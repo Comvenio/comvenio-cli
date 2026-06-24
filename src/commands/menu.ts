@@ -1,7 +1,7 @@
 import type { CAC } from "cac";
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
-import { output } from "../format.ts";
+import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
 import { readImageAsBase64 } from "../util/image.ts";
@@ -46,6 +46,21 @@ type Opts = {
   menuName?: string;
   prompt?: string;
   apply?: boolean;
+  // direct CRUD (create/show/add-item/delete)
+  name?: string;
+  description?: string;
+  category?: string;
+  recipe?: string;
+  price?: string;
+};
+
+type MenuItemRead = {
+  id?: string;
+  name?: string;
+  selling_price?: number | string | null;
+  recipe_id?: string | null;
+  display_order?: number;
+  [key: string]: unknown;
 };
 
 function today(): string {
@@ -60,17 +75,22 @@ function today(): string {
  */
 export function registerMenuCommands(cli: CAC): void {
   cli
-    .command("menu <action>", "KI-Speisekarte: generate (KI) | apply (deklarativ) | design")
+    .command("menu <action> [id]", "Speisekarte: create | list | show | add-item | delete | generate (KI) | apply | design")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--photo <file>", "Foto/Scan einer Papier-/PDF-Karte (generate/design)")
     .option("--text <desc>", "Freitext-Beschreibung (generate)")
     .option("--file <path>", "menu.json: vom Agenten komponierte Karte (apply)")
     .option("--menu <id>", "Ziel-Menu (Pflicht bei design)")
     .option("--menu-name <name>", "Name der neuen Karte")
+    .option("--name <name>", "Name der Karte (create) bzw. des Eintrags (add-item)")
+    .option("--description <text>", "Beschreibung der Karte (create)")
+    .option("--category <cat>", "Kategorie der Karte (create)")
+    .option("--recipe <id>", "Rezept-ID fuer add-item")
+    .option("--price <eur>", "Verkaufspreis fuer add-item (sonst Rezept-Default)")
     .option("--prompt <stil>", "Design-Stil (design)")
     .option("--apply", "Vorschlag wirklich anlegen (generate/design)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (action: string, opts: Opts) => {
+    .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
