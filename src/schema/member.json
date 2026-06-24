@@ -1,0 +1,44 @@
+{
+  "domain": "member",
+  "generated": true,
+  "source": [
+    "Backend/Microservice-Backend/member-service/app/models/team.py"
+  ],
+  "note": "TeamMemberRole aus member-service team.py. Es gibt KEINEN zentralen Member-Status-Enum (MembershipStatus ist club-spezifisch/dynamisch) — daher nur Kernfelder + strukturelle Enums.",
+  "create_required_fields": [
+    "club_id",
+    "first_name",
+    "last_name"
+  ],
+  "create_optional_fields": [
+    "email",
+    "phone_number",
+    "birthdate",
+    "address",
+    "postal_code",
+    "city",
+    "state",
+    "country",
+    "joined_at",
+    "user_id",
+    "membership_status_id",
+    "family_id"
+  ],
+  "update_fields": {
+    "note": "Alle Felder optional. club_id ist NICHT im MemberUpdate-Schema (Club nicht aenderbar)."
+  },
+  "enums": {
+    "team_member_role": [
+      "PLAYER",
+      "CAPTAIN",
+      "COACH",
+      "ASSISTANT_COACH",
+      "MANAGER"
+    ]
+  },
+  "notes": [
+    "member ohne user_id ist normal (null-Feld).",
+    "RBAC-Rollen laufen ueber den role-service, NICHT member-service — kein member role-Command.",
+    "team member --role ist TeamMemberRole (PLAYER/COACH/...), KEINE Berechtigungsrolle."
+  ]
+}

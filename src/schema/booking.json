@@ -1,0 +1,32 @@
+{
+  "domain": "booking",
+  "generated": true,
+  "source": [
+    "Backend/Microservice-Backend/object-service/app/enums.py"
+  ],
+  "note": "reservation_status/object_type aus den object-service Enum-Klassen (enums.py).",
+  "enums": {
+    "reservation_status": [
+      "requested",
+      "approved",
+      "rejected",
+      "cancelled"
+    ],
+    "object_type": [
+      "static",
+      "portable",
+      "event"
+    ]
+  },
+  "update_required_fields": [
+    "club_id",
+    "object_id"
+  ],
+  "notes": [
+    "approve = PATCH status=approved, reject = PATCH status=rejected.",
+    "PATCH-Body braucht club_id + object_id (Pflicht) — vorher GET der Reservierung.",
+    "Kein status-Query-Filter; --pending filtert clientseitig auf status=requested.",
+    "object list --type ist ein Sub-Pfad (/objects/club/{id}/{type}), kein Query-Param.",
+    "Owner-Bypass-Sperre: eigene Buchung kann nicht selbst genehmigt werden (403)."
+  ]
+}

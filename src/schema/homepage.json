@@ -1,0 +1,1203 @@
+{
+  "domain": "homepage",
+  "generated": true,
+  "source": [
+    "Frontend/web-page/src/components/ClubHome/widgets/index.ts",
+    "Backend/Microservice-Backend/ai-service/app/prompts/homepage_system.py",
+    "Backend/Microservice-Backend/club-service/app/models/club_home_section.py"
+  ],
+  "widget_count": 68,
+  "widget_config_documented": 41,
+  "note": "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag (Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema).",
+  "structure": {
+    "tab": {
+      "fields": [
+        "label",
+        "slug",
+        "icon",
+        "position",
+        "visibility_scope",
+        "department_id",
+        "sections"
+      ],
+      "visibility_scope_enum": [
+        "public",
+        "member",
+        "department"
+      ]
+    },
+    "section": {
+      "fields": [
+        "layout",
+        "style_variant",
+        "sort_order",
+        "title",
+        "is_visible",
+        "bg_image_url",
+        "widgets"
+      ],
+      "layout_enum": [
+        "full",
+        "two-col",
+        "three-col",
+        "sidebar-left",
+        "sidebar-right"
+      ],
+      "style_variant_enum": [
+        "default",
+        "primary",
+        "dark",
+        "subtle",
+        "gradient"
+      ]
+    },
+    "widget": {
+      "fields": [
+        "kind",
+        "title",
+        "config",
+        "slot_index",
+        "preset"
+      ],
+      "preset_enum": [
+        "",
+        "glass",
+        "dark",
+        "gradient",
+        "soft",
+        "elevated",
+        "outlined",
+        "neon"
+      ]
+    }
+  },
+  "templates": [
+    "elegance",
+    "sport",
+    "community",
+    "minimal",
+    "festlich",
+    "modern",
+    "classic"
+  ],
+  "widget_kinds": [
+    "hero",
+    "description",
+    "custom_html",
+    "stats",
+    "cta",
+    "contact",
+    "faq",
+    "sponsors",
+    "countdown",
+    "club_history",
+    "news",
+    "news_highlight",
+    "ticker",
+    "events_list",
+    "event_highlight",
+    "event_calendar",
+    "event_program",
+    "event_rsvp",
+    "training_schedule",
+    "special_event_promo",
+    "feature_grid",
+    "team",
+    "org_chart",
+    "birthdays",
+    "birthday_highlight",
+    "honors_showcase",
+    "image",
+    "image_gallery",
+    "video",
+    "files",
+    "booking_highlight",
+    "menu_display",
+    "instagram",
+    "facebook",
+    "fupa_widget",
+    "bfv_widget",
+    "divider",
+    "spacer",
+    "parallax_section",
+    "gradient_section",
+    "decorative_element",
+    "testimonials",
+    "logo_marquee",
+    "image_text_split",
+    "forum_highlight",
+    "tournament_highlight",
+    "sport_api",
+    "member_counter",
+    "department_showcase",
+    "next_training",
+    "booking_calendar",
+    "meeting_decisions",
+    "quick_links",
+    "poll",
+    "recipe_highlight",
+    "task_overview",
+    "activity_feed",
+    "member_spotlight",
+    "newsletter_signup",
+    "social_feed",
+    "weather",
+    "live_match_ticker",
+    "membership_form",
+    "gallery_slideshow",
+    "department_calendar",
+    "chat_preview",
+    "honor_wall",
+    "ad_banner"
+  ],
+  "widgets": {
+    "hero": {
+      "config": [
+        {
+          "name": "headline"
+        },
+        {
+          "name": "subtitle"
+        },
+        {
+          "name": "bg_type",
+          "values": [
+            "gradient",
+            "primary",
+            "image",
+            "subtle"
+          ]
+        },
+        {
+          "name": "text_color",
+          "values": [
+            "light",
+            "dark",
+            "auto"
+          ]
+        },
+        {
+          "name": "text_align",
+          "values": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        {
+          "name": "min_height"
+        },
+        {
+          "name": "show_logo"
+        },
+        {
+          "name": "cta_primary_label"
+        },
+        {
+          "name": "cta_primary_url"
+        },
+        {
+          "name": "cta_secondary_label"
+        },
+        {
+          "name": "cta_secondary_url"
+        }
+      ]
+    },
+    "description": {
+      "config": [
+        {
+          "name": "text"
+        },
+        {
+          "name": "markdown"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "custom_html": {
+      "config": []
+    },
+    "stats": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "columns",
+          "values": [
+            "2",
+            "3",
+            "4"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "card",
+            "bold",
+            "minimal"
+          ]
+        }
+      ]
+    },
+    "cta": {
+      "config": [
+        {
+          "name": "headline"
+        },
+        {
+          "name": "text"
+        },
+        {
+          "name": "btn_label"
+        },
+        {
+          "name": "btn_url"
+        },
+        {
+          "name": "bg_type",
+          "values": [
+            "gradient",
+            "primary",
+            "accent",
+            "subtle"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "banner",
+            "card"
+          ]
+        },
+        {
+          "name": "btn_variant",
+          "values": [
+            "contained",
+            "outlined"
+          ]
+        }
+      ]
+    },
+    "contact": {
+      "config": [
+        {
+          "name": "email"
+        },
+        {
+          "name": "phone"
+        },
+        {
+          "name": "address"
+        },
+        {
+          "name": "map_url"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "card",
+            "inline"
+          ]
+        }
+      ]
+    },
+    "faq": {
+      "config": []
+    },
+    "sponsors": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "columns",
+          "values": [
+            "2",
+            "3",
+            "4"
+          ]
+        }
+      ]
+    },
+    "countdown": {
+      "config": [
+        {
+          "name": "target_date"
+        },
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "label"
+        },
+        {
+          "name": "display_format",
+          "values": [
+            "full",
+            "compact"
+          ]
+        },
+        {
+          "name": "bg_type",
+          "values": [
+            "gradient",
+            "primary",
+            "subtle"
+          ]
+        }
+      ]
+    },
+    "club_history": {
+      "config": [
+        {
+          "name": "entries"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "vertical",
+            "alternating"
+          ]
+        }
+      ]
+    },
+    "news": {
+      "config": [
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_images"
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "display_mode",
+          "values": [
+            "cards",
+            "list"
+          ]
+        },
+        {
+          "name": "pinned_only"
+        }
+      ]
+    },
+    "news_highlight": {
+      "config": [
+        {
+          "name": "news_id"
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "ticker": {
+      "config": [
+        {
+          "name": "text"
+        },
+        {
+          "name": "speed"
+        },
+        {
+          "name": "style",
+          "values": [
+            "modern",
+            "classic",
+            "minimal",
+            "bold"
+          ]
+        },
+        {
+          "name": "background_color"
+        },
+        {
+          "name": "text_color"
+        }
+      ]
+    },
+    "events_list": {
+      "config": [
+        {
+          "name": "limit"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "cards",
+            "timeline",
+            "compact",
+            "calendar-strip"
+          ]
+        }
+      ]
+    },
+    "event_highlight": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "hero",
+            "card",
+            "banner",
+            "countdown-focus"
+          ]
+        },
+        {
+          "name": "countdown_style",
+          "values": [
+            "blocks",
+            "inline",
+            "ring"
+          ]
+        }
+      ]
+    },
+    "event_calendar": {
+      "config": [
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "week_start",
+          "values": [
+            "0",
+            "1"
+          ]
+        }
+      ]
+    },
+    "event_program": {
+      "config": []
+    },
+    "event_rsvp": {
+      "config": []
+    },
+    "training_schedule": {
+      "config": [
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "table",
+            "timeline"
+          ]
+        }
+      ]
+    },
+    "special_event_promo": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "event_name"
+        },
+        {
+          "name": "event_date"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "location"
+        },
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "show_countdown"
+        },
+        {
+          "name": "show_news"
+        },
+        {
+          "name": "show_gallery"
+        },
+        {
+          "name": "show_program"
+        },
+        {
+          "name": "show_description"
+        },
+        {
+          "name": "cta_text"
+        },
+        {
+          "name": "cta_url"
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "hero",
+            "poster",
+            "cinematic"
+          ]
+        },
+        {
+          "name": "program"
+        }
+      ]
+    },
+    "feature_grid": {
+      "config": []
+    },
+    "team": {
+      "config": [
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "columns",
+          "values": [
+            "2",
+            "3",
+            "4"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "card",
+            "compact",
+            "org"
+          ]
+        },
+        {
+          "name": "show_role"
+        },
+        {
+          "name": "show_email"
+        },
+        {
+          "name": "limit"
+        }
+      ]
+    },
+    "org_chart": {
+      "config": [
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "columns"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "card",
+            "compact",
+            "org"
+          ]
+        }
+      ]
+    },
+    "birthdays": {
+      "config": [
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "display_mode",
+          "values": [
+            "full",
+            "age_with_date",
+            "age_only"
+          ]
+        }
+      ]
+    },
+    "birthday_highlight": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "celebration",
+            "card",
+            "banner",
+            "confetti"
+          ]
+        },
+        {
+          "name": "show_age"
+        },
+        {
+          "name": "show_milestone_badge"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "max_display"
+        },
+        {
+          "name": "celebration_text"
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "confetti",
+            "sparkle",
+            "balloons",
+            "none"
+          ]
+        }
+      ]
+    },
+    "honors_showcase": {
+      "config": [
+        {
+          "name": "honors"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "timeline",
+            "grid",
+            "spotlight",
+            "banner"
+          ]
+        },
+        {
+          "name": "show_member_name"
+        },
+        {
+          "name": "show_date"
+        },
+        {
+          "name": "featured_honor_index"
+        },
+        {
+          "name": "animation_style"
+        }
+      ]
+    },
+    "image": {
+      "config": [
+        {
+          "name": "url"
+        },
+        {
+          "name": "alt"
+        },
+        {
+          "name": "fit",
+          "values": [
+            "cover",
+            "contain",
+            "fill"
+          ]
+        }
+      ]
+    },
+    "image_gallery": {
+      "config": [
+        {
+          "name": "urls"
+        },
+        {
+          "name": "auto_play"
+        },
+        {
+          "name": "interval"
+        }
+      ]
+    },
+    "video": {
+      "config": [
+        {
+          "name": "url"
+        },
+        {
+          "name": "aspect_ratio"
+        }
+      ]
+    },
+    "files": {
+      "config": [
+        {
+          "name": "folder_id"
+        },
+        {
+          "name": "file_ids"
+        },
+        {
+          "name": "limit"
+        }
+      ]
+    },
+    "booking_highlight": {
+      "config": []
+    },
+    "menu_display": {
+      "config": [
+        {
+          "name": "menu_id"
+        },
+        {
+          "name": "view_mode",
+          "values": [
+            "grid",
+            "list"
+          ]
+        },
+        {
+          "name": "columns"
+        }
+      ]
+    },
+    "instagram": {
+      "config": [
+        {
+          "name": "username"
+        },
+        {
+          "name": "limit"
+        }
+      ]
+    },
+    "facebook": {
+      "config": [
+        {
+          "name": "page_id"
+        },
+        {
+          "name": "url"
+        }
+      ]
+    },
+    "fupa_widget": {
+      "config": [
+        {
+          "name": "widget_url"
+        },
+        {
+          "name": "height"
+        }
+      ]
+    },
+    "bfv_widget": {
+      "config": [
+        {
+          "name": "widget_url"
+        },
+        {
+          "name": "height"
+        }
+      ]
+    },
+    "divider": {
+      "config": [
+        {
+          "name": "thickness"
+        },
+        {
+          "name": "color"
+        },
+        {
+          "name": "margin"
+        },
+        {
+          "name": "style",
+          "values": [
+            "solid",
+            "dashed",
+            "gradient",
+            "wave",
+            "zigzag",
+            "dots"
+          ]
+        }
+      ]
+    },
+    "spacer": {
+      "config": [
+        {
+          "name": "height"
+        },
+        {
+          "name": "style",
+          "values": [
+            "dots",
+            "gradient",
+            "wave",
+            "zigzag"
+          ]
+        }
+      ]
+    },
+    "parallax_section": {
+      "config": [
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "text"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "effect",
+          "values": [
+            "parallax",
+            "fixed",
+            "zoom",
+            "blur"
+          ]
+        },
+        {
+          "name": "overlay_color"
+        }
+      ]
+    },
+    "gradient_section": {
+      "config": [
+        {
+          "name": "style",
+          "values": [
+            "mesh",
+            "aurora",
+            "waves",
+            "spotlight",
+            "radial"
+          ]
+        },
+        {
+          "name": "colors"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "pattern_type",
+          "values": [
+            "dots",
+            "grid",
+            "diagonal",
+            "circles"
+          ]
+        }
+      ]
+    },
+    "decorative_element": {
+      "config": [
+        {
+          "name": "element_type",
+          "values": [
+            "shapes",
+            "blobs",
+            "confetti",
+            "particles",
+            "badges",
+            "quote"
+          ]
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "badge_style",
+          "values": [
+            "seal",
+            "ribbon",
+            "shield",
+            "circle"
+          ]
+        },
+        {
+          "name": "quote_text"
+        },
+        {
+          "name": "quote_author"
+        }
+      ]
+    },
+    "testimonials": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "carousel",
+            "grid",
+            "stack",
+            "marquee"
+          ]
+        },
+        {
+          "name": "autoplay"
+        },
+        {
+          "name": "show_rating"
+        },
+        {
+          "name": "show_avatar"
+        },
+        {
+          "name": "card_style"
+        }
+      ]
+    },
+    "logo_marquee": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "speed"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "grayscale"
+        },
+        {
+          "name": "pause_on_hover"
+        }
+      ]
+    },
+    "image_text_split": {
+      "config": [
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "headline"
+        },
+        {
+          "name": "text"
+        },
+        {
+          "name": "cta_label"
+        },
+        {
+          "name": "cta_url"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "image-left",
+            "image-right",
+            "image-top"
+          ]
+        },
+        {
+          "name": "image_effect",
+          "values": [
+            "parallax",
+            "zoom",
+            "reveal",
+            "none"
+          ]
+        },
+        {
+          "name": "badge_text"
+        }
+      ]
+    },
+    "forum_highlight": {
+      "config": [
+        {
+          "name": "posts"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "cards",
+            "compact",
+            "featured",
+            "trending"
+          ]
+        },
+        {
+          "name": "sort_by",
+          "values": [
+            "reactions",
+            "replies",
+            "views",
+            "recent"
+          ]
+        },
+        {
+          "name": "show_reactions"
+        },
+        {
+          "name": "show_reply_count"
+        }
+      ]
+    },
+    "tournament_highlight": {
+      "config": [
+        {
+          "name": "matches"
+        },
+        {
+          "name": "standings"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "scoreboard",
+            "table",
+            "cards",
+            "ticker"
+          ]
+        },
+        {
+          "name": "show_live_indicator"
+        }
+      ]
+    },
+    "sport_api": {
+      "config": [
+        {
+          "name": "provider",
+          "values": [
+            "fupa",
+            "bfv",
+            "btv",
+            "dfb",
+            "custom"
+          ]
+        },
+        {
+          "name": "team_id"
+        },
+        {
+          "name": "league_id"
+        },
+        {
+          "name": "embed_url"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "table",
+            "card",
+            "embed",
+            "compact"
+          ]
+        },
+        {
+          "name": "show_standings"
+        },
+        {
+          "name": "show_last_results"
+        },
+        {
+          "name": "show_next_match"
+        }
+      ]
+    },
+    "member_counter": {
+      "config": []
+    },
+    "department_showcase": {
+      "config": []
+    },
+    "next_training": {
+      "config": []
+    },
+    "booking_calendar": {
+      "config": []
+    },
+    "meeting_decisions": {
+      "config": []
+    },
+    "quick_links": {
+      "config": []
+    },
+    "poll": {
+      "config": []
+    },
+    "recipe_highlight": {
+      "config": []
+    },
+    "task_overview": {
+      "config": []
+    },
+    "activity_feed": {
+      "config": []
+    },
+    "member_spotlight": {
+      "config": []
+    },
+    "newsletter_signup": {
+      "config": []
+    },
+    "social_feed": {
+      "config": []
+    },
+    "weather": {
+      "config": []
+    },
+    "live_match_ticker": {
+      "config": []
+    },
+    "membership_form": {
+      "config": []
+    },
+    "gallery_slideshow": {
+      "config": []
+    },
+    "department_calendar": {
+      "config": []
+    },
+    "chat_preview": {
+      "config": []
+    },
+    "honor_wall": {
+      "config": []
+    },
+    "ad_banner": {
+      "config": []
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "comvenio-cli",
+  "version": "0.1.0",
+  "description": "Comvenio Club-CLI — authenticate via opaque device token (cvn_...) and talk to the Comvenio gateway. Build vorbild: rts-cli (Bun + cac).",
+  "type": "module",
+  "bin": {
+    "comvenio": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --compile --outfile comvenio",
+    "typecheck": "bunx tsc --noEmit",
+    "gen:schema": "bun run scripts/gen-schema.ts",
+    "gen:schema:check": "bun run scripts/gen-schema.ts --check",
+    "gen:api": "echo 'Placeholder — per service: openapi-typescript https://api.comvenio.app/{service}/openapi.json -o src/api/{service}.ts (Folge-Straenge comvenio-cli-04..09)'"
+  },
+  "dependencies": {
+    "cac": "^6.7.14"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.4.0"
+  }
+}

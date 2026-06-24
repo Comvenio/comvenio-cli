@@ -1,0 +1,63 @@
+{
+  "domain": "event",
+  "generated": true,
+  "source": [
+    "Backend/Microservice-Backend/event-service/app/models/event.py"
+  ],
+  "note": "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py).",
+  "enums": {
+    "event_type": [
+      "party",
+      "meeting",
+      "excursion",
+      "training",
+      "competition",
+      "other"
+    ],
+    "visibility_scope": [
+      "public",
+      "member",
+      "private",
+      "department",
+      "invite_only"
+    ],
+    "organizer_type": [
+      "member",
+      "external"
+    ],
+    "status": [
+      "draft",
+      "planned",
+      "confirmed",
+      "archived",
+      "cancelled"
+    ],
+    "complexity": [
+      "simple",
+      "multi_day"
+    ]
+  },
+  "create_required_fields": [
+    "title",
+    "event_type",
+    "visibility_scope",
+    "organizer_type",
+    "club_id",
+    "department_id"
+  ],
+  "create_optional_fields": [
+    "start_time",
+    "end_time",
+    "description",
+    "location",
+    "status",
+    "organizer_member_id",
+    "complexity"
+  ],
+  "notes": [
+    "Es gibt KEINEN 'published'-Status — publish = PATCH status=confirmed.",
+    "list/show haben keinen RBAC-Key (nur Visibility-Filter).",
+    "multi_day-Events muessen visibility_scope=public behalten.",
+    "EventArea anlegen via POST /events/areas/ mit event_id + club_id + name."
+  ]
+}

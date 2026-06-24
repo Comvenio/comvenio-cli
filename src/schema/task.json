@@ -1,0 +1,49 @@
+{
+  "domain": "task",
+  "generated": true,
+  "source": [
+    "Backend/Microservice-Backend/task-service/app/models/task.py"
+  ],
+  "note": "status/priority/phase aus den task-service Enum-Klassen (task.py). context_type ist im task-service ein eigener TaskContextType-Enum (club/event/object/meeting/supply) — hier statisch, da kein zentraler Enum in task.py.",
+  "enums": {
+    "status": [
+      "open",
+      "in_progress",
+      "completed",
+      "cancelled"
+    ],
+    "priority": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "phase": [
+      "preparation",
+      "execution",
+      "followup"
+    ],
+    "context_type": [
+      "club",
+      "event",
+      "object",
+      "meeting",
+      "supply"
+    ]
+  },
+  "create_required_fields": [
+    "title",
+    "club_id",
+    "task_context_id"
+  ],
+  "assignment_required_fields": [
+    "task_id",
+    "member_id",
+    "club_id"
+  ],
+  "notes": [
+    "task create braucht zwingend task_context_id (kein 'Default-Context'-Lookup) — via task context list/create.",
+    "task assign erwartet member_id, NICHT user_id.",
+    "task done = PUT /tasks/{id} status=completed + completed_at (CLI setzt completed_at selbst).",
+    "completed/cancelled koennen NICHT zurueck auf open gesetzt werden (Backend-Guard)."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "domain": "design",
+  "generated": "manual — mirror of web-page src/components/ClubHome/templates/flexConfig.ts (FlexDesignConfig)",
+  "note": "Config-getriebenes Design-Vokabular fuer das GENERISCHE Flex-Template. Kein club-spezifischer Code: der Look kommt komplett aus dieser Config. Alle Felder optional — fehlende Felder nutzen moderne Defaults (ein leeres Objekt ergibt bereits einen guten, modernen Look).",
+  "applies_when": "homepage_template == 'flex'",
+  "stored_in": "design_settings.custom_template_config",
+  "how": [
+    "1) Template waehlen:  comvenio club design --public-template flex",
+    "2) Design schreiben:  comvenio club design --file design_settings.json",
+    "   wobei design_settings.json = { \"homepage_theme\": \"...\", \"primary_color\": \"#..\", \"accent_color\": \"#..\", \"custom_template_config\": { <diese Config> } }",
+    "3) Vorschau:          comvenio homepage preview --file home.json   (rendert das Flex-Template mit dieser Config)"
+  ],
+  "config": {
+    "hero": {
+      "variant": { "values": ["gradient", "image", "split", "minimal"], "default": "gradient", "note": "image/split nutzen data.bannerUrl wenn vorhanden, sonst Gradient-Fallback" },
+      "minHeight": { "type": "number(px)", "range": "360..900", "default": 600 },
+      "align": { "values": ["left", "center"], "default": "center" },
+      "overlay": { "type": "number", "range": "0..1", "default": 0.45, "note": "Bild-Abdunklung bei variant=image" },
+      "pattern": { "values": ["none", "dots", "grid", "diagonal"], "default": "dots" },
+      "showStats": { "type": "boolean", "default": true, "note": "Stats-Leiste (Mitglieder/Abteilungen/Jahre) im Hero" },
+      "accentWord": { "type": "number", "default": 0, "note": "Index des accent-unterstrichenen Headline-Worts, -1 = keiner" }
+    },
+    "sections": {
+      "rhythm": { "values": ["tight", "normal", "airy"], "default": "airy", "note": "vertikales Padding der Template-Sektionen" },
+      "container": { "values": ["narrow", "normal", "wide"], "default": "normal", "note": "Inhaltsbreite um die Widget-children (ca. 720/1100/1400px)" },
+      "styleCycle": { "type": "array<light|subtle|dark|gradient>", "default": ["light", "subtle", "dark", "light"], "note": "Hintergrund-Folge der Template-eigenen Sektionen" },
+      "dividers": { "values": ["none", "line", "angle", "wave"], "default": "none" }
+    },
+    "decor": {
+      "foundedBadge": { "type": "boolean", "default": true, "note": "'Seit {founded_year}'-Badge am Hero" },
+      "gradientAccents": { "type": "boolean", "default": true, "note": "weiche Glow-Blobs aus den Brand-Farben" }
+    },
+    "type": {
+      "scale": { "values": ["compact", "normal", "bold"], "default": "bold" },
+      "headingTransform": { "values": ["none", "uppercase"], "default": "uppercase" },
+      "headingWeight": { "values": [600, 700, 800, 900], "default": 800 }
+    },
+    "density": { "values": ["compact", "normal", "spacious"], "default": "normal" },
+    "cornerStyle": { "values": ["sharp", "rounded", "pill"], "default": "rounded", "note": "Radius von Buttons/Cards (0 / 12px / pill)" },
+    "accentUsage": { "values": ["subtle", "balanced", "vivid"], "default": "balanced", "note": "Intensitaet des Akzent-Einsatzes (Gradients/Highlights)" },
+    "font_pair": { "values": ["default", "editorial", "sporty", "friendly", "corporate"], "note": "auch von ClubThemeProvider genutzt" },
+    "spacing": { "values": ["compact", "normal", "spacious"] }
+  },
+  "colors_note": "Brand-Farben kommen NICHT aus dieser Config, sondern aus design_settings.primary_color/accent_color/secondary_color (comvenio club design --primary/--accent/--secondary). Das Flex-Template faerbt sich daraus.",
+  "example_custom_template_config": {
+    "hero": { "variant": "gradient", "minHeight": 640, "align": "center", "pattern": "dots", "accentWord": 1, "showStats": true },
+    "sections": { "rhythm": "airy", "container": "normal", "dividers": "angle" },
+    "decor": { "foundedBadge": true, "gradientAccents": true },
+    "type": { "scale": "bold", "headingTransform": "uppercase", "headingWeight": 800 },
+    "density": "normal",
+    "cornerStyle": "rounded",
+    "accentUsage": "vivid",
+    "font_pair": "sporty",
+    "spacing": "normal"
+  }
+}

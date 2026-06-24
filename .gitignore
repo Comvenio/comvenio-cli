@@ -1,0 +1,6 @@
+node_modules/
+comvenio
+comvenio.exe
+*.tgz
+*.log
+.DS_Store

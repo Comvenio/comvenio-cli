@@ -1,0 +1,239 @@
+import type { CAC } from "cac";
+import { loadState } from "../auth.ts";
+import { createClient } from "../http.ts";
+import { output, renderTable } from "../format.ts";
+import { requireClubId } from "../util/club.ts";
+import { prune } from "../util/body.ts";
+
+// event-service endpoints (verified Sub-File 05):
+//   GET   /event/events/club/{club_id}          (Query view, month, start, end, complexity)
+//   GET   /event/events/{event_id}
+//   POST  /event/events/                        (EventCreate)
+//   PATCH /event/events/{event_id}              (EventUpdate)
+//   GET   /event/events/areas/by-event/{id}
+//   POST  /event/events/areas/                  (EventAreaCreate)
+// publish = PATCH {status:"confirmed"} (NO dedicated publish endpoint; enum has no "published").
+
+type EventRead = {
+  id?: string;
+  title?: string;
+  event_type?: string;
+  status?: string;
+  visibility_scope?: string;
+  start_time?: string | null;
+  [key: string]: unknown;
+};
+type EventAreaRead = { id?: string; name?: string; [key: string]: unknown };
+
+type Opts = {
+  json?: boolean;
+  club?: string;
+  view?: string;
+  month?: string;
+  start?: string;
+  end?: string;
+  complexity?: string;
+  title?: string;
+  eventType?: string;
+  visibilityScope?: string;
+  organizerType?: string;
+  departmentId?: string;
+  startTime?: string;
+  endTime?: string;
+  description?: string;
+  location?: string;
+  status?: string;
+  organizerMemberId?: string;
+  public?: boolean;
+  // area
+  name?: string;
+  color?: string;
+  areaCategory?: string;
+};
+
+function eventUpdateBody(o: Opts): Record<string, unknown> {
+  return prune({
+    title: o.title,
+    event_type: o.eventType,
+    visibility_scope: o.visibilityScope,
+    organizer_type: o.organizerType,
+    department_id: o.departmentId,
+    start_time: o.startTime,
+    end_time: o.endTime,
+    description: o.description,
+    location: o.location,
+    status: o.status,
+    organizer_member_id: o.organizerMemberId,
+    complexity: o.complexity,
+  });
+}
+
+/**
+ * `comvenio event <action> [arg1] [arg2]` dispatcher.
+ *   event list|show|create|update|publish
+ *   event area list <event-id> | event area add <event-id> --name X
+ */
+export function registerEventCommands(cli: CAC): void {
+  cli
+    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | area list|add")
+    .option("--club <id>", "Club-ID (sonst aus dem State-File)")
+    .option("--view <v>", "full|calendar (Default full)")
+    .option("--month <v>", "YYYY-MM")
+    .option("--start <v>", "ISO Start")
+    .option("--end <v>", "ISO Ende")
+    .option("--complexity <v>", "simple|multi_day")
+    .option("--title <v>", "Titel")
+    .option("--event-type <v>", "party|meeting|excursion|training|competition|other")
+    .option("--visibility-scope <v>", "public|member|private|department|invite_only")
+    .option("--organizer-type <v>", "member|external")
+    .option("--department-id <v>", "Abteilungs-ID (Pflicht bei create)")
+    .option("--start-time <v>", "ISO datetime")
+    .option("--end-time <v>", "ISO datetime")
+    .option("--description <v>", "Beschreibung")
+    .option("--location <v>", "Ort")
+    .option("--status <v>", "draft|planned|confirmed|archived|cancelled")
+    .option("--organizer-member-id <v>", "Organisator (Member-ID)")
+    .option("--public", "publish: visibility_scope auf public setzen")
+    // area flags
+    .option("--name <v>", "Bereichsname (area add)")
+    .option("--color <v>", "Bereichsfarbe (area add)")
+    .option("--area-category <v>", "Bereichskategorie (area add)")
+    .option("--json", "JSON-Ausgabe (maschinenlesbar)")
+    .action(
+      async (
+        action: string,
+        arg1: string | undefined,
+        arg2: string | undefined,
+        opts: Opts,
+      ) => {
+        const state = loadState();
+        const client = createClient(state);
+        const clubId = requireClubId(state, opts.club);
+
+        // event area <sub> <event-id>
+        if (action === "area") {
+          const sub = arg1;
+          const eventId = arg2;
+          if (sub === "list") {
+            if (!eventId) throw new Error("event area list benoetigt eine <event-id>.");
+            const areas = await client.get<EventAreaRead[]>(
+              "event",
+              `/events/areas/by-event/${eventId}`,
+            );
+            output(areas, opts.json, () =>
+              areas.length
+                ? renderTable(areas, [
+                    { header: "ID", width: 36, get: (a) => String(a.id ?? "") },
+                    { header: "Name", width: 24, get: (a) => String(a.name ?? "—") },
+                  ])
+                : "Keine Bereiche.",
+            );
+            return;
+          }
+          if (sub === "add") {
+            if (!eventId) throw new Error("event area add benoetigt eine <event-id>.");
+            if (!opts.name) throw new Error("event area add benoetigt --name <v>.");
+            const body = prune({
+              event_id: eventId,
+              club_id: clubId,
+              name: opts.name,
+              description: opts.description,
+              color: opts.color,
+              public: opts.public,
+              area_category: opts.areaCategory,
+            });
+            const area = await client.post<EventAreaRead>("event", "/events/areas/", body);
+            output(area, opts.json, () => `Bereich angelegt: ${area.name} (${area.id})`);
+            return;
+          }
+          throw new Error(`Unbekannte event-area-Aktion "${sub}". Verfuegbar: list, add`);
+        }
+
+        switch (action) {
+          case "list": {
+            const params = new URLSearchParams();
+            if (opts.view) params.set("view", opts.view);
+            if (opts.month) params.set("month", opts.month);
+            if (opts.start) params.set("start", opts.start);
+            if (opts.end) params.set("end", opts.end);
+            if (opts.complexity) params.set("complexity", opts.complexity);
+            const qs = params.toString();
+            const data = await client.get<EventRead[]>(
+              "event",
+              `/events/club/${clubId}${qs ? `?${qs}` : ""}`,
+            );
+            output(data, opts.json, () =>
+              data.length
+                ? renderTable(data, [
+                    { header: "ID", width: 36, get: (e) => String(e.id ?? "") },
+                    { header: "Titel", width: 24, get: (e) => String(e.title ?? "—") },
+                    { header: "Typ", width: 12, get: (e) => String(e.event_type ?? "—") },
+                    { header: "Status", width: 10, get: (e) => String(e.status ?? "—") },
+                  ])
+                : "Keine Veranstaltungen.",
+            );
+            break;
+          }
+          case "show": {
+            const id = arg1;
+            if (!id) throw new Error("event show benoetigt eine <event-id>.");
+            const e = await client.get<EventRead>("event", `/events/${id}`);
+            output(e, opts.json, () =>
+              [
+                `Titel:      ${e.title ?? "—"}`,
+                `ID:         ${e.id ?? id}`,
+                `Typ:        ${e.event_type ?? "—"}`,
+                `Status:     ${e.status ?? "—"}`,
+                `Sichtbar:   ${e.visibility_scope ?? "—"}`,
+                `Start:      ${e.start_time ?? "—"}`,
+              ].join("\n"),
+            );
+            break;
+          }
+          case "create": {
+            const missing = [
+              ["--title", opts.title],
+              ["--event-type", opts.eventType],
+              ["--visibility-scope", opts.visibilityScope],
+              ["--organizer-type", opts.organizerType],
+              ["--department-id", opts.departmentId],
+            ].filter(([, v]) => !v).map(([flag]) => flag);
+            if (missing.length) {
+              throw new Error(`event create benoetigt: ${missing.join(", ")}.`);
+            }
+            const body = { club_id: clubId, ...eventUpdateBody(opts) };
+            const e = await client.post<EventRead>("event", "/events/", body);
+            output(e, opts.json, () => `Veranstaltung angelegt: ${e.title} (${e.id})`);
+            break;
+          }
+          case "update": {
+            const id = arg1;
+            if (!id) throw new Error("event update benoetigt eine <event-id>.");
+            const body = eventUpdateBody(opts);
+            if (Object.keys(body).length === 0) {
+              throw new Error("event update benoetigt mindestens ein zu aenderndes Feld.");
+            }
+            const e = await client.patch<EventRead>("event", `/events/${id}`, body);
+            output(e, opts.json, () => `Veranstaltung aktualisiert: ${e.title} (${e.id})`);
+            break;
+          }
+          case "publish": {
+            const id = arg1;
+            if (!id) throw new Error("event publish benoetigt eine <event-id>.");
+            // No dedicated publish endpoint — PATCH status=confirmed (Sub-File 05).
+            const body: Record<string, string> = { status: "confirmed" };
+            if (opts.public) body.visibility_scope = "public";
+            const e = await client.patch<EventRead>("event", `/events/${id}`, body);
+            output(e, opts.json, () =>
+              `Veranstaltung veroeffentlicht: ${e.title ?? id} (status=${e.status ?? "confirmed"})`,
+            );
+            break;
+          }
+          default:
+            throw new Error(
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, area`,
+            );
+        }
+      },
+    );
+}

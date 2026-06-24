@@ -1,0 +1,210 @@
+{
+  "domain": "menu",
+  "generated": true,
+  "source": [
+    "Frontend/web-page/src/components/supply-service/MenuPreview.tsx",
+    "Backend/Microservice-Backend/supply-service/app/models/core.py"
+  ],
+  "note": "design_config_fields = exportierter MenuDesignOptions-Typ (MenuPreview.tsx). unit_type/type_of_recipe AUTORITATIV aus supply-service core.py (UnitType hat 10 Werte, NICHT die 6 des veralteten Frontend-Types).",
+  "design_config_fields": {
+    "template": {
+      "type": "enum",
+      "values": [
+        "classic",
+        "modern"
+      ]
+    },
+    "clubName": {
+      "type": "string"
+    },
+    "menuName": {
+      "type": "string"
+    },
+    "menuDescription": {
+      "type": "string",
+      "optional": true
+    },
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "portrait",
+        "landscape"
+      ]
+    },
+    "columns": {
+      "type": "enum",
+      "values": [
+        1,
+        2,
+        3
+      ]
+    },
+    "showPrices": {
+      "type": "bool"
+    },
+    "showDescriptions": {
+      "type": "bool"
+    },
+    "showAllergens": {
+      "type": "bool"
+    },
+    "showColorants": {
+      "type": "bool"
+    },
+    "pageSettings": {
+      "type": "array"
+    },
+    "baseFontSize": {
+      "type": "number"
+    },
+    "titleFontSize": {
+      "type": "number"
+    },
+    "categoryFontSize": {
+      "type": "number"
+    },
+    "background": {
+      "type": "string"
+    },
+    "textColor": {
+      "type": "string"
+    },
+    "mutedTextColor": {
+      "type": "string"
+    },
+    "accentColor": {
+      "type": "string"
+    },
+    "headerBackground": {
+      "type": "string"
+    },
+    "headerTextColor": {
+      "type": "string"
+    },
+    "itemGap": {
+      "type": "number"
+    },
+    "categoryGap": {
+      "type": "number"
+    },
+    "logoUrl": {
+      "type": "string",
+      "optional": true
+    },
+    "logoPosition": {
+      "type": "enum",
+      "values": [
+        "left",
+        "right",
+        "none"
+      ]
+    },
+    "logoSize": {
+      "type": "number"
+    },
+    "clubNameAlign": {
+      "type": "enum",
+      "values": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "menuNameAlign": {
+      "type": "enum",
+      "values": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "categoryOrder": {
+      "type": "array"
+    },
+    "pageBreakAfter": {
+      "type": "array"
+    },
+    "showQr": {
+      "type": "bool"
+    },
+    "qrUrl": {
+      "type": "string"
+    },
+    "qrPosition": {
+      "type": "enum",
+      "values": [
+        "header-right",
+        "header-left"
+      ]
+    },
+    "qrSize": {
+      "type": "number"
+    },
+    "headerImageUrl": {
+      "type": "string",
+      "optional": true
+    },
+    "showHeaderImage": {
+      "type": "bool"
+    },
+    "headerImageX": {
+      "type": "number"
+    },
+    "headerImageY": {
+      "type": "number"
+    },
+    "headerImageZoom": {
+      "type": "number"
+    },
+    "headerImageOpacity": {
+      "type": "number"
+    },
+    "watermarkUrl": {
+      "type": "string",
+      "optional": true
+    },
+    "showWatermark": {
+      "type": "bool"
+    },
+    "watermarkOpacity": {
+      "type": "number"
+    },
+    "overlays": {
+      "type": "array"
+    }
+  },
+  "menu_item_fields": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "selling_price": {
+      "type": "number",
+      "optional": true
+    },
+    "display_order": {
+      "type": "int"
+    },
+    "recipe_id": {
+      "type": "string",
+      "optional": true,
+      "note": "nullable — reine Anzeige-Karte ohne Rezept moeglich"
+    }
+  },
+  "unit_type": [
+    "gr",
+    "kg",
+    "ml",
+    "l",
+    "pc",
+    "portion",
+    "tsp",
+    "tbsp",
+    "cup",
+    "pinch"
+  ],
+  "type_of_recipe": [
+    "food",
+    "drink"
+  ]
+}
