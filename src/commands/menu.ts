@@ -255,8 +255,99 @@ export function registerMenuCommands(cli: CAC): void {
           break;
         }
 
+        case "create": {
+          // Deterministisch: der Agent komponiert die Karte, CLI POSTet direkt an
+          // supply (KEIN ai-service). Items danach via `menu add-item`.
+          if (!opts.name && !opts.menuName) {
+            throw new Error("menu create benoetigt --name.");
+          }
+          const menu = await client.post<MenuRead>(
+            "supply",
+            `/menu/club/${clubId}/menus`,
+            prune({
+              name: opts.name ?? opts.menuName,
+              description: opts.description,
+              category: opts.category,
+            }),
+          );
+          output(menu, opts.json, () => `Speisekarte angelegt: ${opts.name ?? opts.menuName} — ${menu.id ?? "?"}`);
+          break;
+        }
+
+        case "list": {
+          const menus = await client.get<MenuRead[]>("supply", `/menu/club/${clubId}/menus`);
+          output(menus, opts.json, () =>
+            Array.isArray(menus) && menus.length
+              ? renderTable(menus, [
+                  { header: "Name", width: 30, get: (m) => String(m.name ?? "—") },
+                  { header: "Kategorie", width: 18, get: (m) => String((m as Record<string, unknown>).category ?? "—") },
+                  { header: "ID", width: 36, get: (m) => String(m.id ?? "—") },
+                ])
+              : "Keine Speisekarten.",
+          );
+          break;
+        }
+
+        case "show": {
+          if (!id) throw new Error("menu show <menu_id> benoetigt eine Menu-ID.");
+          const menu = await client.get<MenuRead>("supply", `/menu/club/${clubId}/menus/${id}`);
+          output(menu, opts.json, () => {
+            const items = ((menu as Record<string, unknown>).items as MenuItemRead[] | undefined) ?? [];
+            const lines = [`Speisekarte: ${menu.name ?? "—"} (${menu.id ?? id})`];
+            for (const it of items) {
+              const price = it.selling_price != null ? ` — ${it.selling_price} €` : "";
+              lines.push(`  - ${it.name ?? "?"}${price}`);
+            }
+            if (items.length === 0) lines.push("  (keine Eintraege)");
+            return lines.join("\n");
+          });
+          break;
+        }
+
+        case "add-item": {
+          // Rezept (recipe) auf eine Speisekarte setzen. Name/Preis aus dem Rezept,
+          // falls nicht angegeben. Deterministisch (supply direkt).
+          if (!id) throw new Error("menu add-item <menu_id> benoetigt eine Menu-ID.");
+          let itemName = opts.name;
+          let price = opts.price != null ? Number(opts.price) : undefined;
+          if (opts.recipe && (!itemName || price === undefined)) {
+            const r = await client.get<{ name?: string; default_selling_price?: number | string | null }>(
+              "supply",
+              `/recipe/club/${clubId}/recipes/${opts.recipe}`,
+            );
+            if (!itemName) itemName = r.name;
+            if (price === undefined && r.default_selling_price != null) price = Number(r.default_selling_price);
+          }
+          if (!itemName) {
+            throw new Error("menu add-item benoetigt --name (oder --recipe, dessen Name uebernommen wird).");
+          }
+          const item = await client.post<MenuItemRead>(
+            "supply",
+            `/menu/club/${clubId}/menus/${id}/items`,
+            prune({
+              menu_id: id,
+              recipe_id: opts.recipe,
+              name: itemName,
+              selling_price: price,
+            }),
+          );
+          output(item, opts.json, () =>
+            `Auf Karte gesetzt: ${itemName}${price != null ? ` — ${price} €` : ""} (${item.id ?? "?"}).`,
+          );
+          break;
+        }
+
+        case "delete": {
+          if (!id) throw new Error("menu delete <menu_id> benoetigt eine Menu-ID.");
+          await client.del("supply", `/menu/club/${clubId}/menus/${id}`);
+          output({ deleted: id }, opts.json, () => `Speisekarte geloescht: ${id}`);
+          break;
+        }
+
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: generate, apply, design`);
+          throw new Error(
+            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, delete, generate, apply, design`,
+          );
       }
     });
 }
