@@ -16,7 +16,9 @@ import { prune } from "../util/body.ts";
 // gateway key: "supply" → supply-service. supply nutzt KEIN RBAC, nur JWT (CLAUDE.md).
 
 const VALID_TYPES = ["food", "drink"];
-const VALID_UNITS = ["gr", "kg", "ml", "l", "pc", "portion"];
+// UnitType verifiziert an schemas/core.py (Code = Wahrheit; die AI-doc nannte
+// faelschlich g/piece/serving). Die echten Enum-Werte:
+const VALID_UNITS = ["gr", "kg", "ml", "l", "pc", "portion", "tsp", "tbsp", "cup", "pinch"];
 
 type RecipeRead = {
   id?: string;
@@ -67,11 +69,14 @@ function priceLabel(p: RecipeRead["default_selling_price"]): string {
  */
 export function registerRecipeCommands(cli: CAC): void {
   cli
-    .command("recipe <action> [id]", "Gerichte/Getraenke (Rezepte): create | list | show | update | delete")
+    .command(
+      "recipe <action> [id]",
+      "Gerichte/Getraenke (Rezepte): create | from-template | list | show | update | delete",
+    )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
-    .option("--name <name>", "Name des Gerichts/Getraenks (create/update)")
+    .option("--name <name>", "Name (create/update); custom_name (from-template)")
     .option("--type <t>", `Art: ${VALID_TYPES.join("|")} (Default food)`)
-    .option("--price <eur>", "Verkaufspreis in Euro (z.B. 5.50)")
+    .option("--price <eur>", "Verkaufspreis in Euro (z.B. 5.50); custom_price (from-template)")
     .option("--category <cat>", 'Kategorie (z.B. "Hauptgericht", "Getraenke")')
     .option("--description <text>", "Beschreibung (update)")
     .option("--ingredients <list>", 'Zutaten "Name:Menge:Einheit,..." — fehlende werden auto-angelegt (create)')
@@ -105,6 +110,42 @@ export function registerRecipeCommands(cli: CAC): void {
           output(r, opts.json, () =>
             `Angelegt: ${r.name ?? opts.name} (${r.type_of_recipe ?? type}) — ${priceLabel(r.default_selling_price)} — ${r.id ?? "?"}`,
           );
+          break;
+        }
+
+        case "from-template": {
+          // Rezept aus einer GlobalDishTemplate instanziieren (vollstaendige Zutaten +
+          // Preis + Kategorie, Allergene erben transitiv ueber die auto-angelegten Zutaten).
+          // Idempotent: gleicher Name -> bestehendes Rezept, kein Duplikat.
+          // Template-ID via `comvenio template dish --search "..."`.
+          if (!id) {
+            throw new Error(
+              'recipe from-template <template_id> benoetigt eine Dish-Vorlagen-ID (siehe: comvenio template dish --search "...").',
+            );
+          }
+          const body = prune({
+            template_id: id,
+            club_id: clubId,
+            custom_price: opts.price != null ? Number(opts.price) : undefined,
+            custom_name: opts.name,
+            auto_create_missing_ingredients: true,
+          });
+          const r = await client.post<{
+            recipe_id?: string;
+            recipe_name?: string;
+            created_ingredients?: string[];
+            missing_ingredients?: string[];
+            already_exists?: boolean;
+            success?: boolean;
+            error?: string;
+          }>("supply", `/global-dish-templates/create-recipe`, body);
+          output(r, opts.json, () => {
+            const dup = r.already_exists ? " (bestand bereits)" : "";
+            const miss = r.missing_ingredients?.length
+              ? ` — fehlende Zutaten (kein Vorlagen-Match): ${r.missing_ingredients.join(", ")}`
+              : "";
+            return `Rezept aus Vorlage: ${r.recipe_name ?? "?"} — ${r.recipe_id ?? "?"}${dup}${miss}`;
+          });
           break;
         }
 
@@ -168,7 +209,9 @@ export function registerRecipeCommands(cli: CAC): void {
         }
 
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: create, list, show, update, delete`);
+          throw new Error(
+            `Unbekannte Aktion "${action}". Verfuegbar: create, from-template, list, show, update, delete`,
+          );
       }
     });
 }

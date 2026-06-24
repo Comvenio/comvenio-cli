@@ -6,6 +6,7 @@ import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
 import { readImageAsBase64 } from "../util/image.ts";
 import { readJsonFile } from "../util/file.ts";
+import { readFileSync } from "node:fs";
 
 // KI-Gen Speisekarte (verified Sub-File 08). TWO modes (D-12):
 //   generative `menu generate` → ai-service /menu-content/generate (Foto/Text)
@@ -52,6 +53,7 @@ type Opts = {
   category?: string;
   recipe?: string;
   price?: string;
+  css?: string;
 };
 
 type MenuItemRead = {
@@ -87,6 +89,7 @@ export function registerMenuCommands(cli: CAC): void {
     .option("--category <cat>", "Kategorie der Karte (create)")
     .option("--recipe <id>", "Rezept-ID fuer add-item")
     .option("--price <eur>", "Verkaufspreis fuer add-item (sonst Rezept-Default)")
+    .option("--css <file>", "CSS-Datei fuer 'style' (design_config.custom_css, frei stylbar)")
     .option("--prompt <stil>", "Design-Stil (design)")
     .option("--apply", "Vorschlag wirklich anlegen (generate/design)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
@@ -292,7 +295,9 @@ export function registerMenuCommands(cli: CAC): void {
           if (!id) throw new Error("menu show <menu_id> benoetigt eine Menu-ID.");
           const menu = await client.get<MenuRead>("supply", `/menu/club/${clubId}/menus/${id}`);
           output(menu, opts.json, () => {
-            const items = ((menu as Record<string, unknown>).items as MenuItemRead[] | undefined) ?? [];
+            // Read-Model ist MenuWithItemsRead -> Feld heisst `menu_items` (nicht `items`),
+            // verifiziert an schemas/menu.py.
+            const items = ((menu as Record<string, unknown>).menu_items as MenuItemRead[] | undefined) ?? [];
             const lines = [`Speisekarte: ${menu.name ?? "—"} (${menu.id ?? id})`];
             for (const it of items) {
               const price = it.selling_price != null ? ` — ${it.selling_price} €` : "";
@@ -321,9 +326,11 @@ export function registerMenuCommands(cli: CAC): void {
           if (!itemName) {
             throw new Error("menu add-item benoetigt --name (oder --recipe, dessen Name uebernommen wird).");
           }
+          // Single-Item-Route ist /menu/club/{club_id}/items (menu_id im Body) —
+          // NICHT /menus/{id}/items (existiert nicht, verifiziert an routes/menu.py:294).
           const item = await client.post<MenuItemRead>(
             "supply",
-            `/menu/club/${clubId}/menus/${id}/items`,
+            `/menu/club/${clubId}/items`,
             prune({
               menu_id: id,
               recipe_id: opts.recipe,
@@ -344,9 +351,28 @@ export function registerMenuCommands(cli: CAC): void {
           break;
         }
 
+        case "style": {
+          // Frei konfigurierbares CSS auf eine bestehende Karte (design_config.custom_css).
+          // GET -> merge -> PUT, damit andere design_config-Knobs erhalten bleiben.
+          // Deterministisch, der Agent komponiert das CSS (KI-Traeger, kein ai-service).
+          if (!id) throw new Error("menu style <menu_id> benoetigt eine Menu-ID.");
+          if (!opts.css) throw new Error("menu style benoetigt --css <datei> (CSS-Datei).");
+          const css = readFileSync(opts.css, "utf-8");
+          const existing = await client.get<MenuRead>("supply", `/menu/club/${clubId}/menus/${id}`);
+          const design = {
+            ...(((existing as Record<string, unknown>).design_config as Record<string, unknown>) ?? {}),
+            custom_css: css,
+          };
+          await client.put("supply", `/menu/club/${clubId}/menus/${id}`, { design_config: design });
+          output({ menu_id: id, css_bytes: css.length }, opts.json, () =>
+            `CSS gesetzt auf Karte ${id} (${css.length} Zeichen). Im Browser pruefen.`,
+          );
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, delete, generate, apply, design`,
+            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, delete, style, generate, apply, design`,
           );
       }
     });

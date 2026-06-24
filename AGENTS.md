@@ -39,9 +39,15 @@ comvenio club info                    # Vereinsdaten
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
 | task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |
-| menu     | `comvenio menu generate\|apply\|design`                       |
+| template | `comvenio template dish\|ingredient [--search\|--category\|--common]` (globale Vorlagen) |
+| recipe   | `comvenio recipe from-template\|create\|list\|show\|update\|delete` (Gerichte/Getränke) |
+| menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
 | homepage | `comvenio homepage generate\|preview\|apply\|show\|design`     |
 | schema   | `comvenio schema <domain> --json`                             |
+
+> **Speisekarten ausführlich:** `docs/speisekarten.md` — Datenmodell (Recipe↔Ingredient↔Allergen
+> transitiv), Vorlagen-Workflow, Wiederverwendung, Gotchas, End-to-End-Beispiel. **Lesen, bevor du
+> Gerichte/Karten anlegst.**
 
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
@@ -67,8 +73,14 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   (low\|medium\|high). `task create` braucht zwingend `--context-id`
   (`task_context_id`) — vorher `task context list`. `task assign` erwartet
   `--member-id` (Member-ID, **nicht** user_id).
-- **menu:** `comvenio schema menu --json` → `design_config`-Felder (MenuDesignOptions)
-  + `unit_type` (gr\|kg\|ml\|l\|pc\|portion) + `type_of_recipe` (food\|drink).
+- **menu / recipe:** `comvenio schema menu --json` → `design_config`-Felder (MenuDesignOptions).
+  `unit_type` (UnitType, verifiziert): `gr\|kg\|ml\|l\|pc\|portion\|tsp\|tbsp\|cup\|pinch` (NICHT
+  `g`/`piece`/`serving`). `type_of_recipe` (food\|drink), `age_group` (none\|teen\|adult). **Allergene
+  sind transitiv** (Recipe → Ingredient → Allergen), nie direkt am Rezept — korrekte Allergene bekommst
+  du, indem die Zutaten-Namen die globalen Vorlagen treffen. Details: `docs/speisekarten.md`.
+- **template:** `comvenio template dish\|ingredient --search "..."` durchsucht die globalen Vorlagen
+  (100+ Gerichte mit Rezept+Allergenen, 380+ Zutaten). `recipe from-template <id>` instanziiert ein
+  vollständiges Rezept (Allergene inklusive, idempotent). **Vorlagen zuerst** — nur was fehlt ad-hoc bauen.
 - **homepage:** `comvenio schema homepage --json` → 68 Widget-`kind`-Werte +
   config-Felder je Widget + Section-`layout`/`style_variant` + Templates.
 - **design (Flex-Template):** `comvenio schema design --json` → `FlexDesignConfig`
@@ -138,14 +150,26 @@ comvenio event area add <event-id> --name "Bühne" --json
 comvenio event publish <event-id> --public --json
 ```
 
-**2. Speisekarte deklarativ bauen (Standardweg — du komponierst)**
+**2. Speisekarte rezept-basiert bauen (EMPFOHLEN — echte Allergene, Wiederverwendung)**
+```bash
+# Vorlage finden -> Rezept (mit Allergenen) -> Karte -> Eintrag (Label/Preis pro Karte)
+comvenio template dish --search "Schnitzel" --json
+RID=$(comvenio recipe from-template <template-id> --price 12 --json | jq -r .recipe_id)
+MID=$(comvenio menu create --name "Festtag" --category Fest --json | jq -r .id)
+comvenio menu add-item $MID --recipe $RID --name "Schnitzel mit Kartoffelsalat" --price 12 --json
+```
+> Vollständiger Leitfaden + Gotchas: **`docs/speisekarten.md`**. Ein `MenuItem` **ohne** `recipe_id`
+> (z.B. via `apply --file` mit reinen name+price-Items) hat **keine Allergene** und fehlt in der
+> öffentlichen QR-Liste — für echte Karten immer ein Rezept hinterlegen.
+
+**2b. Speisekarte deklarativ im Schwung (apply --file — wenn recipe_ids schon feststehen)**
 ```bash
 comvenio schema menu --json > schema.json     # gültige design_config-Felder / UnitType nachschlagen
-# menu.json komponieren (name + items[] + optional design_config), dann:
-comvenio menu apply --file menu.json          # Karte + Items (kein ai-service, kein zweiter LLM-Call)
+# menu.json komponieren (name + items[] MIT recipe_id + optional design_config), dann:
+comvenio menu apply --file menu.json          # Karte + Items im Bulk (kein ai-service, kein zweiter LLM-Call)
 ```
 
-**2b. Speisekarte aus Foto (generativ — nur wenn echtes Bild-OCR nötig)**
+**2c. Speisekarte aus Foto (generativ — nur wenn echtes Bild-OCR nötig)**
 ```bash
 comvenio menu generate --photo ./speisekarte.jpg --json     # Vorschlag ansehen (kein Write)
 comvenio menu generate --photo ./speisekarte.jpg --apply --menu-name "Sommerkarte 2026"
