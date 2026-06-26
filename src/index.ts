@@ -22,6 +22,7 @@ import { registerMeetingCommands } from "./commands/meeting.ts";
 import { registerHomepageCommands } from "./commands/homepage.ts";
 import { registerSchemaCommand } from "./commands/schema.ts";
 import { registerVerifyCommands } from "./commands/verify.ts";
+import { registerDataCommands } from "./commands/data.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -131,6 +132,8 @@ registerHomepageCommands(cli);
 registerSchemaCommand(cli);
 // K11 — visuelles Review (headless render → screenshots, der Agent sieht das Ergebnis).
 registerVerifyCommands(cli);
+// K12 — DataShare: Vereins-Dateien laden/bereitstellen/analysieren (content-service).
+registerDataCommands(cli);
 
 cli.help();
 cli.version(pkg.version);
