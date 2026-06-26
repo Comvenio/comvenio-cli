@@ -1,0 +1,15 @@
+- generic [ref=e3]:
+  - status [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img "Comvenio laden" [ref=e7]
+        - progressbar [ref=e8]:
+          - img [ref=e9]
+      - heading "Comvenio laden" [level=6] [ref=e12]
+  - status [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - img "Comvenio laden" [ref=e16]
+        - progressbar [ref=e17]:
+          - img [ref=e18]
+      - heading "Comvenio laden" [level=6] [ref=e21]

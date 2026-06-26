@@ -35,7 +35,7 @@ comvenio club info                    # Vereinsdaten
 | club     | `comvenio club info` · `comvenio club design` (Theme/Farben/Public-Template → design_settings) |
 | member   | `comvenio member list\|show\|add\|update\|remove`             |
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
-| event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` |
+| event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` (Speisekarte je Event/Bereich — EventMenu, supply-service) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
 | task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |

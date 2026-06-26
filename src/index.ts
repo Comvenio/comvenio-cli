@@ -18,8 +18,10 @@ import { registerTaskCommands } from "./commands/task.ts";
 import { registerRecipeCommands } from "./commands/recipe.ts";
 import { registerTemplateCommands } from "./commands/template.ts";
 import { registerMenuCommands } from "./commands/menu.ts";
+import { registerMeetingCommands } from "./commands/meeting.ts";
 import { registerHomepageCommands } from "./commands/homepage.ts";
 import { registerSchemaCommand } from "./commands/schema.ts";
+import { registerVerifyCommands } from "./commands/verify.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -124,8 +126,11 @@ registerTaskCommands(cli);
 registerRecipeCommands(cli);
 registerTemplateCommands(cli);
 registerMenuCommands(cli);
+registerMeetingCommands(cli);
 registerHomepageCommands(cli);
 registerSchemaCommand(cli);
+// K11 — visuelles Review (headless render → screenshots, der Agent sieht das Ergebnis).
+registerVerifyCommands(cli);
 
 cli.help();
 cli.version(pkg.version);

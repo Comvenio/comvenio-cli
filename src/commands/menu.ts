@@ -77,7 +77,7 @@ function today(): string {
  */
 export function registerMenuCommands(cli: CAC): void {
   cli
-    .command("menu <action> [id]", "Speisekarte: create | list | show | add-item | delete | generate (KI) | apply | design")
+    .command("menu <action> [id]", "Speisekarte: create | list | show | add-item | update-item | delete-item | delete | style | generate (KI) | apply | design")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--photo <file>", "Foto/Scan einer Papier-/PDF-Karte (generate/design)")
     .option("--text <desc>", "Freitext-Beschreibung (generate)")
@@ -85,7 +85,7 @@ export function registerMenuCommands(cli: CAC): void {
     .option("--menu <id>", "Ziel-Menu (Pflicht bei design)")
     .option("--menu-name <name>", "Name der neuen Karte")
     .option("--name <name>", "Name der Karte (create) bzw. des Eintrags (add-item)")
-    .option("--description <text>", "Beschreibung der Karte (create)")
+    .option("--description <text>", "Beschreibung der Karte (create) bzw. des Eintrags (add-item/update-item, Item-Override)")
     .option("--category <cat>", "Kategorie der Karte (create)")
     .option("--recipe <id>", "Rezept-ID fuer add-item")
     .option("--price <eur>", "Verkaufspreis fuer add-item (sonst Rezept-Default)")
@@ -336,6 +336,7 @@ export function registerMenuCommands(cli: CAC): void {
               recipe_id: opts.recipe,
               name: itemName,
               selling_price: price,
+              description: opts.description, // Item-Override (Option B: Praesentation = MenuItem-Master)
             }),
           );
           output(item, opts.json, () =>
@@ -348,6 +349,33 @@ export function registerMenuCommands(cli: CAC): void {
           if (!id) throw new Error("menu delete <menu_id> benoetigt eine Menu-ID.");
           await client.del("supply", `/menu/club/${clubId}/menus/${id}`);
           output({ deleted: id }, opts.json, () => `Speisekarte geloescht: ${id}`);
+          break;
+        }
+
+        case "update-item": {
+          // Bestehenden Eintrag aendern (Preis/Label). Item-IDs via `menu show <menu_id> --json`.
+          // Endpoint: PUT /menu/items/{menu_item_id} (MenuItemUpdate: name/selling_price/display_order).
+          if (!id) throw new Error("menu update-item <item_id> benoetigt eine Item-ID (siehe: menu show <menu_id> --json).");
+          const body = prune({
+            name: opts.name,
+            selling_price: opts.price != null ? Number(opts.price) : undefined,
+            description: opts.description, // Item-Override (Option B: Praesentation = MenuItem-Master)
+          });
+          if (Object.keys(body).length === 0) {
+            throw new Error("menu update-item braucht --price, --name und/oder --description.");
+          }
+          const item = await client.put<MenuItemRead>("supply", `/menu/items/${id}`, body);
+          output(item, opts.json, () =>
+            `Eintrag aktualisiert: ${item.name ?? opts.name ?? id}${opts.price != null ? ` — ${opts.price} €` : ""}.`,
+          );
+          break;
+        }
+
+        case "delete-item": {
+          // Einzelnen Eintrag von einer Karte entfernen. Endpoint: DELETE /menu/items/{menu_item_id}.
+          if (!id) throw new Error("menu delete-item <item_id> benoetigt eine Item-ID.");
+          await client.del("supply", `/menu/items/${id}`);
+          output({ deleted: id }, opts.json, () => `Eintrag geloescht: ${id}`);
           break;
         }
 
@@ -372,7 +400,7 @@ export function registerMenuCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, delete, style, generate, apply, design`,
+            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, update-item, delete-item, delete, style, generate, apply, design`,
           );
       }
     });

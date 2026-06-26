@@ -16,6 +16,7 @@ import { prune } from "../util/body.ts";
 // gateway key: "supply" → supply-service. supply nutzt KEIN RBAC, nur JWT (CLAUDE.md).
 
 const VALID_TYPES = ["food", "drink"];
+const VALID_AGE_GROUPS = ["none", "teen", "adult"]; // AgeGroup (schemas/core.py): teen=16+, adult=18+
 // UnitType verifiziert an schemas/core.py (Code = Wahrheit; die AI-doc nannte
 // faelschlich g/piece/serving). Die echten Enum-Werte:
 const VALID_UNITS = ["gr", "kg", "ml", "l", "pc", "portion", "tsp", "tbsp", "cup", "pinch"];
@@ -39,23 +40,122 @@ type Opts = {
   description?: string;
   ingredients?: string;
   search?: string;
+  ageGroup?: string;
 };
 
-/** Parse `--ingredients "Name:Menge:Einheit,Name2:Menge2"` → AiDishIngredient[]. */
+/**
+ * Split auf `sep` (Default ",") nur auf TOP-LEVEL — NICHT innerhalb von Klammern.
+ * Damit bleibt ein Zutaten-Name wie "Schnitzel (Schwein, paniert)" intakt.
+ */
+function splitTopLevel(s: string, sep = ","): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of s) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    if (ch === sep && depth === 0) {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+/**
+ * Parse `--ingredients "Name:Menge:Einheit,Name2:Menge2"` → AiDishIngredient[].
+ * Gehaertet: Kommas in Klammern (z.B. "Schnitzel (Schwein, paniert)") brechen NICHT
+ * mehr. Pro Eintrag sind die LETZTEN beiden ":"-Segmente Menge + Einheit, der Rest
+ * ist der Name — so brechen auch Namen mit ":" nicht. Menge/Einheit sind optional.
+ */
 function parseIngredients(s?: string): Array<{ name: string; quantity: number; unit: string }> {
   if (!s) return [];
-  return s
-    .split(",")
+  return splitTopLevel(s, ",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
     .map((part) => {
-      const [name, qty, unit] = part.split(":").map((x) => x.trim());
-      if (!name) return null;
-      const u = (unit || "pc").toLowerCase();
-      if (!VALID_UNITS.includes(u)) {
-        throw new Error(`Ungueltige Einheit "${unit}" bei "${name}". Erlaubt: ${VALID_UNITS.join(", ")}.`);
+      const segs = part.split(":").map((x) => x.trim());
+      let name: string;
+      let qtyRaw: string | undefined;
+      let unitRaw: string | undefined;
+      if (segs.length >= 3) {
+        unitRaw = segs[segs.length - 1];
+        qtyRaw = segs[segs.length - 2];
+        name = segs.slice(0, segs.length - 2).join(":");
+      } else if (segs.length === 2) {
+        [name, qtyRaw] = segs;
+      } else {
+        [name] = segs;
       }
-      return { name, quantity: qty ? Number(qty) : 1, unit: u };
+      if (!name) return null;
+      const u = (unitRaw || "pc").toLowerCase();
+      if (!VALID_UNITS.includes(u)) {
+        throw new Error(`Ungueltige Einheit "${unitRaw}" bei "${name}". Erlaubt: ${VALID_UNITS.join(", ")}.`);
+      }
+      const q = qtyRaw ? Number(qtyRaw) : 1;
+      if (Number.isNaN(q)) throw new Error(`Ungueltige Menge "${qtyRaw}" bei "${name}".`);
+      return { name, quantity: q, unit: u };
     })
     .filter((i): i is { name: string; quantity: number; unit: string } => i !== null);
+}
+
+type IngredientRef = { id?: string; name?: string; [key: string]: unknown };
+
+/**
+ * Loest Zutaten-Namen zu Club-`ingredient_id`s auf — fuer ein IN-PLACE Rezept-Update
+ * (RecipeUpdate.ingredients erwartet IDs). Spiegelt die Backend-Logik
+ * `_ensure_ingredient_exists` clientseitig (es gibt keinen Update-per-Name-Endpoint):
+ *   1. bestehende Club-Zutat (case-insensitiv exakt)
+ *   2. globale Zutaten-Vorlage -> instanziieren (bringt Allergene/Farbstoffe mit)
+ *   3. plain Club-Zutat (kein Vorlagen-Match -> ohne Allergen; in `missing` gemeldet)
+ */
+async function resolveIngredientIds(
+  client: ReturnType<typeof createClient>,
+  clubId: string,
+  parsed: Array<{ name: string; quantity: number; unit: string }>,
+): Promise<{ ingredients: Array<{ ingredient_id: string; quantity: number; unit: string }>; missing: string[] }> {
+  const ingredients: Array<{ ingredient_id: string; quantity: number; unit: string }> = [];
+  const missing: string[] = [];
+  for (const ing of parsed) {
+    const lc = ing.name.toLowerCase();
+    let id: string | undefined;
+    // 1. bestehende Club-Zutat (exakter, case-insensitiver Name)
+    const existing = await client.get<IngredientRef[]>(
+      "supply",
+      `/ingredients/club/${clubId}/ingredients?search=${encodeURIComponent(ing.name)}`,
+    );
+    id = (Array.isArray(existing) ? existing : []).find((e) => (e.name ?? "").toLowerCase() === lc)?.id;
+    // 2. globale Zutaten-Vorlage -> instanziieren (Allergene erben)
+    if (!id) {
+      const tmpls = await client.get<IngredientRef[]>(
+        "supply",
+        `/global-ingredient-templates/?search=${encodeURIComponent(ing.name)}`,
+      );
+      const tmpl = (Array.isArray(tmpls) ? tmpls : []).find((t) => (t.name ?? "").toLowerCase() === lc);
+      if (tmpl?.id) {
+        const created = await client.post<IngredientRef>(
+          "supply",
+          `/global-ingredient-templates/create-ingredient`,
+          { template_id: tmpl.id, club_id: clubId },
+        );
+        id = created?.id;
+      }
+    }
+    // 3. plain Club-Zutat (ohne Allergen)
+    if (!id) {
+      const created = await client.post<IngredientRef>("supply", `/ingredients/club/${clubId}`, {
+        name: ing.name,
+        unit: ing.unit,
+      });
+      id = created?.id;
+      missing.push(ing.name);
+    }
+    if (id) ingredients.push({ ingredient_id: id, quantity: ing.quantity, unit: ing.unit });
+  }
+  return { ingredients, missing };
 }
 
 function priceLabel(p: RecipeRead["default_selling_price"]): string {
@@ -79,6 +179,7 @@ export function registerRecipeCommands(cli: CAC): void {
     .option("--price <eur>", "Verkaufspreis in Euro (z.B. 5.50); custom_price (from-template)")
     .option("--category <cat>", 'Kategorie (z.B. "Hauptgericht", "Getraenke")')
     .option("--description <text>", "Beschreibung (update)")
+    .option("--age-group <g>", `Altersgruppe: ${VALID_AGE_GROUPS.join("|")} (teen=16+, adult=18+) (update)`)
     .option("--ingredients <list>", 'Zutaten "Name:Menge:Einheit,..." — fehlende werden auto-angelegt (create)')
     .option("--search <q>", "Suchbegriff (list)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
@@ -186,18 +287,33 @@ export function registerRecipeCommands(cli: CAC): void {
           if (opts.type && !VALID_TYPES.includes(opts.type.toLowerCase())) {
             throw new Error(`Ungueltiger Typ "${opts.type}". Erlaubt: ${VALID_TYPES.join(", ")}.`);
           }
-          const body = prune({
+          if (opts.ageGroup && !VALID_AGE_GROUPS.includes(opts.ageGroup.toLowerCase())) {
+            throw new Error(`Ungueltige Altersgruppe "${opts.ageGroup}". Erlaubt: ${VALID_AGE_GROUPS.join(", ")}.`);
+          }
+          const body: Record<string, unknown> = prune({
             name: opts.name,
             category: opts.category,
             description: opts.description,
             default_selling_price: opts.price != null ? Number(opts.price) : undefined,
             type_of_recipe: opts.type?.toLowerCase(),
+            age_group: opts.ageGroup?.toLowerCase(),
           });
+          let ingMissing: string[] = [];
+          if (opts.ingredients) {
+            // IN-PLACE Zutaten ersetzen: Namen -> ingredient_ids aufloesen, das Backend
+            // ersetzt die recipe_ingredients (update_recipe Z.228-246). Allergene erben
+            // transitiv. Kein Loeschen/Neu-Anlegen/Umhaengen mehr (Option B).
+            const resolved = await resolveIngredientIds(client, clubId, parseIngredients(opts.ingredients));
+            body.ingredients = resolved.ingredients;
+            ingMissing = resolved.missing;
+          }
           if (Object.keys(body).length === 0) {
-            throw new Error("recipe update braucht mind. ein Feld (--name/--price/--category/--type/--description).");
+            throw new Error("recipe update braucht mind. ein Feld (--name/--price/--category/--type/--age-group/--description/--ingredients).");
           }
           const r = await client.put<RecipeRead>("supply", `/recipe/club/${clubId}/recipes/${id}`, body);
-          output(r, opts.json, () => `Aktualisiert: ${r.name ?? id} — ${priceLabel(r.default_selling_price)}.`);
+          output(r, opts.json, () =>
+            `Aktualisiert: ${r.name ?? id} — ${priceLabel(r.default_selling_price)}${ingMissing.length ? ` — fehlende Vorlagen (ohne Allergen): ${ingMissing.join(", ")}` : ""}.`,
+          );
           break;
         }
 

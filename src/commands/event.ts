@@ -49,6 +49,10 @@ type Opts = {
   name?: string;
   color?: string;
   areaCategory?: string;
+  // menu (EventMenu = supply-service)
+  menu?: string;
+  area?: string;
+  notes?: string;
 };
 
 function eventUpdateBody(o: Opts): Record<string, unknown> {
@@ -75,7 +79,7 @@ function eventUpdateBody(o: Opts): Record<string, unknown> {
  */
 export function registerEventCommands(cli: CAC): void {
   cli
-    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | area list|add")
+    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | area list|add | menu list|assign|unassign")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--view <v>", "full|calendar (Default full)")
     .option("--month <v>", "YYYY-MM")
@@ -98,6 +102,10 @@ export function registerEventCommands(cli: CAC): void {
     .option("--name <v>", "Bereichsname (area add)")
     .option("--color <v>", "Bereichsfarbe (area add)")
     .option("--area-category <v>", "Bereichskategorie (area add)")
+    // menu flags (EventMenu = Speisekarte je Event/Bereich)
+    .option("--menu <id>", "Speisekarte-ID (menu assign)")
+    .option("--area <id>", "Bereich/EventArea-ID (menu assign; siehe: event area list <event-id>)")
+    .option("--notes <text>", "Notiz zur Zuordnung (menu assign)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -147,6 +155,62 @@ export function registerEventCommands(cli: CAC): void {
             return;
           }
           throw new Error(`Unbekannte event-area-Aktion "${sub}". Verfuegbar: list, add`);
+        }
+
+        // event menu <sub> [event-id|event-menu-id]  — EventMenu liegt im SUPPLY-service
+        // (gateway-key "supply"), NICHT event-service. Verifiziert: routes/menu.py.
+        //   list    → GET    /menu/events/{event_id}/menus        (alle Zuordnungen des Events)
+        //   assign  → POST   /menu/events/menus                   (EventMenuCreate: event_id, event_area_id PFLICHT, menu_id, notes; club_id wird aus dem Menu abgeleitet)
+        //   unassign→ DELETE /menu/events/menus/{event_menu_id}
+        if (action === "menu") {
+          const sub = arg1;
+          if (sub === "list") {
+            const eventId = arg2;
+            if (!eventId) throw new Error("event menu list benoetigt eine <event-id>.");
+            const rows = await client.get<Array<Record<string, unknown>>>(
+              "supply",
+              `/menu/events/${eventId}/menus`,
+            );
+            output(rows, opts.json, () =>
+              Array.isArray(rows) && rows.length
+                ? renderTable(rows, [
+                    { header: "EventMenu-ID", width: 36, get: (r) => String(r.id ?? "") },
+                    { header: "Menu-ID", width: 36, get: (r) => String(r.menu_id ?? "") },
+                    { header: "Bereich/Area", width: 36, get: (r) => String(r.event_area_id ?? "— (Default)") },
+                  ])
+                : "Keine Speisekarten zugeordnet.",
+            );
+            return;
+          }
+          if (sub === "assign") {
+            const eventId = arg2;
+            if (!eventId) throw new Error("event menu assign benoetigt eine <event-id>.");
+            if (!opts.menu) throw new Error("event menu assign benoetigt --menu <menu-id>.");
+            if (!opts.area) {
+              throw new Error("event menu assign benoetigt --area <area-id> (EventArea; siehe: event area list <event-id>).");
+            }
+            const body = prune({
+              event_id: eventId,
+              event_area_id: opts.area,
+              menu_id: opts.menu,
+              notes: opts.notes,
+            });
+            const em = await client.post<Record<string, unknown>>("supply", "/menu/events/menus", body);
+            output(em, opts.json, () =>
+              `Speisekarte zugeordnet: Menu ${opts.menu} -> Event ${eventId} / Bereich ${opts.area} (${em.id ?? "?"})`,
+            );
+            return;
+          }
+          if (sub === "unassign") {
+            const eventMenuId = arg2;
+            if (!eventMenuId) {
+              throw new Error("event menu unassign benoetigt eine <event-menu-id> (siehe: event menu list <event-id>).");
+            }
+            await client.del("supply", `/menu/events/menus/${eventMenuId}`);
+            output({ deleted: eventMenuId }, opts.json, () => `Zuordnung entfernt: ${eventMenuId}`);
+            return;
+          }
+          throw new Error(`Unbekannte event-menu-Aktion "${sub}". Verfuegbar: list, assign, unassign`);
         }
 
         switch (action) {
@@ -231,7 +295,7 @@ export function registerEventCommands(cli: CAC): void {
           }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, area`,
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, area, menu`,
             );
         }
       },
