@@ -23,6 +23,7 @@ import { registerHomepageCommands } from "./commands/homepage.ts";
 import { registerSchemaCommand } from "./commands/schema.ts";
 import { registerVerifyCommands } from "./commands/verify.ts";
 import { registerDataCommands } from "./commands/data.ts";
+import { registerNewsCommands } from "./commands/news.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -134,6 +135,8 @@ registerSchemaCommand(cli);
 registerVerifyCommands(cli);
 // K12 — DataShare: Vereins-Dateien laden/bereitstellen/analysieren (content-service).
 registerDataCommands(cli);
+// Rich-News K2 — comvenio news: Vereinsnews verfassen + apply --file (rich HTML, design_source=cli).
+registerNewsCommands(cli);
 
 cli.help();
 cli.version(pkg.version);

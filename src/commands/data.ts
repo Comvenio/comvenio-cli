@@ -48,6 +48,7 @@ type DataOpts = {
   label?: string;
   public?: boolean;
   type?: string;
+  format?: string;
 };
 
 export function registerDataCommands(cli: CAC): void {
@@ -63,6 +64,7 @@ export function registerDataCommands(cli: CAC): void {
     .option("--label <bucket>", "context_label/Bucket (upload), z.B. title_picture|flyer|gallery")
     .option("--public", "Sichtbarkeit public (upload; Default private)")
     .option("--type <doc>", "document_type-Filter (papers): protokoll|flyer|bericht|...")
+    .option("--format <fmt>", "Export-Format csv|xlsx (data export; Default csv)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: DataOpts) => {
       const state = loadState();
@@ -192,9 +194,37 @@ export function registerDataCommands(cli: CAC): void {
           break;
         }
 
+        case "export": {
+          // K13 — strukturierter CSV/XLSX-Export (read-only Backend-Endpoints).
+          if (arg !== "members" && arg !== "bookings") {
+            throw new Error("data export <members|bookings> — nur diese beiden Entitaeten.");
+          }
+          const fmt = opts.format === "xlsx" ? "xlsx" : "csv";
+          const { svc, p } =
+            arg === "members"
+              ? { svc: "member", p: `/members/export/${clubId}?format=${fmt}` }
+              : { svc: "object", p: `/object-reservations/export/${clubId}?format=${fmt}` };
+          // Export liefert Binaer (xlsx) — der JSON-Client wuerde die Bytes zerstoeren,
+          // daher roher fetch mit Bearer-Header.
+          const url = `${state.gatewayBaseUrl}/${svc}${p}`;
+          const resp = await fetch(url, { headers: { Authorization: `Bearer ${state.token}` } });
+          if (!resp.ok) {
+            throw new Error(
+              `Export fehlgeschlagen: HTTP ${resp.status} ${(await resp.text()).slice(0, 160)}`,
+            );
+          }
+          const bytes = await resp.arrayBuffer();
+          const out = opts.out ?? `./${arg}-export.${fmt}`;
+          await Bun.write(out, bytes);
+          output({ entity: arg, format: fmt, out, size_bytes: bytes.byteLength }, opts.json, () =>
+            `Export ${arg} (${fmt}): ${out} (${bytes.byteLength} Bytes)`,
+          );
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, download, upload, papers (export = K13)`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, download, upload, papers, export`,
           );
       }
     });
