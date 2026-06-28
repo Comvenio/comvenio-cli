@@ -24,6 +24,7 @@ import { registerSchemaCommand } from "./commands/schema.ts";
 import { registerVerifyCommands } from "./commands/verify.ts";
 import { registerDataCommands } from "./commands/data.ts";
 import { registerNewsCommands } from "./commands/news.ts";
+import { registerPlanCommands } from "./commands/plan.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -137,6 +138,8 @@ registerVerifyCommands(cli);
 registerDataCommands(cli);
 // Rich-News K2 — comvenio news: Vereinsnews verfassen + apply --file (rich HTML, design_source=cli).
 registerNewsCommands(cli);
+// Geländeplan — comvenio plan: Pläne/Bereiche/Garnituren/Marker lesen + planen (Agent-Preview via --json).
+registerPlanCommands(cli);
 
 cli.help();
 cli.version(pkg.version);
