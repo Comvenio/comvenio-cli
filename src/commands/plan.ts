@@ -9,11 +9,14 @@ import { prune } from "../util/body.ts";
 //   GET   /event/events/{event_id}/map-plans            Plan-Liste (scoped: Parent + Festtag)
 //   POST  /event/events/{event_id}/map-plans            EventMapPlanCreate
 //   GET   /event/events/map-plans/{plan_id}/map         Aggregat: plan, zones, legacy_areas, tables, markers
-//   POST  /event/events/map-zones                       EventMapZoneCreate (Umriss/Bereich)
+//   POST  /event/events/map-zones                       EventMapZoneCreate (Umriss/Bereich, polygon|polyline)
 //   POST  /event/events/map-zones/{zone_id}/detail-plan EventMapDetailPlanCreate (Gebäude-Canvas)
+//   POST  /event/events/map-zones/{zone_id}/areas       Zone ↔ Event-Area verknüpfen (V6.1)
+//   DELETE/event/events/map-zones/{zone_id}/areas/{id}  Verknüpfung lösen (V6.1)
 //   POST  /event/events/tables                          EventTableCreate (Garnitur/Innenplanung)
 //   POST  /event/events/tables/{table_id}/duplicate
-//   POST  /event/events/map-markers                     EventMapMarkerCreate
+//   POST  /event/events/map-markers                     EventMapMarkerCreate (+ size V7, assigned_club_id V6.1)
+// Plan create unterstützt inherit_to_days (V7: Allgemein-Plan gilt für alle Festtage).
 
 type Plan = {
   id?: string;
@@ -74,6 +77,15 @@ type Opts = {
   label?: string;
   markerType?: string;
   logo?: string;
+  // V6.1 / V7
+  inherit?: boolean;     // Plan-Vererbung auf alle Festtage (nur Allgemein-Plan)
+  size?: string;         // Marker-Skalierungsfaktor (1 = Standard)
+  club?: string;         // assigned_club_id am Marker (Festaufstellung)
+  shape?: string;        // Zonen-Form: polygon | polyline
+  points?: string;       // Polyline-Punkte: "lat,lng;lat,lng;..."
+  arrow?: boolean;       // Polyline-Richtungspfeile (Festumzug)
+  lineWeight?: string;   // Linienbreite (polyline)
+  area?: string;         // Event-Area-ID (zone link/unlink)
 };
 
 const num = (v: string | undefined): number | undefined =>
@@ -113,6 +125,24 @@ function rectangleGeoJson(
   return JSON.stringify({ type: "Polygon", coordinates: [ring] });
 }
 
+/** Polyline-Punkte "lat,lng;lat,lng;..." → [[lat,lng], ...]. */
+function parsePoints(s: string): [number, number][] {
+  return s
+    .split(";")
+    .map((pair) => pair.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [la, ln] = pair.split(",").map((v) => Number(v.trim()));
+      if (!Number.isFinite(la) || !Number.isFinite(ln)) throw new Error(`Ungueltiger Punkt "${pair}" (erwartet lat,lng).`);
+      return [la as number, ln as number];
+    });
+}
+
+/** LineString-GeoJSON ([lng,lat]) aus [lat,lng]-Punkten — für Wege/Festumzug (polyline). */
+function lineStringGeoJson(points: [number, number][]): string {
+  return JSON.stringify({ type: "LineString", coordinates: points.map(([la, ln]) => [ln, la]) });
+}
+
 const fetchPlan = (client: ComvenioClient, planId: string): Promise<Aggregate> =>
   client.get<Aggregate>("event", `/events/map-plans/${planId}/map`);
 
@@ -126,19 +156,21 @@ function positionPayload(o: Opts, crsMode: string | undefined): Record<string, u
 
 /**
  * `comvenio plan <action> [arg1] [arg2]` — Geländeplan lesen + planen (agent-tauglich, --json).
- *   plan list <event-id> | plan show <plan-id> | plan create <event-id> --name
- *   plan zone create|list <plan-id> | plan table create|duplicate <plan-id|table-id>
- *   plan marker create <plan-id> | plan detail <zone-id>
+ *   plan list <event-id> | plan show <plan-id> | plan create <event-id> --name [--inherit]
+ *   plan zone create <plan-id> [--length/--width | --shape polyline --points] | plan zone list <plan-id>
+ *   plan zone link|unlink <zone-id> --area <area-id>
+ *   plan table create|duplicate <plan-id|table-id> | plan marker create <plan-id> [--size --club --logo]
+ *   plan detail <zone-id> --length --width
  */
 export function registerPlanCommands(cli: CAC): void {
   cli
     .command(
       "plan <action> [arg1] [arg2]",
-      "Geländeplan: list|show|create | zone create/list | table create/duplicate | marker create | detail",
+      "Geländeplan: list|show|create | zone create/list/link/unlink | table create/duplicate | marker create | detail",
     )
     .option("--name <v>", "Name (plan/zone create)")
     .option("--type <v>", "Plan-Typ: gelaende|fluchtplan|festumzug|sonstiges")
-    .option("--length <m>", "Länge (m) — Rechteck-Bereich / Garnitur")
+    .option("--length <m>", "Länge (m) — Rechteck-Bereich / Garnitur / Detailplan-Canvas")
     .option("--width <m>", "Breite (m)")
     .option("--rotation <deg>", "Drehung (Grad, 90er-Schritte)")
     .option("--lat <v>", "Breitengrad (geo-Position)")
@@ -151,6 +183,15 @@ export function registerPlanCommands(cli: CAC): void {
     .option("--label <v>", "Label (table/marker), z. B. 'Parken 1'")
     .option("--marker-type <v>", "Marker-Typ: entrance|toilet|parking|stage|taxi|dropoff|info|other")
     .option("--logo <file-id>", "Logo-File-ID (marker)")
+    // V6.1 / V7
+    .option("--inherit", "Plan-Vererbung: Allgemein-Plan gilt für ALLE Festtage (plan create, nur Parent)")
+    .option("--size <factor>", "Marker-Größe (Skalierungsfaktor, 1=Standard, z. B. 1.5/2/3)")
+    .option("--club <id>", "Verein am Marker (assigned_club_id, Festaufstellung)")
+    .option("--shape <v>", "Zonen-Form: polygon (Default) | polyline (Weg/Festumzug)")
+    .option("--points <pairs>", "Polyline-Punkte: 'lat,lng;lat,lng;...' (shape=polyline)")
+    .option("--arrow", "Polyline mit Richtungspfeilen (Festumzug)")
+    .option("--line-weight <px>", "Linienbreite (polyline)")
+    .option("--area <id>", "Event-Area-ID (zone link/unlink)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -184,8 +225,31 @@ export function registerPlanCommands(cli: CAC): void {
             return;
           }
           if (sub === "create") {
+            // V6.1: Polyline (Weg/Festumzug) vs. Rechteck-Bereich (Default).
+            if (opts.shape === "polyline") {
+              if (!opts.points) {
+                throw new Error("plan zone create --shape polyline benoetigt --points 'lat,lng;lat,lng;...'.");
+              }
+              const pts = parsePoints(opts.points);
+              if (pts.length < 2) throw new Error("Eine Linie braucht mindestens 2 Punkte.");
+              const body = prune({
+                plan_id: planId,
+                name: opts.name,
+                color: opts.color,
+                geometry: lineStringGeoJson(pts),
+                crs_mode: "geo",
+                shape_type: "polyline",
+                arrow: opts.arrow ? true : undefined,
+                line_weight: num(opts.lineWeight),
+              });
+              const zone = await client.post<Zone>("event", "/events/map-zones", body);
+              output(zone, opts.json, () =>
+                `Linie angelegt: ${zone.name ?? "—"} (${zone.id}) ${pts.length} Punkte${opts.arrow ? " · Pfeile" : ""}`,
+              );
+              return;
+            }
             if (!opts.length || !opts.width) {
-              throw new Error("plan zone create benoetigt --length <m> und --width <m> (Rechteck-Bereich).");
+              throw new Error("plan zone create benoetigt --length <m> und --width <m> (Rechteck-Bereich) oder --shape polyline.");
             }
             const agg = await fetchPlan(client, planId);
             const plan = agg.plan ?? {};
@@ -213,7 +277,20 @@ export function registerPlanCommands(cli: CAC): void {
             );
             return;
           }
-          throw new Error(`Unbekannte plan-zone-Aktion "${sub}". Verfuegbar: list, create`);
+          // V6.1: Zone ↔ Event-Area verknüpfen (Public-Klick auf Zone springt in die Area des Tages).
+          if (sub === "link" || sub === "unlink") {
+            const zoneId = planId; // bei link/unlink ist arg2 die ZONE-ID
+            if (!opts.area) throw new Error(`plan zone ${sub} benoetigt --area <area-id>.`);
+            if (sub === "link") {
+              const zone = await client.post<Zone>("event", `/events/map-zones/${zoneId}/areas`, { area_id: opts.area });
+              output(zone, opts.json, () => `Bereich verknüpft: Zone ${zoneId} ↔ Area ${opts.area}`);
+            } else {
+              await client.del("event", `/events/map-zones/${zoneId}/areas/${opts.area}`);
+              output({ ok: true }, opts.json, () => `Verknüpfung entfernt: Zone ${zoneId} ✕ Area ${opts.area}`);
+            }
+            return;
+          }
+          throw new Error(`Unbekannte plan-zone-Aktion "${sub}". Verfuegbar: list, create, link, unlink`);
         }
 
         // ── plan table <sub> <plan-id|table-id> ────────────────
@@ -267,6 +344,8 @@ export function registerPlanCommands(cli: CAC): void {
             marker_type: opts.markerType,
             label: opts.label,
             logo_file_id: opts.logo,
+            assigned_club_id: opts.club,   // V6.1: Verein (Festaufstellung)
+            size: num(opts.size),          // V7: Skalierungsfaktor
             ...positionPayload(opts, plan.crs_mode),
           });
           const m = await client.post<Marker>("event", "/events/map-markers", body);
@@ -338,9 +417,12 @@ export function registerPlanCommands(cli: CAC): void {
               crs_mode: "geo",
               center_lat: num(opts.lat),
               center_lng: num(opts.lng),
+              inherit_to_days: opts.inherit ? true : undefined, // V7: gilt für alle Festtage (nur Allgemein-Plan)
             });
             const p = await client.post<Plan>("event", `/events/${eventId}/map-plans`, body);
-            output(p, opts.json, () => `Plan angelegt: ${p.name} (${p.id})`);
+            output(p, opts.json, () =>
+              `Plan angelegt: ${p.name} (${p.id})${opts.inherit ? " · gilt für alle Festtage" : ""}`,
+            );
             break;
           }
           default:

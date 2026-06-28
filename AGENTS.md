@@ -36,6 +36,7 @@ comvenio club info                    # Vereinsdaten
 | member   | `comvenio member list\|show\|add\|update\|remove`             |
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
 | event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` (Speisekarte je Event/Bereich — EventMenu, supply-service) |
+| plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
 | task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |

@@ -48,6 +48,42 @@ comvenio logout
 
 `--gateway <url>` überschreibt die Basis direkt.
 
+## Geländeplan (`plan`)
+
+Geländeplan eines Events lesen + agent-tauglich planen (alle Bodies ohne `club_id` —
+das Backend leitet es aus Event/Plan ab). Jeder Befehl kennt `--json`.
+
+```bash
+# Pläne / Aggregat
+comvenio plan list <event-id>                 # Pläne (scoped: Parent + Festtag)
+comvenio plan show <plan-id>                  # Aggregat: zones, tables, markers (Preview)
+comvenio plan create <event-id> --name "Hauptgelände" [--type gelaende|fluchtplan|festumzug|sonstiges]
+comvenio plan create <event-id> --name "Allgemein" --inherit   # V7: gilt für ALLE Festtage (nur Parent-Plan)
+
+# Zonen (Bereiche / Wege)
+comvenio plan zone list <plan-id>
+comvenio plan zone create <plan-id> --name "Bierzelt" --length 20 --width 10 [--rotation 90] [--color "#2e7d32"]
+comvenio plan zone create <plan-id> --name "Festumzug" --shape polyline \
+  --points "48.13,11.57;48.14,11.58;48.15,11.59" --arrow --line-weight 5   # V6.1
+comvenio plan zone link   <zone-id> --area <area-id>     # V6.1: Zone ↔ Event-Area (Public-Klick → Area des Tages)
+comvenio plan zone unlink <zone-id> --area <area-id>
+
+# Garnituren / Tische (Innenplanung)
+comvenio plan table create <plan-id> --length 2.2 --width 0.5 --furniture beer_set [--label "Verein X"] [--capacity 8]
+comvenio plan table duplicate <table-id>
+
+# Marker (POI)
+comvenio plan marker create <plan-id> --marker-type parking --label "Parken 1" [--lat .. --lng ..]
+comvenio plan marker create <plan-id> --marker-type stage --label "Festaufstellung" --club <club-id> --size 2  # V6.1+V7
+#   --size = Skalierungsfaktor (1=Standard, 1.5/2/3), --club = assigned_club_id, --logo = content-service File-ID
+
+# Detailplan eines Bereichs (Gebäude-Canvas, z. B. Bierzelt-Innenraum)
+comvenio plan detail <zone-id> --name "Zelt-Innen" --length 20 --width 10
+```
+
+> Marker-/Tisch-Logos via content-service hochladen (File-ID an `--logo`). Diese Logos
+> erscheinen NICHT in der öffentlichen Galerie und werden beim Löschen des Markers hart entfernt.
+
 ## Konzept
 
 - **Token opak:** Das `cvn_`-Token wird vom CLI nie dekodiert. Gültigkeit prüft
@@ -71,4 +107,6 @@ src/
   commands/
     whoami.ts         # GET /user/users/me (best-effort)
     club.ts           # club <action>-Dispatcher → club info → GET /club/clubs/{id}
+    plan.ts           # plan <action>-Dispatcher → Geländeplan (event-service /events/map-*)
+    event.ts menu.ts recipe.ts task.ts member.ts ...   # je ein <action>-Dispatcher pro Service
 ```
