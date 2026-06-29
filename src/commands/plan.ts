@@ -1,8 +1,11 @@
 import type { CAC } from "cac";
+import { mkdirSync } from "node:fs";
 import { loadState } from "../auth.ts";
 import { createClient, type ComvenioClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { prune } from "../util/body.ts";
+import { requireClubId } from "../util/club.ts";
+import { frontendBase, hasPlaywrightCli, screenshotToPng, pngFileToPdf } from "../util/render.ts";
 
 // Geländeplan-Endpoints im event-service (Router-Prefix /events, verifiziert app/routes/event_map.py).
 // Map-Bodies tragen KEIN club_id — das Backend leitet es aus dem Event/Plan ab.
@@ -86,6 +89,16 @@ type Opts = {
   arrow?: boolean;       // Polyline-Richtungspfeile (Festumzug)
   lineWeight?: string;   // Linienbreite (polyline)
   area?: string;         // Event-Area-ID (zone link/unlink)
+  // V7-EXPORT (plan export)
+  plan?: string;         // genau diesen Plan exportieren (sonst alle Pläne des Events)
+  format?: string;       // png | pdf | both (Default png)
+  hideZones?: string;    // CSV von Zone-IDs zum Ausblenden
+  hideMarkers?: string;  // CSV von Marker-IDs zum Ausblenden
+  hideTables?: boolean;  // Tische/Garnituren ausblenden
+  hideLabels?: boolean;  // Tisch-Labels auf der Karte ausblenden
+  out?: string;          // Zielordner (Default .comvenio-export)
+  wait?: string;         // Settle-Zeit ms vor Screenshot (Default 3500)
+  frontendBase?: string; // Frontend-Basis überschreiben (z. B. http://localhost:5173)
 };
 
 const num = (v: string | undefined): number | undefined =>
@@ -166,7 +179,7 @@ export function registerPlanCommands(cli: CAC): void {
   cli
     .command(
       "plan <action> [arg1] [arg2]",
-      "Geländeplan: list|show|create | zone create/list/link/unlink | table create/duplicate | marker create | detail",
+      "Geländeplan: list|show|create | zone | table | marker | detail | export (Bild/PDF)",
     )
     .option("--name <v>", "Name (plan/zone create)")
     .option("--type <v>", "Plan-Typ: gelaende|fluchtplan|festumzug|sonstiges")
@@ -192,6 +205,15 @@ export function registerPlanCommands(cli: CAC): void {
     .option("--arrow", "Polyline mit Richtungspfeilen (Festumzug)")
     .option("--line-weight <px>", "Linienbreite (polyline)")
     .option("--area <id>", "Event-Area-ID (zone link/unlink)")
+    .option("--plan <id>", "export: nur diesen Plan (sonst alle Pläne des Events)")
+    .option("--format <v>", "export: png | pdf | both (Default png)")
+    .option("--hide-zones <csv>", "export: Zone-IDs ausblenden (komma-separiert)")
+    .option("--hide-markers <csv>", "export: Marker-IDs ausblenden (komma-separiert)")
+    .option("--hide-tables", "export: Tische/Garnituren ausblenden")
+    .option("--hide-labels", "export: Tisch-Labels auf der Karte ausblenden")
+    .option("--out <dir>", "export: Zielordner (Default .comvenio-export)")
+    .option("--wait <ms>", "export: Settle-Zeit vor Screenshot (Default 3500)")
+    .option("--frontend-base <url>", "export: Frontend-Basis überschreiben (z. B. http://localhost:5173)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -202,6 +224,80 @@ export function registerPlanCommands(cli: CAC): void {
       ) => {
         const state = loadState();
         const client = createClient(state);
+
+        // ── plan export <event-id> — Geländeplan als Bild/PDF (V7, D-24/D-26) ──
+        if (action === "export") {
+          const eventId = arg1;
+          if (!eventId) throw new Error("plan export benoetigt eine <event-id>.");
+          if (!(await hasPlaywrightCli())) {
+            throw new Error(
+              "playwright-cli nicht auf dem PATH. Installiere @playwright/cli (npm i -g @playwright/cli) + einmalig `playwright-cli install`.",
+            );
+          }
+          const clubId = requireClubId(state, opts.club);
+          const fb = frontendBase(state.environment, opts.frontendBase);
+          const format = (opts.format ?? "png").toLowerCase();
+          if (!["png", "pdf", "both"].includes(format)) {
+            throw new Error(`--format muss png | pdf | both sein (war "${format}").`);
+          }
+          const wantPng = format === "png" || format === "both";
+          const wantPdf = format === "pdf" || format === "both";
+          const outDir = opts.out ?? ".comvenio-export";
+          mkdirSync(outDir, { recursive: true });
+          const waitMs = opts.wait ? Math.max(0, parseInt(opts.wait, 10) || 0) : 3500;
+
+          // Plan-Auswahl: genau --plan ODER alle Pläne des Events (D-26).
+          const planList: Plan[] = opts.plan
+            ? [{ id: opts.plan }]
+            : await client.get<Plan[]>("event", `/events/${eventId}/map-plans`);
+          if (planList.length === 0) {
+            output({ ok: true, plans: 0 }, opts.json, () => "Keine Pläne für dieses Event — nichts zu exportieren.");
+            return;
+          }
+
+          const results: { plan_id: string; name?: string; png?: string; pdf?: string; error?: string }[] = [];
+          for (const p of planList) {
+            const planId = p.id!;
+            const qs = new URLSearchParams({ plan: planId });
+            if (opts.hideZones) qs.set("hideZones", opts.hideZones);
+            if (opts.hideMarkers) qs.set("hideMarkers", opts.hideMarkers);
+            if (opts.hideTables) qs.set("hideTables", "1");
+            if (opts.hideLabels) qs.set("hideLabels", "1");
+            const url = `${fb}/club/${clubId}/event/${eventId}/gelaendeplan/export?${qs.toString()}`;
+            const base = `${outDir}/gelaendeplan-${planId}`;
+            const pngPath = `${base}.png`;
+            try {
+              // PNG wird immer gerendert (auch Basis für die PDF-Einbettung).
+              await screenshotToPng(url, pngPath, { waitMs });
+              const r: { plan_id: string; name?: string; png?: string; pdf?: string } = {
+                plan_id: planId,
+                name: p.name,
+              };
+              if (wantPng) r.png = pngPath;
+              if (wantPdf) {
+                const pdfPath = `${base}.pdf`;
+                await pngFileToPdf(pngPath, pdfPath);
+                r.pdf = pdfPath;
+              }
+              results.push(r);
+            } catch (e) {
+              results.push({ plan_id: planId, name: p.name, error: (e as Error)?.message ?? "Fehler" });
+            }
+          }
+
+          const failed = results.filter((r) => r.error);
+          output({ event_id: eventId, results }, opts.json, () => {
+            const lines = results.map((r) =>
+              r.error
+                ? `  x ${r.name ?? r.plan_id}: ${r.error}`
+                : `  + ${r.name ?? r.plan_id}: ${[r.png, r.pdf].filter(Boolean).join(", ")}`,
+            );
+            return [`Export (${results.length} Plan/Pläne) -> ${outDir}:`, ...lines].join("\n");
+          });
+          // Non-zero exit nur, wenn ALLE Pläne fehlschlugen.
+          if (failed.length === results.length) process.exitCode = 1;
+          return;
+        }
 
         // ── plan zone <sub> <plan-id> ──────────────────────────
         if (action === "zone") {
