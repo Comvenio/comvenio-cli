@@ -84,6 +84,26 @@ comvenio plan detail <zone-id> --name "Zelt-Innen" --length 20 --width 10
 > Marker-/Tisch-Logos via content-service hochladen (File-ID an `--logo`). Diese Logos
 > erscheinen NICHT in der öffentlichen Galerie und werden beim Löschen des Markers hart entfernt.
 
+## Tournament (`tournament`)
+
+V3-Turniere lesen + steuern (Gateway-Key `tournament`). Participant-Engine: ein Match
+paart Teilnehmer (Einzelspieler / Doppel / **Mannschaft**) über `TournamentMatchSide`,
+nie ein Team. Jeder Befehl kennt `--json`.
+
+```bash
+comvenio tournament list [--club <id>]            # Turniere des Clubs
+comvenio tournament show <id>                     # Turnier-Meta
+comvenio tournament participants <id>             # Teilnehmer (Art/Status)
+comvenio tournament mannschaft <id> --name "SV Motzing AH" [--kind team|individual|pair] [--seed 1]
+comvenio tournament start <id>                    # Spielplan generieren (Status → active)
+comvenio tournament matches <id>                  # Spielplan (Namen aus den Match-Sides)
+comvenio tournament standings <id>                # Tabelle (participant-basiert)
+comvenio tournament preview <id> [--open]         # self-contained HTML in Temp-Datei; --open öffnet den Browser
+```
+
+> `mannschaft` = Alias für `participant` mit Default `--kind team`; `individual` = Einzel, `pair` = Doppel.
+> `preview` rendert lokal (kein Frontend-Deploy nötig). Nur verifizierte Endpoint-Pfade — Serien-Create ist (noch) nicht enthalten.
+
 ## Konzept
 
 - **Token opak:** Das `cvn_`-Token wird vom CLI nie dekodiert. Gültigkeit prüft
@@ -108,5 +128,6 @@ src/
     whoami.ts         # GET /user/users/me (best-effort)
     club.ts           # club <action>-Dispatcher → club info → GET /club/clubs/{id}
     plan.ts           # plan <action>-Dispatcher → Geländeplan (event-service /events/map-*)
+    tournament.ts     # tournament <action>-Dispatcher → V3-Turniere (tournament-service)
     event.ts menu.ts recipe.ts task.ts member.ts ...   # je ein <action>-Dispatcher pro Service
 ```
