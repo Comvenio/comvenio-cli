@@ -25,6 +25,7 @@ import { registerVerifyCommands } from "./commands/verify.ts";
 import { registerDataCommands } from "./commands/data.ts";
 import { registerNewsCommands } from "./commands/news.ts";
 import { registerPlanCommands } from "./commands/plan.ts";
+import { registerTournamentCommands } from "./commands/tournament.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -140,6 +141,8 @@ registerDataCommands(cli);
 registerNewsCommands(cli);
 // Geländeplan — comvenio plan: Pläne/Bereiche/Garnituren/Marker lesen + planen (Agent-Preview via --json).
 registerPlanCommands(cli);
+// Tournament-Hub — comvenio tournament: V3 participant-engine (Mannschaft/Doppel/Einzel) + Preview.
+registerTournamentCommands(cli);
 
 cli.help();
 cli.version(pkg.version);
