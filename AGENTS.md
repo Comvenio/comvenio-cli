@@ -36,7 +36,7 @@ comvenio club info                    # Vereinsdaten
 | member   | `comvenio member list\|show\|add\|update\|remove`             |
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
 | event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` (Speisekarte je Event/Bereich — EventMenu, supply-service) |
-| plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) |
+| plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) · `plan export` (PNG/PDF) · `plan illustrate` + `plan compose` (illustrierter Lageplan, D-36) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
 | task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |
@@ -210,6 +210,20 @@ comvenio task context list --json                 # task_context_id ermitteln
 comvenio task create --title "Bestuhlung" --context-id <ctx> --json
 comvenio task assign <task-id> --member-id <member> --responsible --json
 comvenio task done <task-id> --json
+```
+
+**5. Illustrierter Lageplan (D-36 — Generieren = du, nicht der Server)**
+```bash
+# 1. Kit erzeugen: echter Export als Layout-Referenz + Struktur + fertiger Prompt
+comvenio plan illustrate <event-id> --plan <plan-id> --style "Wasserfarben, herbstlich" --json
+# -> .comvenio-illustration/<plan-id>/: export.png + plan.json + PROMPT.md
+
+# 2. DU generierst die Illustration mit deinem Bildmodell:
+#    PROMPT.md befolgen (Vogelperspektive, KEIN Text im Bild, Layout-Treue zu export.png).
+
+# 3. Echte Beschriftungen (gelbe Fahnen + Linien, exakte Umlaute) deterministisch darüberlegen:
+comvenio plan compose <event-id> --plan <plan-id> --image illustration.png --out lageplan.png
+# Fahne sitzt daneben? -> Label-Anker im Web-Editor verschieben (D-35), compose erneut (Sekunden).
 ```
 
 ## RBAC (serverseitig geprüft)
