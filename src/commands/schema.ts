@@ -16,8 +16,9 @@ import event from "../schema/event.json" with { type: "json" };
 import member from "../schema/member.json" with { type: "json" };
 import booking from "../schema/booking.json" with { type: "json" };
 import task from "../schema/task.json" with { type: "json" };
+import sponsor from "../schema/sponsor.json" with { type: "json" };
 
-const SCHEMAS: Record<string, unknown> = { homepage, design, menu, event, member, booking, task };
+const SCHEMAS: Record<string, unknown> = { homepage, design, menu, event, member, booking, task, sponsor };
 
 const DOMAIN_SUMMARY: Record<string, string> = {
   homepage: "Tab/Section/Widget-Struktur, 68 Widget-Kinds, config-Felder, Templates",
@@ -27,6 +28,7 @@ const DOMAIN_SUMMARY: Record<string, string> = {
   member: "MemberCreate-Felder + TeamMemberRole",
   booking: "reservation_status, object_type + PATCH-Pflichtfelder",
   task: "status, priority, context_type + Create/Assignment-Felder",
+  sponsor: "Lokale Sponsoren, Sponsoring-Angebote, Assignments, Logos und Vertragsdateien",
 };
 
 /**
@@ -78,3 +80,4 @@ export function registerSchemaCommand(cli: CAC): void {
       console.log(JSON.stringify(schema, null, 2));
     });
 }
+

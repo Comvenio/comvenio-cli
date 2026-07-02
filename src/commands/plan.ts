@@ -1,5 +1,7 @@
 import type { CAC } from "cac";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { loadState } from "../auth.ts";
 import { createClient, type ComvenioClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
@@ -38,10 +40,14 @@ type Zone = {
   id?: string;
   name?: string;
   shape_type?: string;
+  geometry?: string | null;
+  color?: string | null;
   length_m?: number | null;
   width_m?: number | null;
   rotation?: number | null;
   detail_plan_id?: string | null;
+  label_x?: number | null; // D-35: Label-Anker (CRS wie geometry)
+  label_y?: number | null;
   [k: string]: unknown;
 };
 type TableRow = {
@@ -99,6 +105,10 @@ type Opts = {
   out?: string;          // Zielordner (Default .comvenio-export)
   wait?: string;         // Settle-Zeit ms vor Screenshot (Default 3500)
   frontendBase?: string; // Frontend-Basis überschreiben (z. B. http://localhost:5173)
+  // D-36 (illustrate/compose)
+  style?: string;        // illustrate: freie Stil-Vorgaben für den Generierungs-Prompt
+  image?: string;        // compose: Pfad zur generierten Illustration (PNG/JPG)
+  lines?: boolean;       // compose: cac-Negation via --no-lines (Fahnen ohne Verbindungslinien)
 };
 
 const num = (v: string | undefined): number | undefined =>
@@ -167,6 +177,97 @@ function positionPayload(o: Opts, crsMode: string | undefined): Record<string, u
   return { lat: num(o.lat), lng: num(o.lng) };
 }
 
+// ── D-36: Illustrierter Lageplan — Label-Sammlung + Normalisierung ─────────────
+// Beschriftungen (Zonen mit Namen, Marker mit Label) mit auf 0..1 normalisierten Positionen
+// relativ zu den Content-Bounds. geo: nur gültige Punkte (|lng|<=180, |lat|<=90 — korrupte
+// Pixel-Geometrie aus dem alten CRS-Bug ignorieren, D-35); y invertiert (Nord = oben).
+// image: Bounds = Canvas (0..image_width/height); Leaflet CRS.Simple rendert y nach oben → ebenfalls invertiert.
+type IllustrationLabel = { text: string; kind: "zone" | "marker"; nx: number; ny: number };
+
+function escapeHtmlText(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function zoneRingPoints(z: Zone, geoValid: boolean): [number, number][] {
+  if (!z.geometry) return [];
+  try {
+    const geo = JSON.parse(z.geometry);
+    const raw: number[][] =
+      geo?.type === "Polygon" ? geo.coordinates?.[0] ?? [] : geo?.coordinates ?? [];
+    const pts = raw.filter(
+      (p): p is [number, number] =>
+        Array.isArray(p) &&
+        typeof p[0] === "number" &&
+        typeof p[1] === "number" &&
+        (!geoValid || (Math.abs(p[0]) <= 180 && Math.abs(p[1]) <= 90)),
+    );
+    // Schlusspunkt (Duplikat des ersten) für Centroid nicht doppelt zählen.
+    if (pts.length > 1) {
+      const [f, l] = [pts[0]!, pts[pts.length - 1]!];
+      if (f[0] === l[0] && f[1] === l[1]) return pts.slice(0, -1);
+    }
+    return pts;
+  } catch {
+    return [];
+  }
+}
+
+function collectIllustrationLabels(agg: Aggregate): IllustrationLabel[] {
+  const plan = agg.plan ?? {};
+  const isImg = plan.crs_mode === "image";
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  const push = (x: unknown, y: unknown) => {
+    if (typeof x !== "number" || typeof y !== "number") return;
+    if (!isImg && (Math.abs(x) > 180 || Math.abs(y) > 90)) return;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  };
+  if (isImg) {
+    // Canvas-Bounds sind exakt bekannt.
+    push(0, 0);
+    push((plan.image_width as number) ?? 1000, (plan.image_height as number) ?? 1000);
+  } else {
+    for (const z of agg.zones ?? []) for (const [x, y] of zoneRingPoints(z, true)) push(x, y);
+    for (const m of agg.markers ?? []) push(m.lng as number, m.lat as number);
+    for (const t of agg.tables ?? []) push((t as Record<string, unknown>).lng, (t as Record<string, unknown>).lat);
+  }
+  if (!Number.isFinite(minX) || maxX - minX <= 0 || maxY - minY <= 0) return [];
+
+  const norm = (x: number, y: number): { nx: number; ny: number } => ({
+    nx: Math.min(0.97, Math.max(0.03, (x - minX) / (maxX - minX))),
+    ny: Math.min(0.97, Math.max(0.03, 1 - (y - minY) / (maxY - minY))),
+  });
+
+  const labels: IllustrationLabel[] = [];
+  for (const z of agg.zones ?? []) {
+    if (!z.name || z.shape_type === "polyline") continue;
+    let x = z.label_x ?? null;
+    let y = z.label_y ?? null;
+    if (x == null || y == null) {
+      const pts = zoneRingPoints(z, !isImg);
+      if (!pts.length) continue;
+      x = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+      y = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    }
+    if (!isImg && (Math.abs(x) > 180 || Math.abs(y) > 90)) continue; // korrupt → auslassen
+    labels.push({ text: z.name, kind: "zone", ...norm(x, y) });
+  }
+  for (const m of agg.markers ?? []) {
+    if (!m.label) continue;
+    const x = (isImg ? (m.pos_x as number) : (m.lng as number)) ?? null;
+    const y = (isImg ? (m.pos_y as number) : (m.lat as number)) ?? null;
+    if (typeof x !== "number" || typeof y !== "number") continue;
+    if (!isImg && (Math.abs(x) > 180 || Math.abs(y) > 90)) continue;
+    labels.push({ text: String(m.label), kind: "marker", ...norm(x, y) });
+  }
+  return labels;
+}
+
 /**
  * `comvenio plan <action> [arg1] [arg2]` — Geländeplan lesen + planen (agent-tauglich, --json).
  *   plan list <event-id> | plan show <plan-id> | plan create <event-id> --name [--inherit]
@@ -174,12 +275,14 @@ function positionPayload(o: Opts, crsMode: string | undefined): Record<string, u
  *   plan zone link|unlink <zone-id> --area <area-id>
  *   plan table create|duplicate <plan-id|table-id> | plan marker create <plan-id> [--size --club --logo]
  *   plan detail <zone-id> --length --width
+ *   plan illustrate <event-id> [--plan --out --style]   D-36: Illustrations-Kit (export.png + plan.json + PROMPT.md)
+ *   plan compose <event-id> --plan <id> --image <png>   D-36: echte Label-Fahnen über die generierte Illustration
  */
 export function registerPlanCommands(cli: CAC): void {
   cli
     .command(
       "plan <action> [arg1] [arg2]",
-      "Geländeplan: list|show|create | zone | table | marker | detail | export (Bild/PDF)",
+      "Geländeplan: list|show|create | zone | table | marker | detail | export (Bild/PDF) | illustrate | compose",
     )
     .option("--name <v>", "Name (plan/zone create)")
     .option("--type <v>", "Plan-Typ: gelaende|fluchtplan|festumzug|sonstiges")
@@ -214,6 +317,9 @@ export function registerPlanCommands(cli: CAC): void {
     .option("--out <dir>", "export: Zielordner (Default .comvenio-export)")
     .option("--wait <ms>", "export: Settle-Zeit vor Screenshot (Default 3500)")
     .option("--frontend-base <url>", "export: Frontend-Basis überschreiben (z. B. http://localhost:5173)")
+    .option("--style <vorgaben>", "illustrate: freie Stil-Vorgaben für den Generierungs-Prompt")
+    .option("--image <file>", "compose: Pfad zur generierten Illustration (PNG/JPG)")
+    .option("--no-lines", "compose: Label-Fahnen ohne Verbindungslinien/Punkte")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -296,6 +402,217 @@ export function registerPlanCommands(cli: CAC): void {
           });
           // Non-zero exit nur, wenn ALLE Pläne fehlschlugen.
           if (failed.length === results.length) process.exitCode = 1;
+          return;
+        }
+
+        // ── plan illustrate <event-id> — Illustrations-Kit für den User-Agenten (D-36) ──
+        if (action === "illustrate") {
+          const eventId = arg1;
+          if (!eventId) throw new Error("plan illustrate benoetigt eine <event-id>.");
+          if (!(await hasPlaywrightCli())) {
+            throw new Error(
+              "playwright-cli nicht auf dem PATH. Installiere @playwright/cli (npm i -g @playwright/cli) + einmalig `playwright-cli install`.",
+            );
+          }
+          const clubId = requireClubId(state, opts.club);
+          const fb = frontendBase(state.environment, opts.frontendBase);
+          const outDir = opts.out ?? ".comvenio-illustration";
+          const waitMs = opts.wait ? Math.max(0, parseInt(opts.wait, 10) || 0) : 3500;
+          const planList: Plan[] = opts.plan
+            ? [{ id: opts.plan }]
+            : await client.get<Plan[]>("event", `/events/${eventId}/map-plans`);
+          if (planList.length === 0) {
+            output({ ok: true, plans: 0 }, opts.json, () => "Keine Pläne für dieses Event.");
+            return;
+          }
+
+          const results: { plan_id: string; name?: string; dir?: string; labels?: number; error?: string }[] = [];
+          for (const p of planList) {
+            const planId = p.id!;
+            const dir = `${outDir}/${planId}`;
+            try {
+              mkdirSync(dir, { recursive: true });
+              // 1. Layout-Referenz: echter Export (K20-Route, Labels sichtbar).
+              const url = `${fb}/club/${clubId}/event/${eventId}/gelaendeplan/export?plan=${planId}`;
+              await screenshotToPng(url, `${dir}/export.png`, { waitMs });
+              // 2. Struktur + normalisierte Label-Anker.
+              const agg = await fetchPlan(client, planId);
+              const labels = collectIllustrationLabels(agg);
+              const planJson = {
+                plan: {
+                  id: planId,
+                  name: agg.plan?.name,
+                  plan_type: agg.plan?.plan_type,
+                  crs_mode: agg.plan?.crs_mode,
+                  real_width_m: agg.plan?.real_width_m,
+                  real_height_m: agg.plan?.real_height_m,
+                },
+                zones: (agg.zones ?? []).map((z) => ({
+                  id: z.id,
+                  name: z.name,
+                  shape_type: z.shape_type,
+                  color: z.color,
+                  length_m: z.length_m,
+                  width_m: z.width_m,
+                  label_x: z.label_x,
+                  label_y: z.label_y,
+                })),
+                markers: (agg.markers ?? []).map((m) => ({
+                  id: m.id,
+                  marker_type: m.marker_type,
+                  label: m.label,
+                })),
+                labels_normalized: labels,
+              };
+              writeFileSync(`${dir}/plan.json`, JSON.stringify(planJson, null, 2), "utf8");
+              // 3. Generierungs-Prompt (Vorgaben; KEIN Text im Bild — Beschriftung macht compose).
+              const elementLines = [
+                ...(agg.zones ?? [])
+                  .filter((z) => z.name && z.shape_type !== "polyline")
+                  .map((z) => `- Bereich: ${z.name}${z.length_m ? ` (${z.length_m}×${z.width_m} m)` : ""}`),
+                ...(agg.zones ?? [])
+                  .filter((z) => z.shape_type === "polyline")
+                  .map((z) => `- Weg/Route: ${z.name ?? "Route"} (als Weg darstellen)`),
+                ...(agg.markers ?? []).map(
+                  (m) => `- Punkt: ${m.label ?? m.marker_type ?? "Marker"} (Typ: ${m.marker_type ?? "other"})`,
+                ),
+              ];
+              const prompt = [
+                `# Illustrierter Lageplan — Generierungs-Auftrag (${agg.plan?.name ?? planId})`,
+                "",
+                "Erzeuge aus der Layout-Referenz `export.png` (gleicher Ordner) eine stilisierte Lageplan-Illustration.",
+                "",
+                "## Vorgaben (bindend)",
+                "- Vogelperspektive (leicht schräg), freundliche 3D-Illustration, sommerliches Vereinsfest",
+                "- KEIN Text, KEINE Schrift, KEINE Logos im Bild — die Beschriftung wird separat darübergelegt",
+                "- Layout-Treue: Positionen und Proportionen der Bereiche aus `export.png` möglichst genau einhalten",
+                "- Elemente klar erkennbar gestalten (Zelte als Zelte, Bühne als Bühne, Wiese/Bäume als Umgebung)",
+                "- Querformat, mindestens 1600 px Breite",
+                ...(opts.style ? ["", "## Zusätzliche Stil-Vorgaben", `- ${opts.style}`] : []),
+                "",
+                "## Elemente (aus den echten Plandaten — alle darstellen)",
+                ...elementLines,
+                "",
+                "## Danach (Beschriftung exakt darüberlegen)",
+                "```",
+                `comvenio plan compose ${eventId} --plan ${planId} --image <deine-illustration.png>`,
+                "```",
+                "",
+              ].join("\n");
+              writeFileSync(`${dir}/PROMPT.md`, prompt, "utf8");
+              results.push({ plan_id: planId, name: agg.plan?.name, dir, labels: labels.length });
+            } catch (e) {
+              results.push({ plan_id: planId, name: p.name, error: (e as Error)?.message ?? "Fehler" });
+            }
+          }
+          const failed = results.filter((r) => r.error);
+          output({ event_id: eventId, results }, opts.json, () => {
+            const lines = results.map((r) =>
+              r.error
+                ? `  x ${r.name ?? r.plan_id}: ${r.error}`
+                : `  + ${r.name ?? r.plan_id}: ${r.dir} (export.png, plan.json, PROMPT.md — ${r.labels} Beschriftungen)`,
+            );
+            return [
+              `Illustrations-Kit (${results.length} Plan/Pläne) -> ${outDir}:`,
+              ...lines,
+              "",
+              "Nächste Schritte: Illustration mit deinem Bildmodell aus PROMPT.md + export.png erzeugen,",
+              "dann `comvenio plan compose <event-id> --plan <plan-id> --image <illustration.png>`.",
+            ].join("\n");
+          });
+          if (failed.length === results.length) process.exitCode = 1;
+          return;
+        }
+
+        // ── plan compose <event-id> — echte Beschriftungen über die Illustration legen (D-36) ──
+        if (action === "compose") {
+          const eventId = arg1;
+          if (!eventId) throw new Error("plan compose benoetigt eine <event-id>.");
+          if (!opts.plan) throw new Error("plan compose benoetigt --plan <plan-id>.");
+          if (!opts.image) throw new Error("plan compose benoetigt --image <illustration.png>.");
+          const imageAbs = resolve(opts.image);
+          if (!existsSync(imageAbs)) throw new Error(`Illustration nicht gefunden: ${imageAbs}`);
+          if (!(await hasPlaywrightCli())) {
+            throw new Error(
+              "playwright-cli nicht auf dem PATH. Installiere @playwright/cli (npm i -g @playwright/cli) + einmalig `playwright-cli install`.",
+            );
+          }
+          const agg = await fetchPlan(client, opts.plan);
+          const labels = collectIllustrationLabels(agg);
+          if (!labels.length) {
+            throw new Error("Keine beschrifteten Elemente (Zonen mit Namen / Marker mit Label) auf diesem Plan.");
+          }
+          const waitMs = opts.wait ? Math.max(0, parseInt(opts.wait, 10) || 0) : 1500;
+          const outPath = resolve(opts.out ?? "lageplan.png");
+          const overlayPath = outPath.replace(/\.(png|jpe?g)$/i, "") + "-overlay.html";
+          const withLines = opts.lines !== false;
+          // Gelbe Label-Fahnen + Verbindungslinie zum Anker — Referenz-Look (Tom-Screenshot 2026-07-02).
+          const pins = labels
+            .map((l) => {
+              const flag = `<div class="flag">${escapeHtmlText(l.text)}</div>`;
+              const tail = withLines ? `<div class="line"></div><div class="dot"></div>` : "";
+              return `<div class="pin" style="left:${(l.nx * 100).toFixed(2)}%;top:${(l.ny * 100).toFixed(2)}%">${flag}${tail}</div>`;
+            })
+            .join("\n");
+          const htmlFor = (imgSrc: string) => `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;padding:0;background:#fff}
+  .wrap{position:relative;display:inline-block;font-family:Arial,Helvetica,sans-serif}
+  .wrap img{display:block;width:1600px;height:auto}
+  .pin{position:absolute;width:0;height:0}
+  .flag{position:absolute;bottom:${withLines ? "30px" : "-14px"};left:0;transform:translateX(-50%);
+    background:#ffd60a;color:#111;font-weight:800;font-size:21px;letter-spacing:.3px;
+    padding:5px 14px;border-radius:9px;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.35)}
+  .line{position:absolute;bottom:6px;left:0;width:3px;height:24px;background:#ffd60a;transform:translateX(-50%)}
+  .dot{position:absolute;bottom:0;left:0;width:11px;height:11px;border-radius:50%;background:#ffd60a;
+    border:2px solid #111;transform:translate(-50%,50%)}
+</style></head><body>
+<div class="wrap">
+<img src="${imgSrc}" alt="">
+${pins}
+</div>
+</body></html>
+`;
+          // Fürs manuelle Nachjustieren im Browser: Overlay mit file-URL aufs Original.
+          writeFileSync(overlayPath, htmlFor(pathToFileURL(imageAbs).href), "utf8");
+          // playwright-cli blockt file:-URLs (nur http/https/about/data) — daher Mini-HTTP-Server
+          // (Bun.serve, Port 0 = frei) für den Render; danach sofort wieder gestoppt.
+          const imageBytes = readFileSync(imageAbs);
+          const imageMime = /\.jpe?g$/i.test(imageAbs) ? "image/jpeg" : "image/png";
+          const servedHtml = htmlFor("/illustration");
+          const server = Bun.serve({
+            port: 0,
+            hostname: "127.0.0.1",
+            fetch(req) {
+              const path = new URL(req.url).pathname;
+              if (path === "/overlay.html") {
+                return new Response(servedHtml, { headers: { "content-type": "text/html; charset=utf-8" } });
+              }
+              if (path === "/illustration") {
+                return new Response(imageBytes, { headers: { "content-type": imageMime } });
+              }
+              return new Response("not found", { status: 404 });
+            },
+          });
+          try {
+            await screenshotToPng(`http://127.0.0.1:${server.port}/overlay.html`, outPath, {
+              waitMs,
+              width: 1700,
+            });
+          } finally {
+            server.stop(true);
+          }
+          output(
+            { ok: true, out: outPath, overlay: overlayPath, labels: labels.length },
+            opts.json,
+            () =>
+              [
+                `Lageplan komponiert -> ${outPath} (${labels.length} Beschriftungen).`,
+                "Hinweis: Die Illustration hält das Layout nur ungefähr ein — sitzt eine Fahne daneben,",
+                "den Label-Anker im Editor verschieben (D-35) und compose erneut ausführen.",
+                `Overlay-HTML (für manuelle Anpassung): ${overlayPath}`,
+              ].join("\n"),
+          );
           return;
         }
 

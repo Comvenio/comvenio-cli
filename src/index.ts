@@ -26,6 +26,7 @@ import { registerDataCommands } from "./commands/data.ts";
 import { registerNewsCommands } from "./commands/news.ts";
 import { registerPlanCommands } from "./commands/plan.ts";
 import { registerTournamentCommands } from "./commands/tournament.ts";
+import { registerSponsorCommands } from "./commands/sponsor.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -143,6 +144,8 @@ registerNewsCommands(cli);
 registerPlanCommands(cli);
 // Tournament-Hub — comvenio tournament: V3 participant-engine (Mannschaft/Doppel/Einzel) + Preview.
 registerTournamentCommands(cli);
+// Lokales Club-Sponsoring - Sponsoren, Angebote, Zuordnungen, Logos und Vertraege.
+registerSponsorCommands(cli);
 
 cli.help();
 cli.version(pkg.version);
@@ -176,3 +179,4 @@ async function main() {
 }
 
 main();
+
