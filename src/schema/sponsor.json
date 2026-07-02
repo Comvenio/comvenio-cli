@@ -1,0 +1,75 @@
+{
+  "domain": "sponsor",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/marketing-service/app/schemas/advertiser.py",
+    "Backend/Microservice-Backend/marketing-service/app/schemas/club_sponsorship.py",
+    "Backend/Microservice-Backend/content-service/app/schemas/file_entry.py"
+  ],
+  "note": "Lokales Club-Sponsoring nutzt marketing-service als Single Source of Truth. Logos und Vertragsdateien liegen im content-service.",
+  "commands": {
+    "sponsors": [
+      "sponsor list --department-id <id>",
+      "sponsor add --department-id <id> --name <name> --email <mail> [--file logo.png]",
+      "sponsor update <sponsor-id> [--name ... --email ... --department-id ...]",
+      "sponsor logo <sponsor-id> --file logo.png"
+    ],
+    "products": [
+      "sponsor product-list --department-id <id>",
+      "sponsor product-add --department-id <id> --name <name> [--price-cents 50000 --file vertrag.pdf]",
+      "sponsor product-update <product-id> [--price-cents ... --conditions ...]",
+      "sponsor product-delete <product-id>"
+    ],
+    "contracts": [
+      "sponsor contract-list <product-id>",
+      "sponsor contract-add <product-id> --file vertrag.pdf --valid-from <iso> [--superseded-valid-until <iso>]"
+    ],
+    "assignments": [
+      "sponsor assignment-list --department-id <id>",
+      "sponsor assign --department-id <id> --sponsor <sponsor-id> --product <product-id>",
+      "sponsor assignment-update <assignment-id> [--ends-at <iso> --note ...]",
+      "sponsor cancel <assignment-id> [--note ...]"
+    ],
+    "documents": [
+      "sponsor doc-upload <assignment-id> --file vertrag.pdf",
+      "sponsor doc-list <assignment-id>"
+    ],
+    "responsibles": [
+      "sponsor responsible-list --sponsor <sponsor-id>",
+      "sponsor responsible-add --department-id <id> --sponsor <sponsor-id> --member <member-id> [--primary]",
+      "sponsor responsible-update <responsible-assignment-id> [--role ... --primary]",
+      "sponsor responsible-remove <responsible-assignment-id>"
+    ]
+  },
+  "models": {
+    "AdvertiserCreate": {
+      "required": ["company_name", "contact_email", "club_id", "club_department_id"],
+      "optional": ["website_url", "contact_person", "contact_phone", "address", "organization_type"]
+    },
+    "ClubSponsorshipProductCreate": {
+      "required": ["club_id", "club_department_id", "name"],
+      "optional": ["description", "conditions", "contract_template_file_id", "default_unit_price_cents", "currency", "billing_interval", "default_duration_months", "sort_order"]
+    },
+    "ClubSponsorshipProductContractVersionCreate": {
+      "required": ["contract_file_id", "valid_from"],
+      "optional": ["label", "conditions", "unit_price_cents", "currency", "billing_interval", "duration_months", "valid_until", "supersedes_version_id", "superseded_valid_until", "note"]
+    },
+    "SponsorshipAssignmentCreate": {
+      "required": ["club_id", "club_department_id", "advertiser_id", "sponsorship_product_id"],
+      "optional": ["quantity", "unit_price_cents", "total_price_cents", "currency", "starts_at", "ends_at", "note"]
+    },
+    "SponsorMemberAssignmentCreate": {
+      "required": ["club_id", "club_department_id", "advertiser_id", "member_id"],
+      "optional": ["role", "is_primary", "note"]
+    }
+  },
+  "content_contexts": {
+    "sponsor_logo": "context_type=advertiser, context_id=<advertiser_id>, label=logo, visibility=public",
+    "product_contract": "context_type=sponsorship_product, context_id=<product_id>, visibility=private",
+    "assignment_contract": "context_type=sponsorship_assignment, context_id=<assignment_id>, sub_context_id=<advertiser_id>, visibility=private"
+  },
+  "rbac": {
+    "read": "view_sponsors oder manage_sponsors im club_department_id-Scope",
+    "write": "manage_sponsors im club_department_id-Scope"
+  }
+}

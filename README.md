@@ -99,10 +99,21 @@ comvenio tournament start <id>                    # Spielplan generieren (Status
 comvenio tournament matches <id>                  # Spielplan (Namen aus den Match-Sides)
 comvenio tournament standings <id>                # Tabelle (participant-basiert)
 comvenio tournament preview <id> [--open]         # self-contained HTML in Temp-Datei; --open öffnet den Browser
+
+# Auslosung + Spielplan (EXTEND 2026-07-02)
+comvenio tournament draw <id> --file plan.json    # Draw-Session anlegen (strategy=manual + fixed_assignments
+                                                  #   + knockout_config inkl. placement_mode direct|cross)
+comvenio tournament draw-confirm <id>             # aktuelle Session bestätigen → materialisiert Gruppen-Matches + K.O.-Bracket
+comvenio tournament schedule-generate <id> --match-minutes 15 --break-minutes 3 --field-count 2 \
+  --first-kickoff 2026-07-04T14:00:00Z [--dry-run] [--no-auto-book]   # automatischer Generator
+comvenio tournament match-schedule <match-id> --start 2026-07-04T14:00:00Z --end 2026-07-04T14:15:00Z \
+  --location "Feld 1" [--status proposed|booked]  # EXAKTE Zeit/Feld für EIN Match (PDF-treues Setup)
+comvenio tournament match-delete <match-id>       # Match löschen (Soft-Delete; z. B. vor Re-Draw)
 ```
 
 > `mannschaft` = Alias für `participant` mit Default `--kind team`; `individual` = Einzel, `pair` = Doppel.
 > `preview` rendert lokal (kein Frontend-Deploy nötig). Nur verifizierte Endpoint-Pfade — Serien-Create ist (noch) nicht enthalten.
+> **Re-Draw-Achtung:** `draw-confirm` erzeugt Matches ADDITIV — bestehende Gruppen-Matches vorher per `match-delete` entfernen, sonst Duplikate. `placement_mode` braucht tournament-service ≥ PR #10; K.O.-Platzhalter im `matches`-Read brauchen ≥ PR #9.
 
 ## Konzept
 

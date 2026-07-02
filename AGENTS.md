@@ -37,6 +37,7 @@ comvenio club info                    # Vereinsdaten
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
 | event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` (Speisekarte je Event/Bereich — EventMenu, supply-service) |
 | plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) · `plan export` (PNG/PDF) · `plan illustrate` + `plan compose` (illustrierter Lageplan, D-36) |
+| sponsor  | `comvenio sponsor list\|add\|update\|logo` · `sponsor product-list\|product-add` · `sponsor assign` · `sponsor contract-add` · `sponsor doc-upload` (lokales Club-Sponsoring, marketing-service + content-service) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
 | task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |
@@ -84,6 +85,7 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   vollständiges Rezept (Allergene inklusive, idempotent). **Vorlagen zuerst** — nur was fehlt ad-hoc bauen.
 - **homepage:** `comvenio schema homepage --json` → 68 Widget-`kind`-Werte +
   config-Felder je Widget + Section-`layout`/`style_variant` + Templates.
+- **sponsor:** lokale Sponsoren sind `Advertiser` mit `club_id` + `club_department_id`. Sponsoring-Angebote sind `ClubSponsorshipProduct`, lokale Vertraege/Preisversionen laufen ueber `contract-add`, aktive Sponsor-Zuordnungen ueber `assign`. Logos und Vertragsdateien werden via content-service hochgeladen; Sponsor-Logos: `context_type=advertiser`, Produktvertraege: `sponsorship_product`, Assignment-Vertraege: `sponsorship_assignment`.
 - **design (Flex-Template):** `comvenio schema design --json` → `FlexDesignConfig`
   (hero/sections/decor/type/density/cornerStyle/accentUsage) für `custom_template_config`.
   Das Aussehen kommt aus **Config**, nicht aus club-spezifischem Code: EIN generisches
@@ -246,3 +248,4 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 `member list/show`, `event list/show`, `booking list/show`, `object list`,
 `task list/show`, `task context list` brauchen nur Clubmitgliedschaft bzw. einen
 Visibility-Filter (kein dedizierter Key).
+
