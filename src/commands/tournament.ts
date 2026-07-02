@@ -4,7 +4,7 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -20,6 +20,17 @@ type Opts = {
   seed?: string;
   status?: string;
   open?: boolean;
+  // draw / schedule (EXTEND 2026-07-02)
+  file?: string;
+  start?: string;
+  end?: string;
+  location?: string;
+  matchMinutes?: string;
+  breakMinutes?: string;
+  fieldCount?: string;
+  firstKickoff?: string;
+  dryRun?: boolean;
+  autoBook?: boolean;
 };
 
 type Tournament = {
@@ -46,6 +57,18 @@ type Match = {
   group?: string | null;
   status?: string;
   sides?: MatchSide[];
+};
+type DrawSession = {
+  id?: string;
+  status?: string;
+  strategy?: string;
+  outcome?: { groups?: Array<{ label?: string; key?: string; participants?: unknown[] }>; materialization?: { matches_created?: number } } & Record<string, unknown>;
+};
+type ScheduleGenerateResult = {
+  generated_count?: number;
+  skipped_fixed_count?: number;
+  assignments?: unknown[];
+  warnings?: string[];
 };
 type StandingRow = {
   rank?: number;
@@ -130,19 +153,30 @@ th,td{border:1px solid #dde;padding:.4rem .6rem;text-align:left}th{background:#f
 /**
  * `comvenio tournament <action>` — V3 participant engine (gateway key "tournament").
  *   list | show | participants | mannschaft (add) | start | matches | standings | preview
+ *   | draw | draw-confirm | schedule-generate | match-schedule | match-delete
  */
 export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | show | participants | mannschaft | start | matches | standings | preview",
+      "Turniere V3: list | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
     .option("--kind <kind>", "Teilnehmer-Art: team (Mannschaft) | individual | pair (default: team)")
     .option("--seed <n>", "Setznummer (mannschaft)")
-    .option("--status <s>", "registration_status (mannschaft, default confirmed)")
+    .option("--status <s>", "mannschaft: registration_status (default confirmed) | match-schedule: schedule_status (default proposed)")
     .option("--open", "Preview im Standard-Browser oeffnen")
+    .option("--file <path>", "draw: JSON-Datei mit dem Draw-Session-Body (strategy, fixed_assignments, knockout_config)")
+    .option("--start <iso>", "match-schedule: starts_at (ISO, z. B. 2026-07-04T14:00:00Z)")
+    .option("--end <iso>", "match-schedule: ends_at (ISO)")
+    .option("--location <label>", 'match-schedule: Feld-Label, z. B. "Feld 1"')
+    .option("--match-minutes <n>", "schedule-generate: Spieldauer in Minuten")
+    .option("--break-minutes <n>", "schedule-generate: Pause zwischen Slots in Minuten")
+    .option("--field-count <n>", "schedule-generate: Anzahl paralleler Felder")
+    .option("--first-kickoff <iso>", "schedule-generate: erster Anpfiff (ISO; leer = Turnier-Startzeit)")
+    .option("--dry-run", "schedule-generate: nur Vorschau, nichts persistieren")
+    .option("--no-auto-book", "schedule-generate: keine automatische Objekt-Buchung")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -274,9 +308,89 @@ export function registerTournamentCommands(cli: CAC): void {
           break;
         }
 
+        case "draw": {
+          // EXTEND 2026-07-02: fixed draw via JSON body (TournamentDrawSessionCreate) -
+          // strategy "manual" + fixed_assignments places groups exactly; with
+          // knockout_config (incl. placement_mode) the confirm also builds the KO bracket.
+          if (!id) throw new Error("tournament draw <tournament-id> benoetigt eine Turnier-ID + --file <plan.json>.");
+          if (!opts.file) throw new Error("tournament draw benoetigt --file <plan.json> (Body: TournamentDrawSessionCreate).");
+          const body = JSON.parse(readFileSync(opts.file, "utf-8"));
+          const session = await client.post<DrawSession>("tournament", `/tournaments/${id}/draw-sessions`, body);
+          const groups = session.outcome?.groups ?? [];
+          output(session, opts.json, () =>
+            [
+              `Draw-Session ${session.id ?? "?"} angelegt — Status ${session.status ?? "?"} (${session.strategy ?? "?"}).`,
+              ...groups.map(
+                (g) => `  ${g.label ?? g.key ?? "?"}: ${(g.participants ?? []).length} Teilnehmer`,
+              ),
+              `Bestaetigen (materialisiert Spiele + K.O.-Bracket): comvenio tournament draw-confirm ${id}`,
+            ].join("\n"),
+          );
+          break;
+        }
+
+        case "draw-confirm": {
+          if (!id) throw new Error("tournament draw-confirm <tournament-id> benoetigt eine Turnier-ID.");
+          const current = await client.get<DrawSession>("tournament", `/tournaments/${id}/draw-sessions/current`);
+          if (!current?.id) throw new Error("Keine Draw-Session gefunden — zuerst: comvenio tournament draw <id> --file plan.json");
+          const confirmed = await client.post<DrawSession>("tournament", `/draw-sessions/${current.id}/confirm`);
+          const created = confirmed.outcome?.materialization?.matches_created;
+          output(confirmed, opts.json, () =>
+            `Auslosung bestaetigt — ${created ?? "?"} Spiele materialisiert (inkl. K.O.-Bracket bei group_knockout). Spielplan: comvenio tournament matches ${id}`,
+          );
+          break;
+        }
+
+        case "schedule-generate": {
+          if (!id) throw new Error("tournament schedule-generate <tournament-id> benoetigt eine Turnier-ID.");
+          const body = prune({
+            match_minutes: opts.matchMinutes != null ? Number(opts.matchMinutes) : undefined,
+            break_minutes: opts.breakMinutes != null ? Number(opts.breakMinutes) : undefined,
+            field_count: opts.fieldCount != null ? Number(opts.fieldCount) : undefined,
+            first_kickoff: opts.firstKickoff,
+            auto_book: opts.autoBook === false ? false : undefined,
+            dry_run: opts.dryRun ? true : undefined,
+          });
+          const result = await client.post<ScheduleGenerateResult>("tournament", `/tournaments/${id}/schedule/generate`, body);
+          output(result, opts.json, () =>
+            [
+              `${opts.dryRun ? "Vorschau" : "Spielplan generiert"}: ${result.generated_count ?? 0} Spiele` +
+                ((result.skipped_fixed_count ?? 0) > 0 ? ` (${result.skipped_fixed_count} fixierte uebersprungen)` : ""),
+              ...(result.warnings ?? []).map((w) => `  ⚠ ${w}`),
+            ].join("\n"),
+          );
+          break;
+        }
+
+        case "match-schedule": {
+          // id = MATCH id here (not tournament id). Sets exact time/field for one match.
+          if (!id) throw new Error("tournament match-schedule <match-id> benoetigt eine Match-ID + --start/--end/--location.");
+          if (!opts.start && !opts.end && !opts.location) {
+            throw new Error("tournament match-schedule benoetigt mindestens --start, --end oder --location.");
+          }
+          const body = prune({
+            starts_at: opts.start,
+            ends_at: opts.end,
+            location: opts.location,
+            schedule_status: opts.status ?? "proposed",
+          });
+          const updated = await client.patch<Match>("tournament", `/matches/${id}/schedule`, body);
+          output(updated, opts.json, () =>
+            `Match ${id}: ${opts.start ?? "(Zeit unveraendert)"} — ${opts.location ?? "(Feld unveraendert)"} gesetzt.`,
+          );
+          break;
+        }
+
+        case "match-delete": {
+          if (!id) throw new Error("tournament match-delete <match-id> benoetigt eine Match-ID.");
+          await client.del("tournament", `/matches/${id}`);
+          output({ deleted: id }, opts.json, () => `Match ${id} geloescht (Soft-Delete).`);
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, participants, mannschaft, start, matches, standings, preview`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, participants, mannschaft, start, matches, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
           );
       }
     });
