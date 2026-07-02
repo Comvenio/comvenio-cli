@@ -86,9 +86,10 @@ function parseIngredients(s?: string): Array<{ name: string; quantity: number; u
         qtyRaw = segs[segs.length - 2];
         name = segs.slice(0, segs.length - 2).join(":");
       } else if (segs.length === 2) {
-        [name, qtyRaw] = segs;
+        name = segs[0] ?? "";
+        qtyRaw = segs[1];
       } else {
-        [name] = segs;
+        name = segs[0] ?? "";
       }
       if (!name) return null;
       const u = (unitRaw || "pc").toLowerCase();
