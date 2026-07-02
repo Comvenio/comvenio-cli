@@ -42,6 +42,17 @@ type Tournament = {
   sport_key?: string;
   [k: string]: unknown;
 };
+type TournamentSeries = {
+  id?: string;
+  title?: string;
+  sport_key?: string;
+  template_key?: string;
+  format_family?: string;
+  public_slug?: string | null;
+  is_active?: boolean;
+  executions?: Tournament[];
+};
+
 type Participant = {
   id?: string;
   name?: string;
@@ -152,14 +163,14 @@ th,td{border:1px solid #dde;padding:.4rem .6rem;text-align:left}th{background:#f
 
 /**
  * `comvenio tournament <action>` — V3 participant engine (gateway key "tournament").
- *   list | show | participants | mannschaft (add) | start | matches | standings | preview
+ *   list | series-list | series-create | execution-create | show | participants | mannschaft (add) | start | matches | standings | preview
  *   | draw | draw-confirm | schedule-generate | match-schedule | match-delete
  */
 export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
+      "Turniere V3: list | series-list | series-create | execution-create | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -183,6 +194,40 @@ export function registerTournamentCommands(cli: CAC): void {
       const client = createClient(state);
 
       switch (action) {
+        case "series-list": {
+          const clubId = requireClubId(state, opts.club);
+          const items = await client.get<TournamentSeries[]>("tournament", `/tournament-series/?club_id=${clubId}`);
+          output(items, opts.json, () =>
+            Array.isArray(items) && items.length
+              ? renderTable(items, [
+                  { header: "Titel", width: 32, get: (s) => String(s.title ?? "—") },
+                  { header: "Sport", width: 10, get: (s) => String(s.sport_key ?? "—") },
+                  { header: "Template", width: 28, get: (s) => String(s.template_key ?? "—") },
+                  { header: "Exec", width: 5, get: (s) => String((s.executions ?? []).length) },
+                  { header: "ID", width: 36, get: (s) => String(s.id ?? "—") },
+                ])
+              : "Keine Turnierserien.",
+          );
+          break;
+        }
+
+        case "series-create": {
+          if (!opts.file) throw new Error("tournament series-create benoetigt --file <series.json>.");
+          const clubId = requireClubId(state, opts.club);
+          const body = { club_id: clubId, ...JSON.parse(readFileSync(opts.file, "utf-8")) };
+          const created = await client.post<TournamentSeries>("tournament", "/tournament-series/", body);
+          output(created, opts.json, () => `Turnierserie angelegt: ${created.title ?? "?"} (${created.id ?? "?"}).`);
+          break;
+        }
+
+        case "execution-create": {
+          if (!id) throw new Error("tournament execution-create <series-id> benoetigt eine Serien-ID.");
+          if (!opts.file) throw new Error("tournament execution-create benoetigt --file <execution.json>.");
+          const body = JSON.parse(readFileSync(opts.file, "utf-8"));
+          const created = await client.post<Tournament>("tournament", `/tournament-series/${id}/executions`, body);
+          output(created, opts.json, () => `Turnier-Ausführung angelegt: ${created.title ?? "?"} (${created.id ?? "?"}).`);
+          break;
+        }
         case "list": {
           const clubId = requireClubId(state, opts.club);
           const items = await client.get<Tournament[]>("tournament", `/tournaments/?club_id=${clubId}`);

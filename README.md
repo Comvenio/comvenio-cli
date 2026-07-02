@@ -91,6 +91,9 @@ paart Teilnehmer (Einzelspieler / Doppel / **Mannschaft**) über `TournamentMatc
 nie ein Team. Jeder Befehl kennt `--json`.
 
 ```bash
+comvenio tournament series-list [--club <id>]     # Turnierserien des Clubs
+comvenio tournament series-create --file series.json   # Serie anlegen (POST /tournament-series)
+comvenio tournament execution-create <series-id> --file execution.json  # Ausführung aus Serie anlegen
 comvenio tournament list [--club <id>]            # Turniere des Clubs
 comvenio tournament show <id>                     # Turnier-Meta
 comvenio tournament participants <id>             # Teilnehmer (Art/Status)
