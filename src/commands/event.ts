@@ -24,6 +24,7 @@ type EventRead = {
   [key: string]: unknown;
 };
 type EventAreaRead = { id?: string; name?: string; [key: string]: unknown };
+type EventProgramItemRead = { id?: string; title?: string; start_time?: string | null; reference_type?: string | null; reference_id?: string | null; [key: string]: unknown };
 
 type Opts = {
   json?: boolean;
@@ -49,6 +50,12 @@ type Opts = {
   name?: string;
   color?: string;
   areaCategory?: string;
+  // program
+  referenceType?: string;
+  referenceId?: string;
+  referenceLabel?: string;
+  referenceUrl?: string;
+  sortOrder?: string;
   // menu (EventMenu = supply-service)
   menu?: string;
   area?: string;
@@ -76,10 +83,11 @@ function eventUpdateBody(o: Opts): Record<string, unknown> {
  * `comvenio event <action> [arg1] [arg2]` dispatcher.
  *   event list|show|create|update|publish
  *   event area list <event-id> | event area add <event-id> --name X
+ *   event program list <event-id> | event program add <event-id> --title X --area <area-id>
  */
 export function registerEventCommands(cli: CAC): void {
   cli
-    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | area list|add | menu list|assign|unassign")
+    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | area list|add | program list|add | menu list|assign|unassign")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--view <v>", "full|calendar (Default full)")
     .option("--month <v>", "YYYY-MM")
@@ -102,6 +110,12 @@ export function registerEventCommands(cli: CAC): void {
     .option("--name <v>", "Bereichsname (area add)")
     .option("--color <v>", "Bereichsfarbe (area add)")
     .option("--area-category <v>", "Bereichskategorie (area add)")
+    // program flags
+    .option("--reference-type <v>", "Programmpunkt-Referenztyp, z. B. tournament")
+    .option("--reference-id <v>", "Programmpunkt-Referenz-ID")
+    .option("--reference-label <v>", "Programmpunkt-Referenz-Anzeige")
+    .option("--reference-url <v>", "Programmpunkt-Referenz-Link")
+    .option("--sort-order <n>", "Programmpunkt-Reihenfolge")
     // menu flags (EventMenu = Speisekarte je Event/Bereich)
     .option("--menu <id>", "Speisekarte-ID (menu assign)")
     .option("--area <id>", "Bereich/EventArea-ID (menu assign; siehe: event area list <event-id>)")
@@ -157,6 +171,50 @@ export function registerEventCommands(cli: CAC): void {
           throw new Error(`Unbekannte event-area-Aktion "${sub}". Verfuegbar: list, add`);
         }
 
+        // event program <sub> <event-id> — Programmpunkte im event-service.
+        if (action === "program") {
+          const sub = arg1;
+          const eventId = arg2;
+          if (sub === "list") {
+            if (!eventId) throw new Error("event program list benoetigt eine <event-id>.");
+            const rows = await client.get<EventProgramItemRead[]>("event", `/events/${eventId}/program-items`);
+            output(rows, opts.json, () =>
+              Array.isArray(rows) && rows.length
+                ? renderTable(rows, [
+                    { header: "ID", width: 36, get: (r) => String(r.id ?? "") },
+                    { header: "Titel", width: 30, get: (r) => String(r.title ?? "—") },
+                    { header: "Start", width: 20, get: (r) => String(r.start_time ?? "—") },
+                    { header: "Referenz", width: 16, get: (r) => String(r.reference_type ?? "—") },
+                    { header: "Ref-ID", width: 36, get: (r) => String(r.reference_id ?? "—") },
+                  ])
+                : "Keine Programmpunkte.",
+            );
+            return;
+          }
+          if (sub === "add") {
+            if (!eventId) throw new Error("event program add benoetigt eine <event-id>.");
+            if (!opts.title) throw new Error("event program add benoetigt --title <v>.");
+            if (!opts.area) throw new Error("event program add benoetigt --area <area-id>.");
+            if (!opts.startTime) throw new Error("event program add benoetigt --start-time <iso>.");
+            const body = prune({
+              club_id: clubId,
+              area_id: opts.area,
+              title: opts.title,
+              description: opts.description,
+              start_time: opts.startTime,
+              end_time: opts.endTime,
+              sort_order: opts.sortOrder != null ? Number(opts.sortOrder) : undefined,
+              reference_type: opts.referenceType,
+              reference_id: opts.referenceId,
+              reference_label: opts.referenceLabel,
+              reference_url: opts.referenceUrl,
+            });
+            const item = await client.post<EventProgramItemRead>("event", `/events/${eventId}/program-items`, body);
+            output(item, opts.json, () => `Programmpunkt angelegt: ${item.title ?? opts.title} (${item.id ?? "?"})`);
+            return;
+          }
+          throw new Error(`Unbekannte event-program-Aktion "${sub}". Verfuegbar: list, add`);
+        }
         // event menu <sub> [event-id|event-menu-id]  — EventMenu liegt im SUPPLY-service
         // (gateway-key "supply"), NICHT event-service. Verifiziert: routes/menu.py.
         //   list    → GET    /menu/events/{event_id}/menus        (alle Zuordnungen des Events)
@@ -295,7 +353,7 @@ export function registerEventCommands(cli: CAC): void {
           }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, area, menu`,
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, area, program, menu`,
             );
         }
       },

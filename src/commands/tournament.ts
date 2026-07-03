@@ -19,6 +19,8 @@ type Opts = {
   kind?: string;
   seed?: string;
   status?: string;
+  event?: string;
+  clearEvent?: boolean;
   open?: boolean;
   // draw / schedule (EXTEND 2026-07-02)
   file?: string;
@@ -29,6 +31,7 @@ type Opts = {
   breakMinutes?: string;
   fieldCount?: string;
   firstKickoff?: string;
+  matchNumber?: string;
   dryRun?: boolean;
   autoBook?: boolean;
 };
@@ -163,20 +166,22 @@ th,td{border:1px solid #dde;padding:.4rem .6rem;text-align:left}th{background:#f
 
 /**
  * `comvenio tournament <action>` — V3 participant engine (gateway key "tournament").
- *   list | series-list | series-create | execution-create | show | participants | mannschaft (add) | start | matches | standings | preview
+ *   list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft (add) | start | matches | standings | preview
  *   | draw | draw-confirm | schedule-generate | match-schedule | match-delete
  */
 export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-create | execution-create | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
+      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
     .option("--kind <kind>", "Teilnehmer-Art: team (Mannschaft) | individual | pair (default: team)")
     .option("--seed <n>", "Setznummer (mannschaft)")
     .option("--status <s>", "mannschaft: registration_status (default confirmed) | match-schedule: schedule_status (default proposed)")
+    .option("--event <id>", "execution-link: Event-ID setzen")
+    .option("--clear-event", "execution-link: Event-Verknuepfung entfernen")
     .option("--open", "Preview im Standard-Browser oeffnen")
     .option("--file <path>", "draw: JSON-Datei mit dem Draw-Session-Body (strategy, fixed_assignments, knockout_config)")
     .option("--start <iso>", "match-schedule: starts_at (ISO, z. B. 2026-07-04T14:00:00Z)")
@@ -186,6 +191,7 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--break-minutes <n>", "schedule-generate: Pause zwischen Slots in Minuten")
     .option("--field-count <n>", "schedule-generate: Anzahl paralleler Felder")
     .option("--first-kickoff <iso>", "schedule-generate: erster Anpfiff (ISO; leer = Turnier-Startzeit)")
+    .option("--match-number <n>", "match-schedule: Spielnummer setzen")
     .option("--dry-run", "schedule-generate: nur Vorschau, nichts persistieren")
     .option("--no-auto-book", "schedule-generate: keine automatische Objekt-Buchung")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
@@ -226,6 +232,21 @@ export function registerTournamentCommands(cli: CAC): void {
           const body = JSON.parse(readFileSync(opts.file, "utf-8"));
           const created = await client.post<Tournament>("tournament", `/tournament-series/${id}/executions`, body);
           output(created, opts.json, () => `Turnier-Ausführung angelegt: ${created.title ?? "?"} (${created.id ?? "?"}).`);
+          break;
+        }
+        case "execution-link": {
+          if (!id) throw new Error("tournament execution-link <tournament-id> benoetigt eine Ausfuehrungs-ID.");
+          if (!opts.event && !opts.clearEvent) throw new Error("tournament execution-link benoetigt --event <event-id> oder --clear-event.");
+          const updated = await client.patch<Tournament>("tournament", `/tournaments/${id}`, {
+            event_id: opts.clearEvent ? null : opts.event,
+          });
+          output(updated, opts.json, () => `Turnier-Ausfuehrung ${id}: Event ${opts.clearEvent ? "entfernt" : opts.event}.`);
+          break;
+        }        case "status": {
+          if (!id) throw new Error("tournament status <id> benoetigt eine Turnier-ID + --status <status>.");
+          if (!opts.status) throw new Error("tournament status benoetigt --status <draft|registration|draw|scheduled|active|completed|cancelled|archived>.");
+          const updated = await client.patch<Tournament>("tournament", `/tournaments/${id}`, { status: opts.status });
+          output(updated, opts.json, () => `Turnier ${id}: Status ${updated.status ?? opts.status}.`);
           break;
         }
         case "list": {
@@ -419,6 +440,9 @@ export function registerTournamentCommands(cli: CAC): void {
             location: opts.location,
             schedule_status: opts.status ?? "proposed",
           });
+          if (opts.matchNumber != null) {
+            await client.patch<Match>("tournament", `/matches/${id}`, { match_number: Number(opts.matchNumber) });
+          }
           const updated = await client.patch<Match>("tournament", `/matches/${id}/schedule`, body);
           output(updated, opts.json, () =>
             `Match ${id}: ${opts.start ?? "(Zeit unveraendert)"} — ${opts.location ?? "(Feld unveraendert)"} gesetzt.`,
@@ -435,7 +459,7 @@ export function registerTournamentCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, participants, mannschaft, start, matches, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, start, matches, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
           );
       }
     });

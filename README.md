@@ -96,6 +96,7 @@ comvenio tournament series-create --file series.json   # Serie anlegen (POST /to
 comvenio tournament execution-create <series-id> --file execution.json  # Ausführung aus Serie anlegen
 comvenio tournament list [--club <id>]            # Turniere des Clubs
 comvenio tournament show <id>                     # Turnier-Meta
+comvenio tournament status <id> --status registration  # Status setzen
 comvenio tournament participants <id>             # Teilnehmer (Art/Status)
 comvenio tournament mannschaft <id> --name "SV Motzing AH" [--kind team|individual|pair] [--seed 1]
 comvenio tournament start <id>                    # Spielplan generieren (Status → active)
@@ -110,7 +111,7 @@ comvenio tournament draw-confirm <id>             # aktuelle Session bestätigen
 comvenio tournament schedule-generate <id> --match-minutes 15 --break-minutes 3 --field-count 2 \
   --first-kickoff 2026-07-04T14:00:00Z [--dry-run] [--no-auto-book]   # automatischer Generator
 comvenio tournament match-schedule <match-id> --start 2026-07-04T14:00:00Z --end 2026-07-04T14:15:00Z \
-  --location "Feld 1" [--status proposed|booked]  # EXAKTE Zeit/Feld für EIN Match (PDF-treues Setup)
+  --location "Feld 1" [--status proposed|booked] [--match-number 1]  # EXAKTE Zeit/Feld/Spielnummer
 comvenio tournament match-delete <match-id>       # Match löschen (Soft-Delete; z. B. vor Re-Draw)
 ```
 
