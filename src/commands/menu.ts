@@ -6,7 +6,8 @@ import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
 import { readImageAsBase64 } from "../util/image.ts";
 import { readJsonFile } from "../util/file.ts";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { frontendBase, hasPlaywrightCli, renderMenuToPdf } from "../util/render.ts";
 
 // KI-Gen Speisekarte (verified Sub-File 08). TWO modes (D-12):
 //   generative `menu generate` → ai-service /menu-content/generate (Foto/Text)
@@ -54,6 +55,11 @@ type Opts = {
   recipe?: string;
   price?: string;
   css?: string;
+  // export
+  out?: string;
+  all?: boolean;
+  wait?: string;
+  frontendBase?: string;
 };
 
 type MenuItemRead = {
@@ -92,6 +98,10 @@ export function registerMenuCommands(cli: CAC): void {
     .option("--css <file>", "CSS-Datei fuer 'style' (design_config.custom_css, frei stylbar)")
     .option("--prompt <stil>", "Design-Stil (design)")
     .option("--apply", "Vorschlag wirklich anlegen (generate/design)")
+    .option("--out <dir>", "export: Zielordner (Default .menu-export)")
+    .option("--all", "export: alle Club-Menues (statt einer <menu_id>)")
+    .option("--wait <ms>", "export: Render-Wartezeit in ms (Default 9000)")
+    .option("--frontend-base <url>", "export: Frontend-Basis ueberschreiben (z. B. http://localhost:5173)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -398,9 +408,67 @@ export function registerMenuCommands(cli: CAC): void {
           break;
         }
 
+        case "export": {
+          // Rendert die oeffentliche Menue-Druckseite (/clubs/{club}/menu/{id}/print) headless
+          // zu einem themed A4-PDF (+ PNG-Preview). Seitenzahl == 1 -> passt auf eine A4.
+          if (!(await hasPlaywrightCli())) {
+            throw new Error(
+              "playwright-cli nicht auf dem PATH. Installiere @playwright/cli (npm i -g @playwright/cli) + einmalig `playwright-cli install`.",
+            );
+          }
+          const fb = frontendBase(state.environment, opts.frontendBase);
+          const outDir = opts.out ?? ".menu-export";
+          mkdirSync(outDir, { recursive: true });
+          const waitMs = opts.wait ? Math.max(0, parseInt(opts.wait, 10) || 0) : 9000;
+
+          const menus: Array<{ id?: string; name?: string }> =
+            id && !opts.all
+              ? [{ id }]
+              : await client.get<MenuRead[]>("supply", `/menu/club/${clubId}/menus`);
+          if (menus.length === 0) {
+            output({ ok: true, menus: 0 }, opts.json, () => "Keine Menues — nichts zu exportieren.");
+            return;
+          }
+
+          const results: Array<{
+            id?: string;
+            name?: string;
+            pdf?: string;
+            png?: string;
+            pages?: number;
+            error?: string;
+          }> = [];
+          for (const mu of menus) {
+            const label = String(mu.name ?? mu.id ?? "menu");
+            const slug =
+              label.toLowerCase().replace(/[^a-z0-9\u00e4\u00f6\u00fc\u00df]+/gi, "-").replace(/(^-|-$)/g, "") ||
+              "menu";
+            const url = `${fb}/clubs/${clubId}/menu/${mu.id}/print`;
+            const pdfPath = `${outDir}/${slug}.pdf`;
+            const pngPath = `${outDir}/${slug}.png`;
+            try {
+              const { pages } = await renderMenuToPdf(url, pdfPath, pngPath, { waitMs });
+              results.push({ id: mu.id, name: label, pdf: pdfPath, png: pngPath, pages });
+            } catch (e) {
+              results.push({ id: mu.id, name: label, error: (e as Error)?.message ?? "Fehler" });
+            }
+          }
+
+          output({ out: outDir, results }, opts.json, () =>
+            [`Export -> ${outDir}`].concat(
+              results.map((rr) =>
+                rr.error
+                  ? `  x ${rr.name}: ${rr.error}`
+                  : `  ${rr.pages === 1 ? "[1 A4]" : "[" + rr.pages + " Seiten]"}  ${rr.name} -> ${rr.pdf}`,
+              ),
+            ).join("\n"),
+          );
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, update-item, delete-item, delete, style, generate, apply, design`,
+            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, update-item, delete-item, delete, style, generate, apply, design, export`,
           );
       }
     });

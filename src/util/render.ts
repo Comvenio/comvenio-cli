@@ -16,8 +16,8 @@ export function frontendBase(env: string, override?: string): string {
 
 type PwResult = { code: number; stdout: string; stderr: string };
 
-async function pw(args: string[]): Promise<PwResult> {
-  const proc = Bun.spawn(["playwright-cli", PW_SESSION, ...args], { stdout: "pipe", stderr: "pipe" });
+async function pw(args: string[], session: string = PW_SESSION): Promise<PwResult> {
+  const proc = Bun.spawn(["playwright-cli", session, ...args], { stdout: "pipe", stderr: "pipe" });
   const code = await proc.exited;
   const stdout = await new Response(proc.stdout).text();
   const stderr = await new Response(proc.stderr).text();
@@ -45,9 +45,14 @@ export async function screenshotToPng(
   outPath: string,
   opts: { waitMs?: number; width?: number } = {},
 ): Promise<void> {
-  const open = await pw(["open", url]);
+  // Eigene, isolierte Session (nicht die geteilte Plan-Export-Session): frisch zuruecksetzen,
+  // damit kein gecachter React-Query-Fehlerzustand ("Fehler beim Laden") einen Lauf blockiert.
+  const S = "-s=cvn-menu-export";
+  await pw(["close"], S);
+  await pw(["delete-data"], S);
+  const open = await pw(["open", url], S);
   if (open.code !== 0) {
-    await pw(["close"]);
+    await pw(["close"], S);
     throw new Error(`Render fehlgeschlagen (open): ${open.stderr.trim().slice(0, 200)}`);
   }
   await pw(["resize", String(opts.width ?? 900), "900"]);
@@ -75,4 +80,66 @@ export async function pngFileToPdf(pngPath: string, pdfPath: string): Promise<vo
   const h = img.height * ratio;
   page.drawImage(img, { x: (pageW - w) / 2, y: (pageH - h) / 2, width: w, height: h });
   writeFileSync(pdfPath, await pdf.save());
+}
+
+/**
+ * Oeffnet die Menue-Druckseite (/clubs/{club}/menu/{id}/print) headless und erzeugt:
+ *  - ein Chromium-Print-to-PDF (echtes A4; @media print blendet die Konfigurator-Chrome
+ *    aus, es bleibt nur die themed Karte),
+ *  - ein Full-Page-PNG als Preview.
+ * Gibt die PDF-Seitenzahl zurueck (pages === 1 -> passt auf eine A4).
+ */
+
+export async function renderMenuToPdf(
+  url: string,
+  pdfPath: string,
+  pngPath: string,
+  opts: { waitMs?: number } = {},
+): Promise<{ pages: number }> {
+  const open = await pw(["open", url]);
+  if (open.code !== 0) {
+    await pw(["close"]);
+    throw new Error(`Render fehlgeschlagen (open): ${open.stderr.trim().slice(0, 200)}`);
+  }
+  // SPA-Boot + oeffentlicher Menue-Fetch: auf die A4-Karte (.menu-page) pollen, bei
+  // transientem Lade-/Boundary-Fehler EINMAL neu laden. playwright-cli echot den eval-
+  // Code mit -> NUR die "### Result"-Sektion auswerten (distinktive Tokens).
+  await sleep(opts.waitMs ?? 3000);
+  let ready = false;
+  let reloaded = false;
+  for (let i = 0; i < 40; i++) {
+    const probe = await pw([
+      "eval",
+      "() => document.querySelector('.menu-page') ? 'CARDOK' : ((document.body.innerText.includes('Fehler beim Laden') || document.body.innerText.includes('ging etwas schief')) ? 'CARDERR' : 'CARDWAIT')",
+    ], S);
+    const m = probe.stdout.match(/### Result\s*([\s\S]*?)(?:### Ran Playwright code|$)/);
+    const res = (m ? m[1] : "").trim();
+    if (process.env.MENU_DEBUG) console.error(`[probe ${i}] code=${probe.code} res=${JSON.stringify(res).slice(0,40)} stdoutLen=${probe.stdout.length}`);
+    if (res.includes("CARDOK")) {
+      ready = true;
+      break;
+    }
+    if (res.includes("CARDERR") && !reloaded) {
+      reloaded = true;
+      await pw(["reload"], S);
+      await sleep(2500);
+    }
+    await sleep(500);
+  }
+  if (!ready) {
+    await pw(["close"], S);
+    throw new Error("Menue-Karte nicht gerendert (Timeout/Ladefehler) — erneut versuchen.");
+  }
+  const pdf = await pw(["pdf", "--filename", pdfPath], S);
+  await pw(["screenshot", "--full-page", "--filename", pngPath], S);
+  await pw(["close"], S);
+  if (pdf.code !== 0) throw new Error(`PDF fehlgeschlagen: ${pdf.stderr.trim().slice(0, 200)}`);
+  let pages = 0;
+  try {
+    const doc = await PDFDocument.load(readFileSync(pdfPath));
+    pages = doc.getPageCount();
+  } catch {
+    /* pages bleibt 0 */
+  }
+  return { pages };
 }
