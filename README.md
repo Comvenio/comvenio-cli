@@ -1,10 +1,16 @@
 # comvenio-cli
 
 Das offizielle Comvenio Club-CLI. Ein Club-Admin (oder dessen KI-Agent)
-authentifiziert sich per opakem Device-Token (`cvn_...`) und spricht damit das
-Comvenio-Gateway an. Phase 1 (dieser Stand) = Fundament + Auth; die
-Domänen-Commands (Mitglieder, Veranstaltungen, Buchungen, Aufgaben, Speisekarte,
-Homepage) folgen in den Strängen comvenio-cli-04..09.
+authentifiziert sich per opakem Device-Token (`cvn_...`) und verwaltet damit
+seinen Verein direkt über die Comvenio-Service-APIs.
+
+Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
+`task`, `template`, `recipe`, `menu`, `homepage`, `plan` (Geländeplan),
+`tournament`, `sponsor`, `news` (Vereinsnews), `data` (Dateien/Galerie),
+`meeting`, `verify`, `schema`. Jeder Command kennt `--json` und `--help`.
+
+> Der Agent, der dieses CLI bedient, liest **`AGENTS.md`** — dort steht die
+> Domänensprache (Enums, Felder, Workflows) inkl. dem News- und Galerie-Workflow.
 
 Stack: **Bun + cac + TypeScript**. Bau-Vorbild: `comvenio-tools/rts-cli`.
 
@@ -118,6 +124,32 @@ comvenio tournament match-delete <match-id>       # Match löschen (Soft-Delete;
 > `mannschaft` = Alias für `participant` mit Default `--kind team`; `individual` = Einzel, `pair` = Doppel.
 > `preview` rendert lokal (kein Frontend-Deploy nötig). Nur verifizierte Endpoint-Pfade — Serien-Create ist (noch) nicht enthalten.
 > **Re-Draw-Achtung:** `draw-confirm` erzeugt Matches ADDITIV — bestehende Gruppen-Matches vorher per `match-delete` entfernen, sonst Duplikate. `placement_mode` braucht tournament-service ≥ PR #10; K.O.-Platzhalter im `matches`-Read brauchen ≥ PR #9.
+
+## Vereinsnews (`news`) + Dateien/Galerie (`data`)
+
+Vereinsnews als Rich-HTML verfassen, lokal ansehen und veröffentlichen — mit
+Bildern aus der Event-Galerie. Der bedienende Agent komponiert das Rich-HTML
+selbst (kein ai-service). Jeder Befehl kennt `--json`.
+
+```bash
+# Galerie eines Events + presigned Bild-URL (Header/Titelbild)
+comvenio data list --context event --context-id <event-id> --json   # context_label: gallery|gelaendeplan|…
+comvenio data url  <file_id> --json                                 # presigned URL (kein Download)
+comvenio data download <file_id> --out bild.jpg --json              # Datei lokal speichern
+
+# News schreiben: news.json komponieren, dann ansehen → veröffentlichen
+comvenio news preview --file news.json --open       # lokale HTML-Vorschau (kein Write)
+comvenio news apply   --file news.json --draft      # Entwurf (nur Admins sichtbar)
+comvenio news publish <news-id>                     # Entwurf → öffentlich
+comvenio news apply   --file news.json --publish    # in einem Schritt live
+comvenio news list --json                           # Status je News: Entwurf/Live
+```
+
+> **Entwurf vs. veröffentlicht:** News sind per Default **Entwürfe** (`is_draft=true`,
+> nur Admins). `--publish` bzw. `news publish <id>` schaltet sie öffentlich. `news.json`:
+> `title`, `teaser`, `visibility_scope`, `content` (rich HTML), optional `cover_image_file_id`
+> (Titelbild) und `cover_url` (presigned, nur für die Vorschau). Vollständiger Workflow inkl.
+> mehrtägiger Feste: `AGENTS.md` → „Vereinsnews mit Galerie-Bild als Header".
 
 ## Konzept
 

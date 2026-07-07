@@ -55,7 +55,7 @@ export function registerDataCommands(cli: CAC): void {
   cli
     .command(
       "data <action> [arg]",
-      "Vereins-Dateien: list | show | download | upload | papers | export (K13)",
+      "Vereins-Dateien: list | show | url | download | upload | papers | export (K13)",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--context <type>", "context_type (list/upload/papers): event|paper|certificate|...")
@@ -106,6 +106,21 @@ export function registerDataCommands(cli: CAC): void {
           break;
         }
 
+        case "url": {
+          // Nur die presigned S3-URL holen (KEIN Download) — fuer das Einbetten von
+          // Galerie-Bildern in Rich-News/Homepage-Content. Presigned URLs laufen ab;
+          // fuer News re-signt das Backend anhand von data-comvenio-file-id.
+          if (!arg) throw new Error("data url <file-id> benoetigt eine Datei-ID.");
+          const res = await client.post<DownloadURLOut>("content", `/files/download-url`, {
+            file_id: arg,
+          });
+          if (!res.url) throw new Error("Keine Download-URL vom content-service erhalten.");
+          output({ file_id: arg, url: res.url, expires_in: res.expires_in }, opts.json, () =>
+            `${res.url}${res.expires_in ? `  (gueltig ~${res.expires_in}s)` : ""}`,
+          );
+          break;
+        }
+
         case "download": {
           if (!arg) throw new Error("data download <file-id> benoetigt eine Datei-ID.");
           // 2-step: download-url -> presigned S3 URL -> fetch directly (not via gateway).
@@ -119,7 +134,7 @@ export function registerDataCommands(cli: CAC): void {
           });
           const out = opts.out ?? `./${arg}`;
           await Bun.write(out, bytes);
-          output({ file_id: arg, out, size_bytes: bytes.byteLength }, opts.json, () =>
+          output({ file_id: arg, out, size_bytes: bytes.byteLength, url: res.url }, opts.json, () =>
             `Heruntergeladen: ${out} (${bytes.byteLength} Bytes)`,
           );
           break;
@@ -224,7 +239,7 @@ export function registerDataCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, download, upload, papers, export`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, url, download, upload, papers, export`,
           );
       }
     });

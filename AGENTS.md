@@ -5,6 +5,23 @@
 > Felder/Enums/Widget-Typen **kennst statt rätst**. Zur Laufzeit liefert
 > `comvenio schema <domain> --json` die maschinenlesbaren Details.
 
+## Wer bedient dich — und wie du sprichst (WICHTIG)
+
+Der Nutzer dieses CLI ist ein **Vereins-Verantwortlicher (Kunde)**, kein Entwickler.
+Du verwaltest **seinen** Verein. Sprich in seiner Sprache — über Verein, Mitglieder,
+Veranstaltungen, News — **nie** über Interna:
+
+- **Keine Umgebungs-/Infrastruktur-Begriffe** dem Nutzer gegenüber: „prod/dev/local",
+  „Gateway", „Umgebung", „PROD", „Staging" gehören NICHT in deine Antworten. Welches
+  Gateway aktiv ist, ist ein internes Detail — der Kunde interessiert sich für seinen
+  Verein, nicht für Server.
+- **Keine internen Bezeichner** unnötig zeigen: Service-Namen (content-service …),
+  rohe UUIDs, `context_type`, Enum-Rohwerte. Wenn ein Name verfügbar ist, nenne den Namen.
+- `--env`/`--gateway` sind reine Betriebs-Flags. Nutze sie still; erkläre sie dem
+  Kunden nicht als „Produktivumgebung".
+
+Kurz: Du bist der Vereins-Assistent am Terminal, nicht der DevOps-Kollege.
+
 ## Was ist Comvenio
 
 Comvenio ist eine Vereins-Plattform (Mitglieder, Veranstaltungen, Buchungen,
@@ -18,7 +35,7 @@ das CLI sendet nur dein opakes Device-Token.
 
 ```bash
 comvenio login --token cvn_xxxxxxxx   # Device-Token aus der Web-App (Einstellungen → CLI-Zugriff)
-comvenio whoami                       # zeigt Name + Club + Umgebung
+comvenio whoami                       # zeigt Name + Verein
 comvenio club info                    # Vereinsdaten
 ```
 
@@ -45,6 +62,11 @@ comvenio club info                    # Vereinsdaten
 | recipe   | `comvenio recipe from-template\|create\|list\|show\|update\|delete` (Gerichte/Getränke) |
 | menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
 | homepage | `comvenio homepage generate\|preview\|apply\|show\|design`     |
+| news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file --open` (lokale Vorschau, kein Write) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews". |
+| data     | `comvenio data list\|show\|url\|download\|upload\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten) |
+| tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) |
+| meeting  | `comvenio meeting list\|show\|...` (Sitzungen/Protokolle) |
+| verify   | `comvenio verify <action>` (visuelles Review: headless Render → Screenshots, damit du das Ergebnis siehst) |
 | schema   | `comvenio schema <domain> --json`                             |
 
 > **Speisekarten ausführlich:** `docs/speisekarten.md` — Datenmodell (Recipe↔Ingredient↔Allergen
@@ -65,6 +87,18 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   `visibility_scope` (public\|member\|private\|department\|invite_only),
   `organizer_type` (member\|external), `status` (draft\|planned\|confirmed\|archived\|cancelled).
   Es gibt **kein** `published` — `event publish` = `PATCH status=confirmed`.
+  **Mehrtägige Feste** sind ein **Parent-Event** (`event_complexity=multi_day`) mit einem
+  **Child-Event pro Tag** (`parent_event_id` zeigt aufs Parent, `child_events[]` listet die Tage).
+  Jeder Tag hat eine **eigene Galerie** (`data list --context event --context-id <tag-event>`).
+  Finden: `comvenio event list --month YYYY-MM --json` → Feld `child_events` / `parent_event_id`.
+- **news:** `visibility_scope` (public\|member\|department, Default member).
+  **Entwurf/Veröffentlichung (WICHTIG):** `is_draft` (Default **true** → News ist nur für Admins
+  sichtbar, NICHT öffentlich). Veröffentlichen = `is_draft=false` + `published_at`. Im CLI:
+  `--publish` (sofort live) · `--draft` (bewusst als Entwurf) · `news publish <id>` (einen
+  bestehenden Entwurf live schalten). **Ohne `--publish` bleibt eine neue News ein Entwurf** —
+  vergisst du das, wundert sich der Verein, warum die News nicht erscheint. `design_source` wird
+  bei `apply` auf `cli` erzwungen (design-locked Rich-HTML). `news preview --file --open` zeigt
+  die News vorab lokal (kein Write).
 - **member:** Pflicht bei `add`: `first_name`, `last_name` (club_id aus State).
   `team member --role`: PLAYER\|CAPTAIN\|COACH\|ASSISTANT_COACH\|MANAGER.
 - **booking:** `reservation_status` (requested\|approved\|rejected\|cancelled).
@@ -228,6 +262,35 @@ comvenio plan compose <event-id> --plan <plan-id> --image illustration.png --out
 # Fahne sitzt daneben? -> Label-Anker im Web-Editor verschieben (D-35), compose erneut (Sekunden).
 ```
 
+**6. Vereinsnews mit Galerie-Bild als Header (Rich-News, deklarativ)**
+```bash
+# 1. Das (ggf. mehrtägige) Event finden — bei Festen: Parent + Child-Event pro Tag
+comvenio event list --month 2026-07 --json          # parent_event_id / child_events[]
+
+# 2. Galerie-Bild wählen + presigned URL holen. context_label trennt echte Fotos von
+#    Geländeplan-Markern/Logos: "gallery" = Galerie-Foto, "gelaendeplan" = Marker/Logo.
+comvenio data list --context event --context-id <event-id> --json
+comvenio data url  <file_id> --json                 # presigned URL fürs <img> / die Vorschau
+
+# 3. news.json SELBST komponieren (du bist das LLM — kein ai-service):
+#    { "title", "teaser", "visibility_scope": "public",
+#      "cover_image_file_id": "<file_id>",           # echtes Titelbild (Frontend löst die ID auf)
+#      "cover_url": "<presigned>",                   # NUR für die lokale Vorschau (wird beim apply verworfen)
+#      "content": "<h2>Freitag …</h2><p>…</p>" }     # rich HTML; Bilder als
+#      # <img src="<presigned>" data-comvenio-file-id="<file_id>">
+
+# 4. Ansehen → veröffentlichen
+comvenio news preview --file news.json --open       # lokale HTML-Vorschau (kein Write)
+comvenio news apply   --file news.json --draft      # als Entwurf anlegen (nur Admins sehen es)
+comvenio news publish <news-id>                     # live schalten
+#   oder in einem Schritt: comvenio news apply --file news.json --publish
+```
+> **Warum Draft→Publish:** eine News ist ohne `--publish` ein **Entwurf** (`is_draft=true`,
+> nicht öffentlich). `preview` ist die schnelle lokale Sicht, `apply --draft` + `news publish`
+> der saubere „erst ansehen, dann live"-Weg (analog `homepage preview` → `apply`).
+> Inline-Bilder brauchen `data-comvenio-file-id`, damit das Backend abgelaufene presigned
+> URLs automatisch neu signiert. „Jeden Tag beschreiben" = ein `<h2>`-Abschnitt je Child-Event.
+
 ## RBAC (serverseitig geprüft)
 
 Dein Token trägt nur deine User-Rechte. Das CLI prüft **nichts** clientseitig —
@@ -244,6 +307,8 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 | `task assign/done`            | `manage_tasks`                       |
 | `menu generate/apply/design`  | `create_menus`/`manage_menus`/`manage_club_settings` |
 | `homepage generate/preview/apply` | `manage_club_settings`           |
+| `news create/update/delete/apply/publish` | `manage_news` (schließt „Entwürfe sehen" ein) |
+| `data upload` (Event) / `download` | kontextabhängig `write_files`/`manage_events`; Lesen: `read_files` bzw. public |
 
 `member list/show`, `event list/show`, `booking list/show`, `object list`,
 `task list/show`, `task context list` brauchen nur Clubmitgliedschaft bzw. einen
