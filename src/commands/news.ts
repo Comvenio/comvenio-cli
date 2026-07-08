@@ -30,7 +30,7 @@ import { join, resolve } from "node:path";
 //      <img src="<presigned>" data-comvenio-file-id="<file_id>"> (Backend re-signt via file-id),
 //      danach <h2>/<p> je Tag/Abschnitt. Optional cover_image_file_id fuer das Titelbild.
 //      Zusaetzlich cover_url (presigned) NUR fuer die lokale Vorschau (wird vor dem POST entfernt).
-//   4. comvenio news preview --file news.json --open   -> lokale HTML-Vorschau (kein Write)
+//   4. comvenio news preview --file news.json --open   -> Backend-Vorschau-URL (K8); --local = Offline-Fallback
 //   5. comvenio news apply --file news.json --publish  -> veroeffentlicht (design_source=cli)
 
 type NewsRead = {

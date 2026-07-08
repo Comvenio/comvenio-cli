@@ -138,11 +138,12 @@ comvenio data url  <file_id> --json                                 # presigned 
 comvenio data download <file_id> --out bild.jpg --json              # Datei lokal speichern
 
 # News schreiben: news.json komponieren, dann ansehen → veröffentlichen
-comvenio news preview --file news.json --open       # lokale HTML-Vorschau (kein Write)
+comvenio news preview --file news.json --open       # Backend-Vorschau-URL (echtes Layout, 30 Min); --local = Offline-Fallback
 comvenio news apply   --file news.json --draft      # Entwurf (nur Admins sichtbar)
 comvenio news publish <news-id>                     # Entwurf → öffentlich
 comvenio news apply   --file news.json --publish    # in einem Schritt live
 comvenio news list --json                           # Status je News: Entwurf/Live
+comvenio news video slideshow --params params.json --upload  # Video generieren (Remotion, lokal) + einbetten
 ```
 
 > **Entwurf vs. veröffentlicht:** News sind per Default **Entwürfe** (`is_draft=true`,
