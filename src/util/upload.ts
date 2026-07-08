@@ -42,7 +42,9 @@ export async function uploadClubFile({
   if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${path}`);
   const expectedSize = file.size;
   if (expectedSize <= 0) throw new Error(`Datei ist leer: ${path}`);
-  if (expectedSize > 34 * 1024 * 1024) throw new Error("Datei > 34 MB (Upload-Limit).");
+  // K6 (D-10): must match content-service MAX_FILE_UPLOAD_BYTES code default (200 MB)
+  const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
+  if (expectedSize > MAX_UPLOAD_BYTES) throw new Error("Datei > 200 MB (Upload-Limit).");
 
   const contentType = file.type || "application/octet-stream";
   const visibility = isPublic ? "public" : "private";

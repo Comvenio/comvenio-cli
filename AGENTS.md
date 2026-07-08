@@ -342,6 +342,34 @@ Tabellen, Videos sind erwünscht. Qualitätsmassstab: professioneller Zeitungs-/
 - Zusätzlich erlaubt: Inline-Styles auf Whitelist-Properties (Layout/Farbe/Typo) — der Katalog
   ist aber der dokumentierte Standardweg.
 
+### Videos einbetten (K6)
+
+Zwei Wege, beide im `rn-video`-Container:
+
+```bash
+# Eigenes Video hochladen (Presign-Flow, Limit 200 MB) und einbetten:
+comvenio data upload ./festumzug.mp4 --context event --context-id <event-id> --json
+comvenio data url <file_id> --json                  # presigned URL fürs <source src>
+```
+
+```html
+<!-- Comvenio-Video (S3-URLs werden beim Lesen automatisch re-signed): -->
+<figure class="rn-video">
+  <video controls preload="metadata" poster="…optional presigned…">
+    <source src="…presigned-s3-url…" type="video/mp4" />
+    Dein Browser kann dieses Video nicht abspielen.
+  </video>
+</figure>
+<figcaption class="rn-caption" data-edit>Der Festumzug. <span class="rn-credit">Video: SV Motzing</span></figcaption>
+
+<!-- YouTube (NUR youtube-nocookie — andere iframe-Hosts werden vom Renderer entfernt): -->
+<div class="rn-video"><iframe src="https://www.youtube-nocookie.com/embed/<video-id>"
+  allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+```
+
+Regeln: `autoplay` ist verboten (wird entfernt); `video`/`source`-src nur `https:`;
+Videos für News generieren → `comvenio news video` (Remotion, siehe Workflows).
+
 ## RBAC (serverseitig geprüft)
 
 Dein Token trägt nur deine User-Rechte. Das CLI prüft **nichts** clientseitig —
