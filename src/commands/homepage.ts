@@ -119,10 +119,13 @@ export function registerHomepageCommands(cli: CAC): void {
             body.selected_widgets = opts.widgets.split(",").map((s) => s.trim()).filter(Boolean);
           }
           // synchronous; at auto_apply the ai-service persists via club-service bulk itself.
+          // LLM generation legitimately runs 30-120s — long per-request timeout
+          // (default 15s aborts it, E2E-Befund K9 2026-07-08).
           const res = await client.post<HomepageGenerateResponse>(
             "ai",
             "/club-homepage/generate?streaming=false",
             body,
+            { timeoutMs: 180_000 },
           );
           output(
             {
@@ -247,6 +250,7 @@ export function registerHomepageCommands(cli: CAC): void {
             "ai",
             "/club-design/generate?streaming=false",
             { club_id: clubId, prompt: opts.prompt },
+            { timeoutMs: 180_000 },
           );
           output(res, opts.json, () =>
             `Design-Empfehlung erhalten (reine Empfehlung, nicht persistiert).`,
