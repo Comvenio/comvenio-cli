@@ -3,6 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
+import { readFileSync } from "node:fs";
 
 type ClubResponse = {
   id?: string;
@@ -32,6 +33,8 @@ type Opts = {
   spacing?: string;
   publicTemplate?: string;
   file?: string;
+  cssFile?: string;
+  tokensFile?: string;
   dryRun?: boolean;
 };
 
@@ -74,6 +77,8 @@ export function registerClubCommands(cli: CAC): void {
     .option("--spacing <mode>", `design: Spacing (${VALID_SPACING.join("|")})`)
     .option("--public-template <id>", `design: oeffentliches Website-Template (${VALID_PUBLIC_TEMPLATES.join("|")})`)
     .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags)")
+    .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
+    .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
     .option("--dry-run", "design: nur anzeigen was geschrieben wuerde (kein Write)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, opts: Opts) => {
@@ -140,10 +145,19 @@ export function registerClubCommands(cli: CAC): void {
             if (opts.spacing) ctc.spacing = opts.spacing;
             if (Object.keys(ctc).length) design.custom_template_config = ctc;
           }
+          // Agent-Design-Engine (Lastenheft 08 G2/G3): dedicated file inputs,
+          // composable with --file/flags. Empty file = clear the field.
+          if (opts.cssFile) {
+            const raw = readFileSync(opts.cssFile, "utf-8");
+            design.custom_css = raw.trim() ? raw : null;
+          }
+          if (opts.tokensFile) {
+            design.tokens = readJsonFile<Record<string, unknown>>(opts.tokensFile);
+          }
 
           if (Object.keys(design).length === 0) {
             throw new Error(
-              "club design braucht mind. ein Feld (--template/--primary/--accent/--secondary/--font/--spacing) oder --file.",
+              "club design braucht mind. ein Feld (--template/--primary/--accent/--secondary/--font/--spacing), --file, --css-file oder --tokens-file.",
             );
           }
 
@@ -188,6 +202,8 @@ export function registerClubCommands(cli: CAC): void {
               design.secondary_color ? `Secondary=${design.secondary_color}` : "",
               ctc?.font_pair ? `Font=${ctc.font_pair}` : "",
               ctc?.spacing ? `Spacing=${ctc.spacing}` : "",
+              typeof design.custom_css === "string" ? `CustomCSS=${design.custom_css.length}B` : design.custom_css === null ? "CustomCSS=geloescht" : "",
+              design.tokens ? "Tokens=gesetzt" : "",
             ].filter(Boolean);
             return `Design gesetzt (${parts.join(", ")}).`;
           });
