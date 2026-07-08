@@ -68,7 +68,10 @@ export async function uploadClubFile({
   const put = await fetch(presign.upload_url, {
     method: "PUT",
     headers: presign.headers ?? { "Content-Type": contentType },
-    body: file,
+    // Bun standalone-exe bug (1.3.13, Windows): streaming a Bun.file body through fetch
+    // segfaults in compiled executables (works under `bun run`). Reading into memory is
+    // fine here — uploads are capped at 200 MB (MAX_UPLOAD_BYTES).
+    body: await file.arrayBuffer(),
   });
   if (!put.ok) throw new Error(`S3-Upload (PUT) fehlgeschlagen: HTTP ${put.status}`);
 
