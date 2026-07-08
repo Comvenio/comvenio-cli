@@ -88,7 +88,7 @@ async function openInBrowser(url: string): Promise<boolean> {
  */
 export function registerHomepageCommands(cli: CAC): void {
   cli
-    .command("homepage <action>", "KI-Homepage: generate (KI) | preview (Vorschau) | apply (deklarativ) | show | design")
+    .command("homepage <action>", "Homepage (deklarativ, kein Backend-LLM): preview (Vorschau) | apply | show — der Agent komponiert via schema homepage")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--prompt <text>", "Beschreibung (min. 5 Zeichen, generate/design)")
     .option("--template <name>", "elegance|sport|community|minimal|festlich|modern|classic")
@@ -105,46 +105,22 @@ export function registerHomepageCommands(cli: CAC): void {
       const clubId = requireClubId(state, opts.club);
 
       switch (action) {
-        case "generate": {
-          if (!opts.prompt || opts.prompt.length < 5) {
-            throw new Error("homepage generate benoetigt --prompt (min. 5 Zeichen).");
-          }
-          const body: Record<string, unknown> = {
-            club_id: clubId,
-            prompt: opts.prompt,
-            auto_apply: !!opts.apply,
-          };
-          if (opts.template) body.template_id = opts.template;
-          if (opts.widgets) {
-            body.selected_widgets = opts.widgets.split(",").map((s) => s.trim()).filter(Boolean);
-          }
-          // synchronous; at auto_apply the ai-service persists via club-service bulk itself.
-          // LLM generation legitimately runs 30-120s — long per-request timeout
-          // (default 15s aborts it, E2E-Befund K9 2026-07-08).
-          const res = await client.post<HomepageGenerateResponse>(
-            "ai",
-            "/club-homepage/generate?streaming=false",
-            body,
-            { timeoutMs: 180_000 },
+        case "generate":
+        case "design": {
+          // Doctrine (Tom 2026-07-08): this CLI NEVER calls the backend LLM.
+          // The operating agent (Claude/Codex) IS the intelligence and composes
+          // declaratively — that is the whole point of the CLI.
+          throw new Error(
+            [
+              `"homepage ${action}" wurde entfernt: Das CLI ruft NIEMALS das Backend-LLM — der bedienende Agent komponiert selbst.`,
+              "Deklarativer Weg:",
+              "  1) comvenio schema homepage          — gueltige Widget-Kinds/Layouts/Enums",
+              "  2) home.json komponieren             — Tabs/Sections/Widgets als JSON",
+              "  3) comvenio homepage preview --file home.json [--open]",
+              "  4) comvenio homepage apply --file home.json [--clear]",
+              "Design-Settings direkt setzen: comvenio club design",
+            ].join("\n"),
           );
-          output(
-            {
-              applied: !!opts.apply,
-              tabs: res.config?.tabs?.length ?? 0,
-              explanation: res.explanation,
-              config: res.config,
-              suggestions: res.suggestions,
-            },
-            opts.json,
-            () =>
-              [
-                `${opts.apply ? "Homepage angewendet" : "Vorschlag (nicht angewendet)"}: ${res.config?.tabs?.length ?? 0} Tabs.`,
-                res.explanation ?? "",
-              ]
-                .filter(Boolean)
-                .join("\n"),
-          );
-          break;
         }
 
         case "preview": {
@@ -241,25 +217,8 @@ export function registerHomepageCommands(cli: CAC): void {
           break;
         }
 
-        case "design": {
-          if (!opts.prompt || opts.prompt.length < 5) {
-            throw new Error("homepage design benoetigt --prompt (min. 5 Zeichen).");
-          }
-          // Recommendation only — no auto-apply (Sub-File 09 offener Punkt P-1).
-          const res = await client.post<Record<string, unknown>>(
-            "ai",
-            "/club-design/generate?streaming=false",
-            { club_id: clubId, prompt: opts.prompt },
-            { timeoutMs: 180_000 },
-          );
-          output(res, opts.json, () =>
-            `Design-Empfehlung erhalten (reine Empfehlung, nicht persistiert).`,
-          );
-          break;
-        }
-
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: generate, preview, apply, show, design`);
+          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, apply, show (generate/design entfernt — Agent komponiert deklarativ)`);
       }
     });
 }
