@@ -96,9 +96,12 @@ export async function renderMenuToPdf(
   pngPath: string,
   opts: { waitMs?: number } = {},
 ): Promise<{ pages: number }> {
-  const open = await pw(["open", url]);
+  // Own isolated playwright session for the whole print render — open, probes, pdf and
+  // close must share ONE session (the probes referenced an undefined `S` before).
+  const S = "-s=cvn-menu-print";
+  const open = await pw(["open", url], S);
   if (open.code !== 0) {
-    await pw(["close"]);
+    await pw(["close"], S);
     throw new Error(`Render fehlgeschlagen (open): ${open.stderr.trim().slice(0, 200)}`);
   }
   // SPA-Boot + oeffentlicher Menue-Fetch: auf die A4-Karte (.menu-page) pollen, bei
@@ -113,7 +116,7 @@ export async function renderMenuToPdf(
       "() => document.querySelector('.menu-page') ? 'CARDOK' : ((document.body.innerText.includes('Fehler beim Laden') || document.body.innerText.includes('ging etwas schief')) ? 'CARDERR' : 'CARDWAIT')",
     ], S);
     const m = probe.stdout.match(/### Result\s*([\s\S]*?)(?:### Ran Playwright code|$)/);
-    const res = (m ? m[1] : "").trim();
+    const res = (m?.[1] ?? "").trim();
     if (process.env.MENU_DEBUG) console.error(`[probe ${i}] code=${probe.code} res=${JSON.stringify(res).slice(0,40)} stdoutLen=${probe.stdout.length}`);
     if (res.includes("CARDOK")) {
       ready = true;
