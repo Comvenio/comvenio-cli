@@ -4,7 +4,10 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
-import { resolve } from "node:path";
+import { uploadClubFile } from "../util/upload.ts";
+import { VIDEO_TEMPLATES, isVideoTemplate, validateVideoParams } from "../util/videoParams.ts";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 // K2 — `comvenio news`: Vereinsnews verfassen, ansehen + veroeffentlichen, direkt gegen den
 // content-service. PRIMAER: `news apply --file news.json` — der bedienende Agent
@@ -65,8 +68,38 @@ type NewsOpts = {
   publish?: boolean;
   pinned?: boolean;
   open?: boolean;
+  local?: boolean;
   out?: string;
+  // news video (K7)
+  params?: string;
+  duration?: string;
+  upload?: boolean;
+  context?: string;
+  contextId?: string;
+  public?: boolean;
 };
+
+// K7: 200 MB — must match content-service MAX_FILE_UPLOAD_BYTES code default (D-10)
+const MAX_VIDEO_UPLOAD_BYTES = 200 * 1024 * 1024;
+
+// remotion/ sub-project location: env override (compiled binary) or repo-relative (bun run)
+function resolveRemotionDir(): string {
+  const fromEnv = process.env.COMVENIO_CLI_REMOTION_DIR;
+  if (fromEnv) return fromEnv;
+  return resolve(import.meta.dir, "../../remotion");
+}
+
+function buildVideoEmbedSnippet(url: string): string {
+  return [
+    '<figure class="rn-video">',
+    '  <video controls preload="metadata">',
+    `    <source src="${url}" type="video/mp4" />`,
+    "    Dein Browser kann dieses Video nicht abspielen.",
+    "  </video>",
+    "</figure>",
+    '<figcaption class="rn-caption" data-edit>Bildunterschrift <span class="rn-credit">Video: …</span></figcaption>',
+  ].join("\n");
+}
 
 // content-service NewsEntry-Felder, die ein Vollersatz-PUT (news update/publish) mitsenden muss.
 // Wir bauen den Body aus einem NewsRead, damit ein PUT keine Felder auf ihre Defaults zuruecksetzt
@@ -195,8 +228,14 @@ function buildNewsPreviewHtml(payload: Record<string, unknown>): string {
 
 export function registerNewsCommands(cli: CAC): void {
   cli
-    .command("news <action> [id]", "Vereinsnews: list|show|create|update|delete|apply|preview|publish (rich HTML)")
+    .command("news <action> [id]", "Vereinsnews: list|show|create|update|delete|apply|preview|publish|video (rich HTML)")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
+    .option("--params <file>", "video: params.json (Zod-validiert pro Template)")
+    .option("--duration <sec>", "video: Dauer in Sekunden uebersteuern")
+    .option("--upload", "video: gerendertes MP4 via Presign zum content-service hochladen")
+    .option("--context <type>", "video --upload: context_type der Datei (Default news)")
+    .option("--context-id <id>", "video --upload: context_id (z.B. Event-ID)")
+    .option("--public", "video --upload: Sichtbarkeit public (Default private)")
     .option("--title <v>", "Titel (create/update)")
     .option("--content <v>", "HTML-Content (create/update)")
     .option("--teaser <v>", "Teaser-Text (create/update)")
@@ -207,7 +246,8 @@ export function registerNewsCommands(cli: CAC): void {
     .option("--draft", "create/apply: als Entwurf anlegen (is_draft=true, nur Admins sehen es)")
     .option("--publish", "create/apply: sofort veroeffentlichen (is_draft=false + published_at=jetzt)")
     .option("--pinned", "create/update: News anpinnen (is_pinned=true)")
-    .option("--open", "preview: die lokale HTML-Vorschau im Browser oeffnen")
+    .option("--open", "preview: die Vorschau im Browser oeffnen")
+    .option("--local", "preview: lokaler Offline-Fallback (Naeherung) statt Backend-Vorschau")
     .option("--out <path>", "preview: Zielpfad der HTML-Datei (Default ./news-preview.html)")
     .option("--json", "Maschinenlesbares JSON")
     .action(async (action: string, id: string | undefined, opts: NewsOpts) => {
@@ -318,27 +358,58 @@ export function registerNewsCommands(cli: CAC): void {
         }
 
         case "preview": {
-          // Lokale, backend-freie HTML-Vorschau des komponierten Rich-HTML (kein Write).
           if (!opts.file) throw new Error("news preview benoetigt --file <news.json>.");
           const payload = readJsonFile<Record<string, unknown>>(opts.file);
           if (!payload.title) throw new Error("news.json benoetigt 'title'.");
           if (!payload.content) throw new Error("news.json benoetigt 'content'.");
-          // is_draft/published-Intent aus Flags in die Vorschau-Badge spiegeln.
-          const df = draftFields();
-          if (df.is_draft !== undefined) payload.is_draft = df.is_draft;
-          const html = buildNewsPreviewHtml(payload);
-          const outPath = opts.out ?? "./news-preview.html";
-          await Bun.write(outPath, html);
-          const abs = resolve(outPath);
+
+          if (opts.local) {
+            // K8: lokaler Naeherungs-Preview (Offline-Fallback) — massgeblich ist die
+            // Backend-Vorschau (echtes Layout inkl. .rich-news-CSS; lokal droht CSS-Drift).
+            const df = draftFields();
+            if (df.is_draft !== undefined) payload.is_draft = df.is_draft;
+            const html = buildNewsPreviewHtml(payload);
+            const outPath = opts.out ?? "./news-preview.html";
+            await Bun.write(outPath, html);
+            const abs = resolve(outPath);
+            let opened = false;
+            if (opts.open) opened = await openInBrowser(abs);
+            output({ out: outPath, opened: opts.open ? opened : undefined, local: true }, opts.json, () => {
+              const openHint = opts.open
+                ? opened
+                  ? "\nIm Browser geoeffnet."
+                  : `\nBrowser nicht automatisch geoeffnet — Datei manuell oeffnen: ${abs}`
+                : "";
+              return `Lokale Naeherungs-Vorschau geschrieben: ${outPath} (massgeblich ist die Backend-Vorschau ohne --local)${openHint}`;
+            });
+            break;
+          }
+
+          // K8 Default: Backend-TTL-Preview — content-service legt den Entwurf 30 Min ab,
+          // die web-page rendert ihn im ECHTEN Layout (Scaffold + .rich-news + Re-Signing).
+          const previewBody = {
+            title: payload.title,
+            content: payload.content,
+            teaser: payload.teaser,
+            cover_url: payload.cover_url,
+            author_name: payload.author_name,
+            club_name: payload.club_name,
+            design_source: "cli",
+          };
+          const created = await client.post<{
+            preview_id?: string;
+            preview_url?: string;
+            expires_at?: string;
+          }>("content", `/news/club/${clubId}/preview`, previewBody);
           let opened = false;
-          if (opts.open) opened = await openInBrowser(abs);
-          output({ out: outPath, opened: opts.open ? opened : undefined }, opts.json, () => {
+          if (opts.open && created.preview_url) opened = await openInBrowser(created.preview_url);
+          output(created, opts.json, () => {
             const openHint = opts.open
               ? opened
                 ? "\nIm Browser geoeffnet."
-                : `\nBrowser nicht automatisch geoeffnet — Datei manuell oeffnen: ${abs}`
+                : "\nBrowser nicht automatisch geoeffnet — URL manuell oeffnen."
               : "";
-            return `Lokale Vorschau geschrieben: ${outPath}${openHint}`;
+            return `Backend-Vorschau erstellt (gueltig bis ${created.expires_at ?? "?"}):\n${created.preview_url ?? "?"}${openHint}\n(Offline-Fallback: news preview --file ... --local)`;
           });
           break;
         }
@@ -366,9 +437,98 @@ export function registerNewsCommands(cli: CAC): void {
           break;
         }
 
+        case "video": {
+          // K7: lokales Remotion-Rendering (NIEMALS im Backend, D-14) + optionaler Presign-Upload.
+          const template = id ?? "";
+          if (!isVideoTemplate(template)) {
+            throw new Error(
+              `Unbekanntes Template "${template || "(fehlt)"}". Verfuegbar: ${VIDEO_TEMPLATES.join(", ")}`,
+            );
+          }
+          if (!opts.params) throw new Error("news video benoetigt --params <params.json>.");
+
+          // 1. Zod-Validierung VOR dem (teuren) Render — Feldfehler sofort.
+          const rawParams = readJsonFile<Record<string, unknown>>(opts.params);
+          const validated = await validateVideoParams(template, rawParams);
+
+          // 2. Dependency-Check: remotion/-Unterprojekt + node_modules (kein stiller Auto-Install).
+          const remotionDir = resolveRemotionDir();
+          if (!existsSync(join(remotionDir, "render.mjs"))) {
+            throw new Error(
+              `remotion/-Unterprojekt nicht gefunden (${remotionDir}). Im comvenio-cli-Repo ausfuehren oder COMVENIO_CLI_REMOTION_DIR setzen.`,
+            );
+          }
+          if (!existsSync(join(remotionDir, "node_modules"))) {
+            throw new Error(
+              `Remotion-Dependencies fehlen. Einmalig installieren: cd ${remotionDir} && npm install`,
+            );
+          }
+
+          // 3. Render als Node-Subprozess (robuster Bun/Node-Interop-Default, Sub-File 07).
+          const outPath = resolve(
+            opts.out ?? `./news-video-${template}-${Date.now()}.mp4`,
+          );
+          const validatedParamsPath = join(remotionDir, `.params-${process.pid}.json`);
+          await Bun.write(validatedParamsPath, JSON.stringify(validated));
+          try {
+            const args = [
+              "node",
+              join(remotionDir, "render.mjs"),
+              "--template", template,
+              "--params", validatedParamsPath,
+              "--out", outPath,
+            ];
+            if (opts.duration) args.push("--duration", String(Number(opts.duration)));
+            const proc = Bun.spawn(args, { cwd: remotionDir, stdout: "inherit", stderr: "inherit" });
+            const code = await proc.exited;
+            if (code !== 0) throw new Error(`Remotion-Render fehlgeschlagen (Exit ${code}).`);
+          } finally {
+            try {
+              await Bun.file(validatedParamsPath).delete();
+            } catch {
+              /* best effort cleanup */
+            }
+          }
+
+          const rendered = Bun.file(outPath);
+          if (!(await rendered.exists())) throw new Error(`Render-Output fehlt: ${outPath}`);
+
+          // 4. Optional: Upload (Limit-Check VOR dem Upload) + Embed-Snippet.
+          if (!opts.upload) {
+            output({ out: outPath }, opts.json, () =>
+              `Video gerendert: ${outPath}\nHochladen + einbetten: comvenio news video ${template} --params ${opts.params} --upload`,
+            );
+            break;
+          }
+          if (rendered.size > MAX_VIDEO_UPLOAD_BYTES) {
+            throw new Error(
+              `Video ist ${(rendered.size / 1024 / 1024).toFixed(0)} MB (> 200-MB-Upload-Limit) — Datei bleibt lokal: ${outPath}`,
+            );
+          }
+          const uploaded = await uploadClubFile({
+            client,
+            clubId,
+            path: outPath,
+            contextType: opts.context ?? "news",
+            contextId: opts.contextId,
+            isPublic: opts.public,
+          });
+          const dl = await client.post<{ url?: string }>("content", "/files/download-url", {
+            file_id: uploaded.file_id,
+          });
+          const snippet = buildVideoEmbedSnippet(dl.url ?? "");
+          output(
+            { out: outPath, file_id: uploaded.file_id, url: dl.url, snippet },
+            opts.json,
+            () =>
+              `Video gerendert + hochgeladen (${uploaded.file_id}).\n\nEmbed-Snippet fuer news.json content:\n${snippet}`,
+          );
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, delete, apply, preview, publish`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, delete, apply, preview, publish, video`,
           );
       }
     });

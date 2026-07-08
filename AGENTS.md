@@ -291,6 +291,110 @@ comvenio news publish <news-id>                     # live schalten
 > Inline-Bilder brauchen `data-comvenio-file-id`, damit das Backend abgelaufene presigned
 > URLs automatisch neu signiert. „Jeden Tag beschreiben" = ein `<h2>`-Abschnitt je Child-Event.
 
+## Rich-News-Redaktion (Design-System `.rich-news`)
+
+CLI-News (`design_source=cli`) werden in der Web-App mit dem **`rn-*`-Baukasten** gerendert
+(`web-page: rich-news.css`). Du komponierst die Bausteine **frei** — mehr Bilder, Spalten,
+Tabellen, Videos sind erwünscht. Qualitätsmassstab: professioneller Zeitungs-/Magazinbericht.
+**Vertrag:** dieser Katalog ist 1:1 mit `rich-news.css` synchron — nutze KEINE anderen
+`rn-*`-Klassennamen (unbekannte Klassen rendern nur im Basis-Stil).
+
+### Klassen-Katalog (alle verfügbaren Bausteine)
+
+| Klasse | Baustein | Snippet |
+|--------|----------|---------|
+| `rn-kicker` | Dachzeile über der Headline | `<p class="rn-kicker" data-edit>Gründungsfest</p>` |
+| `rn-headline` | Hero-Headline | `<h1 class="rn-headline" data-edit>Zeichen der Gemeinschaft</h1>` |
+| `rn-subline` | Unterzeile | `<p class="rn-subline" data-edit>SV feiert drei Tage lang…</p>` |
+| `rn-lead` | Lead-/Einstiegsabsatz (grösser) | `<p class="rn-lead" data-edit>Mit einem…</p>` |
+| `rn-byline` | Autoren-/Ortsmarke-Zeile | `<p class="rn-byline" data-edit>Obermotzing. Von der Redaktion</p>` |
+| `rn-crosshead` | Zwischenüberschrift | `<h2 class="rn-crosshead" data-edit>Ernennung des Ehrenvorstands</h2>` |
+| `rn-serif` | Serif-Modifikator (kombinierbar mit headline/crosshead/lead/quote) | `<h1 class="rn-headline rn-serif" data-edit>…</h1>` |
+| `rn-dropcap` | Initial am Absatzanfang | `<p class="rn-dropcap" data-edit>Bereits zum Auftakt…</p>` |
+| `rn-columns-2` / `rn-columns-3` | Mehrspaltiger Fliesstext (Mobile: 1 Spalte) | `<div class="rn-columns-2"><p data-edit>…</p>…</div>` |
+| `rn-figure` | Standard-Bild mit Caption | `<figure class="rn-figure"><img src="…" data-comvenio-file-id="…" alt="…"/><figcaption class="rn-caption" data-edit>Text <span class="rn-credit">Foto: N.N.</span></figcaption></figure>` |
+| `rn-figure-full` | Vollbreite-Bild (bricht aus der Lesespalte aus) | `<figure class="rn-figure-full">…wie rn-figure…</figure>` |
+| `rn-figure-left` / `rn-figure-right` | Umflossenes Bild (Mobile: gestapelt) | `<figure class="rn-figure-left">…</figure>` |
+| `rn-gallery` | Bild-Raster (3/2/1 Spalten responsive) | `<div class="rn-gallery"><img …/><img …/><img …/></div>` |
+| `rn-caption` | Bildunterschrift | s. `rn-figure` |
+| `rn-credit` | Foto-/Video-Credit in der Caption | `<span class="rn-credit">Foto: Otto Zellmer</span>` |
+| `rn-quote` | Zitat-Block (Pull-Quote, Akzent-Rand) | `<blockquote class="rn-quote" data-edit>„80 Jahre…"<span class="rn-quote-source">Johann Busl, Bürgermeister</span></blockquote>` |
+| `rn-quote-source` | Zitat-Quelle (in `rn-quote`) | s. `rn-quote` |
+| `rn-infobox` | Info-/Fakten-Kasten (getönt) | `<div class="rn-infobox"><p data-edit>…</p></div>` |
+| `rn-table` | Daten-Tabelle (Zebra, Mobile scrollbar) | `<div class="rn-table"><table>…</table></div>` |
+| `rn-video` | Video-Container 16:9 | `<figure class="rn-video"><video controls preload="metadata"><source src="…" type="video/mp4"/></video></figure>` |
+| `rn-divider` | Redaktioneller Trenner | `<hr class="rn-divider"/>` |
+
+### Journalistischer Stil-Guide (Baustein B)
+
+- **Aufbau:** `rn-kicker` (Dachzeile) → `rn-headline` → `rn-subline` → `rn-byline`
+  (Ortsmarke) → `rn-lead` → Erzählbogen im Fliesstext → Abschluss (Ausblick/Fazit).
+- **Zwischenüberschriften** (`rn-crosshead`) ca. alle 3-5 Absätze — sie strukturieren den Bogen.
+- **Zitate** als `rn-quote` mit `rn-quote-source` — wörtliche Rede macht den Bericht lebendig.
+- **Jedes Foto** bekommt `rn-caption` + `rn-credit`. Vollbreite-Fotos (`rn-figure-full`) als
+  visuelle Anker am Anfang/Ende; umflossene (`rn-figure-left/right`) im Fliesstext.
+- **Spalten** (`rn-columns-2`) sparsam für lange Passagen; Tabellen (`rn-table`) für
+  Ergebnisse/Zahlen; `rn-infobox` für Fakten am Rand.
+- **`data-edit` auf ALLE redaktionellen Textknoten** (h1/h2/p/figcaption/li/blockquote) —
+  sonst kann der Vereinsadmin den Text in der Web-App nicht pflegen.
+- Bilder aus der Event-Galerie (`comvenio data list/url`) oder eigene Uploads; Inline-Bilder
+  immer mit `data-comvenio-file-id`.
+- Zusätzlich erlaubt: Inline-Styles auf Whitelist-Properties (Layout/Farbe/Typo) — der Katalog
+  ist aber der dokumentierte Standardweg.
+
+### Videos einbetten (K6)
+
+Zwei Wege, beide im `rn-video`-Container:
+
+```bash
+# Eigenes Video hochladen (Presign-Flow, Limit 200 MB) und einbetten:
+comvenio data upload ./festumzug.mp4 --context event --context-id <event-id> --json
+comvenio data url <file_id> --json                  # presigned URL fürs <source src>
+```
+
+```html
+<!-- Comvenio-Video (S3-URLs werden beim Lesen automatisch re-signed): -->
+<figure class="rn-video">
+  <video controls preload="metadata" poster="…optional presigned…">
+    <source src="…presigned-s3-url…" type="video/mp4" />
+    Dein Browser kann dieses Video nicht abspielen.
+  </video>
+</figure>
+<figcaption class="rn-caption" data-edit>Der Festumzug. <span class="rn-credit">Video: SV Motzing</span></figcaption>
+
+<!-- YouTube (NUR youtube-nocookie — andere iframe-Hosts werden vom Renderer entfernt): -->
+<div class="rn-video"><iframe src="https://www.youtube-nocookie.com/embed/<video-id>"
+  allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+```
+
+Regeln: `autoplay` ist verboten (wird entfernt); `video`/`source`-src nur `https:`;
+Videos für News generieren → `comvenio news video` (Remotion, siehe unten).
+
+### Videos generieren (`comvenio news video`, K7)
+
+Rendert **lokal** per Remotion (Node + Chromium, `remotion/`-Unterprojekt — läuft NIEMALS im
+Backend). Drei fixe Templates, parametrisiert über eine Zod-validierte `params.json` —
+du schreibst KEINE eigenen Remotion-Kompositionen:
+
+| Template | Inhalt | Pflicht-Params | Optional |
+|----------|--------|----------------|----------|
+| `slideshow` | Galerie-Slideshow, Ken-Burns + Overlays | `title`, `images[]` (min. 2 lokale Pfade), `brandColor` (#rrggbb) | `subtitle`, `overlays[]` (Länge = images), `durationPerImage` (2-10s, Default 4), `logoPath` |
+| `result` | Ergebnis-Tafel | `homeTeam`, `awayTeam`, `homeScore`, `awayScore` (int >= 0), `brandColor` | `competition`, `scorers[]` („Name (Minute)"), `date` (ISO), `logoPath` |
+| `teaser` | Ankündigungs-Teaser mit Countdown-Optik | `title`, `date` (ISO), `brandColor` | `location`, `ctaText`, `backgroundImage`, `logoPath` |
+
+```bash
+# 1. Bilder beschaffen (Galerie -> lokal): comvenio data download <file_id> --out ./bilder/…
+# 2. params.json bauen (Club-Farben kennst du aus dem Kontext — kein Auto-Fetch)
+# 3. Rendern (16:9, 1080p, H.264; Dauer: slideshow n*4s, result 12s, teaser 10s; --duration übersteuert):
+comvenio news video slideshow --params params.json --out fest.mp4
+# 4. Hochladen + Embed-Snippet bekommen (Limit 200 MB):
+comvenio news video slideshow --params params.json --upload --context event --context-id <id> --json
+# 5. Snippet in news.json einbetten -> news preview -> news apply
+```
+
+Erster Render lädt die Chrome-Headless-Shell (~110 MB, einmalig). Fehlen die Dependencies:
+`cd remotion && npm install`.
+
 ## RBAC (serverseitig geprüft)
 
 Dein Token trägt nur deine User-Rechte. Das CLI prüft **nichts** clientseitig —
