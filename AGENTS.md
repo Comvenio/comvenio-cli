@@ -63,7 +63,7 @@ comvenio club info                    # Vereinsdaten
 | menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
 | homepage | `comvenio homepage generate\|preview\|apply\|show\|design`     |
 | news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file [--open]` (Backend-Vorschau-URL im echten Layout, 30-Min-TTL; `--local` = Offline-Fallback) · `news video <template> --params` (Remotion, lokal) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews" + „Rich-News-Redaktion". |
-| data     | `comvenio data list\|show\|url\|download\|upload\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten) |
+| data     | `comvenio data list\|show\|url\|download\|upload\|update\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten; `data update <file_id> --context news --context-id <news-id>` = Datei NACHTRÄGLICH zuordnen) |
 | tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) |
 | meeting  | `comvenio meeting list\|show\|...` (Sitzungen/Protokolle) |
 | verify   | `comvenio verify <action>` (visuelles Review: headless Render → Screenshots, damit du das Ergebnis siehst) |
@@ -341,6 +341,9 @@ Tabellen, Videos sind erwünscht. Qualitätsmassstab: professioneller Zeitungs-/
   sonst kann der Vereinsadmin den Text in der Web-App nicht pflegen.
 - Bilder aus der Event-Galerie (`comvenio data list/url`) oder eigene Uploads; Inline-Bilder
   immer mit `data-comvenio-file-id`.
+- **Nach `news apply`: hochgeladene Assets an die News hängen** (sonst bleiben sie kontextlose
+  „tote" Dateien): `comvenio data update <file-id> --context news --context-id <news-id>` —
+  die news-id existiert beim Upload noch nicht (Henne-Ei), deshalb NACH dem apply zuordnen.
 - Zusätzlich erlaubt: Inline-Styles auf Whitelist-Properties (Layout/Farbe/Typo) — der Katalog
   ist aber der dokumentierte Standardweg.
 
