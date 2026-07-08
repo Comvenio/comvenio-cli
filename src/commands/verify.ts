@@ -84,6 +84,7 @@ type AuditResult = {
   checked: number;
   fail_count: number;
   invisible_texts: number;
+  gradient_skipped?: number;
   worst: Array<{ text: string; ratio: number; fg: string; bg: string; size: number }>;
 };
 
@@ -99,12 +100,30 @@ type VerifyResult = {
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
 // text node, computes contrast vs. effective background and counts texts
 // stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
-const AUDIT_JS = `(() => {
-  const toRGB = (s) => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
-  const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+const AUDIT_JS = `() => {
+  const toRGB = (str) => {
+    if (!str || str.indexOf('rgb') !== 0) return null;
+    const inner = str.slice(str.indexOf('(') + 1, str.indexOf(')'));
+    const p = inner.split(',').map(parseFloat);
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+  };
+  const lum = (c) => {
+    const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+  };
   const ratio = (a, b) => { const l1 = Math.max(lum(a), lum(b)), l2 = Math.min(lum(a), lum(b)); return (l1 + 0.05) / (l2 + 0.05); };
-  const effBg = (el) => { let e = el; while (e && e !== document.documentElement) { const bg = toRGB(getComputedStyle(e).backgroundColor); if (bg && bg.a > 0.5) return bg; e = e.parentElement; } return { r: 255, g: 255, b: 255, a: 1 }; };
-  const fails = []; let invisible = 0; let checked = 0;
+  const effBg = (el) => {
+    let e = el;
+    while (e && e !== document.documentElement) {
+      const st = getComputedStyle(e);
+      if (st.backgroundImage && st.backgroundImage !== 'none') return null;
+      const bg = toRGB(st.backgroundColor);
+      if (bg && bg.a > 0.5) return bg;
+      e = e.parentElement;
+    }
+    return { r: 255, g: 255, b: 255, a: 1 };
+  };
+  const fails = []; let invisible = 0; let checked = 0; let gradientSkipped = 0;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();
   while (walker.nextNode()) {
@@ -116,14 +135,16 @@ const AUDIT_JS = `(() => {
     let op = 1, e = el; while (e) { op *= parseFloat(getComputedStyle(e).opacity || '1'); e = e.parentElement; }
     if (op < 0.15) { invisible++; continue; }
     const fg = toRGB(st.color); if (!fg) continue;
-    const bg = effBg(el); const rt = ratio(fg, bg); checked++;
+    const bg = effBg(el);
+    if (!bg) { gradientSkipped++; continue; }
+    const rt = ratio(fg, bg); checked++;
     const size = parseFloat(st.fontSize); const bold = parseInt(st.fontWeight) >= 700;
     const isLarge = size >= 24 || (size >= 18.66 && bold);
     if (rt < (isLarge ? 3 : 4.5)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });
   }
   fails.sort((a, b) => a.ratio - b.ratio);
-  return JSON.stringify({ checked, fail_count: fails.length, invisible_texts: invisible, worst: fails.slice(0, 15) });
-})()`;
+  return JSON.stringify({ checked: checked, fail_count: fails.length, invisible_texts: invisible, gradient_skipped: gradientSkipped, worst: fails.slice(0, 15) });
+}`;
 
 // Open the URL, capture Desktop + Mobile screenshots (full-page), console errors,
 // and an ARIA snapshot. Returns the bundle; throws on a hard render failure.
@@ -179,12 +200,13 @@ async function renderBundle(
   }
   let audit: AuditResult | undefined;
   if (opts.audit) {
-    const a = await pw(["eval", AUDIT_JS]);
+    // Windows argv mangles multi-line args — pass as a single line.
+    const a = await pw(["eval", AUDIT_JS.replace(/\s+/g, " ")]);
     const m = a.stdout.match(/"\{.*\}"/s);
     if (m) {
       try {
         audit = JSON.parse(JSON.parse(m[0])) as AuditResult;
-      } catch {
+      } catch (e) {
         audit = undefined;
       }
     }
@@ -215,6 +237,16 @@ async function renderAndOutput(
     lines.push(`  Console-Errors: ${result.console_errors.length}`);
     if (result.console_errors.length > 0) {
       lines.push(...result.console_errors.slice(0, 5).map((e) => `    • ${e.slice(0, 160)}`));
+    }
+    if (result.audit) {
+      lines.push(
+        `  Audit: ${result.audit.fail_count} Kontrast-Fails, ` +
+        `${result.audit.invisible_texts} unsichtbare Texte ` +
+        `(${result.audit.checked} geprueft, ${result.audit.gradient_skipped ?? 0} Gradient uebersprungen)`,
+      );
+      for (const f of result.audit.worst.slice(0, 5)) {
+        lines.push(`    x "${f.text}" ratio=${f.ratio} (${f.fg} auf ${f.bg}, ${f.size}px)`);
+      }
     }
     return lines.join("\n");
   });
