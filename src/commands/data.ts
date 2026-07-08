@@ -94,8 +94,12 @@ export function registerDataCommands(cli: CAC): void {
           output(files, opts.json, () =>
             Array.isArray(files) && files.length
               ? renderTable(files, [
-                  { header: "Datei", width: 34, get: (f) => String(f.filename ?? "—") },
-                  { header: "Label", width: 14, get: (f) => String(f.context_label ?? "—") },
+                  // file_id first: it is the UUID the news flow needs
+                  // (data-comvenio-file-id / --cover) — copy-paste ready.
+                  { header: "file_id", width: 38, get: (f) => String(f.id ?? "—") },
+                  { header: "Datei", width: 30, get: (f) => String(f.filename ?? "—") },
+                  { header: "Typ", width: 18, get: (f) => String(f.content_type ?? "—") },
+                  { header: "Label", width: 12, get: (f) => String(f.context_label ?? "—") },
                   { header: "Sicht", width: 8, get: (f) => String(f.visibility ?? "—") },
                   { header: "Bytes", width: 9, get: (f) => String(f.size_bytes ?? "") },
                 ])
