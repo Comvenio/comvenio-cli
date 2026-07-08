@@ -44,6 +44,7 @@ type DataOpts = {
   club?: string;
   context?: string;
   contextId?: string;
+  subContextId?: string;
   out?: string;
   label?: string;
   public?: boolean;
@@ -51,17 +52,23 @@ type DataOpts = {
   format?: string;
 };
 
+// data update: CLI value "none" clears a field (sends explicit null to the PATCH)
+function contextPatchValue(v: string): string | null {
+  return v === "none" ? null : v;
+}
+
 export function registerDataCommands(cli: CAC): void {
   cli
     .command(
       "data <action> [arg]",
-      "Vereins-Dateien: list | show | url | download | upload | papers | export (K13)",
+      "Vereins-Dateien: list | show | url | download | upload | update | papers | export (K13)",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--context <type>", "context_type (list/upload/papers): event|paper|certificate|...")
-    .option("--context-id <id>", "context_id (Pflicht bei list; Zuordnung bei upload/papers)")
+    .option("--context-id <id>", "context_id (Pflicht bei list; Zuordnung bei upload/papers/update; 'none' loescht bei update)")
+    .option("--sub-context-id <id>", "sub_context_id (upload/update, z.B. event_area_id; 'none' loescht bei update)")
     .option("--out <path>", "Zielpfad (download)")
-    .option("--label <bucket>", "context_label/Bucket (upload), z.B. title_picture|flyer|gallery")
+    .option("--label <bucket>", "context_label/Bucket (upload/update), z.B. title_picture|flyer|gallery; 'none' loescht bei update")
     .option("--public", "Sichtbarkeit public (upload; Default private)")
     .option("--type <doc>", "document_type-Filter (papers): protokoll|flyer|bericht|...")
     .option("--format <fmt>", "Export-Format csv|xlsx (data export; Default csv)")
@@ -102,6 +109,29 @@ export function registerDataCommands(cli: CAC): void {
           const file = await client.get<FileEntryRead>("content", `/files/${arg}`);
           output(file, opts.json, () =>
             `${file.filename ?? "—"} (${file.visibility ?? "?"}, ${file.size_bytes ?? "?"} Bytes, ${file.content_type ?? "?"})`,
+          );
+          break;
+        }
+
+        case "update": {
+          // Kontext-Zuordnung NACHTRAEGLICH setzen (PATCH /files/{id}/context) — loest das
+          // Henne-Ei des News-Flows: Assets werden VOR news apply hochgeladen (keine news-id),
+          // danach an die News haengen: data update <file-id> --context news --context-id <news-id>.
+          // Nur angegebene Flags werden gesendet; Wert "none" loescht das Feld (explizites null).
+          if (!arg) throw new Error("data update <file-id> benoetigt eine Datei-ID.");
+          const patch: Record<string, unknown> = {};
+          if (opts.context !== undefined) patch.context_type = contextPatchValue(opts.context);
+          if (opts.contextId !== undefined) patch.context_id = contextPatchValue(opts.contextId);
+          if (opts.subContextId !== undefined) patch.sub_context_id = contextPatchValue(opts.subContextId);
+          if (opts.label !== undefined) patch.context_label = contextPatchValue(opts.label);
+          if (Object.keys(patch).length === 0) {
+            throw new Error(
+              "data update benoetigt mindestens eines von --context, --context-id, --sub-context-id, --label.",
+            );
+          }
+          const updated = await client.patch<FileEntryRead>("content", `/files/${arg}/context`, patch);
+          output(updated, opts.json, () =>
+            `Kontext aktualisiert: ${updated.filename ?? arg} -> context=${updated.context_type ?? "—"}, context_id=${updated.context_id ?? "—"}${updated.context_label ? `, label=${updated.context_label}` : ""}`,
           );
           break;
         }
@@ -239,7 +269,7 @@ export function registerDataCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, url, download, upload, papers, export`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, url, download, upload, update, papers, export`,
           );
       }
     });
