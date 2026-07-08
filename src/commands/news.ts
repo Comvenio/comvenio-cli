@@ -112,18 +112,23 @@ async function openInBrowser(target: string): Promise<boolean> {
 const esc = (s: unknown): string =>
   String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
 
-// Lokale, backend-freie HTML-Vorschau der komponierten News. Zeigt Titelbild (cover_url),
-// Titel, Teaser und den rich-HTML-content in einem schlichten News-Detail-Layout. Der content
-// ist vom Agenten komponiertes, vertrauenswuerdiges HTML und wird bewusst roh eingesetzt.
+// Lokale, backend-freie HTML-Vorschau — spiegelt das ECHTE web.comvenio.app News-Detail-Layout
+// (Club-Header-Leiste, Cover, Titel, Teaser, Autor-Zeile, Content) statt eines erfundenen Layouts,
+// damit die Vorschau zeigt, wie die News auf der Seite tatsaechlich aussieht. Das Content-Styling
+// bildet den web-page RichTextRenderer nach (h2/img/section/figure + inline-styles der cli-News).
+// Optionale Preview-Felder: club_name, author_name, preview_date (werden beim apply verworfen).
 function buildNewsPreviewHtml(payload: Record<string, unknown>): string {
   const title = esc(payload.title);
   const teaser = payload.teaser ? esc(payload.teaser) : "";
   const content = String(payload.content ?? "");
   const coverUrl = payload.cover_url ? String(payload.cover_url) : "";
-  const isDraft = payload.is_draft !== false; // Default True (wie Backend)
-  const badge = isDraft
-    ? '<span class="badge draft">Entwurf &middot; nur fuer Admins sichtbar</span>'
-    : '<span class="badge live">Veroeffentlicht &middot; oeffentlich</span>';
+  const clubName = esc(payload.club_name ?? "Verein");
+  const author = payload.author_name ? esc(payload.author_name) : "";
+  const dateStr = payload.preview_date ? esc(payload.preview_date) : "";
+  const isDraft = payload.is_draft !== false;
+  const statusNote = isDraft
+    ? "Entwurf — nur fuer Admins sichtbar"
+    : "Veroeffentlicht — oeffentlich sichtbar";
   return `<!doctype html>
 <html lang="de">
 <head>
@@ -133,43 +138,56 @@ function buildNewsPreviewHtml(payload: Record<string, unknown>): string {
 <style>
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #eef1f5; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1a2230; line-height: 1.65; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; }
-  .note { font-size: 12px; color: #6b7686; text-align: center; margin: 0 0 16px; }
-  article { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 24px rgba(20,30,50,.10); }
-  .cover { width: 100%; display: block; aspect-ratio: 16/7; object-fit: cover; background: #dde3ec; }
-  .body { padding: 28px clamp(18px, 5vw, 40px) 40px; }
-  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
-  .badge.draft { background: #fff3d6; color: #9a6a00; }
-  .badge.live { background: #d9f4e3; color: #1c6b3f; }
-  h1 { font-size: clamp(26px, 4.5vw, 38px); line-height: 1.15; margin: 4px 0 10px; letter-spacing: -.01em; }
-  .teaser { font-size: 18px; color: #4a5568; margin: 0 0 24px; font-weight: 500; }
-  .content { font-size: 17px; }
-  .content img { max-width: 100%; height: auto; border-radius: 12px; margin: 18px 0; display: block; }
-  .content h2 { font-size: 22px; margin: 30px 0 8px; letter-spacing: -.01em; }
-  .content h3 { font-size: 19px; margin: 24px 0 6px; }
-  .content p { margin: 12px 0; }
-  .content ul, .content ol { padding-left: 22px; }
+  body { margin: 0; background: #eef1f5; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1a2230; }
+  .note { font-size: 12px; color: #6b7686; text-align: center; margin: 14px 16px; }
+  /* News-Detail-Scaffold (wie web.comvenio.app) */
+  .page { max-width: 900px; margin: 0 auto 64px; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 8px rgba(20,30,50,.08); }
+  .clubbar { display: flex; align-items: center; justify-content: space-between; background: #16205a; color: #fff; padding: 12px 20px; }
+  .clubbar .name { font-weight: 700; font-size: 15px; }
+  .clubbar .tag { border: 1px solid rgba(255,255,255,.5); border-radius: 6px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+  .cover { width: 100%; display: block; }
+  .body { padding: 24px clamp(18px, 4vw, 40px) 48px; }
+  h1.title { font-size: clamp(26px, 4vw, 40px); font-weight: 800; line-height: 1.15; margin: 8px 0 14px; color: #1a2230; }
+  .teaser { font-size: 16px; color: #5a6a7d; margin: 0 0 20px; line-height: 1.6; }
+  .author { display: flex; align-items: center; gap: 10px; padding: 4px 0 18px; border-bottom: 1px solid #e6eaf0; margin-bottom: 8px; }
+  .author .avatar { width: 34px; height: 34px; border-radius: 50%; background: #c9d3e2; display: inline-block; }
+  .author .who { font-size: 13px; }
+  .author .who b { display: block; color: #1a2230; }
+  .author .who span { color: #7a8798; }
+  /* Content: bildet den RichTextRenderer nach (MUI sx) */
+  .content { font-size: 16px; line-height: 1.75; color: #1a2230; word-break: break-word; }
+  .content p { margin: 0 0 10px; }
+  .content h1 { font-size: 1.75rem; font-weight: 700; margin: 24px 0 10px; }
+  .content h2 { font-size: 1.4rem; font-weight: 700; margin: 20px 0 8px; }
+  .content h3 { font-size: 1.15rem; font-weight: 600; margin: 16px 0 6px; }
+  .content img { max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block; }
+  .content section { margin-bottom: 16px; }
+  .content figure { margin: 16px 0; }
+  .content figcaption { font-size: .875rem; color: #5a6a7d; margin-top: 4px; text-align: center; }
+  .content ul, .content ol { padding-left: 24px; margin: 0 0 10px; }
+  .content li { margin-bottom: 4px; }
+  .content a { color: #1c4fd8; text-decoration: underline; }
   @media (prefers-color-scheme: dark) {
     body { background: #10151d; color: #e6ebf2; }
-    article { background: #1a2130; box-shadow: none; }
-    .teaser { color: #a7b2c2; }
-    .cover { background: #232c3c; }
+    .page { background: #1a2130; box-shadow: none; }
+    h1.title, .content, .content h1, .content h2, .content h3 { color: #e6ebf2; }
+    .teaser, .content figcaption { color: #a7b2c2; }
+    .author { border-color: #2a3446; }
+    .author .who b { color: #e6ebf2; }
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <p class="note">Lokale Vorschau (comvenio news preview) — nicht veroeffentlicht, kein Backend-Write.</p>
-    <article>
-      ${coverUrl ? `<img class="cover" src="${esc(coverUrl)}" alt="Titelbild">` : ""}
-      <div class="body">
-        ${badge}
-        <h1>${title}</h1>
-        ${teaser ? `<p class="teaser">${teaser}</p>` : ""}
-        <div class="content">${content}</div>
-      </div>
-    </article>
+  <p class="note">Lokale Vorschau (comvenio news preview) — spiegelt das web.comvenio.app-Layout. ${statusNote}. Kein Backend-Write.</p>
+  <div class="page">
+    <div class="clubbar"><span class="name">${clubName}</span><span class="tag">News</span></div>
+    ${coverUrl ? `<img class="cover" src="${esc(coverUrl)}" alt="Titelbild">` : ""}
+    <div class="body">
+      <h1 class="title">${title}</h1>
+      ${teaser ? `<p class="teaser">${teaser}</p>` : ""}
+      ${author ? `<div class="author"><span class="avatar"></span><span class="who"><b>${author}</b><span>${dateStr}</span></span></div>` : ""}
+      <div class="content">${content}</div>
+    </div>
   </div>
 </body>
 </html>`;
@@ -254,6 +272,17 @@ export function registerNewsCommands(cli: CAC): void {
           // (u. a. wuerde is_draft auf den Default True zurueckfallen).
           const current = await client.get<NewsRead>("content", `/news/${id}`);
           const body = fullBodyFromRead(current);
+          // --file: vom Agenten komponiertes Rich-HTML-JSON in den Body mergen (Vorschau-Felder
+          // strippen, design_source=cli erzwingen). Flags unten ueberschreiben das JSON.
+          if (opts.file) {
+            const payload = readJsonFile<Record<string, unknown>>(opts.file);
+            delete payload.cover_url;
+            delete payload.club_name;
+            delete payload.author_name;
+            delete payload.preview_date;
+            payload.design_source = "cli";
+            Object.assign(body, payload);
+          }
           if (opts.title) body.title = opts.title;
           if (opts.content) body.content = opts.content;
           if (opts.teaser !== undefined) body.teaser = opts.teaser;
@@ -322,8 +351,12 @@ export function registerNewsCommands(cli: CAC): void {
           if (!payload.content) throw new Error("news.json benoetigt 'content'.");
           // CLI-Rich-News: design_source=cli IMMER erzwungen (D-01/D-02) — unabhaengig vom JSON.
           payload.design_source = "cli";
-          // cover_url ist ein reines Vorschau-Feld (presigned, laeuft ab) — NIE ans Backend schicken.
+          // Reine Vorschau-Felder — NIE ans Backend schicken (cover_url ist presigned/laeuft ab;
+          // club_name/author_name/preview_date dienen nur der lokalen Layout-Vorschau).
           delete payload.cover_url;
+          delete payload.club_name;
+          delete payload.author_name;
+          delete payload.preview_date;
           // --draft/--publish stechen den JSON-Wert (published stackt is_draft=false + published_at).
           Object.assign(payload, draftFields());
           const applied = await client.post<NewsRead>("content", `/news/club/${clubId}`, payload);
