@@ -77,6 +77,14 @@ type VerifyOpts = {
   print?: boolean;
   file?: string;
   frontendBase?: string;
+  audit?: boolean;
+};
+
+type AuditResult = {
+  checked: number;
+  fail_count: number;
+  invisible_texts: number;
+  worst: Array<{ text: string; ratio: number; fg: string; bg: string; size: number }>;
 };
 
 type VerifyResult = {
@@ -85,7 +93,37 @@ type VerifyResult = {
   console_errors: string[];
   snapshot_taken: boolean;
   render_ms: number;
+  audit?: AuditResult;
 };
+
+// WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
+// text node, computes contrast vs. effective background and counts texts
+// stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
+const AUDIT_JS = `(() => {
+  const toRGB = (s) => { const m = s.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(',').map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
+  const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
+  const ratio = (a, b) => { const l1 = Math.max(lum(a), lum(b)), l2 = Math.min(lum(a), lum(b)); return (l1 + 0.05) / (l2 + 0.05); };
+  const effBg = (el) => { let e = el; while (e && e !== document.documentElement) { const bg = toRGB(getComputedStyle(e).backgroundColor); if (bg && bg.a > 0.5) return bg; e = e.parentElement; } return { r: 255, g: 255, b: 255, a: 1 }; };
+  const fails = []; let invisible = 0; let checked = 0;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const seen = new Set();
+  while (walker.nextNode()) {
+    const t = walker.currentNode; const txt = t.textContent.trim(); if (txt.length < 3) continue;
+    const el = t.parentElement; if (!el || seen.has(el)) continue; seen.add(el);
+    const st = getComputedStyle(el);
+    if (st.display === 'none' || st.visibility === 'hidden') continue;
+    const r = el.getBoundingClientRect(); if (r.width === 0 || r.height === 0) continue;
+    let op = 1, e = el; while (e) { op *= parseFloat(getComputedStyle(e).opacity || '1'); e = e.parentElement; }
+    if (op < 0.15) { invisible++; continue; }
+    const fg = toRGB(st.color); if (!fg) continue;
+    const bg = effBg(el); const rt = ratio(fg, bg); checked++;
+    const size = parseFloat(st.fontSize); const bold = parseInt(st.fontWeight) >= 700;
+    const isLarge = size >= 24 || (size >= 18.66 && bold);
+    if (rt < (isLarge ? 3 : 4.5)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });
+  }
+  fails.sort((a, b) => a.ratio - b.ratio);
+  return JSON.stringify({ checked, fail_count: fails.length, invisible_texts: invisible, worst: fails.slice(0, 15) });
+})()`;
 
 // Open the URL, capture Desktop + Mobile screenshots (full-page), console errors,
 // and an ARIA snapshot. Returns the bundle; throws on a hard render failure.
@@ -139,10 +177,23 @@ async function renderBundle(
     const s = await pw(["snapshot"]);
     snapshotTaken = s.code === 0;
   }
+  let audit: AuditResult | undefined;
+  if (opts.audit) {
+    const a = await pw(["eval", AUDIT_JS]);
+    const m = a.stdout.match(/"\{.*\}"/s);
+    if (m) {
+      try {
+        audit = JSON.parse(JSON.parse(m[0])) as AuditResult;
+      } catch {
+        audit = undefined;
+      }
+    }
+  }
   await pw(["close"]);
 
   return {
     url,
+    audit,
     screenshots,
     console_errors: consoleErrors,
     snapshot_taken: snapshotTaken,
@@ -188,6 +239,7 @@ export function registerVerifyCommands(cli: CAC): void {
     .option("--print", "menu: Druck-Ansicht (/print)")
     .option("--file <path>", "homepage: home.json fuer Entwurfs-Vorschau (statt Live)")
     .option("--frontend-base <url>", "Frontend-Basis ueberschreiben (z.B. http://localhost:5173)")
+    .option("--audit", "Kontrast-/Sichtbarkeits-Audit (WCAG-Ratios + opacity-0-Texte) mit ausgeben")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: VerifyOpts) => {
       const state = loadState();
