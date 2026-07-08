@@ -3,9 +3,16 @@
 // retried on transient gateway errors; mutations are NEVER auto-retried.
 import type { ComvenioCliState } from "./auth.ts";
 
+export type RequestOpts = {
+  // Per-request timeout override. Synchronous LLM endpoints (homepage/menu/news
+  // generate with ?streaming=false) legitimately run 30-120s — the 15s default
+  // aborts them (E2E-Befund K9, 2026-07-08).
+  timeoutMs?: number;
+};
+
 export type ComvenioClient = {
   get<T = unknown>(service: string, path: string): Promise<T>;
-  post<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
+  post<T = unknown>(service: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T>;
   patch<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
   put<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
   del<T = unknown>(service: string, path: string): Promise<T>;
@@ -46,6 +53,7 @@ export function createClient(state: ClientState): ComvenioClient {
     method: string,
     url: string,
     body?: unknown,
+    timeoutMs: number = REQUEST_TIMEOUT_MS,
   ): Promise<T> {
     // Retry ONLY idempotent GETs. POST/PATCH/DELETE are never auto-retried
     // (duplicate-mutation hazard).
@@ -55,7 +63,7 @@ export function createClient(state: ClientState): ComvenioClient {
     while (true) {
       attempt++;
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
         const res = await fetch(url, {
           method,
@@ -104,8 +112,8 @@ export function createClient(state: ClientState): ComvenioClient {
 
   return {
     get: (service, path) => request("GET", serviceUrl(service, path)),
-    post: (service, path, body) =>
-      request("POST", serviceUrl(service, path), body),
+    post: (service, path, body, opts) =>
+      request("POST", serviceUrl(service, path), body, opts?.timeoutMs),
     patch: (service, path, body) =>
       request("PATCH", serviceUrl(service, path), body),
     put: (service, path, body) =>
