@@ -83,7 +83,7 @@ function today(): string {
  */
 export function registerMenuCommands(cli: CAC): void {
   cli
-    .command("menu <action> [id]", "Speisekarte: create | list | show | add-item | update-item | delete-item | delete | style | generate (KI) | apply | design")
+    .command("menu <action> [id]", "Speisekarte (deklarativ, kein Backend-LLM): create | list | show | add-item | update-item | delete-item | delete | style | apply")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--photo <file>", "Foto/Scan einer Papier-/PDF-Karte (generate/design)")
     .option("--text <desc>", "Freitext-Beschreibung (generate)")
@@ -110,73 +110,18 @@ export function registerMenuCommands(cli: CAC): void {
 
       switch (action) {
         case "generate": {
-          if (!opts.photo && !opts.text) {
-            throw new Error('menu generate benoetigt --photo <datei> oder --text "...".');
-          }
-          const body: Record<string, unknown> = { club_id: clubId };
-          if (opts.text) body.prompt = opts.text;
-          if (opts.photo) {
-            const [b64, mime] = readImageAsBase64(opts.photo);
-            body.image_data = b64;
-            body.image_mime = mime;
-          }
-          // Stage 1: generate (synchronous, streaming=false → no SSE topic).
-          const gen = await client.post<MenuContentResponse>(
-            "ai",
-            "/menu-content/generate?streaming=false",
-            body,
+          // Doctrine (Tom 2026-07-08): this CLI NEVER calls the backend LLM.
+          // The operating agent (Claude/Codex) IS the intelligence — it reads the
+          // photo/text itself and composes the card declaratively.
+          throw new Error(
+            [
+              '"menu generate" wurde entfernt: Das CLI ruft NIEMALS das Backend-LLM — der bedienende Agent liest Foto/Text selbst und komponiert deklarativ.',
+              "Deklarativer Weg:",
+              "  1) comvenio schema menu               — gueltige Felder/Enums",
+              "  2) comvenio recipe create ... / comvenio template dish (Vorlagen)",
+              "  3) comvenio menu create + menu add-item (oder menu apply --file)",
+            ].join("\n"),
           );
-          if (!opts.apply) {
-            // Review contract D-02: stage 1 writes NOTHING.
-            output(gen, opts.json, () => formatDishes(gen));
-            return;
-          }
-          if (!gen.dishes?.length) {
-            throw new Error("Keine Gerichte erkannt — Foto/Beschreibung praezisieren.");
-          }
-          // Stage 2: persist — recipe per dish, then menu, then items/bulk.
-          const recipeIds: string[] = [];
-          for (const d of gen.dishes) {
-            const r = await client.post<MenuRead>(
-              "supply",
-              `/recipe/club/${clubId}/from-ai-dish`,
-              {
-                name: d.name,
-                type_of_recipe: d.type_of_recipe,
-                category: d.category,
-                selling_price: d.selling_price,
-                ingredients: (d.ingredients ?? []).map((i) => ({
-                  name: i.name,
-                  quantity: i.quantity,
-                  unit: i.unit,
-                })),
-                auto_create_missing_ingredients: true,
-              },
-            );
-            if (r.id) recipeIds.push(r.id);
-          }
-          const menu = await client.post<MenuRead>("supply", `/menu/club/${clubId}/menus`, {
-            name: opts.menuName ?? `KI-Speisekarte ${today()}`,
-          });
-          const itemsPayload = gen.dishes.map((d, idx) => ({
-            menu_id: menu.id,
-            recipe_id: recipeIds[idx] ?? null,
-            name: d.name,
-            selling_price: d.selling_price ?? null,
-            display_order: idx,
-          }));
-          const bulk = await client.post<BulkResponse>(
-            "supply",
-            `/menu/club/${clubId}/items/bulk`,
-            itemsPayload,
-          );
-          output(
-            { menu_id: menu.id, recipes: recipeIds.length, items: bulk.total_created ?? itemsPayload.length },
-            opts.json,
-            () =>
-              `Karte angelegt: ${menu.id} (${recipeIds.length} Rezepte, ${bulk.total_created ?? itemsPayload.length} Gerichte).`,
-          );
-          break;
         }
 
         case "apply": {
@@ -237,35 +182,14 @@ export function registerMenuCommands(cli: CAC): void {
         }
 
         case "design": {
-          if (!opts.menu) {
-            throw new Error("menu design benoetigt --menu <menu_id> (MenuDesignGenerateRequest.menu_id).");
-          }
-          const body: Record<string, unknown> = {
-            club_id: clubId,
-            menu_id: opts.menu,
-            prompt: opts.prompt ?? "",
-          };
-          if (opts.photo) {
-            const [b64, mime] = readImageAsBase64(opts.photo);
-            body.image_data = b64;
-            body.image_mime = mime;
-          }
-          const res = await client.post<MenuDesignResponse>(
-            "ai",
-            "/menu-design/generate?streaming=false",
-            body,
+          // Doctrine (Tom 2026-07-08): no backend LLM — the agent composes the
+          // design_config itself and writes it via `menu style`.
+          throw new Error(
+            [
+              '"menu design" wurde entfernt: Das CLI ruft NIEMALS das Backend-LLM — der bedienende Agent komponiert die design_config selbst.',
+              "Deklarativer Weg: comvenio schema design (Vokabular) → comvenio menu style --menu <id> --file design.json",
+            ].join("\n"),
           );
-          if (!opts.apply) {
-            output(res, opts.json, () => res.explanation ?? "Design-Vorschlag erhalten (ohne --apply nicht angewendet).");
-            return;
-          }
-          await client.put("supply", `/menu/club/${clubId}/menus/${opts.menu}`, {
-            design_config: res.design_config,
-          });
-          output({ menu_id: opts.menu, applied: true }, opts.json, () =>
-            `Design auf Karte ${opts.menu} angewendet.`,
-          );
-          break;
         }
 
         case "create": {
