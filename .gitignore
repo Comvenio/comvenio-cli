@@ -4,3 +4,8 @@ comvenio.exe
 *.tgz
 *.log
 .DS_Store
+
+# remotion sub-project (K7)
+remotion/node_modules/
+remotion/public/job-*/
+remotion/.params-*.json

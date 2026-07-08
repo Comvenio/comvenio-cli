@@ -368,7 +368,32 @@ comvenio data url <file_id> --json                  # presigned URL fürs <sourc
 ```
 
 Regeln: `autoplay` ist verboten (wird entfernt); `video`/`source`-src nur `https:`;
-Videos für News generieren → `comvenio news video` (Remotion, siehe Workflows).
+Videos für News generieren → `comvenio news video` (Remotion, siehe unten).
+
+### Videos generieren (`comvenio news video`, K7)
+
+Rendert **lokal** per Remotion (Node + Chromium, `remotion/`-Unterprojekt — läuft NIEMALS im
+Backend). Drei fixe Templates, parametrisiert über eine Zod-validierte `params.json` —
+du schreibst KEINE eigenen Remotion-Kompositionen:
+
+| Template | Inhalt | Pflicht-Params | Optional |
+|----------|--------|----------------|----------|
+| `slideshow` | Galerie-Slideshow, Ken-Burns + Overlays | `title`, `images[]` (min. 2 lokale Pfade), `brandColor` (#rrggbb) | `subtitle`, `overlays[]` (Länge = images), `durationPerImage` (2-10s, Default 4), `logoPath` |
+| `result` | Ergebnis-Tafel | `homeTeam`, `awayTeam`, `homeScore`, `awayScore` (int >= 0), `brandColor` | `competition`, `scorers[]` („Name (Minute)"), `date` (ISO), `logoPath` |
+| `teaser` | Ankündigungs-Teaser mit Countdown-Optik | `title`, `date` (ISO), `brandColor` | `location`, `ctaText`, `backgroundImage`, `logoPath` |
+
+```bash
+# 1. Bilder beschaffen (Galerie -> lokal): comvenio data download <file_id> --out ./bilder/…
+# 2. params.json bauen (Club-Farben kennst du aus dem Kontext — kein Auto-Fetch)
+# 3. Rendern (16:9, 1080p, H.264; Dauer: slideshow n*4s, result 12s, teaser 10s; --duration übersteuert):
+comvenio news video slideshow --params params.json --out fest.mp4
+# 4. Hochladen + Embed-Snippet bekommen (Limit 200 MB):
+comvenio news video slideshow --params params.json --upload --context event --context-id <id> --json
+# 5. Snippet in news.json einbetten -> news preview -> news apply
+```
+
+Erster Render lädt die Chrome-Headless-Shell (~110 MB, einmalig). Fehlen die Dependencies:
+`cd remotion && npm install`.
 
 ## RBAC (serverseitig geprüft)
 
