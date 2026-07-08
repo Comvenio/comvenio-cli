@@ -68,6 +68,7 @@ type NewsOpts = {
   publish?: boolean;
   pinned?: boolean;
   open?: boolean;
+  local?: boolean;
   out?: string;
   // news video (K7)
   params?: string;
@@ -245,7 +246,8 @@ export function registerNewsCommands(cli: CAC): void {
     .option("--draft", "create/apply: als Entwurf anlegen (is_draft=true, nur Admins sehen es)")
     .option("--publish", "create/apply: sofort veroeffentlichen (is_draft=false + published_at=jetzt)")
     .option("--pinned", "create/update: News anpinnen (is_pinned=true)")
-    .option("--open", "preview: die lokale HTML-Vorschau im Browser oeffnen")
+    .option("--open", "preview: die Vorschau im Browser oeffnen")
+    .option("--local", "preview: lokaler Offline-Fallback (Naeherung) statt Backend-Vorschau")
     .option("--out <path>", "preview: Zielpfad der HTML-Datei (Default ./news-preview.html)")
     .option("--json", "Maschinenlesbares JSON")
     .action(async (action: string, id: string | undefined, opts: NewsOpts) => {
@@ -356,27 +358,58 @@ export function registerNewsCommands(cli: CAC): void {
         }
 
         case "preview": {
-          // Lokale, backend-freie HTML-Vorschau des komponierten Rich-HTML (kein Write).
           if (!opts.file) throw new Error("news preview benoetigt --file <news.json>.");
           const payload = readJsonFile<Record<string, unknown>>(opts.file);
           if (!payload.title) throw new Error("news.json benoetigt 'title'.");
           if (!payload.content) throw new Error("news.json benoetigt 'content'.");
-          // is_draft/published-Intent aus Flags in die Vorschau-Badge spiegeln.
-          const df = draftFields();
-          if (df.is_draft !== undefined) payload.is_draft = df.is_draft;
-          const html = buildNewsPreviewHtml(payload);
-          const outPath = opts.out ?? "./news-preview.html";
-          await Bun.write(outPath, html);
-          const abs = resolve(outPath);
+
+          if (opts.local) {
+            // K8: lokaler Naeherungs-Preview (Offline-Fallback) — massgeblich ist die
+            // Backend-Vorschau (echtes Layout inkl. .rich-news-CSS; lokal droht CSS-Drift).
+            const df = draftFields();
+            if (df.is_draft !== undefined) payload.is_draft = df.is_draft;
+            const html = buildNewsPreviewHtml(payload);
+            const outPath = opts.out ?? "./news-preview.html";
+            await Bun.write(outPath, html);
+            const abs = resolve(outPath);
+            let opened = false;
+            if (opts.open) opened = await openInBrowser(abs);
+            output({ out: outPath, opened: opts.open ? opened : undefined, local: true }, opts.json, () => {
+              const openHint = opts.open
+                ? opened
+                  ? "\nIm Browser geoeffnet."
+                  : `\nBrowser nicht automatisch geoeffnet — Datei manuell oeffnen: ${abs}`
+                : "";
+              return `Lokale Naeherungs-Vorschau geschrieben: ${outPath} (massgeblich ist die Backend-Vorschau ohne --local)${openHint}`;
+            });
+            break;
+          }
+
+          // K8 Default: Backend-TTL-Preview — content-service legt den Entwurf 30 Min ab,
+          // die web-page rendert ihn im ECHTEN Layout (Scaffold + .rich-news + Re-Signing).
+          const previewBody = {
+            title: payload.title,
+            content: payload.content,
+            teaser: payload.teaser,
+            cover_url: payload.cover_url,
+            author_name: payload.author_name,
+            club_name: payload.club_name,
+            design_source: "cli",
+          };
+          const created = await client.post<{
+            preview_id?: string;
+            preview_url?: string;
+            expires_at?: string;
+          }>("content", `/news/club/${clubId}/preview`, previewBody);
           let opened = false;
-          if (opts.open) opened = await openInBrowser(abs);
-          output({ out: outPath, opened: opts.open ? opened : undefined }, opts.json, () => {
+          if (opts.open && created.preview_url) opened = await openInBrowser(created.preview_url);
+          output(created, opts.json, () => {
             const openHint = opts.open
               ? opened
                 ? "\nIm Browser geoeffnet."
-                : `\nBrowser nicht automatisch geoeffnet — Datei manuell oeffnen: ${abs}`
+                : "\nBrowser nicht automatisch geoeffnet — URL manuell oeffnen."
               : "";
-            return `Lokale Vorschau geschrieben: ${outPath}${openHint}`;
+            return `Backend-Vorschau erstellt (gueltig bis ${created.expires_at ?? "?"}):\n${created.preview_url ?? "?"}${openHint}\n(Offline-Fallback: news preview --file ... --local)`;
           });
           break;
         }
