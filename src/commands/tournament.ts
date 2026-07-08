@@ -34,6 +34,9 @@ type Opts = {
   matchNumber?: string;
   dryRun?: boolean;
   autoBook?: boolean;
+  // K5 (2026-07-08): withdrawal / re-draw / reset
+  participant?: string;
+  phase?: string;
 };
 
 type Tournament = {
@@ -173,7 +176,7 @@ export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | start | matches | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
+      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -194,6 +197,8 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--match-number <n>", "match-schedule: Spielnummer setzen")
     .option("--dry-run", "schedule-generate: nur Vorschau, nichts persistieren")
     .option("--no-auto-book", "schedule-generate: keine automatische Objekt-Buchung")
+    .option("--participant <id>", "participant-withdraw/-reinstate/-remove: Teilnehmer-ID")
+    .option("--phase <p>", "matches-clear: group | finals | all (default all)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -457,9 +462,88 @@ export function registerTournamentCommands(cli: CAC): void {
           break;
         }
 
+        case "participant-withdraw":
+        case "participant-reinstate": {
+          // K5: withdraw (registration_status=withdrawn) removes a participant from draws +
+          // public view and cancels its open matches (backend K2); reinstate sets it back to
+          // confirmed. Backend: PATCH /tournaments/{tid}/participants/{pid}.
+          if (!id) throw new Error(`tournament ${action} <tournament-id> benoetigt eine Turnier-ID + --participant <pid>.`);
+          if (!opts.participant) throw new Error(`tournament ${action} benoetigt --participant <participant-id>.`);
+          const registration_status = action === "participant-withdraw" ? "withdrawn" : "confirmed";
+          const updated = await client.patch<Participant>(
+            "tournament",
+            `/tournaments/${id}/participants/${opts.participant}`,
+            { registration_status },
+          );
+          output(updated, opts.json, () =>
+            action === "participant-withdraw"
+              ? `Teilnehmer ${updated.name ?? opts.participant} abgemeldet (withdrawn) — offene Spiele wurden annulliert.`
+              : `Teilnehmer ${updated.name ?? opts.participant} wieder angemeldet (confirmed). Neuer Spielplan: comvenio tournament redraw ${id} --file plan.json`,
+          );
+          break;
+        }
+
+        case "participant-remove": {
+          // K5: hard removal (soft-delete) of a participant incl. its open matches (backend K2).
+          if (!id) throw new Error("tournament participant-remove <tournament-id> benoetigt eine Turnier-ID + --participant <pid>.");
+          if (!opts.participant) throw new Error("tournament participant-remove benoetigt --participant <participant-id>.");
+          await client.del("tournament", `/tournaments/${id}/participants/${opts.participant}`);
+          output({ removed: opts.participant }, opts.json, () => `Teilnehmer ${opts.participant} entfernt (Soft-Delete) — offene Spiele wurden annulliert.`);
+          break;
+        }
+
+        case "matches-clear": {
+          // K5: bulk-clear matches (phase group|finals|all) before a re-draw. Backend K3.
+          if (!id) throw new Error("tournament matches-clear <tournament-id> benoetigt eine Turnier-ID.");
+          const phase = opts.phase ?? "all";
+          const result = await client.post<{ cleared?: number; phase?: string }>(
+            "tournament",
+            `/tournaments/${id}/matches/clear?phase=${phase}`,
+          );
+          output(result, opts.json, () => `${result.cleared ?? 0} Spiele geleert (Phase: ${result.phase ?? phase}).`);
+          break;
+        }
+
+        case "reset": {
+          // K5: reset a tournament to a re-draw-able state (status=registration). Backend K4.
+          if (!id) throw new Error("tournament reset <tournament-id> benoetigt eine Turnier-ID.");
+          const t = await client.post<Tournament>("tournament", `/tournaments/${id}/reset`);
+          output(t, opts.json, () => `Turnier ${id} auf Status ${t.status ?? "registration"} gesetzt. Neue Auslosung kann starten.`);
+          break;
+        }
+
+        case "redraw": {
+          // K5: convenience wrapper for a full re-draw: reset -> matches-clear all ->
+          // draw (--file) -> draw-confirm. Withdrawn participants are NOT drawn back in
+          // (backend only draws "confirmed") — so: first participant-withdraw, then redraw.
+          if (!id) throw new Error("tournament redraw <tournament-id> benoetigt eine Turnier-ID + --file <plan.json>.");
+          if (!opts.file) throw new Error("tournament redraw benoetigt --file <plan.json> (Body: TournamentDrawSessionCreate).");
+          const body = JSON.parse(readFileSync(opts.file, "utf-8"));
+          await client.post<Tournament>("tournament", `/tournaments/${id}/reset`);
+          const cleared = await client.post<{ cleared?: number }>("tournament", `/tournaments/${id}/matches/clear?phase=all`);
+          const session = await client.post<DrawSession>("tournament", `/tournaments/${id}/draw-sessions`, body);
+          if (!session?.id) throw new Error("Draw-Session konnte nicht angelegt werden.");
+          const confirmed = await client.post<DrawSession>("tournament", `/draw-sessions/${session.id}/confirm`);
+          const created = confirmed.outcome?.materialization?.matches_created;
+          output(
+            { reset: true, cleared: cleared.cleared, draw_session: session.id, matches_created: created },
+            opts.json,
+            () =>
+              [
+                "Re-Draw abgeschlossen:",
+                "  Reset -> registration",
+                `  ${cleared.cleared ?? 0} alte Spiele geleert`,
+                `  Neue Auslosung: ${session.id ?? "?"}`,
+                `  ${created ?? "?"} Spiele materialisiert (inkl. K.O.-Bracket)`,
+                `Zeiten/Felder: comvenio tournament schedule-generate ${id} --match-minutes ... --field-count ...`,
+              ].join("\n"),
+          );
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, start, matches, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
           );
       }
     });
