@@ -62,7 +62,7 @@ comvenio club info                    # Vereinsdaten
 | recipe   | `comvenio recipe from-template\|create\|list\|show\|update\|delete` (Gerichte/Getränke) |
 | menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
 | homepage | `comvenio homepage generate\|preview\|apply\|show\|design`     |
-| news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file --open` (lokale Vorschau, kein Write) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews". |
+| news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file [--open]` (Backend-Vorschau-URL im echten Layout, 30-Min-TTL; `--local` = Offline-Fallback) · `news video <template> --params` (Remotion, lokal) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews" + „Rich-News-Redaktion". |
 | data     | `comvenio data list\|show\|url\|download\|upload\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten) |
 | tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) |
 | meeting  | `comvenio meeting list\|show\|...` (Sitzungen/Protokolle) |
@@ -97,8 +97,9 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   `--publish` (sofort live) · `--draft` (bewusst als Entwurf) · `news publish <id>` (einen
   bestehenden Entwurf live schalten). **Ohne `--publish` bleibt eine neue News ein Entwurf** —
   vergisst du das, wundert sich der Verein, warum die News nicht erscheint. `design_source` wird
-  bei `apply` auf `cli` erzwungen (design-locked Rich-HTML). `news preview --file --open` zeigt
-  die News vorab lokal (kein Write).
+  bei `apply` auf `cli` erzwungen (design-locked Rich-HTML). `news preview --file [--open]` legt eine
+  Backend-Vorschau an (30-Min-TTL, unguessable URL, echtes Layout inkl. .rich-news-CSS) —
+  `--local` ist der Offline-Fallback (Näherung).
 - **member:** Pflicht bei `add`: `first_name`, `last_name` (club_id aus State).
   `team member --role`: PLAYER\|CAPTAIN\|COACH\|ASSISTANT_COACH\|MANAGER.
 - **booking:** `reservation_status` (requested\|approved\|rejected\|cancelled).
@@ -280,14 +281,15 @@ comvenio data url  <file_id> --json                 # presigned URL fürs <img> 
 #      # <img src="<presigned>" data-comvenio-file-id="<file_id>">
 
 # 4. Ansehen → veröffentlichen
-comvenio news preview --file news.json --open       # lokale HTML-Vorschau (kein Write)
+comvenio news preview --file news.json --open       # Backend-Vorschau-URL (echtes Layout, 30-Min-TTL); --local = Offline-Fallback
 comvenio news apply   --file news.json --draft      # als Entwurf anlegen (nur Admins sehen es)
 comvenio news publish <news-id>                     # live schalten
 #   oder in einem Schritt: comvenio news apply --file news.json --publish
 ```
 > **Warum Draft→Publish:** eine News ist ohne `--publish` ein **Entwurf** (`is_draft=true`,
-> nicht öffentlich). `preview` ist die schnelle lokale Sicht, `apply --draft` + `news publish`
-> der saubere „erst ansehen, dann live"-Weg (analog `homepage preview` → `apply`).
+> nicht öffentlich). `preview` erzeugt eine teilbare Backend-Vorschau-URL im echten Layout
+> (30 Min gültig, keine echte News), `apply --draft` + `news publish` der saubere
+> „erst ansehen, dann live"-Weg (identisches Muster wie `homepage preview` → `apply`).
 > Inline-Bilder brauchen `data-comvenio-file-id`, damit das Backend abgelaufene presigned
 > URLs automatisch neu signiert. „Jeden Tag beschreiben" = ein `<h2>`-Abschnitt je Child-Event.
 
@@ -412,6 +414,8 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 | `menu generate/apply/design`  | `create_menus`/`manage_menus`/`manage_club_settings` |
 | `homepage generate/preview/apply` | `manage_club_settings`           |
 | `news create/update/delete/apply/publish` | `manage_news` (schließt „Entwürfe sehen" ein) |
+| `news preview` (Backend-POST) | `manage_news`; das Öffnen der Vorschau-URL ist auth-frei (TTL + unguessable UUID) |
+| `news video --upload` | File-Upload-RBAC (Presign); Rendern selbst ist lokal, ohne Server |
 | `data upload` (Event) / `download` | kontextabhängig `write_files`/`manage_events`; Lesen: `read_files` bzw. public |
 
 `member list/show`, `event list/show`, `booking list/show`, `object list`,
