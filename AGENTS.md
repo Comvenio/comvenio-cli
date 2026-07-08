@@ -31,6 +31,28 @@ Aufgaben, Speisekarte, Vereins-Homepage). Dieses CLI verwaltet einen Verein
 keinen Agenten/Chat dazwischen. Rechte (RBAC) werden **serverseitig** geprüft —
 das CLI sendet nur dein opakes Device-Token.
 
+## Eiserne Regel: NUR das CLI — nie direkte API-Calls (BLOCKIEREND — Tom 2026-07-08)
+
+Dieses CLI ist die **einzige** erlaubte Schnittstelle zum Comvenio-Backend. **NIEMALS**
+direkte HTTP-/API-Calls (`curl`, PowerShell `Invoke-RestMethod`, Python `urllib`/`requests`,
+`fetch`, direkter `GET/POST/PATCH/DELETE` gegen `api.comvenio.app`) — auch nicht „nur einmal
+zum Eintragen".
+
+**Warum:** Die konsequente CLI-Nutzung ist die Fehlerkontrolle des CLI — jeder echte Aufruf
+prüft es und deckt Lücken/Bugs auf. Ein API-Call umgeht das und lässt CLI-Fehler unentdeckt.
+
+**Fehlt ein Command?** Dann wird das CLI **erweitert**, nicht umgangen — in
+`src/commands/<domain>.ts`: Feld in `type Opts` + `.option("--…")` + neuer `case` im
+`switch (action)` + Aktion in Command-Beschreibung UND `default`-Fehlerliste. Danach
+Typecheck `~/.bun/bin/bun.exe x tsc --noEmit` + Build
+`~/.bun/bin/bun.exe build src/index.ts --compile --outfile comvenio` (NICHT `bun run build` —
+der npm-`bun` auf dem PATH ist auf Windows kaputt). Beispiel: `tournament match-result
+<match-id> --home <n> --away <n>` wurde am 2026-07-08 ergänzt, weil Ergebnisse zuvor
+fälschlich per `POST /matches/{id}/result` gesetzt wurden.
+
+> Nebeneffekt-Beweis: Direkte HTTP-Clients ohne Browser-User-Agent werden von Cloudflare mit
+> `403 error code 1010` geblockt — ein weiterer Grund, immer über das CLI zu gehen.
+
 ## Quickstart (Auth)
 
 ```bash

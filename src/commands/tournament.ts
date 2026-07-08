@@ -37,6 +37,9 @@ type Opts = {
   // K5 (2026-07-08): withdrawal / re-draw / reset
   participant?: string;
   phase?: string;
+  // match-result (2026-07-08): Tore setzen
+  home?: string;
+  away?: string;
 };
 
 type Tournament = {
@@ -169,14 +172,17 @@ th,td{border:1px solid #dde;padding:.4rem .6rem;text-align:left}th{background:#f
 
 /**
  * `comvenio tournament <action>` — V3 participant engine (gateway key "tournament").
- *   list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft (add) | start | matches | standings | preview
- *   | draw | draw-confirm | schedule-generate | match-schedule | match-delete
+ * Diese CLI ist die EINZIGE erlaubte Backend-Schnittstelle fuer Agenten — NIE direkte API-Calls.
+ * Fehlt ein Befehl, wird er HIER ergaenzt (so wird das CLI staendig auf Fehler geprueft).
+ *   list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft (add)
+ *   | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw
+ *   | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result
  */
 export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete",
+      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -199,6 +205,8 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--no-auto-book", "schedule-generate: keine automatische Objekt-Buchung")
     .option("--participant <id>", "participant-withdraw/-reinstate/-remove: Teilnehmer-ID")
     .option("--phase <p>", "matches-clear: group | finals | all (default all)")
+    .option("--home <n>", "match-result: Tore Heim (side 0)")
+    .option("--away <n>", "match-result: Tore Auswaerts (side 1)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -541,9 +549,25 @@ export function registerTournamentCommands(cli: CAC): void {
           break;
         }
 
+        case "match-result": {
+          // Ergebnis eines Matches setzen (Backend POST /matches/{id}/result).
+          // id = MATCH-id (nicht Turnier-id). Auto-Winner aus score_home/score_away.
+          if (!id) throw new Error("tournament match-result <match-id> benoetigt eine Match-ID + --home <tore> --away <tore>.");
+          if (opts.home == null || opts.away == null) {
+            throw new Error("tournament match-result benoetigt --home <tore> und --away <tore>.");
+          }
+          const updated = await client.post<Match>("tournament", `/matches/${id}/result`, {
+            score_home: Number(opts.home),
+            score_away: Number(opts.away),
+            result_status: opts.status ?? "confirmed",
+          });
+          output(updated, opts.json, () => `Ergebnis gesetzt: Match ${id} ${opts.home}:${opts.away} (${updated.status ?? "?"}).`);
+          break;
+        }
+
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete, match-result`,
           );
       }
     });
