@@ -14,6 +14,8 @@ describe("homepage schema", () => {
     expect(homepage.templates).toContain("flex");
     expect(homepage.vocabulary_sync.missing_in_backend).toEqual([]);
     expect(homepage.vocabulary_sync.missing_in_prompt).toEqual([]);
+    expect(homepage.preview_contract.no_live_write).toBe(true);
+    expect(homepage.preview_contract.design_snapshot_version).toBe(1);
   });
 
   test("publishes all section layouts and styles", () => {

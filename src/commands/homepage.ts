@@ -33,6 +33,7 @@ type Opts = {
   json?: boolean;
   club?: string;
   file?: string;
+  designFile?: string;
   clear?: boolean;
   public?: boolean;
   open?: boolean;
@@ -75,6 +76,7 @@ export function registerHomepageCommands(cli: CAC): void {
     .command("homepage <action>", "Homepage (deklarativ, kein Backend-LLM): preview (Vorschau) | apply | show — der Agent komponiert via schema homepage")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "home.json: vom Agenten komponierte Struktur (preview/apply)")
+    .option("--design-file <path>", "preview: design_settings-JSON als versionierter No-Write-Snapshot")
     .option("--clear", "apply: bestehende Homepage ersetzen (clear_existing)")
     .option("--public", "show: nur oeffentliche Struktur lesen")
     .option("--open", "preview: die Vorschau-URL im Standard-Browser oeffnen")
@@ -110,7 +112,11 @@ export function registerHomepageCommands(cli: CAC): void {
           if (!opts.file) {
             throw new Error("homepage preview benoetigt --file <home.json> (vom Agenten komponierte Struktur).");
           }
-          const struct = readJsonFile<{ tabs?: unknown[]; clear_existing?: boolean } | unknown[]>(opts.file);
+          const struct = readJsonFile<{
+            tabs?: unknown[];
+            clear_existing?: boolean;
+            design_settings?: Record<string, unknown>;
+          } | unknown[]>(opts.file);
           const tabs = Array.isArray(struct) ? struct : (struct.tabs ?? []);
           if (!Array.isArray(tabs) || tabs.length === 0) {
             throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
@@ -119,6 +125,15 @@ export function registerHomepageCommands(cli: CAC): void {
           const body: Record<string, unknown> = { tabs };
           if (!Array.isArray(struct) && struct.clear_existing !== undefined) {
             body.clear_existing = struct.clear_existing;
+          }
+          const designSettings = opts.designFile
+            ? readJsonFile<Record<string, unknown>>(opts.designFile)
+            : !Array.isArray(struct)
+              ? struct.design_settings
+              : undefined;
+          if (designSettings) {
+            body.design_snapshot_version = 1;
+            body.design_settings = designSettings;
           }
           const res = await client.post<HomePreviewResponse>(
             "club",

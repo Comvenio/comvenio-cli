@@ -7,6 +7,19 @@ import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
+import {
+  actionableConsoleErrors,
+  artifactSegment,
+  classifyVerificationExit,
+  failedSameOriginRequests,
+  normalizeHomepageTabs,
+  sanitizeArtifactUrl,
+  selectHomepageViewports,
+  withTabQuery,
+  type HomepageTab,
+  type VerifyFinding,
+  type UnverifiableFinding,
+} from "../verify/homepage.ts";
 
 // K11 — `comvenio verify <action>`: render a Comvenio web page headless and drop
 // screenshots so the operating agent can SEE the result (Lastenheft Sub-File 11).
@@ -76,6 +89,7 @@ type VerifyOpts = {
   token?: string;
   print?: boolean;
   file?: string;
+  designFile?: string;
   frontendBase?: string;
   audit?: boolean;
 };
@@ -95,6 +109,48 @@ type VerifyResult = {
   snapshot_taken: boolean;
   render_ms: number;
   audit?: AuditResult;
+};
+
+type DomAuditFinding = {
+  kind: "horizontal_overflow" | "empty_main" | "invisible_text" | "contrast";
+  message: string;
+  details?: Record<string, unknown>;
+};
+
+type DomAuditResult = {
+  checked_texts: number;
+  failures: DomAuditFinding[];
+  unverifiable: Array<{
+    kind: "unverifiable_background";
+    message: string;
+    details?: Record<string, unknown>;
+  }>;
+};
+
+type HomepageMatrixPoint = {
+  tab: string;
+  viewport: string;
+  width: number;
+  height: number;
+  url: string;
+  screenshot?: string;
+  snapshot?: string;
+  render_ms: number;
+  completed: boolean;
+};
+
+type HomepageVerifyReport = {
+  passed: boolean;
+  incomplete: boolean;
+  exit_code: 0 | 2 | 4;
+  url: string;
+  tabs: string[];
+  viewports: Array<{ name: string; width: number; height: number }>;
+  matrix: HomepageMatrixPoint[];
+  failures: VerifyFinding[];
+  unverifiable: UnverifiableFinding[];
+  infrastructure_errors: string[];
+  report_file: string;
 };
 
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
@@ -145,6 +201,159 @@ const AUDIT_JS = `() => {
   fails.sort((a, b) => a.ratio - b.ratio);
   return JSON.stringify({ checked: checked, fail_count: fails.length, invisible_texts: invisible, gradient_skipped: gradientSkipped, worst: fails.slice(0, 15) });
 }`;
+
+const SCROLL_SETTLE_JS = `async () => {
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const step = Math.max(320, Math.floor(window.innerHeight * 0.75));
+  let lastHeight = 0;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    for (let y = 0; y < height; y += step) {
+      window.scrollTo(0, y);
+      await delay(250);
+    }
+    window.scrollTo(0, height);
+    await delay(250);
+    const nextHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    if (nextHeight === lastHeight || nextHeight === height) break;
+    lastHeight = nextHeight;
+  }
+  window.scrollTo(0, 0);
+  await delay(500);
+  return JSON.stringify({ height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) });
+}`;
+
+const HOMEPAGE_AUDIT_JS = `() => {
+  const failures = [];
+  const unverifiable = [];
+  let checkedTexts = 0;
+  const seen = new Set();
+  const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
+  const toRGB = (value) => {
+    if (!value || !value.startsWith('rgb')) return null;
+    const values = value.slice(value.indexOf('(') + 1, value.indexOf(')')).split(',').map(Number);
+    if (values.length < 3 || values.some((item) => Number.isNaN(item))) return null;
+    return { r: values[0], g: values[1], b: values[2], a: values[3] ?? 1 };
+  };
+  const luminance = (color) => {
+    const channel = (value) => {
+      const normalized = value / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  };
+  const contrastRatio = (foreground, background) => {
+    const a = luminance(foreground);
+    const b = luminance(background);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  const isExcluded = (element) => {
+    if (element.closest(excludedSelector)) return true;
+    let current = element;
+    while (current) {
+      if (getComputedStyle(current).display === 'none') return true;
+      current = current.parentElement;
+    }
+    return false;
+  };
+  const hasBox = (element) => {
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+  const effectiveBackground = (element) => {
+    let current = element;
+    while (current && current !== document.documentElement) {
+      const style = getComputedStyle(current);
+      if (style.backgroundImage && style.backgroundImage !== 'none') return null;
+      const color = toRGB(style.backgroundColor);
+      if (color && color.a >= 0.95) return color;
+      current = current.parentElement;
+    }
+    return { r: 255, g: 255, b: 255, a: 1 };
+  };
+  const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
+  const rootText = (root.textContent || '').replace(/\s+/g, ' ').trim();
+  const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
+  if (rootText.length < 20 && !visibleMedia) {
+    failures.push({ kind: 'empty_main', message: 'Die sichtbare Hauptregion enthaelt keinen ausreichenden Inhalt.', details: { text_length: rootText.length } });
+  }
+  const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
+  if (overflow > 1) {
+    failures.push({ kind: 'horizontal_overflow', message: 'Die Seite laeuft horizontal aus dem Viewport.', details: { overflow_px: overflow } });
+  }
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text.length < 2) continue;
+    const element = node.parentElement;
+    if (!element || seen.has(element) || isExcluded(element) || !hasBox(element)) continue;
+    seen.add(element);
+    const style = getComputedStyle(element);
+    let opacity = 1;
+    let current = element;
+    while (current) {
+      opacity *= Number.parseFloat(getComputedStyle(current).opacity || '1');
+      current = current.parentElement;
+    }
+    if (style.visibility === 'hidden' || opacity <= 0.01) {
+      failures.push({
+        kind: 'invisible_text',
+        message: 'Semantischer Text ist nach Scroll-Settling unsichtbar.',
+        details: { text: text.slice(0, 80), visibility: style.visibility, opacity: Math.round(opacity * 1000) / 1000 },
+      });
+      continue;
+    }
+    const foreground = toRGB(style.color);
+    if (!foreground) continue;
+    const background = effectiveBackground(element);
+    if (!background) {
+      unverifiable.push({
+        kind: 'unverifiable_background',
+        message: 'Text liegt auf einem Bild-, Video- oder Gradient-Hintergrund.',
+        details: { text: text.slice(0, 80) },
+      });
+      continue;
+    }
+    const ratio = contrastRatio(foreground, background);
+    const size = Number.parseFloat(style.fontSize);
+    const weight = Number.parseInt(style.fontWeight, 10) || 400;
+    const large = size >= 24 || (size >= 18.66 && weight >= 700);
+    checkedTexts += 1;
+    if (ratio < (large ? 3 : 4.5)) {
+      failures.push({
+        kind: 'contrast',
+        message: 'Der Textkontrast unterschreitet WCAG AA.',
+        details: { text: text.slice(0, 80), ratio: Math.round(ratio * 100) / 100, font_size: size, font_weight: weight },
+      });
+    }
+  }
+  return JSON.stringify({ checked_texts: checkedTexts, failures, unverifiable });
+}`;
+
+function parseEvalJson<T>(stdout: string): T | undefined {
+  const lines = stdout.split("\n").map((line) => line.trim()).filter(Boolean).reverse();
+  for (const line of lines) {
+    try {
+      const parsed = JSON.parse(line);
+      return (typeof parsed === "string" ? JSON.parse(parsed) : parsed) as T;
+    } catch {
+      // playwright-cli adds headings around the JSON result.
+    }
+  }
+  const quoted = stdout.match(/"\{.*\}"/s)?.[0];
+  if (!quoted) return undefined;
+  try {
+    return JSON.parse(JSON.parse(quoted)) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+function pwFailure(result: PwResult, operation: string): string | undefined {
+  if (result.code === 0) return undefined;
+  return `${operation}: ${(result.stderr || result.stdout).trim().slice(0, 300) || `Exit ${result.code}`}`;
+}
 
 // Open the URL, capture Desktop + Mobile screenshots (full-page), console errors,
 // and an ARIA snapshot. Returns the bundle; throws on a hard render failure.
@@ -252,6 +461,168 @@ async function renderAndOutput(
   });
 }
 
+async function verifyHomepageMatrix(
+  baseUrl: string,
+  rawTabs: readonly HomepageTab[],
+  name: string,
+  opts: VerifyOpts,
+): Promise<void> {
+  const outDir = resolve(opts.out ?? OUT_DIR);
+  mkdirSync(outDir, { recursive: true });
+  const reportFile = resolve(outDir, `${name}-report.json`);
+  const tabs = normalizeHomepageTabs(rawTabs);
+  const viewports = selectHomepageViewports(opts.desktopOnly, opts.mobileOnly);
+  const failures: VerifyFinding[] = [];
+  const unverifiable: UnverifiableFinding[] = [];
+  const infrastructureErrors: string[] = [];
+  const matrix: HomepageMatrixPoint[] = [];
+  const waitMs = opts.wait ? Math.max(0, Number.parseInt(opts.wait, 10) || 0) : DEFAULT_WAIT_MS;
+
+  if (tabs.length === 0) {
+    infrastructureErrors.push("Keine aktiven oeffentlichen Homepage-Tabs gefunden.");
+  }
+  if (!(await hasPlaywrightCli())) {
+    infrastructureErrors.push("playwright-cli ist nicht auf dem PATH verfuegbar.");
+  }
+
+  for (const tab of tabs) {
+    for (const viewport of viewports) {
+      const pointStarted = Date.now();
+      const pageUrl = withTabQuery(baseUrl, tab.slug);
+      const prefix = `${name}-${artifactSegment(tab.slug)}-${viewport.name}`;
+      const screenshotFile = resolve(outDir, `${prefix}.png`);
+      const snapshotFile = resolve(outDir, `${prefix}-aria.md`);
+      const point: HomepageMatrixPoint = {
+        tab: tab.slug,
+        viewport: viewport.name,
+        width: viewport.width,
+        height: viewport.height,
+        url: sanitizeArtifactUrl(pageUrl),
+        render_ms: 0,
+        completed: false,
+      };
+      let sessionOpened = false;
+
+      try {
+        const open = await pw(["open", "about:blank"]);
+        const openFailure = pwFailure(open, "Browser-Start");
+        if (openFailure) throw new Error(openFailure);
+        sessionOpened = true;
+
+        const resizeResult = await pw(["resize", String(viewport.width), String(viewport.height)]);
+        const resizeFailure = pwFailure(resizeResult, "Viewport");
+        if (resizeFailure) throw new Error(resizeFailure);
+
+        const navigation = await pw(["goto", pageUrl]);
+        const navigationFailure = pwFailure(navigation, "Navigation");
+        if (navigationFailure) throw new Error(navigationFailure);
+        await sleep(waitMs);
+
+        const scroll = await pw(["eval", SCROLL_SETTLE_JS.replace(/\s+/g, " ")]);
+        const scrollFailure = pwFailure(scroll, "Scroll-Settling");
+        if (scrollFailure) throw new Error(scrollFailure);
+
+        const screenshot = await pw(["screenshot", "--full-page", "--filename", screenshotFile]);
+        const screenshotFailure = pwFailure(screenshot, "Screenshot");
+        if (screenshotFailure) throw new Error(screenshotFailure);
+        point.screenshot = screenshotFile;
+
+        if (opts.snapshot !== false) {
+          const snapshot = await pw(["snapshot", "--filename", snapshotFile]);
+          const snapshotFailure = pwFailure(snapshot, "ARIA-Snapshot");
+          if (snapshotFailure) throw new Error(snapshotFailure);
+          point.snapshot = snapshotFile;
+        }
+
+        if (opts.audit) {
+          const auditResult = await pw(["eval", HOMEPAGE_AUDIT_JS.replace(/\s+/g, " ")]);
+          const auditFailure = pwFailure(auditResult, "DOM-Audit");
+          if (auditFailure) throw new Error(auditFailure);
+          const audit = parseEvalJson<DomAuditResult>(auditResult.stdout);
+          if (!audit) throw new Error("DOM-Audit: Ergebnis war nicht parsebar.");
+          failures.push(...audit.failures.map((finding) => ({
+            ...finding,
+            tab: tab.slug,
+            viewport: viewport.name,
+          })));
+          unverifiable.push(...audit.unverifiable.map((finding) => ({
+            ...finding,
+            tab: tab.slug,
+            viewport: viewport.name,
+          })));
+        }
+
+        if (opts.console !== false) {
+          const consoleResult = await pw(["console", "error"]);
+          const consoleFailure = pwFailure(consoleResult, "Console-Auswertung");
+          if (consoleFailure) throw new Error(consoleFailure);
+          for (const message of actionableConsoleErrors(consoleResult.stdout)) {
+            failures.push({
+              kind: "console_error",
+              message: message.slice(0, 500),
+              tab: tab.slug,
+              viewport: viewport.name,
+            });
+          }
+
+          const networkResult = await pw(["network"]);
+          const networkFailure = pwFailure(networkResult, "Network-Auswertung");
+          if (networkFailure) throw new Error(networkFailure);
+          for (const message of failedSameOriginRequests(networkResult.stdout, pageUrl)) {
+            failures.push({
+              kind: "same_origin_request",
+              message: message.slice(0, 500),
+              tab: tab.slug,
+              viewport: viewport.name,
+            });
+          }
+        }
+
+        point.completed = true;
+      } catch (error) {
+        infrastructureErrors.push(
+          `${tab.slug}/${viewport.name}: ${(error as Error).message}`,
+        );
+      } finally {
+        point.render_ms = Date.now() - pointStarted;
+        matrix.push(point);
+        if (sessionOpened) {
+          const close = await pw(["close"]);
+          const closeFailure = pwFailure(close, "Browser-Close");
+          if (closeFailure) infrastructureErrors.push(`${tab.slug}/${viewport.name}: ${closeFailure}`);
+        }
+      }
+    }
+  }
+
+  const incomplete = infrastructureErrors.length > 0 || matrix.some((point) => !point.completed);
+  const exitCode = classifyVerificationExit(incomplete, failures.length);
+  const report: HomepageVerifyReport = {
+    passed: exitCode === 0,
+    incomplete,
+    exit_code: exitCode,
+    url: sanitizeArtifactUrl(baseUrl),
+    tabs: tabs.map((tab) => tab.slug),
+    viewports: viewports.map(({ name: viewportName, width, height }) => ({
+      name: viewportName,
+      width,
+      height,
+    })),
+    matrix,
+    failures,
+    unverifiable,
+    infrastructure_errors: infrastructureErrors,
+    report_file: reportFile,
+  };
+  writeFileSync(reportFile, JSON.stringify(report, null, 2), "utf8");
+  output(report, opts.json, () => [
+    `Homepage-Verifier: ${tabs.length} Tabs x ${viewports.length} Viewports`,
+    `  Ergebnis: Exit ${exitCode} (${failures.length} Findings, ${unverifiable.length} unverifiable, ${infrastructureErrors.length} Infrastrukturfehler)`,
+    `  Bericht: ${reportFile}`,
+  ].join("\n"));
+  process.exitCode = exitCode;
+}
+
 export function registerVerifyCommands(cli: CAC): void {
   cli
     .command(
@@ -270,6 +641,7 @@ export function registerVerifyCommands(cli: CAC): void {
     .option("--token <t>", "event: Hub-Token (?token=...)")
     .option("--print", "menu: Druck-Ansicht (/print)")
     .option("--file <path>", "homepage: home.json fuer Entwurfs-Vorschau (statt Live)")
+    .option("--design-file <path>", "homepage: design_settings-JSON fuer den Preview-Snapshot")
     .option("--frontend-base <url>", "Frontend-Basis ueberschreiben (z.B. http://localhost:5173)")
     .option("--audit", "Kontrast-/Sichtbarkeits-Audit (WCAG-Ratios + opacity-0-Texte) mit ausgeben")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
@@ -309,18 +681,31 @@ export function registerVerifyCommands(cli: CAC): void {
           const clubId = requireClubId(state, opts.club);
           if (opts.file) {
             // Draft preview: POST composed structure → preview_url (no live mutation).
-            const struct = readJsonFile<{ tabs?: unknown[] } | unknown[]>(opts.file);
+            const struct = readJsonFile<{
+              tabs?: HomepageTab[];
+              design_settings?: Record<string, unknown>;
+            } | HomepageTab[]>(opts.file);
             const tabs = Array.isArray(struct) ? struct : (struct.tabs ?? []);
             if (!Array.isArray(tabs) || tabs.length === 0) {
               throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
             }
+            const designSettings = opts.designFile
+              ? readJsonFile<Record<string, unknown>>(opts.designFile)
+              : !Array.isArray(struct)
+                ? struct.design_settings
+                : undefined;
+            const body: Record<string, unknown> = { tabs };
+            if (designSettings) {
+              body.design_snapshot_version = 1;
+              body.design_settings = designSettings;
+            }
             const res = await client.post<{ preview_url?: string }>(
               "club",
               `/home-config/${clubId}/preview`,
-              { tabs },
+              body,
             );
             if (!res.preview_url) throw new Error("Keine preview_url vom club-service erhalten.");
-            await renderAndOutput(res.preview_url, "homepage-preview", opts);
+            await verifyHomepageMatrix(res.preview_url, tabs, "homepage-preview", opts);
             break;
           }
           // Live homepage: resolve the club slug → {slug}.web.comvenio.app.
@@ -333,7 +718,16 @@ export function registerVerifyCommands(cli: CAC): void {
                 "oeffentlichen Slug setzen, oder `verify homepage --file home.json` fuer einen Entwurf nutzen.",
             );
           }
-          await renderAndOutput(`https://${slug}.web.comvenio.app`, "homepage", opts);
+          const tabs = await client.get<HomepageTab[]>(
+            "club",
+            `/public/clubs/${clubId}/home`,
+          );
+          await verifyHomepageMatrix(
+            `https://${slug}.web.comvenio.app`,
+            tabs,
+            "homepage",
+            opts,
+          );
           break;
         }
 

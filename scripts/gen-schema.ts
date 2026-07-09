@@ -327,6 +327,13 @@ function genHomepage(): unknown {
         preset_enum: ["", "glass", "dark", "gradient", "soft", "elevated", "outlined", "neon"],
       },
     },
+    preview_contract: {
+      no_live_write: true,
+      design_snapshot_version: 1,
+      optional_top_level_fields: ["design_snapshot_version", "design_settings"],
+      cli: "comvenio homepage preview --file home.json --design-file design_settings.json",
+      legacy_without_design_snapshot: "readable_until_ttl_with_live_design_warning",
+    },
     templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"],
     widget_kinds: kinds,
     widgets,

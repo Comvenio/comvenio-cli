@@ -12,7 +12,7 @@
     "1) Template waehlen:  comvenio club design --public-template flex",
     "2) Design schreiben:  comvenio club design --file design_settings.json",
     "   wobei design_settings.json = { \"homepage_theme\": \"...\", \"primary_color\": \"#..\", \"accent_color\": \"#..\", \"custom_template_config\": { <diese Config> } }",
-    "3) Vorschau:          comvenio homepage preview --file home.json   (rendert das Flex-Template mit dieser Config)"
+    "3) Vorschau:          comvenio homepage preview --file home.json --design-file design_settings.json   (No-Write-Preview mit exakt diesem Design-Snapshot)"
   ],
   "config": {
     "look_recipe_id": {
