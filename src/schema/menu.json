@@ -171,6 +171,10 @@
     },
     "overlays": {
       "type": "array"
+    },
+    "custom_css": {
+      "type": "string",
+      "optional": true
     }
   },
   "menu_item_fields": {

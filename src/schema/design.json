@@ -1,7 +1,11 @@
 {
   "domain": "design",
-  "generated": "manual — mirror of web-page src/components/ClubHome/templates/flexConfig.ts (FlexDesignConfig)",
-  "note": "Config-getriebenes Design-Vokabular fuer das GENERISCHE Flex-Template. Kein club-spezifischer Code: der Look kommt komplett aus dieser Config. Alle Felder optional — fehlende Felder nutzen moderne Defaults (ein leeres Objekt ergibt bereits einen guten, modernen Look).",
+  "generated": "source mirror — flexConfig.ts + lookRecipes.ts",
+  "source": [
+    "Frontend/web-page/src/components/ClubHome/templates/flexConfig.ts",
+    "Frontend/web-page/src/components/ClubHome/templates/lookRecipes.ts"
+  ],
+  "note": "Config-getriebenes Design-Vokabular fuer das GENERISCHE Flex-Template. LookRecipes sind additive Defaults; explizite Club-Werte gewinnen. Clubs ohne look_recipe_id behalten die bestehenden Flex-Defaults.",
   "applies_when": "homepage_template == 'flex'",
   "stored_in": "design_settings.custom_template_config",
   "how": [
@@ -11,6 +15,11 @@
     "3) Vorschau:          comvenio homepage preview --file home.json   (rendert das Flex-Template mit dieser Config)"
   ],
   "config": {
+    "look_recipe_id": {
+      "values": ["sport-editorial", "community-documentary", "heritage-modern", "culture-editorial", "festival-live"],
+      "optional": true,
+      "note": "Additive V1-Recipe; kein club-spezifischer React-Code"
+    },
     "hero": {
       "variant": { "values": ["gradient", "image", "split", "minimal"], "default": "gradient", "note": "image/split nutzen data.bannerUrl wenn vorhanden, sonst Gradient-Fallback" },
       "minHeight": { "type": "number(px)", "range": "360..900", "default": 600 },
@@ -38,11 +47,38 @@
     "density": { "values": ["compact", "normal", "spacious"], "default": "normal" },
     "cornerStyle": { "values": ["sharp", "rounded", "pill"], "default": "rounded", "note": "Radius von Buttons/Cards (0 / 12px / pill)" },
     "accentUsage": { "values": ["subtle", "balanced", "vivid"], "default": "balanced", "note": "Intensitaet des Akzent-Einsatzes (Gradients/Highlights)" },
+    "bodySurface": { "values": ["light", "dark"], "default": "auto", "note": "Entkoppelt die neutrale Seitenflaeche von Hero-/Markenfarben" },
+    "media": {
+      "focus": { "type": "object", "fields": { "x": "0..100", "y": "0..100" }, "default": { "x": 50, "y": 50 } },
+      "mobileFocus": { "type": "object", "fields": { "x": "0..100", "y": "0..100" }, "default": "focus" }
+    },
     "font_pair": { "values": ["default", "editorial", "sporty", "friendly", "corporate"], "note": "auch von ClubThemeProvider genutzt" },
     "spacing": { "values": ["compact", "normal", "spacious"] }
   },
+  "design_settings_fields": {
+    "tokens": {
+      "palette": "Record<string,#RRGGBB>",
+      "radius": "Record<string,number>",
+      "spacing_scale": "number",
+      "type_scale": "number",
+      "shadow_level": "number"
+    },
+    "custom_css": {
+      "scope": ".pub-site-root",
+      "forbidden": ["@import", "url(javascript:...)", "position:fixed outside approved shell"],
+      "note": "serverseitig sanitisiert und beim Public-Read erneut sanitisiert"
+    }
+  },
+  "look_recipes": [
+    { "id": "sport-editorial", "version": 1, "name": "Sport Editorial", "suitable_for": ["Sportvereine"] },
+    { "id": "community-documentary", "version": 1, "name": "Community Documentary", "suitable_for": ["Sozialvereine", "Ortsvereine"] },
+    { "id": "heritage-modern", "version": 1, "name": "Heritage Modern", "suitable_for": ["Jubilaeen", "Traditionsvereine"] },
+    { "id": "culture-editorial", "version": 1, "name": "Culture Editorial", "suitable_for": ["Musik", "Theater", "Kunst"] },
+    { "id": "festival-live", "version": 1, "name": "Festival Live", "suitable_for": ["Feste", "Turniere"], "event_tab_only": true }
+  ],
   "colors_note": "Brand-Farben kommen NICHT aus dieser Config, sondern aus design_settings.primary_color/accent_color/secondary_color (comvenio club design --primary/--accent/--secondary). Das Flex-Template faerbt sich daraus.",
   "example_custom_template_config": {
+    "look_recipe_id": "sport-editorial",
     "hero": { "variant": "gradient", "minHeight": 640, "align": "center", "pattern": "dots", "accentWord": 1, "showStats": true },
     "sections": { "rhythm": "airy", "container": "normal", "dividers": "angle" },
     "decor": { "foundedBadge": true, "gradientAccents": true },
@@ -52,5 +88,7 @@
     "accentUsage": "vivid",
     "font_pair": "sporty",
     "spacing": "normal"
+    ,"bodySurface": "light"
+    ,"media": { "focus": { "x": 50, "y": 38 }, "mobileFocus": { "x": 50, "y": 28 } }
   }
 }

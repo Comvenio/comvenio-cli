@@ -5,21 +5,11 @@ import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 
-// KI-Gen Homepage (verified Sub-File 09). TWO modes (D-12):
-//   generative `homepage generate --prompt` → ai /club-homepage/generate (auto_apply
-//              persists itself via club-service bulk — CLI must NOT call bulk too)
-//   declarative `homepage apply --file home.json` → club /home-config/{club_id}/bulk
-//              directly (BulkCreateRequest), NO ai-service
+// Homepage is declarative (D-12): the operating agent composes JSON from the
+// schema, previews it, and applies it directly through club-service.
+// The CLI never calls the backend LLM.
 //   `homepage show [--public]` → club home-config/tabs OR public/clubs/{id}/home
-//   `homepage design --prompt` → ai /club-design/generate (recommendation only, no apply)
-// gateway keys: "ai" → ai-service, "club" → club-service.
-
-type HomepageGenerateResponse = {
-  config?: { tabs?: unknown[] };
-  explanation?: string;
-  suggestions?: string[];
-  session_id?: string;
-};
+// gateway key: "club" → club-service.
 type BulkCreateResponse = {
   tabs?: unknown[];
   sections_created?: number;
@@ -42,11 +32,7 @@ type ClubHomeTabRead = {
 type Opts = {
   json?: boolean;
   club?: string;
-  prompt?: string;
-  template?: string;
-  widgets?: string;
   file?: string;
-  apply?: boolean;
   clear?: boolean;
   public?: boolean;
   open?: boolean;
@@ -77,11 +63,9 @@ async function openInBrowser(url: string): Promise<boolean> {
 
 /**
  * `comvenio homepage <action>` dispatcher (cac multi-word via dispatcher).
- *   homepage generate --prompt "..." [--template t] [--widgets a,b] [--apply]
  *   homepage preview --file home.json [--open]
  *   homepage apply --file home.json [--clear]
  *   homepage show [--public]
- *   homepage design --prompt "..."
  *
  * Empfohlener Flow: schema homepage (komponieren) → preview --file (ansehen)
  *   → apply --file (live schalten).
@@ -90,11 +74,7 @@ export function registerHomepageCommands(cli: CAC): void {
   cli
     .command("homepage <action>", "Homepage (deklarativ, kein Backend-LLM): preview (Vorschau) | apply | show — der Agent komponiert via schema homepage")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
-    .option("--prompt <text>", "Beschreibung (min. 5 Zeichen, generate/design)")
-    .option("--template <name>", "elegance|sport|community|minimal|festlich|modern|classic")
-    .option("--widgets <list>", "Komma-Liste gewuenschter Widget-Kinds (generate)")
     .option("--file <path>", "home.json: vom Agenten komponierte Struktur (preview/apply)")
-    .option("--apply", "generate: direkt anwenden (auto_apply, ersetzt Homepage)")
     .option("--clear", "apply: bestehende Homepage ersetzen (clear_existing)")
     .option("--public", "show: nur oeffentliche Struktur lesen")
     .option("--open", "preview: die Vorschau-URL im Standard-Browser oeffnen")

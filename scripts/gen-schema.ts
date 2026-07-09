@@ -38,13 +38,16 @@ const CHECK_MODE = process.argv.includes("--check");
 
 /** Resolve a workspace-relative path and read it, or throw a clear error. */
 function readSource(relPath: string): string {
-  const abs = join(WORKSPACE, relPath);
+  const aiPrefix = "Backend/Microservice-Backend/ai-service/";
+  const abs = process.env.COMVENIO_AI_SERVICE_ROOT && relPath.startsWith(aiPrefix)
+    ? join(resolve(process.env.COMVENIO_AI_SERVICE_ROOT), relPath.slice(aiPrefix.length))
+    : join(WORKSPACE, relPath);
   if (!existsSync(abs)) {
     throw new Error(
       `Quelle nicht gefunden: ${relPath}\n` +
         `  erwartet unter: ${abs}\n` +
         `  Workspace-Root: ${WORKSPACE}\n` +
-        `  Setze COMVENIO_WORKSPACE falls der Workspace woanders liegt.`,
+        `  Setze COMVENIO_WORKSPACE bzw. COMVENIO_AI_SERVICE_ROOT fuer isolierte Worktrees.`,
     );
   }
   return readFileSync(abs, "utf8");
@@ -92,8 +95,10 @@ function parsePyEnum(source: string, className: string): string[] {
 const HOMEPAGE_REGISTRY = "Frontend/web-page/src/components/ClubHome/widgets/index.ts";
 const HOMEPAGE_PROMPT =
   "Backend/Microservice-Backend/ai-service/app/prompts/homepage_system.py";
-const HOMEPAGE_SECTION_MODEL =
-  "Backend/Microservice-Backend/club-service/app/models/club_home_section.py";
+const HOMEPAGE_SECTION_SCHEMA =
+  "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py";
+const HOMEPAGE_WIDGET_KINDS =
+  "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py";
 
 /** Authoritative widget kinds: keys of WIDGET_REGISTRY (one per line). */
 function parseWidgetKinds(registrySrc: string): string[] {
@@ -110,6 +115,30 @@ function parseWidgetKinds(registrySrc: string): string[] {
   }
   if (kinds.length === 0) throw new Error("Keine Widget-kinds aus WIDGET_REGISTRY geparst.");
   return kinds;
+}
+
+function parsePromptWidgetKinds(promptSrc: string): string[] {
+  const start = promptSrc.indexOf("## Verfuegbare Widget-Typen");
+  const end = promptSrc.indexOf("## Design-Presets fuer Widgets", start);
+  if (start === -1 || end === -1) throw new Error("Widget-Sektion im Homepage-Prompt fehlt.");
+  return [...promptSrc.slice(start, end).matchAll(/^\s*-\s+([a-z][a-z0-9_]*)\s*:/gm)]
+    .map((match) => match[1]);
+}
+
+function parsePythonStringSet(source: string, name: string): string[] {
+  const start = source.indexOf(`${name}:`);
+  if (start === -1) throw new Error(`Python-Set ${name} nicht gefunden.`);
+  const bodyStart = source.indexOf("frozenset(", start);
+  const bodyEnd = source.indexOf("\n)", bodyStart);
+  if (bodyStart === -1 || bodyEnd === -1) throw new Error(`Python-Set ${name} nicht abschliessbar.`);
+  return [...source.slice(bodyStart, bodyEnd).matchAll(/["']([a-z][a-z0-9_-]*)["']/g)]
+    .map((match) => match[1]);
+}
+
+function parsePythonLiteral(source: string, name: string): string[] {
+  const match = new RegExp(`${name}\\s*=\\s*Literal\\s*\\[([\\s\\S]*?)\\]`).exec(source);
+  if (!match) throw new Error(`Python-Literal ${name} nicht gefunden.`);
+  return [...match[1].matchAll(/["']([a-z][a-z0-9_-]*)["']/g)].map((entry) => entry[1]);
 }
 
 /**
@@ -222,76 +251,33 @@ function parseSectionEnums(sectionSrc: string): {
   layout: string[];
   style_variant: string[];
 } {
-  // The values are documented as inline comments (`"full"  → ...`). Collect the
-  // quoted keys following `layout`/`style_variant` column docs.
-  const grabAfter = (anchor: string): string[] => {
-    const idx = sectionSrc.indexOf(anchor);
-    if (idx === -1) return [];
-    // Look back a bit and forward to the Column assignment to scope the comment block.
-    const windowStart = sectionSrc.lastIndexOf("#", idx); // not robust enough alone
-    void windowStart;
-    return [];
+  return {
+    layout: parsePythonLiteral(sectionSrc, "SectionLayout"),
+    style_variant: parsePythonLiteral(sectionSrc, "SectionStyleVariant"),
   };
-  void grabAfter;
-
-  // Simpler + robust: pull the documented value sets directly. These live as
-  // `# "full" → ...` comment lines grouped above each Column. We scan the lines
-  // between the `layout = Column` doc block and `style_variant = Column` doc block.
-  const layout = extractQuotedDocValues(sectionSrc, "layout = Column");
-  const style_variant = extractQuotedDocValues(sectionSrc, "style_variant = Column");
-  return { layout, style_variant };
-}
-
-/**
- * Collect quoted values from the comment block immediately preceding a Column
- * assignment, e.g. lines like `# "full" → 1 Widget`. Falls back to empty if
- * the comment style changes (caller supplies a default then).
- */
-function extractQuotedDocValues(src: string, columnAnchor: string): string[] {
-  const colIdx = src.indexOf(columnAnchor);
-  if (colIdx === -1) return [];
-  // The doc-comment block is the contiguous run of `#` lines just above the anchor.
-  const before = src.slice(0, colIdx);
-  const lines = before.split(/\r?\n/);
-  const block: string[] = [];
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const t = lines[i].trim();
-    if (t.startsWith("#")) {
-      block.unshift(t);
-    } else if (t === "") {
-      // skip blank gap but stop if we already collected something
-      if (block.length > 0) break;
-    } else {
-      break;
-    }
-  }
-  const values: string[] = [];
-  const q = /["']([a-z][a-z0-9_-]*)["']/g;
-  for (const l of block) {
-    let m: RegExpExecArray | null;
-    while ((m = q.exec(l)) !== null) values.push(m[1]);
-  }
-  return values;
 }
 
 function genHomepage(): unknown {
   const registrySrc = readSource(HOMEPAGE_REGISTRY);
   const promptSrc = readSource(HOMEPAGE_PROMPT);
-  const sectionSrc = readSource(HOMEPAGE_SECTION_MODEL);
+  const sectionSrc = readSource(HOMEPAGE_SECTION_SCHEMA);
+  const backendKindsSrc = readSource(HOMEPAGE_WIDGET_KINDS);
 
   const kinds = parseWidgetKinds(registrySrc);
   const promptConfigs = parsePromptConfigs(promptSrc);
+  const promptKinds = parsePromptWidgetKinds(promptSrc);
+  const backendKinds = parsePythonStringSet(backendKindsSrc, "VALID_WIDGET_KINDS");
   const sectionEnums = parseSectionEnums(sectionSrc);
 
   // Fall back to the documented value sets if comment-parsing yields nothing.
   const layout =
     sectionEnums.layout.length > 0
       ? sectionEnums.layout
-      : ["full", "two-col", "three-col", "sidebar-left", "sidebar-right"];
+      : ["full", "two-col", "three-col", "four-col", "sidebar-left", "sidebar-right", "asymmetric-left", "asymmetric-right"];
   const style_variant =
     sectionEnums.style_variant.length > 0
       ? sectionEnums.style_variant
-      : ["default", "primary", "dark", "subtle", "gradient"];
+      : ["default", "primary", "dark", "subtle", "gradient", "glass", "image"];
 
   // Build per-widget config from the prompt. Kinds without a prompt entry get
   // `config: []` (honest: their config schema is not documented in the prompt).
@@ -310,9 +296,18 @@ function genHomepage(): unknown {
   return {
     domain: "homepage",
     generated: true,
-    source: [slash(HOMEPAGE_REGISTRY), slash(HOMEPAGE_PROMPT), slash(HOMEPAGE_SECTION_MODEL)],
+    source: [slash(HOMEPAGE_REGISTRY), slash(HOMEPAGE_PROMPT), slash(HOMEPAGE_SECTION_SCHEMA), slash(HOMEPAGE_WIDGET_KINDS)],
     widget_count: kinds.length,
     widget_config_documented: documented,
+    vocabulary_sync: {
+      registry_count: kinds.length,
+      backend_count: backendKinds.length,
+      prompt_count: promptKinds.length,
+      missing_in_backend: kinds.filter((kind) => !backendKinds.includes(kind)),
+      missing_in_prompt: kinds.filter((kind) => !promptKinds.includes(kind)),
+      extra_in_backend: backendKinds.filter((kind) => !kinds.includes(kind)),
+      extra_in_prompt: promptKinds.filter((kind) => !kinds.includes(kind)),
+    },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +
       "stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag " +
@@ -332,7 +327,7 @@ function genHomepage(): unknown {
         preset_enum: ["", "glass", "dark", "gradient", "soft", "elevated", "outlined", "neon"],
       },
     },
-    templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic"],
+    templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"],
     widget_kinds: kinds,
     widgets,
   };
@@ -653,17 +648,20 @@ function main(): number {
 
     if (CHECK_MODE) {
       const current = existsSync(outPath) ? readFileSync(outPath, "utf8") : "";
-      if (current !== generated) {
+      const normalizedCurrent = current.replace(/\r\n/g, "\n");
+      if (normalizedCurrent !== generated) {
         drift = true;
         console.error(
           `DRIFT in src/schema/${domain}.json — committete Datei != aus Quelle generiert.`,
         );
-        console.error(diffSummary(current, generated));
+        console.error(diffSummary(normalizedCurrent, generated));
       } else {
         console.log(`OK   src/schema/${domain}.json (kein Drift)`);
       }
     } else {
-      writeFileSync(outPath, generated, "utf8");
+      const current = existsSync(outPath) ? readFileSync(outPath, "utf8") : "";
+      const output = current.includes("\r\n") ? generated.replace(/\n/g, "\r\n") : generated;
+      writeFileSync(outPath, output, "utf8");
       console.log(`schrieb ${slash(relative(CLI_ROOT, outPath))}`);
     }
   }

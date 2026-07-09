@@ -83,7 +83,7 @@ comvenio club info                    # Vereinsdaten
 | template | `comvenio template dish\|ingredient [--search\|--category\|--common]` (globale Vorlagen) |
 | recipe   | `comvenio recipe from-template\|create\|list\|show\|update\|delete` (Gerichte/Getränke) |
 | menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
-| homepage | `comvenio homepage generate\|preview\|apply\|show\|design`     |
+| homepage | `comvenio homepage preview\|apply\|show` · Design via `comvenio club design` |
 | news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file [--open]` (Backend-Vorschau-URL im echten Layout, 30-Min-TTL; `--local` = Offline-Fallback) · `news video <template> --params` (Remotion, lokal) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews" + „Rich-News-Redaktion". |
 | data     | `comvenio data list\|show\|url\|download\|upload\|update\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten; `data update <file_id> --context news --context-id <news-id>` = Datei NACHTRÄGLICH zuordnen) |
 | tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) |
@@ -140,11 +140,11 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
 - **template:** `comvenio template dish\|ingredient --search "..."` durchsucht die globalen Vorlagen
   (100+ Gerichte mit Rezept+Allergenen, 380+ Zutaten). `recipe from-template <id>` instanziiert ein
   vollständiges Rezept (Allergene inklusive, idempotent). **Vorlagen zuerst** — nur was fehlt ad-hoc bauen.
-- **homepage:** `comvenio schema homepage --json` → 68 Widget-`kind`-Werte +
+- **homepage:** `comvenio schema homepage --json` → 69 Widget-`kind`-Werte +
   config-Felder je Widget + Section-`layout`/`style_variant` + Templates.
 - **sponsor:** lokale Sponsoren sind `Advertiser` mit `club_id` + `club_department_id`. Sponsoring-Angebote sind `ClubSponsorshipProduct`, lokale Vertraege/Preisversionen laufen ueber `contract-add`, aktive Sponsor-Zuordnungen ueber `assign`. Logos und Vertragsdateien werden via content-service hochgeladen; Sponsor-Logos: `context_type=advertiser`, Produktvertraege: `sponsorship_product`, Assignment-Vertraege: `sponsorship_assignment`.
 - **design (Flex-Template):** `comvenio schema design --json` → `FlexDesignConfig`
-  (hero/sections/decor/type/density/cornerStyle/accentUsage) für `custom_template_config`.
+  (LookRecipes/hero/sections/decor/type/bodySurface/media/density/cornerStyle/accentUsage) für `custom_template_config`.
   Das Aussehen kommt aus **Config**, nicht aus club-spezifischem Code: EIN generisches
   `flex`-Template, das die Config liest. Setzen mit `comvenio club design --public-template flex
   --primary "#.." --accent "#.." --file design_settings.json`. Brand-Farben kommen aus
@@ -152,11 +152,9 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
 
 ## Generieren = du, nicht der Server (Leitprinzip)
 
-**Du bist selbst das LLM.** Bei den KI-Gen-Domänen (`menu`, `homepage`) sollst du die
-Struktur (Speisekarte, Homepage aus Tabs/Sektionen/Widgets) **selbst aus dem Schema
-komponieren** (`comvenio schema <domain> --json`) und deterministisch via `apply --file`
-ans Backend schicken — **nicht** den ai-service-Generator (`generate --prompt`) als zweite
-LLM-Schicht aufrufen. Gründe:
+**Du bist selbst das LLM.** Homepages komponierst du aus `comvenio schema homepage/design`
+und schickst sie deterministisch via `preview/apply --file` ans Backend. Das CLI besitzt für
+Homepages keinen generativen Backend-LLM-Pfad. Gründe:
 
 1. **Kosten** — `apply --file` ruft keinen ai-service-LLM. Kein zweiter LLM-Call (du hast
    das Verständnis bereits).
@@ -165,32 +163,20 @@ LLM-Schicht aufrufen. Gründe:
 3. **Determinismus + Kontrolle** — exakte `kind`/`config`/`layout`-Werte, reproduzierbar,
    gezielt erweiterbar. Das Schema sagt dir genau, was gültig ist.
 
-`generate --prompt` bleibt als **Komfort-Fallback** erhalten — für Nutzer **ohne** fähigen
-Agenten (z. B. die Web-App selbst, die den ai-service-Generator als Blackbox nutzt). Für
-dich als CLI-bedienenden Agenten ist `apply --file` der **empfohlene** Weg.
+Der Web-App-Setup-Wizard darf den ai-service-Komfortgenerator separat verwenden. Das ändert
+nichts an der CLI-Doktrin.
 
-## Dual-Mode der KI-Gen-Domänen (menu / homepage)
+## Modi der Generator-Domänen
 
-Beide KI-Gen-Domänen haben **zwei Modi**:
+Für **Homepage** existiert genau ein deklarativer Modus:
 
-1. **Deklarativ** (`apply --file`) — **PRIMÄR für dich (Agent).** **Du** komponierst die
-   Struktur selbst, gestützt auf `comvenio schema`. Das CLI POSTet sie direkt an den
-   Service — **kein** ai-service, kein zweiter LLM-Call (siehe „Generieren = du" oben).
-   - `comvenio schema menu --json > schema.json` → `menu.json` bauen → `menu apply --file menu.json`
-   - `comvenio schema homepage --json > schema.json` → `home.json` bauen → `homepage apply --file home.json`
-2. **Generativ** (`generate`) — **Fallback / Spezialfall.** Der ai-service ist die Blackbox
-   (zweite LLM-Schicht). Sinnvoll nur, wenn der Service ein **Foto/eine Beschreibung
-   interpretieren** soll, die du nicht selbst strukturieren kannst (z. B. Vision-OCR einer
-   Papier-Karte), oder für Nutzer ohne fähigen Agenten.
-   - `menu generate --photo karte.jpg` (Vision-OCR) / `--text "..."`
-   - `homepage generate --prompt "modern, 3 Tabs" --template sport`
-   - Ohne `--apply`: nur Vorschlag (Review). Mit `--apply`: anlegen.
-     `homepage generate --apply` ersetzt die bestehende Homepage (`clear_existing`).
+1. `comvenio schema homepage/design --json` lesen.
+2. Struktur und Design selbst komponieren.
+3. `homepage preview --file` und `verify homepage --audit` ausführen.
+4. Erst nach menschlicher Freigabe `homepage apply --file` bzw. `club design --file` ausführen.
 
-**Empfehlung:** Standardweg = **deklarativ** (`apply --file`) — komponiere selbst aus dem
-Schema. Greife nur zu **generativ** (`generate`), wenn echte Bild-/Text-Interpretation
-nötig ist (Foto einer bestehenden Karte) oder ein Nutzer ohne Agent das Komfort-Verfahren
-braucht.
+Nur **menu** behält für echte Bild-/Text-Interpretation den generativen OCR-Spezialfall
+(`menu generate --photo/--text`).
 
 ## --json-Konvention
 
@@ -254,14 +240,14 @@ comvenio homepage apply --file home.json --clear  # bestehende Homepage ersetzen
 ```bash
 comvenio schema design --json > design-schema.json  # FlexDesignConfig-Vokabular (hero/sections/decor/type/…)
 # design_settings.json bauen: { "homepage_theme": "...", "primary_color": "#..", "accent_color": "#..",
-#   "homepage_template": "flex", "custom_template_config": { <FlexDesignConfig> } }
+#   "homepage_template": "flex", "custom_template_config": { "look_recipe_id": "sport-editorial", <Overrides> } }
 comvenio club design --public-template flex --primary "#1c2fb8" --accent "#3d9bff" --font sporty  # Flags
 comvenio club design --file design_settings.json --dry-run   # oder: volles Objekt, erst Trockenlauf
 comvenio club design --file design_settings.json             # schreibt design_settings (Deep-Merge)
 # danach: homepage preview --file home.json  -> rendert das flex-Template MIT dieser Config
 ```
-> Brand-Farben kommen aus `--primary/--accent/--secondary`; Layout/Hero/Deko aus der Flex-Config
-> (`custom_template_config`). EIN generisches `flex`-Template, beliebig viele Looks via Config.
+> Brand-Farben kommen aus `--primary/--accent/--secondary`; Recipe/Layout/Hero/Medienfokus aus
+> `custom_template_config`. EIN generisches `flex`-Template, beliebig viele Looks via Config.
 
 **4. Aufgabe mit Context anlegen + zuweisen**
 ```bash
@@ -437,7 +423,7 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 | `task create`                 | `create_tasks`                       |
 | `task assign/done`            | `manage_tasks`                       |
 | `menu generate/apply/design`  | `create_menus`/`manage_menus`/`manage_club_settings` |
-| `homepage generate/preview/apply` | `manage_club_settings`           |
+| `homepage preview/apply`          | `manage_club_settings`           |
 | `news create/update/delete/apply/publish` | `manage_news` (schließt „Entwürfe sehen" ein) |
 | `news preview` (Backend-POST) | `manage_news`; das Öffnen der Vorschau-URL ist auth-frei (TTL + unguessable UUID) |
 | `news video --upload` | File-Upload-RBAC (Presign); Rendern selbst ist lokal, ohne Server |
