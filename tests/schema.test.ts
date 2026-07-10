@@ -20,7 +20,17 @@ describe("homepage schema", () => {
     expect(homepage.widgets.news.config).toContainEqual({ name: "detail_label" });
     expect(homepage.widgets.fupa_widget.config).toContainEqual({ name: "widgetId", required: true });
     expect(homepage.widgets.fupa_widget.config).toContainEqual({ name: "hrefLabel" });
-    expect(homepage.interaction_contract.required_public_widgets).toEqual(["legal_notice"]);
+    expect(homepage.interaction_contract.required_public_widgets).toEqual([]);
+    expect(homepage.widgets.legal_notice.status).toBe("legacy_optional");
+    expect(homepage.public_shell_contract.configurable).toBe(false);
+    expect(homepage.public_shell_contract.imprint_route).toBe("/impressum");
+    expect(homepage.public_shell_contract.availability_rule).toContain("404");
+    expect(homepage.public_shell_contract.footer_links).toEqual({
+      imprint: "/impressum",
+      privacy: "https://www.comvenio.app/datenschutz",
+      terms: "https://www.comvenio.app/agb",
+      powered_by: "https://www.comvenio.app",
+    });
     expect(homepage.interaction_contract.public_detail_routes.event).toContain("/event/");
     expect(homepage.templates).toContain("flex");
     expect(homepage.vocabulary_sync.missing_in_backend).toEqual([]);
