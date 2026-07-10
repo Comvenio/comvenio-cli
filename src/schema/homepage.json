@@ -7,12 +7,12 @@
     "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py",
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
-  "widget_count": 69,
-  "widget_config_documented": 66,
+  "widget_count": 70,
+  "widget_config_documented": 67,
   "vocabulary_sync": {
-    "registry_count": 69,
-    "backend_count": 69,
-    "prompt_count": 69,
+    "registry_count": 70,
+    "backend_count": 70,
+    "prompt_count": 70,
     "missing_in_backend": [],
     "missing_in_prompt": [],
     "extra_in_backend": [],
@@ -113,6 +113,7 @@
     "stats",
     "cta",
     "contact",
+    "legal_notice",
     "faq",
     "sponsors",
     "countdown",
@@ -273,38 +274,37 @@
     "cta": {
       "config": [
         {
-          "name": "headline"
+          "name": "heading"
         },
         {
-          "name": "text"
+          "name": "subheading"
         },
         {
-          "name": "btn_label"
+          "name": "primary_button_text"
         },
         {
-          "name": "btn_url"
+          "name": "primary_button_url"
         },
         {
-          "name": "bg_type",
-          "values": [
-            "gradient",
-            "primary",
-            "accent",
-            "subtle"
-          ]
+          "name": "secondary_button_text"
+        },
+        {
+          "name": "secondary_button_url"
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "show_badge"
         },
         {
           "name": "layout",
           "values": [
             "banner",
-            "card"
-          ]
-        },
-        {
-          "name": "btn_variant",
-          "values": [
-            "contained",
-            "outlined"
+            "split",
+            "centered",
+            "floating",
+            "minimal"
           ]
         }
       ]
@@ -401,17 +401,61 @@
           "name": "show_images"
         },
         {
+          "name": "show_cover_images"
+        },
+        {
+          "name": "show_category_badges"
+        },
+        {
+          "name": "show_author"
+        },
+        {
+          "name": "show_reading_time"
+        },
+        {
           "name": "department_id"
         },
         {
           "name": "display_mode",
           "values": [
-            "cards",
-            "list"
+            "titles_only",
+            "full"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "editorial",
+            "grid",
+            "compact",
+            "magazine"
           ]
         },
         {
           "name": "pinned_only"
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "minimal",
+            "elevated",
+            "glassmorphism",
+            "bordered"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "cascade",
+            "none"
+          ]
+        },
+        {
+          "name": "detail_label"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -502,6 +546,9 @@
             "inline",
             "ring"
           ]
+        },
+        {
+          "name": "cta_label"
         }
       ]
     },
@@ -906,10 +953,27 @@
     "fupa_widget": {
       "config": [
         {
-          "name": "widget_url"
+          "name": "widgetId",
+          "required": true
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "includeSrc",
+          "default": "https://widget-api.fupa.net/vendor/widget.js?v1"
+        },
+        {
+          "name": "hrefUrl"
+        },
+        {
+          "name": "hrefLabel"
         },
         {
           "name": "height"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1618,6 +1682,117 @@
           "name": "label"
         }
       ]
+    },
+    "legal_notice": {
+      "config": [
+        {
+          "name": "club_name",
+          "required": true
+        },
+        {
+          "name": "legal_form"
+        },
+        {
+          "name": "address",
+          "required": true
+        },
+        {
+          "name": "postal_code"
+        },
+        {
+          "name": "city"
+        },
+        {
+          "name": "country"
+        },
+        {
+          "name": "email",
+          "required": true
+        },
+        {
+          "name": "phone"
+        },
+        {
+          "name": "register_court"
+        },
+        {
+          "name": "register_number"
+        },
+        {
+          "name": "vat_id"
+        },
+        {
+          "name": "responsible_name",
+          "note": "Nur nach ausdruecklicher Freigabe als oeffentliche Personendaten setzen."
+        },
+        {
+          "name": "responsibility_text"
+        },
+        {
+          "name": "club_privacy_url"
+        },
+        {
+          "name": "club_terms_url"
+        },
+        {
+          "name": "show_comvenio_links",
+          "default": true,
+          "required": true
+        },
+        {
+          "name": "show_title",
+          "default": true
+        },
+        {
+          "name": "layout",
+          "values": [
+            "columns",
+            "stacked"
+          ]
+        }
+      ]
     }
+  },
+  "interaction_contract": {
+    "buttons": {
+      "rule": "Alle sichtbaren Button-Beschriftungen und Ziele muessen in der jeweiligen Widget-Config liegen.",
+      "safe_targets": [
+        "relative_path",
+        "tab_query",
+        "http",
+        "https"
+      ],
+      "rejected_schemes": [
+        "javascript",
+        "data"
+      ],
+      "cta": [
+        "primary_button_text",
+        "primary_button_url",
+        "secondary_button_text",
+        "secondary_button_url"
+      ],
+      "hero": [
+        "cta_primary_label",
+        "cta_primary_url",
+        "cta_secondary_label",
+        "cta_secondary_url"
+      ],
+      "news": [
+        "detail_label",
+        "entity_detail"
+      ],
+      "event_highlight": [
+        "cta_label",
+        "entity_detail"
+      ]
+    },
+    "public_detail_routes": {
+      "news": "/club/{club_id}/news/{news_id}",
+      "event": "/club/{club_id}/event/{event_id}/public"
+    },
+    "required_public_widgets": [
+      "legal_notice"
+    ]
   }
 }

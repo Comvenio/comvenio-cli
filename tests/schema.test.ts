@@ -9,8 +9,19 @@ describe("homepage schema", () => {
   const homepage = schema("homepage");
 
   test("mirrors all homepage vocabularies", () => {
-    expect(homepage.widget_count).toBe(69);
+    expect(homepage.widget_count).toBe(70);
     expect(homepage.widget_kinds).toContain("event_hub_embed");
+    expect(homepage.widget_kinds).toContain("legal_notice");
+    expect(homepage.widgets.legal_notice.config).toContainEqual({ name: "club_name", required: true });
+    expect(homepage.widgets.news.config).toContainEqual({
+      name: "layout",
+      values: ["editorial", "grid", "compact", "magazine"],
+    });
+    expect(homepage.widgets.news.config).toContainEqual({ name: "detail_label" });
+    expect(homepage.widgets.fupa_widget.config).toContainEqual({ name: "widgetId", required: true });
+    expect(homepage.widgets.fupa_widget.config).toContainEqual({ name: "hrefLabel" });
+    expect(homepage.interaction_contract.required_public_widgets).toEqual(["legal_notice"]);
+    expect(homepage.interaction_contract.public_detail_routes.event).toContain("/event/");
     expect(homepage.templates).toContain("flex");
     expect(homepage.vocabulary_sync.missing_in_backend).toEqual([]);
     expect(homepage.vocabulary_sync.missing_in_prompt).toEqual([]);

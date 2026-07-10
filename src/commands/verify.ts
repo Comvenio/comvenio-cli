@@ -13,6 +13,7 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
+  validateHomepageStructure,
   sanitizeArtifactUrl,
   selectHomepageViewports,
   withTabQuery,
@@ -476,6 +477,7 @@ async function verifyHomepageMatrix(
   const unverifiable: UnverifiableFinding[] = [];
   const infrastructureErrors: string[] = [];
   const matrix: HomepageMatrixPoint[] = [];
+  failures.push(...validateHomepageStructure(rawTabs));
   const waitMs = opts.wait ? Math.max(0, Number.parseInt(opts.wait, 10) || 0) : DEFAULT_WAIT_MS;
 
   if (tabs.length === 0) {
