@@ -5,6 +5,7 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
+  validateHomepageStructure,
   sanitizeArtifactUrl,
   selectHomepageViewports,
   withTabQuery,
@@ -51,5 +52,42 @@ describe("homepage verifier contract", () => {
       "[500] GET https://club.example/api/home\n[404] GET https://cdn.example/image.png\n[404] GET https://club.example/favicon.ico",
       "https://club.example/",
     )).toEqual(["[500] GET https://club.example/api/home"]);
+  });
+  test("requires legal_notice on public homepages", () => {
+    expect(validateHomepageStructure([
+      { label: "Start", slug: "start", sections: [{ widgets: [{ kind: "news" }] }] },
+    ])).toEqual([
+      expect.objectContaining({ kind: "missing_legal_notice", viewport: "structure" }),
+    ]);
+  });
+
+  test("accepts complete legal_notice in nested preview and flat live shapes", () => {
+    const legal = {
+      kind: "legal_notice",
+      config: { club_name: "SV Musterstadt", address: "Musterweg 1", email: "info@example.org" },
+    };
+    expect(validateHomepageStructure([
+      { label: "Rechtliches", slug: "rechtliches", sections: [{ widgets: [legal] }] },
+    ])).toEqual([]);
+    expect(validateHomepageStructure([
+      { label: "Rechtliches", slug: "rechtliches", widgets: [legal] },
+    ])).toEqual([]);
+  });
+
+  test("reports missing legal fields and disabled Comvenio links", () => {
+    const findings = validateHomepageStructure([
+      {
+        label: "Rechtliches",
+        slug: "rechtliches",
+        widgets: [{
+          kind: "legal_notice",
+          config: { club_name: "SV Musterstadt", show_comvenio_links: false },
+        }],
+      },
+    ]);
+    expect(findings.map((finding) => finding.kind)).toEqual([
+      "invalid_legal_notice",
+      "legal_links_disabled",
+    ]);
   });
 });
