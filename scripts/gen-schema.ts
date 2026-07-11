@@ -258,6 +258,10 @@ function parseSectionEnums(sectionSrc: string): {
 }
 
 function genHomepage(): unknown {
+  const existingPath = join(SCHEMA_DIR, "homepage.json");
+  const existing = existsSync(existingPath)
+    ? JSON.parse(readFileSync(existingPath, "utf8")) as Record<string, any>
+    : {};
   const registrySrc = readSource(HOMEPAGE_REGISTRY);
   const promptSrc = readSource(HOMEPAGE_PROMPT);
   const sectionSrc = readSource(HOMEPAGE_SECTION_SCHEMA);
@@ -293,7 +297,28 @@ function genHomepage(): unknown {
     }
   }
 
+  const existingWidgetEntries = Object.entries(existing.widgets ?? {})
+    .filter(([kind]) => kinds.includes(kind));
+  const missingWidgetEntries = kinds
+    .filter((kind) => !Object.prototype.hasOwnProperty.call(existing.widgets ?? {}, kind))
+    .map((kind) => [kind, widgets[kind]]);
+  const mergedWidgets = Object.fromEntries([
+    ...existingWidgetEntries,
+    ...missingWidgetEntries,
+  ]);
+
+  const navigationGroupContract = {
+    type: "string|null",
+    max_length: 100,
+    scope: "PublicClubApp Standalone-Fallback und dessen HomePreviewPage; Fixed Templates und PublicClubHubView bleiben flach.",
+    purpose: "Tabs mit demselben getrimmten Wert werden in der öffentlichen Navigation unter diesem Menüpunkt zusammengefasst.",
+    behavior: "Der Gruppen-Klick öffnet ein Menü; der Klick auf einen Eintrag navigiert weiter zur unveränderten Tab-URL.",
+    normalization: "Nur Leerzeichen wird null; Gruppennamen werden ohne Beachtung der Groß-/Kleinschreibung verglichen; angezeigt wird die erste Schreibweise.",
+    example: { navigation_group: "Sport", child_slugs: ["fussball", "dart"] },
+  };
+
   return {
+    ...existing,
     domain: "homepage",
     generated: true,
     source: [slash(HOMEPAGE_REGISTRY), slash(HOMEPAGE_PROMPT), slash(HOMEPAGE_SECTION_SCHEMA), slash(HOMEPAGE_WIDGET_KINDS)],
@@ -313,21 +338,26 @@ function genHomepage(): unknown {
       "stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag " +
       "(Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema).",
     structure: {
+      ...(existing.structure ?? {}),
       tab: {
-        fields: ["label", "slug", "icon", "position", "visibility_scope", "department_id", "sections"],
+        ...(existing.structure?.tab ?? {}),
+        fields: ["label", "slug", "icon", "navigation_group", "position", "visibility_scope", "department_id", "sections"],
         visibility_scope_enum: ["public", "member", "department"],
+        navigation_group_contract: navigationGroupContract,
       },
       section: {
+        ...(existing.structure?.section ?? {}),
         fields: ["layout", "style_variant", "sort_order", "title", "is_visible", "bg_image_url", "widgets"],
         layout_enum: layout,
         style_variant_enum: style_variant,
       },
       widget: {
+        ...(existing.structure?.widget ?? {}),
         fields: ["kind", "title", "config", "slot_index", "preset"],
         preset_enum: ["", "glass", "dark", "gradient", "soft", "elevated", "outlined", "neon"],
       },
     },
-    preview_contract: {
+    preview_contract: existing.preview_contract ?? {
       no_live_write: true,
       design_snapshot_version: 1,
       optional_top_level_fields: ["design_snapshot_version", "design_settings"],
@@ -336,7 +366,7 @@ function genHomepage(): unknown {
     },
     templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"],
     widget_kinds: kinds,
-    widgets,
+    widgets: mergedWidgets,
   };
 }
 

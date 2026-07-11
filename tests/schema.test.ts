@@ -27,6 +27,13 @@ describe("homepage schema", () => {
     expect(homepage.vocabulary_sync.missing_in_prompt).toEqual([]);
     expect(homepage.preview_contract.no_live_write).toBe(true);
     expect(homepage.preview_contract.design_snapshot_version).toBe(1);
+    expect(homepage.structure.tab.fields).toContain("navigation_group");
+    expect(homepage.structure.tab.navigation_group_contract.max_length).toBe(100);
+    expect(homepage.structure.tab.navigation_group_contract.scope).toContain("HomePreviewPage");
+    expect(homepage.structure.tab.navigation_group_contract.example).toEqual({
+      navigation_group: "Sport",
+      child_slugs: ["fussball", "dart"],
+    });
   });
 
   test("publishes all section layouts and styles", () => {

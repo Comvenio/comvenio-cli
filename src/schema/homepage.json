@@ -25,6 +25,7 @@
         "label",
         "slug",
         "icon",
+        "navigation_group",
         "position",
         "visibility_scope",
         "department_id",
@@ -34,7 +35,22 @@
         "public",
         "member",
         "department"
-      ]
+      ],
+      "navigation_group_contract": {
+        "type": "string|null",
+        "max_length": 100,
+        "scope": "PublicClubApp Standalone-Fallback und dessen HomePreviewPage; Fixed Templates und PublicClubHubView bleiben flach.",
+        "purpose": "Tabs mit demselben getrimmten Wert werden in der öffentlichen Navigation unter diesem Menüpunkt zusammengefasst.",
+        "behavior": "Der Gruppen-Klick öffnet ein Menü; der Klick auf einen Eintrag navigiert weiter zur unveränderten Tab-URL.",
+        "normalization": "Nur Leerzeichen wird null; Gruppennamen werden ohne Beachtung der Groß-/Kleinschreibung verglichen; angezeigt wird die erste Schreibweise.",
+        "example": {
+          "navigation_group": "Sport",
+          "child_slugs": [
+            "fussball",
+            "dart"
+          ]
+        }
+      }
     },
     "section": {
       "fields": [
