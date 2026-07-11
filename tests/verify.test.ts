@@ -5,9 +5,9 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
-  validateHomepageStructure,
   sanitizeArtifactUrl,
   selectHomepageViewports,
+  withImprintRoute,
   withTabQuery,
 } from "../src/verify/homepage.ts";
 
@@ -53,41 +53,10 @@ describe("homepage verifier contract", () => {
       "https://club.example/",
     )).toEqual(["[500] GET https://club.example/api/home"]);
   });
-  test("requires legal_notice on public homepages", () => {
-    expect(validateHomepageStructure([
-      { label: "Start", slug: "start", sections: [{ widgets: [{ kind: "news" }] }] },
-    ])).toEqual([
-      expect.objectContaining({ kind: "missing_legal_notice", viewport: "structure" }),
-    ]);
-  });
-
-  test("accepts complete legal_notice in nested preview and flat live shapes", () => {
-    const legal = {
-      kind: "legal_notice",
-      config: { club_name: "SV Musterstadt", address: "Musterweg 1", email: "info@example.org" },
-    };
-    expect(validateHomepageStructure([
-      { label: "Rechtliches", slug: "rechtliches", sections: [{ widgets: [legal] }] },
-    ])).toEqual([]);
-    expect(validateHomepageStructure([
-      { label: "Rechtliches", slug: "rechtliches", widgets: [legal] },
-    ])).toEqual([]);
-  });
-
-  test("reports missing legal fields and disabled Comvenio links", () => {
-    const findings = validateHomepageStructure([
-      {
-        label: "Rechtliches",
-        slug: "rechtliches",
-        widgets: [{
-          kind: "legal_notice",
-          config: { club_name: "SV Musterstadt", show_comvenio_links: false },
-        }],
-      },
-    ]);
-    expect(findings.map((finding) => finding.kind)).toEqual([
-      "invalid_legal_notice",
-      "legal_links_disabled",
-    ]);
+  test("builds live and preview imprint routes deterministically", () => {
+    expect(withImprintRoute("https://sv.example/?tab=start"))
+      .toBe("https://sv.example/impressum");
+    expect(withImprintRoute("https://app.comvenio.app/home-preview/club-1/preview-1?tab=start"))
+      .toBe("https://app.comvenio.app/home-preview/club-1/preview-1?page=impressum");
   });
 });

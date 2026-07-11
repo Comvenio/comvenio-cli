@@ -37,9 +37,10 @@ export type VerifyFinding = {
     | "contrast"
     | "console_error"
     | "same_origin_request"
-    | "missing_legal_notice"
-    | "invalid_legal_notice"
-    | "legal_links_disabled";
+    | "missing_legal_footer"
+    | "invalid_legal_footer_link"
+    | "imprint_unavailable"
+    | "invalid_imprint_content";
   message: string;
   tab: string;
   viewport: string;
@@ -65,64 +66,22 @@ export function normalizeHomepageTabs(tabs: readonly HomepageTab[]): Required<Pi
     }));
 }
 
-function collectTabWidgets(tab: HomepageTab): HomepageWidget[] {
-  const direct = tab.widgets ?? [];
-  const sectionWidgets = (tab.sections ?? [])
-    .filter((section) => section.is_visible !== false)
-    .flatMap((section) => section.widgets ?? []);
-  return [...direct, ...sectionWidgets].filter((widget) => widget.is_active !== false);
-}
-
-export function validateHomepageStructure(tabs: readonly HomepageTab[]): VerifyFinding[] {
-  const publicTabs = tabs.filter(
-    (tab) => tab.is_active !== false && (tab.visibility_scope ?? "public") === "public",
-  );
-  const legalEntries = publicTabs.flatMap((tab) =>
-    collectTabWidgets(tab)
-      .filter((widget) => widget.kind === "legal_notice")
-      .map((widget) => ({ tab, widget })),
-  );
-
-  if (legalEntries.length === 0) {
-    return [{
-      kind: "missing_legal_notice",
-      message: "Oeffentliche Homepage braucht einen legal_notice-Widget mit Vereinsangaben.",
-      tab: "structure",
-      viewport: "structure",
-    }];
-  }
-
-  return legalEntries.flatMap(({ tab, widget }) => {
-    const config = widget.config ?? {};
-    const tabSlug = tab.slug?.trim() || tab.label?.trim() || "rechtliches";
-    const missing = ["club_name", "address", "email"].filter((field) => {
-      const value = config[field];
-      return typeof value !== "string" || value.trim().length === 0;
-    });
-    const findings: VerifyFinding[] = [];
-    if (missing.length > 0) {
-      findings.push({
-        kind: "invalid_legal_notice",
-        message: `legal_notice braucht: ${missing.join(", ")}.`,
-        tab: tabSlug,
-        viewport: "structure",
-        details: { missing_fields: missing },
-      });
-    }
-    if (config.show_comvenio_links === false) {
-      findings.push({
-        kind: "legal_links_disabled",
-        message: "Comvenio Impressum, Datenschutz und AGB muessen auf der oeffentlichen Homepage verlinkt bleiben.",
-        tab: tabSlug,
-        viewport: "structure",
-      });
-    }
-    return findings;
-  });
-}
 export function withTabQuery(baseUrl: string, slug: string): string {
   const url = new URL(baseUrl);
+  url.searchParams.delete("page");
   url.searchParams.set("tab", slug);
+  return url.toString();
+}
+
+export function withImprintRoute(baseUrl: string): string {
+  const url = new URL(baseUrl);
+  url.searchParams.delete("tab");
+  if (url.pathname.includes("/home-preview/")) {
+    url.searchParams.set("page", "impressum");
+  } else {
+    url.pathname = "/impressum";
+    url.search = "";
+  }
   return url.toString();
 }
 

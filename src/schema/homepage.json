@@ -1700,6 +1700,8 @@
       ]
     },
     "legal_notice": {
+      "status": "legacy_optional",
+      "note": "Optionaler Legacy-Inhaltsblock. Rechtsfooter und Impressum werden immer durch die Plattform-Shell erzeugt und duerfen nicht aus Homepage-JSON konfiguriert werden.",
       "config": [
         {
           "name": "club_name",
@@ -1807,8 +1809,29 @@
       "news": "/club/{club_id}/news/{news_id}",
       "event": "/club/{club_id}/event/{event_id}/public"
     },
-    "required_public_widgets": [
-      "legal_notice"
+    "required_public_widgets": []
+  },
+  "public_shell_contract": {
+    "configurable": false,
+    "rule": "Agenten konfigurieren ausschliesslich Homepage-Inhalte. Rechtsfooter und Impressum werden unveraenderbar durch die Plattform injiziert.",
+    "imprint_route": "/impressum",
+    "legal_data_endpoint": "/public/clubs/{club_id}/legal",
+    "legal_data_source": "Allowlist aus ClubSettings.contact_info mit Fallback auf oeffentliche Club-Stammdaten.",
+    "availability_rule": "Der Endpoint liefert 404, wenn die oeffentliche Homepage explizit deaktiviert ist.",
+    "responsibility_fallback": {
+      "responsible_label": "Eigentuemer des Vereins",
+      "responsibility_text": "Verantwortlich fuer die Inhalte ist der Verein."
+    },
+    "footer_links": {
+      "imprint": "/impressum",
+      "privacy": "https://www.comvenio.app/datenschutz",
+      "terms": "https://www.comvenio.app/agb",
+      "powered_by": "https://www.comvenio.app"
+    },
+    "agent_rules": [
+      "Keinen rechtliches-Tab und kein legal_notice-Widget fuer die Pflichtlinks erzeugen.",
+      "Keine Footer-Rechtslinks in custom_html oder custom_css duplizieren.",
+      "Die Plattform-Shell darf durch Homepage-Konfiguration weder ausgeblendet noch umgeleitet werden."
     ]
   }
 }

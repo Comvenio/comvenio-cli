@@ -95,6 +95,9 @@ comvenio club info                    # Vereinsdaten
 > transitiv), Vorlagen-Workflow, Wiederverwendung, Gotchas, End-to-End-Beispiel. **Lesen, bevor du
 > Gerichte/Karten anlegst.**
 
+> **Vereins-Homepages ausführlich:** `docs/homepage.md` — verbindlicher
+> CLI-only-Workflow, Struktur/Design/Preview/Verifier, Plattform-Rechtsseiten,
+> Freigabe-Gate und vollständige Qualitätscheckliste. **Vor jeder Homepage-Arbeit lesen.**
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)
@@ -140,7 +143,7 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
 - **template:** `comvenio template dish\|ingredient --search "..."` durchsucht die globalen Vorlagen
   (100+ Gerichte mit Rezept+Allergenen, 380+ Zutaten). `recipe from-template <id>` instanziiert ein
   vollständiges Rezept (Allergene inklusive, idempotent). **Vorlagen zuerst** — nur was fehlt ad-hoc bauen.
-- **homepage:** `comvenio schema homepage --json` → 69 Widget-`kind`-Werte +
+- **homepage:** `comvenio schema homepage --json` → 70 Widget-`kind`-Werte +
   config-Felder je Widget + Section-`layout`/`style_variant` + Templates.
 - **sponsor:** lokale Sponsoren sind `Advertiser` mit `club_id` + `club_department_id`. Sponsoring-Angebote sind `ClubSponsorshipProduct`, lokale Vertraege/Preisversionen laufen ueber `contract-add`, aktive Sponsor-Zuordnungen ueber `assign`. Logos und Vertragsdateien werden via content-service hochgeladen; Sponsor-Logos: `context_type=advertiser`, Produktvertraege: `sponsorship_product`, Assignment-Vertraege: `sponsorship_assignment`.
 - **design (Flex-Template):** `comvenio schema design --json` → `FlexDesignConfig`

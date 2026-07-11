@@ -13,9 +13,9 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
-  validateHomepageStructure,
   sanitizeArtifactUrl,
   selectHomepageViewports,
+  withImprintRoute,
   withTabQuery,
   type HomepageTab,
   type VerifyFinding,
@@ -329,6 +329,104 @@ const HOMEPAGE_AUDIT_JS = `() => {
       });
     }
   }
+  const legalFooter = document.querySelector('[data-public-legal-footer]');
+  const legalFooterStyle = legalFooter ? getComputedStyle(legalFooter) : null;
+  const legalFooterVisible = !!legalFooter && hasBox(legalFooter) &&
+    legalFooterStyle?.display !== 'none' && legalFooterStyle?.visibility !== 'hidden' &&
+    Number.parseFloat(legalFooterStyle?.opacity || '1') > 0.01;
+  if (!legalFooterVisible) {
+    failures.push({
+      kind: 'missing_legal_footer',
+      message: 'Der unveraenderbare Rechtsfooter fehlt.',
+    });
+  } else {
+    const requiredLinks = {
+      imprint: null,
+      privacy: 'https://www.comvenio.app/datenschutz',
+      terms: 'https://www.comvenio.app/agb',
+      powered_by: 'https://www.comvenio.app',
+    };
+    for (const [key, expected] of Object.entries(requiredLinks)) {
+      const link = legalFooter.querySelector('[data-public-legal-link="' + key + '"]');
+      const linkStyle = link ? getComputedStyle(link) : null;
+      const linkVisible = !!link && hasBox(link) &&
+        linkStyle?.display !== 'none' && linkStyle?.visibility !== 'hidden' &&
+        linkStyle?.pointerEvents !== 'none' &&
+        Number.parseFloat(linkStyle?.opacity || '1') > 0.01;
+      if (!linkVisible) {
+        failures.push({
+          kind: 'invalid_legal_footer_link',
+          message: 'Pflichtlink im Rechtsfooter fehlt oder ist nicht bedienbar.',
+          details: { link: key },
+        });
+        continue;
+      }
+      const href = new URL(link.getAttribute('href') || '', location.href);
+      const normalized = href.origin + href.pathname.replace(/\/+$/, '');
+      const valid = key === 'imprint'
+        ? href.pathname.replace(/\/+$/, '') === '/impressum' || href.searchParams.get('page') === 'impressum'
+        : normalized === expected;
+      if (!valid) {
+        failures.push({
+          kind: 'invalid_legal_footer_link',
+          message: 'Pflichtlink im Rechtsfooter zeigt auf ein falsches Ziel.',
+          details: { link: key, href: href.toString(), expected },
+        });
+      }
+      link.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const rect = link.getBoundingClientRect();
+      const topElement = document.elementFromPoint(
+        Math.min(window.innerWidth - 1, Math.max(0, rect.left + rect.width / 2)),
+        Math.min(window.innerHeight - 1, Math.max(0, rect.top + rect.height / 2)),
+      );
+      if (!topElement || (topElement !== link && !link.contains(topElement))) {
+        failures.push({
+          kind: 'invalid_legal_footer_link',
+          message: 'Pflichtlink im Rechtsfooter wird von einem anderen Element verdeckt.',
+          details: {
+            link: key,
+            occluded_by: topElement ? topElement.tagName.toLowerCase() : null,
+          },
+        });
+      }
+    }
+  }
+
+  const imprintRequested =
+    location.pathname.replace(/\/+$/, '') === '/impressum' ||
+    new URLSearchParams(location.search).get('page') === 'impressum';
+  if (imprintRequested) {
+    const imprint = document.querySelector('[data-public-imprint-page]');
+    if (!imprint) {
+      failures.push({
+        kind: 'imprint_unavailable',
+        message: 'Die separate oeffentliche Impressum-Seite ist nicht verfuegbar.',
+      });
+    } else {
+      const imprintStatus = imprint.getAttribute('data-public-imprint-status');
+      if (imprintStatus !== 'ready') {
+        failures.push({
+          kind: 'imprint_unavailable',
+          message: 'Die Vereinsdaten des Impressums konnten nicht geladen werden.',
+          details: { status: imprintStatus },
+        });
+      }
+      if (imprint.getAttribute('data-public-imprint-contact') !== 'present') {
+        failures.push({
+          kind: 'invalid_imprint_content',
+          message: 'Im Impressum fehlen die oeffentlichen Kontaktdaten des Vereins.',
+        });
+      }
+      const imprintText = (imprint.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!imprintText.includes('Impressum') || !imprintText.includes('Verantwortlich für die Inhalte')) {
+        failures.push({
+          kind: 'invalid_imprint_content',
+          message: 'Das Impressum enthaelt nicht den Pflichtinhalt zur Vereinsverantwortung.',
+          details: { text_length: imprintText.length },
+        });
+      }
+    }
+  }
   return JSON.stringify({ checked_texts: checkedTexts, failures, unverifiable });
 }`;
 
@@ -477,7 +575,6 @@ async function verifyHomepageMatrix(
   const unverifiable: UnverifiableFinding[] = [];
   const infrastructureErrors: string[] = [];
   const matrix: HomepageMatrixPoint[] = [];
-  failures.push(...validateHomepageStructure(rawTabs));
   const waitMs = opts.wait ? Math.max(0, Number.parseInt(opts.wait, 10) || 0) : DEFAULT_WAIT_MS;
 
   if (tabs.length === 0) {
@@ -487,10 +584,15 @@ async function verifyHomepageMatrix(
     infrastructureErrors.push("playwright-cli ist nicht auf dem PATH verfuegbar.");
   }
 
-  for (const tab of tabs) {
+  const verificationPages = [
+    ...tabs.map((tab) => ({ ...tab, url: withTabQuery(baseUrl, tab.slug) })),
+    { label: "Impressum", slug: "impressum", url: withImprintRoute(baseUrl) },
+  ];
+
+  for (const tab of verificationPages) {
     for (const viewport of viewports) {
       const pointStarted = Date.now();
-      const pageUrl = withTabQuery(baseUrl, tab.slug);
+      const pageUrl = tab.url;
       const prefix = `${name}-${artifactSegment(tab.slug)}-${viewport.name}`;
       const screenshotFile = resolve(outDir, `${prefix}.png`);
       const snapshotFile = resolve(outDir, `${prefix}-aria.md`);
@@ -618,7 +720,7 @@ async function verifyHomepageMatrix(
   };
   writeFileSync(reportFile, JSON.stringify(report, null, 2), "utf8");
   output(report, opts.json, () => [
-    `Homepage-Verifier: ${tabs.length} Tabs x ${viewports.length} Viewports`,
+    `Homepage-Verifier: ${tabs.length} Tabs + Impressum x ${viewports.length} Viewports`,
     `  Ergebnis: Exit ${exitCode} (${failures.length} Findings, ${unverifiable.length} unverifiable, ${infrastructureErrors.length} Infrastrukturfehler)`,
     `  Bericht: ${reportFile}`,
   ].join("\n"));
