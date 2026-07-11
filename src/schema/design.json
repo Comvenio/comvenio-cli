@@ -1,12 +1,13 @@
 {
   "domain": "design",
-  "generated": "source mirror — flexConfig.ts + lookRecipes.ts",
+  "generated": "source mirror — flexConfig.ts + lookRecipes.ts + public-header action contract",
   "source": [
     "Frontend/web-page/src/components/ClubHome/templates/flexConfig.ts",
-    "Frontend/web-page/src/components/ClubHome/templates/lookRecipes.ts"
+    "Frontend/web-page/src/components/ClubHome/templates/lookRecipes.ts",
+    "AI-docs/concepts/club/homepage-generator/12-public-header-action-contract.md"
   ],
   "note": "Config-getriebenes Design-Vokabular fuer das GENERISCHE Flex-Template. LookRecipes sind additive Defaults; explizite Club-Werte gewinnen. Clubs ohne look_recipe_id behalten die bestehenden Flex-Defaults.",
-  "applies_when": "homepage_template == 'flex'",
+  "applies_when": "Flex-Vokabular bei homepage_template == 'flex'; public_header gilt templateübergreifend",
   "stored_in": "design_settings.custom_template_config",
   "how": [
     "1) Template waehlen:  comvenio club design --public-template flex",
@@ -53,7 +54,17 @@
       "mobileFocus": { "type": "object", "fields": { "x": "0..100", "y": "0..100" }, "default": "focus" }
     },
     "font_pair": { "values": ["default", "editorial", "sporty", "friendly", "corporate"], "note": "auch von ClubThemeProvider genutzt" },
-    "spacing": { "values": ["compact", "normal", "spacious"] }
+    "spacing": { "values": ["compact", "normal", "spacious"] },
+    "public_header": {
+      "stored_in": "design_settings.custom_template_config.public_header",
+      "layout": { "values": ["navigation", "brand-left"], "default": "navigation" },
+      "surface": { "values": ["light", "dark", "brand"], "default": "light" },
+      "density": { "values": ["compact", "comfortable"], "default": "comfortable" },
+      "sticky": { "type": "boolean", "default": true },
+      "clear": "comvenio club design --clear-header",
+      "cli": "comvenio club design --header-layout brand-left --header-surface dark --header-density comfortable --header-sticky true",
+      "note": "Identisches Schema im Comvenio-Designer, Preview und Live-Renderer; ohne public_header oder mit public_header=null bleibt der bestehende Template-Header erhalten"
+    }
   },
   "design_settings_fields": {
     "tokens": {
@@ -88,6 +99,7 @@
     "accentUsage": "vivid",
     "font_pair": "sporty",
     "spacing": "normal"
+    ,"public_header": { "layout": "brand-left", "surface": "dark", "density": "comfortable", "sticky": true }
     ,"bodySurface": "light"
     ,"media": { "focus": { "x": 50, "y": 38 }, "mobileFocus": { "x": 50, "y": 28 } }
   }

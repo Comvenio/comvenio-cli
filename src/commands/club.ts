@@ -21,7 +21,7 @@ type ClubResponse = {
   [key: string]: unknown;
 };
 
-type Opts = {
+export type Opts = {
   json?: boolean;
   club?: string;
   // design action
@@ -35,6 +35,11 @@ type Opts = {
   file?: string;
   cssFile?: string;
   tokensFile?: string;
+  headerLayout?: string;
+  headerSurface?: string;
+  headerDensity?: string;
+  headerSticky?: string;
+  clearHeader?: boolean;
   dryRun?: boolean;
 };
 
@@ -46,12 +51,123 @@ const VALID_TEMPLATES = [
 ];
 const VALID_FONT_PAIRS = ["default", "editorial", "sporty", "friendly", "corporate"];
 const VALID_SPACING = ["compact", "normal", "spacious"];
+export const VALID_PUBLIC_HEADER_LAYOUTS = ["navigation", "brand-left"] as const;
+export const VALID_PUBLIC_HEADER_SURFACES = ["light", "dark", "brand"] as const;
+export const VALID_PUBLIC_HEADER_DENSITIES = ["compact", "comfortable"] as const;
 // Public-website templates (standalone designed homepages, separate from the hub
 // template). Mirrors TEMPLATE_COMPONENTS in web-page PublicClubApp.tsx. Set via
 // design_settings.homepage_template → the public site renders the designed shell.
 const VALID_PUBLIC_TEMPLATES = [
   "elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex",
 ];
+
+export type PublicHeaderFlagOptions = Pick<
+  Opts,
+  "headerLayout" | "headerSurface" | "headerDensity" | "headerSticky" | "clearHeader"
+>;
+
+function parseBooleanFlag(name: string, value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${name} muss true oder false sein.`);
+}
+
+export function buildPublicHeaderPatch(
+  opts: PublicHeaderFlagOptions,
+): Record<string, unknown> | null | undefined {
+  const header: Record<string, unknown> = {};
+  if (opts.headerLayout !== undefined) header.layout = opts.headerLayout;
+  if (opts.headerSurface !== undefined) header.surface = opts.headerSurface;
+  if (opts.headerDensity !== undefined) header.density = opts.headerDensity;
+  const sticky = parseBooleanFlag("--header-sticky", opts.headerSticky);
+  if (sticky !== undefined) header.sticky = sticky;
+  if (opts.clearHeader && Object.keys(header).length) {
+    throw new Error("--clear-header kann nicht mit anderen Header-Optionen kombiniert werden.");
+  }
+  if (opts.clearHeader) return null;
+  return Object.keys(header).length ? header : undefined;
+}
+
+export function validatePublicHeader(value: unknown): void {
+  if (value === undefined || value === null) return;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("custom_template_config.public_header muss ein Objekt sein.");
+  }
+  const header = value as Record<string, unknown>;
+  const allowedKeys = new Set(["layout", "surface", "density", "sticky"]);
+  const unknown = Object.keys(header).filter((key) => !allowedKeys.has(key));
+  if (unknown.length) {
+    throw new Error(`Unbekannte Public-Header-Felder: ${unknown.join(", ")}.`);
+  }
+  if (header.layout !== undefined && (
+    typeof header.layout !== "string"
+    || !VALID_PUBLIC_HEADER_LAYOUTS.includes(header.layout as typeof VALID_PUBLIC_HEADER_LAYOUTS[number])
+  )) {
+    throw new Error(`Ungueltiges Header-Layout "${header.layout}". Erlaubt: ${VALID_PUBLIC_HEADER_LAYOUTS.join(", ")}.`);
+  }
+  if (header.surface !== undefined && (
+    typeof header.surface !== "string"
+    || !VALID_PUBLIC_HEADER_SURFACES.includes(header.surface as typeof VALID_PUBLIC_HEADER_SURFACES[number])
+  )) {
+    throw new Error(`Ungueltige Header-Oberflaeche "${header.surface}". Erlaubt: ${VALID_PUBLIC_HEADER_SURFACES.join(", ")}.`);
+  }
+  if (header.density !== undefined && (
+    typeof header.density !== "string"
+    || !VALID_PUBLIC_HEADER_DENSITIES.includes(header.density as typeof VALID_PUBLIC_HEADER_DENSITIES[number])
+  )) {
+    throw new Error(`Ungueltige Header-Dichte "${header.density}". Erlaubt: ${VALID_PUBLIC_HEADER_DENSITIES.join(", ")}.`);
+  }
+  if (header.sticky !== undefined && typeof header.sticky !== "boolean") {
+    throw new Error("custom_template_config.public_header.sticky muss Boolean sein.");
+  }
+}
+
+export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
+  let design: Record<string, unknown>;
+  if (opts.file) {
+    design = readJsonFile<Record<string, unknown>>(opts.file);
+  } else {
+    design = {};
+    if (opts.template) design.homepage_theme = opts.template;
+    if (opts.primary) design.primary_color = opts.primary;
+    if (opts.accent) design.accent_color = opts.accent;
+    if (opts.secondary) design.secondary_color = opts.secondary;
+    if (opts.publicTemplate) design.homepage_template = opts.publicTemplate;
+    const ctc: Record<string, unknown> = {};
+    if (opts.font) ctc.font_pair = opts.font;
+    if (opts.spacing) ctc.spacing = opts.spacing;
+    if (Object.keys(ctc).length) design.custom_template_config = ctc;
+  }
+
+  if (opts.cssFile) {
+    const raw = readFileSync(opts.cssFile, "utf-8");
+    design.custom_css = raw.trim() ? raw : null;
+  }
+  if (opts.tokensFile) {
+    design.tokens = readJsonFile<Record<string, unknown>>(opts.tokensFile);
+  }
+
+  const publicHeaderPatch = buildPublicHeaderPatch(opts);
+  if (publicHeaderPatch !== undefined) {
+    const existingConfig = design.custom_template_config;
+    const customTemplateConfig = existingConfig && typeof existingConfig === "object" && !Array.isArray(existingConfig)
+      ? { ...(existingConfig as Record<string, unknown>) }
+      : {};
+    const existingHeader = customTemplateConfig.public_header;
+    customTemplateConfig.public_header = publicHeaderPatch === null
+      ? null
+      : {
+          ...(existingHeader && typeof existingHeader === "object" && !Array.isArray(existingHeader)
+            ? existingHeader as Record<string, unknown>
+            : {}),
+          ...publicHeaderPatch,
+        };
+    design.custom_template_config = customTemplateConfig;
+  }
+
+  return design;
+}
 
 /**
  * `comvenio club <action>` dispatcher. cac cannot do native multi-word commands
@@ -79,6 +195,11 @@ export function registerClubCommands(cli: CAC): void {
     .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags)")
     .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
     .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
+    .option("--header-layout <mode>", `design: Public-Header-Aufbau (${VALID_PUBLIC_HEADER_LAYOUTS.join("|")})`)
+    .option("--header-surface <mode>", `design: Public-Header-Oberflaeche (${VALID_PUBLIC_HEADER_SURFACES.join("|")})`)
+    .option("--header-density <mode>", `design: Public-Header-Hoehe (${VALID_PUBLIC_HEADER_DENSITIES.join("|")})`)
+    .option("--header-sticky <true|false>", "design: Public-Header beim Scrollen fixieren")
+    .option("--clear-header", "design: konfigurierten Public-Header entfernen und Template-Header wiederherstellen")
     .option("--dry-run", "design: nur anzeigen was geschrieben wuerde (kein Write)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, opts: Opts) => {
@@ -130,34 +251,11 @@ export function registerClubCommands(cli: CAC): void {
 
           // Build the partial design_settings object — only supplied keys.
           // --file wins (full object); otherwise compose from flags.
-          let design: Record<string, unknown>;
-          if (opts.file) {
-            design = readJsonFile<Record<string, unknown>>(opts.file);
-          } else {
-            design = {};
-            if (opts.template) design.homepage_theme = opts.template;
-            if (opts.primary) design.primary_color = opts.primary;
-            if (opts.accent) design.accent_color = opts.accent;
-            if (opts.secondary) design.secondary_color = opts.secondary;
-            if (opts.publicTemplate) design.homepage_template = opts.publicTemplate;
-            const ctc: Record<string, unknown> = {};
-            if (opts.font) ctc.font_pair = opts.font;
-            if (opts.spacing) ctc.spacing = opts.spacing;
-            if (Object.keys(ctc).length) design.custom_template_config = ctc;
-          }
-          // Agent-Design-Engine (Lastenheft 08 G2/G3): dedicated file inputs,
-          // composable with --file/flags. Empty file = clear the field.
-          if (opts.cssFile) {
-            const raw = readFileSync(opts.cssFile, "utf-8");
-            design.custom_css = raw.trim() ? raw : null;
-          }
-          if (opts.tokensFile) {
-            design.tokens = readJsonFile<Record<string, unknown>>(opts.tokensFile);
-          }
+          const design = buildClubDesignSettings(opts);
 
           if (Object.keys(design).length === 0) {
             throw new Error(
-              "club design braucht mind. ein Feld (--template/--primary/--accent/--secondary/--font/--spacing), --file, --css-file oder --tokens-file.",
+              "club design braucht mind. ein Design-Feld, eine Header-Option, --file, --css-file oder --tokens-file.",
             );
           }
 
@@ -174,6 +272,7 @@ export function registerClubCommands(cli: CAC): void {
           if (ctc && typeof ctc.spacing === "string" && !VALID_SPACING.includes(ctc.spacing)) {
             throw new Error(`Ungueltiges Spacing "${ctc.spacing}". Erlaubt: ${VALID_SPACING.join(", ")}.`);
           }
+          validatePublicHeader(ctc?.public_header);
           if (typeof design.homepage_template === "string" && !VALID_PUBLIC_TEMPLATES.includes(design.homepage_template)) {
             throw new Error(
               `Ungueltiges Public-Template "${design.homepage_template}". Erlaubt: ${VALID_PUBLIC_TEMPLATES.join(", ")}.`,
@@ -202,6 +301,7 @@ export function registerClubCommands(cli: CAC): void {
               design.secondary_color ? `Secondary=${design.secondary_color}` : "",
               ctc?.font_pair ? `Font=${ctc.font_pair}` : "",
               ctc?.spacing ? `Spacing=${ctc.spacing}` : "",
+              ctc?.public_header === null ? "PublicHeader=entfernt" : ctc?.public_header ? "PublicHeader=gesetzt" : "",
               typeof design.custom_css === "string" ? `CustomCSS=${design.custom_css.length}B` : design.custom_css === null ? "CustomCSS=geloescht" : "",
               design.tokens ? "Tokens=gesetzt" : "",
             ].filter(Boolean);

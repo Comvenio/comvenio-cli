@@ -60,5 +60,15 @@ describe("design schema", () => {
     expect(design.config.look_recipe_id.values).toContain("sport-editorial");
     expect(design.config.bodySurface.values).toEqual(["light", "dark"]);
     expect(design.config.media.focus.default).toEqual({ x: 50, y: 50 });
+    expect(design.config.public_header.layout).toEqual({
+      values: ["navigation", "brand-left"],
+      default: "navigation",
+    });
+    expect(design.config.public_header.surface.values).toEqual(["light", "dark", "brand"]);
+    expect(design.config.public_header.density.default).toBe("comfortable");
+    expect(design.config.public_header.sticky.default).toBe(true);
+    expect(design.config.public_header.clear).toBe("comvenio club design --clear-header");
+    expect(design.design_settings_fields.public_header).toBeUndefined();
+    expect(design.source).toContain("AI-docs/concepts/club/homepage-generator/12-public-header-action-contract.md");
   });
 });
