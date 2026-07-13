@@ -237,16 +237,14 @@ export function registerRecipeCommands(cli: CAC): void {
             recipe_name?: string;
             created_ingredients?: string[];
             missing_ingredients?: string[];
-            already_exists?: boolean;
             success?: boolean;
             error?: string;
           }>("supply", `/global-dish-templates/create-recipe`, body);
           output(r, opts.json, () => {
-            const dup = r.already_exists ? " (bestand bereits)" : "";
             const miss = r.missing_ingredients?.length
               ? ` — fehlende Zutaten (kein Vorlagen-Match): ${r.missing_ingredients.join(", ")}`
               : "";
-            return `Rezept aus Vorlage: ${r.recipe_name ?? "?"} — ${r.recipe_id ?? "?"}${dup}${miss}`;
+            return `Rezept aus Vorlage: ${r.recipe_name ?? "?"} — ${r.recipe_id ?? "?"}${miss}`;
           });
           break;
         }

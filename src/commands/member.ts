@@ -48,7 +48,7 @@ type Opts = {
 
 // Map CLI flags → MemberCreate/MemberUpdate body fields. club_id is added by the
 // caller (from the state file), never from a flag — and never on update.
-function memberBody(o: Opts): Record<string, unknown> {
+function memberBody(o: Opts, mode: "create" | "update"): Record<string, unknown> {
   return prune({
     first_name: o.firstName,
     last_name: o.lastName,
@@ -62,8 +62,8 @@ function memberBody(o: Opts): Record<string, unknown> {
     country: o.country,
     joined_at: o.joinedAt,
     user_id: o.userId,
-    membership_status_id: o.membershipStatusId,
-    family_id: o.familyId,
+    membership_status_id: mode === "create" ? o.membershipStatusId : undefined,
+    family_id: mode === "create" ? o.familyId : undefined,
   });
 }
 
@@ -94,8 +94,8 @@ export function registerMemberCommands(cli: CAC): void {
     .option("--country <v>", "Land")
     .option("--joined-at <v>", "Eintrittsdatum (ISO)")
     .option("--user-id <v>", "Verknuepfte User-ID")
-    .option("--membership-status-id <v>", "Mitgliedsstatus-ID")
-    .option("--family-id <v>", "Familien-ID")
+    .option("--membership-status-id <v>", "Mitgliedsstatus-ID (nur add; nicht Teil von MemberUpdate)")
+    .option("--family-id <v>", "Familien-ID (nur add; nicht Teil von MemberUpdate)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -143,7 +143,7 @@ export function registerMemberCommands(cli: CAC): void {
           if (!opts.firstName || !opts.lastName) {
             throw new Error("member add benoetigt --first-name und --last-name.");
           }
-          const body = { club_id: clubId, ...memberBody(opts) };
+          const body = { club_id: clubId, ...memberBody(opts, "create") };
           const m = await client.post<MemberRead>("member", "/members/", body);
           output(m, opts.json, () => `Mitglied angelegt: ${memberName(m)} (${m.id})`);
           break;
@@ -151,7 +151,12 @@ export function registerMemberCommands(cli: CAC): void {
         case "update": {
           if (!id) throw new Error('member update benoetigt eine <member-id>.');
           // No club_id on update — not in MemberUpdate schema (Sub-File 04).
-          const body = memberBody(opts);
+          if (opts.membershipStatusId !== undefined || opts.familyId !== undefined) {
+            throw new Error(
+              "member update unterstuetzt --membership-status-id/--family-id nicht. Nutze die jeweiligen Mitgliedsstatus-/Familien-Workflows.",
+            );
+          }
+          const body = memberBody(opts, "update");
           if (Object.keys(body).length === 0) {
             throw new Error("member update benoetigt mindestens ein zu aenderndes Feld.");
           }

@@ -4,6 +4,7 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
+import { readJsonFile } from "../util/file.ts";
 
 // task-service endpoints (verified Sub-File 07):
 //   GET  /task/tasks/by-club/{club_id}
@@ -49,7 +50,17 @@ type Opts = {
   // context create
   contextType?: string;
   refId?: string;
+  file?: string;
 };
+
+function jsonBody(opts: Opts, command: string): unknown {
+  if (!opts.file) throw new Error(`${command} benoetigt --file <payload.json>.`);
+  return readJsonFile<unknown>(opts.file);
+}
+
+function printJsonResult(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
 
 /**
  * `comvenio task <action> [arg1] [arg2]` dispatcher.
@@ -58,7 +69,10 @@ type Opts = {
  */
 export function registerTaskCommands(cli: CAC): void {
   cli
-    .command("task <action> [arg1] [arg2]", "Aufgaben: list|show|create|assign|done | context list|create")
+    .command(
+      "task <action> [arg1] [arg2]",
+      "Aufgaben sowie Contexts, Zuweisungen, Notizen und Checklisten verwalten",
+    )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--mine", "Nur mir zugewiesene Tasks (list)")
     .option("--subtasks", "show: Subtasks laden")
@@ -75,6 +89,7 @@ export function registerTaskCommands(cli: CAC): void {
     // context create
     .option("--context-type <v>", "context create: club|event|object|meeting|supply")
     .option("--ref-id <v>", "context create: context_id (referenzierte Entitaet)")
+    .option("--file <path>", "JSON-Payload fuer update/bulk und Unterressourcen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -106,10 +121,21 @@ export function registerTaskCommands(cli: CAC): void {
             );
             return;
           }
+          if (sub === "show") {
+            if (!arg2) throw new Error("task context show <context-id> benoetigt eine ID.");
+            const ctx = await client.get<TaskContextRead>("task", `/task-contexts/${arg2}`);
+            output(ctx, opts.json, () => printJsonResult(ctx));
+            return;
+          }
           if (sub === "create") {
             if (!opts.contextType) {
               throw new Error(
                 "task context create benoetigt --context-type (club|event|object|meeting|supply).",
+              );
+            }
+            if (!opts.refId) {
+              throw new Error(
+                "task context create benoetigt --ref-id (context_id des referenzierten Objekts).",
               );
             }
             const body = prune({
@@ -121,7 +147,146 @@ export function registerTaskCommands(cli: CAC): void {
             output(ctx, opts.json, () => `Task-Context angelegt: ${ctx.id}`);
             return;
           }
-          throw new Error(`Unbekannte task-context-Aktion "${sub}". Verfuegbar: list, create`);
+          if (sub === "update") {
+            if (!arg2) throw new Error("task context update <context-id> benoetigt eine ID.");
+            const ctx = await client.put<TaskContextRead>(
+              "task",
+              `/task-contexts/${arg2}`,
+              jsonBody(opts, "task context update"),
+            );
+            output(ctx, opts.json, () => `Task-Context aktualisiert: ${ctx.id ?? arg2}`);
+            return;
+          }
+          if (sub === "delete") {
+            if (!arg2) throw new Error("task context delete <context-id> benoetigt eine ID.");
+            await client.del("task", `/task-contexts/${arg2}`);
+            output({ deleted: true, id: arg2 }, opts.json, () => `Task-Context geloescht: ${arg2}`);
+            return;
+          }
+          throw new Error(
+            `Unbekannte task-context-Aktion "${sub}". Verfuegbar: list, show, create, update, delete`,
+          );
+        }
+
+        // task assignment <list|show|update|delete> <task-id|assignment-id>
+        if (action === "assignment") {
+          const sub = arg1;
+          if (!arg2) throw new Error(`task assignment ${sub ?? "<aktion>"} benoetigt eine ID.`);
+          if (sub === "list") {
+            const rows = await client.get("task", `/task-assignments/by-task/${arg2}`);
+            output(rows, opts.json, () => printJsonResult(rows));
+            return;
+          }
+          if (sub === "show") {
+            const row = await client.get("task", `/task-assignments/${arg2}`);
+            output(row, opts.json, () => printJsonResult(row));
+            return;
+          }
+          if (sub === "update") {
+            const row = await client.put(
+              "task",
+              `/task-assignments/${arg2}`,
+              jsonBody(opts, "task assignment update"),
+            );
+            output(row, opts.json, () => `Zuweisung aktualisiert: ${arg2}`);
+            return;
+          }
+          if (sub === "delete") {
+            await client.del("task", `/task-assignments/${arg2}`);
+            output({ deleted: true, id: arg2 }, opts.json, () => `Zuweisung geloescht: ${arg2}`);
+            return;
+          }
+          throw new Error(
+            `Unbekannte task-assignment-Aktion "${sub}". Verfuegbar: list, show, update, delete`,
+          );
+        }
+
+        // task note <list|add|update|delete> <task-id|note-id>
+        if (action === "note") {
+          const sub = arg1;
+          if (!arg2) throw new Error(`task note ${sub ?? "<aktion>"} benoetigt eine ID.`);
+          if (sub === "list") {
+            const rows = await client.get("task", `/tasks/${arg2}/notes`);
+            output(rows, opts.json, () => printJsonResult(rows));
+            return;
+          }
+          if (sub === "add") {
+            const row = await client.post(
+              "task",
+              `/tasks/${arg2}/notes`,
+              jsonBody(opts, "task note add"),
+            );
+            output(row, opts.json, () => `Notiz angelegt fuer Task ${arg2}`);
+            return;
+          }
+          if (sub === "update") {
+            const row = await client.put(
+              "task",
+              `/tasks/notes/${arg2}`,
+              jsonBody(opts, "task note update"),
+            );
+            output(row, opts.json, () => `Notiz aktualisiert: ${arg2}`);
+            return;
+          }
+          if (sub === "delete") {
+            await client.del("task", `/tasks/notes/${arg2}`);
+            output({ deleted: true, id: arg2 }, opts.json, () => `Notiz geloescht: ${arg2}`);
+            return;
+          }
+          throw new Error(
+            `Unbekannte task-note-Aktion "${sub}". Verfuegbar: list, add, update, delete`,
+          );
+        }
+
+        // task checklist <list|add|update|toggle|delete|reorder> <task-id|item-id>
+        if (action === "checklist") {
+          const sub = arg1;
+          if (!arg2) throw new Error(`task checklist ${sub ?? "<aktion>"} benoetigt eine ID.`);
+          if (sub === "list") {
+            const rows = await client.get("task", `/tasks/${arg2}/checklist-items`);
+            output(rows, opts.json, () => printJsonResult(rows));
+            return;
+          }
+          if (sub === "add") {
+            const row = await client.post(
+              "task",
+              `/tasks/${arg2}/checklist-items`,
+              jsonBody(opts, "task checklist add"),
+            );
+            output(row, opts.json, () => `Checklistenpunkt angelegt fuer Task ${arg2}`);
+            return;
+          }
+          if (sub === "update") {
+            const row = await client.put(
+              "task",
+              `/tasks/checklist-items/${arg2}`,
+              jsonBody(opts, "task checklist update"),
+            );
+            output(row, opts.json, () => `Checklistenpunkt aktualisiert: ${arg2}`);
+            return;
+          }
+          if (sub === "toggle") {
+            const row = await client.patch("task", `/tasks/checklist-items/${arg2}/toggle`, {});
+            output(row, opts.json, () => `Checklistenpunkt umgeschaltet: ${arg2}`);
+            return;
+          }
+          if (sub === "delete") {
+            await client.del("task", `/tasks/checklist-items/${arg2}`);
+            output({ deleted: true, id: arg2 }, opts.json, () => `Checklistenpunkt geloescht: ${arg2}`);
+            return;
+          }
+          if (sub === "reorder") {
+            const rows = await client.patch(
+              "task",
+              `/tasks/${arg2}/checklist-items/reorder`,
+              jsonBody(opts, "task checklist reorder"),
+            );
+            output(rows, opts.json, () => `Checkliste sortiert: ${arg2}`);
+            return;
+          }
+          throw new Error(
+            `Unbekannte task-checklist-Aktion "${sub}". Verfuegbar: list, add, update, toggle, delete, reorder`,
+          );
         }
 
         switch (action) {
@@ -184,6 +349,36 @@ export function registerTaskCommands(cli: CAC): void {
             output(t, opts.json, () => `Aufgabe angelegt: ${t.title} (${t.id})`);
             break;
           }
+          case "bulk": {
+            const rows = await client.post(
+              "task",
+              "/tasks/bulk",
+              jsonBody(opts, "task bulk"),
+            );
+            output(rows, opts.json, () => printJsonResult(rows));
+            break;
+          }
+          case "update": {
+            const id = arg1;
+            if (!id) throw new Error("task update benoetigt eine <task-id>.");
+            const fromFlags = prune({
+              title: opts.title,
+              description: opts.description,
+              priority: opts.priority,
+              status: opts.status,
+              department_id: opts.departmentId,
+              due_date: opts.dueDate,
+              task_context_id: opts.contextId,
+              completed_at: opts.status === "completed" ? new Date().toISOString() : undefined,
+            });
+            const body = opts.file ? readJsonFile<unknown>(opts.file) : fromFlags;
+            if (!opts.file && Object.keys(fromFlags).length === 0) {
+              throw new Error("task update benoetigt mindestens ein Feld oder --file <payload.json>.");
+            }
+            const row = await client.put<TaskRead>("task", `/tasks/${id}`, body);
+            output(row, opts.json, () => `Aufgabe aktualisiert: ${row.title ?? id}`);
+            break;
+          }
           case "assign": {
             const id = arg1;
             if (!id) throw new Error("task assign benoetigt eine <task-id>.");
@@ -215,9 +410,16 @@ export function registerTaskCommands(cli: CAC): void {
             );
             break;
           }
+          case "delete": {
+            const id = arg1;
+            if (!id) throw new Error("task delete benoetigt eine <task-id>.");
+            await client.del("task", `/tasks/${id}`);
+            output({ deleted: true, id }, opts.json, () => `Aufgabe geloescht: ${id}`);
+            break;
+          }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, assign, done, context`,
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, bulk, update, assign, done, delete, context, assignment, note, checklist`,
             );
         }
       },

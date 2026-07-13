@@ -82,6 +82,7 @@ type Opts = {
   durationMonths?: string;
   sortOrder?: string;
   inactive?: boolean;
+  active?: string;
   sponsor?: string;
   product?: string;
   quantity?: string;
@@ -96,10 +97,18 @@ type Opts = {
   member?: string;
   role?: string;
   primary?: boolean;
+  notPrimary?: boolean;
 };
 
 const cents = (value?: string): number | undefined =>
   value == null || value === "" ? undefined : Math.round(Number(value));
+
+function optionalBoolean(value: string | undefined, flag: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${flag} erwartet true oder false.`);
+}
 const intValue = (value?: string): number | undefined =>
   value == null || value === "" ? undefined : Number.parseInt(value, 10);
 
@@ -157,6 +166,7 @@ export function registerSponsorCommands(cli: CAC): void {
     .option("--duration-months <n>", "Standard-/Vertragslaufzeit in Monaten")
     .option("--sort-order <n>", "Sortierreihenfolge")
     .option("--inactive", "product-update: is_active=false")
+    .option("--active <boolean>", "product-update: is_active explizit true|false")
     .option("--sponsor <id>", "Advertiser/Sponsor-ID")
     .option("--product <id>", "SponsoringProduct-ID")
     .option("--quantity <n>", "Menge, Default 1")
@@ -171,6 +181,7 @@ export function registerSponsorCommands(cli: CAC): void {
     .option("--member <id>", "Member-ID fuer responsible-*")
     .option("--role <v>", "Rolle des Verantwortlichen")
     .option("--primary", "responsible-add/update: Hauptverantwortlicher")
+    .option("--not-primary", "responsible-update: Hauptverantwortlich explizit entfernen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -367,6 +378,9 @@ export function registerSponsorCommands(cli: CAC): void {
         }
         case "product-update": {
           if (!id) throw new Error("sponsor product-update <product-id> benoetigt eine ID.");
+          if (opts.inactive && opts.active !== undefined) {
+            throw new Error("--inactive und --active koennen nicht kombiniert werden.");
+          }
           const body = prune({
             name: opts.name,
             description: opts.description,
@@ -377,7 +391,7 @@ export function registerSponsorCommands(cli: CAC): void {
             default_duration_months: intValue(opts.durationMonths),
             sort_order: intValue(opts.sortOrder),
             club_department_id: opts.departmentId,
-            is_active: opts.inactive ? false : undefined,
+            is_active: opts.inactive ? false : optionalBoolean(opts.active, "--active"),
           });
           if (Object.keys(body).length === 0) throw new Error("product-update braucht mindestens ein Feld.");
           const product = await client.patch<ProductRead>("marketing", `/club-sponsorship-products/${id}`, body);
@@ -606,10 +620,13 @@ export function registerSponsorCommands(cli: CAC): void {
         }
         case "responsible-update": {
           if (!id) throw new Error("responsible-update <assignment-id> benoetigt eine ID.");
+          if (opts.primary && opts.notPrimary) {
+            throw new Error("--primary und --not-primary koennen nicht kombiniert werden.");
+          }
           const body = prune({
             member_id: opts.member,
             role: opts.role,
-            is_primary: opts.primary ? true : undefined,
+            is_primary: opts.primary ? true : opts.notPrimary ? false : undefined,
             note: opts.note,
           });
           if (Object.keys(body).length === 0) throw new Error("responsible-update braucht mindestens ein Feld.");

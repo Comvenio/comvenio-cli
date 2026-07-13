@@ -66,13 +66,13 @@ function allergenLabel(raw: unknown): string {
  */
 export function registerTemplateCommands(cli: CAC): void {
   cli
-    .command("template <kind>", "Globale Vorlagen durchsuchen: dish | ingredient")
+    .command("template <kind> [id]", "Globale Vorlagen durchsuchen/anzeigen: dish | ingredient")
     .option("--search <q>", "Suchbegriff (Name/Beschreibung/Kategorie)")
     .option("--category <c>", "Kategorie-Filter (nur dish, z.B. Grill/Hauptgericht)")
     .option("--common", "Nur haeufig genutzte Vorlagen (common_only)")
     .option("--limit <n>", "Max. Treffer (1-500, Default 100)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (kind: string, opts: Opts) => {
+    .action(async (kind: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
       const client = createClient(state);
 
@@ -83,6 +83,11 @@ export function registerTemplateCommands(cli: CAC): void {
 
       switch (kind) {
         case "dish": {
+          if (id) {
+            const row = await client.get<DishTemplate>("supply", `/global-dish-templates/${id}`);
+            output(row, opts.json, () => JSON.stringify(row, null, 2));
+            break;
+          }
           if (opts.category) q.set("category", opts.category);
           const qs = q.toString() ? `?${q}` : "";
           const rows = await client.get<DishTemplate[]>("supply", `/global-dish-templates/${qs}`);
@@ -101,6 +106,11 @@ export function registerTemplateCommands(cli: CAC): void {
         }
 
         case "ingredient": {
+          if (id) {
+            const row = await client.get<IngredientTemplate>("supply", `/global-ingredient-templates/${id}`);
+            output(row, opts.json, () => JSON.stringify(row, null, 2));
+            break;
+          }
           const qs = q.toString() ? `?${q}` : "";
           const rows = await client.get<IngredientTemplate[]>("supply", `/global-ingredient-templates/${qs}`);
           output(rows, opts.json, () =>

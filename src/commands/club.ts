@@ -9,15 +9,14 @@ type ClubResponse = {
   id?: string;
   name?: string;
   short_name?: string;
-  email?: string;
-  phone?: string;
-  website?: string;
-  street?: string;
-  house_number?: string;
-  zip_code?: string;
+  email_address?: string;
+  phone_number?: string;
+  website_url?: string;
+  address?: string;
+  postal_code?: string;
   city?: string;
   country?: string;
-  founded_year?: number;
+  founded_date?: string;
   [key: string]: unknown;
 };
 
@@ -224,18 +223,18 @@ export function registerClubCommands(cli: CAC): void {
             if (club.short_name) lines.push(`Kurzname: ${club.short_name}`);
             lines.push(`ID:       ${club.id ?? clubId}`);
             const address = [
-              [club.street, club.house_number].filter(Boolean).join(" "),
-              [club.zip_code, club.city].filter(Boolean).join(" "),
+              club.address,
+              [club.postal_code, club.city].filter(Boolean).join(" "),
               club.country,
             ]
               .filter(Boolean)
               .join(", ");
             if (address) lines.push(`Adresse:  ${address}`);
-            if (club.email) lines.push(`E-Mail:   ${club.email}`);
-            if (club.phone) lines.push(`Telefon:  ${club.phone}`);
-            if (club.website) lines.push(`Website:  ${club.website}`);
-            if (club.founded_year)
-              lines.push(`Gegruendet: ${club.founded_year}`);
+            if (club.email_address) lines.push(`E-Mail:   ${club.email_address}`);
+            if (club.phone_number) lines.push(`Telefon:  ${club.phone_number}`);
+            if (club.website_url) lines.push(`Website:  ${club.website_url}`);
+            if (club.founded_date)
+              lines.push(`Gegruendet: ${club.founded_date}`);
             return lines.join("\n");
           });
           break;

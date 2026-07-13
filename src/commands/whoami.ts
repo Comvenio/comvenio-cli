@@ -1,6 +1,6 @@
 import type { CAC } from "cac";
 import { loadState, STATE_FILE } from "../auth.ts";
-import { createClient } from "../http.ts";
+import { createClient, HttpError } from "../http.ts";
 
 type MeResponse = {
   id?: string;
@@ -28,8 +28,12 @@ export function registerWhoamiCommand(cli: CAC): void {
       let user: MeResponse | null = null;
       try {
         user = await client.service<MeResponse>("user", "/users/me");
-      } catch {
-        // best-effort: token is the login proof even if /users/me fails.
+      } catch (error) {
+        // A cached state file is not proof that the token is still valid. Keep the
+        // offline fallback for transient outages, but never hide auth failures.
+        if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
+          throw error;
+        }
       }
 
       const name =

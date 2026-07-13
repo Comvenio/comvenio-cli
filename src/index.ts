@@ -60,10 +60,12 @@ cli
         'Ungueltiges Token: muss mit "cvn_" beginnen. In der Web-App unter "CLI-Zugriff" erzeugen.',
       );
     }
+    if (!(o.env in GATEWAY_BY_ENV)) {
+      throw new AuthError('Ungueltige Umgebung. --env muss "prod", "dev" oder "local" sein.');
+    }
     const gatewayBaseUrl = (
       o.gateway ??
-      GATEWAY_BY_ENV[o.env] ??
-      GATEWAY_BY_ENV.prod!
+      GATEWAY_BY_ENV[o.env]!
     ).replace(/\/+$/, "");
 
     // Verify the token via /users/me BEFORE persisting — a 401 here means the
