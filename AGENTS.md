@@ -86,7 +86,7 @@ comvenio club info                    # Vereinsdaten
 | homepage | `comvenio homepage preview\|apply\|show` · Design via `comvenio club design` |
 | news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file [--open]` (Backend-Vorschau-URL im echten Layout, 30-Min-TTL; `--local` = Offline-Fallback) · `news video <template> --params` (Remotion, lokal) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews" + „Rich-News-Redaktion". |
 | data     | `comvenio data list\|show\|url\|download\|upload\|update\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten; `data update <file_id> --context news --context-id <news-id>` = Datei NACHTRÄGLICH zuordnen) |
-| tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) |
+| tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) · `match-result --sets "6:2,7:6(9:7)"` (Tennis-Sätze, MTB = Match-Tiebreak) · Sonderwertungen `--walkover\|--retired\|--no-show\|--no-contest --winner home\|away` · `participant-withdraw --mode cancel\|walkover` · `deadline <tid> --phase group --at <iso>` / `--policy manual\|auto_no_contest` / `--show` (K18, 2026-07-13) |
 | meeting  | `comvenio meeting list\|show\|...` (Sitzungen/Protokolle) |
 | verify   | `comvenio verify <action>` (visuelles Review: headless Render → Screenshots, damit du das Ergebnis siehst) |
 | schema   | `comvenio schema <domain> --json`                             |
