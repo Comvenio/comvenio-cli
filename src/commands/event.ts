@@ -4,6 +4,11 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
+import { readJsonFile } from "../util/file.ts";
+import {
+  handleEventOperation,
+  type EventOperationOpts,
+} from "./event-operations.ts";
 
 // event-service endpoints (verified Sub-File 05):
 //   GET   /event/events/club/{club_id}          (Query view, month, start, end, complexity)
@@ -47,7 +52,7 @@ type EventSeriesRead = {
   [key: string]: unknown;
 };
 
-export type EventCommandOpts = {
+export type EventCommandOpts = EventOperationOpts & {
   json?: boolean;
   club?: string;
   view?: string;
@@ -103,6 +108,15 @@ export type EventCommandOpts = {
   area?: string;
   notes?: string;
 };
+
+function eventFileBody(path: string | undefined, command: string): Record<string, unknown> {
+  if (!path) return {};
+  const body = readJsonFile<unknown>(path);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error(`${command}: --file muss ein JSON-Objekt enthalten.`);
+  }
+  return body as Record<string, unknown>;
+}
 
 const VALID_FREQUENCIES = new Set(["daily", "weekly", "monthly", "yearly"]);
 const VALID_WEEKDAYS = new Set(["MO", "TU", "WE", "TH", "FR", "SA", "SU"]);
@@ -304,7 +318,7 @@ export function buildSeriesCreateBody(
 
 /**
  * `comvenio event <action> [arg1] [arg2]` dispatcher.
- *   event list|show|create|update|publish
+ *   event list|show|create|update|publish|delete
  *   event template list|create|clone|instantiate [id]
  *   event series list|show|create|materialize|next|promote-recurring|promote-yearly [id]
  *   event area list <event-id> | event area add <event-id> --name X
@@ -312,7 +326,7 @@ export function buildSeriesCreateBody(
  */
 export function registerEventCommands(cli: CAC): void {
   cli
-    .command("event <action> [arg1] [arg2]", "Veranstaltungen: list|show|create|update|publish | template | series | area | program | menu")
+    .command("event <action> [arg1] [arg2]", "Veranstaltungen und Event-Hub: Core, Vorlagen, Serien, Bereiche, Programm, Einladungen und weitere Module")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--view <v>", "full|calendar (Default full)")
     .option("--month <v>", "YYYY-MM")
@@ -331,6 +345,7 @@ export function registerEventCommands(cli: CAC): void {
     .option("--status <v>", "draft|planned|confirmed|archived|cancelled")
     .option("--organizer-member-id <v>", "Organisator (Member-ID)")
     .option("--public", "publish: visibility_scope auf public setzen")
+    .option("--file <path>", "JSON-Payload für komplexe create/update/bulk-Aktionen")
     // template flags
     .option("--without-tags", "instantiate: Tags nicht aus der Vorlage kopieren")
     .option("--without-areas", "instantiate: Bereiche nicht aus der Vorlage kopieren")
@@ -366,6 +381,25 @@ export function registerEventCommands(cli: CAC): void {
     .option("--menu <id>", "Speisekarte-ID (menu assign)")
     .option("--area <id>", "Bereich/EventArea-ID (menu assign; siehe: event area list <event-id>)")
     .option("--notes <text>", "Notiz zur Zuordnung (menu assign)")
+    // Event-Hub subresources
+    .option("--member-id <id>", "Mitglied-ID (assignment)")
+    .option("--user-id <id>", "User-ID (invitation)")
+    .option("--category-id <id>", "Tag-Kategorie-ID")
+    .option("--tag-id <id>", "Tag-ID")
+    .option("--target-type <v>", "object|room|building (resource)")
+    .option("--target-id <id>", "Ressourcen-Ziel-ID")
+    .option("--attachment-type <v>", "Anhangstyp")
+    .option("--attachment-id <id>", "Anhang-ID")
+    .option("--asset-id <id>", "Design-Asset-ID")
+    .option("--advertiser-id <id>", "Sponsor-/Advertiser-ID")
+    .option("--program-item-id <id>", "Programmpunkt-ID")
+    .option("--tier <v>", "Sponsor-Tier")
+    .option("--label <v>", "Anzeige-Label")
+    .option("--asset-type <v>", "FLYER|TITLE_PICTURE")
+    .option("--provider <id>", "Externer Spielplan-Provider")
+    .option("--limit <n>", "Listenlimit")
+    .option("--offset <n>", "Listenoffset")
+    .option("--key <v>", "Public-Hub-Copy-Key")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
       async (
@@ -377,6 +411,10 @@ export function registerEventCommands(cli: CAC): void {
         const state = loadState();
         const client = createClient(state);
         const clubId = requireClubId(state, opts.club);
+
+        if (await handleEventOperation({ action, sub: arg1, id: arg2, opts, client, clubId })) {
+          return;
+        }
 
         // event template <sub> [id]
         if (action === "template") {
@@ -405,20 +443,21 @@ export function registerEventCommands(cli: CAC): void {
             return;
           }
           if (sub === "create") {
+            const fromFile = eventFileBody(opts.file, "event template create");
             const missing = [
               ["--title", opts.title],
               ["--event-type", opts.eventType],
               ["--visibility-scope", opts.visibilityScope],
               ["--organizer-type", opts.organizerType],
               ["--department-id", opts.departmentId],
-            ].filter(([, value]) => !value).map(([flag]) => flag);
+            ].filter(([flag, value]) => !value && !fromFile[String(flag).slice(2).replace(/-/g, "_")]).map(([flag]) => flag);
             if (missing.length) {
               throw new Error(`event template create benoetigt: ${missing.join(", ")}.`);
             }
             const template = await client.post<EventRead>(
               "event",
               "/events/",
-              buildEventCreateBody(opts, clubId, true),
+              { ...buildEventCreateBody(opts, clubId, true), ...fromFile, club_id: clubId, is_template: true },
             );
             output(template, opts.json, () => `Event-Vorlage angelegt: ${template.title} (${template.id})`);
             return;
@@ -499,6 +538,22 @@ export function registerEventCommands(cli: CAC): void {
             });
             return;
           }
+          if (sub === "update") {
+            if (!id) throw new Error("event series update benötigt eine <series-id>.");
+            const result = await client.patch<EventSeriesRead>(
+              "event",
+              `/event-series/${id}`,
+              eventFileBody(opts.file, "event series update"),
+            );
+            output(result, opts.json, () => `Terminserie aktualisiert: ${result.title ?? "—"} (${result.id ?? id})`);
+            return;
+          }
+          if (sub === "delete") {
+            if (!id) throw new Error("event series delete benötigt eine <series-id>.");
+            await client.del("event", `/event-series/${id}`);
+            output({ deleted: id }, opts.json, () => `Terminserie entfernt: ${id}`);
+            return;
+          }
           if (sub === "next") {
             if (!id) throw new Error("event series next benoetigt eine <series-id>.");
             if (!opts.startTime) throw new Error("event series next benoetigt --start-time <iso>.");
@@ -534,7 +589,7 @@ export function registerEventCommands(cli: CAC): void {
             return;
           }
           throw new Error(
-            `Unbekannte event-series-Aktion "${sub}". Verfuegbar: list, show, create, materialize, next, promote-recurring, promote-yearly`,
+            `Unbekannte event-series-Aktion "${sub}". Verfügbar: list, show, create, update, delete, materialize, next, promote-recurring, promote-yearly`,
           );
         }
 
@@ -567,7 +622,7 @@ export function registerEventCommands(cli: CAC): void {
               name: opts.name,
               description: opts.description,
               color: opts.color,
-              public: opts.public,
+              is_public: opts.public,
               area_category: opts.areaCategory,
             });
             const area = await client.post<EventAreaRead>("event", "/events/areas/", body);
@@ -599,22 +654,23 @@ export function registerEventCommands(cli: CAC): void {
           }
           if (sub === "add") {
             if (!eventId) throw new Error("event program add benoetigt eine <event-id>.");
-            if (!opts.title) throw new Error("event program add benoetigt --title <v>.");
-            if (!opts.area) throw new Error("event program add benoetigt --area <area-id>.");
-            if (!opts.startTime) throw new Error("event program add benoetigt --start-time <iso>.");
+            const fileBody = eventFileBody(opts.file, "event program add");
             const body = prune({
+              ...fileBody,
               club_id: clubId,
-              area_id: opts.area,
-              title: opts.title,
-              description: opts.description,
-              start_time: opts.startTime,
-              end_time: opts.endTime,
-              sort_order: opts.sortOrder != null ? Number(opts.sortOrder) : undefined,
-              reference_type: opts.referenceType,
-              reference_id: opts.referenceId,
-              reference_label: opts.referenceLabel,
-              reference_url: opts.referenceUrl,
+              area_id: opts.area ?? fileBody.area_id,
+              title: opts.title ?? fileBody.title,
+              description: opts.description ?? fileBody.description,
+              start_time: opts.startTime ?? fileBody.start_time,
+              end_time: opts.endTime ?? fileBody.end_time,
+              sort_order: opts.sortOrder != null ? Number(opts.sortOrder) : fileBody.sort_order,
+              reference_type: opts.referenceType ?? fileBody.reference_type,
+              reference_id: opts.referenceId ?? fileBody.reference_id,
+              reference_label: opts.referenceLabel ?? fileBody.reference_label,
+              reference_url: opts.referenceUrl ?? fileBody.reference_url,
             });
+            if (!body.title) throw new Error("event program add benoetigt --title <v> oder title in --file.");
+            if (!body.area_id) throw new Error("event program add benoetigt --area <area-id> oder area_id in --file.");
             const item = await client.post<EventProgramItemRead>("event", `/events/${eventId}/program-items`, body);
             output(item, opts.json, () => `Programmpunkt angelegt: ${item.title ?? opts.title} (${item.id ?? "?"})`);
             return;
@@ -719,17 +775,18 @@ export function registerEventCommands(cli: CAC): void {
             break;
           }
           case "create": {
+            const fromFile = eventFileBody(opts.file, "event create");
             const missing = [
               ["--title", opts.title],
               ["--event-type", opts.eventType],
               ["--visibility-scope", opts.visibilityScope],
               ["--organizer-type", opts.organizerType],
               ["--department-id", opts.departmentId],
-            ].filter(([, v]) => !v).map(([flag]) => flag);
+            ].filter(([flag, value]) => !value && !fromFile[String(flag).slice(2).replace(/-/g, "_")]).map(([flag]) => flag);
             if (missing.length) {
               throw new Error(`event create benoetigt: ${missing.join(", ")}.`);
             }
-            const body = buildEventCreateBody(opts, clubId);
+            const body = { ...buildEventCreateBody(opts, clubId), ...fromFile, club_id: clubId };
             const e = await client.post<EventRead>("event", "/events/", body);
             output(e, opts.json, () => `Veranstaltung angelegt: ${e.title} (${e.id})`);
             break;
@@ -737,7 +794,7 @@ export function registerEventCommands(cli: CAC): void {
           case "update": {
             const id = arg1;
             if (!id) throw new Error("event update benoetigt eine <event-id>.");
-            const body = eventUpdateBody(opts);
+            const body = { ...eventUpdateBody(opts), ...eventFileBody(opts.file, "event update") };
             if (Object.keys(body).length === 0) {
               throw new Error("event update benoetigt mindestens ein zu aenderndes Feld.");
             }
@@ -757,9 +814,16 @@ export function registerEventCommands(cli: CAC): void {
             );
             break;
           }
+          case "delete": {
+            const id = arg1;
+            if (!id) throw new Error("event delete benötigt eine <event-id>.");
+            await client.del("event", `/events/${id}`);
+            output({ deleted: id }, opts.json, () => `Veranstaltung entfernt: ${id}`);
+            break;
+          }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, update, publish, template, series, area, program, menu`,
+              `Unbekannte Aktion "${action}". Verfügbar: list, show, create, update, publish, delete, template, series, area, assignment, lead, area-note, program, contact, resource, attachment, tag, sponsor, sponsor-program, invitation, club-invitation, registration, budget, design, copy, dj, external-sync, instance, child, menu`,
             );
         }
       },

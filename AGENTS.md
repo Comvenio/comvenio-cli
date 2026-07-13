@@ -74,8 +74,8 @@ comvenio club info                    # Vereinsdaten
 | club     | `comvenio club info` · `comvenio club design` (Theme/Farben/Public-Template → design_settings) |
 | member   | `comvenio member list\|show\|add\|update\|remove`             |
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
-| event    | `comvenio event list\|show\|create\|update\|publish` · `event template list\|create\|clone\|instantiate` · `event series list\|show\|create\|materialize\|next\|promote-recurring\|promote-yearly` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` |
-| plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) · `plan export` (PNG/PDF) · `plan illustrate` + `plan compose` (illustrierter Lageplan, D-36) |
+| event    | Vollständiger Event-Hub: Core, Vorlagen, Serien, Festtage, Bereiche, Programm, Kontakte, Ressourcen, Anhänge, Tags, Einladungen, Anmeldungen, Sponsoring, Design, DJ und externe Spielpläne. Verbindliche Befehls- und Payload-Referenz: `docs/veranstaltungen.md`. |
+| plan     | `comvenio plan list\|show\|create\|update\|delete` · `plan zone create\|list\|update\|delete\|link\|unlink` · `plan table create\|duplicate\|update\|delete` · `plan marker create\|update\|delete` · `plan guest list\|add\|update\|delete` · `plan detail` · `plan export` · `plan illustrate` + `plan compose` |
 | sponsor  | `comvenio sponsor list\|add\|update\|logo` · `sponsor product-list\|product-add` · `sponsor assign` · `sponsor contract-add` · `sponsor doc-upload` (lokales Club-Sponsoring, marketing-service + content-service) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
 | object   | `comvenio object list [--type static\|portable\|event]`       |
@@ -98,6 +98,11 @@ comvenio club info                    # Vereinsdaten
 > **Vereins-Homepages ausführlich:** `docs/homepage.md` — verbindlicher
 > CLI-only-Workflow, Struktur/Design/Preview/Verifier, Plattform-Rechtsseiten,
 > Freigabe-Gate und vollständige Qualitätscheckliste. **Vor jeder Homepage-Arbeit lesen.**
+
+> **Veranstaltungen ausführlich:** `docs/veranstaltungen.md` — eigenständige
+> Referenz für alle Event-Hub-Befehle, JSON-Payloads, Serien-Workflow,
+> domänenübergreifende Zuständigkeiten und bewusst nicht angebotene Routen.
+> **Vor jeder Veranstaltungsarbeit lesen.**
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)
@@ -121,6 +126,8 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   idempotent mit `event series materialize <series-id> --start <iso> --end <iso>` erzeugt.
   **Jährliche Veranstaltungen:** `--series-type yearly` erstellt eine manuell geplante Serie;
   `event series next <series-id> --start-time <iso>` legt den nächsten Termin an.
+  Alle weiteren Event-Hub-Funktionen und ihre vollständigen JSON-Verträge stehen in
+  `docs/veranstaltungen.md`; diese Datei ist ohne Backend- oder AI-docs-Zugriff nutzbar.
 - **news:** `visibility_scope` (public\|member\|department, Default member).
   **Entwurf/Veröffentlichung (WICHTIG):** `is_draft` (Default **true** → News ist nur für Admins
   sichtbar, NICHT öffentlich). Veröffentlichen = `is_draft=false` + `published_at`. Im CLI:
@@ -437,8 +444,7 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 | `member list/show`            | `view_members`                       |
 | `member add/update/remove`    | `manage_members`                     |
 | `event create` / `event template create` / `event series create` | `create_events` |
-| `event template clone\|instantiate` / `event series materialize\|next\|promote-*` | `manage_events` |
-| `event update/publish`, `area`| `manage_events`                      |
+| Alle verändernden `event`-Unterbefehle nach der Anlage | überwiegend `manage_events`; Detailausnahmen stehen in `docs/veranstaltungen.md` |
 | `booking approve/reject`      | `confirm_object_bookings` (kein Owner-Bypass) |
 | `task create`                 | `create_tasks`                       |
 | `task assign/done`            | `manage_tasks`                       |

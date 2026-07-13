@@ -87,6 +87,12 @@ comvenio event series next <series-id> --start-time <iso> --json
 Terminserien. Für komplexe Regeln kann `--rrule` statt `--frequency`, `--weekdays`,
 `--interval`, `--count` und `--until` verwendet werden.
 
+Die CLI deckt außerdem Child-Events, Bereiche und Zuständigkeiten, Programm,
+Kontakte, Ressourcen, Anhänge, Tags, Einladungen, Anmeldungen, Sponsoring,
+Event-Design, DJ-Wünsche und externe Spielplan-Synchronisation ab. Die
+vollständige, eigenständige Referenz mit Payloads und Zuständigkeitsgrenzen steht
+in [`docs/veranstaltungen.md`](docs/veranstaltungen.md).
+
 ## Geländeplan (`plan`)
 
 Geländeplan eines Events lesen + agent-tauglich planen (alle Bodies ohne `club_id` —

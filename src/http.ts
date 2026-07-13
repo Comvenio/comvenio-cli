@@ -15,6 +15,7 @@ export type ComvenioClient = {
   post<T = unknown>(service: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T>;
   patch<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
   put<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
+  postForm<T = unknown>(service: string, path: string, body: FormData): Promise<T>;
   del<T = unknown>(service: string, path: string): Promise<T>;
   // Convenience GET helper: service("user", "/users/me").
   service<T = unknown>(service: string, path: string): Promise<T>;
@@ -118,6 +119,32 @@ export function createClient(state: ClientState): ComvenioClient {
       request("PATCH", serviceUrl(service, path), body),
     put: (service, path, body) =>
       request("PUT", serviceUrl(service, path), body),
+    postForm: async <T = unknown>(service: string, path: string, body: FormData) => {
+      const url = serviceUrl(service, path);
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${state.token}`,
+            Accept: "application/json",
+          },
+          body,
+          signal: ctrl.signal,
+        });
+        const responseText = await res.text();
+        if (!res.ok) throw new HttpError(res.status, responseText, url);
+        if (!responseText) return undefined as T;
+        try {
+          return JSON.parse(responseText) as T;
+        } catch {
+          return responseText as T;
+        }
+      } finally {
+        clearTimeout(timer);
+      }
+    },
     del: (service, path) => request("DELETE", serviceUrl(service, path)),
     service: (service, path) => request("GET", serviceUrl(service, path)),
   };

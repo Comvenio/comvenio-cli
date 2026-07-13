@@ -515,15 +515,33 @@ function genMenu(): unknown {
 
 const EVENT_MODEL = "Backend/Microservice-Backend/event-service/app/models/event.py";
 const EVENT_SERIES_MODEL = "Backend/Microservice-Backend/event-service/app/models/event_series.py";
+const EVENT_INVITATION_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/event_invitation.py";
+const EVENT_CLUB_INVITATION_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/club_event_invitation.py";
+const EVENT_RESOURCE_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/event_resource_link.py";
+const EVENT_DESIGN_MODEL = "Backend/Microservice-Backend/event-service/app/models/event_design.py";
+const EVENT_EXTERNAL_SYNC_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/external_team_sync.py";
 
 function genEvent(): unknown {
   const src = readSource(EVENT_MODEL);
   const seriesSrc = readSource(EVENT_SERIES_MODEL);
+  const invitationSrc = readSource(EVENT_INVITATION_SCHEMA);
+  const clubInvitationSrc = readSource(EVENT_CLUB_INVITATION_SCHEMA);
+  const resourceSrc = readSource(EVENT_RESOURCE_SCHEMA);
+  const designSrc = readSource(EVENT_DESIGN_MODEL);
+  const externalSyncSrc = readSource(EVENT_EXTERNAL_SYNC_SCHEMA);
   return {
     domain: "event",
     generated: true,
-    source: [slash(EVENT_MODEL), slash(EVENT_SERIES_MODEL)],
-    note: "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py, event_series.py).",
+    source: [
+      slash(EVENT_MODEL),
+      slash(EVENT_SERIES_MODEL),
+      slash(EVENT_INVITATION_SCHEMA),
+      slash(EVENT_CLUB_INVITATION_SCHEMA),
+      slash(EVENT_RESOURCE_SCHEMA),
+      slash(EVENT_DESIGN_MODEL),
+      slash(EVENT_EXTERNAL_SYNC_SCHEMA),
+    ],
+    note: "Event-/Serien-Enums aus den Models; Subresource-Enums aus den API-Schemas. Vollständige Agent-Anleitung: docs/veranstaltungen.md.",
     enums: {
       event_type: parsePyEnum(src, "EventType"),
       visibility_scope: parsePyEnum(src, "VisibilityScope"),
@@ -532,6 +550,13 @@ function genEvent(): unknown {
       complexity: parsePyEnum(src, "EventComplexity"),
       series_type: parsePyEnum(seriesSrc, "SeriesType"),
       materialization_mode: parsePyEnum(seriesSrc, "MaterializationMode"),
+      invitation_status: parsePyEnum(invitationSrc, "InvitationStatus"),
+      club_invitation_type: parsePyEnum(clubInvitationSrc, "ClubInvitationType"),
+      club_invitation_status: parsePyEnum(clubInvitationSrc, "ClubInvitationStatus"),
+      resource_target: parsePyEnum(resourceSrc, "ReservationTarget"),
+      design_asset_type: parsePyEnum(designSrc, "DesignAssetType"),
+      design_asset_source: parsePyEnum(designSrc, "DesignAssetSource"),
+      external_sync_provider: parsePyEnum(externalSyncSrc, "ExternalSyncProvider"),
       recurrence_frequency: ["daily", "weekly", "monthly", "yearly"],
       recurrence_weekday: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"],
     },
@@ -569,6 +594,8 @@ function genEvent(): unknown {
         "list",
         "show",
         "create",
+        "update",
+        "delete",
         "materialize",
         "next",
         "promote-recurring",
@@ -591,6 +618,57 @@ function genEvent(): unknown {
         "count",
       ],
       materialize_required_fields: ["window_start", "window_end"],
+    },
+    command_groups: {
+      core: ["list", "show", "create", "update", "publish", "delete"],
+      template: ["list", "create", "clone", "instantiate"],
+      series: ["list", "show", "create", "update", "delete", "materialize", "next", "promote-recurring", "promote-yearly"],
+      instance: ["previous", "next", "compare", "clone-next"],
+      child: ["list", "create", "invitation-summary"],
+      area: ["list", "show", "add", "update", "delete", "bulk", "copy"],
+      assignment: ["list", "add", "remove", "clear"],
+      lead: ["list", "add", "update", "delete"],
+      area_note: ["list", "add", "update", "delete"],
+      program: ["list", "add", "update", "delete", "reorder"],
+      contact: ["list", "add", "update", "delete"],
+      resource: ["list", "add", "set", "remove", "link-show", "link-update", "link-delete", "usage", "usage-batch"],
+      attachment: ["list", "show", "add", "update", "delete"],
+      tag: ["category-list", "category-show", "category-add", "category-update", "category-delete", "list", "show", "add", "update", "delete", "assigned", "assignment-list", "assign", "unassign", "clear"],
+      sponsor: ["list", "add", "delete", "tier-list", "tier-add", "tier-update", "tier-delete", "tier-sync"],
+      sponsor_program: ["list", "by-program", "add", "delete"],
+      invitation: ["mine", "list", "show", "add", "groups", "departments", "org-groups", "update", "status", "delete", "notified"],
+      club_invitation: ["list", "attending", "incoming", "accepted", "show", "add", "external", "self-join", "update", "respond", "delete"],
+      registration: ["list", "add", "stats", "show", "update", "adjust", "delete", "aggregate"],
+      budget: ["show", "set", "delete"],
+      design: ["theme-show", "theme-set", "theme-delete", "asset-list", "asset-upload", "asset-delete"],
+      copy: ["set", "reset"],
+      dj: ["settings", "requests", "settings-set", "request-status", "reset"],
+      external_sync: ["list", "add", "show", "update", "delete", "matches", "run", "stats", "provider-run"],
+      menu: ["list", "assign", "unassign"],
+    },
+    file_payloads: {
+      convention: "Komplexe Bodies werden mit --file <payload.json> übergeben. IDs im Pfad kommen aus dem Command; club_id wird dort injiziert, wo der Vertrag eindeutig ist.",
+      area_bulk: { required: ["event_id", "areas"], areas_fields: ["name", "description", "color", "is_public", "public_description", "area_category"] },
+      area_copy: { required: ["source_area_ids", "target_event_ids"], optional: ["copy_leads", "copy_assignments", "copy_notes", "copy_program", "copy_contacts", "copy_sponsors", "copy_resources", "copy_tasks", "copy_shifts", "reuse_existing"] },
+      program: { create_fields: ["club_id", "area_id", "title", "start_time", "end_time", "time_label", "description", "responsible_member_id", "image_file_id", "flyer_file_id", "reference_type", "reference_id", "reference_label", "reference_url", "sort_order"] },
+      resource_bulk: { body: { targets: [{ target_type: "object|room|building", target_id: "uuid", event_area_id: "uuid|null" }] } },
+      registration: { create_fields: ["attendee_count", "contact_name", "contact_email", "contact_phone", "notes", "orders"], order_fields: ["menu_item_id", "quantity", "note"] },
+      design_theme: { fields: ["name", "base_brief", "css_vars", "reference_image_ids", "mood_tags"] },
+      external_sync: { create_fields: ["department_id", "provider", "external_club_id", "external_team_id", "age_group_filter", "home_location", "team_label", "sync_enabled"] },
+    },
+    cross_domain_commands: {
+      map: "comvenio plan ...",
+      files: "comvenio data ...; danach event attachment add zum fachlichen Verknüpfen",
+      sponsor_master_data: "comvenio sponsor ...; danach event sponsor add",
+      tasks_and_shifts: "comvenio task ... auf dem EventArea-Task-Kontext",
+      event_menu: "comvenio event menu ...",
+      bookings: "comvenio booking/object ...; event resource verwaltet nur den Event-Link",
+    },
+    intentionally_not_exposed: {
+      internal: "Alle /internal-Routen und System-Copy-Mutationen benötigen internen API-Key und gehören nicht ins Club-CLI.",
+      public_forms: "Öffentliche Share-/Token-Formular-Routen werden nicht als Club-Verwaltung gespiegelt.",
+      calendar_subscriptions: "Der Router dekodiert derzeit Standard-JWT direkt und akzeptiert den opaken cvn_-Tokenvertrag noch nicht zuverlässig.",
+      legacy_map: "Legacy GET /events/{id}/map und PUT /map-plan; V2+ liegt vollständig unter comvenio plan.",
     },
     notes: [
       "Es gibt KEINEN 'published'-Status — publish = PATCH status=confirmed.",

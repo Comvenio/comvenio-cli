@@ -8,6 +8,7 @@ import { output, renderTable } from "../format.ts";
 import { prune } from "../util/body.ts";
 import { requireClubId } from "../util/club.ts";
 import { frontendBase, hasPlaywrightCli, screenshotToPng, pngFileToPdf } from "../util/render.ts";
+import { readJsonFile } from "../util/file.ts";
 
 // Geländeplan-Endpoints im event-service (Router-Prefix /events, verifiziert app/routes/event_map.py).
 // Map-Bodies tragen KEIN club_id — das Backend leitet es aus dem Event/Plan ab.
@@ -109,7 +110,17 @@ type Opts = {
   style?: string;        // illustrate: freie Stil-Vorgaben für den Generierungs-Prompt
   image?: string;        // compose: Pfad zur generierten Illustration (PNG/JPG)
   lines?: boolean;       // compose: cac-Negation via --no-lines (Fahnen ohne Verbindungslinien)
+  file?: string;         // strukturierte Payloads für update-/guest-Aktionen
 };
+
+function planFileBody(path: string | undefined, command: string): Record<string, unknown> {
+  if (!path) throw new Error(`${command} benötigt --file <payload.json>.`);
+  const body = readJsonFile<unknown>(path);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error(`${command}: --file muss ein JSON-Objekt enthalten.`);
+  }
+  return body as Record<string, unknown>;
+}
 
 const num = (v: string | undefined): number | undefined =>
   v === undefined || v === "" ? undefined : Number(v);
@@ -271,9 +282,12 @@ function collectIllustrationLabels(agg: Aggregate): IllustrationLabel[] {
 /**
  * `comvenio plan <action> [arg1] [arg2]` — Geländeplan lesen + planen (agent-tauglich, --json).
  *   plan list <event-id> | plan show <plan-id> | plan create <event-id> --name [--inherit]
+ *   plan update|delete <plan-id> [--file]
  *   plan zone create <plan-id> [--length/--width | --shape polyline --points] | plan zone list <plan-id>
  *   plan zone link|unlink <zone-id> --area <area-id>
- *   plan table create|duplicate <plan-id|table-id> | plan marker create <plan-id> [--size --club --logo]
+ *   plan table create|duplicate|update|delete <plan-id|table-id>
+ *   plan marker create|update|delete <plan-id|marker-id> [--size --club --logo]
+ *   plan guest list|add|update|delete <event-id|guest-id>
  *   plan detail <zone-id> --length --width
  *   plan illustrate <event-id> [--plan --out --style]   D-36: Illustrations-Kit (export.png + plan.json + PROMPT.md)
  *   plan compose <event-id> --plan <id> --image <png>   D-36: echte Label-Fahnen über die generierte Illustration
@@ -282,7 +296,7 @@ export function registerPlanCommands(cli: CAC): void {
   cli
     .command(
       "plan <action> [arg1] [arg2]",
-      "Geländeplan: list|show|create | zone | table | marker | detail | export (Bild/PDF) | illustrate | compose",
+      "Geländeplan: list|show|create|update|delete | zone | table | marker | guest | detail | export | illustrate | compose",
     )
     .option("--name <v>", "Name (plan/zone create)")
     .option("--type <v>", "Plan-Typ: gelaende|fluchtplan|festumzug|sonstiges")
@@ -319,6 +333,7 @@ export function registerPlanCommands(cli: CAC): void {
     .option("--frontend-base <url>", "export: Frontend-Basis überschreiben (z. B. http://localhost:5173)")
     .option("--style <vorgaben>", "illustrate: freie Stil-Vorgaben für den Generierungs-Prompt")
     .option("--image <file>", "compose: Pfad zur generierten Illustration (PNG/JPG)")
+    .option("--file <path>", "JSON-Payload für update- und Gast-Aktionen")
     .option("--no-lines", "compose: Label-Fahnen ohne Verbindungslinien/Punkte")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(
@@ -690,6 +705,22 @@ ${pins}
             );
             return;
           }
+          if (sub === "update") {
+            const zoneId = planId;
+            const zone = await client.patch<Zone>(
+              "event",
+              `/events/map-zones/${zoneId}`,
+              planFileBody(opts.file, "plan zone update"),
+            );
+            output(zone, opts.json, () => `Bereich aktualisiert: ${zone.name ?? zone.id} (${zone.id})`);
+            return;
+          }
+          if (sub === "delete") {
+            const zoneId = planId;
+            await client.del("event", `/events/map-zones/${zoneId}`);
+            output({ deleted: zoneId }, opts.json, () => `Bereich entfernt: ${zoneId}`);
+            return;
+          }
           // V6.1: Zone ↔ Event-Area verknüpfen (Public-Klick auf Zone springt in die Area des Tages).
           if (sub === "link" || sub === "unlink") {
             const zoneId = planId; // bei link/unlink ist arg2 die ZONE-ID
@@ -703,7 +734,7 @@ ${pins}
             }
             return;
           }
-          throw new Error(`Unbekannte plan-zone-Aktion "${sub}". Verfuegbar: list, create, link, unlink`);
+          throw new Error(`Unbekannte plan-zone-Aktion "${sub}". Verfügbar: list, create, update, delete, link, unlink`);
         }
 
         // ── plan table <sub> <plan-id|table-id> ────────────────
@@ -738,14 +769,50 @@ ${pins}
             output(t, opts.json, () => `Garnitur angelegt: ${t.label ?? t.id} (${t.id})`);
             return;
           }
-          throw new Error(`Unbekannte plan-table-Aktion "${sub}". Verfuegbar: create, duplicate`);
+          if (sub === "update") {
+            const tableId = arg2;
+            if (!tableId) throw new Error("plan table update benötigt eine <table-id>.");
+            const table = await client.patch<TableRow>(
+              "event",
+              `/events/tables/${tableId}`,
+              planFileBody(opts.file, "plan table update"),
+            );
+            output(table, opts.json, () => `Garnitur aktualisiert: ${table.label ?? table.id} (${table.id})`);
+            return;
+          }
+          if (sub === "delete") {
+            const tableId = arg2;
+            if (!tableId) throw new Error("plan table delete benötigt eine <table-id>.");
+            await client.del("event", `/events/tables/${tableId}`);
+            output({ deleted: tableId }, opts.json, () => `Garnitur entfernt: ${tableId}`);
+            return;
+          }
+          throw new Error(`Unbekannte plan-table-Aktion "${sub}". Verfügbar: create, duplicate, update, delete`);
         }
 
         // ── plan marker create <plan-id> ───────────────────────
         if (action === "marker") {
           const sub = arg1;
           const planId = arg2;
-          if (sub !== "create") throw new Error(`Unbekannte plan-marker-Aktion "${sub}". Verfuegbar: create`);
+          if (sub === "update") {
+            const markerId = planId;
+            if (!markerId) throw new Error("plan marker update benötigt eine <marker-id>.");
+            const marker = await client.patch<Marker>(
+              "event",
+              `/events/map-markers/${markerId}`,
+              planFileBody(opts.file, "plan marker update"),
+            );
+            output(marker, opts.json, () => `Marker aktualisiert: ${marker.label ?? marker.marker_type} (${marker.id})`);
+            return;
+          }
+          if (sub === "delete") {
+            const markerId = planId;
+            if (!markerId) throw new Error("plan marker delete benötigt eine <marker-id>.");
+            await client.del("event", `/events/map-markers/${markerId}`);
+            output({ deleted: markerId }, opts.json, () => `Marker entfernt: ${markerId}`);
+            return;
+          }
+          if (sub !== "create") throw new Error(`Unbekannte plan-marker-Aktion "${sub}". Verfügbar: create, update, delete`);
           if (!planId) throw new Error("plan marker create benoetigt eine <plan-id>.");
           if (!opts.markerType) throw new Error("plan marker create benoetigt --marker-type <v>.");
           const agg = await fetchPlan(client, planId);
@@ -764,6 +831,42 @@ ${pins}
           const m = await client.post<Marker>("event", "/events/map-markers", body);
           output(m, opts.json, () => `Marker gesetzt: ${m.label ?? m.marker_type} (${m.id})`);
           return;
+        }
+
+        // ── plan guest list|add|update|delete <event-id|guest-id> ──
+        if (action === "guest") {
+          const sub = arg1;
+          const id = arg2;
+          if (!id) throw new Error(`plan guest ${sub ?? ""} benötigt eine ID.`);
+          if (sub === "list") {
+            const guests = await client.get<Array<Record<string, unknown>>>("event", `/events/${id}/guests`);
+            output(guests, opts.json, () => `${guests.length} Gastposition(en).`);
+            return;
+          }
+          if (sub === "add") {
+            const guest = await client.post<Record<string, unknown>>(
+              "event",
+              `/events/${id}/guests`,
+              planFileBody(opts.file, "plan guest add"),
+            );
+            output(guest, opts.json, () => `Gastposition angelegt: ${guest.id ?? "OK"}`);
+            return;
+          }
+          if (sub === "update") {
+            const guest = await client.patch<Record<string, unknown>>(
+              "event",
+              `/events/guests/${id}`,
+              planFileBody(opts.file, "plan guest update"),
+            );
+            output(guest, opts.json, () => `Gastposition aktualisiert: ${guest.id ?? id}`);
+            return;
+          }
+          if (sub === "delete") {
+            await client.del("event", `/events/guests/${id}`);
+            output({ deleted: id }, opts.json, () => `Gastposition entfernt: ${id}`);
+            return;
+          }
+          throw new Error(`Unbekannte plan-guest-Aktion "${sub}". Verfügbar: list, add, update, delete`);
         }
 
         // ── plan detail <zone-id> — Gebäude-Canvas-Detailplan ──
@@ -838,9 +941,27 @@ ${pins}
             );
             break;
           }
+          case "update": {
+            const planId = arg1;
+            if (!planId) throw new Error("plan update benötigt eine <plan-id>.");
+            const plan = await client.patch<Plan>(
+              "event",
+              `/events/map-plans/${planId}`,
+              planFileBody(opts.file, "plan update"),
+            );
+            output(plan, opts.json, () => `Plan aktualisiert: ${plan.name ?? plan.id} (${plan.id})`);
+            break;
+          }
+          case "delete": {
+            const planId = arg1;
+            if (!planId) throw new Error("plan delete benötigt eine <plan-id>.");
+            await client.del("event", `/events/map-plans/${planId}`);
+            output({ deleted: planId }, opts.json, () => `Plan entfernt: ${planId}`);
+            break;
+          }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, zone, table, marker, detail`,
+              `Unbekannte Aktion "${action}". Verfügbar: list, show, create, update, delete, zone, table, marker, guest, detail, export, illustrate, compose`,
             );
         }
       },
