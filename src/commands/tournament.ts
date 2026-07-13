@@ -7,6 +7,7 @@ import { prune } from "../util/body.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parseSetsNotation } from "../util/sets.ts";
 
 // gateway key "tournament" -> tournament-service. V3 engine: a match pairs
 // PARTICIPANTS via sides (Einzelspieler / Doppel / Mannschaft), never a team.
@@ -40,6 +41,17 @@ type Opts = {
   // match-result (2026-07-08): Tore setzen
   home?: string;
   away?: string;
+  // K18 (2026-07-13): Tennis-Saetze + Sonderwertungen + Deadline
+  sets?: string;
+  walkover?: boolean;
+  retired?: boolean;
+  noShow?: boolean;
+  noContest?: boolean;
+  winner?: string;
+  mode?: string;
+  at?: string;
+  policy?: string;
+  show?: boolean;
 };
 
 type Tournament = {
@@ -68,6 +80,7 @@ type Participant = {
   participant_kind?: string;
   registration_status?: string;
   seed?: number | null;
+  participant_metadata?: Record<string, unknown> | null;
 };
 type MatchSide = { side_index?: number; participant_id?: string; score?: number | null; is_winner?: boolean };
 type Match = {
@@ -76,7 +89,9 @@ type Match = {
   round?: number | null;
   group?: string | null;
   status?: string;
+  deadline_at?: string | null;
   sides?: MatchSide[];
+  [k: string]: unknown;
 };
 type DrawSession = {
   id?: string;
@@ -182,7 +197,7 @@ export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result",
+      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result | deadline",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -207,6 +222,16 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--phase <p>", "matches-clear: group | finals | all (default all)")
     .option("--home <n>", "match-result: Tore Heim (side 0)")
     .option("--away <n>", "match-result: Tore Auswaerts (side 1)")
+    .option("--sets <notation>", 'match-result: Tennis-Saetze, z. B. "6:2,7:6(9:7)" oder "7:6(7:4),1:6,MTB2:10"')
+    .option("--walkover", "match-result: kampflos (w.o.) — Gegner nicht angetreten, Template-Wertung (Tennis 6:0 6:0)")
+    .option("--retired", "match-result: Aufgabe im Match — Teil-Score via --sets, Rest wird fuer den Gegner gewertet")
+    .option("--no-show", "match-result: einseitiger Nichtantritt (Wertung wie walkover, eigener Marker)")
+    .option("--no-contest", "match-result: beide nicht angetreten — ohne Wertung abschliessen")
+    .option("--winner <side>", "match-result: Gewinner-Seite home | away (Pflicht bei walkover/retired/no-show)")
+    .option("--mode <m>", "participant-withdraw: cancel | walkover (Default: vor Turnierstart cancel, danach walkover)")
+    .option("--at <iso>", "deadline: Ergebnis-Deadline (ISO) fuer offene Spiele der Phase setzen")
+    .option("--policy <p>", "deadline: manual | auto_no_contest (Verhalten bei Deadline-Ueberschreitung)")
+    .option("--show", "deadline: aktuelle Konfiguration + ueberfaellige Spiele anzeigen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -478,14 +503,26 @@ export function registerTournamentCommands(cli: CAC): void {
           if (!id) throw new Error(`tournament ${action} <tournament-id> benoetigt eine Turnier-ID + --participant <pid>.`);
           if (!opts.participant) throw new Error(`tournament ${action} benoetigt --participant <participant-id>.`);
           const registration_status = action === "participant-withdraw" ? "withdrawn" : "confirmed";
+          if (opts.mode && !["cancel", "walkover"].includes(opts.mode)) {
+            throw new Error('tournament participant-withdraw --mode erwartet "cancel" oder "walkover".');
+          }
           const updated = await client.patch<Participant>(
             "tournament",
             `/tournaments/${id}/participants/${opts.participant}`,
-            { registration_status },
+            prune({
+              registration_status,
+              // K18/K17: cancel = annullieren (Re-Draw), walkover = offene Spiele
+              // 6:0 6:0 fuer die Gegner werten. Ohne --mode: Backend-Default
+              // (vor Turnierstart cancel, danach walkover).
+              withdrawal_mode: action === "participant-withdraw" ? opts.mode : undefined,
+            }),
           );
+          const summary = (updated.participant_metadata as Record<string, any> | undefined)?.withdrawal_summary;
           output(updated, opts.json, () =>
             action === "participant-withdraw"
-              ? `Teilnehmer ${updated.name ?? opts.participant} abgemeldet (withdrawn) — offene Spiele wurden annulliert.`
+              ? summary?.mode === "walkover"
+                ? `Teilnehmer ${updated.name ?? opts.participant} abgemeldet — ${summary.walkover_matches ?? 0} offene Spiele als Walkover (6:0 6:0) fuer die Gegner gewertet.`
+                : `Teilnehmer ${updated.name ?? opts.participant} abgemeldet (withdrawn) — ${summary?.cancelled_matches ?? "offene"} Spiele annulliert.`
               : `Teilnehmer ${updated.name ?? opts.participant} wieder angemeldet (confirmed). Neuer Spielplan: comvenio tournament redraw ${id} --file plan.json`,
           );
           break;
@@ -551,23 +588,121 @@ export function registerTournamentCommands(cli: CAC): void {
 
         case "match-result": {
           // Ergebnis eines Matches setzen (Backend POST /matches/{id}/result).
-          // id = MATCH-id (nicht Turnier-id). Auto-Winner aus score_home/score_away.
-          if (!id) throw new Error("tournament match-result <match-id> benoetigt eine Match-ID + --home <tore> --away <tore>.");
-          if (opts.home == null || opts.away == null) {
-            throw new Error("tournament match-result benoetigt --home <tore> und --away <tore>.");
+          // id = MATCH-id (nicht Turnier-id). K18: Tennis-Saetze via --sets,
+          // Sonderwertungen via --walkover/--retired/--no-show/--no-contest.
+          if (!id) throw new Error("tournament match-result <match-id> benoetigt eine Match-ID.");
+
+          const specialFlags = [
+            opts.walkover ? "walkover" : null,
+            opts.retired ? "retired" : null,
+            opts.noShow ? "no_show" : null,
+            opts.noContest ? "no_contest" : null,
+          ].filter(Boolean) as string[];
+          if (specialFlags.length > 1) {
+            throw new Error(
+              `Nur EINE Sonderwertung erlaubt (--walkover | --retired | --no-show | --no-contest), gefunden: ${specialFlags.join(", ")}.`,
+            );
           }
-          const updated = await client.post<Match>("tournament", `/matches/${id}/result`, {
-            score_home: Number(opts.home),
-            score_away: Number(opts.away),
-            result_status: opts.status ?? "confirmed",
-          });
-          output(updated, opts.json, () => `Ergebnis gesetzt: Match ${id} ${opts.home}:${opts.away} (${updated.status ?? "?"}).`);
+          const resultType = specialFlags[0] ?? "played";
+
+          const winner = (opts.winner ?? "").trim().toLowerCase();
+          if (resultType !== "played" && resultType !== "no_contest" && !["home", "away"].includes(winner)) {
+            throw new Error(`tournament match-result --${resultType.replace("_", "-")} benoetigt --winner home|away.`);
+          }
+          if (resultType === "retired" && !opts.sets) {
+            throw new Error('tournament match-result --retired benoetigt --sets "<Teil-Score bei Aufgabe>", z. B. --sets "6:3,2:1".');
+          }
+
+          const body: Record<string, unknown> = { result_status: opts.status ?? "confirmed" };
+          if (resultType !== "played") body.result_type = resultType;
+          if (winner) body.winner_side_id = winner;
+          if (opts.sets) {
+            // Parser-Fehler fliegen VOR dem Request (AK-18-01).
+            body.score = { sets: parseSetsNotation(opts.sets) };
+          } else if (resultType === "played" || (opts.home != null && opts.away != null)) {
+            if (resultType === "played" && (opts.home == null || opts.away == null)) {
+              throw new Error('tournament match-result benoetigt --home <tore> --away <tore> ODER --sets "6:2,7:6(9:7)".');
+            }
+            if (opts.home != null && opts.away != null) {
+              body.score_home = Number(opts.home);
+              body.score_away = Number(opts.away);
+            }
+          }
+
+          const updated = await client.post<Match>("tournament", `/matches/${id}/result`, body);
+          const scoreLabel = opts.sets
+            ? opts.sets
+            : opts.home != null
+              ? `${opts.home}:${opts.away}`
+              : resultType === "no_contest"
+                ? "ohne Wertung"
+                : "Template-Wertung (z. B. 6:0 6:0)";
+          const typeLabel =
+            resultType === "played"
+              ? ""
+              : ` [${{ walkover: "w.o.", retired: "Aufgabe", no_show: "nicht angetreten", no_contest: "beide nicht angetreten" }[resultType]}]`;
+          output(updated, opts.json, () => `Ergebnis gesetzt: Match ${id} ${scoreLabel}${typeLabel} (${updated.status ?? "?"}).`);
+          break;
+        }
+
+        case "deadline": {
+          // K18: Ergebnis-Deadline pro Phase + Policy (Backend K17).
+          if (!id) throw new Error("tournament deadline <tournament-id> benoetigt eine Turnier-ID (+ --at | --policy | --show).");
+          const phase = opts.phase ?? "group";
+
+          if (opts.at) {
+            const result = await client.patch<{ updated?: number; phase?: string; deadline_at?: string }>(
+              "tournament",
+              `/tournaments/${id}/matches/deadline?phase=${phase}`,
+              { deadline_at: opts.at },
+            );
+            output(result, opts.json, () =>
+              `Deadline ${opts.at} auf ${result.updated ?? 0} offene Spiele gesetzt (Phase: ${result.phase ?? phase}).`,
+            );
+            break;
+          }
+
+          if (opts.policy) {
+            if (!["manual", "auto_no_contest"].includes(opts.policy)) {
+              throw new Error('tournament deadline --policy erwartet "manual" oder "auto_no_contest".');
+            }
+            // rules_config merge-semantisch patchen (PATCH ersetzt das ganze JSON-Feld).
+            const tournament = await client.get<Tournament>("tournament", `/tournaments/${id}`);
+            const rules = { ...((tournament.rules_config as Record<string, unknown>) ?? {}) };
+            rules.result_deadline = { ...((rules.result_deadline as Record<string, unknown>) ?? {}), policy: opts.policy };
+            const updated = await client.patch<Tournament>("tournament", `/tournaments/${id}`, { rules_config: rules });
+            output(updated, opts.json, () =>
+              `Deadline-Policy: ${opts.policy === "auto_no_contest" ? "automatisch ohne Wertung (auto_no_contest)" : "Admin entscheidet (manual)"} gesetzt.`,
+            );
+            break;
+          }
+
+          // --show (Default ohne --at/--policy)
+          const tournament = await client.get<Tournament>("tournament", `/tournaments/${id}`);
+          const deadlineConfig = ((tournament.rules_config as Record<string, unknown>) ?? {}).result_deadline as
+            | Record<string, unknown>
+            | undefined;
+          const matches = await client.get<Match[]>("tournament", `/tournaments/${id}/matches`);
+          const now = Date.now();
+          const overdue = (matches ?? []).filter(
+            (m) =>
+              (m.status === "scheduled" || m.status === "postponed") &&
+              m.deadline_at &&
+              Date.parse(String(m.deadline_at)) < now,
+          );
+          output({ policy: deadlineConfig?.policy ?? null, overdue: overdue.map((m) => m.id) }, opts.json, () =>
+            [
+              `Deadline-Policy: ${deadlineConfig?.policy ?? "(nicht gesetzt — Admin entscheidet)"}`,
+              `Ueberfaellige offene Spiele: ${overdue.length}`,
+              ...overdue.map((m) => `  ${m.id}  (Deadline ${m.deadline_at})`),
+            ].join("\n"),
+          );
           break;
         }
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete, match-result`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete, match-result, deadline`,
           );
       }
     });

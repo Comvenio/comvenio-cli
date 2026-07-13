@@ -1,9 +1,10 @@
 import type { CAC } from "cac";
-import { basename } from "node:path";
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
+import { readJsonFile } from "../util/file.ts";
+import { uploadClubFile } from "../util/upload.ts";
 
 // K12 — `comvenio data <action>`: load, list, provide club files via the
 // content-service (the existing "DataShare" domain). RBAC server-side: the CLI
@@ -30,13 +31,6 @@ type FileEntryRead = {
   [key: string]: unknown;
 };
 type DownloadURLOut = { url?: string; expires_in?: number };
-type PresignUploadOut = {
-  file_id?: string;
-  object_key?: string;
-  upload_url?: string;
-  headers?: Record<string, string>;
-};
-type FinalizeOut = { ok?: boolean; etag?: string; size_bytes?: number };
 type PaperRead = { id?: string; file_id?: string; document_type?: string; title?: string; [k: string]: unknown };
 
 type DataOpts = {
@@ -50,6 +44,17 @@ type DataOpts = {
   public?: boolean;
   type?: string;
   format?: string;
+  department?: string;
+  folder?: string;
+  parent?: string;
+  name?: string;
+  query?: string;
+  visibility?: string;
+  file?: string;
+  hard?: boolean;
+  recursive?: boolean;
+  includeDeleted?: boolean;
+  protected?: string;
 };
 
 // data update: CLI value "none" clears a field (sends explicit null to the PATCH)
@@ -57,11 +62,41 @@ function contextPatchValue(v: string): string | null {
   return v === "none" ? null : v;
 }
 
+function nullableFolder(v: string | undefined): string | null | undefined {
+  if (v === undefined) return undefined;
+  return v === "root" || v === "none" ? null : v;
+}
+
+function boolValue(value: string | undefined, flag: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${flag} erwartet true oder false.`);
+}
+
+function query(values: Record<string, string | boolean | undefined | null>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && value !== null) search.set(key, String(value));
+  }
+  const encoded = search.toString();
+  return encoded ? `?${encoded}` : "";
+}
+
+function fileBody(opts: DataOpts, command: string): Record<string, unknown> {
+  if (!opts.file) throw new Error(`${command} benoetigt --file <payload.json>.`);
+  const body = readJsonFile<unknown>(opts.file);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error(`${command}: JSON-Payload muss ein Objekt sein.`);
+  }
+  return body as Record<string, unknown>;
+}
+
 export function registerDataCommands(cli: CAC): void {
   cli
     .command(
       "data <action> [arg]",
-      "Vereins-Dateien: list | show | url | download | upload | update | papers | export (K13)",
+      "DataShare: Dateien, Ordner, Suche, Papierkorb, Papers und Export",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--context <type>", "context_type (list/upload/papers): event|paper|certificate|...")
@@ -72,6 +107,17 @@ export function registerDataCommands(cli: CAC): void {
     .option("--public", "Sichtbarkeit public (upload; Default private)")
     .option("--type <doc>", "document_type-Filter (papers): protokoll|flyer|bericht|...")
     .option("--format <fmt>", "Export-Format csv|xlsx (data export; Default csv)")
+    .option("--department <id>", "Abteilungs-ID fuer Ordner/Datei-Scope")
+    .option("--folder <id>", "Ordner-ID; root/none verschiebt in den Root")
+    .option("--parent <id>", "Parent-Ordner; root/none fuer den Root")
+    .option("--name <name>", "Ordnername fuer folder-create/folder-rename")
+    .option("--query <text>", "Suchtext fuer search")
+    .option("--visibility <v>", "Dateisichtbarkeit: public|private")
+    .option("--file <path>", "Komplexer JSON-Body, z.B. fuer paper-add/paper-update")
+    .option("--hard", "Datei physisch und endgueltig loeschen")
+    .option("--no-recursive", "Ordner nicht rekursiv loeschen/wiederherstellen")
+    .option("--include-deleted", "Geloeschte Dateien/Ordner mitlisten")
+    .option("--protected <bool>", "Ordnerschutz true|false")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: DataOpts) => {
       const state = loadState();
