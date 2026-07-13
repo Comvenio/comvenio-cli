@@ -139,7 +139,7 @@ comvenio event area add <event-id> \
 Für den vollständigen Area-Vertrag akzeptiert `area add` zusätzlich `--file` mit
 `public_description`, `opens_at`, `closes_at`, `geometry`, `crs_mode` und
 `is_default`. `area update <area-id> --file area-patch.json` unterstützt dieselben
-änderbaren Fachfelder; `geometry` enthält GeoJSON als JSON-Text.
+änderbaren Fachfelder außer `is_default`; `geometry` enthält GeoJSON als JSON-Text.
 
 Mehrere Bereiche in einem Aufruf:
 
