@@ -19,6 +19,7 @@ type Opts = {
   name?: string;
   kind?: string;
   seed?: string;
+  member?: string;
   status?: string;
   event?: string;
   clearEvent?: boolean;
@@ -203,6 +204,7 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
     .option("--kind <kind>", "Teilnehmer-Art: team (Mannschaft) | individual | pair (default: team)")
     .option("--seed <n>", "Setznummer (mannschaft)")
+    .option("--member <id>", "mannschaft/participant: Mitglieds-ID (verknuepft den Teilnehmer mit einem Vereinsmitglied)")
     .option("--status <s>", "mannschaft: registration_status (default confirmed) | match-schedule: schedule_status (default proposed)")
     .option("--event <id>", "execution-link: Event-ID setzen")
     .option("--clear-event", "execution-link: Event-Verknuepfung entfernen")
@@ -344,9 +346,24 @@ export function registerTournamentCommands(cli: CAC): void {
               origin: "host_club",
               registration_status: opts.status ?? "confirmed",
               seed: opts.seed != null ? Number(opts.seed) : undefined,
+              // --member verknuepft den Teilnehmer mit einem Vereinsmitglied
+              // (Einzelspieler: das IST die Person; Mannschaft: der Kapitaen).
+              captain_member_id: opts.member,
             }),
           );
-          output(created, opts.json, () => `${KIND_NOUN[kind] ?? kind} angelegt: ${opts.name} (${created.id ?? "?"}).`);
+          // Die Personenliste des Teilnehmers fuehrt das Mitglied zusaetzlich als
+          // Spieler — so haengen Ergebnisse/Statistik an der echten Person, nicht
+          // an einem freien Namen.
+          if (opts.member && created.id) {
+            await client.post("tournament", `/tournaments/${id}/participants/${created.id}/members`, {
+              member_id: opts.member,
+              display_name: opts.name,
+              role: "player",
+            });
+          }
+          output(created, opts.json, () =>
+            `${KIND_NOUN[kind] ?? kind} angelegt: ${opts.name} (${created.id ?? "?"})${opts.member ? " — mit Mitglied verknuepft" : ""}.`,
+          );
           break;
         }
 
