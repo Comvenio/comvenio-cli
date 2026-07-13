@@ -46,8 +46,8 @@ type Opts = {
   sets?: string;
   walkover?: boolean;
   retired?: boolean;
-  noShow?: boolean;
-  noContest?: boolean;
+  resultNoShow?: boolean;
+  resultNoContest?: boolean;
   winner?: string;
   mode?: string;
   at?: string;
@@ -190,7 +190,7 @@ th,td{border:1px solid #dde;padding:.4rem .6rem;text-align:left}th{background:#f
  * `comvenio tournament <action>` — V3 participant engine (gateway key "tournament").
  * Diese CLI ist die EINZIGE erlaubte Backend-Schnittstelle fuer Agenten — NIE direkte API-Calls.
  * Fehlt ein Befehl, wird er HIER ergaenzt (so wird das CLI staendig auf Fehler geprueft).
- *   list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft (add)
+ *   list | series-list | series-show | series-create | series-update | series-delete | execution-create | execution-link | status | show | update | delete | participants | mannschaft (add)
  *   | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw
  *   | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result
  */
@@ -198,7 +198,7 @@ export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-create | execution-create | execution-link | status | show | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result | deadline",
+      "Turniere V3: list | series-list | series-show | series-create | series-update | series-delete | execution-create | execution-link | status | show | update | delete | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result | deadline",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -227,9 +227,9 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--sets <notation>", 'match-result: Tennis-Saetze, z. B. "6:2,7:6(9:7)" oder "7:6(7:4),1:6,MTB2:10"')
     .option("--walkover", "match-result: kampflos (w.o.) — Gegner nicht angetreten, Template-Wertung (Tennis 6:0 6:0)")
     .option("--retired", "match-result: Aufgabe im Match — Teil-Score via --sets, Rest wird fuer den Gegner gewertet")
-    .option("--no-show", "match-result: einseitiger Nichtantritt (Wertung wie walkover, eigener Marker)")
-    .option("--no-contest", "match-result: beide nicht angetreten — ohne Wertung abschliessen")
-    .option("--winner <side>", "match-result: Gewinner-Seite home | away (Pflicht bei walkover/retired/no-show)")
+    .option("--result-no-show", "match-result: einseitiger Nichtantritt (Wertung wie walkover, eigener Marker)")
+    .option("--result-no-contest", "match-result: beide nicht angetreten — ohne Wertung abschliessen")
+    .option("--winner <side>", "match-result: Gewinner-Seite home | away (Pflicht bei walkover/retired/result-no-show)")
     .option("--mode <m>", "participant-withdraw: cancel | walkover (Default: vor Turnierstart cancel, danach walkover)")
     .option("--at <iso>", "deadline: Ergebnis-Deadline (ISO) fuer offene Spiele der Phase setzen")
     .option("--policy <p>", "deadline: manual | auto_no_contest (Verhalten bei Deadline-Ueberschreitung)")
@@ -266,6 +266,29 @@ export function registerTournamentCommands(cli: CAC): void {
           break;
         }
 
+        case "series-show": {
+          if (!id) throw new Error("tournament series-show <series-id> benoetigt eine Serien-ID.");
+          const series = await client.get<TournamentSeries>("tournament", `/tournament-series/${id}`);
+          output(series, opts.json, () => `${series.title ?? "?"} (${series.id ?? id}).`);
+          break;
+        }
+
+        case "series-update": {
+          if (!id) throw new Error("tournament series-update <series-id> benoetigt eine Serien-ID.");
+          if (!opts.file) throw new Error("tournament series-update benoetigt --file <series-update.json>.");
+          const body = JSON.parse(readFileSync(opts.file, "utf-8"));
+          const series = await client.patch<TournamentSeries>("tournament", `/tournament-series/${id}`, body);
+          output(series, opts.json, () => `Turnierserie aktualisiert: ${series.title ?? id}.`);
+          break;
+        }
+
+        case "series-delete": {
+          if (!id) throw new Error("tournament series-delete <series-id> benoetigt eine Serien-ID.");
+          await client.del("tournament", `/tournament-series/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Turnierserie geloescht: ${id}.`);
+          break;
+        }
+
         case "execution-create": {
           if (!id) throw new Error("tournament execution-create <series-id> benoetigt eine Serien-ID.");
           if (!opts.file) throw new Error("tournament execution-create benoetigt --file <execution.json>.");
@@ -282,7 +305,8 @@ export function registerTournamentCommands(cli: CAC): void {
           });
           output(updated, opts.json, () => `Turnier-Ausfuehrung ${id}: Event ${opts.clearEvent ? "entfernt" : opts.event}.`);
           break;
-        }        case "status": {
+        }
+        case "status": {
           if (!id) throw new Error("tournament status <id> benoetigt eine Turnier-ID + --status <status>.");
           if (!opts.status) throw new Error("tournament status benoetigt --status <draft|registration|draw|scheduled|active|completed|cancelled|archived>.");
           const updated = await client.patch<Tournament>("tournament", `/tournaments/${id}`, { status: opts.status });
@@ -313,6 +337,22 @@ export function registerTournamentCommands(cli: CAC): void {
             opts.json,
             () => `${t.title ?? "?"} — ${t.sport_key ?? "?"} / ${t.tournament_mode ?? "?"} — Status ${t.status ?? "?"} (${t.id ?? id})`,
           );
+          break;
+        }
+
+        case "update": {
+          if (!id) throw new Error("tournament update <id> benoetigt eine Turnier-ID.");
+          if (!opts.file) throw new Error("tournament update benoetigt --file <tournament-update.json>.");
+          const body = JSON.parse(readFileSync(opts.file, "utf-8"));
+          const updated = await client.patch<Tournament>("tournament", `/tournaments/${id}`, body);
+          output(updated, opts.json, () => `Turnier aktualisiert: ${updated.title ?? id}.`);
+          break;
+        }
+
+        case "delete": {
+          if (!id) throw new Error("tournament delete <id> benoetigt eine Turnier-ID.");
+          await client.del("tournament", `/tournaments/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Turnier geloescht: ${id}.`);
           break;
         }
 
@@ -606,18 +646,18 @@ export function registerTournamentCommands(cli: CAC): void {
         case "match-result": {
           // Ergebnis eines Matches setzen (Backend POST /matches/{id}/result).
           // id = MATCH-id (nicht Turnier-id). K18: Tennis-Saetze via --sets,
-          // Sonderwertungen via --walkover/--retired/--no-show/--no-contest.
+          // Sonderwertungen via --walkover/--retired/--result-no-show/--result-no-contest.
           if (!id) throw new Error("tournament match-result <match-id> benoetigt eine Match-ID.");
 
           const specialFlags = [
             opts.walkover ? "walkover" : null,
             opts.retired ? "retired" : null,
-            opts.noShow ? "no_show" : null,
-            opts.noContest ? "no_contest" : null,
+            opts.resultNoShow ? "no_show" : null,
+            opts.resultNoContest ? "no_contest" : null,
           ].filter(Boolean) as string[];
           if (specialFlags.length > 1) {
             throw new Error(
-              `Nur EINE Sonderwertung erlaubt (--walkover | --retired | --no-show | --no-contest), gefunden: ${specialFlags.join(", ")}.`,
+              `Nur EINE Sonderwertung erlaubt (--walkover | --retired | --result-no-show | --result-no-contest), gefunden: ${specialFlags.join(", ")}.`,
             );
           }
           const resultType = specialFlags[0] ?? "played";
@@ -719,7 +759,7 @@ export function registerTournamentCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-create, execution-create, execution-link, status, show, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete, match-result, deadline`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, series-list, series-show, series-create, series-update, series-delete, execution-create, execution-link, status, show, update, delete, participants, mannschaft, participant-withdraw, participant-reinstate, participant-remove, start, matches, matches-clear, reset, redraw, standings, preview, draw, draw-confirm, schedule-generate, match-schedule, match-delete, match-result, deadline`,
           );
       }
     });

@@ -81,7 +81,7 @@ Pflichtfelder für `MeetingCreate`: `club_id`, `department_id`, `title`. Zuläss
 | `protocol-delete` | Protokoll-ID | `DELETE /protocols/{id}` | – |
 | `protocol-advance` | Protokoll-ID | `POST /protocol-management/{id}/advance-phase` | – |
 | `protocol-revert` | Protokoll-ID | `POST /protocol-management/{id}/revert-phase` | – |
-| `protocol-updates` | Protokoll-ID | `GET /protocol-management/{id}/updates` | – |
+| `protocol-updates` | Protokoll-ID | `GET /protocol-management/{id}/updates` | `--since <iso-datetime>` optional |
 | `protocol-validation` | Protokoll-ID | `GET /protocol-validation/protocols/{id}/validation-status` | – |
 | `protocol-publish` | Protokoll-ID | `POST /protocol-validation/protocols/{id}/publish` | – |
 
@@ -184,6 +184,7 @@ Entscheidungen werden an einem TOP erstellt. Vollständige Decision-Daten eines 
 | `decision-cancel` | Entscheidungs-ID | `POST /decisions/{id}/cancel` | `--reason <text>` optional |
 | `decision-option-add` | Entscheidungs-ID | `POST /decisions/{id}/options` | `VotingOptionCreate` |
 | `decision-options-add` | Entscheidungs-ID | `POST /decisions/{id}/options/batch` | Array von `VotingOptionCreate` |
+| `decision-promote` | Entscheidungs-ID | `POST /decisions/{id}/promote-to-resolution` | `--number <beschlussnummer>` |
 | `voting-open` | Entscheidungs-ID | `POST /votes/{id}/open` | – |
 | `voting-close` | Entscheidungs-ID | `POST /votes/{id}/close` | – |
 | `voting-results` | Entscheidungs-ID | `GET /votes/{id}/results` | – |
@@ -192,9 +193,13 @@ Entscheidungen werden an einem TOP erstellt. Vollständige Decision-Daten eines 
 | `vote-cast-bulk` | Entscheidungs-ID | `POST /votes/{id}/cast/bulk` | `BulkVoteCast` |
 | `vote-proxy` | Entscheidungs-ID | `POST /votes/{id}/proxy` | `VoteProxyCast` |
 | `vote-proxy-bulk` | Entscheidungs-ID | `POST /votes/{id}/proxy/bulk` | `BulkProxyVoteCast` |
+| `voting-tally` | Entscheidungs-ID | `POST /votes/{id}/offline-tally/{option_id}` | `--option <id> --count <n> [--increment]` |
+| `vote-option-retract` | Entscheidungs-ID | `DELETE /votes/{id}/option/{option_id}` | `--option <id>` |
 | `vote-retract` | Entscheidungs-ID | `DELETE /votes/{id}` | – |
 
 Für `DecisionCreate` sind unter anderem `protocol_id`, `agenda_item_id`, `department_id`, `club_id`, `title`, `decision_type` und `valid_from` nötig. Entscheidungen dürfen nur für einen aktuell behandelten TOP erstellt werden. Stimmberechtigt sind nur anwesende Teilnehmer.
+
+`voting-tally` ist ausschließlich für Offline-Abstimmungen gedacht. Ohne `--increment` setzt `--count` den absoluten Zählerstand; mit `--increment` wird die ganze Zahl als Delta addiert, beispielsweise `--count -1 --increment`. Bei einer Mehrfachauswahl entfernt `vote-option-retract` nur die eigene Stimme für die angegebene Option; `vote-retract` entfernt alle eigenen Stimmen dieser Entscheidung.
 
 ```json
 {

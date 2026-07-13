@@ -83,3 +83,50 @@ describe("event schema", () => {
     expect(event.series.defaults.recurring.frequency).toBe("weekly");
   });
 });
+
+describe("cross-domain schema coverage", () => {
+  test("publishes an offline contract for every registered coverage domain", async () => {
+    const coverage = schema("coverage");
+    const root = join(import.meta.dir, "..");
+    const child = Bun.spawn([process.execPath, "run", "src/index.ts", "schema"], {
+      cwd: root,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const output = await new Response(child.stdout).text();
+    const error = await new Response(child.stderr).text();
+
+    expect(await child.exited).toBe(0);
+    expect(error).toBe("");
+    const index = JSON.parse(output);
+    for (const domain of coverage.domains) {
+      expect(index.domains).toContain(domain.id);
+    }
+  });
+
+  test("publishes detailed contracts for the expanded admin workflows", () => {
+    expect(schema("meeting").domain).toBe("meeting");
+    expect(schema("data").domain).toBe("data");
+    expect(schema("team").domain).toBe("team");
+    expect(schema("object").domain).toBe("object");
+    expect(schema("ingredient").domain).toBe("ingredient");
+    expect(schema("ingredient-category").domain).toBe("ingredient-category");
+    expect(schema("shopping").domain).toBe("shopping");
+    expect(schema("member").commands.family).toContain("add");
+    expect(schema("member").commands.membership_period).toContain("update");
+    expect(schema("task").commands.task).toContain("bulk");
+    expect(schema("task").commands.assignment).toContain("delete");
+    expect(schema("task").commands.checklist).toContain("reorder");
+  });
+
+  test("keeps coverage status aligned with implemented and backend-blocked workflows", () => {
+    const domains = Object.fromEntries(schema("coverage").domains.map((domain: any) => [domain.id, domain]));
+
+    expect(domains.club.status).toBe("covered");
+    expect(domains.member.status).toBe("covered");
+    expect(domains.task.status).toBe("covered");
+    expect(domains.tournament.status).toBe("covered");
+    expect(domains.sponsor.status).toBe("core-partial");
+    expect(domains.sponsor.gaps[0]).toContain("marketing-service");
+  });
+});

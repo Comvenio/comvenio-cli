@@ -1,0 +1,67 @@
+{
+  "domain": "shopping",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/supply-service/app/routes/shopping.py",
+    "Backend/Microservice-Backend/supply-service/app/schemas/shopping.py"
+  ],
+  "commands": {
+    "list": ["list", "active", "completed", "by-context", "by-context-type", "show", "create", "update", "delete"],
+    "item": ["item-add", "item-update", "item-delete", "purchased"],
+    "generate": ["generate-from-recipe", "generate-from-menu"]
+  },
+  "enums": {
+    "context_type": ["club", "event", "object", "meeting"],
+    "status": ["draft", "active", "completed", "cancelled"],
+    "unit": ["gr", "kg", "ml", "l", "pc", "portion", "tsp", "tbsp", "cup", "pinch"]
+  },
+  "shopping_list_create_required_fields": ["name", "context_type", "context_id"],
+  "shopping_list_create_optional_fields": [
+    "description",
+    "status",
+    "total_estimated_cost",
+    "actual_cost",
+    "is_completed",
+    "items"
+  ],
+  "shopping_list_update_fields": [
+    "name",
+    "description",
+    "status",
+    "total_estimated_cost",
+    "actual_cost",
+    "is_completed",
+    "items",
+    "context_type",
+    "context_id"
+  ],
+  "shopping_item_create_required_fields": ["quantity", "unit"],
+  "shopping_item_create_rule": "ingredient_id oder ein nicht-leerer name ist erforderlich",
+  "shopping_item_fields": [
+    "shopping_list_id",
+    "ingredient_id",
+    "name",
+    "quantity",
+    "unit",
+    "estimated_cost",
+    "actual_cost",
+    "is_purchased",
+    "notes"
+  ],
+  "generate_from_recipe_fields": {
+    "portions": { "type": "integer", "minimum": 1, "maximum": 500, "default": 1 },
+    "name": { "type": "string", "max_length": 200 },
+    "description": { "type": "string", "max_length": 500 }
+  },
+  "generate_from_menu_fields": {
+    "name": { "type": "string", "max_length": 200 },
+    "description": { "type": "string", "max_length": 500 }
+  },
+  "notes": [
+    "Listen- und Positions-CRUD lesen komplexe Bodies aus --file.",
+    "purchased sendet den booleschen Status als Query-Parameter, wie vom Backend verlangt.",
+    "RBAC wird ausschließlich serverseitig geprüft.",
+    "Bekannter Backend-Source-Fehler: Direkt vor GET /shopping/lists/{shopping_list_id} steht ein nackter @router.get-Decorator. Der Router-Import muss serverseitig geprüft und korrigiert werden."
+  ],
+  "excluded_routes": ["Interne Service-Routen", "Public-Routen", "Globale Sync-Routen"]
+}

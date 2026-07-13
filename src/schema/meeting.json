@@ -1,0 +1,300 @@
+{
+  "domain": "meeting",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/meeting-service/app/routes/meeting.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/protocol.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/protocol_management.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/protocol_validation.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/agenda.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/agenda_item_management.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/agenda_item_notes.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/participant.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/decision.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/voting.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/resolution.py",
+    "Backend/Microservice-Backend/meeting-service/app/routes/protocol_entry.py",
+    "Backend/Microservice-Backend/meeting-service/app/schemas/"
+  ],
+  "documentation": "docs/meetings.md",
+  "command": "comvenio meeting <action> [id]",
+  "payload_contract": {
+    "complex_payloads": "JSON-Datei über --file <payload.json>",
+    "transport": "Payload wird ohne Feldumbenennung an meeting-service gesendet",
+    "machine_output": "--json"
+  },
+  "enums": {
+    "protocol_status": [
+      "preparation_open",
+      "preparation_admin",
+      "agenda_finished",
+      "in_progress",
+      "finalized",
+      "protocol_generation",
+      "pending_approval",
+      "published"
+    ],
+    "protocol_summary_style": [
+      "results",
+      "detailed",
+      "decision",
+      "short",
+      "action",
+      "custom"
+    ],
+    "decision_type": [
+      "informal",
+      "voting",
+      "formal"
+    ],
+    "voting_visibility": [
+      "public",
+      "secret"
+    ],
+    "voting_status": [
+      "draft",
+      "active",
+      "closed",
+      "cancelled"
+    ],
+    "resolution_status": [
+      "new",
+      "accepted",
+      "declined",
+      "expired"
+    ],
+    "manual_note_type": [
+      "admin",
+      "discussion",
+      "note",
+      "summary"
+    ]
+  },
+  "groups": {
+    "series": [
+      "series",
+      "series-list",
+      "series-show",
+      "series-create",
+      "series-update",
+      "series-delete"
+    ],
+    "protocol": [
+      "list",
+      "protocol-list",
+      "show",
+      "protocol-show",
+      "protocol-create",
+      "protocol-update",
+      "protocol-delete",
+      "protocol-advance",
+      "protocol-revert",
+      "protocol-updates",
+      "protocol-validation",
+      "protocol-publish"
+    ],
+    "agenda": [
+      "agenda-list",
+      "agenda-show",
+      "agenda-create",
+      "agenda-update",
+      "agenda-delete",
+      "agenda-reorder",
+      "agenda-start",
+      "agenda-complete",
+      "agenda-skip",
+      "agenda-approve"
+    ],
+    "notes": [
+      "note-list",
+      "note-list-protocol",
+      "note-create",
+      "note-update",
+      "note-delete"
+    ],
+    "participants": [
+      "participant-list",
+      "participant-add",
+      "participant-update",
+      "participant-remove",
+      "participant-validate",
+      "participant-unvalidate"
+    ],
+    "decisions_and_voting": [
+      "decision-create",
+      "decision-agenda",
+      "decision-update",
+      "decision-cancel",
+      "decision-option-add",
+      "decision-options-add",
+      "decision-promote",
+      "voting-open",
+      "voting-close",
+      "voting-results",
+      "voting-eligible",
+      "vote-cast",
+      "vote-cast-bulk",
+      "vote-proxy",
+      "vote-proxy-bulk",
+      "voting-tally",
+      "vote-option-retract",
+      "vote-retract"
+    ],
+    "resolutions": [
+      "resolutions",
+      "resolution-list",
+      "resolution-list-protocol",
+      "resolution-show",
+      "resolution-history",
+      "resolution-create",
+      "resolution-update",
+      "resolution-approve",
+      "resolution-decline",
+      "resolution-delete"
+    ],
+    "protocol_entries": [
+      "entries",
+      "entry-list",
+      "entry-show",
+      "entry-show-agenda",
+      "entry-create",
+      "entry-update",
+      "entry-delete",
+      "attachment-list",
+      "attachment-add",
+      "attachment-remove"
+    ]
+  },
+  "routes": {
+    "series-list": "GET /meetings/by_club/{club_id}",
+    "series-show": "GET /meetings/{meeting_id}",
+    "series-create": "POST /meetings/",
+    "series-update": "PATCH /meetings/{meeting_id}",
+    "series-delete": "DELETE /meetings/{meeting_id}",
+    "protocol-list": "GET /protocols/?club_id={club_id}",
+    "protocol-show": "GET /protocols/{protocol_id}/view",
+    "protocol-create": "POST /protocols/",
+    "protocol-update": "PATCH /protocols/{protocol_id}",
+    "protocol-delete": "DELETE /protocols/{protocol_id}",
+    "protocol-advance": "POST /protocol-management/{protocol_id}/advance-phase",
+    "protocol-revert": "POST /protocol-management/{protocol_id}/revert-phase",
+    "protocol-updates": "GET /protocol-management/{protocol_id}/updates?since={iso_datetime}",
+    "protocol-validation": "GET /protocol-validation/protocols/{protocol_id}/validation-status",
+    "protocol-publish": "POST /protocol-validation/protocols/{protocol_id}/publish",
+    "agenda-list": "GET /agenda-items/protocol/{protocol_id}",
+    "agenda-show": "GET /agenda-items/{agenda_item_id}",
+    "agenda-create": "POST /agenda-items/protocol/{protocol_id}",
+    "agenda-update": "PATCH /agenda-items/{agenda_item_id}",
+    "agenda-delete": "DELETE /agenda-items/{agenda_item_id}",
+    "agenda-reorder": "POST /agenda-management/protocol/{protocol_id}/reorder",
+    "agenda-start": "POST /agenda-management/{agenda_item_id}/start",
+    "agenda-complete": "POST /agenda-management/{agenda_item_id}/complete",
+    "agenda-skip": "POST /agenda-management/{agenda_item_id}/skip",
+    "agenda-approve": "POST /agenda-management/{agenda_item_id}/approve",
+    "note-list": "GET /agenda-notes/agenda-item/{agenda_item_id}",
+    "note-list-protocol": "GET /agenda-notes/protocol/{protocol_id}",
+    "note-create": "POST /agenda-notes/",
+    "note-update": "PATCH /agenda-notes/{note_id}",
+    "note-delete": "DELETE /agenda-notes/{note_id}",
+    "participant-list": "GET /participants/{protocol_id}",
+    "participant-add": "POST /participants/{protocol_id}",
+    "participant-update": "PATCH /participants/{participant_id}",
+    "participant-remove": "DELETE /participants/{participant_id}",
+    "participant-validate": "POST /protocol-validation/participants/{participant_id}/validate",
+    "participant-unvalidate": "DELETE /protocol-validation/participants/{participant_id}/validate",
+    "decision-create": "POST /decisions/agenda-item/{agenda_item_id}",
+    "decision-agenda": "GET /decisions/{decision_id}/agenda-item",
+    "decision-update": "PATCH /decisions/{decision_id}",
+    "decision-cancel": "POST /decisions/{decision_id}/cancel",
+    "decision-option-add": "POST /decisions/{decision_id}/options",
+    "decision-options-add": "POST /decisions/{decision_id}/options/batch",
+    "decision-promote": "POST /decisions/{decision_id}/promote-to-resolution?resolution_number={number}",
+    "voting-open": "POST /votes/{decision_id}/open",
+    "voting-close": "POST /votes/{decision_id}/close",
+    "voting-results": "GET /votes/{decision_id}/results",
+    "voting-eligible": "GET /votes/{decision_id}/eligible-voters",
+    "vote-cast": "POST /votes/{decision_id}/cast",
+    "vote-cast-bulk": "POST /votes/{decision_id}/cast/bulk",
+    "vote-proxy": "POST /votes/{decision_id}/proxy",
+    "vote-proxy-bulk": "POST /votes/{decision_id}/proxy/bulk",
+    "voting-tally": "POST /votes/{decision_id}/offline-tally/{option_id}?count={integer}&increment={boolean}",
+    "vote-option-retract": "DELETE /votes/{decision_id}/option/{option_id}",
+    "vote-retract": "DELETE /votes/{decision_id}",
+    "resolution-list": "GET /resolutions/?club_id={club_id}",
+    "resolution-list-protocol": "GET /resolutions/protocol/{protocol_id}",
+    "resolution-show": "GET /resolutions/{resolution_id}",
+    "resolution-history": "GET /resolutions/{resolution_id}/history",
+    "resolution-create": "POST /resolutions/",
+    "resolution-update": "PATCH /resolutions/{resolution_id}",
+    "resolution-approve": "POST /resolutions/{resolution_id}/approve",
+    "resolution-decline": "POST /resolutions/{resolution_id}/decline",
+    "resolution-delete": "DELETE /resolutions/{resolution_id}",
+    "entry-list": "GET /protocol-entries/protocol/{protocol_id}",
+    "entry-show": "GET /protocol-entries/{entry_id}",
+    "entry-show-agenda": "GET /protocol-entries/agenda-item/{agenda_item_id}",
+    "entry-create": "POST /protocol-entries/{agenda_item_id}",
+    "entry-update": "PUT /protocol-entries/{entry_id}",
+    "entry-delete": "DELETE /protocol-entries/{entry_id}",
+    "attachment-list": "GET /protocol-entries/{entry_id}/attachments",
+    "attachment-add": "POST /protocol-entries/{entry_id}/attachments",
+    "attachment-remove": "DELETE /protocol-entries/attachments/{attachment_id}"
+  },
+  "required_payload_fields": {
+    "series-create": [
+      "club_id",
+      "department_id",
+      "title"
+    ],
+    "protocol-create": [
+      "meeting_id",
+      "event_id",
+      "club_id",
+      "department_id",
+      "title",
+      "protocol_type"
+    ],
+    "note-create": [
+      "meeting_protocol_id",
+      "agenda_item_id",
+      "club_id",
+      "content",
+      "note_type"
+    ],
+    "participant-add": [
+      "protocol_id",
+      "club_id",
+      "one_of:user_id|member_id|name"
+    ],
+    "decision-create": [
+      "agenda_item_id",
+      "protocol_id",
+      "department_id",
+      "club_id",
+      "title",
+      "decision_type",
+      "valid_from"
+    ],
+    "resolution-create": [
+      "resolution_number",
+      "title",
+      "description",
+      "decision_date",
+      "valid_from",
+      "club_id",
+      "department_id"
+    ],
+    "entry-create": [
+      "meeting_protocol_id",
+      "content"
+    ],
+    "attachment-add": [
+      "file_id"
+    ]
+  },
+  "excluded": {
+    "internal": "/internal/* service-to-service maintenance",
+    "public_access": "/meeting-access/*, join and token routes",
+    "ai_internal": "/meeting-assistant-suggestions/* and /agenda-task-suggestion-drafts/*",
+    "system_notes": "taskupdate notes are produced by the task/meeting workflow"
+  }
+}

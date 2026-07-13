@@ -40,6 +40,7 @@ export type Opts = {
   headerSticky?: string;
   clearHeader?: boolean;
   dryRun?: boolean;
+  tree?: boolean;
 };
 
 // Hub templates the backend renders (ClubThemeProvider .club-hub--{name}).
@@ -182,7 +183,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action>", "Club-Operationen: info | design")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
     .option("--primary <hex>", "design: Primaerfarbe (#RRGGBB)")
@@ -200,8 +201,9 @@ export function registerClubCommands(cli: CAC): void {
     .option("--header-sticky <true|false>", "design: Public-Header beim Scrollen fixieren")
     .option("--clear-header", "design: konfigurierten Public-Header entfernen und Template-Header wiederherstellen")
     .option("--dry-run", "design: nur anzeigen was geschrieben wuerde (kein Write)")
+    .option("--tree", "department-list: hierarchischen Abteilungsbaum laden")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (action: string, opts: Opts) => {
+    .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
       const client = createClient(state);
 
@@ -237,6 +239,94 @@ export function registerClubCommands(cli: CAC): void {
               lines.push(`Gegruendet: ${club.founded_date}`);
             return lines.join("\n");
           });
+          break;
+        }
+
+        case "update": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file) throw new Error("club update benoetigt --file <club-update.json>.");
+          const body = readJsonFile<Record<string, unknown>>(opts.file);
+          const club = await client.put<ClubResponse>("club", `/clubs/${clubId}`, body);
+          output(club, opts.json, () => `Club-Profil aktualisiert: ${club.name ?? clubId}.`);
+          break;
+        }
+
+        case "settings": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const settings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+          output(settings, opts.json, () => JSON.stringify(settings, null, 2));
+          break;
+        }
+
+        case "settings-update": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file) throw new Error("club settings-update benoetigt --file <settings-update.json>.");
+          const body = readJsonFile<Record<string, unknown>>(opts.file);
+          const settings = await client.put<Record<string, unknown>>(
+            "club",
+            `/clubs/${clubId}/settings`,
+            body,
+          );
+          output(settings, opts.json, () => "Club-Settings aktualisiert.");
+          break;
+        }
+
+        case "department-list": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const suffix = opts.tree ? "/tree" : "";
+          const rows = await client.get<Record<string, unknown>[]>(
+            "club",
+            `/departments/by_club/${clubId}${suffix}`,
+          );
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+
+        case "department-show": {
+          if (!id) throw new Error("club department-show <department-id> benoetigt eine ID.");
+          const department = await client.get<Record<string, unknown>>(
+            "club",
+            `/departments/by_dep_id/${id}`,
+          );
+          output(department, opts.json, () => JSON.stringify(department, null, 2));
+          break;
+        }
+
+        case "department-add": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file) throw new Error("club department-add benoetigt --file <department.json>.");
+          const body = readJsonFile<Record<string, unknown>>(opts.file);
+          const department = await client.post<Record<string, unknown>>(
+            "club",
+            `/departments/${clubId}`,
+            body,
+          );
+          output(department, opts.json, () => `Abteilung angelegt: ${department.name ?? department.id ?? "?"}.`);
+          break;
+        }
+
+        case "department-update": {
+          if (!id) throw new Error("club department-update <department-id> benoetigt eine ID.");
+          if (!opts.file) throw new Error("club department-update benoetigt --file <department-update.json>.");
+          const body = readJsonFile<Record<string, unknown>>(opts.file);
+          const department = await client.put<Record<string, unknown>>(
+            "club",
+            `/departments/${id}`,
+            body,
+          );
+          output(department, opts.json, () => `Abteilung aktualisiert: ${department.name ?? id}.`);
+          break;
+        }
+
+        case "department-delete": {
+          if (!id) throw new Error("club department-delete <department-id> benoetigt eine ID.");
+          await client.del("club", `/departments/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Abteilung geloescht: ${id}.`);
           break;
         }
 
@@ -311,7 +401,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: info, design`,
+            `Unbekannte Aktion "${action}". Verfuegbar: info, update, settings, settings-update, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });

@@ -18,24 +18,27 @@ comvenio <command> ... --json
 - Gibt es keine CLI-Action, ist ein direkter API-Aufruf kein Ersatz. Die Lücke muss im CLI geschlossen werden.
 - Mutationen werden nicht automatisch wiederholt. Nur lesende GET-Aufrufe haben einen begrenzten Retry bei vorübergehenden Fehlern.
 
-## Die 22 Top-Level-Commands
+## Die 25 Top-Level-Commands
 
 | Command | Vorhandener CLI-Scope | Detailreferenz |
 |---|---|---|
 | `login` | Device-Token prüfen und lokalen State speichern | [`auth-club.md`](auth-club.md) |
 | `logout` | lokalen State entfernen | [`auth-club.md`](auth-club.md) |
 | `whoami` | aktuelle Identität und Club-Kontext anzeigen | [`auth-club.md`](auth-club.md) |
-| `club` | `info`, `design` | [`auth-club.md`](auth-club.md), [`homepage.md`](homepage.md) |
-| `member` | `list`, `show`, `add`, `update`, `remove` | `comvenio member --help` |
-| `team` | `list`, `member list|add|remove` | `comvenio team --help` |
+| `club` | Profil, Settings, Abteilungen und `design` | [`auth-club.md`](auth-club.md), [`homepage.md`](homepage.md) |
+| `member` | Mitglieder, Familien, Status, Mitgliedschaftszeiten und Import | [`mitglieder-teams.md`](mitglieder-teams.md) |
+| `team` | Team-CRUD, Mitglieder und Ressourcen-Prioritäten | [`mitglieder-teams.md`](mitglieder-teams.md) |
 | `event` | Event-Core, Vorlagen, Serien und Event-Hub-Unterressourcen | [`veranstaltungen.md`](veranstaltungen.md) |
-| `booking` | `list`, `show`, `approve`, `reject` | `comvenio booking --help` |
-| `object` | buchbare Objekte auflisten | `comvenio object --help` |
-| `task` | Aufgaben, Zuweisung und Task-Kontexte | [`aufgaben.md`](aufgaben.md) |
+| `booking` | Reservierungen lesen und verwalten | [`buchungen-objekte.md`](buchungen-objekte.md) |
+| `object` | Objekt-, Gebäude-, Raum-, Buchungsregel- und Task-Regel-CRUD | [`buchungen-objekte.md`](buchungen-objekte.md) |
+| `task` | Aufgaben, Contexts, Zuweisungen, Notizen und Checklisten | [`aufgaben.md`](aufgaben.md) |
 | `recipe` | Rezepte vollständig verwalten | [`speisekarten.md`](speisekarten.md) |
+| `ingredient` | Club-Zutaten lesen und verwalten | [`speisekarten.md`](speisekarten.md) |
+| `ingredient-category` | Kategorienbaum und Zutaten-Zuordnungen; Backend-Blocker beachten | [`speisekarten.md`](speisekarten.md) |
+| `shopping` | Einkaufslisten, Positionen und Generierung aus Rezept/Karte; Backend-Blocker beachten | [`speisekarten.md`](speisekarten.md) |
 | `template` | globale Gerichts- und Zutatenvorlagen durchsuchen | [`speisekarten.md`](speisekarten.md) |
 | `menu` | Karten, Einträge, CSS, deklaratives Apply und Export | [`speisekarten.md`](speisekarten.md) |
-| `meeting` | Sitzungs-/Protokollfunktionen; aktuellen Stand aus Coverage lesen | [`coverage.md`](coverage.md) |
+| `meeting` | Sitzungsserien, Protokolle, Agenda, Teilnehmer, Abstimmungen, Beschlüsse und Einträge | [`meetings.md`](meetings.md) |
 | `homepage` | `preview`, `apply`, `show` | [`homepage.md`](homepage.md) |
 | `schema` | verfügbare Domain-Schemas offline ausgeben | `comvenio schema --json` |
 | `verify` | visuelle Prüfung für URL, Event, Menü, Homepage, News, Urkunde | `comvenio verify --help` |

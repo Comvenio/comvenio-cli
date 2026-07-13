@@ -30,6 +30,45 @@
       "supply"
     ]
   },
+  "commands": {
+    "task": [
+      "list",
+      "show",
+      "create",
+      "bulk",
+      "update",
+      "assign",
+      "done",
+      "delete"
+    ],
+    "context": [
+      "list",
+      "show",
+      "create",
+      "update",
+      "delete"
+    ],
+    "assignment": [
+      "list",
+      "show",
+      "update",
+      "delete"
+    ],
+    "note": [
+      "list",
+      "add",
+      "update",
+      "delete"
+    ],
+    "checklist": [
+      "list",
+      "add",
+      "update",
+      "toggle",
+      "delete",
+      "reorder"
+    ]
+  },
   "create_required_fields": [
     "title",
     "club_id",
@@ -40,6 +79,14 @@
     "member_id",
     "club_id"
   ],
+  "bulk_contract": {
+    "root": "items",
+    "item_fields": [
+      "task",
+      "checklist_items",
+      "assignments"
+    ]
+  },
   "notes": [
     "task create braucht zwingend task_context_id (kein 'Default-Context'-Lookup) — via task context list/create.",
     "task assign erwartet member_id, NICHT user_id.",

@@ -55,13 +55,23 @@ Allergen (global, 14 EU-Allergene)        Colorant (global, E-Nummern)
 | `comvenio recipe from-template <id> [--price] [--name]` | Rezept aus einer **Dish-Vorlage** instanziieren (Allergene inklusive, idempotent) |
 | `comvenio recipe create --name --type --price [--ingredients]` | **Ad-hoc-Rezept** (für Speisen ohne passende Vorlage); fehlende Zutaten werden auto-angelegt |
 | `comvenio recipe list\|show\|update\|delete` | Rezepte verwalten |
+| `comvenio ingredient list\|show\|create\|update\|delete` | Club-Zutaten samt Allergen-/Farbstoff-/Kategorie-IDs verwalten |
+| `comvenio ingredient-category list\|roots\|tree\|…` | Kategorienbaum und Zutaten-Zuordnungen verwalten |
+| `comvenio shopping list\|show\|create\|…` | Einkaufslisten und Positionen verwalten oder aus Rezept/Karte erzeugen |
 | `comvenio menu create --name [--description] [--category]` | Leere **Speisekarte** anlegen |
 | `comvenio menu add-item <menu_id> --recipe <id> [--name] [--price]` | Rezept als Eintrag auf eine Karte setzen (Name/Preis aus Rezept, wenn nicht angegeben) |
 | `comvenio menu list\|show\|delete` | Karten verwalten |
 | `comvenio menu style <menu_id> --css <datei>` | Freies CSS auf eine Karte (`design_config.custom_css`) |
-| `comvenio menu generate\|apply\|design` | KI-/Foto-Modi + deklarativer Bulk-Apply (siehe AGENTS.md / AI-doc 08) |
+| `comvenio menu apply --file <menu.json>` | Vom Agenten komponierte Karte + Einträge im Bulk anlegen |
+| `comvenio menu update-item\|delete-item` | Bestehende Karten-Einträge ändern oder entfernen |
+| `comvenio menu export <menu_id> [--out]` | Karte über das echte Frontend als PDF exportieren |
 
 Jeder Befehl hat `--help`. `--json` für maschinenlesbare Ausgabe (Agent-Modus).
+
+> `menu generate` und `menu design` sind bewusst entfernt und brechen mit einer
+> Erklärung ab. Der bedienende Agent liest Foto/Text selbst, komponiert Rezepte,
+> Einträge und `design_config` und nutzt anschließend `menu apply`, `menu create`,
+> `menu add-item` beziehungsweise `menu style`. Das CLI ruft kein Backend-LLM auf.
 
 ---
 
@@ -91,8 +101,10 @@ comvenio recipe from-template 91bfad18-99cf-4f2f-bdad-956d36d10eaf --price 12 --
 #  → { recipe_id, recipe_name, created_ingredients[], missing_ingredients[] }
 ```
 
-**Idempotenz:** `from-template` matcht serverseitig auf `(club_id, recipe_name)`. Zweiter Aufruf mit gleichem
-Namen → **bestehendes Rezept** (kein Duplikat, `already_exists: true`). Wiederholtes Ausführen ist sicher.
+**Idempotenz:** `from-template` matcht serverseitig auf `(club_id, recipe_name)`. Ein zweiter Aufruf mit
+gleichem Namen liefert die bestehende `recipe_id` statt ein Duplikat anzulegen. Die Antwort enthält
+`recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus; ein
+`already_exists`-Feld gehört nicht zum aktuellen Vertrag.
 
 **`missing_ingredients`** im Ergebnis = Zutaten, die kein Vorlagen-Match hatten und als nackte Zutat (ohne
 Allergen) angelegt wurden. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch …) prüfen, ob der
@@ -157,7 +169,126 @@ eigenen Preis hat. **Nicht** pro Karte ein neues „Steaksemmel"-Rezept anlegen 
 
 ---
 
-## 6. Karte stylen (freies CSS)
+## 6. Club-Zutaten und Kategorien
+
+Zutaten-CRUD verwendet JSON-Dateien. Beim Anlegen sind `name` und `unit` Pflicht:
+
+```json
+{
+  "name": "Bio-Kartoffeln",
+  "description": "Festkochend",
+  "unit": "kg",
+  "cost_per_unit": 2.4,
+  "supplier": "Hof Muster",
+  "allergen_ids": [],
+  "colorant_ids": [],
+  "category_ids": ["<category-id>"]
+}
+```
+
+```bash
+comvenio ingredient create --file ingredient.json --json
+comvenio ingredient list --search "Kartoffel" --category <category-id> --json
+comvenio ingredient show <ingredient-id> --json
+comvenio ingredient update <ingredient-id> --file ingredient.json --json
+comvenio ingredient delete <ingredient-id> --json
+```
+
+`--category` schließt Unterkategorien ein. `--skip` und `--limit` steuern die Liste; `--limit` liegt zwischen 1 und 1000.
+
+Kategorien lesen und zuordnen:
+
+```bash
+comvenio ingredient-category roots --type main --json
+comvenio ingredient-category tree --json
+comvenio ingredient-category list --include-inactive --json
+comvenio ingredient-category by-ingredient <ingredient-id> --json
+comvenio ingredient-category assign <ingredient-id> --category <category-id> --json
+comvenio ingredient-category unassign <ingredient-id> --category <category-id> --json
+```
+
+Kategorie-Typen: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`.
+
+Ein Kategorie-Create-Body benötigt `name` und `category_type`; optional sind `description`, `parent_id`, `icon`, `color`, `sort_order` und `is_active`. Das CLI ergänzt `club_id`.
+
+```bash
+comvenio ingredient-category create --file category.json --json
+comvenio ingredient-category update <category-id> --file category.json --json
+comvenio ingredient-category delete <category-id> --json       # Soft-Delete
+comvenio ingredient-category delete <category-id> --hard --json
+comvenio ingredient-category init --json
+```
+
+> **Bestätigter Backend-Blocker:** `IngredientCategoryCreate` deklariert aktuell kein
+> `club_id`, die Create-Route greift aber auf `category_in.club_id` zu. Das CLI sendet
+> `club_id` korrekt mit; `ingredient-category create` ist trotzdem nicht verlässlich,
+> bis Schema und Route im Backend synchronisiert sind. Das ist kein CLI-Parsingfehler.
+
+`init` ist nur für Clubs ohne vorhandene Standardkategorien gedacht und kann andernfalls mit `409` antworten.
+
+## 7. Einkaufslisten
+
+Einkaufslisten haben `context_type` (`club`, `event`, `object`, `meeting`) und Status `draft`, `active`, `completed` oder `cancelled`.
+
+```json
+{
+  "name": "Einkauf Sommerfest",
+  "description": "Grillbude und Getränkestand",
+  "context_type": "event",
+  "context_id": "<event-id>",
+  "status": "draft",
+  "items": []
+}
+```
+
+```bash
+comvenio shopping create --file shopping-list.json --json
+comvenio shopping list --status draft --json
+comvenio shopping active --json
+comvenio shopping completed --json
+comvenio shopping by-context --context-id <event-id> --json
+comvenio shopping by-context-type --context-type event --json
+comvenio shopping show <list-id> --json
+comvenio shopping update <list-id> --file shopping-list.json --json
+comvenio shopping delete <list-id> --json
+```
+
+Eine Position benötigt `quantity`, `unit` und entweder `ingredient_id` oder einen nicht leeren `name`:
+
+```json
+{
+  "ingredient_id": "<ingredient-id>",
+  "quantity": 20,
+  "unit": "kg",
+  "estimated_cost": 48,
+  "notes": "Festkochend"
+}
+```
+
+```bash
+comvenio shopping item-add <list-id> --file item.json --json
+comvenio shopping item-update <item-id> --file item.json --json
+comvenio shopping purchased <item-id> --purchased true --json
+comvenio shopping item-delete <item-id> --json
+```
+
+Deterministische Generierung aus vorhandenen Daten:
+
+```bash
+comvenio shopping generate-from-recipe <recipe-id> --portions 80 \
+  --name "Einkauf Grillteller" --json
+comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json
+```
+
+> **Bestätigter Backend-Blocker:** In `shopping.py` steht vor der Route
+> `GET /lists/{id}` ein nackter `@router.get`-Decorator. Dieser Backend-Codefehler
+> gefährdet Router-Import und Endpoint-Verfügbarkeit. Die CLI-Actions und Verträge
+> sind implementiert, dürfen aber bis zur Backend-Korrektur nicht als zuverlässig
+> erreichbar behandelt werden.
+
+---
+
+## 8. Karte stylen (freies CSS)
 
 Das Karten-Design liegt in `Menu.design_config` (JSONB). Das CLI setzt freies, scoped CSS unter dem Key
 `custom_css`:
@@ -175,7 +306,7 @@ comvenio menu style <menu_id> --css ./meine-karte.css
 
 ---
 
-## 7. Enums (verifiziert am Code — `schemas/core.py`)
+## 9. Enums (verifiziert am Code — `schemas/core.py`)
 
 | Enum | Werte |
 |------|-------|
@@ -188,7 +319,7 @@ comvenio menu style <menu_id> --css ./meine-karte.css
 
 ---
 
-## 8. Gotchas (verifiziert — nicht raten)
+## 10. Gotchas (verifiziert — nicht raten)
 
 - **MenuItem ohne Recipe ist eine Falle.** `recipe_id` ist nullable, aber dann: keine Allergene, keine
   Kategorie (kommt transitiv vom Recipe), und der Eintrag **fehlt in `GET …/items/public`** (INNER JOIN auf
@@ -209,7 +340,7 @@ comvenio menu style <menu_id> --css ./meine-karte.css
 
 ---
 
-## 9. Komplettes Beispiel: eine Grillbude-Karte end-to-end
+## 11. Komplettes Beispiel: eine Grillbude-Karte end-to-end
 
 ```bash
 CLUB=9ea9d95a-…        # SV Motzing (aus dem State-File, sonst --club)
@@ -246,7 +377,7 @@ comvenio menu show $MENU --json
 
 ---
 
-## 10. Endpoint-Karte (Gateway `supply` → supply-service)
+## 12. Endpoint-Karte (Gateway `supply` → supply-service)
 
 | Aktion | Methode | Pfad | Auth |
 |--------|---------|------|------|
@@ -256,6 +387,13 @@ comvenio menu show $MENU --json
 | Rezept (ad-hoc) | POST | `/recipe/club/{club_id}/from-ai-dish` | `require_menu_create` |
 | Rezept-Liste/Detail | GET | `/recipe/club/{club_id}/recipes[/{id}]` | `require_supply_read` |
 | Rezept Update/Delete | PUT/DELETE | `/recipe/club/{club_id}/recipes/{id}` | `require_menu_manage` |
+| Zutaten-Liste/Create | GET/POST | `/ingredients/club/{club_id}/ingredients` · `/ingredients/club/{club_id}` | serverseitige Supply-RBAC |
+| Zutat Detail/Update/Delete | GET/PUT/DELETE | `/ingredients/{id}` | serverseitige Supply-RBAC |
+| Kategorienbaum | GET | `/ingredient-categories/by-club/{club_id}/tree` | serverseitige Supply-RBAC |
+| Kategorie CRUD | POST/GET/PUT/DELETE | `/ingredient-categories/[{id}]` | serverseitige Supply-RBAC; Create-Blocker beachten |
+| Einkaufsliste CRUD | POST/GET/PUT/DELETE | `/shopping/club/{club_id}/lists[/{id}]` | serverseitige Supply-RBAC; Router-Blocker beachten |
+| Einkaufsposition CRUD | POST/PUT/DELETE | `/shopping/club/{club_id}/lists/{id}/items` · `/shopping/club/{club_id}/items/{id}` | serverseitige Supply-RBAC |
+| Liste aus Rezept/Karte | POST | `/shopping/club/{club_id}/generate-from-recipe/{id}` · `generate-from-menu/{id}` | serverseitige Supply-RBAC |
 | Karte anlegen | POST | `/menu/club/{club_id}/menus` | `require_menu_create` |
 | Karten-Liste/Detail | GET | `/menu/club/{club_id}/menus[/{id}]` | `require_supply_read` |
 | Karte Update (design) | PUT | `/menu/club/{club_id}/menus/{id}` | `require_menu_manage` |

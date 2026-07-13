@@ -36,6 +36,59 @@
       "MANAGER"
     ]
   },
+  "commands": {
+    "member": [
+      "list",
+      "show",
+      "add",
+      "update",
+      "remove",
+      "import"
+    ],
+    "family": [
+      "list",
+      "show",
+      "add",
+      "update",
+      "delete"
+    ],
+    "membership_status": [
+      "list",
+      "show",
+      "add",
+      "update",
+      "delete"
+    ],
+    "membership_period": [
+      "list",
+      "show",
+      "add",
+      "update",
+      "delete"
+    ]
+  },
+  "family_create_required_fields": [
+    "club_id",
+    "name",
+    "responsible_member_id"
+  ],
+  "membership_status_create_required_fields": [
+    "club_id",
+    "name"
+  ],
+  "membership_period_create_required_fields": [
+    "member_id",
+    "club_id",
+    "joined_at"
+  ],
+  "bulk_import_fields": [
+    "club_id",
+    "rows",
+    "preview",
+    "import_date",
+    "reconcile_absent_members",
+    "present_member_ids"
+  ],
   "notes": [
     "member ohne user_id ist normal (null-Feld).",
     "RBAC-Rollen laufen ueber den role-service, NICHT member-service — kein member role-Command.",

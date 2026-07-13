@@ -1,0 +1,53 @@
+{
+  "domain": "data",
+  "schema_version": 1,
+  "generated": false,
+  "verified_at": "2026-07-13",
+  "service": "content",
+  "context_types": [
+    "none", "club", "department", "event", "object", "task", "news", "paper",
+    "newsletter", "tournament", "protocol", "agenda_item", "agenda_item_note",
+    "protocol_entry", "user_avatar", "message_attachment", "feedback", "certificate",
+    "certificate_template", "letter", "event_sponsor", "advertiser",
+    "sponsorship_product", "sponsorship_assignment"
+  ],
+  "visibility": ["public", "private"],
+  "upload": {
+    "command": "comvenio data upload <path> --context <type>",
+    "max_bytes": 209715200,
+    "flow": ["presign-upload", "direct-s3-put", "finalize"],
+    "optional_flags": [
+      "--context-id", "--sub-context-id", "--department", "--label", "--public"
+    ]
+  },
+  "actions": {
+    "files": ["list", "show", "url", "download", "upload", "update", "delete", "restore", "move", "visibility", "stats", "empty-trash"],
+    "area_sharing": ["area-media", "area-shares", "area-share-add", "area-share-remove"],
+    "folders": ["children", "search", "breadcrumb", "folder-create", "folder-rename", "folder-move", "folder-protect", "folder-delete", "folder-restore"],
+    "folder_rights": ["folder-rights", "folder-right-add", "folder-right-bulk", "folder-right-delete"],
+    "papers": ["papers", "paper-show", "paper-add", "paper-update", "paper-delete"],
+    "exports": ["export members", "export bookings"]
+  },
+  "payloads": {
+    "folder-right-add": {
+      "folder_id": "uuid",
+      "subject_type": "user|role|team",
+      "subject_id": "uuid",
+      "can_read": true,
+      "can_write": false
+    },
+    "folder-right-bulk": "JSON array of folder-right-add payloads",
+    "paper-add": "PaperCreate JSON object",
+    "paper-update": "PaperUpdate JSON object"
+  },
+  "special_values": {
+    "root_or_none": "Use root or none for a null folder/parent ID.",
+    "clear_context": "Use none for --context, --context-id, --sub-context-id or --label in data update."
+  },
+  "source": [
+    "content-service/app/routes/files.py",
+    "content-service/app/routes/file_folders.py",
+    "content-service/app/routes/folder_rights.py",
+    "content-service/app/routes/paper.py"
+  ]
+}

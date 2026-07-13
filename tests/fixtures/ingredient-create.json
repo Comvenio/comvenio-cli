@@ -1,0 +1,8 @@
+{
+  "name": "Kartoffeln",
+  "unit": "kg",
+  "cost_per_unit": 1.8,
+  "allergen_ids": [],
+  "colorant_ids": [],
+  "category_ids": ["category-1"]
+}

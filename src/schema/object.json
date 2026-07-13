@@ -1,0 +1,44 @@
+{
+  "domain": "object",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/object-service/app/enums.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Building/ClubBuilding.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Building/ClubRoom.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Object/ClubObject.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Object/ObjectBookingRule.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Object/ObjectTaskRule.py"
+  ],
+  "commands": {
+    "object": ["list", "show", "create", "update", "delete"],
+    "building": ["list", "show", "create", "update", "delete"],
+    "room": ["list", "show", "create", "update", "delete"],
+    "booking_rule": ["list", "show", "create", "bulk", "update", "delete"],
+    "task_rule": ["list", "show", "create", "update", "delete"]
+  },
+  "enums": {
+    "object_type": ["static", "portable", "event"],
+    "booking_granularity": ["15min", "30min", "hourly", "timedate"],
+    "guest_fee_mode": ["per_booking", "per_hour"],
+    "weekday": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    "task_priority": ["low", "medium", "high"]
+  },
+  "building_create_required_fields": ["club_id", "department_id", "name"],
+  "building_update_required_fields": ["id", "club_id", "department_id"],
+  "room_create_required_fields": ["club_id", "building_id", "name"],
+  "room_update_required_fields": ["id"],
+  "object_create_required_fields": [
+    "club_id", "department_id", "name", "description", "type", "booking_granularity"
+  ],
+  "object_update_required_fields": ["id"],
+  "booking_rule_create_required_fields": ["object_id", "club_id", "weekday", "start_time", "end_time"],
+  "task_rule_create_required_fields": ["object_id", "club_id", "title", "description"],
+  "notes": [
+    "Gebaeude-Update ist PATCH /buildings/{id}; die CLI laedt das bestehende Gebaeude und ergaenzt department_id.",
+    "Raum-Update ist PATCH /rooms/ mit id im JSON-Body.",
+    "Objekt-Update ist PATCH /objects/{id} und benoetigt id auch im Body; die CLI ergaenzt es.",
+    "--force setzt ?force=true fuer kaskadierendes Soft-Delete von Gebaeude, Raum oder Objekt.",
+    "Bei 15min, 30min und hourly sind min_duration_minutes und max_duration_minutes Pflicht.",
+    "Interne Sponsor-Routen und der anonyme Public-Highlight-Endpunkt sind ausgeschlossen."
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "domain": "ingredient-category",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/supply-service/app/routes/ingredient_categories.py",
+    "Backend/Microservice-Backend/supply-service/app/schemas/ingredient_category.py"
+  ],
+  "commands": [
+    "list",
+    "roots",
+    "tree",
+    "by-ingredient",
+    "show",
+    "create",
+    "update",
+    "delete",
+    "assign",
+    "unassign",
+    "init"
+  ],
+  "enums": {
+    "category_type": ["main", "food_type", "meat_type", "dietary", "origin", "custom"]
+  },
+  "create_required_fields": ["name", "category_type"],
+  "create_optional_fields": [
+    "description",
+    "parent_id",
+    "icon",
+    "color",
+    "sort_order",
+    "is_active"
+  ],
+  "update_fields": [
+    "name",
+    "category_type",
+    "description",
+    "parent_id",
+    "icon",
+    "color",
+    "sort_order",
+    "is_active"
+  ],
+  "assignment_fields": ["ingredient_id", "category_id"],
+  "notes": [
+    "create und update lesen den komplexen JSON-Body aus --file.",
+    "delete ist standardmäßig ein Soft-Delete; --hard fordert den Hard-Delete an.",
+    "init ist nur für Clubs ohne bestehende Kategorien vorgesehen und antwortet sonst mit 409.",
+    "RBAC wird ausschließlich serverseitig geprüft.",
+    "Bekannter Backend-Vertragsfehler auf main: POST /ingredient-categories/ greift auf category_in.club_id zu, obwohl IngredientCategoryCreate dieses Feld nicht deklariert. Das CLI sendet club_id mit; der Backend-Vertrag muss korrigiert werden, damit create produktiv funktioniert."
+  ],
+  "excluded_routes": ["Interne x-internal-api-key-Nutzung"]
+}

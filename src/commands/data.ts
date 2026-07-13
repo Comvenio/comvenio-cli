@@ -55,6 +55,8 @@ type DataOpts = {
   recursive?: boolean;
   includeDeleted?: boolean;
   protected?: string;
+  areaId?: string;
+  areaIds?: string;
 };
 
 // data update: CLI value "none" clears a field (sends explicit null to the PATCH)
@@ -118,6 +120,8 @@ export function registerDataCommands(cli: CAC): void {
     .option("--no-recursive", "Ordner nicht rekursiv loeschen/wiederherstellen")
     .option("--include-deleted", "Geloeschte Dateien/Ordner mitlisten")
     .option("--protected <bool>", "Ordnerschutz true|false")
+    .option("--area-id <id>", "Event-Area-ID fuer area-share-remove")
+    .option("--area-ids <ids>", "Kommagetrennte Event-Area-IDs fuer Area-Media/Sharing")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: DataOpts) => {
       const state = loadState();
@@ -135,7 +139,10 @@ export function registerDataCommands(cli: CAC): void {
           }
           const files = await client.get<FileEntryRead[]>(
             "content",
-            `/files/by-context/${clubId}/${opts.context}/${opts.contextId}`,
+            `/files/by-context/${clubId}/${opts.context}/${opts.contextId}${query({
+              include_deleted: opts.includeDeleted,
+              sub_context_id: opts.subContextId,
+            })}`,
           );
           output(files, opts.json, () =>
             Array.isArray(files) && files.length
@@ -223,46 +230,232 @@ export function registerDataCommands(cli: CAC): void {
         case "upload": {
           if (!arg) throw new Error("data upload <pfad> benoetigt eine lokale Datei.");
           if (!opts.context) throw new Error("data upload benoetigt --context <type>.");
-          const file = Bun.file(arg);
-          if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${arg}`);
-          const expectedSize = file.size;
-          if (expectedSize <= 0) throw new Error(`Datei ist leer: ${arg}`);
-          if (expectedSize > 34 * 1024 * 1024) throw new Error("Datei > 34 MB (Upload-Limit).");
-          const contentType = file.type || "application/octet-stream";
-
-          // Step 1: reserve + presign.
-          const presign = await client.post<PresignUploadOut>("content", `/files/presign-upload`, {
-            club_id: clubId,
-            filename: basename(arg),
-            content_type: contentType,
-            expected_size: expectedSize,
-            visibility: opts.public ? "public" : "private",
-            context_type: opts.context,
-            context_id: opts.contextId,
-            context_label: opts.label,
+          const uploaded = await uploadClubFile({
+            client,
+            clubId,
+            path: arg,
+            contextType: opts.context,
+            contextId: opts.contextId,
+            subContextId: opts.subContextId,
+            departmentId: opts.department,
+            label: opts.label,
+            isPublic: opts.public,
           });
-          if (!presign.upload_url || !presign.file_id) {
-            throw new Error("presign-upload lieferte keine upload_url/file_id.");
-          }
-          // Step 2: PUT the bytes DIRECTLY to S3 with the returned headers (Content-Type).
-          const put = await fetch(presign.upload_url, {
-            method: "PUT",
-            headers: presign.headers ?? { "Content-Type": contentType },
-            body: file,
-          });
-          if (!put.ok) throw new Error(`S3-Upload (PUT) fehlgeschlagen: HTTP ${put.status}`);
-          // Step 3: finalize (server reads ETag+size from S3, activates the FileEntry).
-          const fin = await client.post<FinalizeOut>(
-            "content",
-            `/files/${presign.file_id}/finalize`,
-            {},
-          );
           output(
-            { file_id: presign.file_id, visibility: opts.public ? "public" : "private", ...fin },
+            uploaded,
             opts.json,
             () =>
-              `Bereitgestellt: ${basename(arg)} (${fin.size_bytes ?? expectedSize} Bytes, ${opts.public ? "public" : "private"}) — file_id ${presign.file_id}`,
+              `Bereitgestellt: ${uploaded.filename} (${uploaded.size_bytes ?? "?"} Bytes, ${uploaded.visibility}) — file_id ${uploaded.file_id}`,
           );
+          break;
+        }
+
+        case "delete": {
+          if (!arg) throw new Error("data delete <file-id> benoetigt eine Datei-ID.");
+          await client.del("content", `/files/${arg}${opts.hard ? "?hard=true" : ""}`);
+          output({ ok: true, file_id: arg, hard: Boolean(opts.hard) }, opts.json, () =>
+            opts.hard ? `Datei endgueltig geloescht: ${arg}` : `Datei in den Papierkorb verschoben: ${arg}`,
+          );
+          break;
+        }
+
+        case "restore": {
+          if (!arg) throw new Error("data restore <file-id> benoetigt eine Datei-ID.");
+          await client.post("content", `/files/${arg}/restore`);
+          output({ ok: true, file_id: arg }, opts.json, () => `Datei wiederhergestellt: ${arg}`);
+          break;
+        }
+
+        case "move": {
+          if (!arg) throw new Error("data move <file-id> benoetigt eine Datei-ID.");
+          if (opts.folder === undefined) throw new Error("data move benoetigt --folder <id|root>.");
+          const folderId = nullableFolder(opts.folder);
+          await client.post("content", `/files/${arg}/move`, { target_folder_id: folderId });
+          output({ ok: true, file_id: arg, folder_id: folderId }, opts.json, () => `Datei verschoben: ${arg}`);
+          break;
+        }
+
+        case "visibility": {
+          if (!arg) throw new Error("data visibility <file-id> benoetigt eine Datei-ID.");
+          if (opts.visibility !== "public" && opts.visibility !== "private") {
+            throw new Error("data visibility benoetigt --visibility public|private.");
+          }
+          const updated = await client.patch<FileEntryRead>("content", `/files/${arg}/visibility`, {
+            visibility: opts.visibility,
+          });
+          output(updated, opts.json, () => `Sichtbarkeit gesetzt: ${arg} -> ${opts.visibility}`);
+          break;
+        }
+
+        case "stats": {
+          const stats = await client.get(
+            "content",
+            `/files/storage-stats${query({ club_id: clubId, club_department_id: opts.department })}`,
+          );
+          output(stats, opts.json, () => JSON.stringify(stats, null, 2));
+          break;
+        }
+
+        case "empty-trash": {
+          const result = await client.post("content", "/files/empty-trash", {
+            club_id: clubId,
+            club_department_id: opts.department,
+            folder_id: nullableFolder(opts.folder),
+          });
+          output(result, opts.json, () => JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case "area-media": {
+          const params = new URLSearchParams({ club_id: clubId });
+          for (const areaId of (opts.areaIds ?? "").split(",").map((id) => id.trim()).filter(Boolean)) {
+            params.append("area_ids", areaId);
+          }
+          if (opts.label) params.set("label", opts.label);
+          const rows = await client.get("content", `/files/areas/media-map?${params.toString()}`);
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+
+        case "area-shares": {
+          if (!arg) throw new Error("data area-shares <file-id> benoetigt eine Datei-ID.");
+          const rows = await client.get("content", `/files/${arg}/area-shares`);
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+
+        case "area-share-add": {
+          if (!arg) throw new Error("data area-share-add <file-id> benoetigt eine Datei-ID.");
+          const areaIds = (opts.areaIds ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+          if (!areaIds.length) throw new Error("data area-share-add benoetigt --area-ids <id,id,...>.");
+          await client.post("content", `/files/${arg}/area-shares`, { area_ids: areaIds });
+          output({ ok: true, file_id: arg, area_ids: areaIds }, opts.json, () =>
+            `Datei mit ${areaIds.length} Event-Bereichen geteilt.`,
+          );
+          break;
+        }
+
+        case "area-share-remove": {
+          if (!arg || !opts.areaId) {
+            throw new Error("data area-share-remove <file-id> benoetigt --area-id <id>.");
+          }
+          await client.del("content", `/files/${arg}/area-shares/${opts.areaId}`);
+          output({ ok: true, file_id: arg, area_id: opts.areaId }, opts.json, () =>
+            `Area-Freigabe entfernt: ${opts.areaId}`,
+          );
+          break;
+        }
+
+        case "children": {
+          const result = await client.get("content", `/folders/children${query({
+            club_id: clubId,
+            club_department_id: opts.department,
+            parent_id: nullableFolder(opts.parent),
+            include_deleted: opts.includeDeleted,
+          })}`);
+          output(result, opts.json, () => JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case "search": {
+          if (!opts.query) throw new Error("data search benoetigt --query <text>.");
+          const result = await client.get("content", `/folders/search${query({
+            club_id: clubId,
+            club_department_id: opts.department,
+            folder_id: nullableFolder(opts.folder),
+            q: opts.query,
+            recursive: opts.recursive,
+          })}`);
+          output(result, opts.json, () => JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case "breadcrumb": {
+          if (!arg) throw new Error("data breadcrumb <folder-id> benoetigt eine Ordner-ID.");
+          const result = await client.get("content", `/folders/${arg}/breadcrumb`);
+          output(result, opts.json, () => JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case "folder-create": {
+          if (!opts.name) throw new Error("data folder-create benoetigt --name <name>.");
+          const folder = await client.post("content", "/folders", {
+            club_id: clubId,
+            club_department_id: opts.department,
+            parent_id: nullableFolder(opts.parent),
+            name: opts.name,
+            is_protected: boolValue(opts.protected, "--protected") ?? false,
+          });
+          output(folder, opts.json, () => `Ordner angelegt: ${opts.name}`);
+          break;
+        }
+
+        case "folder-rename": {
+          if (!arg || !opts.name) throw new Error("data folder-rename <folder-id> --name <name>.");
+          const folder = await client.patch("content", `/folders/${arg}/rename`, { new_name: opts.name });
+          output(folder, opts.json, () => `Ordner umbenannt: ${arg}`);
+          break;
+        }
+
+        case "folder-move": {
+          if (!arg || opts.parent === undefined) throw new Error("data folder-move <folder-id> --parent <id|root>.");
+          const folder = await client.patch("content", `/folders/${arg}/move`, {
+            new_parent_id: nullableFolder(opts.parent),
+          });
+          output(folder, opts.json, () => `Ordner verschoben: ${arg}`);
+          break;
+        }
+
+        case "folder-protect": {
+          if (!arg) throw new Error("data folder-protect <folder-id> benoetigt eine Ordner-ID.");
+          const protect = boolValue(opts.protected, "--protected");
+          if (protect === undefined) throw new Error("data folder-protect benoetigt --protected true|false.");
+          const folder = await client.patch("content", `/folders/${arg}/protect?protect=${protect}`, {});
+          output(folder, opts.json, () => `Ordnerschutz gesetzt: ${arg} -> ${protect}`);
+          break;
+        }
+
+        case "folder-delete":
+        case "folder-restore": {
+          if (!arg) throw new Error(`data ${action} <folder-id> benoetigt eine Ordner-ID.`);
+          const recursive = opts.recursive !== false;
+          if (action === "folder-delete") {
+            await client.del("content", `/folders/${arg}?recursive=${recursive}`);
+          } else {
+            await client.post("content", `/folders/${arg}/restore?recursive=${recursive}`);
+          }
+          output({ ok: true, folder_id: arg, recursive }, opts.json, () =>
+            action === "folder-delete" ? `Ordner geloescht: ${arg}` : `Ordner wiederhergestellt: ${arg}`,
+          );
+          break;
+        }
+
+        case "folder-rights": {
+          if (!arg) throw new Error("data folder-rights <folder-id> benoetigt eine Ordner-ID.");
+          const rows = await client.get("content", `/folder-rights/by-folder/${arg}`);
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+
+        case "folder-right-add": {
+          const row = await client.post("content", "/folder-rights", fileBody(opts, "data folder-right-add"));
+          output(row, opts.json, () => "Ordnerrecht angelegt");
+          break;
+        }
+
+        case "folder-right-bulk": {
+          if (!opts.file) throw new Error("data folder-right-bulk benoetigt --file <payload.json>.");
+          const body = readJsonFile<unknown>(opts.file);
+          if (!Array.isArray(body)) throw new Error("data folder-right-bulk: JSON-Payload muss ein Array sein.");
+          const rows = await client.post("content", "/folder-rights/bulk", body);
+          output(rows, opts.json, () => "Ordnerrechte angelegt");
+          break;
+        }
+
+        case "folder-right-delete": {
+          if (!arg) throw new Error("data folder-right-delete <right-id> benoetigt eine Rechte-ID.");
+          await client.del("content", `/folder-rights/${arg}`);
+          output({ ok: true, right_id: arg }, opts.json, () => `Ordnerrecht geloescht: ${arg}`);
           break;
         }
 
@@ -289,12 +482,50 @@ export function registerDataCommands(cli: CAC): void {
           break;
         }
 
+        case "paper-show": {
+          if (!arg) throw new Error("data paper-show <paper-id> benoetigt eine Paper-ID.");
+          const paper = await client.get("content", `/papers/${arg}`);
+          output(paper, opts.json, () => JSON.stringify(paper, null, 2));
+          break;
+        }
+
+        case "paper-add": {
+          const paper = await client.post(
+            "content",
+            `/papers/club/${clubId}`,
+            fileBody(opts, "data paper-add"),
+          );
+          output(paper, opts.json, () => "Paper angelegt");
+          break;
+        }
+
+        case "paper-update": {
+          if (!arg) throw new Error("data paper-update <paper-id> benoetigt eine Paper-ID.");
+          const paper = await client.put(
+            "content",
+            `/papers/${arg}`,
+            fileBody(opts, "data paper-update"),
+          );
+          output(paper, opts.json, () => `Paper aktualisiert: ${arg}`);
+          break;
+        }
+
+        case "paper-delete": {
+          if (!arg) throw new Error("data paper-delete <paper-id> benoetigt eine Paper-ID.");
+          await client.del("content", `/papers/${arg}`);
+          output({ ok: true, paper_id: arg }, opts.json, () => `Paper geloescht: ${arg}`);
+          break;
+        }
+
         case "export": {
           // K13 — strukturierter CSV/XLSX-Export (read-only Backend-Endpoints).
           if (arg !== "members" && arg !== "bookings") {
             throw new Error("data export <members|bookings> — nur diese beiden Entitaeten.");
           }
-          const fmt = opts.format === "xlsx" ? "xlsx" : "csv";
+          if (opts.format && opts.format !== "csv" && opts.format !== "xlsx") {
+            throw new Error("data export --format erwartet csv oder xlsx.");
+          }
+          const fmt = opts.format ?? "csv";
           const { svc, p } =
             arg === "members"
               ? { svc: "member", p: `/members/export/${clubId}?format=${fmt}` }
@@ -319,7 +550,7 @@ export function registerDataCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, url, download, upload, update, papers, export`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, url, download, upload, update, delete, restore, move, visibility, stats, empty-trash, area-media, area-shares, area-share-add, area-share-remove, children, search, breadcrumb, folder-create, folder-rename, folder-move, folder-protect, folder-delete, folder-restore, folder-rights, folder-right-add, folder-right-bulk, folder-right-delete, papers, paper-show, paper-add, paper-update, paper-delete, export`,
           );
       }
     });

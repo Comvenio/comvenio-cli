@@ -708,8 +708,19 @@ function genTask(): unknown {
       phase: parsePyEnum(src, "TaskPhase"),
       context_type: ["club", "event", "object", "meeting", "supply"],
     },
+    commands: {
+      task: ["list", "show", "create", "bulk", "update", "assign", "done", "delete"],
+      context: ["list", "show", "create", "update", "delete"],
+      assignment: ["list", "show", "update", "delete"],
+      note: ["list", "add", "update", "delete"],
+      checklist: ["list", "add", "update", "toggle", "delete", "reorder"],
+    },
     create_required_fields: ["title", "club_id", "task_context_id"],
     assignment_required_fields: ["task_id", "member_id", "club_id"],
+    bulk_contract: {
+      root: "items",
+      item_fields: ["task", "checklist_items", "assignments"],
+    },
     notes: [
       "task create braucht zwingend task_context_id (kein 'Default-Context'-Lookup) — via task context list/create.",
       "task assign erwartet member_id, NICHT user_id.",
@@ -722,25 +733,51 @@ function genTask(): unknown {
 // ─── Domain: booking ─────────────────────────────────────────────────────────
 
 const OBJECT_ENUMS = "Backend/Microservice-Backend/object-service/app/enums.py";
+const OBJECT_RESERVATION_SCHEMA = "Backend/Microservice-Backend/object-service/app/schemas/Object/ObjectReservation.py";
 
 function genBooking(): unknown {
   const src = readSource(OBJECT_ENUMS);
   return {
     domain: "booking",
     generated: true,
-    source: [slash(OBJECT_ENUMS)],
-    note: "reservation_status/object_type aus den object-service Enum-Klassen (enums.py).",
+    source: [slash(OBJECT_ENUMS), slash(OBJECT_RESERVATION_SCHEMA)],
+    note: "Reservierungs-, Teilnehmer- und Bulk-Vertraege aus dem object-service.",
     enums: {
       reservation_status: parsePyEnum(src, "ReservationStatus"),
+      participant_status: parsePyEnum(src, "ParticipantStatus"),
       object_type: parsePyEnum(src, "ObjectType"),
+      booking_granularity: parsePyEnum(src, "BookingGranularity"),
     },
+    commands: {
+      reservation: ["list", "show", "create", "update", "approve", "reject", "cancel", "delete", "bulk"],
+      participant: ["list", "show", "add", "add-groups", "update", "remove"],
+      link: ["list", "club", "add", "remove"],
+      stats: ["object", "guests"],
+    },
+    create_required_fields: ["object_id", "club_id", "start_time", "end_time"],
+    create_optional_fields: ["title", "comment", "status", "participants", "resp_member_id"],
+    bulk_fields: [
+      "object_id", "club_id", "start_time", "end_time", "title", "comment", "status",
+      "resp_member_id", "participants", "group_ids", "portable_reservations",
+    ],
     update_required_fields: ["club_id", "object_id"],
+    participant_create_fields: [
+      "club_id", "object_reservation_id", "member_id", "status", "is_guest", "guest_name", "guest_email",
+    ],
+    participant_update_required_fields: ["id", "club_id", "status"],
+    reservation_link_required_fields: ["primary_reservation_id", "linked_reservation_id"],
+    stats_filters: {
+      object: ["year", "month"],
+      guests: ["from_date", "to_date"],
+    },
     notes: [
-      "approve = PATCH status=approved, reject = PATCH status=rejected.",
-      "PATCH-Body braucht club_id + object_id (Pflicht) — vorher GET der Reservierung.",
+      "approve/reject/cancel sind PATCH-Statuswechsel, keine eigenen Backend-Endpunkte.",
+      "Die CLI laedt vor PATCH die Reservierung und ergaenzt club_id + object_id.",
       "Kein status-Query-Filter; --pending filtert clientseitig auf status=requested.",
-      "object list --type ist ein Sub-Pfad (/objects/club/{id}/{type}), kein Query-Param.",
       "Owner-Bypass-Sperre: eigene Buchung kann nicht selbst genehmigt werden (403).",
+      "Teilnehmer-Update verwendet PUT /object-reservations/participants/{id}.",
+      "ReservationLinks benoetigen club_id als Query-Parameter.",
+      "Interne Endpunkte und der anonyme Public-Highlight-Endpunkt sind nicht Teil der Admin-CLI.",
     ],
   };
 }
@@ -779,6 +816,18 @@ function genMember(): unknown {
     enums: {
       team_member_role: parsePyEnum(src, "TeamMemberRole"),
     },
+    commands: {
+      member: ["list", "show", "add", "update", "remove", "import"],
+      family: ["list", "show", "add", "update", "delete"],
+      membership_status: ["list", "show", "add", "update", "delete"],
+      membership_period: ["list", "show", "add", "update", "delete"],
+    },
+    family_create_required_fields: ["club_id", "name", "responsible_member_id"],
+    membership_status_create_required_fields: ["club_id", "name"],
+    membership_period_create_required_fields: ["member_id", "club_id", "joined_at"],
+    bulk_import_fields: [
+      "club_id", "rows", "preview", "import_date", "reconcile_absent_members", "present_member_ids",
+    ],
     notes: [
       "member ohne user_id ist normal (null-Feld).",
       "RBAC-Rollen laufen ueber den role-service, NICHT member-service — kein member role-Command.",

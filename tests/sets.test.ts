@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 
 import { parseSetsNotation } from "../src/util/sets.ts";
 
@@ -32,5 +33,22 @@ describe("parseSetsNotation (K18)", () => {
 
   test("rejects tiebreak points on a match tiebreak entry", () => {
     expect(() => parseSetsNotation("MTB10:7(5:3)")).toThrow(/Match-Tiebreak/);
+  });
+});
+
+describe("tournament CLI flags", () => {
+  test("avoids CAC's reserved --no-* negation syntax for result types", async () => {
+    const child = Bun.spawn([process.execPath, "run", "src/index.ts", "tournament", "--help"], {
+      cwd: join(import.meta.dir, ".."),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const stdout = await new Response(child.stdout).text();
+
+    expect(await child.exited).toBe(0);
+    expect(stdout).toContain("--result-no-show");
+    expect(stdout).toContain("--result-no-contest");
+    expect(stdout).not.toContain("  --no-show ");
+    expect(stdout).not.toContain("  --no-contest ");
   });
 });

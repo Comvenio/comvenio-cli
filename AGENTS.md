@@ -71,23 +71,26 @@ comvenio club info                    # Vereinsdaten
 
 | Domäne   | Beispiele                                                      |
 |----------|---------------------------------------------------------------|
-| club     | `comvenio club info` · `comvenio club design` (Theme/Farben/Public-Template → design_settings) |
-| member   | `comvenio member list\|show\|add\|update\|remove`             |
-| team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
+| club     | Profil/Settings/Abteilungen: `info\|update\|settings\|settings-update\|department-*` · `club design` |
+| member   | Mitglieder/Familien/Status/Zeiträume/Import: `list\|show\|add\|update\|remove\|family-*\|status-*\|period-*\|import` |
+| team     | `comvenio team list\|show\|create\|update\|delete` · `team member list\|add\|update\|remove` · `team resource list\|add\|update\|remove` |
 | event    | Vollständiger Event-Hub: Core, Vorlagen, Serien, Festtage, Bereiche, Programm, Kontakte, Ressourcen, Anhänge, Tags, Einladungen, Anmeldungen, Sponsoring, Design, DJ und externe Spielpläne. Verbindliche Befehls- und Payload-Referenz: `docs/veranstaltungen.md`. |
 | plan     | `comvenio plan list\|show\|create\|update\|delete` · `plan zone create\|list\|update\|delete\|link\|unlink` · `plan table create\|duplicate\|update\|delete` · `plan marker create\|update\|delete` · `plan guest list\|add\|update\|delete` · `plan detail` · `plan export` · `plan illustrate` + `plan compose` |
-| sponsor  | `comvenio sponsor list\|add\|update\|logo` · `sponsor product-list\|product-add` · `sponsor assign` · `sponsor contract-add` · `sponsor doc-upload` (lokales Club-Sponsoring, marketing-service + content-service) |
-| booking  | `comvenio booking list\|show\|approve\|reject`                |
-| object   | `comvenio object list [--type static\|portable\|event]`       |
-| task     | `comvenio task list\|show\|create\|assign\|done` · `task context list\|create` |
+| sponsor  | `comvenio sponsor list\|show\|add\|update\|logo` · Produkte, Verträge, Zuordnungen, Dokumente und Verantwortliche. Referenz: `docs/sponsoring.md`. |
+| booking  | `comvenio booking list\|show\|create\|update\|approve\|reject\|cancel\|delete\|bulk` · Teilnehmer, Buchungsverknüpfungen und Statistiken |
+| object   | `comvenio object list\|show\|create\|update\|delete` · Gebäude, Räume, Buchungsregeln und Task-Regeln |
+| task     | Aufgaben inkl. `bulk\|update\|delete`, Contexts, Zuweisungen, Notizen und Checklisten; Referenz: `docs/aufgaben.md`. |
 | template | `comvenio template dish\|ingredient [--search\|--category\|--common]` (globale Vorlagen) |
 | recipe   | `comvenio recipe from-template\|create\|list\|show\|update\|delete` (Gerichte/Getränke) |
-| menu     | `comvenio menu create\|list\|show\|add-item\|delete\|style` · `menu generate\|apply\|design` (KI) |
+| ingredient | `comvenio ingredient list\|show\|create\|update\|delete` (Club-Zutaten; komplexe Bodies via `--file`) |
+| ingredient-category | Kategorienbaum, CRUD und Zutaten-Zuordnung; bekannten Backend-Create-Blocker in `docs/speisekarten.md` beachten |
+| shopping | Einkaufslisten und Positionen, Generierung aus Rezept/Karte; bekannten Backend-Router-Blocker in `docs/speisekarten.md` beachten |
+| menu     | `comvenio menu create\|list\|show\|add-item\|update-item\|delete-item\|delete\|style\|apply\|export` (deklarativ; `generate`/`design` sind entfernt) |
 | homepage | `comvenio homepage preview\|apply\|show` · Design via `comvenio club design` |
-| news     | `comvenio news list\|show\|create\|update\|delete` · `news apply --file` (rich HTML, Galerie-Bilder) · `news preview --file [--open]` (Backend-Vorschau-URL im echten Layout, 30-Min-TTL; `--local` = Offline-Fallback) · `news video <template> --params` (Remotion, lokal) · `news publish <id>` (Entwurf → veröffentlicht). Details unten „Vereinsnews" + „Rich-News-Redaktion". |
-| data     | `comvenio data list\|show\|url\|download\|upload\|update\|papers\|export` (Vereins-Dateien & Galerie; `data url <file_id>` = presigned Bild-URL fürs Einbetten; `data update <file_id> --context news --context-id <news-id>` = Datei NACHTRÄGLICH zuordnen) |
-| tournament | `comvenio tournament list\|show\|participants\|start\|matches\|standings\|draw\|schedule-generate` · `tournament preview [--open]` (V3-Turniere) · `match-result --sets "6:2,7:6(9:7)"` (Tennis-Sätze, MTB = Match-Tiebreak) · Sonderwertungen `--walkover\|--retired\|--no-show\|--no-contest --winner home\|away` · `participant-withdraw --mode cancel\|walkover` · `deadline <tid> --phase group --at <iso>` / `--policy manual\|auto_no_contest` / `--show` (K18, 2026-07-13) |
-| meeting  | `comvenio meeting list\|show\|...` (Sitzungen/Protokolle) |
+| news     | `comvenio news list\|show\|create\|update\|delete\|apply\|preview\|publish\|video`; Referenz: `docs/vereinsnews.md`. |
+| data     | Dateien, Ordner, Papierkorb, Suche, Papers, Bereichsfreigaben und CSV/XLSX-Export; Referenz: `docs/dateien.md`. |
+| tournament | Serien/Ausführungen, Teilnehmer, Draw/Re-Draw, Spielplan, Satz-/Sonderergebnisse und Deadlines; Referenz: `docs/turniere.md`. |
+| meeting  | Sitzungsserien, Protokoll-Lifecycle, Agenda, Notizen, Teilnehmer, Abstimmungen, Beschlüsse und Einträge; Referenz: `docs/meetings.md`. |
 | verify   | `comvenio verify <action>` (visuelles Review: headless Render → Screenshots, damit du das Ergebnis siehst) |
 | schema   | `comvenio schema <domain> --json`                             |
 
@@ -103,6 +106,12 @@ comvenio club info                    # Vereinsdaten
 > Referenz für alle Event-Hub-Befehle, JSON-Payloads, Serien-Workflow,
 > domänenübergreifende Zuständigkeiten und bewusst nicht angebotene Routen.
 > **Vor jeder Veranstaltungsarbeit lesen.**
+
+> **Weitere eigenständige Referenzen:** `docs/cli-reference.md` (alle Commands),
+> `docs/coverage.md` (verifizierte Abdeckung/Lücken), `docs/auth-club.md`,
+> `docs/aufgaben.md`, `docs/mitglieder-teams.md`, `docs/buchungen-objekte.md`,
+> `docs/dateien.md`, `docs/vereinsnews.md`, `docs/turniere.md`,
+> `docs/sponsoring.md` und `docs/meetings.md`.
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)
@@ -190,8 +199,9 @@ Für **Homepage** existiert genau ein deklarativer Modus:
 3. `homepage preview --file` und `verify homepage --audit` ausführen.
 4. Erst nach menschlicher Freigabe `homepage apply --file` bzw. `club design --file` ausführen.
 
-Nur **menu** behält für echte Bild-/Text-Interpretation den generativen OCR-Spezialfall
-(`menu generate --photo/--text`).
+Auch für **menu** gibt es keinen Backend-Generator: Der bedienende Agent liest ein
+Foto oder einen Text selbst, legt passende Rezepte an und persistiert die Karte
+deklarativ mit `menu apply --file` oder `menu create` + `menu add-item`.
 
 ## --json-Konvention
 
@@ -241,10 +251,11 @@ comvenio schema menu --json > schema.json     # gültige design_config-Felder / 
 comvenio menu apply --file menu.json          # Karte + Items im Bulk (kein ai-service, kein zweiter LLM-Call)
 ```
 
-**2c. Speisekarte aus Foto (generativ — nur wenn echtes Bild-OCR nötig)**
+**2c. Speisekarte aus Foto (Agent interpretiert, CLI persistiert deklarativ)**
 ```bash
-comvenio menu generate --photo ./speisekarte.jpg --json     # Vorschlag ansehen (kein Write)
-comvenio menu generate --photo ./speisekarte.jpg --apply --menu-name "Sommerkarte 2026"
+# Foto selbst visuell auswerten, Vorlagen/Rezepte zuordnen und menu.json mit
+# recipe_id je Eintrag komponieren; danach deterministisch anwenden:
+comvenio menu apply --file menu.json --json
 ```
 
 **3. Homepage deklarativ bauen (Standardweg — du komponierst)**
@@ -448,7 +459,7 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 | `booking approve/reject`      | `confirm_object_bookings` (kein Owner-Bypass) |
 | `task create`                 | `create_tasks`                       |
 | `task assign/done`            | `manage_tasks`                       |
-| `menu generate/apply/design`  | `create_menus`/`manage_menus`/`manage_club_settings` |
+| `menu create/add-item/apply/style` | `create_menus`/`manage_menus`/`manage_club_settings` |
 | `homepage preview/apply`          | `manage_club_settings`           |
 | `news create/update/delete/apply/publish` | `manage_news` (schließt „Entwürfe sehen" ein) |
 | `news preview` (Backend-POST) | `manage_news`; das Öffnen der Vorschau-URL ist auth-frei (TTL + unguessable UUID) |

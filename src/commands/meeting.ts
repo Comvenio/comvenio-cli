@@ -22,6 +22,11 @@ export type MeetingCommandOpts = {
   category?: string;
   includeExpired?: boolean;
   reason?: string;
+  option?: string;
+  count?: string;
+  increment?: boolean;
+  number?: string;
+  since?: string;
 };
 
 export type MeetingOperation = {
@@ -59,19 +64,29 @@ function requiredId(id: string | undefined, action: string, kind: string): strin
   return id;
 }
 
-function requiredProtocol(opts: MeetingCommandOpts, action: string): string {
-  if (!opts.protocol) {
-    throw new Error(`meeting ${action} benötigt --protocol <protocol-id>.`);
-  }
-  return opts.protocol;
-}
-
 function bodyFromFile(opts: MeetingCommandOpts, action: string, optional = false): unknown {
   if (!opts.file) {
     if (optional) return undefined;
     throw new Error(`meeting ${action} benötigt --file <payload.json>.`);
   }
   return readJsonFile<unknown>(opts.file);
+}
+
+function requiredOption(opts: MeetingCommandOpts, action: string): string {
+  if (!opts.option) throw new Error(`meeting ${action} benötigt --option <option-id>.`);
+  return opts.option;
+}
+
+function requiredInteger(value: string | undefined, action: string, option: string): string {
+  if (value == null || !Number.isInteger(Number(value))) {
+    throw new Error(`meeting ${action} benötigt ${option} <ganze-zahl>.`);
+  }
+  return value;
+}
+
+function requiredValue(value: string | undefined, action: string, option: string): string {
+  if (!value) throw new Error(`meeting ${action} benötigt ${option}.`);
+  return value;
 }
 
 function query(params: Record<string, string | boolean | undefined>): string {
@@ -126,7 +141,7 @@ export async function handleMeetingOperation({
     case "protocol-revert":
       return client.post("meeting", `/protocol-management/${requiredId(id, action, "Protokoll-ID")}/revert-phase`);
     case "protocol-updates":
-      return client.get("meeting", `/protocol-management/${requiredId(id, action, "Protokoll-ID")}/updates`);
+      return client.get("meeting", `/protocol-management/${requiredId(id, action, "Protokoll-ID")}/updates${query({ since: opts.since })}`);
     case "protocol-validation":
       return client.get("meeting", `/protocol-validation/protocols/${requiredId(id, action, "Protokoll-ID")}/validation-status`);
     case "protocol-publish":
@@ -193,6 +208,10 @@ export async function handleMeetingOperation({
       return client.post("meeting", `/decisions/${requiredId(id, action, "Entscheidungs-ID")}/options`, bodyFromFile(opts, action));
     case "decision-options-add":
       return client.post("meeting", `/decisions/${requiredId(id, action, "Entscheidungs-ID")}/options/batch`, bodyFromFile(opts, action));
+    case "decision-promote":
+      return client.post("meeting", `/decisions/${requiredId(id, action, "Entscheidungs-ID")}/promote-to-resolution${query({
+        resolution_number: requiredValue(opts.number, action, "--number <beschlussnummer>"),
+      })}`);
     case "voting-open":
       return client.post("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}/open`);
     case "voting-close":
@@ -209,6 +228,13 @@ export async function handleMeetingOperation({
       return client.post("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}/proxy`, bodyFromFile(opts, action));
     case "vote-proxy-bulk":
       return client.post("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}/proxy/bulk`, bodyFromFile(opts, action));
+    case "voting-tally":
+      return client.post("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}/offline-tally/${requiredOption(opts, action)}${query({
+        count: requiredInteger(opts.count, action, "--count"),
+        increment: opts.increment ? true : undefined,
+      })}`);
+    case "vote-option-retract":
+      return client.del("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}/option/${requiredOption(opts, action)}`);
     case "vote-retract":
       return client.del("meeting", `/votes/${requiredId(id, action, "Entscheidungs-ID")}`);
 
@@ -336,6 +362,11 @@ export function registerMeetingCommands(cli: CAC): void {
     .option("--category <name>", "Beschlussliste nach Kategorie filtern")
     .option("--include-expired", "Beschlussliste einschließlich abgelaufener Beschlüsse")
     .option("--reason <text>", "Begründung für decision-cancel")
+    .option("--number <value>", "Beschlussnummer für decision-promote")
+    .option("--option <id>", "Abstimmungsoption für voting-tally/vote-option-retract")
+    .option("--count <n>", "Stimmenzahl für voting-tally")
+    .option("--increment", "voting-tally: --count als Delta statt absoluten Wert anwenden")
+    .option("--since <iso-datetime>", "protocol-updates: nur Änderungen seit diesem Zeitpunkt")
     .option("--type <type>", "Reserviert für kompatible Inhaltsfilter")
     .option("--json", "Maschinenlesbare JSON-Ausgabe")
     .action(async (action: string, id: string | undefined, opts: MeetingCommandOpts) => {

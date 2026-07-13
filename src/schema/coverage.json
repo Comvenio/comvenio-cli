@@ -3,11 +3,11 @@
   "cli_version": "0.1.0",
   "verified_at": "2026-07-13",
   "coverage_model": {
-    "covered": "The intended club-admin workflow is available through the CLI. This does not imply one command per technical backend route.",
-    "core-partial": "Useful core operations exist, but at least one important club-admin workflow is still missing.",
-    "intentional-exclusion": "The top-level command is documented only as an explicit non-goal."
+    "covered": "Der vorgesehene Club-Admin-Workflow ist über das CLI verfügbar. Das bedeutet nicht, dass jede technische Backend-Route eine eigene Action braucht.",
+    "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
+    "intentional-exclusion": "Der Top-Level-Command ist ausschließlich als bewusstes Nicht-Ziel dokumentiert."
   },
-  "scope_note": "Workflow-level registry for the 22 top-level commands wired in src/index.ts. Public, anonymous, internal, service-to-service and AI-provider routes are not required to have a CLI command. Gaps name missing CLI workflows, not every technical backend route.",
+  "scope_note": "Workflow-Registry für die 25 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
   "domains": [
     {
       "id": "login",
@@ -17,7 +17,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "No password login and no token decoding; the opaque cvn_ token is verified server-side before it is stored."
+        "Kein Passwort-Login und kein Token-Decoding; das opake cvn_-Token wird vor dem Speichern serverseitig geprüft."
       ],
       "source": [
         "src/index.ts",
@@ -35,7 +35,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Logout removes local CLI state; it does not revoke a device token on the server."
+        "Logout entfernt den lokalen CLI-State; das Device-Token wird dadurch nicht serverseitig widerrufen."
       ],
       "source": [
         "src/index.ts",
@@ -53,7 +53,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Transient user-service failures may use cached identity fields; authentication and authorization failures are never hidden."
+        "Bei vorübergehenden Ausfällen dürfen gecachte Identitätsfelder erscheinen; Authentifizierungs- und Autorisierungsfehler werden nie verborgen."
       ],
       "source": [
         "src/commands/whoami.ts"
@@ -64,16 +64,22 @@
     },
     {
       "id": "club",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "info",
-        "design"
+        "update",
+        "settings",
+        "settings-update",
+        "design",
+        "department-list",
+        "department-show",
+        "department-add",
+        "department-update",
+        "department-delete"
       ],
-      "gaps": [
-        "The dispatcher has no general club profile update, department administration or settings read action."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
-        "Homepage content is managed by homepage; members and teams have separate commands."
+        "Homepage-Inhalte verwaltet homepage; Mitglieder und Teams haben eigene Commands."
       ],
       "source": [
         "src/commands/club.ts"
@@ -85,46 +91,61 @@
     },
     {
       "id": "member",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "show",
         "add",
         "update",
-        "remove"
+        "remove",
+        "import",
+        "family-list",
+        "family-show",
+        "family-add",
+        "family-update",
+        "family-delete",
+        "status-list",
+        "status-show",
+        "status-add",
+        "status-update",
+        "status-delete",
+        "period-list",
+        "period-show",
+        "period-add",
+        "period-update",
+        "period-delete"
       ],
-      "gaps": [
-        "The dispatcher does not expose family, membership-status, role-history or bulk-import workflows."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
-        "Team membership is managed through team member actions."
+        "Team-Mitgliedschaften werden über team member verwaltet."
       ],
       "source": [
         "src/commands/member.ts"
       ],
       "docs": [
+        "docs/mitglieder-teams.md",
         "docs/cli-reference.md"
       ]
     },
     {
       "id": "team",
-      "status": "core-partial",
-      "integration_state": "pending",
+      "status": "covered",
       "actions": [
         "list",
-        "member list",
-        "member add",
-        "member remove"
+        "show",
+        "create",
+        "update",
+        "delete",
+        "member list|add|update|remove",
+        "resource list|add|update|remove"
       ],
-      "gaps": [
-        "The dispatcher has no team create, show, update or delete action."
-      ],
+      "gaps": [],
       "intentional_exclusions": [],
       "source": [
         "src/commands/team.ts"
       ],
       "docs": [
-        "docs/cli-reference.md"
+        "docs/mitglieder-teams.md"
       ]
     },
     {
@@ -162,7 +183,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Anonymous/public self-service routes, backend-internal routes and provider-specific technical administration are outside the club-admin CLI."
+        "Anonyme/öffentliche Self-Service-Routen, Backend-Interna und providerspezifische technische Administration liegen außerhalb des Club-Admin-CLI."
       ],
       "source": [
         "src/commands/event.ts",
@@ -174,60 +195,77 @@
     },
     {
       "id": "booking",
-      "status": "core-partial",
-      "integration_state": "pending",
+      "status": "covered",
       "actions": [
         "list",
         "show",
+        "create",
+        "update",
         "approve",
-        "reject"
+        "reject",
+        "cancel",
+        "delete",
+        "bulk",
+        "participant list|show|add|add-groups|update|remove",
+        "link list|club|add|remove",
+        "stats object|guests"
       ],
-      "gaps": [
-        "The dispatcher has no create, update, cancel or delete workflow for reservations."
+      "gaps": [],
+      "intentional_exclusions": [
+        "Anonyme/öffentliche Buchungsflows, Provider-Importe und technische Export-Routen liegen außerhalb des Club-Admin-Dispatchers."
       ],
-      "intentional_exclusions": [],
       "source": [
         "src/commands/booking.ts"
       ],
       "docs": [
-        "docs/cli-reference.md"
+        "docs/buchungen-objekte.md"
       ]
     },
     {
       "id": "object",
-      "status": "core-partial",
-      "integration_state": "pending",
+      "status": "covered",
       "actions": [
-        "list"
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "building list|show|create|update|delete",
+        "room list|show|create|update|delete",
+        "booking-rule list|show|create|bulk|update|delete",
+        "task-rule list|show|create|update|delete"
       ],
-      "gaps": [
-        "The dispatcher has no object show, create, update, availability or delete workflow."
+      "gaps": [],
+      "intentional_exclusions": [
+        "Objekt-Tags sowie technische Export- und Provider-Batch-Routen liegen bewusst außerhalb des Club-Admin-Dispatchers."
       ],
-      "intentional_exclusions": [],
       "source": [
         "src/commands/object.ts"
       ],
       "docs": [
-        "docs/cli-reference.md"
+        "docs/buchungen-objekte.md"
       ]
     },
     {
       "id": "task",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "show",
         "show --subtasks",
         "show --chain",
         "create",
+        "bulk",
+        "update",
         "assign",
         "done",
-        "context list",
-        "context create"
+        "delete",
+        "context list|show|create|update|delete",
+        "assignment list|show|update|delete",
+        "note list|add|update|delete",
+        "checklist list|add|update|toggle|delete|reorder"
       ],
-      "gaps": [
-        "The dispatcher has no general update, reopen, cancel, delete, assignment-list or assignment-remove action."
-      ],
+      "gaps": [],
       "intentional_exclusions": [],
       "source": [
         "src/commands/task.ts"
@@ -249,10 +287,96 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Ingredient, allergen and colorant administration is not exposed as recipe actions; template-backed recipe creation is the supported agent workflow."
+        "Zutaten-, Allergen- und Farbstoff-Administration sind keine recipe-Actions; vorlagengestützte Rezepterstellung ist der vorgesehene Agenten-Workflow."
       ],
       "source": [
         "src/commands/recipe.ts"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
+    },
+    {
+      "id": "ingredient",
+      "status": "covered",
+      "actions": [
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete"
+      ],
+      "gaps": [],
+      "intentional_exclusions": [
+        "Globale Zutatenvorlagen bleiben im read-only template-Command; interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."
+      ],
+      "source": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
+    },
+    {
+      "id": "ingredient-category",
+      "status": "core-partial",
+      "actions": [
+        "list",
+        "roots",
+        "tree",
+        "by-ingredient",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "assign",
+        "unassign",
+        "init"
+      ],
+      "gaps": [
+        "Der Backend-Create-Vertrag greift aktuell auf club_id zu, obwohl IngredientCategoryCreate das Feld nicht deklariert; das CLI sendet club_id korrekt mit, aber create benötigt eine Backend-Korrektur."
+      ],
+      "intentional_exclusions": [
+        "Interne Service-to-Service-Nutzung ist keine Club-Admin-Action."
+      ],
+      "source": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
+    },
+    {
+      "id": "shopping",
+      "status": "core-partial",
+      "actions": [
+        "list",
+        "active",
+        "completed",
+        "by-context",
+        "by-context-type",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "item-add",
+        "item-update",
+        "item-delete",
+        "purchased",
+        "generate-from-recipe",
+        "generate-from-menu"
+      ],
+      "gaps": [
+        "shopping.py enthält vor GET /lists/{id} einen nackten @router.get-Decorator; dieser Backend-Codefehler gefährdet Router-Import und Endpoint-Verfügbarkeit, obwohl die CLI-Actions implementiert sind."
+      ],
+      "intentional_exclusions": [
+        "Interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."
+      ],
+      "source": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
       ],
       "docs": [
         "docs/speisekarten.md"
@@ -267,7 +391,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Global templates are read-only; mutation and seeding are platform administration concerns."
+        "Globale Vorlagen sind nur lesbar; Mutation und Seeding sind Plattform-Administration."
       ],
       "source": [
         "src/commands/template.ts"
@@ -297,7 +421,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "generate and design deliberately fail: the operating agent composes content and CSS/design_config itself; the CLI never calls a backend LLM."
+        "generate und design brechen bewusst ab: Der bedienende Agent komponiert Inhalt und CSS/design_config selbst; das CLI ruft kein Backend-LLM auf."
       ],
       "source": [
         "src/commands/menu.ts"
@@ -308,26 +432,29 @@
     },
     {
       "id": "meeting",
-      "status": "core-partial",
-      "integration_state": "pending",
+      "status": "covered",
       "actions": [
-        "list",
-        "series",
-        "show",
-        "entries",
-        "resolutions"
+        "series list|show|create|update|delete",
+        "protocol list|show|create|update|delete|advance|revert|updates|validation|publish",
+        "agenda list|show|create|update|delete|reorder|start|complete|skip|approve",
+        "note list|list-protocol|create|update|delete",
+        "participant list|add|update|remove|validate|unvalidate",
+        "decision create|agenda|update|cancel|option-add|options-add|promote",
+        "voting open|close|results|eligible|tally",
+        "vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract",
+        "resolution list|list-protocol|show|history|create|update|approve|decline|delete",
+        "entry list|show|show-agenda|create|update|delete",
+        "attachment list|add|remove"
       ],
-      "gaps": [
-        "The current dispatcher is read-only and does not expose meeting/protocol lifecycle, agenda, participants, voting or resolution mutations."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
-        "Public join/token flows, internal routes and AI-assistant internals are not club-admin CLI workflows."
+        "Öffentliche Join-/Token-Flows, interne Routen und AI-Assistant-Interna sind keine Club-Admin-CLI-Workflows."
       ],
       "source": [
         "src/commands/meeting.ts"
       ],
       "docs": [
-        "docs/cli-reference.md"
+        "docs/meetings.md"
       ]
     },
     {
@@ -344,7 +471,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "generate and design deliberately fail; the agent composes a schema-valid homepage and uses club design for theme settings."
+        "generate und design brechen bewusst ab; der Agent komponiert eine schema-gültige Homepage und nutzt club design für Theme-Einstellungen."
       ],
       "source": [
         "src/commands/homepage.ts",
@@ -362,10 +489,10 @@
         "show domain schema"
       ],
       "gaps": [
-        "Machine-readable domain schemas are not yet available for every top-level command."
+        "Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback."
       ],
       "intentional_exclusions": [
-        "coverage.json is a separate workflow-coverage registry and is readable offline."
+        "coverage.json ist eine getrennte Workflow-Coverage-Registry und offline lesbar."
       ],
       "source": [
         "src/commands/schema.ts",
@@ -389,7 +516,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Only visual or document surfaces with a deterministic verifier are included; verify is not a generic API health check."
+        "Enthalten sind nur visuelle oder Dokument-Oberflächen mit deterministischem Verifier; verify ist kein allgemeiner API-Healthcheck."
       ],
       "source": [
         "src/commands/verify.ts",
@@ -402,7 +529,7 @@
     },
     {
       "id": "data",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "show",
@@ -416,6 +543,10 @@
         "visibility",
         "stats",
         "empty-trash",
+        "area-media",
+        "area-shares",
+        "area-share-add",
+        "area-share-remove",
         "children",
         "search",
         "breadcrumb",
@@ -425,6 +556,10 @@
         "folder-protect",
         "folder-delete",
         "folder-restore",
+        "folder-rights",
+        "folder-right-add",
+        "folder-right-bulk",
+        "folder-right-delete",
         "papers",
         "paper-show",
         "paper-add",
@@ -432,11 +567,10 @@
         "paper-delete",
         "export members|bookings"
       ],
-      "gaps": [
-        "Area-share/media-map workflows and publication/newsletter-specific administration are not exposed by the data dispatcher."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
-        "Content analysis is performed by the operating agent after download; there is no analyze endpoint in this CLI."
+        "Die Inhaltsanalyse übernimmt der bedienende Agent nach dem Download; dieses CLI besitzt keinen analyze-Endpoint.",
+        "Publikations- und Newsletter-Fachworkflows bleiben in ihren eigenen Domänen; DataShare verwaltet Dateien und Kontexte."
       ],
       "source": [
         "src/commands/data.ts",
@@ -462,7 +596,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "The CLI does not call a writing LLM; the operating agent composes rich HTML. Anonymous public reads are a frontend concern."
+        "Das CLI ruft kein schreibendes LLM auf; der bedienende Agent komponiert Rich-HTML. Anonyme öffentliche Reads sind Aufgabe des Frontends."
       ],
       "source": [
         "src/commands/news.ts"
@@ -492,7 +626,7 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Image generation itself is external to the CLI; illustrate prepares the deterministic kit and compose overlays exact labels."
+        "Die Bildgenerierung selbst liegt außerhalb des CLI; illustrate bereitet das deterministische Kit vor und compose setzt exakte Beschriftungen darüber."
       ],
       "source": [
         "src/commands/plan.ts"
@@ -503,14 +637,19 @@
     },
     {
       "id": "tournament",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "series-list",
+        "series-show",
         "series-create",
+        "series-update",
+        "series-delete",
         "execution-create",
         "execution-link",
         "list",
         "show",
+        "update",
+        "delete",
         "status",
         "participants",
         "mannschaft",
@@ -530,13 +669,13 @@
         "schedule-generate",
         "match-schedule",
         "match-delete",
-        "match-result"
+        "match-result",
+        "deadline"
       ],
-      "gaps": [
-        "The dispatcher has no generic tournament create/update/delete command; creation is available through a series execution."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
-        "Public registration and public bracket reads are frontend/self-service concerns."
+        "Turniere werden im V3-Domänenmodell kanonisch über execution-create aus einer Serie erzeugt; der direkte POST /tournaments wird nicht als redundante zweite Create-Action angeboten.",
+        "Öffentliche Anmeldung und öffentliche Bracket-Reads sind Frontend-/Self-Service-Aufgaben."
       ],
       "source": [
         "src/commands/tournament.ts"
@@ -572,10 +711,10 @@
         "responsible-remove"
       ],
       "gaps": [
-        "The dispatcher has no advertiser delete action and no update/delete action for an existing contract version."
+        "Der marketing-service stellt für Advertiser kein DELETE und für bestehende Vertragsversionen nur GET/POST, aber kein PATCH/DELETE bereit; daher kann das CLI diese Mutationen nicht abbilden."
       ],
       "intentional_exclusions": [
-        "Global ad-marketplace and platform billing administration are outside local club sponsorship."
+        "Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings."
       ],
       "source": [
         "src/commands/sponsor.ts",

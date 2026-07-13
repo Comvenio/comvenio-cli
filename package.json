@@ -13,6 +13,8 @@
     "test": "bun test",
     "gen:schema": "bun run scripts/gen-schema.ts",
     "gen:schema:check": "bun run scripts/gen-schema.ts --check",
+    "gen:coverage": "bun run scripts/gen-coverage.ts",
+    "gen:coverage:check": "bun run scripts/gen-coverage.ts --check",
     "gen:api": "echo 'Placeholder — per service: openapi-typescript https://api.comvenio.app/{service}/openapi.json -o src/api/{service}.ts (Folge-Straenge comvenio-cli-04..09)'"
   },
   "dependencies": {

@@ -2,9 +2,10 @@
   "domain": "booking",
   "generated": true,
   "source": [
-    "Backend/Microservice-Backend/object-service/app/enums.py"
+    "Backend/Microservice-Backend/object-service/app/enums.py",
+    "Backend/Microservice-Backend/object-service/app/schemas/Object/ObjectReservation.py"
   ],
-  "note": "reservation_status/object_type aus den object-service Enum-Klassen (enums.py).",
+  "note": "Reservierungs-, Teilnehmer- und Bulk-Vertraege aus dem object-service.",
   "enums": {
     "reservation_status": [
       "requested",
@@ -12,21 +13,119 @@
       "rejected",
       "cancelled"
     ],
+    "participant_status": [
+      "invited",
+      "accepted",
+      "rejected"
+    ],
     "object_type": [
       "static",
       "portable",
       "event"
+    ],
+    "booking_granularity": [
+      "15min",
+      "30min",
+      "hourly",
+      "timedate"
     ]
   },
+  "commands": {
+    "reservation": [
+      "list",
+      "show",
+      "create",
+      "update",
+      "approve",
+      "reject",
+      "cancel",
+      "delete",
+      "bulk"
+    ],
+    "participant": [
+      "list",
+      "show",
+      "add",
+      "add-groups",
+      "update",
+      "remove"
+    ],
+    "link": [
+      "list",
+      "club",
+      "add",
+      "remove"
+    ],
+    "stats": [
+      "object",
+      "guests"
+    ]
+  },
+  "create_required_fields": [
+    "object_id",
+    "club_id",
+    "start_time",
+    "end_time"
+  ],
+  "create_optional_fields": [
+    "title",
+    "comment",
+    "status",
+    "participants",
+    "resp_member_id"
+  ],
+  "bulk_fields": [
+    "object_id",
+    "club_id",
+    "start_time",
+    "end_time",
+    "title",
+    "comment",
+    "status",
+    "resp_member_id",
+    "participants",
+    "group_ids",
+    "portable_reservations"
+  ],
   "update_required_fields": [
     "club_id",
     "object_id"
   ],
+  "participant_create_fields": [
+    "club_id",
+    "object_reservation_id",
+    "member_id",
+    "status",
+    "is_guest",
+    "guest_name",
+    "guest_email"
+  ],
+  "participant_update_required_fields": [
+    "id",
+    "club_id",
+    "status"
+  ],
+  "reservation_link_required_fields": [
+    "primary_reservation_id",
+    "linked_reservation_id"
+  ],
+  "stats_filters": {
+    "object": [
+      "year",
+      "month"
+    ],
+    "guests": [
+      "from_date",
+      "to_date"
+    ]
+  },
   "notes": [
-    "approve = PATCH status=approved, reject = PATCH status=rejected.",
-    "PATCH-Body braucht club_id + object_id (Pflicht) — vorher GET der Reservierung.",
+    "approve/reject/cancel sind PATCH-Statuswechsel, keine eigenen Backend-Endpunkte.",
+    "Die CLI laedt vor PATCH die Reservierung und ergaenzt club_id + object_id.",
     "Kein status-Query-Filter; --pending filtert clientseitig auf status=requested.",
-    "object list --type ist ein Sub-Pfad (/objects/club/{id}/{type}), kein Query-Param.",
-    "Owner-Bypass-Sperre: eigene Buchung kann nicht selbst genehmigt werden (403)."
+    "Owner-Bypass-Sperre: eigene Buchung kann nicht selbst genehmigt werden (403).",
+    "Teilnehmer-Update verwendet PUT /object-reservations/participants/{id}.",
+    "ReservationLinks benoetigen club_id als Query-Parameter.",
+    "Interne Endpunkte und der anonyme Public-Highlight-Endpunkt sind nicht Teil der Admin-CLI."
   ]
 }

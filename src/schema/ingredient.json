@@ -1,0 +1,50 @@
+{
+  "domain": "ingredient",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/supply-service/app/routes/ingredient.py",
+    "Backend/Microservice-Backend/supply-service/app/schemas/core.py"
+  ],
+  "commands": ["list", "show", "create", "update", "delete"],
+  "routes": {
+    "list": "GET /ingredients/club/{club_id}/ingredients",
+    "show": "GET /ingredients/{ingredient_id}",
+    "create": "POST /ingredients/club/{club_id}",
+    "update": "PUT /ingredients/{ingredient_id}",
+    "delete": "DELETE /ingredients/{ingredient_id}"
+  },
+  "enums": {
+    "unit": ["gr", "kg", "ml", "l", "pc", "portion", "tsp", "tbsp", "cup", "pinch"]
+  },
+  "create_required_fields": ["name", "unit"],
+  "create_optional_fields": [
+    "description",
+    "cost_per_unit",
+    "supplier",
+    "allergen_ids",
+    "colorant_ids",
+    "category_ids"
+  ],
+  "update_fields": [
+    "name",
+    "description",
+    "unit",
+    "cost_per_unit",
+    "supplier",
+    "allergen_ids",
+    "colorant_ids",
+    "category_ids"
+  ],
+  "list_filters": ["search", "category_id", "skip", "limit"],
+  "notes": [
+    "create und update lesen den komplexen JSON-Body aus --file.",
+    "category_id schließt laut Backend auch Unterkategorien ein.",
+    "RBAC wird ausschließlich serverseitig geprüft.",
+    "Globale Ingredient-Templates bleiben im separaten read-only template-Command."
+  ],
+  "excluded_routes": [
+    "Globale Allergen-/Colorant-Sync-Routen",
+    "Interne Service-Routen",
+    "Public-Routen"
+  ]
+}

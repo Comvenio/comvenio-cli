@@ -1,0 +1,40 @@
+{
+  "domain": "team",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/member-service/app/models/team.py",
+    "Backend/Microservice-Backend/member-service/app/schemas/team.py",
+    "Backend/Microservice-Backend/member-service/app/routes/team.py"
+  ],
+  "commands": {
+    "team": ["list", "show", "create", "update", "delete"],
+    "member": ["list", "add", "update", "remove"],
+    "resource": ["list", "add", "update", "remove"]
+  },
+  "enums": {
+    "sport_type": ["FOOTBALL", "TENNIS", "HANDBALL", "BASKETBALL", "VOLLEYBALL", "TABLE_TENNIS", "OTHER"],
+    "team_gender": ["MALE", "FEMALE", "MIXED"],
+    "team_member_role": ["PLAYER", "CAPTAIN", "COACH", "ASSISTANT_COACH", "MANAGER"]
+  },
+  "team_create_required_fields": ["club_id", "department_id", "name", "sport_type"],
+  "team_create_optional_fields": [
+    "age_group", "gender", "description", "season", "external_provider_id",
+    "external_team_key", "home_location", "logo_url", "required_resource_count",
+    "buffer_before_minutes", "buffer_after_minutes"
+  ],
+  "team_update_fields": [
+    "name", "department_id", "sport_type", "age_group", "gender", "description",
+    "season", "external_provider_id", "external_team_key", "home_location", "logo_url",
+    "required_resource_count", "buffer_before_minutes", "buffer_after_minutes"
+  ],
+  "member_create_required_fields": ["member_id"],
+  "member_fields": ["member_id", "role", "jersey_number", "position"],
+  "resource_priority_create_required_fields": ["object_id"],
+  "resource_priority_fields": ["object_id", "priority", "booking_duration_minutes", "notes"],
+  "notes": [
+    "Komplexe Team-Payloads werden per --file uebergeben; die CLI setzt club_id aus dem aktiven Club.",
+    "Team-Mitglied update/remove identifiziert das Mitglied mit --member-id.",
+    "Ressourcen-Prioritaet update/remove identifiziert den Datensatz mit --priority-id.",
+    "Externe Provider-Importe und interne Booking-Info-Routen sind nicht Teil dieses Admin-Scopes."
+  ]
+}

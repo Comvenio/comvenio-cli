@@ -4,6 +4,7 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
+import { readJsonFile } from "../util/file.ts";
 
 // member-service endpoints (verified in Sub-File 04):
 //   GET    /member/members/by_club/{club_id}     (Query limit, offset)
@@ -44,6 +45,7 @@ type Opts = {
   userId?: string;
   membershipStatusId?: string;
   familyId?: string;
+  file?: string;
 };
 
 // Map CLI flags → MemberCreate/MemberUpdate body fields. club_id is added by the
@@ -78,7 +80,7 @@ function memberName(m: MemberRead): string {
  */
 export function registerMemberCommands(cli: CAC): void {
   cli
-    .command("member <action> [id]", "Mitglieder verwalten: list|show|add|update|remove")
+    .command("member <action> [id]", "Mitglieder, Familien, Status, Mitgliedschaftszeiten und Import verwalten")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--limit <n>", "Seitengroesse (1-500, paginiert)")
     .option("--offset <n>", "Offset (Default 0)")
@@ -96,6 +98,7 @@ export function registerMemberCommands(cli: CAC): void {
     .option("--user-id <v>", "Verknuepfte User-ID")
     .option("--membership-status-id <v>", "Mitgliedsstatus-ID (nur add; nicht Teil von MemberUpdate)")
     .option("--family-id <v>", "Familien-ID (nur add; nicht Teil von MemberUpdate)")
+    .option("--file <path>", "JSON-Payload fuer Familien, Status, Mitgliedschaftszeiten oder Import")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = loadState();
@@ -170,9 +173,125 @@ export function registerMemberCommands(cli: CAC): void {
           output({ deleted: true, id }, opts.json, () => `Mitglied geloescht: ${id}`);
           break;
         }
+        case "family-list": {
+          const rows = await client.get<Record<string, unknown>[]>("member", `/families/by_club/${clubId}`);
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+        case "family-show": {
+          if (!id) throw new Error("member family-show <family-id> benoetigt eine ID.");
+          const row = await client.get<Record<string, unknown>>("member", `/families/${id}`);
+          output(row, opts.json, () => JSON.stringify(row, null, 2));
+          break;
+        }
+        case "family-add": {
+          if (!opts.file) throw new Error("member family-add benoetigt --file <family.json>.");
+          const body = { ...readJsonFile<Record<string, unknown>>(opts.file), club_id: clubId };
+          const row = await client.post<Record<string, unknown>>("member", "/families/", body);
+          output(row, opts.json, () => `Familie angelegt: ${row.name ?? row.id ?? "?"}.`);
+          break;
+        }
+        case "family-update": {
+          if (!id) throw new Error("member family-update <family-id> benoetigt eine ID.");
+          if (!opts.file) throw new Error("member family-update benoetigt --file <family-update.json>.");
+          const row = await client.patch<Record<string, unknown>>(
+            "member",
+            `/families/${id}`,
+            readJsonFile<Record<string, unknown>>(opts.file),
+          );
+          output(row, opts.json, () => `Familie aktualisiert: ${row.name ?? id}.`);
+          break;
+        }
+        case "family-delete": {
+          if (!id) throw new Error("member family-delete <family-id> benoetigt eine ID.");
+          await client.del("member", `/families/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Familie geloescht: ${id}.`);
+          break;
+        }
+        case "status-list": {
+          const rows = await client.get<Record<string, unknown>[]>(
+            "member",
+            `/membership-status/by_club/${clubId}`,
+          );
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+        case "status-show": {
+          if (!id) throw new Error("member status-show <status-id> benoetigt eine ID.");
+          const row = await client.get<Record<string, unknown>>("member", `/membership-status/${id}`);
+          output(row, opts.json, () => JSON.stringify(row, null, 2));
+          break;
+        }
+        case "status-add": {
+          if (!opts.file) throw new Error("member status-add benoetigt --file <status.json>.");
+          const body = { ...readJsonFile<Record<string, unknown>>(opts.file), club_id: clubId };
+          const row = await client.post<Record<string, unknown>>("member", "/membership-status/", body);
+          output(row, opts.json, () => `Mitgliedsstatus angelegt: ${row.name ?? row.id ?? "?"}.`);
+          break;
+        }
+        case "status-update": {
+          if (!id) throw new Error("member status-update <status-id> benoetigt eine ID.");
+          if (!opts.file) throw new Error("member status-update benoetigt --file <status-update.json>.");
+          const row = await client.patch<Record<string, unknown>>(
+            "member",
+            `/membership-status/${id}`,
+            readJsonFile<Record<string, unknown>>(opts.file),
+          );
+          output(row, opts.json, () => `Mitgliedsstatus aktualisiert: ${row.name ?? id}.`);
+          break;
+        }
+        case "status-delete": {
+          if (!id) throw new Error("member status-delete <status-id> benoetigt eine ID.");
+          await client.del("member", `/membership-status/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Mitgliedsstatus geloescht: ${id}.`);
+          break;
+        }
+        case "period-list": {
+          if (!id) throw new Error("member period-list <member-id> benoetigt eine Member-ID.");
+          const rows = await client.get<Record<string, unknown>[]>("member", `/membership-periods/member/${id}`);
+          output(rows, opts.json, () => JSON.stringify(rows, null, 2));
+          break;
+        }
+        case "period-show": {
+          if (!id) throw new Error("member period-show <period-id> benoetigt eine ID.");
+          const row = await client.get<Record<string, unknown>>("member", `/membership-periods/${id}`);
+          output(row, opts.json, () => JSON.stringify(row, null, 2));
+          break;
+        }
+        case "period-add": {
+          if (!opts.file) throw new Error("member period-add benoetigt --file <period.json>.");
+          const body = { ...readJsonFile<Record<string, unknown>>(opts.file), club_id: clubId };
+          const row = await client.post<Record<string, unknown>>("member", "/membership-periods/", body);
+          output(row, opts.json, () => `Mitgliedschaftszeitraum angelegt: ${row.id ?? "?"}.`);
+          break;
+        }
+        case "period-update": {
+          if (!id) throw new Error("member period-update <period-id> benoetigt eine ID.");
+          if (!opts.file) throw new Error("member period-update benoetigt --file <period-update.json>.");
+          const row = await client.patch<Record<string, unknown>>(
+            "member",
+            `/membership-periods/${id}`,
+            readJsonFile<Record<string, unknown>>(opts.file),
+          );
+          output(row, opts.json, () => `Mitgliedschaftszeitraum aktualisiert: ${row.id ?? id}.`);
+          break;
+        }
+        case "period-delete": {
+          if (!id) throw new Error("member period-delete <period-id> benoetigt eine ID.");
+          await client.del("member", `/membership-periods/${id}`);
+          output({ deleted: true, id }, opts.json, () => `Mitgliedschaftszeitraum geloescht: ${id}.`);
+          break;
+        }
+        case "import": {
+          if (!opts.file) throw new Error("member import benoetigt --file <bulk-import.json>.");
+          const body = { ...readJsonFile<Record<string, unknown>>(opts.file), club_id: clubId };
+          const result = await client.post<Record<string, unknown>>("member", "/members/import/bulk", body);
+          output(result, opts.json, () => JSON.stringify(result, null, 2));
+          break;
+        }
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, add, update, remove`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, add, update, remove, family-list, family-show, family-add, family-update, family-delete, status-list, status-show, status-add, status-update, status-delete, period-list, period-show, period-add, period-update, period-delete, import`,
           );
       }
     });

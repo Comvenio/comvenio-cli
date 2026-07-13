@@ -27,6 +27,9 @@ import { registerNewsCommands } from "./commands/news.ts";
 import { registerPlanCommands } from "./commands/plan.ts";
 import { registerTournamentCommands } from "./commands/tournament.ts";
 import { registerSponsorCommands } from "./commands/sponsor.ts";
+import { registerIngredientCommands } from "./commands/ingredient.ts";
+import { registerIngredientCategoryCommands } from "./commands/ingredient-category.ts";
+import { registerShoppingCommands } from "./commands/shopping.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -148,6 +151,10 @@ registerPlanCommands(cli);
 registerTournamentCommands(cli);
 // Lokales Club-Sponsoring - Sponsoren, Angebote, Zuordnungen, Logos und Vertraege.
 registerSponsorCommands(cli);
+// Club-spezifische Supply-Stammdaten und Einkaufslisten.
+registerIngredientCommands(cli);
+registerIngredientCategoryCommands(cli);
+registerShoppingCommands(cli);
 
 cli.help();
 cli.version(pkg.version);

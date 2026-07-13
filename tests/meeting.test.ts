@@ -71,6 +71,54 @@ describe("meeting CLI route contracts", () => {
     expect(await run("voting-close", "decision-1")).toEqual([
       { method: "POST", service: "meeting", path: "/votes/decision-1/close", body: undefined },
     ]);
+    expect(await run("voting-tally", "decision-1", {
+      option: "option-1",
+      count: "-1",
+      increment: true,
+    })).toEqual([
+      {
+        method: "POST",
+        service: "meeting",
+        path: "/votes/decision-1/offline-tally/option-1?count=-1&increment=true",
+        body: undefined,
+      },
+    ]);
+    expect(await run("vote-option-retract", "decision-1", { option: "option-1" })).toEqual([
+      {
+        method: "DELETE",
+        service: "meeting",
+        path: "/votes/decision-1/option/option-1",
+        body: undefined,
+      },
+    ]);
+  });
+
+  test("maps decision promotion and protocol update filters to query parameters", async () => {
+    expect(await run("decision-promote", "decision-1", { number: "2026-007" })).toEqual([
+      {
+        method: "POST",
+        service: "meeting",
+        path: "/decisions/decision-1/promote-to-resolution?resolution_number=2026-007",
+        body: undefined,
+      },
+    ]);
+    expect(await run("protocol-updates", "protocol-1", {
+      since: "2026-07-13T19:30:00+02:00",
+    })).toEqual([
+      {
+        method: "GET",
+        service: "meeting",
+        path: "/protocol-management/protocol-1/updates?since=2026-07-13T19%3A30%3A00%2B02%3A00",
+        body: undefined,
+      },
+    ]);
+  });
+
+  test("rejects an invalid offline tally before issuing a request", async () => {
+    expect(run("voting-tally", "decision-1", {
+      option: "option-1",
+      count: "1.5",
+    })).rejects.toThrow("ganze-zahl");
   });
 
   test("builds resolution filters with the backend parameter names", async () => {
