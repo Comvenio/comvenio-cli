@@ -219,10 +219,8 @@ comvenio ingredient-category delete <category-id> --hard --json
 comvenio ingredient-category init --json
 ```
 
-> **Bestätigter Backend-Blocker:** `IngredientCategoryCreate` deklariert aktuell kein
-> `club_id`, die Create-Route greift aber auf `category_in.club_id` zu. Das CLI sendet
-> `club_id` korrekt mit; `ingredient-category create` ist trotzdem nicht verlässlich,
-> bis Schema und Route im Backend synchronisiert sind. Das ist kein CLI-Parsingfehler.
+Der Backend-Vertrag akzeptiert `club_id` im Create-Body. Das CLI setzt den aktiven Club
+automatisch aus `--club` oder dem Login-State.
 
 `init` ist nur für Clubs ohne vorhandene Standardkategorien gedacht und kann andernfalls mit `409` antworten.
 
@@ -280,11 +278,8 @@ comvenio shopping generate-from-recipe <recipe-id> --portions 80 \
 comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json
 ```
 
-> **Bestätigter Backend-Blocker:** In `shopping.py` steht vor der Route
-> `GET /lists/{id}` ein nackter `@router.get`-Decorator. Dieser Backend-Codefehler
-> gefährdet Router-Import und Endpoint-Verfügbarkeit. Die CLI-Actions und Verträge
-> sind implementiert, dürfen aber bis zur Backend-Korrektur nicht als zuverlässig
-> erreichbar behandelt werden.
+`shopping show` nutzt die eigenständige Detailroute `GET /shopping/lists/{id}`. Die
+Club-ID wird serverseitig aus der Liste aufgelöst und anschließend per Supply-RBAC geprüft.
 
 ---
 
@@ -390,8 +385,9 @@ comvenio menu show $MENU --json
 | Zutaten-Liste/Create | GET/POST | `/ingredients/club/{club_id}/ingredients` · `/ingredients/club/{club_id}` | serverseitige Supply-RBAC |
 | Zutat Detail/Update/Delete | GET/PUT/DELETE | `/ingredients/{id}` | serverseitige Supply-RBAC |
 | Kategorienbaum | GET | `/ingredient-categories/by-club/{club_id}/tree` | serverseitige Supply-RBAC |
-| Kategorie CRUD | POST/GET/PUT/DELETE | `/ingredient-categories/[{id}]` | serverseitige Supply-RBAC; Create-Blocker beachten |
-| Einkaufsliste CRUD | POST/GET/PUT/DELETE | `/shopping/club/{club_id}/lists[/{id}]` | serverseitige Supply-RBAC; Router-Blocker beachten |
+| Kategorie CRUD | POST/GET/PUT/DELETE | `/ingredient-categories/[{id}]` | serverseitige Supply-RBAC |
+| Einkaufslisten Create/List/Update/Delete | POST/GET/PUT/DELETE | `/shopping/club/{club_id}/lists[/{id}]` | serverseitige Supply-RBAC |
+| Einkaufsliste Detail | GET | `/shopping/lists/{id}` | serverseitige Supply-RBAC |
 | Einkaufsposition CRUD | POST/PUT/DELETE | `/shopping/club/{club_id}/lists/{id}/items` · `/shopping/club/{club_id}/items/{id}` | serverseitige Supply-RBAC |
 | Liste aus Rezept/Karte | POST | `/shopping/club/{club_id}/generate-from-recipe/{id}` · `generate-from-menu/{id}` | serverseitige Supply-RBAC |
 | Karte anlegen | POST | `/menu/club/{club_id}/menus` | `require_menu_create` |

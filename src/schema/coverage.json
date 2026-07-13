@@ -320,7 +320,7 @@
     },
     {
       "id": "ingredient-category",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "roots",
@@ -334,9 +334,7 @@
         "unassign",
         "init"
       ],
-      "gaps": [
-        "Der Backend-Create-Vertrag greift aktuell auf club_id zu, obwohl IngredientCategoryCreate das Feld nicht deklariert; das CLI sendet club_id korrekt mit, aber create benötigt eine Backend-Korrektur."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
         "Interne Service-to-Service-Nutzung ist keine Club-Admin-Action."
       ],
@@ -350,7 +348,7 @@
     },
     {
       "id": "shopping",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "active",
@@ -368,9 +366,7 @@
         "generate-from-recipe",
         "generate-from-menu"
       ],
-      "gaps": [
-        "shopping.py enthält vor GET /lists/{id} einen nackten @router.get-Decorator; dieser Backend-Codefehler gefährdet Router-Import und Endpoint-Verfügbarkeit, obwohl die CLI-Actions implementiert sind."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
         "Interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."
       ],
@@ -686,12 +682,13 @@
     },
     {
       "id": "sponsor",
-      "status": "core-partial",
+      "status": "covered",
       "actions": [
         "list",
         "show",
         "add",
         "update",
+        "delete",
         "logo",
         "product-list",
         "product-add",
@@ -699,6 +696,8 @@
         "product-delete",
         "contract-list",
         "contract-add",
+        "contract-update",
+        "contract-delete",
         "assignment-list",
         "assign",
         "assignment-update",
@@ -710,9 +709,7 @@
         "responsible-update",
         "responsible-remove"
       ],
-      "gaps": [
-        "Der marketing-service stellt für Advertiser kein DELETE und für bestehende Vertragsversionen nur GET/POST, aber kein PATCH/DELETE bereit; daher kann das CLI diese Mutationen nicht abbilden."
-      ],
+      "gaps": [],
       "intentional_exclusions": [
         "Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings."
       ],

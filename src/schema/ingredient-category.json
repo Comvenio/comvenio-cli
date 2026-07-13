@@ -22,6 +22,7 @@
     "category_type": ["main", "food_type", "meat_type", "dietary", "origin", "custom"]
   },
   "create_required_fields": ["name", "category_type"],
+  "create_implicit_fields": ["club_id (aus --club oder dem Login-State)"],
   "create_optional_fields": [
     "description",
     "parent_id",
@@ -46,7 +47,7 @@
     "delete ist standardmäßig ein Soft-Delete; --hard fordert den Hard-Delete an.",
     "init ist nur für Clubs ohne bestehende Kategorien vorgesehen und antwortet sonst mit 409.",
     "RBAC wird ausschließlich serverseitig geprüft.",
-    "Bekannter Backend-Vertragsfehler auf main: POST /ingredient-categories/ greift auf category_in.club_id zu, obwohl IngredientCategoryCreate dieses Feld nicht deklariert. Das CLI sendet club_id mit; der Backend-Vertrag muss korrigiert werden, damit create produktiv funktioniert."
+    "POST /ingredient-categories/ akzeptiert club_id im Body; das CLI setzt den aktiven Club automatisch."
   ],
   "excluded_routes": ["Interne x-internal-api-key-Nutzung"]
 }

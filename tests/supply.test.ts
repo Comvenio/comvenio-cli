@@ -191,7 +191,7 @@ describe("supply machine-readable schemas", () => {
   test("publishes command, enum and exclusion contracts", () => {
     expect(schema("ingredient").enums.unit).toContain("pinch");
     expect(schema("ingredient-category").commands).toContain("assign");
-    expect(schema("ingredient-category").notes.join(" ")).toContain("Backend-Vertragsfehler");
+    expect(schema("ingredient-category").notes.join(" ")).toContain("akzeptiert club_id im Body");
     expect(schema("shopping").commands.generate).toEqual(["generate-from-recipe", "generate-from-menu"]);
     expect(schema("shopping").excluded_routes).toContain("Interne Service-Routen");
   });

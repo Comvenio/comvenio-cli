@@ -34,8 +34,8 @@ comvenio <command> ... --json
 | `task` | Aufgaben, Contexts, Zuweisungen, Notizen und Checklisten | [`aufgaben.md`](aufgaben.md) |
 | `recipe` | Rezepte vollständig verwalten | [`speisekarten.md`](speisekarten.md) |
 | `ingredient` | Club-Zutaten lesen und verwalten | [`speisekarten.md`](speisekarten.md) |
-| `ingredient-category` | Kategorienbaum und Zutaten-Zuordnungen; Backend-Blocker beachten | [`speisekarten.md`](speisekarten.md) |
-| `shopping` | Einkaufslisten, Positionen und Generierung aus Rezept/Karte; Backend-Blocker beachten | [`speisekarten.md`](speisekarten.md) |
+| `ingredient-category` | Kategorienbaum und Zutaten-Zuordnungen | [`speisekarten.md`](speisekarten.md) |
+| `shopping` | Einkaufslisten, Positionen und Generierung aus Rezept/Karte | [`speisekarten.md`](speisekarten.md) |
 | `template` | globale Gerichts- und Zutatenvorlagen durchsuchen | [`speisekarten.md`](speisekarten.md) |
 | `menu` | Karten, Einträge, CSS, deklaratives Apply und Export | [`speisekarten.md`](speisekarten.md) |
 | `meeting` | Sitzungsserien, Protokolle, Agenda, Teilnehmer, Abstimmungen, Beschlüsse und Einträge | [`meetings.md`](meetings.md) |

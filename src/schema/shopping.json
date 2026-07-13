@@ -61,7 +61,7 @@
     "Listen- und Positions-CRUD lesen komplexe Bodies aus --file.",
     "purchased sendet den booleschen Status als Query-Parameter, wie vom Backend verlangt.",
     "RBAC wird ausschließlich serverseitig geprüft.",
-    "Bekannter Backend-Source-Fehler: Direkt vor GET /shopping/lists/{shopping_list_id} steht ein nackter @router.get-Decorator. Der Router-Import muss serverseitig geprüft und korrigiert werden."
+    "GET /shopping/lists/{shopping_list_id} ist als eigenständige Detailroute registriert."
   ],
   "excluded_routes": ["Interne Service-Routen", "Public-Routen", "Globale Sync-Routen"]
 }

@@ -119,14 +119,16 @@ describe("cross-domain schema coverage", () => {
     expect(schema("task").commands.checklist).toContain("reorder");
   });
 
-  test("keeps coverage status aligned with implemented and backend-blocked workflows", () => {
+  test("keeps coverage status aligned with implemented workflows", () => {
     const domains = Object.fromEntries(schema("coverage").domains.map((domain: any) => [domain.id, domain]));
 
     expect(domains.club.status).toBe("covered");
     expect(domains.member.status).toBe("covered");
     expect(domains.task.status).toBe("covered");
     expect(domains.tournament.status).toBe("covered");
-    expect(domains.sponsor.status).toBe("core-partial");
-    expect(domains.sponsor.gaps[0]).toContain("marketing-service");
+    expect(domains["ingredient-category"].status).toBe("covered");
+    expect(domains.shopping.status).toBe("covered");
+    expect(domains.sponsor.status).toBe("covered");
+    expect(domains.sponsor.gaps).toEqual([]);
   });
 });

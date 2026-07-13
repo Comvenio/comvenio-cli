@@ -57,7 +57,7 @@ type ResponsibleRead = {
   [key: string]: unknown;
 };
 
-type Opts = {
+export type SponsorCommandOpts = {
   json?: boolean;
   club?: string;
   departmentId?: string;
@@ -94,11 +94,17 @@ type Opts = {
   validUntil?: string;
   supersededValidUntil?: string;
   supersedesVersion?: string;
+  contractVersion?: string;
   member?: string;
   role?: string;
   primary?: boolean;
   notPrimary?: boolean;
 };
+
+export const sponsorDeletePath = (sponsorId: string): string => `/advertisers/${sponsorId}`;
+
+export const contractVersionPath = (productId: string, versionId: string): string =>
+  `/club-sponsorship-products/${productId}/contract-versions/${versionId}`;
 
 const cents = (value?: string): number | undefined =>
   value == null || value === "" ? undefined : Math.round(Number(value));
@@ -111,6 +117,25 @@ function optionalBoolean(value: string | undefined, flag: string): boolean | und
 }
 const intValue = (value?: string): number | undefined =>
   value == null || value === "" ? undefined : Number.parseInt(value, 10);
+
+export function buildContractVersionUpdateBody(
+  opts: SponsorCommandOpts,
+  contractFileId?: string,
+): Record<string, unknown> {
+  return prune({
+    label: opts.label,
+    conditions: opts.conditions,
+    unit_price_cents: cents(opts.priceCents),
+    currency: opts.currency,
+    billing_interval: opts.billingInterval,
+    duration_months: intValue(opts.durationMonths),
+    contract_file_id: contractFileId,
+    valid_from: opts.validFrom,
+    valid_until: opts.validUntil,
+    supersedes_version_id: opts.supersedesVersion,
+    note: opts.note,
+  });
+}
 
 function qs(params: Record<string, string | boolean | undefined>): string {
   const out = new URLSearchParams();
@@ -141,7 +166,7 @@ export function registerSponsorCommands(cli: CAC): void {
   cli
     .command(
       "sponsor <action> [id]",
-      "Lokale Sponsoren: list|add|update|logo | product-* | assign* | contract-* | doc-* | responsible-*",
+      "Lokale Sponsoren: list|add|update|delete|logo | product-* | assign* | contract-* | doc-* | responsible-*",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--department-id <id>", "club_department_id fuer lokales Sponsoring")
@@ -174,16 +199,17 @@ export function registerSponsorCommands(cli: CAC): void {
     .option("--starts-at <iso>", "Startzeitpunkt ISO")
     .option("--ends-at <iso>", "Endzeitpunkt ISO")
     .option("--note <text>", "Notiz")
-    .option("--valid-from <iso>", "contract-add: neue Konditionen ab")
-    .option("--valid-until <iso>", "contract-add: gueltig bis")
+    .option("--valid-from <iso>", "contract-add/update: neue Konditionen ab")
+    .option("--valid-until <iso>", "contract-add/update: gueltig bis")
     .option("--superseded-valid-until <iso>", "contract-add: alten Vertrag gueltig bis setzen")
-    .option("--supersedes-version <id>", "contract-add: explizit abgeloeste Version")
+    .option("--supersedes-version <id>", "contract-add/update: explizit abgeloeste Version")
+    .option("--contract-version <id>", "contract-update/delete: Vertragsversions-ID")
     .option("--member <id>", "Member-ID fuer responsible-*")
     .option("--role <v>", "Rolle des Verantwortlichen")
     .option("--primary", "responsible-add/update: Hauptverantwortlicher")
     .option("--not-primary", "responsible-update: Hauptverantwortlich explizit entfernen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (action: string, id: string | undefined, opts: Opts) => {
+    .action(async (action: string, id: string | undefined, opts: SponsorCommandOpts) => {
       const state = loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
@@ -276,6 +302,12 @@ export function registerSponsorCommands(cli: CAC): void {
           if (Object.keys(body).length === 0) throw new Error("sponsor update braucht mindestens ein Feld.");
           const sponsor = await client.patch<SponsorRead>("marketing", `/advertisers/${id}`, body);
           output(sponsor, opts.json, () => `Sponsor aktualisiert: ${sponsor.company_name ?? id}`);
+          break;
+        }
+        case "delete": {
+          if (!id) throw new Error("sponsor delete <sponsor-id> benoetigt eine ID.");
+          await client.del("marketing", sponsorDeletePath(id));
+          output({ deleted: id }, opts.json, () => `Sponsor geloescht: ${id}`);
           break;
         }
         case "logo": {
@@ -462,6 +494,54 @@ export function registerSponsorCommands(cli: CAC): void {
           );
           break;
         }
+        case "contract-update": {
+          if (!id) throw new Error("sponsor contract-update <product-id> benoetigt eine Product-ID.");
+          if (!opts.contractVersion) {
+            throw new Error("contract-update benoetigt --contract-version <version-id>.");
+          }
+
+          let uploaded: { file_id: string } | undefined;
+          if (opts.file) {
+            const product = await findProduct(client, clubId, id);
+            const departmentId = opts.departmentId ?? String(product?.club_department_id ?? "");
+            if (!departmentId) throw new Error("Product-Department nicht ermittelbar; --department-id setzen.");
+            uploaded = await uploadClubFile({
+              client,
+              clubId,
+              departmentId,
+              path: opts.file,
+              contextType: "sponsorship_product",
+              contextId: id,
+              label: opts.label ?? "contract_version",
+              isPublic: false,
+            });
+          }
+
+          const body = buildContractVersionUpdateBody(opts, uploaded?.file_id);
+          if (Object.keys(body).length === 0) {
+            throw new Error("contract-update braucht mindestens ein Feld oder --file.");
+          }
+          const version = await client.patch<Record<string, unknown>>(
+            "marketing",
+            contractVersionPath(id, opts.contractVersion),
+            body,
+          );
+          output({ version, file: uploaded ?? null }, opts.json, () =>
+            `Vertragsversion aktualisiert: ${version.id ?? opts.contractVersion}`,
+          );
+          break;
+        }
+        case "contract-delete": {
+          if (!id) throw new Error("sponsor contract-delete <product-id> benoetigt eine Product-ID.");
+          if (!opts.contractVersion) {
+            throw new Error("contract-delete benoetigt --contract-version <version-id>.");
+          }
+          await client.del("marketing", contractVersionPath(id, opts.contractVersion));
+          output({ deleted: opts.contractVersion, product_id: id }, opts.json, () =>
+            `Vertragsversion geloescht: ${opts.contractVersion}`,
+          );
+          break;
+        }
         case "assignment-list": {
           const assignments = await client.get<AssignmentRead[]>(
             "marketing",
@@ -642,7 +722,7 @@ export function registerSponsorCommands(cli: CAC): void {
         }
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: list, show, add, update, logo, product-list, product-add, product-update, product-delete, contract-list, contract-add, assignment-list, assign, assignment-update, cancel, doc-list, doc-upload, responsible-list, responsible-add, responsible-update, responsible-remove`,
+            `Unbekannte Aktion "${action}". Verfuegbar: list, show, add, update, delete, logo, product-list, product-add, product-update, product-delete, contract-list, contract-add, contract-update, contract-delete, assignment-list, assign, assignment-update, cancel, doc-list, doc-upload, responsible-list, responsible-add, responsible-update, responsible-remove`,
           );
       }
     });

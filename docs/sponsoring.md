@@ -20,9 +20,9 @@ Lokale Sponsoren, Produkte und Zuordnungen sind immer einem Club und meist einer
 
 | Bereich | Actions |
 |---|---|
-| Sponsor | `list`, `show`, `add`, `update`, `logo` |
+| Sponsor | `list`, `show`, `add`, `update`, `delete`, `logo` |
 | Angebot/Produkt | `product-list`, `product-add`, `product-update`, `product-delete` |
-| Vertragsversion | `contract-list`, `contract-add` |
+| Vertragsversion | `contract-list`, `contract-add`, `contract-update`, `contract-delete` |
 | Sponsor-Zuordnung | `assignment-list`, `assign`, `assignment-update`, `cancel` |
 | Dokumente | `doc-list`, `doc-upload` |
 | Verantwortliche | `responsible-list`, `responsible-add`, `responsible-update`, `responsible-remove` |
@@ -50,6 +50,7 @@ comvenio sponsor list --department-id <department-id> --json
 comvenio sponsor show <sponsor-id> --json
 comvenio sponsor update <sponsor-id> --contact-person "Max Muster" --json
 comvenio sponsor logo <sponsor-id> --file ./neues-logo.svg --json
+comvenio sponsor delete <sponsor-id> --json
 ```
 
 ## Sponsoring-Produkt
@@ -96,6 +97,14 @@ comvenio sponsor contract-add <product-id> \
   --json
 
 comvenio sponsor contract-list <product-id> --json
+
+comvenio sponsor contract-update <product-id> \
+  --contract-version <version-id> \
+  --price-cents 185000 \
+  --valid-until 2027-12-31T23:59:59+01:00 \
+  --json
+
+comvenio sponsor contract-delete <product-id> --contract-version <version-id> --json
 ```
 
 Optionale Versionsverkettung:
@@ -106,6 +115,12 @@ Optionale Versionsverkettung:
 - `--note <text>` speichert eine interne Notiz.
 
 Vertragsdateien sind privat.
+
+`contract-update` ändert nur die angegebenen Felder. Mit `--file` lädt das CLI zuerst eine neue
+private Vertragsdatei hoch und setzt deren `contract_file_id` in derselben Mutation.
+`contract-delete` entfernt die Version per Soft-Delete; andere historische Versionen bleiben
+erhalten. Beide Actions benötigen neben der Product-ID explizit
+`--contract-version <version-id>`.
 
 ## Sponsor einem Produkt zuordnen
 
@@ -163,10 +178,8 @@ comvenio sponsor responsible-remove <responsible-assignment-id> --json
 - Produktverträge und unterschriebene Zuordnungsdokumente sind privat.
 - Uploads laufen über den gemeinsamen DataShare-Mechanismus; Details stehen in [`dateien.md`](dateien.md).
 
-## Belegte Backend-Grenzen
+## Scope-Grenze
 
-Der `marketing-service` stellt für Advertiser keine `DELETE`-Route bereit. Für bestehende
-Vertragsversionen eines Sponsoring-Produkts existieren nur `GET` und `POST`, aber keine
-`PATCH`-/`DELETE`-Routen. Das CLI kann diese Mutationen daher nicht seriös anbieten; sie sind als
-Backend-Lücken in [`coverage.md`](coverage.md) dokumentiert. Globaler Anzeigenmarktplatz und
-Plattform-Abrechnung sind bewusst kein lokales Club-Sponsoring.
+Globaler Anzeigenmarktplatz und Plattform-Abrechnung sind bewusst kein lokales Club-Sponsoring.
+Die lokale Sponsor-, Produkt-, Vertragsversions-, Zuordnungs- und Verantwortlichenverwaltung ist
+vollständig über die oben dokumentierten Actions erreichbar.

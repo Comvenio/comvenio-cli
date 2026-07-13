@@ -12,6 +12,7 @@
       "sponsor list --department-id <id>",
       "sponsor add --department-id <id> --name <name> --email <mail> [--file logo.png]",
       "sponsor update <sponsor-id> [--name ... --email ... --department-id ...]",
+      "sponsor delete <sponsor-id>",
       "sponsor logo <sponsor-id> --file logo.png"
     ],
     "products": [
@@ -22,7 +23,9 @@
     ],
     "contracts": [
       "sponsor contract-list <product-id>",
-      "sponsor contract-add <product-id> --file vertrag.pdf --valid-from <iso> [--superseded-valid-until <iso>]"
+      "sponsor contract-add <product-id> --file vertrag.pdf --valid-from <iso> [--superseded-valid-until <iso>]",
+      "sponsor contract-update <product-id> --contract-version <version-id> [--price-cents ... --valid-until ... --file vertrag.pdf]",
+      "sponsor contract-delete <product-id> --contract-version <version-id>"
     ],
     "assignments": [
       "sponsor assignment-list --department-id <id>",
@@ -53,6 +56,10 @@
     "ClubSponsorshipProductContractVersionCreate": {
       "required": ["contract_file_id", "valid_from"],
       "optional": ["label", "conditions", "unit_price_cents", "currency", "billing_interval", "duration_months", "valid_until", "supersedes_version_id", "superseded_valid_until", "note"]
+    },
+    "ClubSponsorshipProductContractVersionUpdate": {
+      "required": [],
+      "optional": ["label", "conditions", "unit_price_cents", "currency", "billing_interval", "duration_months", "contract_file_id", "valid_from", "valid_until", "supersedes_version_id", "note"]
     },
     "SponsorshipAssignmentCreate": {
       "required": ["club_id", "club_department_id", "advertiser_id", "sponsorship_product_id"],

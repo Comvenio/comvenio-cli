@@ -28,8 +28,8 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `task` | `covered` | list<br>show<br>show --subtasks<br>show --chain<br>create<br>bulk<br>update<br>assign<br>done<br>delete<br>context list|show|create|update|delete<br>assignment list|show|update|delete<br>note list|add|update|delete<br>checklist list|add|update|toggle|delete|reorder | Keine bekannte Kernlücke. |
 | `recipe` | `covered` | create<br>from-template<br>list<br>show<br>update<br>delete | Keine bekannte Kernlücke. |
 | `ingredient` | `covered` | list<br>show<br>create<br>update<br>delete | Keine bekannte Kernlücke. |
-| `ingredient-category` | `core-partial` | list<br>roots<br>tree<br>by-ingredient<br>show<br>create<br>update<br>delete<br>assign<br>unassign<br>init | Der Backend-Create-Vertrag greift aktuell auf club_id zu, obwohl IngredientCategoryCreate das Feld nicht deklariert; das CLI sendet club_id korrekt mit, aber create benötigt eine Backend-Korrektur. |
-| `shopping` | `core-partial` | list<br>active<br>completed<br>by-context<br>by-context-type<br>show<br>create<br>update<br>delete<br>item-add<br>item-update<br>item-delete<br>purchased<br>generate-from-recipe<br>generate-from-menu | shopping.py enthält vor GET /lists/{id} einen nackten @router.get-Decorator; dieser Backend-Codefehler gefährdet Router-Import und Endpoint-Verfügbarkeit, obwohl die CLI-Actions implementiert sind. |
+| `ingredient-category` | `covered` | list<br>roots<br>tree<br>by-ingredient<br>show<br>create<br>update<br>delete<br>assign<br>unassign<br>init | Keine bekannte Kernlücke. |
+| `shopping` | `covered` | list<br>active<br>completed<br>by-context<br>by-context-type<br>show<br>create<br>update<br>delete<br>item-add<br>item-update<br>item-delete<br>purchased<br>generate-from-recipe<br>generate-from-menu | Keine bekannte Kernlücke. |
 | `template` | `covered` | dish<br>ingredient | Keine bekannte Kernlücke. |
 | `menu` | `covered` | create<br>list<br>show<br>add-item<br>update-item<br>delete-item<br>delete<br>style<br>apply<br>export | Keine bekannte Kernlücke. |
 | `meeting` | `covered` | series list|show|create|update|delete<br>protocol list|show|create|update|delete|advance|revert|updates|validation|publish<br>agenda list|show|create|update|delete|reorder|start|complete|skip|approve<br>note list|list-protocol|create|update|delete<br>participant list|add|update|remove|validate|unvalidate<br>decision create|agenda|update|cancel|option-add|options-add|promote<br>voting open|close|results|eligible|tally<br>vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract<br>resolution list|list-protocol|show|history|create|update|approve|decline|delete<br>entry list|show|show-agenda|create|update|delete<br>attachment list|add|remove | Keine bekannte Kernlücke. |
@@ -40,7 +40,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `news` | `covered` | list<br>show<br>create<br>update<br>delete<br>apply<br>preview<br>publish<br>video slideshow|result|teaser | Keine bekannte Kernlücke. |
 | `plan` | `covered` | list<br>show<br>create<br>update<br>delete<br>zone list|create|update|delete|link|unlink<br>table create|duplicate|update|delete<br>marker create|update|delete<br>guest list|add|update|delete<br>detail<br>export<br>illustrate<br>compose | Keine bekannte Kernlücke. |
 | `tournament` | `covered` | series-list<br>series-show<br>series-create<br>series-update<br>series-delete<br>execution-create<br>execution-link<br>list<br>show<br>update<br>delete<br>status<br>participants<br>mannschaft<br>participant<br>participant-withdraw<br>participant-reinstate<br>participant-remove<br>start<br>matches<br>matches-clear<br>reset<br>redraw<br>standings<br>preview<br>draw<br>draw-confirm<br>schedule-generate<br>match-schedule<br>match-delete<br>match-result<br>deadline | Keine bekannte Kernlücke. |
-| `sponsor` | `core-partial` | list<br>show<br>add<br>update<br>logo<br>product-list<br>product-add<br>product-update<br>product-delete<br>contract-list<br>contract-add<br>assignment-list<br>assign<br>assignment-update<br>cancel<br>doc-list<br>doc-upload<br>responsible-list<br>responsible-add<br>responsible-update<br>responsible-remove | Der marketing-service stellt für Advertiser kein DELETE und für bestehende Vertragsversionen nur GET/POST, aber kein PATCH/DELETE bereit; daher kann das CLI diese Mutationen nicht abbilden. |
+| `sponsor` | `covered` | list<br>show<br>add<br>update<br>delete<br>logo<br>product-list<br>product-add<br>product-update<br>product-delete<br>contract-list<br>contract-add<br>contract-update<br>contract-delete<br>assignment-list<br>assign<br>assignment-update<br>cancel<br>doc-list<br>doc-upload<br>responsible-list<br>responsible-add<br>responsible-update<br>responsible-remove | Keine bekannte Kernlücke. |
 
 ## Verbindliche Nutzungsregeln
 
@@ -183,10 +183,10 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## ingredient-category
 
-- Status: `core-partial`
+- Status: `covered`
 - Actions: `list`, `roots`, `tree`, `by-ingredient`, `show`, `create`, `update`, `delete`, `assign`, `unassign`, `init`
 - Wichtige Lücken:
-  - Der Backend-Create-Vertrag greift aktuell auf club_id zu, obwohl IngredientCategoryCreate das Feld nicht deklariert; das CLI sendet club_id korrekt mit, aber create benötigt eine Backend-Korrektur.
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:
   - Interne Service-to-Service-Nutzung ist keine Club-Admin-Action.
 - Geprüfte Quellen: `src/commands/ingredient-category.ts`, `src/schema/ingredient-category.json`
@@ -194,10 +194,10 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## shopping
 
-- Status: `core-partial`
+- Status: `covered`
 - Actions: `list`, `active`, `completed`, `by-context`, `by-context-type`, `show`, `create`, `update`, `delete`, `item-add`, `item-update`, `item-delete`, `purchased`, `generate-from-recipe`, `generate-from-menu`
 - Wichtige Lücken:
-  - shopping.py enthält vor GET /lists/{id} einen nackten @router.get-Decorator; dieser Backend-Codefehler gefährdet Router-Import und Endpoint-Verfügbarkeit, obwohl die CLI-Actions implementiert sind.
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:
   - Interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions.
 - Geprüfte Quellen: `src/commands/shopping.ts`, `src/schema/shopping.json`
@@ -319,10 +319,10 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## sponsor
 
-- Status: `core-partial`
-- Actions: `list`, `show`, `add`, `update`, `logo`, `product-list`, `product-add`, `product-update`, `product-delete`, `contract-list`, `contract-add`, `assignment-list`, `assign`, `assignment-update`, `cancel`, `doc-list`, `doc-upload`, `responsible-list`, `responsible-add`, `responsible-update`, `responsible-remove`
+- Status: `covered`
+- Actions: `list`, `show`, `add`, `update`, `delete`, `logo`, `product-list`, `product-add`, `product-update`, `product-delete`, `contract-list`, `contract-add`, `contract-update`, `contract-delete`, `assignment-list`, `assign`, `assignment-update`, `cancel`, `doc-list`, `doc-upload`, `responsible-list`, `responsible-add`, `responsible-update`, `responsible-remove`
 - Wichtige Lücken:
-  - Der marketing-service stellt für Advertiser kein DELETE und für bestehende Vertragsversionen nur GET/POST, aber kein PATCH/DELETE bereit; daher kann das CLI diese Mutationen nicht abbilden.
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:
   - Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings.
 - Geprüfte Quellen: `src/commands/sponsor.ts`, `src/util/upload.ts`
