@@ -514,20 +514,26 @@ function genMenu(): unknown {
 // ─── Domain: event ───────────────────────────────────────────────────────────
 
 const EVENT_MODEL = "Backend/Microservice-Backend/event-service/app/models/event.py";
+const EVENT_SERIES_MODEL = "Backend/Microservice-Backend/event-service/app/models/event_series.py";
 
 function genEvent(): unknown {
   const src = readSource(EVENT_MODEL);
+  const seriesSrc = readSource(EVENT_SERIES_MODEL);
   return {
     domain: "event",
     generated: true,
-    source: [slash(EVENT_MODEL)],
-    note: "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py).",
+    source: [slash(EVENT_MODEL), slash(EVENT_SERIES_MODEL)],
+    note: "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py, event_series.py).",
     enums: {
       event_type: parsePyEnum(src, "EventType"),
       visibility_scope: parsePyEnum(src, "VisibilityScope"),
       organizer_type: parsePyEnum(src, "OrganizerType"),
       status: parsePyEnum(src, "EventStatus"),
       complexity: parsePyEnum(src, "EventComplexity"),
+      series_type: parsePyEnum(seriesSrc, "SeriesType"),
+      materialization_mode: parsePyEnum(seriesSrc, "MaterializationMode"),
+      recurrence_frequency: ["daily", "weekly", "monthly", "yearly"],
+      recurrence_weekday: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"],
     },
     create_required_fields: [
       "title",
@@ -544,13 +550,54 @@ function genEvent(): unknown {
       "location",
       "status",
       "organizer_member_id",
-      "complexity",
+      "event_complexity",
+      "is_template",
     ],
+    templates: {
+      commands: ["list", "create", "clone", "instantiate"],
+      create: "event template create nutzt EventCreate mit is_template=true",
+      instantiate_required_fields: ["start_time", "end_time"],
+      instantiate_copy_defaults: {
+        copy_tags: true,
+        copy_areas: true,
+        copy_tasks: true,
+        copy_task_assignments: false,
+      },
+    },
+    series: {
+      commands: [
+        "list",
+        "show",
+        "create",
+        "materialize",
+        "next",
+        "promote-recurring",
+        "promote-yearly",
+      ],
+      create_required_fields: ["template_event_id", "dtstart"],
+      defaults: {
+        recurring: { frequency: "weekly", materialization_mode: "AUTO" },
+        yearly: { frequency: "yearly", materialization_mode: "MANUAL" },
+        timezone: "Europe/Berlin",
+        duration_minutes: 120,
+      },
+      friendly_flags: [
+        "frequency",
+        "interval",
+        "weekdays",
+        "by_month",
+        "by_month_day",
+        "until",
+        "count",
+      ],
+      materialize_required_fields: ["window_start", "window_end"],
+    },
     notes: [
       "Es gibt KEINEN 'published'-Status — publish = PATCH status=confirmed.",
       "list/show haben keinen RBAC-Key (nur Visibility-Filter).",
       "multi_day-Events muessen visibility_scope=public behalten.",
       "EventArea anlegen via POST /events/areas/ mit event_id + club_id + name.",
+      "Wiederkehrende Events: zuerst Vorlage, dann Serie, danach ein Zeitfenster idempotent materialisieren.",
     ],
   };
 }

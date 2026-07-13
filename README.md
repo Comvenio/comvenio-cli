@@ -54,6 +54,39 @@ comvenio logout
 
 `--gateway <url>` überschreibt die Basis direkt.
 
+## Veranstaltungen (`event`)
+
+Veranstaltungen können direkt angelegt oder als wiederverwendbare Vorlage mit
+einer Terminserie geplant werden. Jeder Befehl unterstützt `--json`.
+
+```bash
+# Eine Vorlage direkt erstellen
+comvenio event template create --title "Darttraining" --event-type training \
+  --visibility-scope member --organizer-type member --department-id <dept-id> --json
+
+# Wöchentliche Terminserie aus der Vorlage anlegen
+comvenio event series create <template-id> \
+  --start-time 2026-07-15T19:00:00+02:00 --frequency weekly --weekdays WE \
+  --duration-minutes 120 --json
+
+# Konkrete Termine für ein Zeitfenster erzeugen (idempotent)
+comvenio event series materialize <series-id> \
+  --start 2026-07-15T00:00:00+02:00 --end 2027-01-15T00:00:00+01:00 --json
+
+# Vorhandene Events weiterverwenden
+comvenio event template clone <event-id> --json
+comvenio event series promote-recurring <event-id> --frequency weekly --weekdays WE --json
+comvenio event series promote-yearly <event-id> --json
+
+# Einzeltermin aus einer Vorlage oder nächsten Jahrestermin erzeugen
+comvenio event template instantiate <template-id> --start-time <iso> --end-time <iso> --json
+comvenio event series next <series-id> --start-time <iso> --json
+```
+
+`event template list` zeigt Event-Vorlagen, `event series list|show` die vorhandenen
+Terminserien. Für komplexe Regeln kann `--rrule` statt `--frequency`, `--weekdays`,
+`--interval`, `--count` und `--until` verwendet werden.
+
 ## Geländeplan (`plan`)
 
 Geländeplan eines Events lesen + agent-tauglich planen (alle Bodies ohne `club_id` —

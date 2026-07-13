@@ -72,3 +72,14 @@ describe("design schema", () => {
     expect(design.source).toContain("AI-docs/concepts/club/homepage-generator/12-public-header-action-contract.md");
   });
 });
+
+describe("event schema", () => {
+  const event = schema("event");
+
+  test("publishes template and recurrence contracts", () => {
+    expect(event.enums.series_type).toEqual(["RECURRING", "YEARLY_TEMPLATE"]);
+    expect(event.templates.commands).toContain("instantiate");
+    expect(event.series.commands).toContain("materialize");
+    expect(event.series.defaults.recurring.frequency).toBe("weekly");
+  });
+});

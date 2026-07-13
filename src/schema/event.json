@@ -2,9 +2,10 @@
   "domain": "event",
   "generated": true,
   "source": [
-    "Backend/Microservice-Backend/event-service/app/models/event.py"
+    "Backend/Microservice-Backend/event-service/app/models/event.py",
+    "Backend/Microservice-Backend/event-service/app/models/event_series.py"
   ],
-  "note": "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py).",
+  "note": "Enums direkt aus den event-service SQLAlchemy-Enum-Klassen (event.py, event_series.py).",
   "enums": {
     "event_type": [
       "party",
@@ -35,6 +36,29 @@
     "complexity": [
       "simple",
       "multi_day"
+    ],
+    "series_type": [
+      "RECURRING",
+      "YEARLY_TEMPLATE"
+    ],
+    "materialization_mode": [
+      "AUTO",
+      "MANUAL"
+    ],
+    "recurrence_frequency": [
+      "daily",
+      "weekly",
+      "monthly",
+      "yearly"
+    ],
+    "recurrence_weekday": [
+      "MO",
+      "TU",
+      "WE",
+      "TH",
+      "FR",
+      "SA",
+      "SU"
     ]
   },
   "create_required_fields": [
@@ -52,12 +76,73 @@
     "location",
     "status",
     "organizer_member_id",
-    "complexity"
+    "event_complexity",
+    "is_template"
   ],
+  "templates": {
+    "commands": [
+      "list",
+      "create",
+      "clone",
+      "instantiate"
+    ],
+    "create": "event template create nutzt EventCreate mit is_template=true",
+    "instantiate_required_fields": [
+      "start_time",
+      "end_time"
+    ],
+    "instantiate_copy_defaults": {
+      "copy_tags": true,
+      "copy_areas": true,
+      "copy_tasks": true,
+      "copy_task_assignments": false
+    }
+  },
+  "series": {
+    "commands": [
+      "list",
+      "show",
+      "create",
+      "materialize",
+      "next",
+      "promote-recurring",
+      "promote-yearly"
+    ],
+    "create_required_fields": [
+      "template_event_id",
+      "dtstart"
+    ],
+    "defaults": {
+      "recurring": {
+        "frequency": "weekly",
+        "materialization_mode": "AUTO"
+      },
+      "yearly": {
+        "frequency": "yearly",
+        "materialization_mode": "MANUAL"
+      },
+      "timezone": "Europe/Berlin",
+      "duration_minutes": 120
+    },
+    "friendly_flags": [
+      "frequency",
+      "interval",
+      "weekdays",
+      "by_month",
+      "by_month_day",
+      "until",
+      "count"
+    ],
+    "materialize_required_fields": [
+      "window_start",
+      "window_end"
+    ]
+  },
   "notes": [
     "Es gibt KEINEN 'published'-Status — publish = PATCH status=confirmed.",
     "list/show haben keinen RBAC-Key (nur Visibility-Filter).",
     "multi_day-Events muessen visibility_scope=public behalten.",
-    "EventArea anlegen via POST /events/areas/ mit event_id + club_id + name."
+    "EventArea anlegen via POST /events/areas/ mit event_id + club_id + name.",
+    "Wiederkehrende Events: zuerst Vorlage, dann Serie, danach ein Zeitfenster idempotent materialisieren."
   ]
 }

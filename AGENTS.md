@@ -74,7 +74,7 @@ comvenio club info                    # Vereinsdaten
 | club     | `comvenio club info` · `comvenio club design` (Theme/Farben/Public-Template → design_settings) |
 | member   | `comvenio member list\|show\|add\|update\|remove`             |
 | team     | `comvenio team list` · `comvenio team member list\|add\|remove <team-id>` |
-| event    | `comvenio event list\|show\|create\|update\|publish` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` (Speisekarte je Event/Bereich — EventMenu, supply-service) |
+| event    | `comvenio event list\|show\|create\|update\|publish` · `event template list\|create\|clone\|instantiate` · `event series list\|show\|create\|materialize\|next\|promote-recurring\|promote-yearly` · `event area list\|add <event-id>` · `event menu list\|assign\|unassign` |
 | plan     | `comvenio plan list\|show\|create` · `plan zone create\|list\|link\|unlink` · `plan table create\|duplicate` · `plan marker create` · `plan detail` (Geländeplan; `--inherit` Vererbung, `--shape polyline --points --arrow` Festumzug, `--size`/`--club` Marker) · `plan export` (PNG/PDF) · `plan illustrate` + `plan compose` (illustrierter Lageplan, D-36) |
 | sponsor  | `comvenio sponsor list\|add\|update\|logo` · `sponsor product-list\|product-add` · `sponsor assign` · `sponsor contract-add` · `sponsor doc-upload` (lokales Club-Sponsoring, marketing-service + content-service) |
 | booking  | `comvenio booking list\|show\|approve\|reject`                |
@@ -116,6 +116,11 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   **Child-Event pro Tag** (`parent_event_id` zeigt aufs Parent, `child_events[]` listet die Tage).
   Jeder Tag hat eine **eigene Galerie** (`data list --context event --context-id <tag-event>`).
   Finden: `comvenio event list --month YYYY-MM --json` → Feld `child_events` / `parent_event_id`.
+  **Wiederkehrende Trainings:** zuerst `event template create`, dann `event series create
+  <template-id> --start-time <iso> --frequency weekly --weekdays MO,FR`; konkrete Termine werden
+  idempotent mit `event series materialize <series-id> --start <iso> --end <iso>` erzeugt.
+  **Jährliche Veranstaltungen:** `--series-type yearly` erstellt eine manuell geplante Serie;
+  `event series next <series-id> --start-time <iso>` legt den nächsten Termin an.
 - **news:** `visibility_scope` (public\|member\|department, Default member).
   **Entwurf/Veröffentlichung (WICHTIG):** `is_draft` (Default **true** → News ist nur für Admins
   sichtbar, NICHT öffentlich). Veröffentlichen = `is_draft=false` + `published_at`. Im CLI:
@@ -197,6 +202,17 @@ comvenio event create --title "Sommerfest" --event-type party \
   --visibility-scope public --organizer-type member --department-id <dept> --json
 comvenio event area add <event-id> --name "Bühne" --json
 comvenio event publish <event-id> --public --json
+```
+
+**1b. Darttraining als Vorlage + Terminserie**
+```bash
+TEMPLATE_ID=$(comvenio event template create --title "Darttraining" --event-type training \
+  --visibility-scope member --organizer-type member --department-id <dept> --json | jq -r .id)
+SERIES_ID=$(comvenio event series create $TEMPLATE_ID \
+  --start-time 2026-07-15T19:00:00+02:00 --frequency weekly --weekdays WE \
+  --duration-minutes 120 --json | jq -r .id)
+comvenio event series materialize $SERIES_ID \
+  --start 2026-07-15T00:00:00+02:00 --end 2027-01-15T00:00:00+01:00 --json
 ```
 
 **2. Speisekarte rezept-basiert bauen (EMPFOHLEN — echte Allergene, Wiederverwendung)**
@@ -420,7 +436,8 @@ ein fehlendes Recht ergibt 403 vom Service. Orientierung:
 |-------------------------------|--------------------------------------|
 | `member list/show`            | `view_members`                       |
 | `member add/update/remove`    | `manage_members`                     |
-| `event create`                | `create_events`                      |
+| `event create` / `event template create` / `event series create` | `create_events` |
+| `event template clone\|instantiate` / `event series materialize\|next\|promote-*` | `manage_events` |
 | `event update/publish`, `area`| `manage_events`                      |
 | `booking approve/reject`      | `confirm_object_bookings` (kein Owner-Bypass) |
 | `task create`                 | `create_tasks`                       |
