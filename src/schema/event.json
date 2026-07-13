@@ -7,6 +7,7 @@
     "Backend/Microservice-Backend/event-service/app/schemas/event_invitation.py",
     "Backend/Microservice-Backend/event-service/app/schemas/club_event_invitation.py",
     "Backend/Microservice-Backend/event-service/app/schemas/event_resource_link.py",
+    "Backend/Microservice-Backend/event-service/app/schemas/event_contact.py",
     "Backend/Microservice-Backend/event-service/app/models/event_design.py",
     "Backend/Microservice-Backend/event-service/app/schemas/external_team_sync.py"
   ],
@@ -70,6 +71,16 @@
       "object",
       "room",
       "building"
+    ],
+    "contact_priority": [
+      "normal",
+      "important",
+      "emergency"
+    ],
+    "contact_visibility": [
+      "public",
+      "members",
+      "admin"
     ],
     "design_asset_type": [
       "FLYER",
@@ -385,6 +396,23 @@
   },
   "file_payloads": {
     "convention": "Komplexe Bodies werden mit --file <payload.json> übergeben. IDs im Pfad kommen aus dem Command; club_id wird dort injiziert, wo der Vertrag eindeutig ist.",
+    "area_create": {
+      "required": [
+        "name"
+      ],
+      "optional": [
+        "description",
+        "color",
+        "is_public",
+        "public_description",
+        "area_category",
+        "opens_at",
+        "closes_at",
+        "geometry",
+        "crs_mode",
+        "is_default"
+      ]
+    },
     "area_bulk": {
       "required": [
         "event_id",
@@ -396,7 +424,9 @@
         "color",
         "is_public",
         "public_description",
-        "area_category"
+        "area_category",
+        "opens_at",
+        "closes_at"
       ]
     },
     "area_copy": {
@@ -446,6 +476,21 @@
           }
         ]
       }
+    },
+    "tag_updates": {
+      "behavior": "Die CLI lädt den bestehenden Datensatz und ergänzt die vom Backend verlangten Pflichtfelder club_id bzw. category_id."
+    },
+    "contact": {
+      "priority": [
+        "normal",
+        "important",
+        "emergency"
+      ],
+      "visibility": [
+        "public",
+        "members",
+        "admin"
+      ]
     },
     "registration": {
       "create_fields": [

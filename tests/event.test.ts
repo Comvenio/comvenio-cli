@@ -218,6 +218,62 @@ describe("event hub operations", () => {
     });
   });
 
+  test("updates a tag category with the backend's full create schema", async () => {
+    const { client, calls } = recordingClient({
+      name: "Sportart",
+      description: "Bisherige Beschreibung",
+      is_default: false,
+      club_id: "club-1",
+    });
+    await handleEventOperation({
+      action: "tag",
+      sub: "category-update",
+      id: "category-1",
+      opts: { name: "Disziplin" },
+      client,
+      clubId: "club-1",
+    });
+
+    expect(calls).toEqual([
+      { method: "GET", path: "/events/tags/category/category-1" },
+      {
+        method: "PATCH",
+        path: "/events/tags/category/category-1",
+        body: {
+          name: "Disziplin",
+          description: "Bisherige Beschreibung",
+          is_default: false,
+          club_id: "club-1",
+        },
+      },
+    ]);
+  });
+
+  test("updates a tag without losing its required category and club", async () => {
+    const { client, calls } = recordingClient({
+      name: "Darts",
+      category_id: "category-1",
+      club_id: "club-1",
+    });
+    await handleEventOperation({
+      action: "tag",
+      sub: "update",
+      id: "tag-1",
+      opts: { name: "Steeldarts" },
+      client,
+      clubId: "club-1",
+    });
+
+    expect(calls).toEqual([
+      { method: "GET", path: "/events/tags/tag-1" },
+      {
+        method: "PATCH",
+        path: "/events/tags/tag-1",
+        body: { name: "Steeldarts", category_id: "category-1", club_id: "club-1" },
+      },
+    ]);
+  });
+
   test("builds the resource usage query from safe flags", async () => {
     const { client, calls } = recordingClient([]);
     await handleEventOperation({

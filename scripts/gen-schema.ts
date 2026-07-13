@@ -518,6 +518,7 @@ const EVENT_SERIES_MODEL = "Backend/Microservice-Backend/event-service/app/model
 const EVENT_INVITATION_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/event_invitation.py";
 const EVENT_CLUB_INVITATION_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/club_event_invitation.py";
 const EVENT_RESOURCE_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/event_resource_link.py";
+const EVENT_CONTACT_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/event_contact.py";
 const EVENT_DESIGN_MODEL = "Backend/Microservice-Backend/event-service/app/models/event_design.py";
 const EVENT_EXTERNAL_SYNC_SCHEMA = "Backend/Microservice-Backend/event-service/app/schemas/external_team_sync.py";
 
@@ -527,6 +528,7 @@ function genEvent(): unknown {
   const invitationSrc = readSource(EVENT_INVITATION_SCHEMA);
   const clubInvitationSrc = readSource(EVENT_CLUB_INVITATION_SCHEMA);
   const resourceSrc = readSource(EVENT_RESOURCE_SCHEMA);
+  const contactSrc = readSource(EVENT_CONTACT_SCHEMA);
   const designSrc = readSource(EVENT_DESIGN_MODEL);
   const externalSyncSrc = readSource(EVENT_EXTERNAL_SYNC_SCHEMA);
   return {
@@ -538,6 +540,7 @@ function genEvent(): unknown {
       slash(EVENT_INVITATION_SCHEMA),
       slash(EVENT_CLUB_INVITATION_SCHEMA),
       slash(EVENT_RESOURCE_SCHEMA),
+      slash(EVENT_CONTACT_SCHEMA),
       slash(EVENT_DESIGN_MODEL),
       slash(EVENT_EXTERNAL_SYNC_SCHEMA),
     ],
@@ -554,6 +557,8 @@ function genEvent(): unknown {
       club_invitation_type: parsePyEnum(clubInvitationSrc, "ClubInvitationType"),
       club_invitation_status: parsePyEnum(clubInvitationSrc, "ClubInvitationStatus"),
       resource_target: parsePyEnum(resourceSrc, "ReservationTarget"),
+      contact_priority: parsePyEnum(contactSrc, "EventContactPriority"),
+      contact_visibility: parsePyEnum(contactSrc, "EventContactVisibility"),
       design_asset_type: parsePyEnum(designSrc, "DesignAssetType"),
       design_asset_source: parsePyEnum(designSrc, "DesignAssetSource"),
       external_sync_provider: parsePyEnum(externalSyncSrc, "ExternalSyncProvider"),
@@ -648,10 +653,13 @@ function genEvent(): unknown {
     },
     file_payloads: {
       convention: "Komplexe Bodies werden mit --file <payload.json> übergeben. IDs im Pfad kommen aus dem Command; club_id wird dort injiziert, wo der Vertrag eindeutig ist.",
-      area_bulk: { required: ["event_id", "areas"], areas_fields: ["name", "description", "color", "is_public", "public_description", "area_category"] },
+      area_create: { required: ["name"], optional: ["description", "color", "is_public", "public_description", "area_category", "opens_at", "closes_at", "geometry", "crs_mode", "is_default"] },
+      area_bulk: { required: ["event_id", "areas"], areas_fields: ["name", "description", "color", "is_public", "public_description", "area_category", "opens_at", "closes_at"] },
       area_copy: { required: ["source_area_ids", "target_event_ids"], optional: ["copy_leads", "copy_assignments", "copy_notes", "copy_program", "copy_contacts", "copy_sponsors", "copy_resources", "copy_tasks", "copy_shifts", "reuse_existing"] },
       program: { create_fields: ["club_id", "area_id", "title", "start_time", "end_time", "time_label", "description", "responsible_member_id", "image_file_id", "flyer_file_id", "reference_type", "reference_id", "reference_label", "reference_url", "sort_order"] },
       resource_bulk: { body: { targets: [{ target_type: "object|room|building", target_id: "uuid", event_area_id: "uuid|null" }] } },
+      tag_updates: { behavior: "Die CLI lädt den bestehenden Datensatz und ergänzt die vom Backend verlangten Pflichtfelder club_id bzw. category_id." },
+      contact: { priority: ["normal", "important", "emergency"], visibility: ["public", "members", "admin"] },
       registration: { create_fields: ["attendee_count", "contact_name", "contact_email", "contact_phone", "notes", "orders"], order_fields: ["menu_item_id", "quantity", "note"] },
       design_theme: { fields: ["name", "base_brief", "css_vars", "reference_image_ids", "mood_tags"] },
       external_sync: { create_fields: ["department_id", "provider", "external_club_id", "external_team_id", "age_group_filter", "home_location", "team_label", "sync_enabled"] },

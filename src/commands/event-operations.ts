@@ -264,14 +264,37 @@ async function handleTag({ sub, id, opts, client, clubId }: HandlerArgs): Promis
   if (sub === "category-list") emit(await client.get("event", `/events/tags/category/by-club/${clubId}`), opts.json, "Tag-Kategorien");
   else if (sub === "category-show") emit(await client.get("event", `/events/tags/category/${requireId(id, "event tag category-show", "category-id")}`), opts.json, "Tag-Kategorie");
   else if (sub === "category-add") emit(await client.post("event", "/events/tags/category", withClub(nameBody(), clubId)), opts.json, "Tag-Kategorie angelegt");
-  else if (sub === "category-update") emit(await client.patch("event", `/events/tags/category/${requireId(id, "event tag category-update", "category-id")}`, nameBody()), opts.json, "Tag-Kategorie aktualisiert");
+  else if (sub === "category-update") {
+    const categoryId = requireId(id, "event tag category-update", "category-id");
+    const current = await client.get<Record<string, unknown>>("event", `/events/tags/category/${categoryId}`);
+    const patch = nameBody();
+    const body = {
+      name: current.name,
+      description: current.description,
+      is_default: current.is_default,
+      ...patch,
+      club_id: clubId,
+    };
+    emit(await client.patch("event", `/events/tags/category/${categoryId}`, body), opts.json, "Tag-Kategorie aktualisiert");
+  }
   else if (sub === "category-delete") {
     const categoryId = requireId(id, "event tag category-delete", "category-id");
     await removed(client, `/events/tags/category/${categoryId}`, categoryId, opts, "Tag-Kategorie");
   } else if (sub === "list") emit(await client.get("event", opts.categoryId ? `/events/tags/by-club/${clubId}/by-category/${opts.categoryId}` : `/events/tags/by-club/${clubId}`), opts.json, "Tags");
   else if (sub === "show") emit(await client.get("event", `/events/tags/${requireId(id, "event tag show", "tag-id")}`), opts.json, "Tag");
   else if (sub === "add") emit(await client.post("event", "/events/tags/", withClub({ ...nameBody(), category_id: opts.categoryId }, clubId)), opts.json, "Tag angelegt");
-  else if (sub === "update") emit(await client.patch("event", `/events/tags/${requireId(id, "event tag update", "tag-id")}`, { ...nameBody(), ...(opts.categoryId ? { category_id: opts.categoryId } : {}) }), opts.json, "Tag aktualisiert");
+  else if (sub === "update") {
+    const tagId = requireId(id, "event tag update", "tag-id");
+    const current = await client.get<Record<string, unknown>>("event", `/events/tags/${tagId}`);
+    const patch = opts.file ? bodyFile(opts, "event tag update") : prune({ name: opts.name, category_id: opts.categoryId });
+    const body = {
+      name: current.name,
+      category_id: current.category_id,
+      ...patch,
+      club_id: clubId,
+    };
+    emit(await client.patch("event", `/events/tags/${tagId}`, body), opts.json, "Tag aktualisiert");
+  }
   else if (sub === "delete") {
     const tagId = requireId(id, "event tag delete", "tag-id");
     await removed(client, `/events/tags/${tagId}`, tagId, opts, "Tag");

@@ -615,16 +615,18 @@ export function registerEventCommands(cli: CAC): void {
           }
           if (sub === "add") {
             if (!eventId) throw new Error("event area add benoetigt eine <event-id>.");
-            if (!opts.name) throw new Error("event area add benoetigt --name <v>.");
+            const fileBody = eventFileBody(opts.file, "event area add");
             const body = prune({
+              ...fileBody,
               event_id: eventId,
               club_id: clubId,
-              name: opts.name,
-              description: opts.description,
-              color: opts.color,
-              is_public: opts.public,
-              area_category: opts.areaCategory,
+              name: opts.name ?? fileBody.name,
+              description: opts.description ?? fileBody.description,
+              color: opts.color ?? fileBody.color,
+              is_public: opts.public ?? fileBody.is_public,
+              area_category: opts.areaCategory ?? fileBody.area_category,
             });
+            if (!body.name) throw new Error("event area add benoetigt --name <v> oder name in --file.");
             const area = await client.post<EventAreaRead>("event", "/events/areas/", body);
             output(area, opts.json, () => `Bereich angelegt: ${area.name} (${area.id})`);
             return;

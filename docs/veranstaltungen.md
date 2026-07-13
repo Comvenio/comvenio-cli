@@ -110,7 +110,10 @@ Minimaler `event.json`-Vertrag:
 }
 ```
 
-Zusätzliche Event-Felder sind unter anderem `organizer_member_id`, `external_name`, `external_email`, `has_protocol_support`, `has_counter_support`, `has_purchase_support`, `actual_visitors`, `actual_revenue`, `actual_costs`, `invitation_mode` und `feature_profile`.
+Zusätzliche Create- und Update-Felder sind unter anderem `organizer_member_id`,
+`external_name`, `external_email`, `has_protocol_support`, `has_counter_support`,
+`has_purchase_support`, `invitation_mode` und `feature_profile`. Nur beim Aktualisieren
+verfügbar sind `actual_visitors`, `actual_revenue` und `actual_costs`.
 
 ### Bereiche, Helfer, Leitungen und Notizen
 
@@ -132,6 +135,11 @@ comvenio event area add <event-id> \
   --public \
   --json
 ```
+
+Für den vollständigen Area-Vertrag akzeptiert `area add` zusätzlich `--file` mit
+`public_description`, `opens_at`, `closes_at`, `geometry`, `crs_mode` und
+`is_default`. `area update <area-id> --file area-patch.json` unterstützt dieselben
+änderbaren Fachfelder; `geometry` enthält GeoJSON als JSON-Text.
 
 Mehrere Bereiche in einem Aufruf:
 
@@ -226,6 +234,8 @@ Ein vollständiger Programm-Payload kann diese Felder enthalten:
   "time_label": "Sa 18:00",
   "title": "Live-Musik",
   "description": "Band auf der Hauptbühne",
+  "icon": "music",
+  "image_url": "https://example.org/legacy-image.jpg",
   "image_file_id": "<file-id>",
   "flyer_file_id": "<file-id>",
   "reference_type": "tournament",
@@ -266,6 +276,9 @@ Kontakt anlegen:
 ```bash
 comvenio event contact add <event-id> --file contact.json --json
 ```
+
+Kontakt-Enums: `priority` ist `normal`, `important` oder `emergency`;
+`visibility` ist `public`, `members` oder `admin`.
 
 ### Ressourcen, Anhänge und Tags
 
@@ -318,6 +331,10 @@ comvenio event tag add --name "Darts" --category-id <category-id> --json
 comvenio event tag assign <event-id> --tag-id <tag-id> --json
 comvenio event tag assigned <event-id> --json
 ```
+
+Bei `tag category-update` und `tag update` lädt die CLI zuerst den bestehenden
+Datensatz und ergänzt `club_id` sowie bei Tags die erforderliche `category_id`.
+Dadurch funktionieren Teiländerungen sicher mit Flags oder einer Patch-Datei.
 
 ### Einladungen und Anmeldungen
 
