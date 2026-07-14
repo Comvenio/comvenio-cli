@@ -198,7 +198,7 @@ export function registerTournamentCommands(cli: CAC): void {
   cli
     .command(
       "tournament <action> [id]",
-      "Turniere V3: list | series-list | series-show | series-create | series-update | series-delete | execution-create | execution-link | status | show | update | delete | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-confirm | schedule-generate | match-schedule | match-delete | match-result | deadline",
+      "Turniere V3: list | series-list | series-show | series-create | series-update | series-delete | execution-create | execution-link | status | show | update | delete | participants | mannschaft | participant-withdraw | participant-reinstate | participant-remove | start | matches | matches-clear | reset | redraw | standings | preview | draw | draw-current | draw-confirm | schedule-generate | match-schedule | match-delete | match-result | deadline",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--name <name>", "Name (mannschaft: Mannschafts-/Spielername)")
@@ -487,6 +487,13 @@ export function registerTournamentCommands(cli: CAC): void {
               `Bestaetigen (materialisiert Spiele + K.O.-Bracket): comvenio tournament draw-confirm ${id}`,
             ].join("\n"),
           );
+          break;
+        }
+
+        case "draw-current": {
+          if (!id) throw new Error("tournament draw-current <tournament-id> benoetigt eine Turnier-ID.");
+          const current = await client.get<DrawSession>("tournament", `/tournaments/${id}/draw-sessions/current`);
+          output(current, opts.json, () => JSON.stringify(current, null, 2));
           break;
         }
 

@@ -23,6 +23,7 @@ type ClubResponse = {
 export type Opts = {
   json?: boolean;
   club?: string;
+  search?: string;
   // design action
   template?: string;
   primary?: string;
@@ -185,6 +186,7 @@ export function registerClubCommands(cli: CAC): void {
   cli
     .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
+    .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
     .option("--primary <hex>", "design: Primaerfarbe (#RRGGBB)")
     .option("--accent <hex>", "design: Akzentfarbe (#RRGGBB)")
@@ -208,6 +210,24 @@ export function registerClubCommands(cli: CAC): void {
       const client = createClient(state);
 
       switch (action) {
+        case "list": {
+          const query = opts.search
+            ? `?search=${encodeURIComponent(opts.search)}`
+            : "";
+          const response = await client.service<ClubResponse[]>(
+            "club",
+            `/clubs/${query}`,
+          );
+          const needle = opts.search?.trim().toLocaleLowerCase("de");
+          const clubs = needle
+            ? response.filter((club) => [club.name, club.description]
+                .some((value) => typeof value === "string"
+                  && value.toLocaleLowerCase("de").includes(needle)))
+            : response;
+          output(clubs, opts.json, () => JSON.stringify(clubs, null, 2));
+          break;
+        }
+
         case "info": {
           const clubId = opts.club ?? state.clubId;
           if (!clubId) {
