@@ -1,7 +1,7 @@
 {
   "registry_version": "1.0.0",
   "cli_version": "0.1.0",
-  "verified_at": "2026-07-13",
+  "verified_at": "2026-07-14",
   "coverage_model": {
     "covered": "Der vorgesehene Club-Admin-Workflow ist über das CLI verfügbar. Das bedeutet nicht, dass jede technische Backend-Route eine eigene Action braucht.",
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
@@ -12,193 +12,419 @@
     {
       "id": "login",
       "status": "covered",
-      "actions": ["login --token"],
+      "actions": [
+        "login --token"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Kein Passwort-Login und kein Token-Decoding; das opake cvn_-Token wird vor dem Speichern serverseitig geprüft."],
-      "source": ["src/index.ts", "src/auth.ts"],
-      "docs": ["docs/auth-club.md"]
+      "intentional_exclusions": [
+        "Kein Passwort-Login und kein Token-Decoding; das opake cvn_-Token wird vor dem Speichern serverseitig geprüft."
+      ],
+      "source": [
+        "src/index.ts",
+        "src/auth.ts"
+      ],
+      "docs": [
+        "docs/auth-club.md"
+      ]
     },
     {
       "id": "logout",
       "status": "covered",
-      "actions": ["logout"],
+      "actions": [
+        "logout"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Logout entfernt den lokalen CLI-State; das Device-Token wird dadurch nicht serverseitig widerrufen."],
-      "source": ["src/index.ts", "src/auth.ts"],
-      "docs": ["docs/auth-club.md"]
+      "intentional_exclusions": [
+        "Logout entfernt den lokalen CLI-State; das Device-Token wird dadurch nicht serverseitig widerrufen."
+      ],
+      "source": [
+        "src/index.ts",
+        "src/auth.ts"
+      ],
+      "docs": [
+        "docs/auth-club.md"
+      ]
     },
     {
       "id": "whoami",
       "status": "covered",
-      "actions": ["whoami"],
+      "actions": [
+        "whoami"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Bei vorübergehenden Ausfällen dürfen gecachte Identitätsfelder erscheinen; Authentifizierungs- und Autorisierungsfehler werden nie verborgen."],
-      "source": ["src/commands/whoami.ts"],
-      "docs": ["docs/auth-club.md"]
+      "intentional_exclusions": [
+        "Bei vorübergehenden Ausfällen dürfen gecachte Identitätsfelder erscheinen; Authentifizierungs- und Autorisierungsfehler werden nie verborgen."
+      ],
+      "source": [
+        "src/commands/whoami.ts"
+      ],
+      "docs": [
+        "docs/auth-club.md"
+      ]
     },
     {
       "id": "club",
       "status": "covered",
       "actions": [
-        "info", "update", "settings", "settings-update", "design",
-        "department-list", "department-show", "department-add", "department-update", "department-delete"
+        "info",
+        "update",
+        "settings",
+        "settings-update",
+        "design",
+        "department-list",
+        "department-show",
+        "department-add",
+        "department-update",
+        "department-delete"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Homepage-Inhalte verwaltet homepage; Mitglieder und Teams haben eigene Commands."],
-      "source": ["src/commands/club.ts"],
-      "docs": ["docs/auth-club.md", "docs/homepage.md"]
+      "intentional_exclusions": [
+        "Homepage-Inhalte verwaltet homepage; Mitglieder und Teams haben eigene Commands."
+      ],
+      "source": [
+        "src/commands/club.ts"
+      ],
+      "docs": [
+        "docs/auth-club.md",
+        "docs/homepage.md"
+      ]
     },
     {
       "id": "member",
       "status": "covered",
       "actions": [
-        "list", "show", "add", "update", "remove", "import",
-        "family-list", "family-show", "family-add", "family-update", "family-delete",
-        "status-list", "status-show", "status-add", "status-update", "status-delete",
-        "period-list", "period-show", "period-add", "period-update", "period-delete"
+        "list",
+        "show",
+        "add",
+        "update",
+        "remove",
+        "import",
+        "family-list",
+        "family-show",
+        "family-add",
+        "family-update",
+        "family-delete",
+        "status-list",
+        "status-show",
+        "status-add",
+        "status-update",
+        "status-delete",
+        "period-list",
+        "period-show",
+        "period-add",
+        "period-update",
+        "period-delete"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Team-Mitgliedschaften werden über team member verwaltet."],
-      "source": ["src/commands/member.ts"],
-      "docs": ["docs/mitglieder-teams.md", "docs/cli-reference.md"]
+      "intentional_exclusions": [
+        "Team-Mitgliedschaften werden über team member verwaltet."
+      ],
+      "source": [
+        "src/commands/member.ts"
+      ],
+      "docs": [
+        "docs/mitglieder-teams.md",
+        "docs/cli-reference.md"
+      ]
     },
     {
       "id": "team",
       "status": "covered",
       "actions": [
-        "list", "show", "create", "update", "delete",
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
         "member list|add|update|remove",
         "resource list|add|update|remove"
       ],
       "gaps": [],
       "intentional_exclusions": [],
-      "source": ["src/commands/team.ts"],
-      "docs": ["docs/mitglieder-teams.md"]
+      "source": [
+        "src/commands/team.ts"
+      ],
+      "docs": [
+        "docs/mitglieder-teams.md"
+      ]
     },
     {
       "id": "event",
       "status": "covered",
       "actions": [
-        "list", "show", "create", "update", "publish", "delete",
+        "list",
+        "show",
+        "create",
+        "update",
+        "publish",
+        "delete",
         "template list|create|clone|instantiate",
         "series list|show|create|materialize|promote-recurring|promote-yearly|next",
         "area list|add|show|update|delete|bulk|copy",
-        "assignment list|add|remove|clear", "lead list|add|update|delete",
-        "area-note list|add|update|delete", "program list|add|update|delete|reorder",
-        "contact list|add|update|delete", "resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch",
-        "attachment list|show|add|update|delete", "tag category and assignment workflows",
-        "sponsor and sponsor-program workflows", "invitation and club-invitation workflows",
+        "assignment list|add|remove|clear",
+        "lead list|add|update|delete",
+        "area-note list|add|update|delete",
+        "program list|add|update|delete|reorder",
+        "contact list|add|update|delete",
+        "resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch",
+        "attachment list|show|add|update|delete",
+        "tag category and assignment workflows",
+        "sponsor and sponsor-program workflows",
+        "invitation and club-invitation workflows",
         "registration list|add|stats|show|update|adjust|delete|aggregate",
-        "budget show|set|delete", "design theme and asset workflows", "copy set|reset",
-        "dj settings and request workflows", "external-sync workflows",
-        "instance previous|next|compare|clone-next", "child list|create|invitation-summary",
+        "budget show|set|delete",
+        "design theme and asset workflows",
+        "copy set|reset",
+        "dj settings and request workflows",
+        "external-sync workflows",
+        "instance previous|next|compare|clone-next",
+        "child list|create|invitation-summary",
         "menu list|assign|unassign"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Anonyme/öffentliche Self-Service-Routen, Backend-Interna und providerspezifische technische Administration liegen außerhalb des Club-Admin-CLI."],
-      "source": ["src/commands/event.ts", "src/commands/event-operations.ts"],
-      "docs": ["docs/veranstaltungen.md"]
+      "intentional_exclusions": [
+        "Anonyme/öffentliche Self-Service-Routen, Backend-Interna und providerspezifische technische Administration liegen außerhalb des Club-Admin-CLI."
+      ],
+      "source": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "docs": [
+        "docs/veranstaltungen.md"
+      ]
     },
     {
       "id": "booking",
       "status": "covered",
       "actions": [
-        "list", "show", "create", "update", "approve", "reject", "cancel", "delete", "bulk",
+        "list",
+        "show",
+        "create",
+        "update",
+        "approve",
+        "reject",
+        "cancel",
+        "delete",
+        "bulk",
         "participant list|show|add|add-groups|update|remove",
         "link list|club|add|remove",
         "stats object|guests"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Anonyme/öffentliche Buchungsflows, Provider-Importe und technische Export-Routen liegen außerhalb des Club-Admin-Dispatchers."],
-      "source": ["src/commands/booking.ts"],
-      "docs": ["docs/buchungen-objekte.md"]
+      "intentional_exclusions": [
+        "Anonyme/öffentliche Buchungsflows, Provider-Importe und technische Export-Routen liegen außerhalb des Club-Admin-Dispatchers."
+      ],
+      "source": [
+        "src/commands/booking.ts"
+      ],
+      "docs": [
+        "docs/buchungen-objekte.md"
+      ]
     },
     {
       "id": "object",
       "status": "covered",
       "actions": [
-        "list", "show", "create", "update", "delete",
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
         "building list|show|create|update|delete",
         "room list|show|create|update|delete",
         "booking-rule list|show|create|bulk|update|delete",
         "task-rule list|show|create|update|delete"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Objekt-Tags sowie technische Export- und Provider-Batch-Routen liegen bewusst außerhalb des Club-Admin-Dispatchers."],
-      "source": ["src/commands/object.ts"],
-      "docs": ["docs/buchungen-objekte.md"]
+      "intentional_exclusions": [
+        "Objekt-Tags sowie technische Export- und Provider-Batch-Routen liegen bewusst außerhalb des Club-Admin-Dispatchers."
+      ],
+      "source": [
+        "src/commands/object.ts"
+      ],
+      "docs": [
+        "docs/buchungen-objekte.md"
+      ]
     },
     {
       "id": "task",
       "status": "covered",
       "actions": [
-        "list", "show", "show --subtasks", "show --chain", "create", "bulk", "update", "assign", "done", "delete",
-        "context list|show|create|update|delete", "assignment list|show|update|delete",
-        "note list|add|update|delete", "checklist list|add|update|toggle|delete|reorder"
+        "list",
+        "show",
+        "show --subtasks",
+        "show --chain",
+        "create",
+        "bulk",
+        "update",
+        "assign",
+        "done",
+        "delete",
+        "context list|show|create|update|delete",
+        "assignment list|show|update|delete",
+        "note list|add|update|delete",
+        "checklist list|add|update|toggle|delete|reorder"
       ],
       "gaps": [],
       "intentional_exclusions": [],
-      "source": ["src/commands/task.ts"],
-      "docs": ["docs/aufgaben.md"]
+      "source": [
+        "src/commands/task.ts"
+      ],
+      "docs": [
+        "docs/aufgaben.md"
+      ]
     },
     {
       "id": "recipe",
       "status": "covered",
-      "actions": ["create", "from-template", "list", "show", "update", "delete"],
+      "actions": [
+        "create",
+        "from-template",
+        "list",
+        "show",
+        "update",
+        "delete"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Zutaten-, Allergen- und Farbstoff-Administration sind keine recipe-Actions; vorlagengestützte Rezepterstellung ist der vorgesehene Agenten-Workflow."],
-      "source": ["src/commands/recipe.ts"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "Zutaten-, Allergen- und Farbstoff-Administration sind keine recipe-Actions; vorlagengestützte Rezepterstellung ist der vorgesehene Agenten-Workflow."
+      ],
+      "source": [
+        "src/commands/recipe.ts"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "ingredient",
       "status": "covered",
-      "actions": ["list", "show", "create", "update", "delete"],
+      "actions": [
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Globale Zutatenvorlagen bleiben im read-only template-Command; interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."],
-      "source": ["src/commands/ingredient.ts", "src/schema/ingredient.json"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "Globale Zutatenvorlagen bleiben im read-only template-Command; interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."
+      ],
+      "source": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "ingredient-category",
       "status": "covered",
-      "actions": ["list", "roots", "tree", "by-ingredient", "show", "create", "update", "delete", "assign", "unassign", "init"],
+      "actions": [
+        "list",
+        "roots",
+        "tree",
+        "by-ingredient",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "assign",
+        "unassign",
+        "init"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Interne Service-to-Service-Nutzung ist keine Club-Admin-Action."],
-      "source": ["src/commands/ingredient-category.ts", "src/schema/ingredient-category.json"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "Interne Service-to-Service-Nutzung ist keine Club-Admin-Action."
+      ],
+      "source": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "shopping",
       "status": "covered",
       "actions": [
-        "list", "active", "completed", "by-context", "by-context-type", "show", "create", "update", "delete",
-        "item-add", "item-update", "item-delete", "purchased",
-        "generate-from-recipe", "generate-from-menu"
+        "list",
+        "active",
+        "completed",
+        "by-context",
+        "by-context-type",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "item-add",
+        "item-update",
+        "item-delete",
+        "purchased",
+        "generate-from-recipe",
+        "generate-from-menu"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."],
-      "source": ["src/commands/shopping.ts", "src/schema/shopping.json"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "Interne, öffentliche und globale Sync-Routen sind keine Club-Admin-Actions."
+      ],
+      "source": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "template",
       "status": "covered",
-      "actions": ["dish", "ingredient"],
+      "actions": [
+        "dish",
+        "ingredient"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Globale Vorlagen sind nur lesbar; Mutation und Seeding sind Plattform-Administration."],
-      "source": ["src/commands/template.ts"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "Globale Vorlagen sind nur lesbar; Mutation und Seeding sind Plattform-Administration."
+      ],
+      "source": [
+        "src/commands/template.ts"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "menu",
       "status": "covered",
-      "actions": ["create", "list", "show", "add-item", "update-item", "delete-item", "delete", "style", "apply", "export"],
-      "removed_actions": ["generate", "design"],
+      "actions": [
+        "create",
+        "list",
+        "show",
+        "add-item",
+        "update-item",
+        "delete-item",
+        "delete",
+        "style",
+        "apply",
+        "export"
+      ],
+      "removed_actions": [
+        "generate",
+        "design"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["generate und design brechen bewusst ab: Der bedienende Agent komponiert Inhalt und CSS/design_config selbst; das CLI ruft kein Backend-LLM auf."],
-      "source": ["src/commands/menu.ts"],
-      "docs": ["docs/speisekarten.md"]
+      "intentional_exclusions": [
+        "generate und design brechen bewusst ab: Der bedienende Agent komponiert Inhalt und CSS/design_config selbst; das CLI ruft kein Backend-LLM auf."
+      ],
+      "source": [
+        "src/commands/menu.ts"
+      ],
+      "docs": [
+        "docs/speisekarten.md"
+      ]
     },
     {
       "id": "meeting",
@@ -217,107 +443,414 @@
         "attachment list|add|remove"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Öffentliche Join-/Token-Flows, interne Routen und AI-Assistant-Interna sind keine Club-Admin-CLI-Workflows."],
-      "source": ["src/commands/meeting.ts"],
-      "docs": ["docs/meetings.md"]
+      "intentional_exclusions": [
+        "Öffentliche Join-/Token-Flows, interne Routen und AI-Assistant-Interna sind keine Club-Admin-CLI-Workflows."
+      ],
+      "source": [
+        "src/commands/meeting.ts"
+      ],
+      "docs": [
+        "docs/meetings.md"
+      ]
     },
     {
       "id": "homepage",
       "status": "covered",
-      "actions": ["preview", "apply", "show"],
-      "removed_actions": ["generate", "design"],
+      "actions": [
+        "preview",
+        "apply",
+        "show"
+      ],
+      "removed_actions": [
+        "generate",
+        "design"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["generate und design brechen bewusst ab; der Agent komponiert eine schema-gültige Homepage und nutzt club design für Theme-Einstellungen."],
-      "source": ["src/commands/homepage.ts", "src/commands/club.ts"],
-      "docs": ["docs/homepage.md"]
+      "intentional_exclusions": [
+        "generate und design brechen bewusst ab; der Agent komponiert eine schema-gültige Homepage und nutzt club design für Theme-Einstellungen."
+      ],
+      "source": [
+        "src/commands/homepage.ts",
+        "src/commands/club.ts"
+      ],
+      "docs": [
+        "docs/homepage.md"
+      ]
     },
     {
       "id": "schema",
       "status": "core-partial",
-      "actions": ["list domains", "show domain schema"],
-      "gaps": ["Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback."],
-      "intentional_exclusions": ["coverage.json ist eine getrennte Workflow-Coverage-Registry und offline lesbar."],
-      "source": ["src/commands/schema.ts", "src/schema/coverage.json"],
-      "docs": ["docs/coverage.md", "docs/cli-reference.md"]
+      "actions": [
+        "list domains",
+        "show domain schema"
+      ],
+      "gaps": [
+        "Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback."
+      ],
+      "intentional_exclusions": [
+        "coverage.json ist eine getrennte Workflow-Coverage-Registry und offline lesbar."
+      ],
+      "source": [
+        "src/commands/schema.ts",
+        "src/schema/coverage.json"
+      ],
+      "docs": [
+        "docs/coverage.md",
+        "docs/cli-reference.md"
+      ]
     },
     {
       "id": "verify",
       "status": "covered",
-      "actions": ["url", "event", "menu", "homepage", "news", "certificate"],
+      "actions": [
+        "url",
+        "event",
+        "menu",
+        "homepage",
+        "news",
+        "certificate"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Enthalten sind nur visuelle oder Dokument-Oberflächen mit deterministischem Verifier; verify ist kein allgemeiner API-Healthcheck."],
-      "source": ["src/commands/verify.ts", "src/verify/homepage.ts"],
-      "docs": ["docs/cli-reference.md", "docs/homepage.md"]
+      "intentional_exclusions": [
+        "Enthalten sind nur visuelle oder Dokument-Oberflächen mit deterministischem Verifier; verify ist kein allgemeiner API-Healthcheck."
+      ],
+      "source": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "docs": [
+        "docs/cli-reference.md",
+        "docs/homepage.md"
+      ]
     },
     {
       "id": "data",
       "status": "covered",
       "actions": [
-        "list", "show", "update", "url", "download", "upload", "delete", "restore", "move", "visibility", "stats", "empty-trash",
-        "area-media", "area-shares", "area-share-add", "area-share-remove",
-        "children", "search", "breadcrumb", "folder-create", "folder-rename", "folder-move", "folder-protect", "folder-delete", "folder-restore",
-        "folder-rights", "folder-right-add", "folder-right-bulk", "folder-right-delete",
-        "papers", "paper-show", "paper-add", "paper-update", "paper-delete", "export members|bookings"
+        "list",
+        "show",
+        "update",
+        "url",
+        "download",
+        "upload",
+        "delete",
+        "restore",
+        "move",
+        "visibility",
+        "stats",
+        "empty-trash",
+        "area-media",
+        "area-shares",
+        "area-share-add",
+        "area-share-remove",
+        "children",
+        "search",
+        "breadcrumb",
+        "folder-create",
+        "folder-rename",
+        "folder-move",
+        "folder-protect",
+        "folder-delete",
+        "folder-restore",
+        "folder-rights",
+        "folder-right-add",
+        "folder-right-bulk",
+        "folder-right-delete",
+        "papers",
+        "paper-show",
+        "paper-add",
+        "paper-update",
+        "paper-delete",
+        "export members|bookings"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Die Inhaltsanalyse übernimmt der bedienende Agent nach dem Download; dieses CLI besitzt keinen analyze-Endpoint.", "Publikations- und Newsletter-Fachworkflows bleiben in ihren eigenen Domänen; DataShare verwaltet Dateien und Kontexte."],
-      "source": ["src/commands/data.ts", "src/util/upload.ts"],
-      "docs": ["docs/dateien.md"]
+      "intentional_exclusions": [
+        "Die Inhaltsanalyse übernimmt der bedienende Agent nach dem Download; dieses CLI besitzt keinen analyze-Endpoint.",
+        "Publikations- und Newsletter-Fachworkflows bleiben in ihren eigenen Domänen; DataShare verwaltet Dateien und Kontexte."
+      ],
+      "source": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "docs": [
+        "docs/dateien.md"
+      ]
     },
     {
       "id": "news",
       "status": "covered",
-      "actions": ["list", "show", "create", "update", "delete", "apply", "preview", "publish", "video slideshow|result|teaser"],
+      "actions": [
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "apply",
+        "preview",
+        "publish",
+        "video slideshow|result|teaser"
+      ],
       "gaps": [],
-      "intentional_exclusions": ["Das CLI ruft kein schreibendes LLM auf; der bedienende Agent komponiert Rich-HTML. Anonyme öffentliche Reads sind Aufgabe des Frontends."],
-      "source": ["src/commands/news.ts"],
-      "docs": ["docs/vereinsnews.md", "docs/dateien.md"]
+      "intentional_exclusions": [
+        "Das CLI ruft kein schreibendes LLM auf; der bedienende Agent komponiert Rich-HTML. Anonyme öffentliche Reads sind Aufgabe des Frontends."
+      ],
+      "source": [
+        "src/commands/news.ts"
+      ],
+      "docs": [
+        "docs/vereinsnews.md",
+        "docs/dateien.md"
+      ]
     },
     {
       "id": "plan",
       "status": "covered",
       "actions": [
-        "list", "show", "create", "update", "delete",
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
         "zone list|create|update|delete|link|unlink",
-        "table create|duplicate|update|delete", "marker create|update|delete",
-        "guest list|add|update|delete", "detail", "export", "illustrate", "compose"
+        "table create|duplicate|update|delete",
+        "marker create|update|delete",
+        "guest list|add|update|delete",
+        "detail",
+        "export",
+        "illustrate",
+        "compose"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Die Bildgenerierung selbst liegt außerhalb des CLI; illustrate bereitet das deterministische Kit vor und compose setzt exakte Beschriftungen darüber."],
-      "source": ["src/commands/plan.ts"],
-      "docs": ["docs/cli-reference.md"]
+      "intentional_exclusions": [
+        "Die Bildgenerierung selbst liegt außerhalb des CLI; illustrate bereitet das deterministische Kit vor und compose setzt exakte Beschriftungen darüber."
+      ],
+      "source": [
+        "src/commands/plan.ts"
+      ],
+      "docs": [
+        "docs/cli-reference.md"
+      ]
     },
     {
       "id": "tournament",
       "status": "covered",
       "actions": [
-        "series-list", "series-show", "series-create", "series-update", "series-delete", "execution-create", "execution-link",
-        "list", "show", "update", "delete", "status",
-        "participants", "mannschaft", "participant", "participant-withdraw", "participant-reinstate", "participant-remove",
-        "start", "matches", "matches-clear", "reset", "redraw", "standings", "preview",
-        "draw", "draw-confirm", "schedule-generate", "match-schedule", "match-delete", "match-result", "deadline"
+        "series-list",
+        "series-show",
+        "series-create",
+        "series-update",
+        "series-delete",
+        "execution-create",
+        "execution-link",
+        "list",
+        "show",
+        "update",
+        "delete",
+        "status",
+        "participants",
+        "mannschaft",
+        "participant",
+        "participant-withdraw",
+        "participant-reinstate",
+        "participant-remove",
+        "start",
+        "matches",
+        "matches-clear",
+        "reset",
+        "redraw",
+        "standings",
+        "preview",
+        "draw",
+        "draw-confirm",
+        "schedule-generate",
+        "match-schedule",
+        "match-delete",
+        "match-result",
+        "deadline"
       ],
       "gaps": [],
       "intentional_exclusions": [
         "Turniere werden im V3-Domänenmodell kanonisch über execution-create aus einer Serie erzeugt; der direkte POST /tournaments wird nicht als redundante zweite Create-Action angeboten.",
         "Öffentliche Anmeldung und öffentliche Bracket-Reads sind Frontend-/Self-Service-Aufgaben."
       ],
-      "source": ["src/commands/tournament.ts"],
-      "docs": ["docs/turniere.md"]
+      "source": [
+        "src/commands/tournament.ts"
+      ],
+      "docs": [
+        "docs/turniere.md"
+      ]
     },
     {
       "id": "sponsor",
       "status": "covered",
       "actions": [
-        "list", "show", "add", "update", "delete", "logo",
-        "product-list", "product-add", "product-update", "product-delete",
-        "contract-list", "contract-add", "contract-update", "contract-delete", "assignment-list", "assign", "assignment-update", "cancel",
-        "doc-list", "doc-upload", "responsible-list", "responsible-add", "responsible-update", "responsible-remove"
+        "list",
+        "show",
+        "add",
+        "update",
+        "delete",
+        "logo",
+        "product-list",
+        "product-add",
+        "product-update",
+        "product-delete",
+        "contract-list",
+        "contract-add",
+        "contract-update",
+        "contract-delete",
+        "assignment-list",
+        "assign",
+        "assignment-update",
+        "cancel",
+        "doc-list",
+        "doc-upload",
+        "responsible-list",
+        "responsible-add",
+        "responsible-update",
+        "responsible-remove"
       ],
       "gaps": [],
-      "intentional_exclusions": ["Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings."],
-      "source": ["src/commands/sponsor.ts", "src/util/upload.ts"],
-      "docs": ["docs/sponsoring.md", "docs/dateien.md"]
+      "intentional_exclusions": [
+        "Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings."
+      ],
+      "source": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "docs": [
+        "docs/sponsoring.md",
+        "docs/dateien.md"
+      ]
+    }
+  ],
+  "uncovered_model": {
+    "gap": "Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.",
+    "partial-gap": "Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.",
+    "no-gap": "Kein CLI-Bedarf. Die Routen sind Plattform-Ebene, Endnutzer-Self-Service, Echtzeit-Kommunikation oder Service-to-Service.",
+    "backend-missing": "Der Workflow existiert serverseitig noch nicht (z. B. HTTP 501). Zuerst Backend, dann CLI — keine CLI-Lücke."
+  },
+  "uncovered_domains": [
+    {
+      "id": "role",
+      "service": "role-service",
+      "verdict": "gap",
+      "summary": "Das gesamte Modul Wer-darf-was ist über keinen Top-Level-Command erreichbar — auch nicht als Teilfunktion von member, team oder club.",
+      "missing_workflows": [
+        "Club-Rollen anlegen, bearbeiten, löschen",
+        "Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)",
+        "Mitgliedern Rollen zuweisen und entziehen",
+        "Positions-Rollen-Mapping (ClubPositionRole)",
+        "Systemrechte auflisten (PermissionDefinition, read-only)"
+      ],
+      "proposed_actions": [
+        "role list|show|create|update|delete",
+        "role permissions-show <role-id>",
+        "role permission-update <permission-id> --allowed <bool>",
+        "role assign <user-id> --role <role-id> [--department <id>]",
+        "role unassign <assignment-id>",
+        "role assignments --club|--member|--department",
+        "role position-link|position-unlink",
+        "role permission-defs"
+      ],
+      "rationale": "Rechtevergabe ist ein Kern-Club-Admin-Workflow. Serverseitig voll implementiert und mit manage_roles geschützt. Ein Agent kann heute nicht einmal die Kassierer-Rolle an ein Mitglied vergeben."
+    },
+    {
+      "id": "agent",
+      "service": "ai-service (ClubAgent)",
+      "verdict": "gap",
+      "summary": "Der Verein kann seinen eigenen Bot nicht per CLI verwalten. Rund 45 club-admin-relevante Routen, davon 0 Prozent abgedeckt.",
+      "missing_workflows": [
+        "Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)",
+        "Autonomie-/Skill-Pakete installieren und listen",
+        "Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)",
+        "Vereinseigene Slash-Kommandos definieren",
+        "Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)",
+        "Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)",
+        "Watch-Rules pflegen (worauf reagiert der Bot autonom)",
+        "Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)",
+        "Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung)"
+      ],
+      "proposed_actions": [
+        "agent info|update",
+        "agent skill-package list|install",
+        "agent skill list|enable|disable",
+        "agent command list|create|update",
+        "agent plan list|create|update|run",
+        "agent approval list|approve|reject",
+        "agent watch-rule list|create|update|test",
+        "agent journal|memory list",
+        "agent status"
+      ],
+      "rationale": "Bot-Konfiguration, Guardrails und Freigaben sind Vereins-Policy-Entscheidungen, keine Runtime-Interna. Achtung: der bestehende Command plan ist der Geländeplan (event-service), NICHT der ai-service-AgentPlan."
+    },
+    {
+      "id": "channel",
+      "service": "message-service",
+      "verdict": "gap",
+      "summary": "Channel- und Forum-Verwaltung sowie die Gäste-Post-Moderation haben keinen CLI-Zugang. 0 von rund 118 Routen abgedeckt.",
+      "missing_workflows": [
+        "Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)",
+        "Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)",
+        "Forum-Boards anlegen und deren Permissions setzen",
+        "Thread-Moderation (sperren, anpinnen, als gelöst markieren)",
+        "Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)",
+        "Vereins-Posts und Umfragen im Feed veröffentlichen"
+      ],
+      "proposed_actions": [
+        "channel list|show|create|update|delete|archive",
+        "channel member list|add|remove|ban|unban|mute|unmute|role",
+        "forum board list|show|create|update|delete",
+        "forum board-permission list|add|remove",
+        "forum thread list|show|create|lock|pin|solve",
+        "feed moderation-list --context event|tournament <id>",
+        "feed approve <post-id> | reject <post-id>",
+        "feed post --context-type <t> --context-id <id> --body <html>"
+      ],
+      "rationale": "Die Gäste-Post-Moderation ist ein DSGVO-relevanter, wiederkehrender Admin-Workflow und existiert bisher nur im Web-UI. Chat selbst (Nachrichten senden, Reactions, Typing, Read-Receipts) ist bewusst KEIN CLI-Ziel — das ist Endnutzer-Echtzeitkommunikation."
+    },
+    {
+      "id": "finance",
+      "service": "finance-service",
+      "verdict": "partial-gap",
+      "summary": "Drei real vorhandene, club-scoped Workflows fehlen im CLI. Die klassischen Vereinsfinanz-Workflows existieren serverseitig noch gar nicht.",
+      "missing_workflows": [
+        "Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)",
+        "Vereins-Rechnungen einsehen",
+        "Auszahlungshistorie einsehen und Auszahlung anstoßen"
+      ],
+      "proposed_actions": [
+        "finance connect-status|connect-onboard|connect-refresh",
+        "finance invoice-list|invoice-show",
+        "finance payout-list|payout-show|payout-create"
+      ],
+      "rationale": "Beiträge, Kassenberichte, Budgets, Spenden und Vereins-Rechnungen liefern serverseitig HTTP 501 — die Modelle existieren, die Routen sind Platzhalter. Das ist eine Backend-Lücke, kein CLI-Gap: zuerst Backend bauen, dann CLI. Nur Connect, Invoices und Payouts sind heute real nutzbar (manage_finances)."
+    },
+    {
+      "id": "marketing-platform",
+      "service": "marketing-service",
+      "verdict": "no-gap",
+      "summary": "Die Club-Ebene des marketing-service ist über sponsor vollständig abgedeckt. Was fehlt, ist Plattform-Ebene.",
+      "missing_workflows": [],
+      "proposed_actions": [],
+      "rationale": "Campaigns, Creatives, Packages, Deals, Boost, Analytics und Revenue-Sharing sind an eine Advertiser-Mitgliedschaft oder MasterAdmin gebunden, nicht an manage_sponsors im Verein. Der globale Anzeigenmarktplatz und die Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings."
+    },
+    {
+      "id": "notify",
+      "service": "notify-service",
+      "verdict": "no-gap",
+      "summary": "Kein Club-Admin-CRUD vorhanden — es gibt schlicht nichts zu verwalten.",
+      "missing_workflows": [],
+      "proposed_actions": [],
+      "rationale": "Alle Routen sind entweder Endnutzer-Self-Service (Inbox, Präferenzen, Push-Registrierung, an den eigenen User gebunden) oder Service-to-Service (Internal-API-Key). Benachrichtigungs-Templates sind Jinja2-Dateien im Repo, keine DB-Entitäten mit Endpoints."
+    },
+    {
+      "id": "automation",
+      "service": "automation-service",
+      "verdict": "no-gap",
+      "summary": "Plattform-Orchestrierung ohne eigene Vereins-Domäne.",
+      "missing_workflows": [],
+      "proposed_actions": [],
+      "rationale": "Die Jobs sind Plattform-Orchestrierung (Club anlegen, Mitglied zusammenführen, Urkunden), keine fachliche Vereins-Verwaltung. Custom-Reminder sind user-persönlich, nicht Club-Admin-Scope. Die SSE-Invalidierung ist reine Infrastruktur."
     }
   ]
 }

@@ -50,6 +50,24 @@ der npm-`bun` auf dem PATH ist auf Windows kaputt). Beispiel: `tournament match-
 <match-id> --home <n> --away <n>` wurde am 2026-07-08 ergänzt, weil Ergebnisse zuvor
 fälschlich per `POST /matches/{id}/result` gesetzt wurden.
 
+### Ganze Themengebiete ohne Command (Stand 2026-07-14)
+
+Die 25 Top-Level-Commands decken **nicht** die ganze Plattform ab. Diese Bereiche haben
+**gar keinen** Command — sie sind in `docs/coverage.md` unter „Nicht erschlossene
+Themengebiete" mit Verdikt und Begründung geführt:
+
+| Gebiet | Verdikt | Kurz |
+|--------|---------|------|
+| **Rollen & Rechte** (role-service) | `gap` | „Wer darf was?" — Rollen, Berechtigungsmatrix, Rollenzuweisung. Kein CLI-Zugang |
+| **ClubAgent/Bot** (ai-service) | `gap` | Bot-Konfiguration, Skills/Guardrails, Routinen, **Freigaben**. Kein CLI-Zugang |
+| **Channels/Forum/Feeds** (message-service) | `gap` | Channel- + Forum-Verwaltung, **Gäste-Post-Moderation** (DSGVO-relevant). Kein CLI-Zugang |
+| **Finanzen** (finance-service) | `partial-gap` | Connect/Rechnungen/Payouts fehlen; Beiträge/Kassen/Budgets liefern serverseitig noch HTTP 501 |
+| Werbe-Plattform, Benachrichtigungen, Automation | `no-gap` | Bewusst kein CLI-Ziel (Plattform-Ebene, Self-Service, Infrastruktur) |
+
+**Wichtig:** Ein `gap` ist **kein** Freibrief für einen direkten API-Call. Wenn du einen dieser
+Workflows brauchst, wird das CLI erweitert. Und: der bestehende Command `plan` ist der
+**Geländeplan** (event-service), NICHT der ai-service-AgentPlan.
+
 > Nebeneffekt-Beweis: Direkte HTTP-Clients ohne Browser-User-Agent werden von Cloudflare mit
 > `403 error code 1010` geblockt — ein weiterer Grund, immer über das CLI zu gehen.
 

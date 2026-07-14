@@ -1,6 +1,6 @@
 # CLI-Coverage
 
-Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-13.
+Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-14.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
@@ -48,6 +48,105 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 2. Lies für Payloads zuerst die verlinkte Domänen-Doku und danach `comvenio <domain> --help`.
 3. Nutze bei Agenten immer `--json`; Fehler erscheinen auf stderr und haben einen Exit-Code ungleich null.
 4. `core-partial` bedeutet: den vorhandenen Teil nutzen, die dokumentierte Lücke aber nicht durch einen direkten API-Call umgehen.
+5. Ein Gebiet aus "Nicht erschlossene Themengebiete" hat **keinen** Command. Auch dort gilt: kein direkter API-Call — das CLI wird erweitert.
+
+## Nicht erschlossene Themengebiete
+
+> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "25 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
+
+- `gap`: Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.
+- `partial-gap`: Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.
+- `no-gap`: Kein CLI-Bedarf. Die Routen sind Plattform-Ebene, Endnutzer-Self-Service, Echtzeit-Kommunikation oder Service-to-Service.
+- `backend-missing`: Der Workflow existiert serverseitig noch nicht (z. B. HTTP 501). Zuerst Backend, dann CLI — keine CLI-Lücke.
+
+| Gebiet | Service | Verdikt | Fehlende Club-Admin-Workflows |
+|---|---|---|---|
+| `role` | role-service | `gap` | Club-Rollen anlegen, bearbeiten, löschen<br>Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)<br>Mitgliedern Rollen zuweisen und entziehen<br>Positions-Rollen-Mapping (ClubPositionRole)<br>Systemrechte auflisten (PermissionDefinition, read-only) |
+| `agent` | ai-service (ClubAgent) | `gap` | Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)<br>Autonomie-/Skill-Pakete installieren und listen<br>Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)<br>Vereinseigene Slash-Kommandos definieren<br>Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)<br>Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)<br>Watch-Rules pflegen (worauf reagiert der Bot autonom)<br>Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)<br>Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung) |
+| `channel` | message-service | `gap` | Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)<br>Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)<br>Forum-Boards anlegen und deren Permissions setzen<br>Thread-Moderation (sperren, anpinnen, als gelöst markieren)<br>Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)<br>Vereins-Posts und Umfragen im Feed veröffentlichen |
+| `finance` | finance-service | `partial-gap` | Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)<br>Vereins-Rechnungen einsehen<br>Auszahlungshistorie einsehen und Auszahlung anstoßen |
+| `marketing-platform` | marketing-service | `no-gap` | — |
+| `notify` | notify-service | `no-gap` | — |
+| `automation` | automation-service | `no-gap` | — |
+
+### role (role-service)
+
+- Verdikt: `gap`
+- Das gesamte Modul Wer-darf-was ist über keinen Top-Level-Command erreichbar — auch nicht als Teilfunktion von member, team oder club.
+- Fehlende Club-Admin-Workflows:
+  - Club-Rollen anlegen, bearbeiten, löschen
+  - Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)
+  - Mitgliedern Rollen zuweisen und entziehen
+  - Positions-Rollen-Mapping (ClubPositionRole)
+  - Systemrechte auflisten (PermissionDefinition, read-only)
+- Vorgeschlagene Actions: `role list|show|create|update|delete`, `role permissions-show <role-id>`, `role permission-update <permission-id> --allowed <bool>`, `role assign <user-id> --role <role-id> [--department <id>]`, `role unassign <assignment-id>`, `role assignments --club|--member|--department`, `role position-link|position-unlink`, `role permission-defs`
+- Begründung: Rechtevergabe ist ein Kern-Club-Admin-Workflow. Serverseitig voll implementiert und mit manage_roles geschützt. Ein Agent kann heute nicht einmal die Kassierer-Rolle an ein Mitglied vergeben.
+
+### agent (ai-service (ClubAgent))
+
+- Verdikt: `gap`
+- Der Verein kann seinen eigenen Bot nicht per CLI verwalten. Rund 45 club-admin-relevante Routen, davon 0 Prozent abgedeckt.
+- Fehlende Club-Admin-Workflows:
+  - Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)
+  - Autonomie-/Skill-Pakete installieren und listen
+  - Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)
+  - Vereinseigene Slash-Kommandos definieren
+  - Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)
+  - Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)
+  - Watch-Rules pflegen (worauf reagiert der Bot autonom)
+  - Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)
+  - Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung)
+- Vorgeschlagene Actions: `agent info|update`, `agent skill-package list|install`, `agent skill list|enable|disable`, `agent command list|create|update`, `agent plan list|create|update|run`, `agent approval list|approve|reject`, `agent watch-rule list|create|update|test`, `agent journal|memory list`, `agent status`
+- Begründung: Bot-Konfiguration, Guardrails und Freigaben sind Vereins-Policy-Entscheidungen, keine Runtime-Interna. Achtung: der bestehende Command plan ist der Geländeplan (event-service), NICHT der ai-service-AgentPlan.
+
+### channel (message-service)
+
+- Verdikt: `gap`
+- Channel- und Forum-Verwaltung sowie die Gäste-Post-Moderation haben keinen CLI-Zugang. 0 von rund 118 Routen abgedeckt.
+- Fehlende Club-Admin-Workflows:
+  - Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)
+  - Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)
+  - Forum-Boards anlegen und deren Permissions setzen
+  - Thread-Moderation (sperren, anpinnen, als gelöst markieren)
+  - Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)
+  - Vereins-Posts und Umfragen im Feed veröffentlichen
+- Vorgeschlagene Actions: `channel list|show|create|update|delete|archive`, `channel member list|add|remove|ban|unban|mute|unmute|role`, `forum board list|show|create|update|delete`, `forum board-permission list|add|remove`, `forum thread list|show|create|lock|pin|solve`, `feed moderation-list --context event|tournament <id>`, `feed approve <post-id> | reject <post-id>`, `feed post --context-type <t> --context-id <id> --body <html>`
+- Begründung: Die Gäste-Post-Moderation ist ein DSGVO-relevanter, wiederkehrender Admin-Workflow und existiert bisher nur im Web-UI. Chat selbst (Nachrichten senden, Reactions, Typing, Read-Receipts) ist bewusst KEIN CLI-Ziel — das ist Endnutzer-Echtzeitkommunikation.
+
+### finance (finance-service)
+
+- Verdikt: `partial-gap`
+- Drei real vorhandene, club-scoped Workflows fehlen im CLI. Die klassischen Vereinsfinanz-Workflows existieren serverseitig noch gar nicht.
+- Fehlende Club-Admin-Workflows:
+  - Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)
+  - Vereins-Rechnungen einsehen
+  - Auszahlungshistorie einsehen und Auszahlung anstoßen
+- Vorgeschlagene Actions: `finance connect-status|connect-onboard|connect-refresh`, `finance invoice-list|invoice-show`, `finance payout-list|payout-show|payout-create`
+- Begründung: Beiträge, Kassenberichte, Budgets, Spenden und Vereins-Rechnungen liefern serverseitig HTTP 501 — die Modelle existieren, die Routen sind Platzhalter. Das ist eine Backend-Lücke, kein CLI-Gap: zuerst Backend bauen, dann CLI. Nur Connect, Invoices und Payouts sind heute real nutzbar (manage_finances).
+
+### marketing-platform (marketing-service)
+
+- Verdikt: `no-gap`
+- Die Club-Ebene des marketing-service ist über sponsor vollständig abgedeckt. Was fehlt, ist Plattform-Ebene.
+- Fehlende Club-Admin-Workflows:
+  - Keine — dieses Gebiet braucht bewusst keinen CLI-Command.
+- Begründung: Campaigns, Creatives, Packages, Deals, Boost, Analytics und Revenue-Sharing sind an eine Advertiser-Mitgliedschaft oder MasterAdmin gebunden, nicht an manage_sponsors im Verein. Der globale Anzeigenmarktplatz und die Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings.
+
+### notify (notify-service)
+
+- Verdikt: `no-gap`
+- Kein Club-Admin-CRUD vorhanden — es gibt schlicht nichts zu verwalten.
+- Fehlende Club-Admin-Workflows:
+  - Keine — dieses Gebiet braucht bewusst keinen CLI-Command.
+- Begründung: Alle Routen sind entweder Endnutzer-Self-Service (Inbox, Präferenzen, Push-Registrierung, an den eigenen User gebunden) oder Service-to-Service (Internal-API-Key). Benachrichtigungs-Templates sind Jinja2-Dateien im Repo, keine DB-Entitäten mit Endpoints.
+
+### automation (automation-service)
+
+- Verdikt: `no-gap`
+- Plattform-Orchestrierung ohne eigene Vereins-Domäne.
+- Fehlende Club-Admin-Workflows:
+  - Keine — dieses Gebiet braucht bewusst keinen CLI-Command.
+- Begründung: Die Jobs sind Plattform-Orchestrierung (Club anlegen, Mitglied zusammenführen, Urkunden), keine fachliche Vereins-Verwaltung. Custom-Reminder sind user-persönlich, nicht Club-Admin-Scope. Die SSE-Invalidierung ist reine Infrastruktur.
 
 ## login
 
