@@ -9,3 +9,4 @@ comvenio.exe
 remotion/node_modules/
 remotion/public/job-*/
 remotion/.params-*.json
+.playwright-cli
