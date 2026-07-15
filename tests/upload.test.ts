@@ -12,6 +12,8 @@ afterEach(() => {
 
 describe("DataShare upload contract", () => {
   test("forwards department and sub-context and uploads standalone-safe bytes", async () => {
+    const fixturePath = join(import.meta.dir, "fixtures", "upload.txt");
+    const fixtureSize = (await Bun.file(fixturePath).arrayBuffer()).byteLength;
     const calls: Array<{ path: string; body?: unknown }> = [];
     const client = {
       post: async (_service: string, path: string, body?: unknown) => {
@@ -36,7 +38,7 @@ describe("DataShare upload contract", () => {
     const result = await uploadClubFile({
       client,
       clubId: "club-1",
-      path: join(import.meta.dir, "fixtures", "upload.txt"),
+      path: fixturePath,
       contextType: "event",
       contextId: "event-1",
       subContextId: "area-1",
@@ -52,7 +54,7 @@ describe("DataShare upload contract", () => {
         club_department_id: "department-1",
         filename: "upload.txt",
         content_type: "text/plain;charset=utf-8",
-        expected_size: 33,
+        expected_size: fixtureSize,
         visibility: "public",
         context_type: "event",
         context_id: "event-1",
