@@ -29,6 +29,39 @@ export type HomepageTab = {
   sections?: HomepageSection[];
 };
 
+export type LiveHomepageClub = {
+  subdomain?: unknown;
+  [key: string]: unknown;
+};
+
+/** Resolve the managed public homepage address exclusively from Club.subdomain. */
+export function resolveLiveHomepageUrl(
+  environment: string,
+  club: LiveHomepageClub,
+): string {
+  const subdomain = typeof club.subdomain === "string"
+    ? club.subdomain.trim().toLowerCase()
+    : "";
+  if (!subdomain) {
+    throw new Error(
+      "Der Verein hat noch keine Comvenio-Adresse. Lege zuerst die Comvenio-Subdomain " +
+      "in den Vereins-Einstellungen fest, oder nutze `verify homepage --file home.json` für einen Entwurf.",
+    );
+  }
+  if (
+    subdomain.length > 63
+    || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(subdomain)
+  ) {
+    throw new Error(
+      "Die gespeicherte Comvenio-Subdomain ist kein gültiges DNS-Label. " +
+        "Korrigiere die Comvenio-Adresse in den Vereins-Einstellungen.",
+    );
+  }
+
+  const suffix = environment === "dev" ? "web.dev.comvenio.app" : "web.comvenio.app";
+  return `https://${subdomain}.${suffix}`;
+}
+
 export type VerifyFinding = {
   kind:
     | "horizontal_overflow"

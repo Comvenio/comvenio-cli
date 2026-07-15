@@ -13,6 +13,7 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
+  resolveLiveHomepageUrl,
   sanitizeArtifactUrl,
   selectHomepageViewports,
   withImprintRoute,
@@ -27,7 +28,7 @@ import {
 //   verify url <url>
 //   verify event <event-id> [--child <id>] [--area <id>] [--token <t>]
 //   verify menu <menu-id> [--print]
-//   verify homepage [--file home.json]      (default: live {slug}.web.comvenio.app)
+//   verify homepage [--file home.json]      (default: live {subdomain}.web.comvenio.app)
 //   verify news <news-id>
 //   verify certificate <honor-id>           (fetch-then-render HTML, RBAC manage_honors)
 //
@@ -812,22 +813,15 @@ export function registerVerifyCommands(cli: CAC): void {
             await verifyHomepageMatrix(res.preview_url, tabs, "homepage-preview", opts);
             break;
           }
-          // Live homepage: resolve the club slug → {slug}.web.comvenio.app.
+          // Live homepage: the managed public host comes exclusively from Club.subdomain.
           const club = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}`);
-          const slug =
-            (club.slug as string) ?? (club.handle as string) ?? (club.public_slug as string);
-          if (!slug) {
-            throw new Error(
-              "Club hat keinen Homepage-Slug. Erst `comvenio homepage apply` ausfuehren bzw. den " +
-                "oeffentlichen Slug setzen, oder `verify homepage --file home.json` fuer einen Entwurf nutzen.",
-            );
-          }
+          const liveUrl = resolveLiveHomepageUrl(state.environment, club);
           const tabs = await client.get<HomepageTab[]>(
             "club",
             `/public/clubs/${clubId}/home`,
           );
           await verifyHomepageMatrix(
-            `https://${slug}.web.comvenio.app`,
+            liveUrl,
             tabs,
             "homepage",
             opts,
