@@ -5,6 +5,7 @@ import {
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
+  resolveLiveHomepageUrl,
   sanitizeArtifactUrl,
   selectHomepageViewports,
   withImprintRoute,
@@ -12,6 +13,31 @@ import {
 } from "../src/verify/homepage.ts";
 
 describe("homepage verifier contract", () => {
+  test("uses Club.subdomain for the managed live homepage address", () => {
+    expect(resolveLiveHomepageUrl("prod", {
+      subdomain: "sv-motzing",
+      slug: "technical-club-id",
+    })).toBe("https://sv-motzing.web.comvenio.app");
+    expect(resolveLiveHomepageUrl("dev", {
+      subdomain: "sv-motzing",
+      slug: "technical-club-id",
+    })).toBe("https://sv-motzing.web.dev.comvenio.app");
+  });
+
+  test("does not fall back to technical club identifiers", () => {
+    expect(() => resolveLiveHomepageUrl("prod", {
+      slug: "technical-slug",
+      handle: "legacy-handle",
+      public_slug: "legacy-public-slug",
+    })).toThrow("noch keine Comvenio-Adresse");
+  });
+
+  test("rejects an invalid stored subdomain instead of building an unsafe URL", () => {
+    expect(() => resolveLiveHomepageUrl("prod", {
+      subdomain: "sv-motzing.example",
+    })).toThrow("kein gültiges DNS-Label");
+  });
+
   test("normalizes active public tabs in stable position order", () => {
     expect(normalizeHomepageTabs([
       { label: "Team", slug: "team", position: 2 },

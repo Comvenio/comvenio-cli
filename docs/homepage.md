@@ -189,6 +189,14 @@ comvenio verify homepage \
   --json
 ```
 
+Ohne `--file` prüft der Verifier die verwaltete Live-Adresse des Vereins. Sie
+wird ausschließlich aus `Club.subdomain` gebildet: in PROD als
+`https://<subdomain>.web.comvenio.app`, in DEV als
+`https://<subdomain>.web.dev.comvenio.app`. Technische Kennungen wie `Club.slug`,
+`handle` oder `public_slug` sind keine Homepage-Adresse und werden nicht als
+Fallback verwendet. Fehlt die Subdomain, weist das CLI auf die Club-Einstellungen
+oder die Entwurfsprüfung mit `--file` hin.
+
 Die Preview verändert die Live-Homepage nicht. Der Verifier prüft:
 
 - jeden öffentlichen Tab
