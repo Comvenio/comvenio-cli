@@ -173,6 +173,76 @@ Das Design stammt aus `comvenio schema design --json`. Vereinsfarben und
 Kontrast werden als Design-Tokens gesetzt; Layout und Look werden nicht durch
 club-spezifischen Frontend-Code implementiert.
 
+### Landing-Modus (Vollbild-Teaser ohne Chrome)
+
+`custom_template_config.landing` (boolean, Default `false`) schaltet das
+Flex-Template in einen bare Vollbild-Modus für reine Teaser-/Kampagnen-Landings:
+
+- Kein Header — weder die interne FlexTemplate-Navigation noch ein gesetzter
+  `public_header`.
+- Kein Template-Hero, kein About-Block, kein Design-Footer.
+- `<main>` wird full-bleed gerendert (kein `maxWidth`/Padding) — eine einzige
+  Section füllt den gesamten Viewport.
+- Der `PublicLegalFooter` (Impressum/Datenschutz/AGB/„Powered by Comvenio“)
+  bleibt **immer** sichtbar unter dem Inhalt — er wird außerhalb des
+  Flex-Templates gerendert (Abschnitt 4) und ist vom Landing-Modus nicht
+  betroffen.
+- **Landing impliziert 1-Tab-Nutzung:** ohne Navigation sind weitere Tabs für
+  Besucher unerreichbar. Bewusste Wahl für reine Teaser-Seiten, kein Fehler.
+
+Setzen (Beispiel-Ausschnitt für `design-settings.json`):
+
+```json
+{
+  "homepage_theme": "...",
+  "primary_color": "#..",
+  "custom_template_config": { "landing": true, "hero": { "variant": "video" } }
+}
+```
+
+Wichtig: `custom_template_config` wird beim `club design --file`-Write
+**gemergt**, nicht ersetzt — bestehende Overrides (Hero, Sections,
+Look-Recipe, ...) bleiben erhalten. `landing` ist ein reines
+`custom_template_config`-Feld, kein Widget-`kind` — es unterliegt nicht der
+Widget-kind-Synchronität, steht aber wie jedes Design-Feld in
+`comvenio schema design --json`.
+
+**Ausblick (noch nicht gebaut):** ein geplantes `landing_cta`-Feld soll einen
+konfigurierbaren „Weiter“-Button ergänzen und die Landing so zur
+Vorschalt-Seite vor der eigentlichen Homepage machen. Aktuell nicht im Schema
+— nicht verwenden, bis es in `comvenio schema design --json` erscheint.
+
+### background_video Spotlight-Layout
+
+Das Widget `background_video` (`comvenio schema homepage --json`) kennt zwei
+Layouts:
+
+| Layout | Wirkung |
+|---|---|
+| `cover` (Default) | Video als klassischer Vollbild-Hintergrund hinter dem Section-Content |
+| `spotlight` | Video als gerahmte Highlight-Card auf einer gebrandeten Fläche, mit Logo-/Titel-/Teaser-Slots |
+
+Spotlight-Config-Felder (zusätzlich zu den Basis-Feldern `video_file_id` /
+`video_url` / `poster_file_id` / `poster_url` / `overlay` / `loop` /
+`headline`):
+
+| Feld | Bedeutung |
+|---|---|
+| `layout` | `"cover"` oder `"spotlight"`, Default `"cover"` |
+| `background` | CSS-Hintergrund der gebrandeten Fläche hinter der Video-Card |
+| `accent_color` | Akzentfarbe für `[[wort]]`-Markup im `title` |
+| `text_color` | Textfarbe auf der Fläche |
+| `logo_file_id` / `logo_url` | Emblem links (Datei-ID bevorzugt — wird beim Public-Read re-signed) |
+| `logo_right_file_id` / `logo_right_url` | Zweites Emblem/Sponsor-Logo rechts |
+| `eyebrow` | Kicker-Zeile über dem Titel |
+| `title` | Überschrift; `[[wort]]` markiert ein Wort zur Hervorhebung in `accent_color` |
+| `date_badge` | Pill-Badge (z. B. Datum/Ort) |
+| `claim` | Schlusszeile unter der Video-Card; `\n` erlaubt für Zeilenumbruch |
+
+Medien immer über `*_file_id` referenzieren — die `url`-Felder sind nur ein
+kurzlebiger Fallback und laufen beim Public-Read ins Leere, sobald die
+presignte URL abläuft.
+
 ## 7. Preview und Verifier
 
 ```bash

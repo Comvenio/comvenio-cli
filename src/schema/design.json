@@ -51,6 +51,11 @@
     "cornerStyle": { "values": ["sharp", "rounded", "pill"], "default": "rounded", "note": "Radius von Buttons/Cards (0 / 12px / pill)" },
     "accentUsage": { "values": ["subtle", "balanced", "vivid"], "default": "balanced", "note": "Intensitaet des Akzent-Einsatzes (Gradients/Highlights)" },
     "bodySurface": { "values": ["light", "dark"], "default": "auto", "note": "Entkoppelt die neutrale Seitenflaeche von Hero-/Markenfarben" },
+    "landing": {
+      "type": "boolean",
+      "default": false,
+      "note": "Landing-Modus: rendert die Seite bare (keine Nav/Hero/About/Footer, full-bleed) — eine Section fuellt den ganzen Viewport. PublicLegalFooter bleibt. Impliziert 1-Tab. Fuer reine Teaser-Landings."
+    },
     "media": {
       "focus": { "type": "object", "fields": { "x": "0..100", "y": "0..100" }, "default": { "x": 50, "y": 50 } },
       "mobileFocus": { "type": "object", "fields": { "x": "0..100", "y": "0..100" }, "default": "focus" }
