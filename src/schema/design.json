@@ -22,13 +22,15 @@
       "note": "Additive V1-Recipe; kein club-spezifischer React-Code"
     },
     "hero": {
-      "variant": { "values": ["gradient", "image", "split", "minimal"], "default": "gradient", "note": "image/split nutzen data.bannerUrl wenn vorhanden, sonst Gradient-Fallback" },
+      "variant": { "values": ["gradient", "image", "split", "minimal", "video"], "default": "gradient", "note": "image/split nutzen data.bannerUrl wenn vorhanden, sonst Gradient-Fallback; video nutzt hero.videoUrl (autoplay/muted/loop, reduced-motion -> Poster)" },
       "minHeight": { "type": "number(px)", "range": "360..900", "default": 600 },
       "align": { "values": ["left", "center"], "default": "center" },
       "overlay": { "type": "number", "range": "0..1", "default": 0.45, "note": "Bild-Abdunklung bei variant=image" },
       "pattern": { "values": ["none", "dots", "grid", "diagonal"], "default": "dots" },
       "showStats": { "type": "boolean", "default": true, "note": "Stats-Leiste (Mitglieder/Abteilungen/Jahre) im Hero" },
-      "accentWord": { "type": "number", "default": 0, "note": "Index des accent-unterstrichenen Headline-Worts, -1 = keiner" }
+      "accentWord": { "type": "number", "default": 0, "note": "Index des accent-unterstrichenen Headline-Worts, -1 = keiner" },
+      "videoUrl": { "type": "string", "default": "", "note": "Hintergrund-Video-URL (mp4) fuer variant=video" },
+      "posterUrl": { "type": "string", "default": "", "note": "Poster/Fallback-Standbild fuer den Video-Hero" }
     },
     "sections": {
       "rhythm": { "values": ["tight", "normal", "airy"], "default": "airy", "note": "vertikales Padding der Template-Sektionen" },
