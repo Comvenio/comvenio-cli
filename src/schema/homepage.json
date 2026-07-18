@@ -7,12 +7,12 @@
     "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py",
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
-  "widget_count": 70,
-  "widget_config_documented": 67,
+  "widget_count": 71,
+  "widget_config_documented": 68,
   "vocabulary_sync": {
-    "registry_count": 70,
-    "backend_count": 70,
-    "prompt_count": 70,
+    "registry_count": 71,
+    "backend_count": 71,
+    "prompt_count": 71,
     "missing_in_backend": [],
     "missing_in_prompt": [],
     "extra_in_backend": [],
@@ -154,6 +154,7 @@
     "image",
     "image_gallery",
     "video",
+    "background_video",
     "files",
     "booking_highlight",
     "menu_display",
@@ -910,6 +911,31 @@
         },
         {
           "name": "aspect_ratio"
+        }
+      ]
+    },
+    "background_video": {
+      "config": [
+        {
+          "name": "video_url"
+        },
+        {
+          "name": "video_file_id"
+        },
+        {
+          "name": "poster_url"
+        },
+        {
+          "name": "poster_file_id"
+        },
+        {
+          "name": "overlay"
+        },
+        {
+          "name": "loop"
+        },
+        {
+          "name": "headline"
         }
       ]
     },
