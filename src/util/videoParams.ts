@@ -54,13 +54,40 @@ export const teaserSchema = z.object({
   backgroundImage: existingFile("backgroundImage").optional(),
 });
 
-export const VIDEO_TEMPLATES = ["slideshow", "result", "teaser"] as const;
+const highlightItem = z.object({
+  label: z.string().optional(),
+  text: z.string().min(1),
+  logo: existingFile("items[].logo").optional(),
+});
+
+export const highlightSchema = z.object({
+  ...common,
+  title: z.string().min(1),
+  subtitle: z.string().optional(),
+  orgName: z.string().optional(),
+  dateRange: z.string().optional(),
+  kicker: z.string().optional(),
+  itemsHeading: z.string().optional(),
+  items: z.array(highlightItem).max(3).optional(),
+  noteText: z.string().optional(),
+  closingText: z.string().optional(),
+  background: existingFile("background").optional(),
+  logo: existingFile("logo").optional(),
+  heroImage: existingFile("heroImage").optional(),
+  sponsors: z.array(existingFile("sponsors[]")).optional(),
+  greenColor: hexColor.optional(),
+  creamColor: hexColor.optional(),
+  goldColor: hexColor.optional(),
+});
+
+export const VIDEO_TEMPLATES = ["slideshow", "result", "teaser", "highlight"] as const;
 export type VideoTemplate = (typeof VIDEO_TEMPLATES)[number];
 
 const SCHEMAS: Record<VideoTemplate, z.ZodTypeAny> = {
   slideshow: slideshowSchema,
   result: resultSchema,
   teaser: teaserSchema,
+  highlight: highlightSchema,
 };
 
 export function isVideoTemplate(v: string): v is VideoTemplate {

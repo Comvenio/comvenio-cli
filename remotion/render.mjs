@@ -64,6 +64,17 @@ try {
       if (days >= 0) inputProps.daysUntil = days;
     }
   }
+  if (template === "highlight") {
+    if (params.background) inputProps.background = stage(params.background);
+    if (params.logo) inputProps.logo = stage(params.logo);
+    if (params.heroImage) inputProps.heroImage = stage(params.heroImage);
+    if (Array.isArray(params.items)) {
+      inputProps.items = params.items.map((d) => (d.logo ? { ...d, logo: stage(d.logo) } : d));
+    }
+    if (Array.isArray(params.sponsors)) {
+      inputProps.sponsors = params.sponsors.map(stage);
+    }
+  }
 
   console.log(`[render] bundling (${template}) ...`);
   const serveUrl = await bundle({

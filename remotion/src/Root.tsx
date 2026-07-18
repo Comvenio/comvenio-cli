@@ -5,7 +5,9 @@ import { Composition } from "remotion";
 import { ResultBoard } from "./ResultBoard";
 import { Slideshow } from "./Slideshow";
 import { Teaser } from "./Teaser";
+import { Highlight } from "./Highlight";
 import {
+  HIGHLIGHT_DEFAULT_SECONDS,
   FPS,
   HEIGHT,
   RESULT_DEFAULT_SECONDS,
@@ -68,6 +70,22 @@ export const RemotionRoot: React.FC = () => {
         }}
         calculateMetadata={({ props }) => ({
           durationInFrames: toFrames(props.durationOverride ?? TEASER_DEFAULT_SECONDS),
+        })}
+      />
+      <Composition
+        id="highlight"
+        component={Highlight}
+        width={WIDTH}
+        height={HEIGHT}
+        fps={FPS}
+        durationInFrames={toFrames(HIGHLIGHT_DEFAULT_SECONDS)}
+        defaultProps={{
+          title: "Titel",
+          brandColor: "#0E847B",
+          items: [],
+        }}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: toFrames(props.durationOverride ?? HIGHLIGHT_DEFAULT_SECONDS),
         })}
       />
     </>

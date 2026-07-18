@@ -35,6 +35,33 @@ export type TeaserProps = CommonBranding & {
   daysUntil?: number; // computed deterministically by render.mjs (countdown look)
 };
 
+// Generic highlight template — NO org-specific fields. All content is supplied per render.
+export type HighlightItem = {
+  label?: string; // short tag (e.g. a weekday or category)
+  text: string; // the main line
+  logo?: string; // staticFile-relative path (staged), optional
+};
+
+export type HighlightProps = CommonBranding & {
+  title: string; // main headline
+  subtitle?: string; // optional line above the title
+  orgName?: string; // organisation/club name
+  dateRange?: string; // e.g. a date or date range
+  kicker?: string; // small line under the opening logo
+  itemsHeading?: string; // heading above the item list
+  items?: HighlightItem[]; // list rows (max 3 fit comfortably)
+  noteText?: string; // a short highlighted note
+  closingText?: string; // closing line (e.g. an invitation)
+  // staticFile-relative asset paths (staged by render.mjs from local paths)
+  background?: string; // background texture/image
+  logo?: string; // organisation logo
+  heroImage?: string; // large hero image
+  sponsors?: string[]; // sponsor logos
+  greenColor?: string;
+  creamColor?: string;
+  goldColor?: string;
+};
+
 export const FPS = 30;
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
@@ -43,6 +70,7 @@ export const SLIDESHOW_INTRO_SECONDS = 2.5;
 export const SLIDESHOW_MIN_SECONDS = 8;
 export const RESULT_DEFAULT_SECONDS = 12;
 export const TEASER_DEFAULT_SECONDS = 10;
+export const HIGHLIGHT_DEFAULT_SECONDS = 20;
 
 export function slideshowDurationSeconds(p: SlideshowProps): number {
   if (p.durationOverride) return p.durationOverride;
