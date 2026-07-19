@@ -190,7 +190,9 @@ Wichtigste Enums (autoritativ via `comvenio schema`):
   Das Aussehen kommt aus **Config**, nicht aus club-spezifischem Code: EIN generisches
   `flex`-Template, das die Config liest. Setzen mit `comvenio club design --public-template flex
   --primary "#.." --accent "#.." --file design_settings.json`. Brand-Farben kommen aus
-  `--primary/--accent/--secondary` (nicht aus der Flex-Config).
+  `--primary/--accent/--secondary` (nicht aus der Flex-Config). **Landing-Modus** (reine
+  Vollbild-Teaser-Startseite ohne Nav/Hero/About/Footer): `custom_template_config.landing=true`,
+  siehe `docs/homepage.md` Abschnitt „Landing-Modus“.
 
 ## Generieren = du, nicht der Server (Leitprinzip)
 
