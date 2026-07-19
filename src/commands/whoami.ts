@@ -14,8 +14,7 @@ type MeResponse = {
 /**
  * `comvenio whoami` — resolve the logged-in user via GET /user/users/me.
  * Best-effort: a valid state file already proves login, so if the user-service
- * is unreachable we still report clubId/environment from the local state
- * (Lastenheft TC-05, rts-cli whoami pattern).
+ * is unreachable we still report clubId/environment from the local state.
  */
 export function registerWhoamiCommand(cli: CAC): void {
   cli

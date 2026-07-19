@@ -1,5 +1,4 @@
-// Tiny pretty-printers. No table dep — keep the compiled binary small.
-// Vorbild: rts-cli/src/format.ts.
+// Tiny pretty-printers. No table dependency to keep the compiled binary small.
 
 export function truncate(value: unknown, max: number): string {
   const s = value == null ? "" : String(value);

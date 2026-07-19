@@ -1,6 +1,6 @@
-// State-File + Auth for the comvenio CLI.
-// Vorbild: rts-cli/src/auth.ts — BUT the token here is an OPAQUE device token
-// (cvn_...), not a JWT. We never decode it; the server validates expiry (D-08).
+// State-file authentication for the Comvenio CLI.
+// The token is an opaque device token (cvn_...), not a JWT. We never decode it;
+// the server validates its expiry.
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";

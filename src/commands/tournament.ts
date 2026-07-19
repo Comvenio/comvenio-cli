@@ -11,7 +11,7 @@ import { parseSetsNotation } from "../util/sets.ts";
 
 // gateway key "tournament" -> tournament-service. V3 engine: a match pairs
 // PARTICIPANTS via sides (Einzelspieler / Doppel / Mannschaft), never a team.
-// Only verified endpoint paths are used here (no guessing — gotcha rts.md).
+// Only verified endpoint paths are used here.
 
 type Opts = {
   json?: boolean;

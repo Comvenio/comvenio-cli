@@ -1,4 +1,4 @@
-// HTTP client against the Comvenio gateway. Vorbild: rts-cli/src/http.ts.
+// HTTP client against the Comvenio gateway.
 // Every request carries `Authorization: Bearer <opaque cvn_ token>`. GETs are
 // retried on transient gateway errors; mutations are NEVER auto-retried.
 import type { ComvenioCliState } from "./auth.ts";
