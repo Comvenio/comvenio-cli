@@ -60,6 +60,12 @@ const highlightItem = z.object({
   logo: existingFile("items[].logo").optional(),
 });
 
+const highlightPartner = z.object({
+  name: z.string().min(1),
+  subtitle: z.string().optional(),
+  logo: existingFile("partners[].logo").optional(),
+});
+
 export const highlightSchema = z.object({
   ...common,
   title: z.string().min(1),
@@ -69,6 +75,7 @@ export const highlightSchema = z.object({
   kicker: z.string().optional(),
   itemsHeading: z.string().optional(),
   items: z.array(highlightItem).max(3).optional(),
+  partners: z.array(highlightPartner).max(2).optional(),
   noteText: z.string().optional(),
   closingText: z.string().optional(),
   background: existingFile("background").optional(),

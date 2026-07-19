@@ -42,6 +42,14 @@ export type HighlightItem = {
   logo?: string; // staticFile-relative path (staged), optional
 };
 
+// A partner/sponsor card with more copy than a sponsor logo row (e.g. catering,
+// beverages, a venue) — shown in an optional scene between the item list and the note.
+export type HighlightPartner = {
+  name: string; // main line (e.g. a partner name)
+  subtitle?: string; // secondary line (e.g. a description)
+  logo?: string; // staticFile-relative path (staged), optional
+};
+
 export type HighlightProps = CommonBranding & {
   title: string; // main headline
   subtitle?: string; // optional line above the title
@@ -50,6 +58,7 @@ export type HighlightProps = CommonBranding & {
   kicker?: string; // small line under the opening logo
   itemsHeading?: string; // heading above the item list
   items?: HighlightItem[]; // list rows (max 3 fit comfortably)
+  partners?: HighlightPartner[]; // optional partner/sponsor cards (max 2) — own scene after the list
   noteText?: string; // a short highlighted note
   closingText?: string; // closing line (e.g. an invitation)
   // staticFile-relative asset paths (staged by render.mjs from local paths)
@@ -71,9 +80,18 @@ export const SLIDESHOW_MIN_SECONDS = 8;
 export const RESULT_DEFAULT_SECONDS = 12;
 export const TEASER_DEFAULT_SECONDS = 10;
 export const HIGHLIGHT_DEFAULT_SECONDS = 20;
+// The optional partners scene adds this many frames (kept in whole frames so the
+// scene windows in Highlight.tsx line up exactly with the composition duration).
+export const HIGHLIGHT_PARTNERS_EXTRA_FRAMES = 128;
 
 export function slideshowDurationSeconds(p: SlideshowProps): number {
   if (p.durationOverride) return p.durationOverride;
   const total = SLIDESHOW_INTRO_SECONDS + p.images.length * p.durationPerImage;
   return Math.max(SLIDESHOW_MIN_SECONDS, total);
+}
+
+export function highlightDurationSeconds(p: HighlightProps): number {
+  if (p.durationOverride) return p.durationOverride;
+  const extra = p.partners && p.partners.length ? HIGHLIGHT_PARTNERS_EXTRA_FRAMES / FPS : 0;
+  return HIGHLIGHT_DEFAULT_SECONDS + extra;
 }

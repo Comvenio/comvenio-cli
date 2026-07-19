@@ -14,6 +14,7 @@ import {
   TEASER_DEFAULT_SECONDS,
   WIDTH,
   slideshowDurationSeconds,
+  highlightDurationSeconds,
 } from "./types";
 
 const toFrames = (seconds: number) => Math.round(seconds * FPS);
@@ -85,7 +86,7 @@ export const RemotionRoot: React.FC = () => {
           items: [],
         }}
         calculateMetadata={({ props }) => ({
-          durationInFrames: toFrames(props.durationOverride ?? HIGHLIGHT_DEFAULT_SECONDS),
+          durationInFrames: toFrames(highlightDurationSeconds(props)),
         })}
       />
     </>
