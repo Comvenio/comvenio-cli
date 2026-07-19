@@ -1,0 +1,50 @@
+name: Hilfe anfordern
+description: Stellen Sie eine Frage zur Installation oder Verwendung des Comvenio CLI.
+title: "[Hilfe]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Öffentliche Issues sind für allgemeine Hilfe gedacht. Melden Sie
+        Sicherheitsprobleme über „Report a vulnerability“.
+  - type: textarea
+    id: question
+    attributes:
+      label: Wobei benötigen Sie Hilfe?
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Betroffener Befehl
+      placeholder: comvenio ...
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Betriebssystem
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Anderes
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: Was haben Sie bereits versucht?
+  - type: textarea
+    id: output
+    attributes:
+      label: Bereinigte Meldung
+      description: Fügen Sie nur Meldungen ohne Tokens und Vereinsdaten ein.
+      render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Datenschutz
+      options:
+        - label: Ich habe Tokens, Passwörter und personenbezogene Vereinsdaten entfernt.
+          required: true
