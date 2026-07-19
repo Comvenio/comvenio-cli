@@ -5,6 +5,7 @@ import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 import { uploadClubFile } from "../util/upload.ts";
+import { cleanupOptimizedVideo, formatMb, isVideoFile, optimizeVideoForWeb } from "../util/optimizeVideo.ts";
 
 // K12 — `comvenio data <action>`: load, list, provide club files via the
 // content-service (the existing "DataShare" domain). RBAC server-side: the CLI
@@ -57,6 +58,7 @@ type DataOpts = {
   protected?: string;
   areaId?: string;
   areaIds?: string;
+  optimizeVideo?: boolean;
 };
 
 // data update: CLI value "none" clears a field (sends explicit null to the PATCH)
@@ -107,6 +109,10 @@ export function registerDataCommands(cli: CAC): void {
     .option("--out <path>", "Zielpfad (download)")
     .option("--label <bucket>", "context_label/Bucket (upload/update), z.B. title_picture|flyer|gallery; 'none' loescht bei update")
     .option("--public", "Sichtbarkeit public (upload; Default private)")
+    .option(
+      "--optimize-video",
+      "upload: Video vor dem Hochladen automatisch fuers mobile Autoplay optimieren (ffmpeg: H.264 main/4.0, max. 1280px, kein Audio, faststart)",
+    )
     .option("--type <doc>", "document_type-Filter (papers): protokoll|flyer|bericht|...")
     .option("--format <fmt>", "Export-Format csv|xlsx (data export; Default csv)")
     .option("--department <id>", "Abteilungs-ID fuer Ordner/Datei-Scope")
@@ -230,23 +236,52 @@ export function registerDataCommands(cli: CAC): void {
         case "upload": {
           if (!arg) throw new Error("data upload <pfad> benoetigt eine lokale Datei.");
           if (!opts.context) throw new Error("data upload benoetigt --context <type>.");
-          const uploaded = await uploadClubFile({
-            client,
-            clubId,
-            path: arg,
-            contextType: opts.context,
-            contextId: opts.contextId,
-            subContextId: opts.subContextId,
-            departmentId: opts.department,
-            label: opts.label,
-            isPublic: opts.public,
-          });
-          output(
-            uploaded,
-            opts.json,
-            () =>
-              `Bereitgestellt: ${uploaded.filename} (${uploaded.size_bytes ?? "?"} Bytes, ${uploaded.visibility}) — file_id ${uploaded.file_id}`,
-          );
+
+          // --optimize-video (mobile Autoplay, RTS-Item 39183f0b): re-encoded via ffmpeg in ein
+          // temp-Verzeichnis BEVOR presign-upload aufgerufen wird — Original bleibt unangetastet,
+          // nur die optimierte Kopie wird hochgeladen. Temp-Verzeichnis wird danach immer aufgeraeumt.
+          let uploadPath = arg;
+          let optimizedDir: string | undefined;
+          let optimizeStats: { inputSizeBytes: number; outputSizeBytes: number } | undefined;
+          if (opts.optimizeVideo) {
+            if (!isVideoFile(arg)) {
+              throw new Error(
+                "--optimize-video erwartet eine Video-Datei (.mp4/.mov/.webm/.mkv).",
+              );
+            }
+            const optimized = await optimizeVideoForWeb(arg);
+            uploadPath = optimized.path;
+            optimizedDir = optimized.dir;
+            optimizeStats = optimized;
+            console.error(
+              `Video optimiert: ${formatMb(optimized.inputSizeBytes)} MB -> ${formatMb(optimized.outputSizeBytes)} MB`,
+            );
+          }
+
+          try {
+            const uploaded = await uploadClubFile({
+              client,
+              clubId,
+              path: uploadPath,
+              contextType: opts.context,
+              contextId: opts.contextId,
+              subContextId: opts.subContextId,
+              departmentId: opts.department,
+              label: opts.label,
+              isPublic: opts.public,
+            });
+            output(
+              optimizeStats ? { ...uploaded, optimized: optimizeStats } : uploaded,
+              opts.json,
+              () =>
+                `Bereitgestellt: ${uploaded.filename} (${uploaded.size_bytes ?? "?"} Bytes, ${uploaded.visibility}) — file_id ${uploaded.file_id}` +
+                (optimizeStats
+                  ? `\nVideo optimiert: ${formatMb(optimizeStats.inputSizeBytes)} MB -> ${formatMb(optimizeStats.outputSizeBytes)} MB`
+                  : ""),
+            );
+          } finally {
+            if (optimizedDir) cleanupOptimizedVideo(optimizedDir);
+          }
           break;
         }
 
