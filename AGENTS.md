@@ -462,7 +462,7 @@ Videos für News generieren → `comvenio news video` (Remotion, siehe unten).
 ### Videos generieren (`comvenio news video`, K7)
 
 Rendert **lokal** per Remotion (Node + Chromium, `remotion/`-Unterprojekt — läuft NIEMALS im
-Backend). Drei fixe Templates, parametrisiert über eine Zod-validierte `params.json` —
+Backend). Vier fixe Templates, parametrisiert über eine Zod-validierte `params.json` —
 du schreibst KEINE eigenen Remotion-Kompositionen:
 
 | Template | Inhalt | Pflicht-Params | Optional |
@@ -470,11 +470,13 @@ du schreibst KEINE eigenen Remotion-Kompositionen:
 | `slideshow` | Galerie-Slideshow, Ken-Burns + Overlays | `title`, `images[]` (min. 2 lokale Pfade), `brandColor` (#rrggbb) | `subtitle`, `overlays[]` (Länge = images), `durationPerImage` (2-10s, Default 4), `logoPath` |
 | `result` | Ergebnis-Tafel | `homeTeam`, `awayTeam`, `homeScore`, `awayScore` (int >= 0), `brandColor` | `competition`, `scorers[]` („Name (Minute)"), `date` (ISO), `logoPath` |
 | `teaser` | Ankündigungs-Teaser mit Countdown-Optik | `title`, `date` (ISO), `brandColor` | `location`, `ctaText`, `backgroundImage`, `logoPath` |
+| `highlight` | Generischer, loopfähiger Highlight-/Auftakt-Clip: Logo-Opener → Hero-Bild → Titel/Datum → Programm-Liste (`items[]`) → optionale Partner-/Gastro-Szene → Hinweis + Sponsoren → Closing | `title`, `brandColor` | `subtitle`, `orgName`, `dateRange`, `kicker`, `itemsHeading`, `items[]` (max. 3, `{label?, text, logo?}`), **`partners[]`** (max. 2, `{name, subtitle?, logo?}` — eigene Szene zwischen Programm-Liste und Hinweis; nur gerendert wenn gesetzt, verlängert das Video automatisch um ~4,3s/128 Frames, kein `durationOverride` nötig), **`partnersBackdrop`** (ein dezentes Deko-Motiv hinter den Partner-Karten, lokaler Bildpfad), `noteText`, `closingText`, `background`, `logo`, `heroImage`, `sponsors[]`, `greenColor`/`creamColor`/`goldColor`, `logoPath` |
 
 ```bash
 # 1. Bilder beschaffen (Galerie -> lokal): comvenio data download <file_id> --out ./bilder/…
 # 2. params.json bauen (Club-Farben kennst du aus dem Kontext — kein Auto-Fetch)
-# 3. Rendern (16:9, 1080p, H.264; Dauer: slideshow n*4s, result 12s, teaser 10s; --duration übersteuert):
+# 3. Rendern (16:9, 1080p, H.264; Dauer: slideshow n*4s, result 12s, teaser 10s, highlight 20s
+#    (+~4,3s wenn partners[] gesetzt ist); --duration übersteuert IMMER, egal welches Template):
 comvenio news video slideshow --params params.json --out fest.mp4
 # 4. Hochladen + Embed-Snippet bekommen (Limit 200 MB):
 comvenio news video slideshow --params params.json --upload --context event --context-id <id> --json
@@ -483,6 +485,19 @@ comvenio news video slideshow --params params.json --upload --context event --co
 
 Erster Render lädt die Chrome-Headless-Shell (~110 MB, einmalig). Fehlen die Dependencies:
 `cd remotion && npm install`.
+
+**`highlight` als Quelle für das `background_video`-Widget der Club-Homepage:** Statt eines
+Embed-Snippets in einer News kann das gerenderte `highlight`-Video auch als Hintergrund-Loop
+der öffentlichen Vereinsseite dienen (Sub-File
+`AI-docs/concepts/club/homepage-generator/13-hero-background-video.md`). Dafür **public** und
+mit Club-Kontext hochladen statt mit News-Kontext:
+
+```bash
+comvenio news video highlight --params highlight.json \
+  --upload --context club --context-id <club-id> --public --json
+# Antwort enthält file_id -> in einem "background_video"-Widget als video_file_id referenzieren
+# (homepage apply / homepage preview, siehe Sub-File 13). Kein news.json-Umweg nötig.
+```
 
 ## RBAC (serverseitig geprüft)
 

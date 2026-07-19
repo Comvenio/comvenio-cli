@@ -104,6 +104,7 @@ Der vollständige Datei- und Ordner-Workflow steht in [`dateien.md`](dateien.md)
 comvenio news video slideshow --params slideshow.json --out fest.mp4 --json
 comvenio news video result --params result.json --out ergebnis.mp4 --json
 comvenio news video teaser --params teaser.json --out teaser.mp4 --json
+comvenio news video highlight --params highlight.json --out highlight.mp4 --json
 ```
 
 Vorlagen:
@@ -113,6 +114,14 @@ Vorlagen:
 | `slideshow` | `title`, `images[]` (mindestens 2), `brandColor` | `subtitle`, `overlays[]`, `durationPerImage`, `logoPath` |
 | `result` | `homeTeam`, `awayTeam`, `homeScore`, `awayScore`, `brandColor` | `competition`, `scorers[]`, `date`, `logoPath` |
 | `teaser` | `title`, `date`, `brandColor` | `location`, `ctaText`, `backgroundImage`, `logoPath` |
+| `highlight` | `title`, `brandColor` | `subtitle`, `orgName`, `dateRange`, `kicker`, `itemsHeading`, `items[]` (max. 3), `partners[]` (max. 2, siehe unten), `partnersBackdrop`, `noteText`, `closingText`, `background`, `logo`, `heroImage`, `sponsors[]`, `greenColor`/`creamColor`/`goldColor`, `logoPath` |
+
+`highlight` ist generisch (loopfähiger Auftakt-Clip, kein vereinsspezifischer Code) und kann
+optional eine **Partner-/Gastro-Szene** zeigen: `partners[]` ist ein Array aus max. 2 Karten
+`{ name, subtitle?, logo? }` (`logo` ist ein lokaler Bildpfad), `partnersBackdrop` ein optionales,
+dezentes Deko-Motiv im Hintergrund der Karten. Die Szene erscheint nur, wenn `partners` gesetzt
+ist, und liegt zwischen der Programm-Liste (`items[]`) und dem Hinweistext (`noteText`); das Video
+wird dadurch automatisch ca. 4,3 Sekunden länger — kein manuelles `--duration` nötig.
 
 Beispiel:
 
@@ -122,6 +131,20 @@ Beispiel:
   "images": ["C:/bilder/1.jpg", "C:/bilder/2.jpg"],
   "brandColor": "#174a7e",
   "durationPerImage": 4
+}
+```
+
+Beispiel `highlight` mit optionaler Partner-Szene:
+
+```json
+{
+  "title": "Sommerfest",
+  "brandColor": "#174a7e",
+  "items": [{ "label": "Samstag", "text": "Fassanstich um 18 Uhr" }],
+  "partners": [
+    { "name": "Partnername", "subtitle": "Kurzbeschreibung", "logo": "C:/bilder/partner-logo.png" }
+  ],
+  "partnersBackdrop": "C:/bilder/partner-backdrop.png"
 }
 ```
 
