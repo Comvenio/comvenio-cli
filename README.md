@@ -31,9 +31,11 @@ um sie auszuführen.
 ## KI-Assistent mit Comvenio Skills verbinden
 
 Für Claude, Codex und andere kompatible KI-Assistenten gibt es offizielle
-Comvenio Skills. Sie führen den Assistenten kundenorientiert durch Anmeldung,
-Vereinsauswahl und sichere Arbeitsabläufe für Veranstaltungen, Homepage,
-Sitzungen, Bewirtung, Aufgaben und Turniere.
+Comvenio Skills. Der Katalog enthält 18 Skills: einen sicheren Einstieg,
+Fachhilfe für Verein, Mitglieder, Buchungen, Veranstaltungen, Homepage,
+Sitzungen, Bewirtung, Aufgaben, Turniere, News, Dateien, Geländepläne und
+Sponsoring sowie übergreifende Workflows für Veranstaltungstag,
+Helferkoordination, Saisonplanung und Vereins-Onboarding.
 
 Alle Skills installieren:
 
@@ -52,10 +54,14 @@ Repository [Comvenio/comvenio-skills](https://github.com/Comvenio/comvenio-skill
 Die Skills verwenden ausschließlich dieses CLI. Das persönliche Zugriffstoken
 gehört nur in den lokalen `comvenio login`-Befehl und niemals in den Chat.
 
+Rollen und Berechtigungen, Community-/Channel-Moderation,
+ClubAgent-Administration und wesentliche Finanzabläufe sind derzeit keine
+CLI-Workflows. Eine eigene Domain wird in der Comvenio-Web-App angebunden.
+
 ## Verwendung
 
 ```bash
-# Einloggen — Token in der Web-App unter "CLI-Zugriff" erzeugen
+# Einloggen — Token unter Mein Bereich → CLI-Zugriff erzeugen
 comvenio login --token cvn_a1b2c3...            # PROD (Default)
 comvenio login --token cvn_... --env dev        # DEV-Gateway (apidev.comvenio.app)
 comvenio login --token cvn_... --club <club-id> # Club-ID explizit setzen
