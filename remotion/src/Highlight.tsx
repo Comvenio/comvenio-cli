@@ -123,8 +123,8 @@ const Hero: React.FC<{ heroImage?: string; start: number; end: number }> = ({ he
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame: frame - start, fps, config: { damping: 16, stiffness: 80 } });
-  const scale = interpolate(enter, [0, 1], [0.78, 1]);
-  const rot = interpolate(enter, [0, 1], [-4, 0]);
+  const scale = interpolate(enter, [0, 1], [0.84, 1]);
+  const rot = interpolate(enter, [0, 1], [-2, 0]);
   const o = win(frame, start, end, 14, 18);
   const shine = interpolate(frame, [start + 20, start + 60], [-60, 160], {
     extrapolateLeft: "clamp",
@@ -134,7 +134,7 @@ const Hero: React.FC<{ heroImage?: string; start: number; end: number }> = ({ he
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: o }}>
       <div style={{ position: "relative", transform: `scale(${scale}) rotate(${rot}deg)` }}>
         {heroImage ? (
-          <Img src={staticFile(heroImage)} style={{ height: 740, filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.55))" }} />
+          <Img src={staticFile(heroImage)} style={{ height: 560, filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.55))" }} />
         ) : null}
         <div
           style={{
@@ -370,18 +370,33 @@ const NoteSponsors: React.FC<{
 // ---------- optional scene: partner cards (catering, beverages, venue …) ----------
 const Partners: React.FC<{
   partners?: HighlightProps["partners"];
+  backdrop?: string;
   cream: string;
   gold: string;
   start: number;
   end: number;
-}> = ({ partners, cream, gold, start, end }) => {
+}> = ({ partners, backdrop, cream, gold, start, end }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const o = win(frame, start, end, 12, 16);
   const rows = partners ?? [];
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: o }}>
-      <div style={{ width: 1240, fontFamily: FONT_STACK }}>
+      {backdrop ? (
+        <Img
+          src={staticFile(backdrop)}
+          style={{
+            position: "absolute",
+            right: "-4%",
+            top: "50%",
+            transform: "translateY(-50%)",
+            height: 980,
+            opacity: 0.14,
+            filter: "saturate(0.85)",
+          }}
+        />
+      ) : null}
+      <div style={{ width: 1240, fontFamily: FONT_STACK, position: "relative" }}>
         {rows.map((p, i) => {
           const enter = spring({ frame: frame - start - 12 - i * 14, fps, config: { damping: 16, stiffness: 120 } });
           const y = interpolate(enter, [0, 1], [60, 0]);
@@ -518,6 +533,7 @@ export const Highlight: React.FC<HighlightProps> = (props) => {
       {hasPartners ? (
         <Partners
           partners={props.partners}
+          backdrop={props.partnersBackdrop}
           cream={cream}
           gold={gold}
           start={448}

@@ -59,6 +59,7 @@ export type HighlightProps = CommonBranding & {
   itemsHeading?: string; // heading above the item list
   items?: HighlightItem[]; // list rows (max 3 fit comfortably)
   partners?: HighlightPartner[]; // optional partner/sponsor cards (max 2) — own scene after the list
+  partnersBackdrop?: string; // optional decorative motif behind the partner cards (staged), subtle
   noteText?: string; // a short highlighted note
   closingText?: string; // closing line (e.g. an invitation)
   // staticFile-relative asset paths (staged by render.mjs from local paths)

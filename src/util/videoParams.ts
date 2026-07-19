@@ -76,6 +76,7 @@ export const highlightSchema = z.object({
   itemsHeading: z.string().optional(),
   items: z.array(highlightItem).max(3).optional(),
   partners: z.array(highlightPartner).max(2).optional(),
+  partnersBackdrop: existingFile("partnersBackdrop").optional(),
   noteText: z.string().optional(),
   closingText: z.string().optional(),
   background: existingFile("background").optional(),
