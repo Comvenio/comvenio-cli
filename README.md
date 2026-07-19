@@ -18,6 +18,17 @@ Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
 
 Stack: **Bun + cac + TypeScript**. Bau-Vorbild: `comvenio-tools/rts-cli`.
 
+## Bereitstellung und Lizenz
+
+Dieses Repository stellt den Quellcode öffentlich bereit. Das CLI wird nicht
+als npm-Paket veröffentlicht und ist ausschließlich für die Verwendung mit
+Comvenio-Diensten und einem gültigen Comvenio-Zugang bestimmt.
+
+Die [Comvenio CLI Source-Available License](LICENSE) erlaubt Download,
+Installation und Verwendung für Comvenio. Sie ist keine Open-Source-Lizenz und
+erlaubt insbesondere keine eigenständige Weitervermarktung oder Verwendung mit
+anderen Diensten.
+
 ## Installation
 
 ```bash
@@ -303,3 +314,15 @@ src/
     tournament.ts     # tournament <action>-Dispatcher → V3-Turniere (tournament-service)
     event.ts menu.ts recipe.ts task.ts member.ts ...   # je ein <action>-Dispatcher pro Service
 ```
+
+## Support und Mitwirkung
+
+Nutzen Sie für Fehler, Wünsche und allgemeine Hilfe die
+[Issue-Formulare](https://github.com/Comvenio/comvenio-cli/issues/new/choose).
+Veröffentlichen Sie dort keine Zugriffstoken, Passwörter oder
+personenbezogenen Vereinsdaten.
+
+Sicherheitsprobleme werden gemäß [SECURITY.md](SECURITY.md) ausschließlich
+privat gemeldet. Hinweise für Beiträge stehen in
+[CONTRIBUTING.md](CONTRIBUTING.md); wichtige Änderungen werden im
+[CHANGELOG.md](CHANGELOG.md) dokumentiert.

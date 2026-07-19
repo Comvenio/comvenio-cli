@@ -1,0 +1,45 @@
+name: Verbesserung vorschlagen
+description: Schlagen Sie einen neuen oder verbesserten Comvenio-CLI-Ablauf vor.
+title: "[Wunsch]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Beschreiben Sie den Vereinsablauf aus Kundensicht. Direkte API- oder
+        Infrastrukturwege sind keine zulässige Lösung.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+    validations:
+      required: true
+  - type: input
+    id: area
+    attributes:
+      label: Betroffener Vereinsbereich
+      placeholder: Zum Beispiel Mitglieder, Veranstaltungen oder Homepage
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Gewünschter CLI-Ablauf
+      description: Beschreiben Sie Eingabe, notwendige Prüfung und gewünschtes Ergebnis.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Erwarteter Nutzen
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Datenschutz
+      options:
+        - label: Der Vorschlag enthält keine Tokens oder personenbezogenen Vereinsdaten.
+          required: true
+

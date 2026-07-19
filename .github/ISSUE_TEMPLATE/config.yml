@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitsproblem privat melden
+    url: https://github.com/Comvenio/comvenio-cli/security/advisories/new
+    about: Bitte melden Sie Schwachstellen vertraulich und nicht als öffentliches Issue.
+

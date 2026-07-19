@@ -1,0 +1,104 @@
+Comvenio CLI Source-Available License
+Version 1.0, 19 July 2026
+
+Copyright (c) 2026 Comvenio. All rights reserved.
+
+This license governs the source code, documentation, and compiled forms of the
+Comvenio CLI made available in this repository (the "Software"). The Software
+is source-available, but it is not open-source software.
+
+1. Definitions
+
+"Authorized User" means a person or legal entity with a valid Comvenio account
+or separate written authorization from Comvenio.
+
+"Comvenio Services" means software, APIs, websites, and hosted services owned
+or operated by Comvenio.
+
+2. Limited license grant
+
+Subject to this license, Comvenio grants an Authorized User a limited,
+non-exclusive, non-transferable, non-sublicensable, revocable license to:
+
+a. download and inspect the Software;
+b. install and execute unmodified copies of the Software solely to access,
+   administer, or automate an authorized account on Comvenio Services; and
+c. make reasonable internal backup copies for that permitted use.
+
+No right is granted to use the Software with a service that is not a Comvenio
+Service.
+
+3. Evaluation and contributions
+
+You may modify the Software only to evaluate a proposed change or to submit a
+contribution to the official Comvenio repository. You may share such a
+modification only with Comvenio through its official contribution process.
+You may not operate, distribute, or provide a modified version to another
+person unless Comvenio gives prior written permission or incorporates the
+change into an official version.
+
+4. Restrictions
+
+Except where applicable law requires otherwise, you may not:
+
+a. sell, rent, lease, sublicense, redistribute, or commercially exploit the
+   Software;
+b. provide the Software, or access to it, as a product or service for a third
+   party;
+c. use the Software to access, imitate, replace, compete with, or interoperate
+   with a service that is not a Comvenio Service;
+d. remove or alter copyright, license, trademark, or attribution notices; or
+e. use Comvenio names, logos, or trademarks except to identify the Software's
+   origin and intended service.
+
+5. Comvenio account and service terms
+
+This license does not create a Comvenio account or grant access to Comvenio
+Services. Access to Comvenio Services remains subject to the applicable
+customer agreement, terms of service, permissions, and subscription. If those
+terms conflict with this license regarding use of the Services, the service
+terms control for the Services.
+
+6. Contributions
+
+Unless you clearly state otherwise before submission, any contribution you
+intentionally submit to Comvenio for inclusion in the Software may be used,
+modified, reproduced, sublicensed, relicensed, and distributed by Comvenio
+without restriction or additional compensation. You confirm that you have the
+right to grant these permissions.
+
+7. Ownership
+
+The Software is licensed, not sold. Comvenio and its licensors retain all
+right, title, and interest in the Software. No rights are granted except those
+expressly stated in this license.
+
+8. Termination
+
+This license terminates automatically if you breach its terms. Upon
+termination, you must stop using the Software and delete copies in your
+possession or control, except where retention is required by law. Sections 4,
+6, 7, 9, and 10 survive termination.
+
+9. Disclaimer of warranty
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED "AS IS" AND
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
+NON-INFRINGEMENT.
+
+10. Limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, COMVENIO AND ITS LICENSORS WILL NOT BE
+LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR
+PUNITIVE DAMAGES, OR FOR LOSS OF DATA, PROFITS, REVENUE, OR BUSINESS, ARISING
+FROM OR RELATED TO THE SOFTWARE OR THIS LICENSE.
+
+11. Mandatory law and severability
+
+Nothing in this license limits rights that cannot lawfully be limited. If a
+provision is unenforceable, it will be enforced to the maximum extent allowed,
+and the remaining provisions will continue in effect.
+
+For permissions beyond this license, contact Comvenio through the official
+support channels listed at https://comvenio.app/.

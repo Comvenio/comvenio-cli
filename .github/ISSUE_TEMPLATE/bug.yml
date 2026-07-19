@@ -1,0 +1,71 @@
+name: Fehler melden
+description: Melden Sie ein reproduzierbares Problem mit dem Comvenio CLI.
+title: "[Fehler]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vielen Dank für den Hinweis. Veröffentlichen Sie keine Zugriffstoken,
+        Passwörter oder personenbezogenen Vereinsdaten.
+  - type: input
+    id: command
+    attributes:
+      label: Betroffener Befehl
+      placeholder: comvenio event list
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CLI-Version oder Commit
+      description: Geben Sie die Version oder den verwendeten Commit an, sofern bekannt.
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Betriebssystem
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Anderes
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Was ist passiert?
+      description: Beschreiben Sie das sichtbare Verhalten ohne vertrauliche Daten.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zum Nachstellen
+      placeholder: |
+        1. CLI anmelden
+        2. Befehl ausführen
+        3. Bereinigte Meldung beobachten
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Bereinigte Ausgabe
+      description: Entfernen Sie Tokens, IDs und personenbezogene Vereinsdaten.
+      render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Datenschutz
+      options:
+        - label: Ich habe Tokens, Passwörter und personenbezogene Vereinsdaten entfernt.
+          required: true
+
