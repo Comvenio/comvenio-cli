@@ -28,6 +28,30 @@ bun run build        # erzeugt die Binary "comvenio" (bzw. comvenio.exe auf Wind
 Die Binary ist eigenständig (`bun build --compile`) — keine Bun-Laufzeit nötig,
 um sie auszuführen.
 
+## KI-Assistent mit Comvenio Skills verbinden
+
+Für Claude, Codex und andere kompatible KI-Assistenten gibt es offizielle
+Comvenio Skills. Sie führen den Assistenten kundenorientiert durch Anmeldung,
+Vereinsauswahl und sichere Arbeitsabläufe für Veranstaltungen, Homepage,
+Sitzungen, Bewirtung, Aufgaben und Turniere.
+
+Alle Skills installieren:
+
+```bash
+npx skills add Comvenio/comvenio-skills --all
+```
+
+Verfügbare Skills zuerst anzeigen:
+
+```bash
+npx skills add Comvenio/comvenio-skills --list
+```
+
+Der vollständige Katalog und weitere Installationsmöglichkeiten stehen im
+Repository [Comvenio/comvenio-skills](https://github.com/Comvenio/comvenio-skills).
+Die Skills verwenden ausschließlich dieses CLI. Das persönliche Zugriffstoken
+gehört nur in den lokalen `comvenio login`-Befehl und niemals in den Chat.
+
 ## Verwendung
 
 ```bash
