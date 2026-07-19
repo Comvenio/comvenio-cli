@@ -71,6 +71,19 @@ Workflows brauchst, wird das CLI erweitert. Und: der bestehende Command `plan` i
 > Nebeneffekt-Beweis: Direkte HTTP-Clients ohne Browser-User-Agent werden von Cloudflare mit
 > `403 error code 1010` geblockt — ein weiterer Grund, immer über das CLI zu gehen.
 
+## Kunden-Support: eigene Domain
+
+Die Einrichtung einer kundeneigenen Domain ist ein bewusster Self-Service-Ablauf in der Web-App und kein CLI-Command:
+
+1. Kunde zu **Club-Hub → Design → Öffentliche Website → Domainverwaltung** führen.
+2. Vollständigen Hostnamen ohne Protokoll oder Pfad eingeben und **Hinzufügen** wählen.
+3. Kunde übernimmt TXT und CNAME exakt aus **Anleitung anzeigen** bei seinem Domain-Anbieter.
+4. In Comvenio **Verifizieren** wählen und auf **Aktiv** warten.
+5. Erst danach mit `comvenio verify url https://<hostname> --json` prüfen.
+
+Eigene Domains sind in Premium und Enterprise verfügbar. Nie direkte API-Aufrufe oder manuelle Cloudflare-Einträge als Kundenlösung verwenden. Nie nach Zugangsdaten des Domain-Anbieters fragen. `verify homepage` prüft nicht die kundeneigene Domain; dafür immer `verify url` verwenden.
+
+Die kundenorientierte Langfassung steht in `README.md` unter **„Eigene Domain für die öffentliche Vereinswebsite“**.
 ## Quickstart (Auth)
 
 ```bash

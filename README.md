@@ -60,6 +60,43 @@ comvenio logout
 
 `--gateway <url>` überschreibt die Basis direkt.
 
+## Eigene Domain für die öffentliche Vereinswebsite
+
+Vereine mit **Premium** oder **Enterprise** können eine bereits vorhandene Domain mit ihrer öffentlichen Comvenio-Website verbinden. Die Einrichtung erfolgt im **Club-Hub** unter **Design → Öffentliche Website → Domainverwaltung**.
+
+Die CLI legt keine Domains und keine DNS-Einträge an. Ein Agent begleitet den Kunden durch die Oberfläche und verwendet weder direkte API-Aufrufe noch manuelle Cloudflare-Einträge.
+
+### Kundenablauf
+
+1. Unter **Kundeneigene Domain** den vollständigen Hostnamen eingeben, zum Beispiel `www.mein-verein.de`, und **Hinzufügen** wählen.
+2. Bei der neuen Domain **Anleitung anzeigen** öffnen.
+3. Beim eigenen Domain-Anbieter beide von Comvenio angezeigten DNS-Einträge exakt übernehmen:
+   - TXT zur Bestätigung der Domain
+   - CNAME mit dem Ziel `edge.comvenio.app`
+4. Zu Comvenio zurückkehren und **Verifizieren** wählen.
+5. Warten, bis der Status **Aktiv** erscheint. Comvenio richtet die Verbindung und HTTPS automatisch ein.
+
+Der Kunde gibt nur den Hostnamen ein — ohne `https://` und ohne Seitenpfad. DNS-Änderungen können je nach Anbieter bis zu 48 Stunden benötigen. Bei **Verifizierung fehlgeschlagen** werden beide Einträge erneut mit den Kopierwerten aus Comvenio verglichen und danach nochmals verifiziert.
+
+### Prüfung durch den Support-Agenten
+
+Ist die Domain in Comvenio **Aktiv**, kann der Agent die öffentliche Seite prüfen:
+
+```bash
+comvenio verify url https://www.mein-verein.de --json
+```
+
+Für eine kundeneigene Domain ist `verify url` mit der vollständigen Domain richtig. `verify homepage` prüft dagegen die verwaltete Comvenio-Standardadresse beziehungsweise einen Homepage-Entwurf.
+
+Wenn Hilfe benötigt wird, fragt der Agent nur nach:
+
+- der vollständigen Domain,
+- dem in Comvenio angezeigten Status,
+- bei Bedarf einem Screenshot der DNS-Einträge ohne Zugangsdaten.
+
+Der Agent fragt niemals nach dem Passwort des Domain-Anbieters und fordert den Kunden nicht auf, selbst etwas in Cloudflare oder einer Comvenio-Infrastrukturverwaltung einzurichten.
+
+---
 ## Veranstaltungen (`event`)
 
 Veranstaltungen können direkt angelegt oder als wiederverwendbare Vorlage mit
