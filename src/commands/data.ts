@@ -237,9 +237,9 @@ export function registerDataCommands(cli: CAC): void {
           if (!arg) throw new Error("data upload <pfad> benoetigt eine lokale Datei.");
           if (!opts.context) throw new Error("data upload benoetigt --context <type>.");
 
-          // --optimize-video (mobile Autoplay, RTS-Item 39183f0b): re-encoded via ffmpeg in ein
-          // temp-Verzeichnis BEVOR presign-upload aufgerufen wird — Original bleibt unangetastet,
-          // nur die optimierte Kopie wird hochgeladen. Temp-Verzeichnis wird danach immer aufgeraeumt.
+          // --optimize-video re-encodes the upload via ffmpeg in a temporary
+          // directory before presign-upload. The original remains untouched,
+          // and the temporary directory is always cleaned up afterwards.
           let uploadPath = arg;
           let optimizedDir: string | undefined;
           let optimizeStats: { inputSizeBytes: number; outputSizeBytes: number } | undefined;

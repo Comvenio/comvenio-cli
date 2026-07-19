@@ -2,7 +2,7 @@
   "name": "comvenio-cli",
   "version": "0.1.0",
   "private": true,
-  "description": "Comvenio Club-CLI — authenticate via opaque device token (cvn_...) and talk to the Comvenio gateway. Build vorbild: rts-cli (Bun + cac).",
+  "description": "Comvenio Club-CLI for authenticated club management and automation.",
   "type": "module",
   "bin": {
     "comvenio": "./src/index.ts"

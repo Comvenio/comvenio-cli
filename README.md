@@ -16,7 +16,7 @@ Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
 > der verifizierte Abdeckungsstatus aller 25 Top-Level-Commands in
 > [`docs/coverage.md`](docs/coverage.md).
 
-Stack: **Bun + cac + TypeScript**. Bau-Vorbild: `comvenio-tools/rts-cli`.
+Stack: **Bun + cac + TypeScript**.
 
 ## Bereitstellung und Lizenz
 

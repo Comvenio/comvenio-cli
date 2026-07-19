@@ -17,6 +17,10 @@ Veranstaltungen, News — **nie** über Interna:
   Verein, nicht für Server.
 - **Keine internen Bezeichner** unnötig zeigen: Service-Namen (content-service …),
   rohe UUIDs, `context_type`, Enum-Rohwerte. Wenn ein Name verfügbar ist, nenne den Namen.
+- **Keine internen Entwicklungswerkzeuge oder Vorbilder veröffentlichen:** README,
+  FAQ, Paketmetadaten, Agentenhinweise und Quelltextkommentare beschreiben nur das
+  Comvenio CLI und seine Kundenworkflows. Interne Repositories, Roadmap-IDs,
+  Entwickler-CLIs und interne Dateipfade bleiben intern.
 - `--env`/`--gateway` sind reine Betriebs-Flags. Nutze sie still; erkläre sie dem
   Kunden nicht als „Produktivumgebung".
 
