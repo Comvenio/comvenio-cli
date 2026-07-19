@@ -71,6 +71,9 @@ try {
     if (Array.isArray(params.items)) {
       inputProps.items = params.items.map((d) => (d.logo ? { ...d, logo: stage(d.logo) } : d));
     }
+    if (Array.isArray(params.partners)) {
+      inputProps.partners = params.partners.map((p) => (p.logo ? { ...p, logo: stage(p.logo) } : p));
+    }
     if (Array.isArray(params.sponsors)) {
       inputProps.sponsors = params.sponsors.map(stage);
     }

@@ -14,6 +14,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT_STACK } from "./Branding";
+import { HIGHLIGHT_PARTNERS_EXTRA_FRAMES } from "./types";
 import type { HighlightProps } from "./types";
 
 // Neutral fallback palette (Comvenio teal family) — real colours come from props.
@@ -366,6 +367,81 @@ const NoteSponsors: React.FC<{
   );
 };
 
+// ---------- optional scene: partner cards (catering, beverages, venue …) ----------
+const Partners: React.FC<{
+  partners?: HighlightProps["partners"];
+  cream: string;
+  gold: string;
+  start: number;
+  end: number;
+}> = ({ partners, cream, gold, start, end }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const o = win(frame, start, end, 12, 16);
+  const rows = partners ?? [];
+  return (
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: o }}>
+      <div style={{ width: 1240, fontFamily: FONT_STACK }}>
+        {rows.map((p, i) => {
+          const enter = spring({ frame: frame - start - 12 - i * 14, fps, config: { damping: 16, stiffness: 120 } });
+          const y = interpolate(enter, [0, 1], [60, 0]);
+          return (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 40,
+                background: "rgba(23,18,13,0.62)",
+                border: `2px solid ${gold}`,
+                borderRadius: 24,
+                padding: "26px 42px",
+                marginBottom: 30,
+                transform: `translateY(${y}px)`,
+                opacity: enter,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              {p.logo ? (
+                <div
+                  style={{
+                    flexShrink: 0,
+                    background: cream,
+                    borderRadius: 18,
+                    padding: 14,
+                    border: `3px solid ${gold}`,
+                    boxShadow: "0 6px 18px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  <Img src={staticFile(p.logo)} style={{ height: 132, width: 132, objectFit: "contain" }} />
+                </div>
+              ) : null}
+              <div style={{ textAlign: "left", flexGrow: 1 }}>
+                <div
+                  style={{
+                    color: cream,
+                    fontSize: 52,
+                    fontWeight: 900,
+                    lineHeight: 1.1,
+                    textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                  }}
+                >
+                  {p.name}
+                </div>
+                {p.subtitle ? (
+                  <div style={{ marginTop: 12, color: gold, fontSize: 33, fontWeight: 700, lineHeight: 1.25 }}>
+                    {p.subtitle}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ---------- scene 6: closing (settles toward opener for a near-seamless loop) ----------
 const Closing: React.FC<{
   logo?: string;
@@ -417,7 +493,11 @@ export const Highlight: React.FC<HighlightProps> = (props) => {
   const cream = props.creamColor || DEFAULTS.cream;
   const gold = props.goldColor || DEFAULTS.gold;
 
-  // scene windows (frames @30fps, total 600) — overlap slightly for smooth flow
+  // scene windows (frames @30fps) — overlap slightly for smooth flow. Base total is
+  // 600; the optional partners scene inserts HIGHLIGHT_PARTNERS_EXTRA_FRAMES between
+  // the item list and the note, shifting the last two scenes back by the same amount.
+  const hasPartners = (props.partners?.length ?? 0) > 0;
+  const shift = hasPartners ? HIGHLIGHT_PARTNERS_EXTRA_FRAMES : 0;
   return (
     <AbsoluteFill style={{ backgroundColor: brand }}>
       <Background background={props.background} brand={brand} />
@@ -435,15 +515,24 @@ export const Highlight: React.FC<HighlightProps> = (props) => {
         end={322}
       />
       <ItemList items={props.items} heading={props.itemsHeading} cream={cream} green={green} gold={gold} start={312} end={458} />
-      <NoteSponsors noteText={props.noteText} sponsors={props.sponsors} cream={cream} gold={gold} start={448} end={524} />
+      {hasPartners ? (
+        <Partners
+          partners={props.partners}
+          cream={cream}
+          gold={gold}
+          start={448}
+          end={448 + HIGHLIGHT_PARTNERS_EXTRA_FRAMES + 10}
+        />
+      ) : null}
+      <NoteSponsors noteText={props.noteText} sponsors={props.sponsors} cream={cream} gold={gold} start={448 + shift} end={524 + shift} />
       <Closing
         logo={props.logo}
         closingText={props.closingText}
         orgName={props.orgName}
         cream={cream}
         gold={gold}
-        start={514}
-        end={600}
+        start={514 + shift}
+        end={600 + shift}
       />
     </AbsoluteFill>
   );
