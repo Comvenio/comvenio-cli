@@ -41,6 +41,23 @@ comvenio data upload ./bild.jpg \
 
 Das CLI führt den vollständigen Presign-Flow aus: reservieren, direkt hochladen, finalisieren. Das Limit beträgt 200 MB. `--sub-context-id` und `--department` werden im Upload-Vertrag mitgesendet. Der Upload funktioniert auch aus der kompilierten Standalone-Binary; Dateiinhalte werden als stabiler Byte-Body übertragen.
 
+### Video-Optimierung fürs mobile Autoplay (`--optimize-video`)
+
+Mobile Chrome (und Safari/iOS) autoplayen große Videos oft nicht — eine kleine, audio-freie MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig inline/muted an. `--optimize-video` re-encodiert das Video vor dem Hochladen automatisch:
+
+```bash
+comvenio data upload ./festumzug.mp4 \
+  --context event \
+  --context-id <event-id> \
+  --public \
+  --optimize-video \
+  --json
+```
+
+Voraussetzung: `ffmpeg` muss im PATH verfügbar sein (`winget install Gyan.FFmpeg`). Ohne `ffmpeg` bricht der Befehl mit einer klaren Fehlermeldung ab, bevor irgendetwas hochgeladen wird.
+
+Das Original bleibt auf der Festplatte unangetastet — die optimierte Kopie entsteht in einem temporären Verzeichnis (gleicher Dateiname) und wird nach dem Upload automatisch gelöscht. Optimierung: H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** (Pflicht für stummes Autoplay) und `+faststart`. `--optimize-video` funktioniert nur mit Video-Dateien (`.mp4`/`.mov`/`.webm`/`.mkv`) — bei anderen Endungen bricht der Befehl vor dem Upload ab. Die Konsole zeigt „Video optimiert: X MB -> Y MB"; bei `--json` steht die gleiche Information zusätzlich unter `optimized.inputSizeBytes`/`optimized.outputSizeBytes` in der Antwort.
+
 ## Kontext nachträglich ändern
 
 ```bash

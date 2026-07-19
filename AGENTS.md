@@ -418,6 +418,12 @@ Zwei Wege, beide im `rn-video`-Container:
 # Eigenes Video hochladen (Presign-Flow, Limit 200 MB) und einbetten:
 comvenio data upload ./festumzug.mp4 --context event --context-id <event-id> --json
 comvenio data url <file_id> --json                  # presigned URL fürs <source src>
+
+# Mobile Autoplay (Chrome/Safari spielen große Videos sonst nicht automatisch ab):
+# --optimize-video re-encodiert vor dem Upload via ffmpeg (H.264, kein Audio, faststart,
+# max. 1280px Breite) — Original bleibt unangetastet, nur die kleine Kopie wird hochgeladen.
+# Voraussetzung: ffmpeg im PATH (winget install Gyan.FFmpeg). Details: docs/dateien.md.
+comvenio data upload ./festumzug.mp4 --context event --context-id <event-id> --optimize-video --json
 ```
 
 ```html
