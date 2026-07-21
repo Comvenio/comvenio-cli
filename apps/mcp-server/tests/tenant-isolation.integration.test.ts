@@ -3,7 +3,14 @@ import { describe, expect, test } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import type { RequestContext } from "@comvenio/connector-contracts";
+import {
+  createConnectorError,
+  type RequestContext,
+} from "@comvenio/connector-contracts";
+import type {
+  ComvenioApiClient,
+  ComvenioApiRequest,
+} from "@comvenio/comvenio-client";
 import {
   createClubSelectionContext,
   type CapabilitySnapshot,
@@ -28,6 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
+import { createK7ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -532,5 +540,109 @@ describe("Remote MCP runtime", () => {
     } finally {
       expect(await server.drain()).toBe(true);
     }
+  });
+});
+
+describe("K7 adapter tenant and RBAC isolation", () => {
+  const departmentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const otherDepartmentId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  function adapterClient(
+    handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>,
+  ): ComvenioApiClient {
+    return {
+      timeout_ms: 15000,
+      async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        return await handler(request) as T;
+      },
+    };
+  }
+
+  test("TC-04: hides member writes without manage_members and records a backend 403 recheck", async () => {
+    const readOnlySnapshot = capabilitySnapshot;
+    const readOnlyContext: RequestContext = {
+      ...context,
+      scopes: ["member.read.basic", "admin.write"],
+      capability_version: readOnlySnapshot.capability_version,
+    };
+    const readOnly = createK7ToolSets({ client: adapterClient(async () => null) }).member;
+    expect(readOnly.listVisible({
+      context: readOnlyContext,
+      capability_snapshot: readOnlySnapshot,
+    }).map((definition) => definition.action_id)).not.toContain("cai.member.03.add");
+
+    let backendForbidden = 0;
+    const writableSnapshot = {
+      ...readOnlySnapshot,
+      permissions: { ...readOnlySnapshot.permissions, manage_members: true },
+    };
+    const writable = createK7ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({
+          code: "PERMISSION_DENIED",
+          message: "raw backend detail must not escape",
+          request_id: request.context.request_id,
+          retryable: false,
+        });
+      }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+      on_backend_forbidden() { backendForbidden += 1; },
+    }).member;
+    await expect(writable.execute({
+      action_id: "cai.member.03.add",
+      input: { club_id: clubId, member: { first_name: "Anna", last_name: "Beispiel" } },
+      context: readOnlyContext,
+      capability_snapshot: writableSnapshot,
+    })).rejects.toMatchObject({
+      code: "PERMISSION_DENIED",
+      message: "Der Fachservice hat die Aktion im aktuellen Kontext abgelehnt.",
+    });
+    expect(backendForbidden).toBe(1);
+  });
+
+  test("TC-05: rejects a foreign club before the member backend is called", async () => {
+    let calls = 0;
+    const member = createK7ToolSets({
+      client: adapterClient(async () => { calls += 1; return []; }),
+    }).member;
+    await expect(member.execute({
+      action_id: "cai.member.01.list",
+      input: { club_id: otherClubId },
+      context,
+      capability_snapshot: capabilitySnapshot,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("TC-05: rejects a team mutation outside the selected department before the backend", async () => {
+    let calls = 0;
+    const scopedContext: RequestContext = {
+      ...context,
+      department_id: departmentId,
+      scopes: ["admin.write"],
+    };
+    const scopedSnapshot: CapabilitySnapshot = {
+      ...capabilitySnapshot,
+      department_ids: [departmentId],
+      permissions: { manage_members: true },
+    };
+    const team = createK7ToolSets({
+      client: adapterClient(async () => { calls += 1; return null; }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).team;
+    await expect(team.execute({
+      action_id: "cai.team.03.create",
+      input: {
+        club_id: clubId,
+        team: {
+          department_id: otherDepartmentId,
+          name: "Fremdes Team",
+          sport_type: "FOOTBALL",
+        },
+      },
+      context: scopedContext,
+      capability_snapshot: scopedSnapshot,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
   });
 });
