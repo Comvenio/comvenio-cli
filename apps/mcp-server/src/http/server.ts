@@ -23,6 +23,7 @@ import type {
 } from "./types.ts";
 import { createAuthChallenge } from "../public/auth-challenge.ts";
 import type { AuthChallenge } from "../public/types.ts";
+import { mountEventCalendarWidgetAssets } from "../widgets/event-calendar/assets.ts";
 
 const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
@@ -75,6 +76,7 @@ export class McpHttpServer {
       host: "0.0.0.0",
       allowedHosts: [...options.allowed_hosts],
     });
+    mountEventCalendarWidgetAssets(this.app, options.environment);
     this.#mountRoutes();
   }
 

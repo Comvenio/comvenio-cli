@@ -27,6 +27,7 @@
     ".": "./src/index.ts",
     "./http": "./src/http/index.ts",
     "./public": "./src/public/index.ts",
+    "./widgets": "./src/widgets/index.ts",
     "./package.json": "./package.json"
   }
 }

@@ -45,6 +45,14 @@ import {
   MemoryJobQueue,
   bundledRateLimitConfig,
 } from "../src/jobs/index.ts";
+import {
+  EVENT_CALENDAR_WIDGET_ASSET_PATH,
+  EVENT_CALENDAR_WIDGET_CLIENT,
+  EVENT_CALENDAR_WIDGET_RESOURCE_URI,
+  EventCalendarWidgetProjector,
+  EventWidgetCapabilityPolicy,
+  registerEventCalendarWidgetResource,
+} from "../src/widgets/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -1241,5 +1249,138 @@ describe("K15 job ownership, RBAC and confirmed export isolation", () => {
     const replay = await safety.confirmCriticalWrite(request, mutation);
     expect(replay).toEqual(first);
     expect(enqueues).toBe(1);
+  });
+});
+
+describe("K16 event calendar widget tenant and runtime isolation", () => {
+  const eventId = "61616161-6161-4161-8161-616161616161";
+  const eventContext: RequestContext = {
+    ...context,
+    scopes: ["event.read", "event.write"],
+  };
+  const eventCapability: CapabilitySnapshot = {
+    ...capabilitySnapshot,
+    permissions: { view_events: true, create_events: true },
+  };
+  const action = {
+    action_id: "event.plan",
+    label: "Termin planen",
+    tool_name: "cv_event_create",
+    input: { club_id: clubId },
+    visibility: "visible" as const,
+    enabled: true,
+    risk_class: "reversible_write" as const,
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+
+  function widgetInput(overrides: Record<string, unknown> = {}) {
+    return {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      range: { from: "2026-07-20T00:00:00+02:00", to: "2026-07-27T00:00:00+02:00" },
+      source: [{
+        event_id: eventId,
+        title: "Sommerfest",
+        start_time: "2026-07-21T17:00:00+02:00",
+        end_time: "2026-07-21T22:00:00+02:00",
+        status: "published",
+      }],
+      context: eventContext,
+      capability_snapshot: eventCapability,
+      action_candidates: [action],
+      ...overrides,
+    } as any;
+  }
+
+  test("TC-04/TC-05: private widget projection binds subject, club, scopes and capability", () => {
+    const allowed = new EventCalendarWidgetProjector(new EventWidgetCapabilityPolicy([action.tool_name]));
+    expect(allowed.private(widgetInput()).actions).toHaveLength(1);
+    expect(() => allowed.private(widgetInput({
+      club: { club_id: otherClubId, name: "Fremder Verein", timezone: "Europe/Berlin" },
+    }))).toThrow();
+    expect(() => allowed.private(widgetInput({
+      capability_snapshot: { ...eventCapability, subject_id: "62626262-6262-4262-8262-626262626262" },
+    }))).toThrow();
+    expect(new EventCalendarWidgetProjector(new EventWidgetCapabilityPolicy([])).private(widgetInput()).actions).toEqual([]);
+  });
+
+  test("TC-05: a visible widget intent is still rechecked and denied by backend RBAC", async () => {
+    let forbidden = 0;
+    let calls = 0;
+    const projector = new EventCalendarWidgetProjector(new EventWidgetCapabilityPolicy([action.tool_name]));
+    expect(projector.private(widgetInput()).actions.map((item) => item.tool_name)).toEqual([action.tool_name]);
+    const event = createK8ToolSets({
+      client: {
+        timeout_ms: 15000,
+        async request(request) {
+          calls++;
+          throw createConnectorError({ code: "PERMISSION_DENIED", message: "private backend detail", request_id: request.context.request_id, retryable: false });
+        },
+      },
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+      on_backend_forbidden() { forbidden++; },
+    }).event;
+    await expect(event.execute({
+      action_id: "cai.event.03.create",
+      input: {
+        club_id: clubId,
+        event: {
+          department_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          title: "Sommerfest",
+          event_type: "meeting",
+          visibility_scope: "member",
+          organizer_type: "member",
+        },
+      },
+      context: eventContext,
+      capability_snapshot: eventCapability,
+    })).rejects.toMatchObject({
+      code: "PERMISSION_DENIED",
+      message: "Der Fachservice hat die Event-/Plan-Aktion im aktuellen Kontext abgelehnt.",
+    });
+    expect(calls).toBe(1);
+    expect(forbidden).toBe(1);
+  });
+
+  test("TC-01/TC-06: MCP resource and hashed public asset are served without private data", async () => {
+    const server = new McpHttpServer(runtimeOptions({
+      server_factory(contextInput) {
+        const runtime = runtimeOptions().server_factory(contextInput);
+        return Promise.resolve(runtime).then((mcpServer) => {
+          registerEventCalendarWidgetResource(mcpServer, "development");
+          return mcpServer;
+        });
+      },
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 1, method: "resources/list", params: {} });
+      expect(list.status).toBe(200);
+      const listed = await list.json() as any;
+      expect(listed.result.resources.some((resource: any) => resource.uri === EVENT_CALENDAR_WIDGET_RESOURCE_URI)).toBe(true);
+
+      const read = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "resources/read",
+        params: { uri: EVENT_CALENDAR_WIDGET_RESOURCE_URI },
+      });
+      expect(read.status).toBe(200);
+      const resource = await read.json() as any;
+      expect(resource.result.contents[0].mimeType).toBe("text/html;profile=mcp-app");
+      expect(resource.result.contents[0].text).toContain(EVENT_CALENDAR_WIDGET_ASSET_PATH);
+      expect(resource.result.contents[0].text).not.toContain(clubId);
+      expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(EVENT_CALENDAR_WIDGET_RESOURCE_URI);
+
+      const asset = await fetch(`${baseUrl}${EVENT_CALENDAR_WIDGET_ASSET_PATH}`);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe(EVENT_CALENDAR_WIDGET_CLIENT);
+      expect(asset.headers.get("cache-control")).toContain("immutable");
+      expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(await fetch(`${baseUrl}/widgets/event-calendar/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
+    } finally {
+      expect(await server.drain()).toBe(true);
+    }
   });
 });
