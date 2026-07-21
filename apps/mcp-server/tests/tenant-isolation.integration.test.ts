@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets, createK13ToolSet } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -968,5 +968,54 @@ describe("K12 content, homepage, data and verify tenant/RBAC isolation", () => {
     const newsReader = { context: { ...context, scopes: ["content.read", "content.write"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { read_news: true } } };
     expect(sets.news.listVisible(newsReader).map((definition) => definition.action_id)).toContain("cai.news.01.list");
     expect(sets.news.listVisible(newsReader).map((definition) => definition.action_id)).not.toContain("cai.news.03.create");
+  });
+});
+
+describe("K13 sponsor and marketing tenant/RBAC isolation", () => {
+  const departmentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const otherDepartmentId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const sponsorId = "31313131-3131-4131-8131-313131313131";
+
+  function adapterClient(handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>): ComvenioApiClient {
+    return { timeout_ms: 15000, async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> { return await handler(request) as T; } };
+  }
+
+  test("rejects a foreign club before any marketing backend call", async () => {
+    let calls = 0;
+    const sponsor = createK13ToolSet({ client: adapterClient(async () => { calls++; return []; }) });
+    await expect(sponsor.execute({ action_id: "cai.sponsor.01.list", input: { club_id: otherClubId }, context: { ...context, scopes: ["sponsor.read"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true } } })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("rejects cross-department sponsor creation before the backend", async () => {
+    let calls = 0;
+    const sponsor = createK13ToolSet({ client: adapterClient(async () => { calls++; return null; }), write_safety: { async execute(_request, mutation) { return mutation(); } } });
+    await expect(sponsor.execute({
+      action_id: "cai.sponsor.03.add",
+      input: { club_id: clubId, department_id: otherDepartmentId, company_name: "Fremder Sponsor", contact_email: "kontakt@example.org" },
+      context: { ...context, department_id: departmentId, scopes: ["sponsor.write"] },
+      capability_snapshot: { ...capabilitySnapshot, department_ids: [departmentId], permissions: { manage_sponsors: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("normalizes a backend RBAC denial without reflecting sponsor details", async () => {
+    let forbidden = 0;
+    const sponsor = createK13ToolSet({
+      client: adapterClient(async (request) => { throw createConnectorError({ code: "PERMISSION_DENIED", message: "private sponsor contact and contract denial", request_id: request.context.request_id, retryable: false }); }),
+      on_backend_forbidden() { forbidden++; },
+    });
+    await expect(sponsor.execute({ action_id: "cai.sponsor.02.show", input: { club_id: clubId, sponsor_id: sponsorId }, context: { ...context, scopes: ["sponsor.read"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true } } })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Marketing-Service hat die Sponsoring-Aktion im aktuellen Kontext abgelehnt." });
+    expect(forbidden).toBe(1);
+  });
+
+  test("separates sponsor readers, managers and member-responsibility reads", () => {
+    const sponsor = createK13ToolSet({ client: adapterClient(async () => []), write_safety: { async execute(_request, mutation) { return mutation(); } }, job_starter: { async start() { return { job_id: sponsorId, status: "queued" }; } } });
+    const reader = { context: { ...context, scopes: ["sponsor.read", "sponsor.write", "member.read.basic"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true } } };
+    expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).toContain("cai.sponsor.01.list");
+    expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).not.toContain("cai.sponsor.03.add");
+    expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).not.toContain("cai.sponsor.21.responsible_list");
+    const memberReader = { ...reader, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true, view_members: true } } };
+    expect(sponsor.listVisible(memberReader).map((definition) => definition.action_id)).toContain("cai.sponsor.21.responsible_list");
   });
 });

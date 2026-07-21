@@ -83,6 +83,17 @@ import {
   createK12ToolSets,
   type K12ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/content-homepage-news-data/index.ts";
+import {
+  K13_ACTION_DEFINITIONS,
+  K13_ACTION_SCHEMAS,
+  K13_SPONSOR_ACTION_IDS,
+  MarketingAssetContract,
+  SponsorConfirmationPolicy,
+  SponsorToolSet,
+  SponsorVisibilityPolicy,
+  createK13ToolSet,
+  type K13ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/sponsor-marketing/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -1146,5 +1157,88 @@ describe("K12 homepage, schema, verify, data and news adapter contract", () => {
     const verify = createK12ToolSets(k12Dependencies(k7Client(async () => null))).verify;
     expect(verify.listVisible({ context: k8Context(["club.read", "files.export"]), capability_snapshot: k8Capability({}) }).map((definition) => definition.action_id)).not.toContain("cai.verify.01.url");
     expect(JSON.stringify(K12_ACTION_DEFINITIONS)).not.toMatch(/log-service|log_service|logserviceinspection|local_path|file_path|playwright-cli|remotion-dir/iu);
+  });
+});
+
+const k13SponsorId = "31313131-3131-4131-8131-313131313131";
+const k13ProductId = "32323232-3232-4232-8232-323232323232";
+const k13AssignmentId = "34343434-3434-4434-8434-343434343434";
+const k13AssetId = "35353535-3535-4535-8535-353535353535";
+
+function k13Dependencies(client: ComvenioApiClient): K13ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+    job_starter: { async start() { return { job_id: "36363636-3636-4636-8636-363636363636", status: "queued", file: { file_id: "37373737-3737-4737-8737-373737373737", name: "sponsorvertrag.pdf", mime_type: "application/pdf" } }; } },
+  };
+}
+
+describe("K13 sponsor and marketing adapter contract", () => {
+  test("TC-01/TC-02: exposes all four required entities and exactly 24 sponsor actions", () => {
+    expect(K13_SPONSOR_ACTION_IDS).toHaveLength(24);
+    expect(Object.keys(K13_ACTION_DEFINITIONS)).toHaveLength(24);
+    expect(Object.keys(K13_ACTION_SCHEMAS)).toHaveLength(24);
+    expect(new SponsorToolSet(k13Dependencies(k7Client(async () => []))).listDefinitions()).toHaveLength(24);
+    expect(new SponsorVisibilityPolicy()).toBeInstanceOf(SponsorVisibilityPolicy);
+    expect(new MarketingAssetContract()).toBeInstanceOf(MarketingAssetContract);
+    expect(new SponsorConfirmationPolicy()).toBeInstanceOf(SponsorConfirmationPolicy);
+    expect(K13_ACTION_DEFINITIONS["cai.sponsor.15.assignment_list"].operations.list!.risk_class).toBe("read");
+  });
+
+  test("TC-03/TC-04: public projection contains only approved presentation fields and private contracts stay private", () => {
+    const toolset = createK13ToolSet(k13Dependencies(k7Client(async () => [])));
+    const projected = toolset.visibilityPolicy.toPublic({
+      id: k13SponsorId,
+      company_name: "Muster GmbH",
+      logo_url: "https://cdn.example.org/logo.png",
+      website_url: "https://muster.example",
+      organization_type: "crafts",
+      contact_email: "private@example.org",
+      contact_phone: "+49 123",
+      address: "Privatstraße 1",
+      club_id: k7ClubId,
+      club_department_id: k8EventId,
+      verification_note: "intern",
+      contract_file_id: k13AssetId,
+    });
+    expect(projected).toEqual({ advertiser_id: k13SponsorId, display_name: "Muster GmbH", logo_url: "https://cdn.example.org/logo.png", target_url: "https://muster.example", label: "crafts" });
+    expect(JSON.stringify(projected)).not.toMatch(/contact|address|club_id|department|verification|contract|file_id/iu);
+    expect(toolset.publicReadContracts()).toEqual([expect.objectContaining({ alias: "public_sponsors", publication_state: "blocked" })]);
+    expect(toolset.listVisible({ context: k8Context(["public.read"]), capability_snapshot: k8Capability({}) })).toHaveLength(0);
+  });
+
+  test("TC-05: public sponsor changes require a matching second confirmation", async () => {
+    const calls: Array<{ method: string; path: string }> = [];
+    const sponsor = createK13ToolSet(k13Dependencies(k7Client(async (request) => {
+      calls.push({ method: request.method, path: request.path });
+      return { id: k13SponsorId, club_id: k7ClubId, company_name: "Muster GmbH", contact_email: "kontakt@example.org", logo_file_id: k13AssetId, is_verified: true };
+    })));
+    const request = { action_id: "cai.sponsor.06.logo" as const, input: { club_id: k7ClubId, sponsor_id: k13SponsorId, logo_file_id: k13AssetId }, context: k8Context(["sponsor.write", "files.read"]), capability_snapshot: k8Capability({ manage_sponsors: true }) };
+    const first = await sponsor.execute(request);
+    expect(first.status).toBe("confirmation_required");
+    expect(calls).toHaveLength(0);
+    const preview = (first.result as Record<string, JsonValue>).preview as Record<string, JsonValue>;
+    const second = await sponsor.execute({ ...request, input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } });
+    expect(second.status).toBe("completed");
+    expect(calls).toEqual([{ method: "GET", path: `/files/${k13AssetId}` }, { method: "GET", path: `/advertisers/${k13SponsorId}` }, { method: "PATCH", path: `/advertisers/${k13SponsorId}` }]);
+    await expect(sponsor.execute({ ...request, input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } })).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+  });
+
+  test("document upload is a server job with a remote asset reference and no synchronous backend call", async () => {
+    let calls = 0;
+    const sponsor = createK13ToolSet(k13Dependencies(k7Client(async () => { calls++; return null; })));
+    const result = await sponsor.execute({ action_id: "cai.sponsor.20.doc_upload", input: { club_id: k7ClubId, assignment_id: k13AssignmentId, asset: { source_file_id: k13AssetId, filename: "vertrag.pdf", content_type: "application/pdf", expected_size: 42 } }, context: k8Context(["sponsor.write", "files.import", "files.write"]), capability_snapshot: k8Capability({ manage_sponsors: true }) });
+    expect(result.status).toBe("queued");
+    expect(result.result).toEqual({ job_id: "36363636-3636-4636-8636-363636363636", status: "queued", file: { file_id: "37373737-3737-4737-8737-373737373737", name: "sponsorvertrag.pdf", mime_type: "application/pdf" } });
+    expect(calls).toBe(0);
+  });
+
+  test("TC-06: excludes payment, private public-contract reads, local paths and free asset payloads", () => {
+    expect(() => K13_ACTION_SCHEMAS["cai.sponsor.20.doc_upload"].input.parse({ club_id: k7ClubId, assignment_id: k13AssignmentId, asset: { source_file_id: k13AssetId, filename: "C:\\private\\vertrag.pdf", content_type: "application/pdf", expected_size: 42 } })).toThrow();
+    expect(() => K13_ACTION_SCHEMAS["cai.sponsor.20.doc_upload"].input.parse({ club_id: k7ClubId, assignment_id: k13AssignmentId, asset: { source_file_id: k13AssetId, filename: "vertrag.pdf", content_type: "application/pdf", expected_size: 42, base64: "secret" } })).toThrow();
+    expect(() => K13_ACTION_SCHEMAS["cai.sponsor.03.add"].input.parse({ club_id: k7ClubId, department_id: k8EventId, company_name: "X", contact_email: "x@example.org", website_url: "http://unsafe.example.org" })).toThrow();
+    expect(() => K13_ACTION_SCHEMAS["cai.sponsor.03.add"].input.parse({ club_id: k7ClubId, department_id: k8EventId, company_name: "X", contact_email: "x@example.org", website_url: "https://127.0.0.1/internal" })).toThrow();
+    expect(() => new MarketingAssetContract().parse({ url: "https://bucket.example.org/private?signature=secret", filename: "x.pdf" })).toThrow();
+    expect(JSON.stringify(K13_ACTION_DEFINITIONS)).not.toMatch(/payment|collect|checkout|privatecontractpublicread|log-service|master.?admin|local_path|file_path/iu);
   });
 });
