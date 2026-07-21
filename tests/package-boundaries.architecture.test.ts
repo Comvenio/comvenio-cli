@@ -6,6 +6,7 @@ const repositoryRoot = resolve(import.meta.dir, "..");
 const sharedSourceRoots = [
   join(repositoryRoot, "packages", "comvenio-client", "src"),
   join(repositoryRoot, "packages", "connector-contracts", "src"),
+  join(repositoryRoot, "packages", "auth", "src"),
   join(repositoryRoot, "packages", "tool-catalog", "src"),
 ];
 

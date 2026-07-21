@@ -32,6 +32,9 @@
     "packages/auth": {
       "name": "@comvenio/auth",
       "version": "0.1.0",
+      "dependencies": {
+        "@comvenio/connector-contracts": "workspace:*",
+      },
     },
     "packages/comvenio-client": {
       "name": "@comvenio/comvenio-client",

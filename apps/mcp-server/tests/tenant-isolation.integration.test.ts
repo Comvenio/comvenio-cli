@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { RequestContext } from "@comvenio/connector-contracts";
+import { createClubSelectionContext } from "../../../packages/auth/src/index.ts";
 import {
   ToolCatalog,
   type OperationDefinition,
@@ -125,5 +126,16 @@ describe("MCP catalog tenant isolation", () => {
       context,
       capabilities: new Set(["view_members"]),
     })).toThrow("Tool wurde nicht gefunden");
+  });
+
+  test("requires an explicit club before private tool discovery for multi-club subjects", () => {
+    expect(() => createClubSelectionContext({
+      eligible_club_ids: [clubId, otherClubId],
+      request_id: context.request_id,
+    })).toThrow("Bitte wähle den Verein");
+    expect(catalog.listVisible({
+      context: { ...context, club_id: null },
+      capabilities: new Set(["view_members"]),
+    })).toEqual([]);
   });
 });
