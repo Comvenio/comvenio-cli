@@ -27,6 +27,7 @@ import {
   type AuthenticatedConnectorPrincipal,
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
+import { PublicToolSubset } from "../src/public/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -260,6 +261,14 @@ function runtimeOptions(overrides: Partial<McpRuntimeOptions> = {}): McpRuntimeO
         return runtimeCapability(input.context.club_id!, input.context.subject_id!);
       },
     },
+    access_policy: new PublicToolSubset({
+      public_tools: [{
+        tool_name: "cv_runtime_context_read",
+        resolver_alias: "public_news",
+        required_scopes: ["public.read"],
+        risk_class: "read",
+      }],
+    }),
     server_factory(contextInput) {
       const server = new McpServer({ name: "comvenio-runtime-test", version: "1.0.0" });
       server.registerTool("cv_runtime_context_read", {
@@ -484,6 +493,42 @@ describe("Remote MCP runtime", () => {
       expect(response.status).toBe(401);
       expect(response.headers.get("www-authenticate")).toContain("resource_metadata=");
       expect(await response.text()).not.toContain("token-invalid");
+    } finally {
+      expect(await server.drain()).toBe(true);
+    }
+  });
+
+  test("returns an HTTP OAuth challenge before an anonymous private tool reaches the SDK", async () => {
+    let factoryCalls = 0;
+    const server = new McpHttpServer(runtimeOptions({
+      access_policy: new PublicToolSubset({
+        public_tools: [{
+          tool_name: "public_news",
+          resolver_alias: "public_news",
+          required_scopes: ["public.read"],
+          risk_class: "read",
+        }],
+        protected_tools: [{ tool_name: "cv_member_write", required_scopes: ["member.write"] }],
+      }),
+      server_factory(contextInput) {
+        factoryCalls += 1;
+        return runtimeOptions().server_factory(contextInput);
+      },
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    try {
+      const response = await postMcp(`http://127.0.0.1:${address.port}`, {
+        jsonrpc: "2.0",
+        id: 6,
+        method: "tools/call",
+        params: {
+          name: "cv_member_write",
+          arguments: { club_id: clubId },
+        },
+      });
+      expect(response.status).toBe(401);
+      expect(response.headers.get("www-authenticate")).toContain("scope=\"member.write\"");
+      expect(factoryCalls).toBe(0);
     } finally {
       expect(await server.drain()).toBe(true);
     }

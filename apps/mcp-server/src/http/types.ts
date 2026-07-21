@@ -12,6 +12,7 @@ import type {
   RequestContext,
   UUID,
 } from "@comvenio/connector-contracts";
+import type { McpRequestAccessPolicy } from "../public/types.ts";
 
 export type RequestRisk = "read" | "write";
 
@@ -122,6 +123,7 @@ export interface McpRuntimeOptions {
   authenticator: BearerAuthenticator;
   provider_resolver: ProviderResolver;
   capability_resolver: CapabilityContextResolver;
+  access_policy: McpRequestAccessPolicy;
   server_factory: McpServerFactory;
   readiness_dependencies: ReadinessDependency[];
   telemetry: TelemetrySink;

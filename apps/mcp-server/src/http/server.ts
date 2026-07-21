@@ -21,6 +21,8 @@ import type {
   SafeTelemetryRecord,
   StatelessTransportContext,
 } from "./types.ts";
+import { createAuthChallenge } from "../public/auth-challenge.ts";
+import type { AuthChallenge } from "../public/types.ts";
 
 const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
@@ -205,6 +207,7 @@ export class McpHttpServer {
     const fallbackRequestId = this.#newRequestId();
     const startedAt = Date.now();
     let context: StatelessTransportContext | null = null;
+    let authChallenge: AuthChallenge | null = null;
     let finalized = false;
     let mcpServer: Awaited<ReturnType<McpRuntimeOptions["server_factory"]>> | null = null;
     let transport: StreamableHTTPServerTransport | null = null;
@@ -256,6 +259,21 @@ export class McpHttpServer {
         protocol_version: request.get("mcp-protocol-version"),
         body: request.body,
       });
+      const accessDecision = this.#options.access_policy.classify(request.body);
+      if (!context.provider_request.authenticated && !accessDecision.anonymous_allowed) {
+        authChallenge = createAuthChallenge({
+          environment: this.#options.environment,
+          request_id: context.request.request_id,
+          required_scopes: accessDecision.required_scopes,
+        });
+        throw runtimeError({
+          code: "AUTH_REQUIRED",
+          message: authChallenge.message,
+          request_id: context.request.request_id,
+          retryable: false,
+          required_scope: authChallenge.required_scopes[0]!,
+        });
+      }
       response.setHeader("x-request-id", context.request.request_id);
       mcpServer = await this.#options.server_factory(context);
       transport = new StreamableHTTPServerTransport({
@@ -271,7 +289,8 @@ export class McpHttpServer {
       if (httpError.status === 401) {
         response.setHeader(
           "WWW-Authenticate",
-          createBearerChallenge(this.#options.environment, "public.read"),
+          authChallenge?.www_authenticate
+            ?? createBearerChallenge(this.#options.environment, "public.read"),
         );
       }
       response.setHeader("x-request-id", requestId);
