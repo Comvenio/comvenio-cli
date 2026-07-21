@@ -1,10 +1,9 @@
-import type { OAuthScope } from "@comvenio/connector-contracts";
+import { ToolVisibilityPolicy } from "@comvenio/auth";
 
 import type {
   CatalogCallRequest,
   McpBinding,
   OperationDefinition,
-  PermissionPolicy,
   ToolCatalogSnapshot,
   ToolCatalogVisibilityContext,
   ToolDefinition,
@@ -15,34 +14,27 @@ import {
   validateToolDefinition,
 } from "./validation.ts";
 
-function hasRequiredScopes(required: readonly OAuthScope[], granted: readonly OAuthScope[]): boolean {
-  const grantedSet = new Set(granted);
-  return required.every((scope) => grantedSet.has(scope));
-}
-
-function hasPermission(policy: PermissionPolicy, capabilities: ReadonlySet<string>): boolean {
-  const all = policy.all_of.every((permission) => capabilities.has(permission));
-  const any = policy.any_of.length === 0
-    || policy.any_of.some((permission) => capabilities.has(permission));
-  return (all && any) || policy.owner_or_self_allowed;
-}
-
 function isPublicTool(tool: ToolDefinition): boolean {
   return tool.required_scopes.length > 0
     && tool.required_scopes.every((scope) => scope === "public.read")
     && tool.permission_policy.backend_audit_refs.some((ref) => /public/iu.test(ref));
 }
 
-function isVisible(tool: ToolDefinition, input: ToolCatalogVisibilityContext): boolean {
-  if (!hasRequiredScopes(tool.required_scopes, input.context.scopes)) return false;
-  if (!isPublicTool(tool) && input.context.club_id === null) return false;
-  if (tool.permission_policy.department_scope === "required" && input.context.department_id === null) {
-    return false;
-  }
-  if (tool.permission_policy.department_scope === "forbidden" && input.context.department_id !== null) {
-    return false;
-  }
-  return hasPermission(tool.permission_policy, input.capabilities);
+const visibilityPolicy = new ToolVisibilityPolicy();
+
+function visibility(tool: ToolDefinition, input: ToolCatalogVisibilityContext) {
+  return visibilityPolicy.evaluate({
+    tool: {
+      tool_name: tool.tool_name,
+      required_scopes: tool.required_scopes,
+      permission_policy: tool.permission_policy,
+      is_public: isPublicTool(tool),
+    },
+    context: input.context,
+    snapshot: input.capability_snapshot,
+    provider_tool_updates: input.provider_tool_updates,
+    catalog_contains_tool: true,
+  });
 }
 
 export class ToolCatalog {
@@ -94,7 +86,7 @@ export class ToolCatalog {
 
   listVisible(input: ToolCatalogVisibilityContext): ToolDefinition[] {
     return [...this.#tools.values()]
-      .filter((tool) => isVisible(tool, input))
+      .filter((tool) => visibility(tool, input).visible)
       .sort((a, b) => a.tool_name.localeCompare(b.tool_name))
       .map((tool) => structuredClone(tool));
   }
@@ -102,19 +94,30 @@ export class ToolCatalog {
   resolveCall(
     request: CatalogCallRequest,
     input: ToolCatalogVisibilityContext,
-  ): { tool: ToolDefinition; operation: OperationDefinition; binding: McpBinding } {
+  ): {
+    tool: ToolDefinition;
+    operation: OperationDefinition;
+    binding: McpBinding;
+    authorization: {
+      backend_recheck_required: true;
+      capability_version: string | null;
+    };
+  } {
     const tool = this.#tools.get(request.tool_name);
     assertCatalog(tool, "Tool wurde nicht gefunden.", "TOOL_NOT_FOUND");
     assertCatalog(tool.operation_ids.includes(request.operation_id),
       "Operation gehört nicht zum angeforderten Tool.", "TOOL_NOT_FOUND");
-    assertCatalog(isVisible(tool, input), "Tool ist im aktuellen Rechtekontext nicht sichtbar.",
-      "TOOL_NOT_VISIBLE");
     if (!isPublicTool(tool)) {
       assertCatalog(request.club_id !== null && input.context.club_id !== null,
         "Ein privater Tool-Aufruf benötigt einen expliziten Verein.", "TENANT_MISMATCH");
       assertCatalog(request.club_id === input.context.club_id,
         "Der angeforderte Verein stimmt nicht mit dem Rechtekontext überein.", "TENANT_MISMATCH");
     }
+    const decision = visibility(tool, input);
+    assertCatalog(decision.authorized, "Tool ist im aktuellen Rechtekontext nicht autorisiert.",
+      decision.reason === "TENANT_MISMATCH" || decision.reason === "DEPARTMENT_MISMATCH"
+        ? "TENANT_MISMATCH"
+        : "TOOL_NOT_VISIBLE");
     const operation = this.#operations.get(request.operation_id);
     const binding = this.#mcpBindings.get(request.operation_id);
     assertCatalog(operation && binding, "Katalogbindung ist unvollständig.");
@@ -122,6 +125,10 @@ export class ToolCatalog {
       tool: structuredClone(tool),
       operation: structuredClone(operation),
       binding: structuredClone(binding),
+      authorization: {
+        backend_recheck_required: true as const,
+        capability_version: input.capability_snapshot?.capability_version ?? null,
+      },
     };
   }
 }

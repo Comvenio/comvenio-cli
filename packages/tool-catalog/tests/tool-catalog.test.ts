@@ -32,7 +32,7 @@ const context: RequestContext = {
   club_id: clubId,
   department_id: null,
   scopes: ["event.read"],
-  capability_version: "cap-v1",
+  capability_version: "A".repeat(43),
   locale: "de-DE",
   timezone: "Europe/Berlin",
 };
@@ -338,7 +338,27 @@ describe("backend permission binding", () => {
   test("keeps catalog visibility separate from backend enforcement", () => {
     const compiled = compileProviderCatalog(compilerInput());
     const catalog = new ToolCatalog(compiled.catalog as ToolCatalogSnapshot);
-    expect(catalog.listVisible({ context, capabilities: new Set() })).toEqual([]);
-    expect(catalog.listVisible({ context, capabilities: new Set(["view_events"]) })).toHaveLength(1);
+    const capabilitySnapshot = {
+      subject_id: context.subject_id!,
+      member_id: "66666666-6666-4666-8666-666666666666",
+      club_id: clubId,
+      department_ids: [],
+      permissions: { view_events: true },
+      sources: [],
+      capability_version: context.capability_version!,
+      generated_at: new Date().toISOString(),
+      observed_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+    };
+    expect(catalog.listVisible({
+      context,
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+      provider_tool_updates: "dynamic",
+    })).toEqual([]);
+    expect(catalog.listVisible({
+      context,
+      capability_snapshot: capabilitySnapshot,
+      provider_tool_updates: "dynamic",
+    })).toHaveLength(1);
   });
 });

@@ -5,6 +5,10 @@ import type {
   RequestContext,
 } from "@comvenio/connector-contracts";
 import type {
+  CapabilitySnapshot,
+  ProviderToolUpdateMode,
+} from "@comvenio/auth";
+import type {
   ComvenioApiClient,
   ComvenioHttpMethod,
 } from "@comvenio/comvenio-client";
@@ -331,7 +335,8 @@ export interface BackendPermissionAuditDraft {
 
 export interface ToolCatalogVisibilityContext {
   context: RequestContext;
-  capabilities: ReadonlySet<string>;
+  capability_snapshot: CapabilitySnapshot | null;
+  provider_tool_updates: ProviderToolUpdateMode;
 }
 
 export interface CatalogCallRequest {

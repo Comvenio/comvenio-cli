@@ -51,6 +51,7 @@
       "name": "@comvenio/tool-catalog",
       "version": "0.1.0",
       "dependencies": {
+        "@comvenio/auth": "workspace:*",
         "@comvenio/comvenio-client": "workspace:*",
         "@comvenio/connector-contracts": "workspace:*",
       },

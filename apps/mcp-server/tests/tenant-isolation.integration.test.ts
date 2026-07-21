@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import type { RequestContext } from "@comvenio/connector-contracts";
-import { createClubSelectionContext } from "../../../packages/auth/src/index.ts";
+import {
+  createClubSelectionContext,
+  type CapabilitySnapshot,
+} from "../../../packages/auth/src/index.ts";
 import {
   ToolCatalog,
   type OperationDefinition,
@@ -85,28 +88,54 @@ const context: RequestContext = {
   club_id: clubId,
   department_id: null,
   scopes: ["member.read.basic"],
-  capability_version: "cap-v1",
+  capability_version: "A".repeat(43),
   locale: "de-DE",
   timezone: "Europe/Berlin",
 };
+const capabilitySnapshot: CapabilitySnapshot = {
+  subject_id: context.subject_id!,
+  member_id: "66666666-6666-4666-8666-666666666666",
+  club_id: clubId,
+  department_ids: [],
+  permissions: { view_members: true },
+  sources: [{
+    permission_key: "view_members",
+    allowed: true,
+    scope: "club",
+    department_id: null,
+    assignment_type: "direct",
+  }],
+  capability_version: context.capability_version!,
+  generated_at: new Date().toISOString(),
+  observed_at: new Date().toISOString(),
+  expires_at: new Date(Date.now() + 60_000).toISOString(),
+};
+
+function visibilityContext(overrides: Partial<Parameters<ToolCatalog["listVisible"]>[0]> = {}) {
+  return {
+    context,
+    capability_snapshot: capabilitySnapshot,
+    provider_tool_updates: "dynamic" as const,
+    ...overrides,
+  };
+}
 
 describe("MCP catalog tenant isolation", () => {
   const catalog = new ToolCatalog(snapshot);
 
   test("hides private tools until scope, club and capability are present", () => {
     expect(catalog.listVisible({
+      ...visibilityContext(),
       context: { ...context, club_id: null },
-      capabilities: new Set(["view_members"]),
     })).toEqual([]);
-    expect(catalog.listVisible({ context, capabilities: new Set() })).toEqual([]);
+    expect(catalog.listVisible(visibilityContext({
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    }))).toEqual([]);
     expect(catalog.listVisible({
+      ...visibilityContext(),
       context: { ...context, scopes: [] },
-      capabilities: new Set(["view_members"]),
     })).toEqual([]);
-    expect(catalog.listVisible({
-      context,
-      capabilities: new Set(["view_members"]),
-    })).toHaveLength(1);
+    expect(catalog.listVisible(visibilityContext())).toHaveLength(1);
   });
 
   test("denies cross-tenant and unknown calls before any handler can be resolved", () => {
@@ -114,18 +143,12 @@ describe("MCP catalog tenant isolation", () => {
       tool_name: tool.tool_name,
       operation_id: operation.operation_id,
       club_id: otherClubId,
-    }, {
-      context,
-      capabilities: new Set(["view_members"]),
-    })).toThrow("Verein stimmt nicht");
+    }, visibilityContext())).toThrow("Verein stimmt nicht");
     expect(() => catalog.resolveCall({
       tool_name: "cv_unknown_read",
       operation_id: "unknown.read",
       club_id: clubId,
-    }, {
-      context,
-      capabilities: new Set(["view_members"]),
-    })).toThrow("Tool wurde nicht gefunden");
+    }, visibilityContext())).toThrow("Tool wurde nicht gefunden");
   });
 
   test("requires an explicit club before private tool discovery for multi-club subjects", () => {
@@ -134,8 +157,28 @@ describe("MCP catalog tenant isolation", () => {
       request_id: context.request_id,
     })).toThrow("Bitte wähle den Verein");
     expect(catalog.listVisible({
+      ...visibilityContext(),
       context: { ...context, club_id: null },
-      capabilities: new Set(["view_members"]),
     })).toEqual([]);
+  });
+
+  test("hides actions for a stable cached provider and rechecks cached calls", () => {
+    const stable = visibilityContext({ provider_tool_updates: "stable_cached" });
+    expect(catalog.listVisible(stable)).toEqual([]);
+    expect(catalog.resolveCall({
+      tool_name: tool.tool_name,
+      operation_id: operation.operation_id,
+      club_id: clubId,
+    }, stable).authorization).toEqual({
+      backend_recheck_required: true,
+      capability_version: context.capability_version,
+    });
+    expect(() => catalog.resolveCall({
+      tool_name: tool.tool_name,
+      operation_id: operation.operation_id,
+      club_id: clubId,
+    }, visibilityContext({
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    }))).toThrow("nicht autorisiert");
   });
 });

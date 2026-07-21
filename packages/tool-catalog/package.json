@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Workspace boundary for the audited Comvenio tool catalog.",
   "dependencies": {
+    "@comvenio/auth": "workspace:*",
     "@comvenio/comvenio-client": "workspace:*",
     "@comvenio/connector-contracts": "workspace:*"
   },
