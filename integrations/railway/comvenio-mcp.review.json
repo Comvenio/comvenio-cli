@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "release_state": "BLOCKED",
+  "reason": "Railway resource IDs, DNS ownership and secret presence require environment verification before deployment.",
+  "service": "comvenio-mcp-server",
+  "environments": {
+    "development": {
+      "domain": "mcpdev.comvenio.app",
+      "healthcheck": "/health",
+      "readiness": "/ready",
+      "secret_namespace": "MCP_DEV"
+    },
+    "production": {
+      "domain": "mcp.comvenio.app",
+      "healthcheck": "/health",
+      "readiness": "/ready",
+      "secret_namespace": "MCP_PROD"
+    }
+  },
+  "rollback": {
+    "strategy": "railway_previous_successful_deployment",
+    "requires_readiness_gate": true,
+    "drain_timeout_seconds": 20
+  }
+}

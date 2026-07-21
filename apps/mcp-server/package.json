@@ -3,5 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Workspace boundary for the remote Comvenio MCP runtime."
+  "description": "Stateless Streamable HTTP runtime for the remote Comvenio MCP connector.",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "test": "bun test tests",
+    "typecheck": "tsc --noEmit --project ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@comvenio/auth": "workspace:*",
+    "@comvenio/connector-contracts": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "^5.2.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./http": "./src/http/index.ts",
+    "./package.json": "./package.json"
+  }
 }
