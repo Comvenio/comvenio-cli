@@ -110,7 +110,7 @@ export function registerMenuCommands(cli: CAC): void {
 
       switch (action) {
         case "generate": {
-          // Doctrine (Tom 2026-07-08): this CLI NEVER calls the backend LLM.
+          // Product doctrine: this CLI NEVER calls the backend LLM.
           // The operating agent (Claude/Codex) IS the intelligence — it reads the
           // photo/text itself and composes the card declaratively.
           throw new Error(
@@ -182,7 +182,7 @@ export function registerMenuCommands(cli: CAC): void {
         }
 
         case "design": {
-          // Doctrine (Tom 2026-07-08): no backend LLM — the agent composes the
+          // Product doctrine: no backend LLM — the agent composes the
           // design_config itself and writes it via `menu style`.
           throw new Error(
             [

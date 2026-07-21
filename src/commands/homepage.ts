@@ -89,7 +89,7 @@ export function registerHomepageCommands(cli: CAC): void {
       switch (action) {
         case "generate":
         case "design": {
-          // Doctrine (Tom 2026-07-08): this CLI NEVER calls the backend LLM.
+          // Product doctrine: this CLI NEVER calls the backend LLM.
           // The operating agent (Claude/Codex) IS the intelligence and composes
           // declaratively — that is the whole point of the CLI.
           throw new Error(
