@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -908,5 +908,65 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
       capability_snapshot: { ...capabilitySnapshot, permissions: { create_menus: true } },
     };
     expect(sets.ingredient.listVisible(creatorOnly).map((definition) => definition.action_id)).not.toContain("cai.ingredient.03.create");
+  });
+});
+
+describe("K12 content, homepage, data and verify tenant/RBAC isolation", () => {
+  const fileId = "22222222-2222-4222-8222-222222222222";
+  const contextId = "23232323-2323-4323-8323-232323232323";
+  const departmentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const otherDepartmentId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  function adapterClient(handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>): ComvenioApiClient {
+    return { timeout_ms: 15000, async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> { return await handler(request) as T; } };
+  }
+
+  test("rejects a foreign club before any content backend call", async () => {
+    let calls = 0;
+    const data = createK12ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).data;
+    await expect(data.execute({
+      action_id: "cai.data.01.list",
+      input: { club_id: otherClubId, context_type: "event", context_id: contextId },
+      context: { ...context, scopes: ["files.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { read_files: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("rejects a news mutation outside the selected department before the backend", async () => {
+    let calls = 0;
+    const news = createK12ToolSets({ client: adapterClient(async () => { calls++; return null; }), write_safety: { async execute(_request, mutation) { return mutation(); } } }).news;
+    await expect(news.execute({
+      action_id: "cai.news.03.create",
+      input: { club_id: clubId, operation: "draft", news: { title: "Fremde News", content: "<p>Inhalt</p>", club_department_id: otherDepartmentId, visibility_scope: "department" } },
+      context: { ...context, department_id: departmentId, scopes: ["content.write"] },
+      capability_snapshot: { ...capabilitySnapshot, department_ids: [departmentId], permissions: { manage_news: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("normalizes backend RBAC denial and never reflects private service details", async () => {
+    let forbidden = 0;
+    const data = createK12ToolSets({
+      client: adapterClient(async (request) => { throw createConnectorError({ code: "PERMISSION_DENIED", message: "private folder and subject detail", request_id: request.context.request_id, retryable: false }); }),
+      on_backend_forbidden() { forbidden++; },
+    }).data;
+    await expect(data.execute({
+      action_id: "cai.data.02.show",
+      input: { club_id: clubId, file_id: fileId },
+      context: { ...context, scopes: ["files.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { read_files: true } },
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Content-Aktion im aktuellen Kontext abgelehnt." });
+    expect(forbidden).toBe(1);
+  });
+
+  test("keeps rights mutations hidden from file readers and file writes hidden from news readers", () => {
+    const sets = createK12ToolSets({ client: adapterClient(async () => []), write_safety: { async execute(_request, mutation) { return mutation(); } } });
+    const fileReader = { context: { ...context, scopes: ["files.read", "files.write"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { read_files: true } } };
+    expect(sets.data.listVisible(fileReader).map((definition) => definition.action_id)).toContain("cai.data.01.list");
+    expect(sets.data.listVisible(fileReader).map((definition) => definition.action_id)).not.toContain("cai.data.27.folder_right_add");
+    const newsReader = { context: { ...context, scopes: ["content.read", "content.write"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { read_news: true } } };
+    expect(sets.news.listVisible(newsReader).map((definition) => definition.action_id)).toContain("cai.news.01.list");
+    expect(sets.news.listVisible(newsReader).map((definition) => definition.action_id)).not.toContain("cai.news.03.create");
   });
 });

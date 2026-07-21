@@ -71,6 +71,18 @@ import {
   createK11ToolSets,
   type K11ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/supply-menu-shopping/index.ts";
+import {
+  K12_ACTION_DEFINITIONS,
+  K12_ACTION_IDS,
+  K12_ACTION_SCHEMAS,
+  K12_DATA_ACTION_IDS,
+  K12_HOMEPAGE_ACTION_IDS,
+  K12_NEWS_ACTION_IDS,
+  K12_SCHEMA_ACTION_IDS,
+  K12_VERIFY_ACTION_IDS,
+  createK12ToolSets,
+  type K12ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/content-homepage-news-data/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -1010,5 +1022,129 @@ describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
     })).toThrow();
     const serialized = JSON.stringify({ definitions: K11_ACTION_DEFINITIONS, schemas: Object.keys(K11_ACTION_SCHEMAS) });
     expect(serialized).not.toMatch(/automaticpurchaseorder|hidden.?cost.?disclosure|backend.?llm|local_path|file_path/iu);
+  });
+});
+
+const k12NewsId = "21212121-2121-4121-8121-212121212121";
+const k12FileId = "22222222-2222-4222-8222-222222222222";
+const k12FolderId = "23232323-2323-4323-8323-232323232323";
+
+function k12Dependencies(client: ComvenioApiClient): K12ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+    job_starter: {
+      async start() {
+        return { job_id: "24242424-2424-4424-8424-242424242424", status: "queued", file: { file_id: "25252525-2525-4525-8525-252525252525", name: "ergebnis.pdf", mime_type: "application/pdf" } };
+      },
+    },
+  };
+}
+
+describe("K12 homepage, schema, verify, data and news adapter contract", () => {
+  test("TC-01/TC-02: exposes five toolsets and exactly 3/2/6/35/9 actions", () => {
+    expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(3);
+    expect(K12_SCHEMA_ACTION_IDS).toHaveLength(2);
+    expect(K12_VERIFY_ACTION_IDS).toHaveLength(6);
+    expect(K12_DATA_ACTION_IDS).toHaveLength(35);
+    expect(K12_NEWS_ACTION_IDS).toHaveLength(9);
+    expect(K12_ACTION_IDS).toHaveLength(55);
+    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(55);
+    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(55);
+    const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
+    expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 3, schema: 2, verify: 6, data: 35, news: 9 });
+    expect(sets.schema.coverage_status).toBe("core-partial");
+    expect(sets.schema.listDefinitions().every((definition) => definition.coverage_status === "core-partial")).toBe(true);
+  });
+
+  test("TC-03: public news reuse K6 contracts and drop drafts, tenant IDs and management metadata", async () => {
+    const news = createK12ToolSets(k12Dependencies(k7Client(async () => ([
+      { id: k12NewsId, club_id: k7ClubId, title: "Sommerfest", content: "Öffentlich", teaser: "Rückblick", visibility_scope: "public", is_draft: false, published_at: "2026-07-20T10:00:00Z", created_by: k7SubjectId },
+      { id: "26262626-2626-4626-8626-262626262626", club_id: k7ClubId, title: "Interner Entwurf", content: "Geheim", visibility_scope: "public", is_draft: true, created_by: k7SubjectId },
+    ] as JsonValue)))).news;
+    expect(news.publicReadContracts().map((contract) => contract.alias)).toEqual(["public_news", "public_news_detail", "public_department_news"]);
+    const result = await news.execute({
+      action_id: "cai.news.01.list",
+      input: { club_id: k7ClubId, operation: "public", limit: 20, offset: 0 },
+      context: k8Context(["public.read"]),
+      capability_snapshot: k8Capability({}),
+    });
+    expect(JSON.stringify(result)).toContain("Sommerfest");
+    expect(JSON.stringify(result)).not.toMatch(/Interner Entwurf|Geheim|created_by|club_id/iu);
+  });
+
+  test("TC-04: homepage and news previews create only expiring preview resources", async () => {
+    const calls: Array<{ method: string; path: string }> = [];
+    const client = k7Client(async (request) => {
+      calls.push({ method: request.method, path: request.path });
+      if (request.path === "/files/download-url") return { url: "https://files.example.org/signed-cover", expires_in: 300 } as JsonValue;
+      return { preview_id: "27272727-2727-4727-8727-272727272727", preview_url: "https://web.comvenio.app/preview/2727", expires_at: "2026-07-21T14:00:00Z" } as JsonValue;
+    });
+    const sets = createK12ToolSets(k12Dependencies(client));
+    const homepage = await sets.homepage.execute({
+      action_id: "cai.homepage.01.preview",
+      input: { club_id: k7ClubId, tabs: [{ label: "Start", slug: "start", sections: [{ widgets: [{ kind: "news", config: { limit: 5 } }] }] }] },
+      context: k8Context(["club.write"]), capability_snapshot: k8Capability({ manage_club_settings: true }),
+    });
+    expect(homepage.status).toBe("completed");
+    const news = await sets.news.execute({
+      action_id: "cai.news.07.preview",
+      input: { club_id: k7ClubId, title: "Vorschau", content: "<h2>Hallo</h2>", cover_file_id: k12FileId },
+      context: k8Context(["content.write"]), capability_snapshot: k8Capability({ manage_news: true }),
+    });
+    expect(news.status).toBe("completed");
+    expect(calls).toEqual([
+      { method: "POST", path: `/home-config/${k7ClubId}/preview` },
+      { method: "POST", path: "/files/download-url" },
+      { method: "POST", path: `/news/club/${k7ClubId}/preview` },
+    ]);
+    expect(calls.some((call) => /\/bulk$|\/news\/[0-9a-f-]+$/iu.test(call.path))).toBe(false);
+  });
+
+  test("TC-05: personal exports require a matching second confirmation and return only a remote file reference", async () => {
+    let backendCalls = 0;
+    const data = createK12ToolSets(k12Dependencies(k7Client(async () => { backendCalls++; return null; }))).data;
+    const request = {
+      action_id: "cai.data.35.export_members_bookings" as const,
+      input: { club_id: k7ClubId, operation: "members" as const, format: "xlsx" as const },
+      context: k8Context(["member.read.details", "files.export"]),
+      capability_snapshot: k8Capability({ view_members_details: true }),
+    };
+    const first = await data.execute(request);
+    expect(first.status).toBe("confirmation_required");
+    expect(backendCalls).toBe(0);
+    const preview = (first.result as Record<string, JsonValue>).preview as Record<string, JsonValue>;
+    const second = await data.execute({ ...request, input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } });
+    expect(second.status).toBe("queued");
+    expect(second.result).toEqual({ job_id: "24242424-2424-4424-8424-242424242424", status: "queued", file: { file_id: "25252525-2525-4525-8525-252525252525", name: "ergebnis.pdf", mime_type: "application/pdf" } });
+    expect(backendCalls).toBe(0);
+  });
+
+  test("file URL resolution never returns presigned URLs to the model", async () => {
+    const data = createK12ToolSets(k12Dependencies(k7Client(async () => ({ url: "https://secret-bucket.example.org/object?signature=secret", expires_in: 300 })))).data;
+    const result = await data.execute({ action_id: "cai.data.04.url", input: { club_id: k7ClubId, file_id: k12FileId }, context: k8Context(["files.read"]), capability_snapshot: k8Capability({ read_files: true }) });
+    expect(result.result).toEqual({ file_id: k12FileId, download_available: true, expires_in: 300 });
+    expect(JSON.stringify(result)).not.toMatch(/secret-bucket|signature=|presigned/iu);
+  });
+
+  test("permission-filtered discovery keeps file rights and news management separated", () => {
+    const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
+    const newsManager = { context: k8Context(["content.read", "content.write", "files.read", "files.write"]), capability_snapshot: k8Capability({ manage_news: true }) };
+    expect(sets.news.listVisible(newsManager).map((definition) => definition.action_id)).toContain("cai.news.03.create");
+    expect(sets.data.listVisible(newsManager).map((definition) => definition.action_id)).not.toContain("cai.data.27.folder_right_add");
+    const rightsManager = { context: k8Context(["files.read", "files.write"]), capability_snapshot: k8Capability({ set_rights_files: true }) };
+    expect(sets.data.listVisible(rightsManager).map((definition) => definition.action_id)).toContain("cai.data.27.folder_right_add");
+    expect(sets.news.listVisible(rightsManager)).toHaveLength(0);
+  });
+
+  test("TC-06: schemas exclude logs, local paths, free HTML scripts and SSRF targets", () => {
+    expect(() => K12_ACTION_SCHEMAS["cai.data.06.upload"].input.parse({ club_id: k7ClubId, source_file_id: k12FileId, filename: "C:\\private\\members.xlsx", content_type: "application/vnd.ms-excel", expected_size: 100, context_type: "club" })).toThrow();
+    expect(() => K12_ACTION_SCHEMAS["cai.verify.01.url"].input.parse({ club_id: k7ClubId, target_url: "https://127.0.0.1/internal" })).toThrow();
+    expect(() => K12_ACTION_SCHEMAS["cai.news.07.preview"].input.parse({ club_id: k7ClubId, title: "X", content: "<script>alert(1)</script>" })).toThrow();
+    expect(() => K12_ACTION_SCHEMAS["cai.homepage.01.preview"].input.parse({ club_id: k7ClubId, tabs: [{ label: "Start", slug: "start", sections: [{ widgets: [{ kind: "news", config: { arbitrary_payload: "secret" } }] }] }] })).toThrow();
+    expect(() => K12_ACTION_SCHEMAS["cai.data.27.folder_right_add"].input.parse({ club_id: k7ClubId, right: { folder_id: k12FolderId, subject_type: "role", subject_id: k7MemberId } })).toThrow();
+    const verify = createK12ToolSets(k12Dependencies(k7Client(async () => null))).verify;
+    expect(verify.listVisible({ context: k8Context(["club.read", "files.export"]), capability_snapshot: k8Capability({}) }).map((definition) => definition.action_id)).not.toContain("cai.verify.01.url");
+    expect(JSON.stringify(K12_ACTION_DEFINITIONS)).not.toMatch(/log-service|log_service|logserviceinspection|local_path|file_path|playwright-cli|remotion-dir/iu);
   });
 });
