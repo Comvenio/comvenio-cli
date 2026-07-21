@@ -12,6 +12,7 @@
       "devDependencies": {
         "@comvenio/comvenio-client": "workspace:*",
         "@comvenio/connector-contracts": "workspace:*",
+        "@comvenio/tool-catalog": "workspace:*",
         "@types/bun": "^1.1.0",
         "openapi-typescript": "^7.13.0",
         "typescript": "^5.4.0",
@@ -46,6 +47,10 @@
     "packages/tool-catalog": {
       "name": "@comvenio/tool-catalog",
       "version": "0.1.0",
+      "dependencies": {
+        "@comvenio/comvenio-client": "workspace:*",
+        "@comvenio/connector-contracts": "workspace:*",
+      },
     },
   },
   "packages": {

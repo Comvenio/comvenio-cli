@@ -21,6 +21,8 @@
     "gen:schema:check": "bun run scripts/gen-schema.ts --check",
     "gen:coverage": "bun run scripts/gen-coverage.ts",
     "gen:coverage:check": "bun run scripts/gen-coverage.ts --check",
+    "gen:connector-inventory": "bun run scripts/import-connector-inventory.ts",
+    "gen:connector-inventory:check": "bun run scripts/import-connector-inventory.ts --check",
     "gen:api": "echo 'Placeholder — per service: openapi-typescript https://api.comvenio.app/{service}/openapi.json -o src/api/{service}.ts (Folge-Straenge comvenio-cli-04..09)'"
   },
   "dependencies": {
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@comvenio/comvenio-client": "workspace:*",
     "@comvenio/connector-contracts": "workspace:*",
+    "@comvenio/tool-catalog": "workspace:*",
     "@types/bun": "^1.1.0",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.4.0"

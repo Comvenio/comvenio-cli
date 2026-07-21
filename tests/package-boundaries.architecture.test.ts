@@ -6,6 +6,7 @@ const repositoryRoot = resolve(import.meta.dir, "..");
 const sharedSourceRoots = [
   join(repositoryRoot, "packages", "comvenio-client", "src"),
   join(repositoryRoot, "packages", "connector-contracts", "src"),
+  join(repositoryRoot, "packages", "tool-catalog", "src"),
 ];
 
 function sourceFiles(root: string): string[] {
@@ -29,6 +30,9 @@ describe("shared package boundaries", () => {
         }
         if (/src\/auth\.ts|ComvenioCliState|STATE_FILE/u.test(source)) {
           violations.push(`${file}: CLI-local auth import`);
+        }
+        if (/\bfetch\s*\(/u.test(source) && root.endsWith(join("tool-catalog", "src"))) {
+          violations.push(`${file}: network-capable catalog code`);
         }
       }
     }

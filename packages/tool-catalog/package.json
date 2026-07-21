@@ -3,5 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Workspace boundary for the audited Comvenio tool catalog."
+  "description": "Workspace boundary for the audited Comvenio tool catalog.",
+  "dependencies": {
+    "@comvenio/comvenio-client": "workspace:*",
+    "@comvenio/connector-contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./generated": "./generated/index.ts",
+    "./generated/*": "./generated/*",
+    "./package.json": "./package.json"
+  }
 }

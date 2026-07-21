@@ -6,39 +6,42 @@ export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue
 export type ClientSurface = "cli" | "mcp";
 export type ProviderId = "openai" | "anthropic";
 
-export type OAuthScope =
-  | "public.read"
-  | "club.read"
-  | "club.write"
-  | "member.read.basic"
-  | "member.read.details"
-  | "member.write"
-  | "team.read"
-  | "team.write"
-  | "role.read.self"
-  | "role.write"
-  | "event.read"
-  | "event.write"
-  | "booking.read"
-  | "object.read"
-  | "content.write"
-  | "content.read"
-  | "booking.write"
-  | "object.write"
-  | "task.read"
-  | "task.write"
-  | "supply.read"
-  | "supply.write"
-  | "meeting.read"
-  | "meeting.write"
-  | "sponsor.read"
-  | "sponsor.write"
-  | "admin.write"
-  | "files.read"
-  | "files.write"
-  | "files.export"
-  | "files.import"
-  | "connector.grants";
+export const OAUTH_SCOPE_VALUES = [
+  "public.read",
+  "club.read",
+  "club.write",
+  "member.read.basic",
+  "member.read.details",
+  "member.write",
+  "team.read",
+  "team.write",
+  "role.read.self",
+  "role.write",
+  "event.read",
+  "event.write",
+  "booking.read",
+  "object.read",
+  "content.write",
+  "content.read",
+  "booking.write",
+  "object.write",
+  "task.read",
+  "task.write",
+  "supply.read",
+  "supply.write",
+  "meeting.read",
+  "meeting.write",
+  "sponsor.read",
+  "sponsor.write",
+  "admin.write",
+  "files.read",
+  "files.write",
+  "files.export",
+  "files.import",
+  "connector.grants",
+] as const;
+
+export type OAuthScope = (typeof OAUTH_SCOPE_VALUES)[number];
 
 export interface RequestContext {
   request_id: UUID;
@@ -102,40 +105,7 @@ const CONNECTOR_ERRORS = new WeakSet<Error>();
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const CLIENT_SURFACES = new Set<ClientSurface>(["cli", "mcp"]);
 const PROVIDERS = new Set<ProviderId>(["openai", "anthropic"]);
-const OAUTH_SCOPES = new Set<OAuthScope>([
-  "public.read",
-  "club.read",
-  "club.write",
-  "member.read.basic",
-  "member.read.details",
-  "member.write",
-  "team.read",
-  "team.write",
-  "role.read.self",
-  "role.write",
-  "event.read",
-  "event.write",
-  "booking.read",
-  "object.read",
-  "content.write",
-  "content.read",
-  "booking.write",
-  "object.write",
-  "task.read",
-  "task.write",
-  "supply.read",
-  "supply.write",
-  "meeting.read",
-  "meeting.write",
-  "sponsor.read",
-  "sponsor.write",
-  "admin.write",
-  "files.read",
-  "files.write",
-  "files.export",
-  "files.import",
-  "connector.grants",
-]);
+const OAUTH_SCOPES = new Set<OAuthScope>(OAUTH_SCOPE_VALUES);
 
 function invalidContext(requestId: string, message: string): Error & ConnectorError {
   return createConnectorError({
