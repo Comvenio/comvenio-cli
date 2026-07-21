@@ -1,6 +1,6 @@
 # comvenio CLI – eigenständige Referenz
 
-Stand: 13. Juli 2026 · CLI-Version: `0.1.0`
+Stand: 20. Juli 2026 · CLI-Version: `0.1.0`
 
 Diese Referenz ist für Agents gedacht, die weder Backend-Quellcode noch interne AI-docs sehen. Sie beschreibt ausschließlich tatsächlich verdrahtete Top-Level-Commands. Die vollständige Coverage einschließlich bekannter Lücken und bewusster Ausschlüsse steht in [`coverage.md`](coverage.md); maschinenlesbar ist sie in `src/schema/coverage.json` enthalten.
 
@@ -18,7 +18,7 @@ comvenio <command> ... --json
 - Gibt es keine CLI-Action, ist ein direkter API-Aufruf kein Ersatz. Die Lücke muss im CLI geschlossen werden.
 - Mutationen werden nicht automatisch wiederholt. Nur lesende GET-Aufrufe haben einen begrenzten Retry bei vorübergehenden Fehlern.
 
-## Die 25 Top-Level-Commands
+## Die 26 Top-Level-Commands
 
 | Command | Vorhandener CLI-Scope | Detailreferenz |
 |---|---|---|
@@ -28,6 +28,7 @@ comvenio <command> ... --json
 | `club` | Profil, Settings, Abteilungen und `design` | [`auth-club.md`](auth-club.md), [`homepage.md`](homepage.md) |
 | `member` | Mitglieder, Familien, Status, Mitgliedschaftszeiten und Import | [`mitglieder-teams.md`](mitglieder-teams.md) |
 | `team` | Team-CRUD, Mitglieder und Ressourcen-Prioritäten | [`mitglieder-teams.md`](mitglieder-teams.md) |
+| `role` | Custom Roles, Berechtigungsmatrix, Zuweisungen und effektive Rechte | [`rollen-rechte.md`](rollen-rechte.md) |
 | `event` | Event-Core, Vorlagen, Serien und Event-Hub-Unterressourcen | [`veranstaltungen.md`](veranstaltungen.md) |
 | `booking` | Reservierungen lesen und verwalten | [`buchungen-objekte.md`](buchungen-objekte.md) |
 | `object` | Objekt-, Gebäude-, Raum-, Buchungsregel- und Task-Regel-CRUD | [`buchungen-objekte.md`](buchungen-objekte.md) |

@@ -4,7 +4,7 @@ Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-14.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
-> Workflow-Registry für die 25 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
+> Workflow-Registry für die 26 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
 
 ## Statusmodell
 
@@ -22,6 +22,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `club` | `covered` | info<br>update<br>settings<br>settings-update<br>design<br>department-list<br>department-show<br>department-add<br>department-update<br>department-delete | Keine bekannte Kernlücke. |
 | `member` | `covered` | list<br>show<br>add<br>update<br>remove<br>import<br>family-list<br>family-show<br>family-add<br>family-update<br>family-delete<br>status-list<br>status-show<br>status-add<br>status-update<br>status-delete<br>period-list<br>period-show<br>period-add<br>period-update<br>period-delete | Keine bekannte Kernlücke. |
 | `team` | `covered` | list<br>show<br>create<br>update<br>delete<br>member list|add|update|remove<br>resource list|add|update|remove | Keine bekannte Kernlücke. |
+| `role` | `covered` | list<br>show<br>create<br>update<br>delete<br>permission-defs<br>permission set<br>permissions show|apply<br>assign<br>unassign<br>assignments<br>position-link<br>position-unlink<br>position-list<br>effective | Keine bekannte Kernlücke. |
 | `event` | `covered` | list<br>show<br>create<br>update<br>publish<br>delete<br>template list|create|clone|instantiate<br>series list|show|create|materialize|promote-recurring|promote-yearly|next<br>area list|add|show|update|delete|bulk|copy<br>assignment list|add|remove|clear<br>lead list|add|update|delete<br>area-note list|add|update|delete<br>program list|add|update|delete|reorder<br>contact list|add|update|delete<br>resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch<br>attachment list|show|add|update|delete<br>tag category and assignment workflows<br>sponsor and sponsor-program workflows<br>invitation and club-invitation workflows<br>registration list|add|stats|show|update|adjust|delete|aggregate<br>budget show|set|delete<br>design theme and asset workflows<br>copy set|reset<br>dj settings and request workflows<br>external-sync workflows<br>instance previous|next|compare|clone-next<br>child list|create|invitation-summary<br>menu list|assign|unassign | Keine bekannte Kernlücke. |
 | `booking` | `covered` | list<br>show<br>create<br>update<br>approve<br>reject<br>cancel<br>delete<br>bulk<br>participant list|show|add|add-groups|update|remove<br>link list|club|add|remove<br>stats object|guests | Keine bekannte Kernlücke. |
 | `object` | `covered` | list<br>show<br>create<br>update<br>delete<br>building list|show|create|update|delete<br>room list|show|create|update|delete<br>booking-rule list|show|create|bulk|update|delete<br>task-rule list|show|create|update|delete | Keine bekannte Kernlücke. |
@@ -52,7 +53,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## Nicht erschlossene Themengebiete
 
-> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "25 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
+> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "26 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
 
 - `gap`: Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.
 - `partial-gap`: Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.
@@ -61,26 +62,12 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 | Gebiet | Service | Verdikt | Fehlende Club-Admin-Workflows |
 |---|---|---|---|
-| `role` | role-service | `gap` | Club-Rollen anlegen, bearbeiten, löschen<br>Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)<br>Mitgliedern Rollen zuweisen und entziehen<br>Positions-Rollen-Mapping (ClubPositionRole)<br>Systemrechte auflisten (PermissionDefinition, read-only) |
 | `agent` | ai-service (ClubAgent) | `gap` | Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)<br>Autonomie-/Skill-Pakete installieren und listen<br>Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)<br>Vereinseigene Slash-Kommandos definieren<br>Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)<br>Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)<br>Watch-Rules pflegen (worauf reagiert der Bot autonom)<br>Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)<br>Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung) |
 | `channel` | message-service | `gap` | Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)<br>Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)<br>Forum-Boards anlegen und deren Permissions setzen<br>Thread-Moderation (sperren, anpinnen, als gelöst markieren)<br>Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)<br>Vereins-Posts und Umfragen im Feed veröffentlichen |
 | `finance` | finance-service | `partial-gap` | Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)<br>Vereins-Rechnungen einsehen<br>Auszahlungshistorie einsehen und Auszahlung anstoßen |
 | `marketing-platform` | marketing-service | `no-gap` | — |
 | `notify` | notify-service | `no-gap` | — |
 | `automation` | automation-service | `no-gap` | — |
-
-### role (role-service)
-
-- Verdikt: `gap`
-- Das gesamte Modul Wer-darf-was ist über keinen Top-Level-Command erreichbar — auch nicht als Teilfunktion von member, team oder club.
-- Fehlende Club-Admin-Workflows:
-  - Club-Rollen anlegen, bearbeiten, löschen
-  - Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)
-  - Mitgliedern Rollen zuweisen und entziehen
-  - Positions-Rollen-Mapping (ClubPositionRole)
-  - Systemrechte auflisten (PermissionDefinition, read-only)
-- Vorgeschlagene Actions: `role list|show|create|update|delete`, `role permissions-show <role-id>`, `role permission-update <permission-id> --allowed <bool>`, `role assign <user-id> --role <role-id> [--department <id>]`, `role unassign <assignment-id>`, `role assignments --club|--member|--department`, `role position-link|position-unlink`, `role permission-defs`
-- Begründung: Rechtevergabe ist ein Kern-Club-Admin-Workflow. Serverseitig voll implementiert und mit manage_roles geschützt. Ein Agent kann heute nicht einmal die Kassierer-Rolle an ein Mitglied vergeben.
 
 ### agent (ai-service (ClubAgent))
 
@@ -213,6 +200,18 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
   - Keine.
 - Geprüfte Quellen: `src/commands/team.ts`
 - Weiterführende Doku: `docs/mitglieder-teams.md`
+
+## role
+
+- Status: `covered`
+- Actions: `list`, `show`, `create`, `update`, `delete`, `permission-defs`, `permission set`, `permissions show|apply`, `assign`, `unassign`, `assignments`, `position-link`, `position-unlink`, `position-list`, `effective`
+- Wichtige Lücken:
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
+- Bewusste Ausschlüsse:
+  - Geschützte Standardrollen sind lesbar, aber über öffentliche CLI-Wege unveränderlich.
+  - Interne Bulk- und Force-Delete-Abläufe sind kein öffentlicher CLI-Scope.
+- Geprüfte Quellen: `src/commands/role.ts`
+- Weiterführende Doku: `docs/rollen-rechte.md`
 
 ## event
 

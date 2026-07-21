@@ -7,7 +7,7 @@
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
     "intentional-exclusion": "Der Top-Level-Command ist ausschließlich als bewusstes Nicht-Ziel dokumentiert."
   },
-  "scope_note": "Workflow-Registry für die 25 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
+  "scope_note": "Workflow-Registry für die 26 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
   "domains": [
     {
       "id": "login",
@@ -146,6 +146,38 @@
       ],
       "docs": [
         "docs/mitglieder-teams.md"
+      ]
+    },
+    {
+      "id": "role",
+      "status": "covered",
+      "actions": [
+        "list",
+        "show",
+        "create",
+        "update",
+        "delete",
+        "permission-defs",
+        "permission set",
+        "permissions show|apply",
+        "assign",
+        "unassign",
+        "assignments",
+        "position-link",
+        "position-unlink",
+        "position-list",
+        "effective"
+      ],
+      "gaps": [],
+      "intentional_exclusions": [
+        "Geschützte Standardrollen sind lesbar, aber über öffentliche CLI-Wege unveränderlich.",
+        "Interne Bulk- und Force-Delete-Abläufe sind kein öffentlicher CLI-Scope."
+      ],
+      "source": [
+        "src/commands/role.ts"
+      ],
+      "docs": [
+        "docs/rollen-rechte.md"
       ]
     },
     {
@@ -730,30 +762,6 @@
     "backend-missing": "Der Workflow existiert serverseitig noch nicht (z. B. HTTP 501). Zuerst Backend, dann CLI — keine CLI-Lücke."
   },
   "uncovered_domains": [
-    {
-      "id": "role",
-      "service": "role-service",
-      "verdict": "gap",
-      "summary": "Das gesamte Modul Wer-darf-was ist über keinen Top-Level-Command erreichbar — auch nicht als Teilfunktion von member, team oder club.",
-      "missing_workflows": [
-        "Club-Rollen anlegen, bearbeiten, löschen",
-        "Berechtigungsmatrix pro Rolle pflegen (ClubPermission togglen)",
-        "Mitgliedern Rollen zuweisen und entziehen",
-        "Positions-Rollen-Mapping (ClubPositionRole)",
-        "Systemrechte auflisten (PermissionDefinition, read-only)"
-      ],
-      "proposed_actions": [
-        "role list|show|create|update|delete",
-        "role permissions-show <role-id>",
-        "role permission-update <permission-id> --allowed <bool>",
-        "role assign <user-id> --role <role-id> [--department <id>]",
-        "role unassign <assignment-id>",
-        "role assignments --club|--member|--department",
-        "role position-link|position-unlink",
-        "role permission-defs"
-      ],
-      "rationale": "Rechtevergabe ist ein Kern-Club-Admin-Workflow. Serverseitig voll implementiert und mit manage_roles geschützt. Ein Agent kann heute nicht einmal die Kassierer-Rolle an ein Mitglied vergeben."
-    },
     {
       "id": "agent",
       "service": "ai-service (ClubAgent)",

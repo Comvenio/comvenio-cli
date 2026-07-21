@@ -2,7 +2,7 @@ import type { CAC } from "cac";
 // Embedded domain schemas. The generator-owned subset is created by
 // `bun run gen:schema` (scripts/gen-schema.ts), which parses the REAL code
 // sources at generation time:
-//   homepage → ClubHome/widgets/index.ts (WIDGET_REGISTRY, 70 kinds) +
+//   homepage → ClubHome/widgets/index.ts (WIDGET_REGISTRY, 71 kinds) +
 //              ai-service/app/prompts/homepage_system.py + club_home_section.py
 //   menu     → MenuPreview.tsx (MenuDesignOptions) + supply-service core.py (UnitType)
 //   event/task/booking/member → the respective service enum classes.
@@ -25,6 +25,7 @@ import object from "../schema/object.json" with { type: "json" };
 import ingredient from "../schema/ingredient.json" with { type: "json" };
 import ingredientCategory from "../schema/ingredient-category.json" with { type: "json" };
 import shopping from "../schema/shopping.json" with { type: "json" };
+import role from "../schema/role.json" with { type: "json" };
 import coverage from "../schema/coverage.json" with { type: "json" };
 
 type CoverageDomain = {
@@ -74,11 +75,12 @@ const SCHEMAS: Record<string, unknown> = {
   ingredient,
   "ingredient-category": ingredientCategory,
   shopping,
+  role,
   coverage,
 };
 
 const DOMAIN_SUMMARY: Record<string, string> = {
-  homepage: "Tab/Section/Widget-Struktur, 70 Widget-Kinds, config-Felder, Templates",
+  homepage: "Tab/Section/Widget-Struktur, 71 Widget-Kinds, config-Felder, Templates",
   design: "Flex-Template Design-Config (hero/sections/decor/type/density) fuer custom_template_config",
   menu: "MenuDesignOptions (design_config) + UnitType + MenuItem-Felder",
   event: "event_type, visibility_scope, organizer_type, status + Create-Felder",
@@ -93,6 +95,7 @@ const DOMAIN_SUMMARY: Record<string, string> = {
   ingredient: "Club-Zutaten CRUD",
   "ingredient-category": "Zutatenkategorien, Baum und Zuweisungen",
   shopping: "Einkaufslisten, Positionen und Generierung aus Rezept/Menu",
+  role: "Custom Roles, Berechtigungsmatrix, Zuweisungen und effektive Rechte",
   coverage: "Workflow-Abdeckung, bekannte Luecken und bewusste Ausschluesse aller CLI-Domaenen",
 };
 

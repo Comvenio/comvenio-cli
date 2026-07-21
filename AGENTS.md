@@ -56,13 +56,13 @@ fälschlich per `POST /matches/{id}/result` gesetzt wurden.
 
 ### Ganze Themengebiete ohne Command (Stand 2026-07-14)
 
-Die 25 Top-Level-Commands decken **nicht** die ganze Plattform ab. Diese Bereiche haben
+Die 26 Top-Level-Commands decken **nicht** die ganze Plattform ab. Diese Bereiche haben
 **gar keinen** Command — sie sind in `docs/coverage.md` unter „Nicht erschlossene
 Themengebiete" mit Verdikt und Begründung geführt:
 
 | Gebiet | Verdikt | Kurz |
 |--------|---------|------|
-| **Rollen & Rechte** (role-service) | `gap` | „Wer darf was?" — Rollen, Berechtigungsmatrix, Rollenzuweisung. Kein CLI-Zugang |
+| **Rollen & Rechte** (role-service) | `covered` | `comvenio role`: Custom Roles, Berechtigungsmatrix, direkte/positionsbasierte Zuweisungen und effektive Rechte |
 | **ClubAgent/Bot** (ai-service) | `gap` | Bot-Konfiguration, Skills/Guardrails, Routinen, **Freigaben**. Kein CLI-Zugang |
 | **Channels/Forum/Feeds** (message-service) | `gap` | Channel- + Forum-Verwaltung, **Gäste-Post-Moderation** (DSGVO-relevant). Kein CLI-Zugang |
 | **Finanzen** (finance-service) | `partial-gap` | Connect/Rechnungen/Payouts fehlen; Beiträge/Kassen/Budgets liefern serverseitig noch HTTP 501 |
@@ -126,6 +126,7 @@ comvenio club info                    # Vereinsdaten
 | data     | Dateien, Ordner, Papierkorb, Suche, Papers, Bereichsfreigaben und CSV/XLSX-Export; Referenz: `docs/dateien.md`. |
 | tournament | Serien/Ausführungen, Teilnehmer, Draw/Re-Draw, Spielplan, Satz-/Sonderergebnisse und Deadlines; Referenz: `docs/turniere.md`. |
 | meeting  | Sitzungsserien, Protokoll-Lifecycle, Agenda, Notizen, Teilnehmer, Abstimmungen, Beschlüsse und Einträge; Referenz: `docs/meetings.md`. |
+| role     | Custom Roles, Berechtigungsmatrix, direkte/positionsbasierte Zuweisungen und effektive Rechte; Referenz: `docs/rollen-rechte.md`. |
 | verify   | `comvenio verify <action>` (visuelles Review: headless Render → Screenshots, damit du das Ergebnis siehst) |
 | schema   | `comvenio schema <domain> --json`                             |
 
@@ -146,7 +147,7 @@ comvenio club info                    # Vereinsdaten
 > `docs/coverage.md` (verifizierte Abdeckung/Lücken), `docs/auth-club.md`,
 > `docs/aufgaben.md`, `docs/mitglieder-teams.md`, `docs/buchungen-objekte.md`,
 > `docs/dateien.md`, `docs/vereinsnews.md`, `docs/turniere.md`,
-> `docs/sponsoring.md` und `docs/meetings.md`.
+> `docs/sponsoring.md`, `docs/meetings.md` und `docs/rollen-rechte.md`.
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)
