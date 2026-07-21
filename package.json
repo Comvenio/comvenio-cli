@@ -24,6 +24,7 @@
     "gen:connector-inventory": "bun run scripts/import-connector-inventory.ts",
     "gen:connector-inventory:check": "bun run scripts/import-connector-inventory.ts --check",
     "gen:openai-submission:check": "bun run scripts/validate-openai-submission.ts",
+    "gen:anthropic-submission:check": "bun run scripts/validate-anthropic-submission.ts",
     "gen:api": "echo 'Placeholder — per service: openapi-typescript https://api.comvenio.app/{service}/openapi.json -o src/api/{service}.ts (Folge-Straenge comvenio-cli-04..09)'"
   },
   "dependencies": {

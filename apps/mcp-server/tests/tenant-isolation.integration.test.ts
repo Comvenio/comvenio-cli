@@ -25,6 +25,7 @@ import {
   type ToolDefinition,
 } from "../../../packages/tool-catalog/src/index.ts";
 import { OpenAiConnectorAdapter } from "../../../integrations/openai/src/index.ts";
+import { AnthropicConnectorAdapter } from "../../../integrations/anthropic/src/index.ts";
 import {
   ExactProviderHintResolver,
   HealthReadinessProbe,
@@ -200,6 +201,23 @@ describe("MCP catalog tenant isolation", () => {
     expect(descriptor?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["member.read.basic"] }]);
     expect(descriptor?._meta?.ui.resourceUri).toBe("ui://comvenio/member-management");
     expect(catalog.listVisible({ ...visibilityContext(), context: { ...context, club_id: null } })).toEqual([]);
+    expect(catalog.listVisible(visibilityContext({ capability_snapshot: { ...capabilitySnapshot, permissions: {} } }))).toEqual([]);
+    expect(catalog.resolveCall({ tool_name: tool.tool_name, operation_id: operation.operation_id, club_id: clubId }, visibilityContext()).authorization)
+      .toEqual({ backend_recheck_required: true, capability_version: context.capability_version });
+    expect(() => catalog.resolveCall({ tool_name: tool.tool_name, operation_id: operation.operation_id, club_id: otherClubId }, visibilityContext()))
+      .toThrow("Verein stimmt nicht");
+  });
+
+  test("K22 Anthropic metadata preserves scope, explicit club, capability filter and backend recheck", () => {
+    const schemas = new Map<string, JsonSchemaDocument>([
+      [tool.input_schema_ref, { type: "object", additionalProperties: false, required: ["club_id"], properties: { club_id: { type: "string", format: "uuid" } } }],
+      [tool.output_schema_ref, { type: "object", additionalProperties: false, required: [], properties: {} }],
+    ]);
+    const [descriptor] = new AnthropicConnectorAdapter().adapt({ catalog: snapshot, schemas });
+    expect(descriptor?.requiredScopes).toEqual(["member.read.basic"]);
+    expect(descriptor?.annotations).toEqual(tool.annotations);
+    expect(descriptor?._meta?.ui.resourceUri).toBe("ui://comvenio/member-management");
+    expect(catalog.listVisible({ ...visibilityContext(), context: { ...context, club_id: null, provider: "anthropic" } })).toEqual([]);
     expect(catalog.listVisible(visibilityContext({ capability_snapshot: { ...capabilitySnapshot, permissions: {} } }))).toEqual([]);
     expect(catalog.resolveCall({ tool_name: tool.tool_name, operation_id: operation.operation_id, club_id: clubId }, visibilityContext()).authorization)
       .toEqual({ backend_recheck_required: true, capability_version: context.capability_version });

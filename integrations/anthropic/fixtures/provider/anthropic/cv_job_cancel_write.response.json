@@ -1,0 +1,1 @@
+{ "schema_version": "1.0.0", "tool_name": "cv_job_cancel_write", "synthetic_data_only": true, "expected": { "outcome": "cancelled_before_upstream_commit", "permission_denied_outcome": "not_found", "data_policy": "own_tenant_bound_job_only", "backend_rbac_recheck_required": true } }

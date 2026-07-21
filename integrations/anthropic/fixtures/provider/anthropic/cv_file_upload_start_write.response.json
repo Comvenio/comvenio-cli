@@ -1,0 +1,1 @@
+{ "schema_version": "1.0.0", "tool_name": "cv_file_upload_start_write", "synthetic_data_only": true, "expected": { "outcome": "quarantine_handle_created", "permission_denied_outcome": "forbidden", "data_policy": "opaque_upload_handle_only", "backend_rbac_recheck_required": true } }
