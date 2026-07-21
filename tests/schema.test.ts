@@ -9,7 +9,7 @@ describe("homepage schema", () => {
   const homepage = schema("homepage");
 
   test("mirrors all homepage vocabularies", () => {
-    expect(homepage.widget_count).toBe(70);
+    expect(homepage.widget_count).toBe(71);
     expect(homepage.widget_kinds).toContain("event_hub_embed");
     expect(homepage.widget_kinds).toContain("legal_notice");
     expect(homepage.widgets.legal_notice.config).toContainEqual({ name: "club_name", required: true });

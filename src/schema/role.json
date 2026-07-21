@@ -1,0 +1,49 @@
+{
+  "domain": "role",
+  "schema_kind": "curated-workflow",
+  "generated": false,
+  "service": "role-service",
+  "permission": "workflow-dependent: reads require club membership or self access; writes require manage_roles",
+  "commands": {
+    "roles": [
+      "role list",
+      "role show <role-id>",
+      "role create --name <name> [--description <text>]",
+      "role update <role-id> [--name <name>] [--description <text>]",
+      "role delete <role-id>",
+      "role restore <role-id>"
+    ],
+    "permissions": [
+      "role permission-defs",
+      "role permissions show --role-id <id>",
+      "role permission set --role-id <id> --permission-key <key> --allowed true|false",
+      "role permissions apply --role-id <id> --file <matrix.json>",
+      "role permissions apply --role-id <id> --file <matrix.json> --replace --yes"
+    ],
+    "assignments": [
+      "role assign --member-id <id> --role-id <id> --scope club|department [--department-id <id>]",
+      "role unassign <assignment-id>",
+      "role assignment-restore <assignment-id>",
+      "role assignments [--role-id <id>|--member-id <id>|--department-id <id>]",
+      "role position-link --position-id <id> --role-id <id> [--department-id <id>]",
+      "role position-unlink <assignment-id>",
+      "role position-restore <assignment-id>",
+      "role position-list --position-id <id>"
+    ],
+    "effective": [
+      "role effective --member-id <id> [--department-id <id>]"
+    ]
+  },
+  "safety": {
+    "protected_roles": "Geschützte Rollen können nicht über öffentliche CLI-Wege verändert werden.",
+    "scope": "club verbietet department_id; department verlangt department_id.",
+    "matrix": "Dateien patchen standardmäßig. --replace setzt fehlende Keys auf false und verlangt --yes. expected_before verhindert TOCTOU.",
+    "reversibility": "Delete, Unassign und Position-Unlink sind Soft-Deletes mit eigenständigen Restore-Commands.",
+    "mutation_evidence": "Kritische Writes liefern Ziel, Ist-Stand, Diff, Risiko und Run-ID.",
+    "identity": "Zuweisungen akzeptieren ausschließlich member_id, keine Namen oder E-Mail-Adressen."
+  },
+  "matrix_file": {
+    "manage_events": true,
+    "manage_finances": false
+  }
+}

@@ -6,14 +6,14 @@ seinen Verein direkt über die Comvenio-Service-APIs.
 
 Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
 `task`, `template`, `recipe`, `ingredient`, `ingredient-category`, `shopping`,
-`menu`, `homepage`, `plan` (Geländeplan),
+`menu`, `homepage`, `role`, `plan` (Geländeplan),
 `tournament`, `sponsor`, `news` (Vereinsnews), `data` (Dateien/Galerie),
 `meeting`, `verify`, `schema`. Jeder Command kennt `--json` und `--help`.
 
 > Der Agent, der dieses CLI bedient, liest **`AGENTS.md`** — dort steht die
 > Domänensprache (Enums, Felder, Workflows) inkl. dem News- und Galerie-Workflow.
 > Die kompakte Gesamtübersicht steht in [`docs/cli-reference.md`](docs/cli-reference.md),
-> der verifizierte Abdeckungsstatus aller 25 Top-Level-Commands in
+> der verifizierte Abdeckungsstatus aller 26 Top-Level-Commands in
 > [`docs/coverage.md`](docs/coverage.md).
 
 Stack: **Bun + cac + TypeScript**.
@@ -65,9 +65,10 @@ Repository [Comvenio/comvenio-skills](https://github.com/Comvenio/comvenio-skill
 Die Skills verwenden ausschließlich dieses CLI. Das persönliche Zugriffstoken
 gehört nur in den lokalen `comvenio login`-Befehl und niemals in den Chat.
 
-Rollen und Berechtigungen, Community-/Channel-Moderation,
-ClubAgent-Administration und wesentliche Finanzabläufe sind derzeit keine
-CLI-Workflows. Eine eigene Domain wird in der Comvenio-Web-App angebunden.
+Community-/Channel-Moderation, ClubAgent-Administration und wesentliche
+Finanzabläufe sind derzeit keine CLI-Workflows. Rollen und Berechtigungen sind
+über `comvenio role` verfügbar. Eine eigene Domain wird in der Comvenio-Web-App
+angebunden.
 
 ## Verwendung
 
