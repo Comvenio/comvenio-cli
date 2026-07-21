@@ -19,10 +19,12 @@ import {
 } from "../../../packages/auth/src/index.ts";
 import {
   ToolCatalog,
+  type JsonSchemaDocument,
   type OperationDefinition,
   type ToolCatalogSnapshot,
   type ToolDefinition,
 } from "../../../packages/tool-catalog/src/index.ts";
+import { OpenAiConnectorAdapter } from "../../../integrations/openai/src/index.ts";
 import {
   ExactProviderHintResolver,
   HealthReadinessProbe,
@@ -188,6 +190,22 @@ function visibilityContext(overrides: Partial<Parameters<ToolCatalog["listVisibl
 
 describe("MCP catalog tenant isolation", () => {
   const catalog = new ToolCatalog(snapshot);
+
+  test("K21 OpenAI metadata preserves scope, explicit club, capability filter and backend recheck", () => {
+    const schemas = new Map<string, JsonSchemaDocument>([
+      [tool.input_schema_ref, { type: "object", additionalProperties: false, required: ["club_id"], properties: { club_id: { type: "string", format: "uuid" } } }],
+      [tool.output_schema_ref, { type: "object", additionalProperties: false, required: [], properties: {} }],
+    ]);
+    const [descriptor] = new OpenAiConnectorAdapter().adapt({ catalog: snapshot, schemas });
+    expect(descriptor?.securitySchemes).toEqual([{ type: "oauth2", scopes: ["member.read.basic"] }]);
+    expect(descriptor?._meta?.ui.resourceUri).toBe("ui://comvenio/member-management");
+    expect(catalog.listVisible({ ...visibilityContext(), context: { ...context, club_id: null } })).toEqual([]);
+    expect(catalog.listVisible(visibilityContext({ capability_snapshot: { ...capabilitySnapshot, permissions: {} } }))).toEqual([]);
+    expect(catalog.resolveCall({ tool_name: tool.tool_name, operation_id: operation.operation_id, club_id: clubId }, visibilityContext()).authorization)
+      .toEqual({ backend_recheck_required: true, capability_version: context.capability_version });
+    expect(() => catalog.resolveCall({ tool_name: tool.tool_name, operation_id: operation.operation_id, club_id: otherClubId }, visibilityContext()))
+      .toThrow("Verein stimmt nicht");
+  });
 
   test("hides private tools until scope, club and capability are present", () => {
     expect(catalog.listVisible({

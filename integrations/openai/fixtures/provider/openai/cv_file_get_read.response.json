@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0.0",
+  "tool_name": "cv_file_get_read",
+  "synthetic_data_only": true,
+  "expected": { "outcome": "short_lived_reference_created", "data_policy": "own_authorized_file_only", "backend_rbac_recheck_required": true }
+}
