@@ -51,6 +51,11 @@ import {
   BOOKING_OBJECT_WIDGET_RESOURCE_URI,
   BookingObjectWidgetProjector,
   BookingWidgetCapabilityPolicy,
+  CONFIRMATION_WIDGET_ASSET_PATH,
+  CONFIRMATION_WIDGET_CLIENT,
+  CONFIRMATION_WIDGET_RESOURCE_URI,
+  ConfirmationWidgetCapabilityPolicy,
+  ConfirmationWidgetProjector,
   EVENT_CALENDAR_WIDGET_ASSET_PATH,
   EVENT_CALENDAR_WIDGET_CLIENT,
   EVENT_CALENDAR_WIDGET_RESOURCE_URI,
@@ -64,6 +69,7 @@ import {
   MemberWidgetCapabilityPolicy,
   registerMemberManagementWidgetResource,
   registerBookingObjectWidgetResource,
+  registerConfirmationWidgetResource,
   NEWS_WIDGET_ASSET_PATH,
   NEWS_WIDGET_CLIENT,
   NEWS_WIDGET_RESOURCE_URI,
@@ -1686,6 +1692,127 @@ describe("K19 news widget tenant and runtime isolation", () => {
       expect(await asset.text()).toBe(NEWS_WIDGET_CLIENT);
       expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
       expect(await fetch(`${baseUrl}/widgets/news/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
+    } finally { expect(await server.drain()).toBe(true); }
+  });
+});
+
+describe("K20 confirmation widget tenant, RBAC and runtime isolation", () => {
+  const previewIdempotencyKey = "a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1";
+  const targetId = "a2a2a2a2-a2a2-42a2-82a2-a2a2a2a2a2a2";
+  const criticalToolName = "cv_news_publish_critical_12345678";
+  const confirmationContext: RequestContext = { ...context, scopes: ["content.write"] };
+  const confirmationCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: { manage_news: true } };
+
+  function confirmAction(challenge: Awaited<ReturnType<WriteSafetyService["createCriticalPreview"]>>) {
+    return {
+      action_id: "action.confirm",
+      label: "Jetzt bestätigen",
+      tool_name: "action_confirm",
+      input: { preview_id: challenge.preview.preview_id, confirmation_token: challenge.confirmation_token, idempotency_key: previewIdempotencyKey },
+      visibility: "visible" as const,
+      enabled: true,
+      risk_class: "critical_write" as const,
+      requires_confirmation: true,
+      disabled_reason: null,
+    };
+  }
+
+  function safetyFixture() {
+    let allowed = true;
+    const service = new WriteSafetyService({
+      store: new MemoryAtomicSafetyStore(),
+      authorization: {
+        async reauthorize(input) {
+          if (!allowed) throw createConnectorError({ code: "PERMISSION_DENIED", message: "Die Berechtigung wurde entzogen.", request_id: input.context.request_id, retryable: false });
+          return { capability_version: confirmationContext.capability_version! };
+        },
+      },
+    });
+    return { service, deny() { allowed = false; } };
+  }
+
+  async function createChallenge(service: WriteSafetyService) {
+    return service.createCriticalPreview({
+      context: confirmationContext,
+      operation: { tool_name: criticalToolName, risk_class: "critical_write", execution_mode: "inline" },
+      normalized_input: { club_id: clubId, news_id: targetId, publish: true },
+      target: { type: "news", id: targetId, label: "Jugendturnier" },
+      impact: { creates: 0, updates: 0, deletes: 0, publishes: 1, imports: 0, exports: 0, affected_total: 1, summary: "Ein Beitrag wird öffentlich sichtbar." },
+      masked_fields: ["contact_email"],
+      safe_summary: "Der Beitrag Jugendturnier wird veröffentlicht.",
+      object_version: "news-v1",
+    });
+  }
+
+  test("TC-03/TC-05: projection is tenant-bound and a fresh backend denial prevents every write", async () => {
+    const fixture = safetyFixture();
+    const challenge = await createChallenge(fixture.service);
+    const projector = new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([criticalToolName]));
+    const input = {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: confirmationContext,
+      capability_snapshot: confirmationCapability,
+      challenge,
+      confirm_action: confirmAction(challenge),
+    };
+    expect(projector.project(input).actions).toHaveLength(1);
+    expect(() => projector.project({ ...input, club: { ...input.club, club_id: otherClubId } })).toThrow();
+    expect(() => new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([])).project(input)).toThrow();
+
+    fixture.deny();
+    let writes = 0;
+    await expect(fixture.service.confirmCriticalWrite({
+      context: confirmationContext,
+      tool_name: criticalToolName,
+      preview_id: challenge.preview.preview_id,
+      confirmation_token: challenge.confirmation_token,
+      idempotency_key: previewIdempotencyKey,
+      current_object_version: "news-v1",
+    }, async () => {
+      writes++;
+      return { target_ids: [targetId], changed_count: 1, unchanged_count: 0, failed_count: 0, result_summary: "Veröffentlicht.", object_versions: [], safe_next_actions: [] };
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    expect(writes).toBe(0);
+  });
+
+  test("TC-04: a changed object version fails closed before dispatch", async () => {
+    const fixture = safetyFixture();
+    const challenge = await createChallenge(fixture.service);
+    let writes = 0;
+    await expect(fixture.service.confirmCriticalWrite({
+      context: confirmationContext,
+      tool_name: criticalToolName,
+      preview_id: challenge.preview.preview_id,
+      confirmation_token: challenge.confirmation_token,
+      idempotency_key: previewIdempotencyKey,
+      current_object_version: "news-v2",
+    }, async () => {
+      writes++;
+      return { target_ids: [targetId], changed_count: 1, unchanged_count: 0, failed_count: 0, result_summary: "Veröffentlicht.", object_versions: [], safe_next_actions: [] };
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(writes).toBe(0);
+  });
+
+  test("TC-01/TC-06: MCP resource and immutable asset contain no intent, token or tenant data", async () => {
+    const server = new McpHttpServer(runtimeOptions({ server_factory(contextInput) { const runtime = runtimeOptions().server_factory(contextInput); return Promise.resolve(runtime).then((mcpServer) => { registerConfirmationWidgetResource(mcpServer, "development"); return mcpServer; }); } }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 1, method: "resources/list", params: {} });
+      expect(list.status).toBe(200);
+      expect((await list.json() as any).result.resources.some((resource: any) => resource.uri === CONFIRMATION_WIDGET_RESOURCE_URI)).toBe(true);
+      const read = await postMcp(baseUrl, { jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: CONFIRMATION_WIDGET_RESOURCE_URI } });
+      const resource = await read.json() as any;
+      expect(read.status).toBe(200);
+      expect(resource.result.contents[0].text).toContain(CONFIRMATION_WIDGET_ASSET_PATH);
+      expect(resource.result.contents[0].text).not.toContain(targetId);
+      expect(resource.result.contents[0].text).not.toContain(clubId);
+      expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(CONFIRMATION_WIDGET_RESOURCE_URI);
+      const asset = await fetch(`${baseUrl}${CONFIRMATION_WIDGET_ASSET_PATH}`);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe(CONFIRMATION_WIDGET_CLIENT);
+      expect(asset.headers.get("cache-control")).toContain("immutable");
+      expect(await fetch(`${baseUrl}/widgets/action-confirmation/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
     } finally { expect(await server.drain()).toBe(true); }
   });
 });

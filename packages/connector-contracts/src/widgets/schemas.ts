@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ACTION_CONFIRM_INPUT_SCHEMA, ACTION_PREVIEW_VIEW_SCHEMA } from "../safety/schemas.ts";
 
 const uuid = z.string().uuid();
 const instant = z.string().datetime({ offset: true });
@@ -433,4 +434,57 @@ export const NEWS_WIDGET_STATE_SCHEMA = z.object({
   if (["preview_expired", "permission_changed"].includes(state.phase) && state.model?.actions.length !== 0) {
     context.addIssue({ code: "custom", message: "Nach Ablauf oder Rechtewechsel dürfen keine alten Newsaktionen verbleiben." });
   }
+});
+
+export const CONFIRMATION_DATA_SCHEMA = z.object({
+  preview: ACTION_PREVIEW_VIEW_SCHEMA.extend({}).transform((value) => value),
+  confirmation_token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
+  confirm_label: safeText(100),
+  cancel_label: z.literal("Abbrechen"),
+  acknowledgement_required: z.boolean(),
+}).strict().superRefine((data, context) => {
+  if (data.preview.masked_fields.some((field) => !/^[a-z][a-z0-9_.-]{0,99}$/u.test(field))) {
+    context.addIssue({ code: "custom", message: "Maskierte Felder dürfen nur sichere Feldbezeichner enthalten.", path: ["preview", "masked_fields"] });
+  }
+});
+
+export const CONFIRMATION_WIDGET_SCHEMA = z.object({
+  widget: z.literal("confirmation"),
+  contract_version: z.literal("1.0.0"),
+  title: safeText(120),
+  club: CLUB_CHIP_SCHEMA,
+  capability_version: z.string().trim().min(1).max(200),
+  generated_at: instant,
+  data: CONFIRMATION_DATA_SCHEMA,
+  actions: z.array(VISIBLE_SERVER_ACTION_DESCRIPTOR_SCHEMA).length(1),
+  empty_state: z.null(),
+}).strict().superRefine((widget, context) => {
+  if (widget.data.preview.club_id !== widget.club.club_id) {
+    context.addIssue({ code: "custom", message: "Vorschau und Dialog müssen an denselben Verein gebunden sein." });
+  }
+  if (Date.parse(widget.data.preview.expires_at) <= Date.parse(widget.generated_at)) {
+    context.addIssue({ code: "custom", message: "Eine abgelaufene Vorschau darf nicht als bestätigbar gerendert werden." });
+  }
+  const action = widget.actions[0];
+  const input = ACTION_CONFIRM_INPUT_SCHEMA.safeParse(action?.input);
+  if (!action || action.tool_name !== "action_confirm" || action.risk_class !== "critical_write" || !action.requires_confirmation
+    || !input.success || input.data.preview_id !== widget.data.preview.preview_id
+    || input.data.confirmation_token !== widget.data.confirmation_token) {
+    context.addIssue({ code: "custom", message: "Die Bestätigungsaktion muss exakt an Vorschau, Token und Idempotenzschlüssel gebunden sein." });
+  }
+});
+
+export const CONFIRMATION_WIDGET_PHASE_SCHEMA = z.enum([
+  "loading", "ready", "confirming", "success", "cancelled", "expired", "stale", "conflict", "auth_required", "permission_changed", "error",
+]);
+
+export const CONFIRMATION_WIDGET_STATE_SCHEMA = z.object({
+  phase: CONFIRMATION_WIDGET_PHASE_SCHEMA,
+  model: CONFIRMATION_WIDGET_SCHEMA.nullable(),
+  message: z.string().trim().min(1).max(500).nullable(),
+  retryable: z.boolean(),
+}).strict().superRefine((state, context) => {
+  if (state.phase === "ready" && state.model === null) context.addIssue({ code: "custom", message: "Der bestätigbare Zustand benötigt genau eine aktuelle Vorschau." });
+  if (state.phase !== "ready" && state.model !== null) context.addIssue({ code: "custom", message: "Außerhalb des bestätigbaren Zustands muss der Intent aus dem Client-State entfernt sein." });
+  if (state.phase !== "ready" && state.message === null) context.addIssue({ code: "custom", message: "Ein nicht bestätigbarer Zustand benötigt eine sichere Nutzerinformation." });
 });

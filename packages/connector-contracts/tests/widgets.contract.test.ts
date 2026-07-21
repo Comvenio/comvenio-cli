@@ -4,6 +4,8 @@ import type { CapabilitySnapshot } from "../../auth/src/index.ts";
 import {
   BOOKING_OBJECT_WIDGET_SCHEMA,
   BOOKING_OBJECT_WIDGET_STATE_SCHEMA,
+  CONFIRMATION_WIDGET_SCHEMA,
+  CONFIRMATION_WIDGET_STATE_SCHEMA,
   EVENT_CALENDAR_WIDGET_SCHEMA,
   EVENT_CALENDAR_WIDGET_STATE_SCHEMA,
   MEMBER_MANAGEMENT_WIDGET_SCHEMA,
@@ -11,6 +13,8 @@ import {
   NEWS_WIDGET_SCHEMA,
   NEWS_WIDGET_STATE_SCHEMA,
   type BookingObjectWidget,
+  type ConfirmationChallenge,
+  type ConfirmationWidget,
   type EventCalendarWidget,
   type MemberManagementWidget,
   type NewsWidget,
@@ -103,6 +107,27 @@ import {
   safeNewsWidgetTelemetry,
   sanitizeNewsHtml,
 } from "../../../apps/mcp-server/src/widgets/news/index.ts";
+import {
+  CONFIRMATION_WIDGET_ASSET_PATH,
+  CONFIRMATION_WIDGET_CLIENT,
+  CONFIRMATION_WIDGET_CSP,
+  CONFIRMATION_WIDGET_FIRST_RENDER_BUDGET_MS,
+  CONFIRMATION_WIDGET_MAX_ACTIVE_INTENTS,
+  CONFIRMATION_WIDGET_MAX_WIDTH_PX,
+  CONFIRMATION_WIDGET_RESOURCE_URI,
+  CONFIRMATION_WIDGET_CSS,
+  ConfirmationActionBar,
+  ConfirmationPanel,
+  ConfirmationWidget as renderConfirmationWidget,
+  ConfirmationWidgetCapabilityPolicy,
+  ConfirmationWidgetProjector,
+  ImpactSummary,
+  MaskedFieldView,
+  confirmationToolMetadata,
+  confirmationWidgetHtml,
+  confirmationWidgetState,
+  safeConfirmationWidgetTelemetry,
+} from "../../../apps/mcp-server/src/widgets/confirmation/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const subjectId = "22222222-2222-4222-8222-222222222222";
@@ -767,5 +792,140 @@ describe("K19 news widget contracts", () => {
     expect(NEWS_WIDGET_CSP).toContain("frame-src 'none'");
     expect(newsWidgetHtml("production")).toContain(`https://mcp.comvenio.app${NEWS_WIDGET_ASSET_PATH}`);
     expect(newsToolMetadata("production")._meta.ui.resourceUri).toBe(NEWS_WIDGET_RESOURCE_URI);
+  });
+});
+
+describe("K20 universal preview and confirmation widget contracts", () => {
+  const previewId = "97979797-9797-4797-8797-979797979797";
+  const newsId = "98989898-9898-4898-8898-989898989898";
+  const idempotencyKey = "99999999-9999-4999-8999-999999999999";
+  const criticalToolName = "cv_news_publish_critical_12345678";
+  const confirmationToken = "T".repeat(43);
+  const confirmationContext: RequestContext = { ...context, scopes: ["content.write"] };
+  const confirmationCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: { manage_news: true } };
+
+  function challenge(overrides: Partial<ConfirmationChallenge> = {}): ConfirmationChallenge {
+    return {
+      preview: {
+        preview_id: previewId,
+        request_id: context.request_id,
+        club_id: clubId,
+        tool_name: criticalToolName,
+        risk_class: "critical_write",
+        target: { type: "news", id: newsId, label: "Jugendturnier" },
+        impact: { creates: 0, updates: 0, deletes: 0, publishes: 1, imports: 0, exports: 0, affected_total: 1, summary: "Ein Beitrag wird öffentlich sichtbar." },
+        safe_summary: "Der Beitrag Jugendturnier wird veröffentlicht.",
+        masked_fields: ["bank_account", "contact_email"],
+        expires_at: "2026-07-21T09:05:00+02:00",
+      },
+      confirmation_token: confirmationToken,
+      confirm_label: "News veröffentlichen",
+      cancel_label: "Abbrechen",
+      acknowledgement_required: true,
+      ...overrides,
+    };
+  }
+
+  function confirmAction(input: Record<string, unknown> = {}): ServerActionDescriptor {
+    return {
+      action_id: "action.confirm",
+      label: "Jetzt bestätigen",
+      tool_name: "action_confirm",
+      input: { preview_id: previewId, confirmation_token: confirmationToken, idempotency_key: idempotencyKey, ...input },
+      visibility: "visible",
+      enabled: true,
+      risk_class: "critical_write",
+      requires_confirmation: true,
+      disabled_reason: null,
+    };
+  }
+
+  function widget(): ConfirmationWidget {
+    return new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([criticalToolName])).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: confirmationContext,
+      capability_snapshot: confirmationCapability,
+      challenge: challenge(),
+      confirm_action: confirmAction(),
+      generated_at: "2026-07-21T09:00:00+02:00",
+    });
+  }
+
+  test("TC-01: all named entities render the bound CNF-01 confirmation shell", () => {
+    const model = widget();
+    expect(CONFIRMATION_WIDGET_SCHEMA.safeParse(model).success).toBe(true);
+    expect(ConfirmationPanel({ model: { data: model.data, club: model.club } })).toContain("News veröffentlichen?");
+    expect(ImpactSummary({ model: { preview: model.data.preview, club: model.club } })).toContain("Ein Beitrag wird öffentlich sichtbar.");
+    expect(MaskedFieldView({ model: { field_names: model.data.preview.masked_fields } })).toContain("Geschützt");
+    expect(ConfirmationActionBar({ model: { action: model.actions[0]!, cancel_label: "Abbrechen", acknowledgement_required: true } })).toContain("data-action-index=\"0\"");
+    const html = renderConfirmationWidget({ model });
+    expect(html).toContain("data-widget=\"confirmation\"");
+    expect(html).toContain("Kritische Aktion");
+    for (const secret of [previewId, context.request_id, clubId, confirmationToken, idempotencyKey]) expect(html).not.toContain(secret);
+  });
+
+  test("TC-02: desktop modal and mobile bottom sheet keep actions and keyboard handling accessible", () => {
+    expect(CONFIRMATION_WIDGET_MAX_WIDTH_PX).toBe(680);
+    expect(CONFIRMATION_WIDGET_CSS).toContain("width:min(100%,680px)");
+    expect(CONFIRMATION_WIDGET_CSS).toContain("@media (max-width:559px)");
+    expect(CONFIRMATION_WIDGET_CSS).toContain("align-items:end");
+    expect(CONFIRMATION_WIDGET_CSS).toContain("position:sticky");
+    expect(CONFIRMATION_WIDGET_CSS).toContain("min-height:44px");
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('event.key==="Escape"');
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('event.key!=="Tab"');
+  });
+
+  test("TC-03: masked field names are visible but sensitive raw values fail closed", () => {
+    const model = widget();
+    const html = MaskedFieldView({ model: { field_names: model.data.preview.masked_fields } });
+    expect(html).toContain("Contact Email");
+    expect(html).toContain("Bank Account");
+    expect(html).not.toContain("max@example.org");
+    const unsafeChallenge = challenge({ preview: { ...challenge().preview, safe_summary: "Kontakt max@example.org veröffentlichen." } });
+    expect(() => new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([criticalToolName])).project({
+      club: model.club, context: confirmationContext, capability_snapshot: confirmationCapability,
+      challenge: unsafeChallenge, confirm_action: confirmAction(), generated_at: "2026-07-21T09:00:00+02:00",
+    })).toThrow();
+  });
+
+  test("TC-04: expired, stale and conflict states discard the complete actionable model", () => {
+    const model = widget();
+    expect(() => new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([criticalToolName])).project({
+      club: model.club, context: confirmationContext, capability_snapshot: confirmationCapability,
+      challenge: challenge(), confirm_action: confirmAction(), generated_at: "2026-07-21T09:05:01+02:00",
+    })).toThrow();
+    for (const phase of ["expired", "stale", "conflict"] as const) {
+      const state = confirmationWidgetState({ phase, model, message: "Bitte erstelle eine neue Vorschau.", retryable: true });
+      expect(CONFIRMATION_WIDGET_STATE_SCHEMA.parse(state).model).toBeNull();
+      expect(JSON.stringify(state)).not.toContain(confirmationToken);
+      expect(JSON.stringify(state)).not.toContain(previewId);
+    }
+  });
+
+  test("TC-05: confirm transports exactly preview id, token and idempotency key", () => {
+    const model = widget();
+    expect(Object.keys(model.actions[0]!.input as Record<string, unknown>).sort()).toEqual(["confirmation_token", "idempotency_key", "preview_id"]);
+    expect(CONFIRMATION_WIDGET_SCHEMA.safeParse({ ...model, actions: [confirmAction({ normalized_input: { publish: false } })] }).success).toBe(false);
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('Object.keys(input).sort().join(",")==="confirmation_token,idempotency_key,preview_id"');
+    expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("normalized_input");
+    expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("window.openai");
+    expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("fetch(");
+    expect(() => new Function(CONFIRMATION_WIDGET_CLIENT)).not.toThrow();
+  });
+
+  test("TC-06: telemetry and MCP App resource remain provider-neutral and data-free", () => {
+    const model = widget();
+    const telemetry = safeConfirmationWidgetTelemetry({ phase: "ready", model, render_duration_ms: 42.6, outcome: "success" });
+    expect(telemetry).toMatchObject({ widget: "confirmation", effect_kind: "public", affected_count_bucket: "1", render_duration_ms: 43 });
+    for (const secret of [previewId, clubId, confirmationToken, idempotencyKey]) expect(JSON.stringify(telemetry)).not.toContain(secret);
+    expect(CONFIRMATION_WIDGET_FIRST_RENDER_BUDGET_MS).toBe(500);
+    expect(CONFIRMATION_WIDGET_MAX_ACTIVE_INTENTS).toBe(1);
+    expect(CONFIRMATION_WIDGET_RESOURCE_URI).toBe("ui://comvenio/action-confirmation");
+    expect(CONFIRMATION_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/action-confirmation\/assets\/action-confirmation\.[a-f0-9]{64}\.js$/u);
+    expect(CONFIRMATION_WIDGET_CSP).toContain("default-src 'none'");
+    const html = confirmationWidgetHtml("production");
+    expect(html).toContain(`https://mcp.comvenio.app${CONFIRMATION_WIDGET_ASSET_PATH}`);
+    for (const secret of [previewId, clubId, confirmationToken, idempotencyKey]) expect(html).not.toContain(secret);
+    expect(confirmationToolMetadata("production")._meta.ui.resourceUri).toBe(CONFIRMATION_WIDGET_RESOURCE_URI);
   });
 });

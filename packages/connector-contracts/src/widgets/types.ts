@@ -1,5 +1,6 @@
 import type { IanaTimeZone, JsonValue, UUID } from "../index.ts";
 import type { ActionRisk } from "../safety/types.ts";
+import type { ActionPreviewView } from "../safety/types.ts";
 
 export type WidgetKind =
   | "event_calendar"
@@ -232,6 +233,43 @@ export type NewsWidgetPhase =
 export interface NewsWidgetState {
   phase: NewsWidgetPhase;
   model: NewsWidget | null;
+  message: string | null;
+  retryable: boolean;
+}
+
+export interface ConfirmationData extends Record<string, JsonValue> {
+  preview: ActionPreviewView & Record<string, JsonValue>;
+  confirmation_token: string;
+  confirm_label: string;
+  cancel_label: "Abbrechen";
+  acknowledgement_required: boolean;
+}
+
+export interface ConfirmationPanel { data: ConfirmationData; club: ClubChip; }
+export interface ImpactSummary { preview: ActionPreviewView; club: ClubChip; }
+export interface MaskedFieldView { field_names: string[]; }
+export interface ConfirmationActionBar { action: ServerActionDescriptor; cancel_label: "Abbrechen"; acknowledgement_required: boolean; }
+export type ConfirmationWidget = Omit<WidgetEnvelope<ConfirmationData, "confirmation">, "capability_version"> & {
+  club: ClubChip;
+  capability_version: string;
+};
+
+export type ConfirmationWidgetPhase =
+  | "loading"
+  | "ready"
+  | "confirming"
+  | "success"
+  | "cancelled"
+  | "expired"
+  | "stale"
+  | "conflict"
+  | "auth_required"
+  | "permission_changed"
+  | "error";
+
+export interface ConfirmationWidgetState {
+  phase: ConfirmationWidgetPhase;
+  model: ConfirmationWidget | null;
   message: string | null;
   retryable: boolean;
 }
