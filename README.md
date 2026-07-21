@@ -39,6 +39,32 @@ bun run build        # erzeugt die Binary "comvenio" (bzw. comvenio.exe auf Wind
 Die Binary ist eigenständig (`bun build --compile`) — keine Bun-Laufzeit nötig,
 um sie auszuführen.
 
+## Status des Remote-MCP-Servers
+
+Die Root-Kommandos `bun run build` und `bun run start` gehören zum weiterhin
+einsatzfähigen CLI. Sie bauen beziehungsweise starten **nicht** den
+Remote-MCP-Server. Das Repository darf deshalb in Railway nicht mit diesen
+beiden Root-Kommandos als MCP-Service konfiguriert werden.
+
+Der Remote-MCP unter `apps/mcp-server` enthält den getesteten
+Streamable-HTTP-Kern, ist aber noch nicht als produktiver Dienst freigegeben.
+Ein ausführbarer Produktions-Bootstrap, der auditierte Tool-Katalog sowie die
+reale Auth-/Capability-Anbindung und der DEV-Health-/Readiness-Nachweis sind
+weiterhin Release-Gates. Der maschinenlesbare Stand steht in
+[`integrations/release/release-gate-report.json`](integrations/release/release-gate-report.json).
+
+Vor jedem Railway-Build muss der Workspace-Lockfile aktuell sein:
+
+```bash
+bun install --frozen-lockfile
+```
+
+Schlägt dieser Befehl mit `lockfile had changes` fehl, muss zuerst die in
+[`.bun-version`](.bun-version) festgelegte Bun-Version verwendet werden. Danach
+wird `bun install` einmal lokal ausgeführt und der aktualisierte `bun.lock`
+committed. Ein erfolgreicher Frozen-Install bestätigt nur die reproduzierbare
+Dependency-Installation; er ersetzt keines der MCP-Release-Gates.
+
 ## KI-Assistent mit Comvenio Skills verbinden
 
 Für Claude, Codex und andere kompatible KI-Assistenten gibt es offizielle

@@ -43,6 +43,18 @@
         "@types/express": "^5.0.6",
       },
     },
+    "integrations/anthropic": {
+      "name": "@comvenio/anthropic-connector",
+      "version": "0.1.0",
+    },
+    "integrations/openai": {
+      "name": "@comvenio/openai-integration",
+      "version": "0.1.0",
+    },
+    "integrations/release": {
+      "name": "@comvenio/connector-release",
+      "version": "0.1.0",
+    },
     "packages/auth": {
       "name": "@comvenio/auth",
       "version": "0.1.0",
@@ -79,6 +91,8 @@
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.29.7", "", {}, "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg=="],
 
+    "@comvenio/anthropic-connector": ["@comvenio/anthropic-connector@workspace:integrations/anthropic"],
+
     "@comvenio/auth": ["@comvenio/auth@workspace:packages/auth"],
 
     "@comvenio/cli": ["@comvenio/cli@workspace:apps/cli"],
@@ -87,7 +101,11 @@
 
     "@comvenio/connector-contracts": ["@comvenio/connector-contracts@workspace:packages/connector-contracts"],
 
+    "@comvenio/connector-release": ["@comvenio/connector-release@workspace:integrations/release"],
+
     "@comvenio/mcp-server": ["@comvenio/mcp-server@workspace:apps/mcp-server"],
+
+    "@comvenio/openai-integration": ["@comvenio/openai-integration@workspace:integrations/openai"],
 
     "@comvenio/tool-catalog": ["@comvenio/tool-catalog@workspace:packages/tool-catalog"],
 
