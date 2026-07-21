@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets, createK8ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets, createK9ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -730,5 +730,61 @@ describe("K8 event and plan tenant/RBAC isolation", () => {
       capability_snapshot: { ...capabilitySnapshot, department_ids: [departmentId], permissions: { create_events: true } },
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
     expect(calls).toBe(0);
+  });
+});
+
+describe("K9 meeting and tournament tenant/RBAC isolation", () => {
+  const tournamentId = "99999999-9999-4999-8999-999999999999";
+
+  function adapterClient(handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>): ComvenioApiClient {
+    return {
+      timeout_ms: 15000,
+      async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        return await handler(request) as T;
+      },
+    };
+  }
+
+  test("TC-03: hides tournament writes while preserving permitted reads", () => {
+    const tournament = createK9ToolSets({
+      client: adapterClient(async () => []),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).tournament;
+    const definitions = tournament.listVisible({
+      context: { ...context, scopes: ["event.read", "event.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_tournaments: true } },
+    });
+    expect(definitions.map((definition) => definition.action_id)).toContain("cai.tournament.08.list");
+    expect(definitions.map((definition) => definition.action_id)).not.toContain("cai.tournament.10.update");
+  });
+
+  test("rejects a foreign club before any Meeting/Tournament backend call", async () => {
+    let calls = 0;
+    const tournament = createK9ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).tournament;
+    await expect(tournament.execute({
+      action_id: "cai.tournament.08.list",
+      input: { club_id: otherClubId },
+      context: { ...context, scopes: ["event.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_tournaments: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("normalizes a backend RBAC denial without leaking its detail", async () => {
+    let forbidden = 0;
+    const tournament = createK9ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({ code: "PERMISSION_DENIED", message: "private tournament denial", request_id: request.context.request_id, retryable: false });
+      }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+      on_backend_forbidden() { forbidden++; },
+    }).tournament;
+    await expect(tournament.execute({
+      action_id: "cai.tournament.10.update",
+      input: { club_id: clubId, tournament_id: tournamentId, changes: { title: "Neu" } },
+      context: { ...context, scopes: ["event.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { manage_tournaments: true } },
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Meeting-/Turnier-Aktion im aktuellen Kontext abgelehnt." });
+    expect(forbidden).toBe(1);
   });
 });

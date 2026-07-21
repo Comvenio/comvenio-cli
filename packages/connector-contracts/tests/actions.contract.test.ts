@@ -32,6 +32,18 @@ import {
   redactEventPlanValue,
   type K8ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/event-plan/index.ts";
+import {
+  AgendaActionPolicy,
+  K9_ACTION_DEFINITIONS,
+  K9_ACTION_IDS,
+  K9_ACTION_SCHEMAS,
+  K9_MEETING_ACTION_IDS,
+  K9_TOURNAMENT_ACTION_IDS,
+  TournamentJobPolicy,
+  createK9ToolSets,
+  stableTournamentMatches,
+  type K9ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/meeting-tournament/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -559,5 +571,118 @@ describe("K8 event and plan adapter contract", () => {
     const serialized = JSON.stringify(safe);
     expect(serialized).not.toMatch(/secret-token|secret-api-key|secret-hash|assigned_user_id|member_id|anna@example|Anna Beispiel/iu);
     expect(serialized).toContain("external_email_masked");
+  });
+});
+
+const k9TournamentId = "99999999-9999-4999-8999-999999999999";
+const k9AgendaId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+function k9Dependencies(client: ComvenioApiClient): K9ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+    job_starter: { async start() { return { job_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", status: "queued" }; } },
+  };
+}
+
+describe("K9 meeting and tournament adapter contract", () => {
+  test("TC-01/TC-02: exposes all required entities and exactly 11/32 action contracts", () => {
+    expect(K9_MEETING_ACTION_IDS).toHaveLength(11);
+    expect(K9_TOURNAMENT_ACTION_IDS).toHaveLength(32);
+    expect(K9_ACTION_IDS).toHaveLength(43);
+    expect(Object.keys(K9_ACTION_DEFINITIONS)).toHaveLength(43);
+    expect(Object.keys(K9_ACTION_SCHEMAS)).toHaveLength(43);
+    expect(new AgendaActionPolicy()).toBeInstanceOf(AgendaActionPolicy);
+    expect(new TournamentJobPolicy()).toBeInstanceOf(TournamentJobPolicy);
+    const sets = createK9ToolSets(k9Dependencies(k7Client(async () => null)));
+    expect(sets.meeting.listDefinitions()).toHaveLength(11);
+    expect(sets.tournament.listDefinitions()).toHaveLength(32);
+  });
+
+  test("corrects aggregate risk drift and keeps Meeting/Tournament permissions separate", () => {
+    const meeting = K9_ACTION_DEFINITIONS["cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr"];
+    expect(meeting.operations.list!).toMatchObject({ risk_class: "read", required_scopes: ["meeting.read"] });
+    expect(meeting.operations.update!).toMatchObject({ risk_class: "critical_write", execution_gate: "agenda_confirmation", required_scopes: ["meeting.write"] });
+    expect(meeting.operations.update!.permission_policy.any_of).toContain("can_manage_agenda_items");
+    const participant = K9_ACTION_DEFINITIONS["cai.tournament.14.mannschaft"].operations.create!;
+    expect(participant).toMatchObject({ risk_class: "reversible_write", execution_gate: "write_safety", required_scopes: ["event.write"] });
+    expect(participant.permission_policy.any_of).toContain("manage_tournament_participants");
+  });
+
+  test("TC-03: a participant without meeting-manage rights cannot see agenda mutation branches", () => {
+    const meeting = createK9ToolSets(k9Dependencies(k7Client(async () => null))).meeting;
+    const definitions = meeting.listVisible({
+      context: k8Context(["meeting.read", "meeting.write"]),
+      capability_snapshot: k8Capability({ can_view: true }),
+    });
+    const agenda = definitions.find((definition) => definition.action_id === "cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr");
+    expect(Object.keys(agenda?.operations ?? {})).toEqual(["list", "show"]);
+  });
+
+  test("TC-04: an agenda mutation has no effect before a matching second confirmation", async () => {
+    let patches = 0;
+    const meeting = createK9ToolSets(k9Dependencies(k7Client(async (request) => {
+      if (request.method === "GET") return { id: k9AgendaId, title: "Bericht des Vorstands", status: "planned" };
+      patches++;
+      return { id: k9AgendaId, title: "Bericht des Vorstands", status: "updated" };
+    }))).meeting;
+    const request = {
+      action_id: "cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr" as const,
+      input: { club_id: k7ClubId, operation: "update" as const, agenda_item_id: k9AgendaId, changes: { title: "Neuer Titel" } },
+      context: k8Context(["meeting.write"]),
+      capability_snapshot: k8Capability({ can_manage_agenda_items: true }),
+    };
+    const first = await meeting.execute(request);
+    expect(first.status).toBe("confirmation_required");
+    expect(patches).toBe(0);
+    const preview = (first.result as Record<string, JsonValue>).preview as Record<string, JsonValue>;
+    const second = await meeting.execute({ ...request, input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } });
+    expect(second.status).toBe("completed");
+    expect(patches).toBe(1);
+  });
+
+  test("TC-05: a large tournament schedule returns a job handle without backend execution", async () => {
+    let calls = 0;
+    const tournament = createK9ToolSets(k9Dependencies(k7Client(async () => { calls++; return null; }))).tournament;
+    const result = await tournament.execute({
+      action_id: "cai.tournament.28.schedule_generate",
+      input: { club_id: k7ClubId, tournament_id: k9TournamentId, match_minutes: 15, field_count: 4 },
+      context: k8Context(["event.write"]),
+      capability_snapshot: k8Capability({ manage_tournaments: true }),
+    });
+    expect(result.status).toBe("queued");
+    expect(result.result).toEqual({ job_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", status: "queued" });
+    expect(calls).toBe(0);
+  });
+
+  test("TC-06: multi-day tournament matches preserve timezone, day segments and stable ordering", () => {
+    const result = stableTournamentMatches([
+      { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", starts_at: "2026-03-29T23:00:00.000Z", ends_at: "2026-03-30T00:00:00.000Z", match_number: 3 },
+      { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", starts_at: "2026-03-28T23:30:00.000Z", ends_at: "2026-03-30T00:30:00.000Z", match_number: 2 },
+      { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", starts_at: "2026-03-28T23:30:00.000Z", ends_at: "2026-03-29T00:00:00.000Z", match_number: 1 },
+    ], "Europe/Berlin") as Record<string, JsonValue>;
+    expect((result.items as Array<Record<string, JsonValue>>).map((match) => match.id)).toEqual([
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    ]);
+    expect((result.items as Array<Record<string, JsonValue>>)[1]!.day_segments).toHaveLength(2);
+    expect(result.timezone).toBe("Europe/Berlin");
+  });
+
+  test("minimizes participant data and accepts remote file IDs instead of local paths", async () => {
+    const tournament = createK9ToolSets(k9Dependencies(k7Client(async () => [{
+      id: k7MemberId, name: "Anna Beispiel", participant_kind: "individual", registration_status: "confirmed",
+      member_id: k7MemberId, captain_member_id: k7MemberId, email: "anna@example.org", phone: "+49 123", participant_metadata: { secret: "hidden" },
+    }]))).tournament;
+    const result = await tournament.execute({
+      action_id: "cai.tournament.13.participants",
+      input: { club_id: k7ClubId, tournament_id: k9TournamentId },
+      context: k8Context(["event.read"]),
+      capability_snapshot: k8Capability({ view_tournaments: true }),
+    });
+    expect(result.result).toEqual({ items: [{ participant_id: k7MemberId, name: "Anna Beispiel", participant_kind: "individual", registration_status: "confirmed" }], returned: 1, truncated: false });
+    expect(JSON.stringify(result)).not.toMatch(/member_id|email|phone|metadata|secret/iu);
+    expect(K9_ACTION_SCHEMAS["cai.meeting.11.attachment_list_add_remove"].input.parse({ club_id: k7ClubId, operation: "add", entry_id: k9AgendaId, file_id: k7MemberId })).toMatchObject({ file_id: k7MemberId });
+    expect(() => K9_ACTION_SCHEMAS["cai.meeting.11.attachment_list_add_remove"].input.parse({ club_id: k7ClubId, operation: "add", entry_id: k9AgendaId, file_id: "C:\\private\\protocol.pdf" })).toThrow();
+    expect(JSON.stringify(K9_ACTION_DEFINITIONS)).not.toMatch(/log-service|log_service|meetinglogtool|synchronoustournamentbulkrun/iu);
   });
 });
