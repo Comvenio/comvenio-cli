@@ -5,6 +5,7 @@ export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue
 
 export type ClientSurface = "cli" | "mcp";
 export type ProviderId = "openai" | "anthropic";
+export type McpClientKind = "chatgpt" | "codex" | "claude" | "unknown";
 
 export const OAUTH_SCOPE_VALUES = [
   "public.read",
@@ -183,8 +184,8 @@ export function normalizeRequestContext(context: RequestContext): RequestContext
   if (context.surface === "cli" && context.oauth_grant_id !== null) {
     throw invalidContext(requestId, "Ein CLI-Kontext darf keinen OAuth-Grant setzen.");
   }
-  if (context.surface === "mcp" && context.provider === null) {
-    throw invalidContext(requestId, "Ein MCP-Kontext benötigt einen KI-Provider.");
+  if (context.surface === "mcp" && context.oauth_grant_id !== null && context.provider === null) {
+    throw invalidContext(requestId, "Ein authentifizierter MCP-Kontext benötigt den geprüften KI-Provider.");
   }
   if (context.capability_version !== null
     && (typeof context.capability_version !== "string" || !context.capability_version.trim())) {

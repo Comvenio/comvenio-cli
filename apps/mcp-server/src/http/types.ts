@@ -7,6 +7,7 @@ import type {
   OAuthEnvironment,
 } from "@comvenio/auth";
 import type {
+  McpClientKind,
   OAuthScope,
   ProviderId,
   RequestContext,
@@ -18,7 +19,8 @@ export type RequestRisk = "read" | "write";
 
 export interface ProviderRequestContext {
   request_id: UUID;
-  provider: ProviderId;
+  provider: ProviderId | null;
+  client_kind: McpClientKind;
   authenticated: boolean;
   protocol_version: string | null;
   received_at: string;

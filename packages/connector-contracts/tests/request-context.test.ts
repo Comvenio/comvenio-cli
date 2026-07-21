@@ -49,15 +49,24 @@ describe("RequestContext contract", () => {
     expect(normalized.scopes).toEqual(["club.read", "public.read"]);
   });
 
-  test("accepts MCP contexts only with a supported provider", () => {
-    const normalized = normalizeRequestContext({
+  test("accepts MCP contexts with a supported or not-yet-known provider", () => {
+    const authenticated = normalizeRequestContext({
       ...cliContext,
       surface: "mcp",
       provider: "openai",
       oauth_grant_id: "44444444-4444-4444-8444-444444444444",
     });
-    expect(normalized.surface).toBe("mcp");
-    expect(normalized.provider).toBe("openai");
+    const anonymous = normalizeRequestContext({
+      ...cliContext,
+      surface: "mcp",
+      provider: null,
+      subject_id: null,
+      club_id: null,
+      scopes: ["public.read"],
+      capability_version: null,
+    });
+    expect(authenticated.provider).toBe("openai");
+    expect(anonymous.provider).toBeNull();
   });
 
   test("fails closed for invalid surface and provider combinations", () => {
@@ -71,12 +80,6 @@ describe("RequestContext contract", () => {
 
     expect(() => normalizeRequestContext({
       ...cliContext,
-      surface: "mcp",
-      provider: null,
-    })).toThrow();
-
-    expect(() => normalizeRequestContext({
-      ...cliContext,
       surface: "desktop" as RequestContext["surface"],
     })).toThrow();
 
@@ -84,6 +87,13 @@ describe("RequestContext contract", () => {
       ...cliContext,
       surface: "mcp",
       provider: "unknown" as RequestContext["provider"],
+    })).toThrow();
+
+    expect(() => normalizeRequestContext({
+      ...cliContext,
+      surface: "mcp",
+      provider: null,
+      oauth_grant_id: "44444444-4444-4444-8444-444444444444",
     })).toThrow();
   });
 

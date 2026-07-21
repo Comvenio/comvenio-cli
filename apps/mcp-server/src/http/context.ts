@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   normalizeRequestContext,
+  type McpClientKind,
   type ProviderId,
   type RequestContext,
   type UUID,
@@ -38,6 +39,21 @@ function messages(body: unknown): JsonObject[] {
 
 function requestRisk(body: unknown): RequestRisk {
   return messages(body).some((message) => message.method === "tools/call") ? "write" : "read";
+}
+
+function mcpClientKind(body: unknown): McpClientKind {
+  const names = [...new Set(messages(body)
+    .filter((message) => message.method === "initialize")
+    .map((message) => object(object(message.params)?.clientInfo)?.name)
+    .filter((name): name is string => typeof name === "string")
+    .map((name) => name.trim().toLocaleLowerCase("en-US"))
+    .filter(Boolean))];
+  if (names.length !== 1) return "unknown";
+  const name = names[0]!;
+  if (name.includes("claude") || name.includes("anthropic")) return "claude";
+  if (name.includes("codex")) return "codex";
+  if (name.includes("chatgpt")) return "chatgpt";
+  return "unknown";
 }
 
 function singleRequestedValue(values: Array<string | null>, field: string, requestId: UUID): string | null {
@@ -134,6 +150,7 @@ export class StatelessTransportContextFactory {
     const requestId = this.#requestId();
     const receivedAt = this.#now();
     const risk = requestRisk(input.body);
+    const clientKind = mcpClientKind(input.body);
     const tenant = requestedTenant(input.body, requestId);
     const rawToken = extractBearerToken(input.authorization, requestId);
     const principal = rawToken === null ? null : await this.#authenticator.authenticate({
@@ -157,14 +174,6 @@ export class StatelessTransportContextFactory {
       });
     }
     const provider = principal?.provider ?? detectedProvider;
-    if (!provider) {
-      throw runtimeError({
-        code: "CONFIG_INVALID",
-        message: "Der aufrufende KI-Provider konnte nicht bestimmt werden.",
-        request_id: requestId,
-        retryable: false,
-      });
-    }
     if (principal?.club_id && tenant.club_id && principal.club_id !== tenant.club_id) {
       throw runtimeError({
         code: "TENANT_MISMATCH",
@@ -219,6 +228,7 @@ export class StatelessTransportContextFactory {
       provider_request: {
         request_id: requestId,
         provider,
+        client_kind: clientKind,
         authenticated: principal !== null,
         protocol_version: protocolVersion(input.protocol_version, requestId),
         received_at: receivedAt.toISOString(),
