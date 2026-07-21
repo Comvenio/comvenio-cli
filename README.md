@@ -302,19 +302,17 @@ comvenio news video slideshow --params params.json --upload  # Video generieren 
 
 ## Architektur
 
-```
-src/
-  index.ts            # cac-Einstieg: login/logout + Dispatcher-Wiring + Exit-Mapping
-  auth.ts             # State-File lesen/mergen/löschen, AuthError
-  http.ts             # createClient(state) → service(svc, path), Bearer, GET-Retry, HttpError
-  format.ts           # output(data, json, textFn), renderTable, truncate
-  commands/
-    whoami.ts         # GET /user/users/me (best-effort)
-    club.ts           # Club-Profil, Settings, Abteilungen und Design
-    plan.ts           # plan <action>-Dispatcher → Geländeplan (event-service /events/map-*)
-    tournament.ts     # tournament <action>-Dispatcher → V3-Turniere (tournament-service)
-    event.ts menu.ts recipe.ts task.ts member.ts ...   # je ein <action>-Dispatcher pro Service
-```
+Das Repository ist als Bun-Workspace aufgebaut. `@comvenio/cli` stellt das
+bestehende `comvenio`-Binary und seine Commands bereit. Der gemeinsame,
+providerneutrale HTTP-Client liegt in `@comvenio/comvenio-client`; stabile
+Request-, Ergebnis- und Fehlerverträge gehören zu
+`@comvenio/connector-contracts`. Die Paketgrenzen für OAuth, den auditierten
+Tool-Katalog und den Remote-MCP-Server sind getrennt, damit Provider-Adapter
+keine Fachlogik oder Berechtigungsentscheidungen übernehmen.
+
+Bestehende CLI-Imports bleiben während der schrittweisen Umstellung über eine
+Kompatibilitätsfassade nutzbar. Fachliche Rechte werden weiterhin ausschließlich
+im Comvenio-Backend geprüft.
 
 ## Support und Mitwirkung
 

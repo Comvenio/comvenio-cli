@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "entity": "PilotProtocol",
+  "country": "DE",
+  "club_reference": null,
+  "pilot_owner": null,
+  "started_on": null,
+  "ended_on": null,
+  "minimum_calendar_days": 7,
+  "minimum_successful_interactions": 30,
+  "minimum_success_rate": 0.95,
+  "interactions": {
+    "total": 0,
+    "successful": 0,
+    "scenario_counts": {},
+    "data_leaks": 0,
+    "confirmation_bypasses": 0
+  },
+  "findings": [],
+  "evidence_refs": [],
+  "status": "pending",
+  "blockers": [
+    "PILOT_IDENTITY_OR_DATES_PENDING",
+    "PILOT_MINIMUM_DAYS",
+    "PILOT_INTERACTION_THRESHOLD",
+    "PILOT_SCENARIO_COVERAGE"
+  ]
+}

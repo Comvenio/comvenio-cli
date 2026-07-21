@@ -1,0 +1,33 @@
+{
+  "name": "@comvenio/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Stateless Streamable HTTP runtime for the remote Comvenio MCP connector.",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "test": "bun test tests",
+    "typecheck": "tsc --noEmit --project ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@comvenio/auth": "workspace:*",
+    "@comvenio/comvenio-client": "workspace:*",
+    "@comvenio/connector-contracts": "workspace:*",
+    "@comvenio/tool-catalog": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "bullmq": "5.80.9",
+    "express": "^5.2.1",
+    "ioredis": "5.11.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./http": "./src/http/index.ts",
+    "./public": "./src/public/index.ts",
+    "./widgets": "./src/widgets/index.ts",
+    "./package.json": "./package.json"
+  }
+}

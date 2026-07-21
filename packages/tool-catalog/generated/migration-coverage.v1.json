@@ -1,0 +1,4833 @@
+{
+  "contract_version": "1.0.0",
+  "action_inventory_version": "1.0.0",
+  "legacy_actions_total": 303,
+  "discovered_candidates": [
+    {
+      "legacy_action_id": "cai.whoami.01.whoami",
+      "domain": "whoami",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.whoami.01.whoami"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.01.info",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.01.info"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.02.update",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.02.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.03.settings",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.03.settings"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.04.settings_update",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.04.settings_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.05.design",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.05.design"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.06.department_list",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.06.department_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.07.department_show",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.07.department_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.08.department_add",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.08.department_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.09.department_update",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.09.department_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.club.10.department_delete",
+      "domain": "club",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.club.10.department_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.01.list",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.02.show",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.03.add",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.03.add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.04.update",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.05.remove",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.05.remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.06.import",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.06.import"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.07.family_list",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.07.family_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.08.family_show",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.08.family_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.09.family_add",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.09.family_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.10.family_update",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.10.family_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.11.family_delete",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.11.family_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.12.status_list",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.12.status_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.13.status_show",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.13.status_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.14.status_add",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.14.status_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.15.status_update",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.15.status_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.16.status_delete",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.16.status_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.17.period_list",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.17.period_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.18.period_show",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.18.period_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.19.period_add",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.19.period_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.20.period_update",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.20.period_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.member.21.period_delete",
+      "domain": "member",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.member.21.period_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.01.list",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.02.show",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.03.create",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.04.update",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.05.delete",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.06.member_list_add_update_remove",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.06.member_list_add_update_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.team.07.resource_list_add_update_remove",
+      "domain": "team",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.team.07.resource_list_add_update_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.01.list",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.02.show",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.03.create",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.04.update",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.05.delete",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.06.permission_defs",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.06.permission_defs"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.07.permission_set",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.07.permission_set"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.08.permissions_show_apply",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.08.permissions_show_apply"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.09.assign",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.09.assign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.10.unassign",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.10.unassign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.11.assignments",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.11.assignments"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.12.position_link",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.12.position_link"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.13.position_unlink",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.13.position_unlink"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.14.position_list",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.14.position_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.role.15.effective",
+      "domain": "role",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.role.15.effective"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.01.list",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.02.show",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.03.create",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.04.update",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.05.publish",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.05.publish"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.06.delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.06.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.07.template_list_create_clone_instantiate",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.07.template_list_create_clone_instantiate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.09.area_list_add_show_update_delete_bulk_copy",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.09.area_list_add_show_update_delete_bulk_copy"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.10.assignment_list_add_remove_clear",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.10.assignment_list_add_remove_clear"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.11.lead_list_add_update_delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.11.lead_list_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.12.area_note_list_add_update_delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.12.area_note_list_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.13.program_list_add_update_delete_reorder",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.13.program_list_add_update_delete_reorder"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.14.contact_list_add_update_delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.14.contact_list_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.15.resource_list_add_set_remove_link_show_link_update_link_delete_usage_u",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.15.resource_list_add_set_remove_link_show_link_update_link_delete_usage_u"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.16.attachment_list_show_add_update_delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.16.attachment_list_show_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.17.tag_category_and_assignment_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.17.tag_category_and_assignment_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.18.sponsor_and_sponsor_program_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.18.sponsor_and_sponsor_program_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.19.invitation_and_club_invitation_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.19.invitation_and_club_invitation_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.21.budget_show_set_delete",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.21.budget_show_set_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.22.design_theme_and_asset_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.22.design_theme_and_asset_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.23.copy_set_reset",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.23.copy_set_reset"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.24.dj_settings_and_request_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.24.dj_settings_and_request_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.25.external_sync_workflows",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.25.external_sync_workflows"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.26.instance_previous_next_compare_clone_next",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.26.instance_previous_next_compare_clone_next"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.27.child_list_create_invitation_summary",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.27.child_list_create_invitation_summary"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.event.28.menu_list_assign_unassign",
+      "domain": "event",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.event.28.menu_list_assign_unassign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.01.list",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.02.show",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.03.create",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.04.update",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.05.approve",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.05.approve"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.06.reject",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.06.reject"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.07.cancel",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.07.cancel"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.08.delete",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.08.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.09.bulk",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.09.bulk"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.10.participant_list_show_add_add_groups_update_remove",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.10.participant_list_show_add_add_groups_update_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.11.link_list_club_add_remove",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.11.link_list_club_add_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.booking.12.stats_object_guests",
+      "domain": "booking",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.booking.12.stats_object_guests"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.01.list",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.02.show",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.03.create",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.04.update",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.05.delete",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.06.building_list_show_create_update_delete",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.06.building_list_show_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.07.room_list_show_create_update_delete",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.07.room_list_show_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.08.booking_rule_list_show_create_bulk_update_delete",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.08.booking_rule_list_show_create_bulk_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.object.09.task_rule_list_show_create_update_delete",
+      "domain": "object",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.object.09.task_rule_list_show_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.01.list",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.02.show",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.03.show_subtasks",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.03.show_subtasks"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.04.show_chain",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.04.show_chain"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.05.create",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.05.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.06.bulk",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.06.bulk"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.07.update",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.07.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.08.assign",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.08.assign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.09.done",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.09.done"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.10.delete",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.10.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.11.context_list_show_create_update_delete",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.11.context_list_show_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.12.assignment_list_show_update_delete",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.12.assignment_list_show_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.13.note_list_add_update_delete",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.13.note_list_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.task.14.checklist_list_add_update_toggle_delete_reorder",
+      "domain": "task",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.task.14.checklist_list_add_update_toggle_delete_reorder"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.01.create",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.01.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.02.from_template",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.02.from_template"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.03.list",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.03.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.04.show",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.04.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.05.update",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.05.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.recipe.06.delete",
+      "domain": "recipe",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.recipe.06.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient.01.list",
+      "domain": "ingredient",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient.02.show",
+      "domain": "ingredient",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient.03.create",
+      "domain": "ingredient",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient.04.update",
+      "domain": "ingredient",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient.05.delete",
+      "domain": "ingredient",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.01.list",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.02.roots",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.02.roots"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.03.tree",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.03.tree"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.04.by_ingredient",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.04.by_ingredient"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.05.show",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.05.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.06.create",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.06.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.07.update",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.07.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.08.delete",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.08.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.09.assign",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.09.assign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.10.unassign",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.10.unassign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.ingredient-category.11.init",
+      "domain": "ingredient-category",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.ingredient-category.11.init"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.01.list",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.02.active",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.02.active"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.03.completed",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.03.completed"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.04.by_context",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.04.by_context"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.05.by_context_type",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.05.by_context_type"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.06.show",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.06.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.07.create",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.07.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.08.update",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.08.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.09.delete",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.09.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.10.item_add",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.10.item_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.11.item_update",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.11.item_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.12.item_delete",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.12.item_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.13.purchased",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.13.purchased"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.14.generate_from_recipe",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.14.generate_from_recipe"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.shopping.15.generate_from_menu",
+      "domain": "shopping",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.shopping.15.generate_from_menu"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.template.01.dish",
+      "domain": "template",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.template.01.dish"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.template.02.ingredient",
+      "domain": "template",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.template.02.ingredient"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.01.create",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.01.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.02.list",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.02.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.03.show",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.03.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.04.add_item",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.04.add_item"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.05.update_item",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.05.update_item"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.06.delete_item",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.06.delete_item"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.07.delete",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.07.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.08.style",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.08.style"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.09.apply",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.09.apply"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.menu.10.export",
+      "domain": "menu",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.menu.10.export"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.01.series_list_show_create_update_delete",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.01.series_list_show_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.04.note_list_list_protocol_create_update_delete",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.04.note_list_list_protocol_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.05.participant_list_add_update_remove_validate_unvalidate",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.05.participant_list_add_update_remove_validate_unvalidate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.07.voting_open_close_results_eligible_tally",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.07.voting_open_close_results_eligible_tally"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.10.entry_list_show_show_agenda_create_update_delete",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.10.entry_list_show_show_agenda_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.meeting.11.attachment_list_add_remove",
+      "domain": "meeting",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.meeting.11.attachment_list_add_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.homepage.01.preview",
+      "domain": "homepage",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.homepage.01.preview"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.homepage.02.apply",
+      "domain": "homepage",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.homepage.02.apply"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.homepage.03.show",
+      "domain": "homepage",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.homepage.03.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.schema.01.list_domains",
+      "domain": "schema",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.schema.01.list_domains"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.schema.02.show_domain_schema",
+      "domain": "schema",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.schema.02.show_domain_schema"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.01.url",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.01.url"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.02.event",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.02.event"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.03.menu",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.03.menu"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.04.homepage",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.04.homepage"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.05.news",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.05.news"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.verify.06.certificate",
+      "domain": "verify",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.verify.06.certificate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.01.list",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.02.show",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.03.update",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.03.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.04.url",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.04.url"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.05.download",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.05.download"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.06.upload",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.06.upload"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.07.delete",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.07.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.08.restore",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.08.restore"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.09.move",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.09.move"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.10.visibility",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.10.visibility"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.11.stats",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.11.stats"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.12.empty_trash",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.12.empty_trash"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.13.area_media",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.13.area_media"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.14.area_shares",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.14.area_shares"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.15.area_share_add",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.15.area_share_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.16.area_share_remove",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.16.area_share_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.17.children",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.17.children"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.18.search",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.18.search"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.19.breadcrumb",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.19.breadcrumb"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.20.folder_create",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.20.folder_create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.21.folder_rename",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.21.folder_rename"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.22.folder_move",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.22.folder_move"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.23.folder_protect",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.23.folder_protect"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.24.folder_delete",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.24.folder_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.25.folder_restore",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.25.folder_restore"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.26.folder_rights",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.26.folder_rights"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.27.folder_right_add",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.27.folder_right_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.28.folder_right_bulk",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.28.folder_right_bulk"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.29.folder_right_delete",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.29.folder_right_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.30.papers",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.30.papers"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.31.paper_show",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.31.paper_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.32.paper_add",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.32.paper_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.33.paper_update",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.33.paper_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.34.paper_delete",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.34.paper_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.data.35.export_members_bookings",
+      "domain": "data",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.data.35.export_members_bookings"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.01.list",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.02.show",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.03.create",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.04.update",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.05.delete",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.06.apply",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.06.apply"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.07.preview",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.07.preview"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.08.publish",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.08.publish"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.news.09.video_slideshow_result_teaser",
+      "domain": "news",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.news.09.video_slideshow_result_teaser"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.01.list",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.02.show",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.03.create",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.03.create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.04.update",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.05.delete",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.06.zone_list_create_update_delete_link_unlink",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.06.zone_list_create_update_delete_link_unlink"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.07.table_create_duplicate_update_delete",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.07.table_create_duplicate_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.08.marker_create_update_delete",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.08.marker_create_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.09.guest_list_add_update_delete",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.09.guest_list_add_update_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.10.detail",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.10.detail"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.11.export",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.11.export"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.12.illustrate",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.12.illustrate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.plan.13.compose",
+      "domain": "plan",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.plan.13.compose"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.01.series_list",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.01.series_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.02.series_show",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.02.series_show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.03.series_create",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.03.series_create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.04.series_update",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.04.series_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.05.series_delete",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.05.series_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.06.execution_create",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.06.execution_create"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.07.execution_link",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.07.execution_link"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.08.list",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.08.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.09.show",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.09.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.10.update",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.10.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.11.delete",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.11.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.12.status",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.12.status"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.13.participants",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.13.participants"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.14.mannschaft",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.14.mannschaft"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.15.participant",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.15.participant"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.16.participant_withdraw",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.16.participant_withdraw"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.17.participant_reinstate",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.17.participant_reinstate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.18.participant_remove",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.18.participant_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.19.start",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.19.start"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.20.matches",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.20.matches"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.21.matches_clear",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.21.matches_clear"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.22.reset",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.22.reset"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.23.redraw",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.23.redraw"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.24.standings",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.24.standings"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.25.preview",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.25.preview"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.26.draw",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.26.draw"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.27.draw_confirm",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.27.draw_confirm"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.28.schedule_generate",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.28.schedule_generate"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.29.match_schedule",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.29.match_schedule"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.30.match_delete",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.30.match_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.31.match_result",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.31.match_result"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.tournament.32.deadline",
+      "domain": "tournament",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.tournament.32.deadline"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.01.list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.01.list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.02.show",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.02.show"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.03.add",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.03.add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.04.update",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.04.update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.05.delete",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.05.delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.06.logo",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.06.logo"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.07.product_list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.07.product_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.08.product_add",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.08.product_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.09.product_update",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.09.product_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.10.product_delete",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.10.product_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.11.contract_list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.11.contract_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.12.contract_add",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.12.contract_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.13.contract_update",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.13.contract_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.14.contract_delete",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.14.contract_delete"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.15.assignment_list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.15.assignment_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.16.assign",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.16.assign"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.17.assignment_update",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.17.assignment_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.18.cancel",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.18.cancel"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.19.doc_list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.19.doc_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.20.doc_upload",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.20.doc_upload"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.21.responsible_list",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.21.responsible_list"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.22.responsible_add",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.22.responsible_add"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.23.responsible_update",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.23.responsible_update"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "legacy_action_id": "cai.sponsor.24.responsible_remove",
+      "domain": "sponsor",
+      "state": "DISCOVERED",
+      "published": false,
+      "candidate_operation_ids": [
+        "candidate.cai.sponsor.24.responsible_remove"
+      ],
+      "blockers": [
+        "backend_permission_audit_missing",
+        "copy_fixture_missing",
+        "route_trace_fixture_missing",
+        "shared_handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    }
+  ],
+  "oauth_lifecycle_replacements": [
+    {
+      "legacy_action_id": "cai.login.01.login_token",
+      "replacement": "oauth_connect"
+    },
+    {
+      "legacy_action_id": "cai.logout.01.logout",
+      "replacement": "oauth_disconnect"
+    }
+  ]
+}

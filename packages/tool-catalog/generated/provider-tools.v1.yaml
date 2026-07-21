@@ -1,0 +1,192 @@
+{
+  "contract_version": "1.0.0",
+  "publication_state": "BLOCKED",
+  "virtual_tools": [
+    {
+      "tool_name": "cv_whoami_read",
+      "title": "Comvenio: Eigene Verbindung",
+      "description": "Zeigt ausschließlich die eigene Comvenio-Identität, den gewählten Verein und die aktiven Scopes.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_whoami_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_whoami_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_permissions_explain_read",
+      "title": "Comvenio: Eigene Rechte erklären",
+      "description": "Erklärt nur die eigenen effektiven Rechte im explizit gewählten Verein.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_permissions_explain_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_permissions_explain_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_schema_read",
+      "title": "Comvenio: Verfügbare Aktionen erklären",
+      "description": "Liefert die freigegebenen Eingabe- und Ausgabeschemata der aktuell sichtbaren Comvenio-Aktionen.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_schema_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_schema_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_job_status_read",
+      "title": "Comvenio: Auftragsstatus",
+      "description": "Zeigt den Status eines eigenen asynchronen Auftrags im angegebenen Verein.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_job_status_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_job_status_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_job_cancel_write",
+      "title": "Comvenio: Auftrag abbrechen",
+      "description": "Bricht einen eigenen Auftrag nur vor dessen irreversiblem Upstream-Commit ab.",
+      "risk_class": "reversible_write",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_job_cancel_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_job_cancel_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_file_upload_start_write",
+      "title": "Comvenio: Datei-Upload starten",
+      "description": "Erstellt ein eigenes, vereinsgebundenes Quarantäne-Upload-Handle nach Rechte-, MIME- und Größenprüfung.",
+      "risk_class": "reversible_write",
+      "permission": "write_files",
+      "oauth_scopes": [
+        "files.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_upload_start_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_upload_start_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_file_upload_complete_write",
+      "title": "Comvenio: Datei-Upload prüfen",
+      "description": "Finalisiert einen eigenen Upload erst nach Hash-, MIME-, Magic-Byte- und Malwareprüfung.",
+      "risk_class": "reversible_write",
+      "permission": "write_files",
+      "oauth_scopes": [
+        "files.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_upload_complete_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_upload_complete_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    },
+    {
+      "tool_name": "cv_file_get_read",
+      "title": "Comvenio: Eigene Datei abrufen",
+      "description": "Liefert eine kurzlebige Referenz nur nach erneuter Nutzer-, Vereins-, Eigentümer- und Rechteprüfung.",
+      "risk_class": "read",
+      "permission": "read_files",
+      "oauth_scopes": [
+        "files.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_get_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_get_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "publication_state": "DISCOVERED",
+      "blockers": [
+        "handler_missing",
+        "typed_schema_pair_missing"
+      ]
+    }
+  ],
+  "domain_tools": [],
+  "notice": "Provider-Metadaten sind kein Runtime-Dispatch. Veröffentlichung folgt ausschließlich aus auditierten Operationen."
+}

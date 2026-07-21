@@ -1,0 +1,14 @@
+{
+  "name": "@comvenio/comvenio-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@comvenio/connector-contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./legacy": "./src/legacy.ts",
+    "./package.json": "./package.json"
+  }
+}

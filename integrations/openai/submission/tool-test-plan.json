@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "catalog_source_hash_sha256": "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417ba5a7",
+  "coverage": "every_published_tool",
+  "cases": [
+    { "tool_name": "cv_file_get_read", "prompt": "Öffne die synthetische Testdatei aus meinem Verein.", "expected_response_fixture": "fixtures/provider/openai/cv_file_get_read.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_file_upload_complete_write", "prompt": "Schließe den synthetischen Testupload sicher ab.", "expected_response_fixture": "fixtures/provider/openai/cv_file_upload_complete_write.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_file_upload_start_write", "prompt": "Starte einen synthetischen Testupload im ausgewählten Verein.", "expected_response_fixture": "fixtures/provider/openai/cv_file_upload_start_write.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_job_cancel_write", "prompt": "Brich meinen synthetischen Testauftrag ab.", "expected_response_fixture": "fixtures/provider/openai/cv_job_cancel_write.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_job_status_read", "prompt": "Zeige den Status meines synthetischen Testauftrags.", "expected_response_fixture": "fixtures/provider/openai/cv_job_status_read.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_permissions_explain_read", "prompt": "Welche Comvenio-Aktionen darf ich in diesem Verein ausführen?", "expected_response_fixture": "fixtures/provider/openai/cv_permissions_explain_read.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_schema_read", "prompt": "Erkläre mir die aktuell sichtbaren Comvenio-Aktionen.", "expected_response_fixture": "fixtures/provider/openai/cv_schema_read.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] },
+    { "tool_name": "cv_whoami_read", "prompt": "Zeige meine aktuelle Comvenio-Verbindung und den gewählten Verein.", "expected_response_fixture": "fixtures/provider/openai/cv_whoami_read.response.json", "required_surfaces": ["web", "mobile"], "verifies": ["schema", "security_schemes", "annotations", "rbac_recheck"] }
+  ]
+}

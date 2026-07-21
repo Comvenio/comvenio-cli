@@ -1,0 +1,16 @@
+{
+  "name": "@comvenio/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Workspace boundary for Comvenio OAuth and capability security.",
+  "dependencies": {
+    "@comvenio/connector-contracts": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./capabilities": "./src/capabilities/index.ts",
+    "./oauth": "./src/oauth/index.ts",
+    "./package.json": "./package.json"
+  }
+}

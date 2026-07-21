@@ -1,0 +1,7 @@
+{
+  "contract_version": "1.0.0",
+  "publication_state": "BLOCKED",
+  "operations": [],
+  "unpublished_migration_candidates": 301,
+  "notice": "Nur vollständig auditierte OperationDefinition-Einträge dürfen dieses Array füllen."
+}

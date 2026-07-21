@@ -1,0 +1,5006 @@
+{
+  "contract_version": "1.0.0",
+  "source_registry_version": "1.0.0",
+  "source_cli_version": "0.1.0",
+  "verified_at": "2026-07-14",
+  "entry_count": 303,
+  "domain_count": 26,
+  "provider_tool_contract": "comvenio-ai-connector-provider-tools.yaml",
+  "provider_binding_artifact": "comvenio-cli/packages/tool-catalog/generated/action-provider-bindings.v1.yaml",
+  "provider_binding_status": "planned; generated only after audited OperationDefinition migration",
+  "semantics": {
+    "count_unit": "one registry action expression; pipe-separated alternatives remain one audited workflow entry",
+    "publication_rule": "no entry is published until its source branch, input/output schema, route set and backend RBAC dependency pass contract tests",
+    "capability_resolution": "after handler migration, every OperationDefinition reads exact permission predicates from backend-route-permissions.v1.json; Unclassified, unknown keys or audit mismatch fail generation",
+    "provider_binding_rule": "each legacy entry is expanded into atomic OperationDefinition branches with shared handlers and route-trace fixtures, then bound only to same-risk, same-permission, same-external-effect provider tools",
+    "route_binding_rule": "raw route call sites are migration evidence only; runtime dispatch uses shared_handler_ref plus an executable route_trace_fixture_ref, never a user-controlled URL/method/service",
+    "legacy_field_rule": "entry fields route_contract and backend_capability are inventory provenance only; they never authorize publication or drive runtime generation",
+    "tenant_rule": "club_id is mandatory for every authenticated domain call and is rechecked by the target backend",
+    "risk_precedence": [
+      "critical_write",
+      "reversible_write",
+      "read"
+    ]
+  },
+  "entries": [
+    {
+      "id": "cai.login.01.login_token",
+      "domain": "login",
+      "coverage_status": "covered",
+      "source_action": "login --token",
+      "delivery": "oauth_connect",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "connector.grants",
+      "source_paths": [
+        "src/index.ts",
+        "src/auth.ts"
+      ],
+      "schema_source": "src/index.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.logout.01.logout",
+      "domain": "logout",
+      "coverage_status": "covered",
+      "source_action": "logout",
+      "delivery": "oauth_disconnect",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "connector.grants",
+      "source_paths": [
+        "src/index.ts",
+        "src/auth.ts"
+      ],
+      "schema_source": "src/index.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.whoami.01.whoami",
+      "domain": "whoami",
+      "coverage_status": "covered",
+      "source_action": "whoami",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/whoami.ts"
+      ],
+      "schema_source": "src/commands/whoami.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.01.info",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "info",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.02.update",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.03.settings",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "settings",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.04.settings_update",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "settings-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.05.design",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "design",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.06.department_list",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "department-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.07.department_show",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "department-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.08.department_add",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "department-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.09.department_update",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "department-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.club.10.department_delete",
+      "domain": "club",
+      "coverage_status": "covered",
+      "source_action": "department-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/club.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.01.list",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.basic",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.02.show",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.details",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.03.add",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.04.update",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.05.remove",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.06.import",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "import",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "files.import",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.07.family_list",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "family-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.basic",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.08.family_show",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "family-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.details",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.09.family_add",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "family-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.10.family_update",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "family-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.11.family_delete",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "family-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.12.status_list",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "status-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.basic",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.13.status_show",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "status-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.details",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.14.status_add",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "status-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.15.status_update",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "status-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.16.status_delete",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "status-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.17.period_list",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "period-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.basic",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.18.period_show",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "period-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "member.read.details",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.19.period_add",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "period-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.20.period_update",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "period-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.member.21.period_delete",
+      "domain": "member",
+      "coverage_status": "covered",
+      "source_action": "period-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/member.ts"
+      ],
+      "schema_source": "src/commands/member.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.01.list",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.02.show",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.03.create",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.04.update",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.05.delete",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.06.member_list_add_update_remove",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "member list|add|update|remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.team.07.resource_list_add_update_remove",
+      "domain": "team",
+      "coverage_status": "covered",
+      "source_action": "resource list|add|update|remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/team.ts"
+      ],
+      "schema_source": "src/commands/team.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.01.list",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.02.show",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.03.create",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.04.update",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.05.delete",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.06.permission_defs",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "permission-defs",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.07.permission_set",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "permission set",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.08.permissions_show_apply",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "permissions show|apply",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.09.assign",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "assign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.10.unassign",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "unassign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.11.assignments",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "assignments",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.12.position_link",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "position-link",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.13.position_unlink",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "position-unlink",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.14.position_list",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "position-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.role.15.effective",
+      "domain": "role",
+      "coverage_status": "covered",
+      "source_action": "effective",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/role.ts"
+      ],
+      "schema_source": "src/commands/role.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.01.list",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.02.show",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.03.create",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.04.update",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.05.publish",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "publish",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.06.delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.07.template_list_create_clone_instantiate",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "template list|create|clone|instantiate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "series list|show|create|materialize|promote-recurring|promote-yearly|next",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.09.area_list_add_show_update_delete_bulk_copy",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "area list|add|show|update|delete|bulk|copy",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.10.assignment_list_add_remove_clear",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "assignment list|add|remove|clear",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.11.lead_list_add_update_delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "lead list|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.12.area_note_list_add_update_delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "area-note list|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.13.program_list_add_update_delete_reorder",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "program list|add|update|delete|reorder",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.14.contact_list_add_update_delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "contact list|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.15.resource_list_add_set_remove_link_show_link_update_link_delete_usage_u",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.16.attachment_list_show_add_update_delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "attachment list|show|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.17.tag_category_and_assignment_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "tag category and assignment workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.18.sponsor_and_sponsor_program_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "sponsor and sponsor-program workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.19.invitation_and_club_invitation_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "invitation and club-invitation workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "registration list|add|stats|show|update|adjust|delete|aggregate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.21.budget_show_set_delete",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "budget show|set|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.22.design_theme_and_asset_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "design theme and asset workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.23.copy_set_reset",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "copy set|reset",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.24.dj_settings_and_request_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "dj settings and request workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.25.external_sync_workflows",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "external-sync workflows",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.26.instance_previous_next_compare_clone_next",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "instance previous|next|compare|clone-next",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.27.child_list_create_invitation_summary",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "child list|create|invitation-summary",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.event.28.menu_list_assign_unassign",
+      "domain": "event",
+      "coverage_status": "covered",
+      "source_action": "menu list|assign|unassign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/event.ts",
+        "src/commands/event-operations.ts"
+      ],
+      "schema_source": "src/commands/event.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.01.list",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.02.show",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.03.create",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.04.update",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.05.approve",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "approve",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.06.reject",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "reject",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.07.cancel",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "cancel",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.08.delete",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.09.bulk",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "bulk",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.10.participant_list_show_add_add_groups_update_remove",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "participant list|show|add|add-groups|update|remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.11.link_list_club_add_remove",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "link list|club|add|remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.booking.12.stats_object_guests",
+      "domain": "booking",
+      "coverage_status": "covered",
+      "source_action": "stats object|guests",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/booking.ts"
+      ],
+      "schema_source": "src/commands/booking.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.01.list",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.02.show",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.03.create",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.04.update",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.05.delete",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.06.building_list_show_create_update_delete",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "building list|show|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.07.room_list_show_create_update_delete",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "room list|show|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.08.booking_rule_list_show_create_bulk_update_delete",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "booking-rule list|show|create|bulk|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.object.09.task_rule_list_show_create_update_delete",
+      "domain": "object",
+      "coverage_status": "covered",
+      "source_action": "task-rule list|show|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/object.ts"
+      ],
+      "schema_source": "src/commands/object.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.01.list",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.02.show",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.03.show_subtasks",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "show --subtasks",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.04.show_chain",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "show --chain",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.05.create",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.06.bulk",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "bulk",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.07.update",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.08.assign",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "assign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.09.done",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "done",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.10.delete",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.11.context_list_show_create_update_delete",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "context list|show|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.12.assignment_list_show_update_delete",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "assignment list|show|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.13.note_list_add_update_delete",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "note list|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.task.14.checklist_list_add_update_toggle_delete_reorder",
+      "domain": "task",
+      "coverage_status": "covered",
+      "source_action": "checklist list|add|update|toggle|delete|reorder",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "booking.write",
+      "source_paths": [
+        "src/commands/task.ts"
+      ],
+      "schema_source": "src/commands/task.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.01.create",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.02.from_template",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "from-template",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.03.list",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.04.show",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.05.update",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.recipe.06.delete",
+      "domain": "recipe",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/recipe.ts"
+      ],
+      "schema_source": "src/commands/recipe.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient.01.list",
+      "domain": "ingredient",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "schema_source": "src/schema/ingredient.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient.02.show",
+      "domain": "ingredient",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "schema_source": "src/schema/ingredient.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient.03.create",
+      "domain": "ingredient",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "schema_source": "src/schema/ingredient.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient.04.update",
+      "domain": "ingredient",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "schema_source": "src/schema/ingredient.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient.05.delete",
+      "domain": "ingredient",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient.ts",
+        "src/schema/ingredient.json"
+      ],
+      "schema_source": "src/schema/ingredient.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.01.list",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.02.roots",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "roots",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.03.tree",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "tree",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.04.by_ingredient",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "by-ingredient",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.05.show",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.06.create",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.07.update",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.08.delete",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.09.assign",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "assign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.10.unassign",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "unassign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.ingredient-category.11.init",
+      "domain": "ingredient-category",
+      "coverage_status": "covered",
+      "source_action": "init",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/ingredient-category.ts",
+        "src/schema/ingredient-category.json"
+      ],
+      "schema_source": "src/schema/ingredient-category.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.01.list",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.02.active",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "active",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.03.completed",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "completed",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.04.by_context",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "by-context",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.05.by_context_type",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "by-context-type",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.06.show",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.07.create",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.08.update",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.09.delete",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.10.item_add",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "item-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.11.item_update",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "item-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.12.item_delete",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "item-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.13.purchased",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "purchased",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.14.generate_from_recipe",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "generate-from-recipe",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.shopping.15.generate_from_menu",
+      "domain": "shopping",
+      "coverage_status": "covered",
+      "source_action": "generate-from-menu",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/shopping.ts",
+        "src/schema/shopping.json"
+      ],
+      "schema_source": "src/schema/shopping.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.template.01.dish",
+      "domain": "template",
+      "coverage_status": "covered",
+      "source_action": "dish",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/template.ts"
+      ],
+      "schema_source": "src/commands/template.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.template.02.ingredient",
+      "domain": "template",
+      "coverage_status": "covered",
+      "source_action": "ingredient",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/template.ts"
+      ],
+      "schema_source": "src/commands/template.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.01.create",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.02.list",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.03.show",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.04.add_item",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "add-item",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.05.update_item",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "update-item",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.06.delete_item",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "delete-item",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.07.delete",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.08.style",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "style",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.09.apply",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "apply",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.menu.10.export",
+      "domain": "menu",
+      "coverage_status": "covered",
+      "source_action": "export",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "files.export",
+      "source_paths": [
+        "src/commands/menu.ts"
+      ],
+      "schema_source": "src/commands/menu.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.01.series_list_show_create_update_delete",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "series list|show|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "protocol list|show|create|update|delete|advance|revert|updates|validation|publish",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "agenda list|show|create|update|delete|reorder|start|complete|skip|approve",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.04.note_list_list_protocol_create_update_delete",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "note list|list-protocol|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.05.participant_list_add_update_remove_validate_unvalidate",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "participant list|add|update|remove|validate|unvalidate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "decision create|agenda|update|cancel|option-add|options-add|promote",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.07.voting_open_close_results_eligible_tally",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "voting open|close|results|eligible|tally",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "resolution list|list-protocol|show|history|create|update|approve|decline|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.10.entry_list_show_show_agenda_create_update_delete",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "entry list|show|show-agenda|create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.meeting.11.attachment_list_add_remove",
+      "domain": "meeting",
+      "coverage_status": "covered",
+      "source_action": "attachment list|add|remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/meeting.ts"
+      ],
+      "schema_source": "src/commands/meeting.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.homepage.01.preview",
+      "domain": "homepage",
+      "coverage_status": "covered",
+      "source_action": "preview",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/homepage.ts",
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/homepage.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.homepage.02.apply",
+      "domain": "homepage",
+      "coverage_status": "covered",
+      "source_action": "apply",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/homepage.ts",
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/homepage.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.homepage.03.show",
+      "domain": "homepage",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/homepage.ts",
+        "src/commands/club.ts"
+      ],
+      "schema_source": "src/commands/homepage.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.schema.01.list_domains",
+      "domain": "schema",
+      "coverage_status": "core-partial",
+      "source_action": "list domains",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/schema.ts",
+        "src/schema/coverage.json"
+      ],
+      "schema_source": "src/schema/coverage.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.schema.02.show_domain_schema",
+      "domain": "schema",
+      "coverage_status": "core-partial",
+      "source_action": "show domain schema",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/schema.ts",
+        "src/schema/coverage.json"
+      ],
+      "schema_source": "src/schema/coverage.json",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.01.url",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "url",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.02.event",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "event",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.03.menu",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "menu",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.04.homepage",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "homepage",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.05.news",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "news",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.verify.06.certificate",
+      "domain": "verify",
+      "coverage_status": "covered",
+      "source_action": "certificate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/verify.ts",
+        "src/verify/homepage.ts"
+      ],
+      "schema_source": "src/commands/verify.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.01.list",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.02.show",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.03.update",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.04.url",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "url",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.05.download",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "download",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "files.export",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.06.upload",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "upload",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.07.delete",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.08.restore",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "restore",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.09.move",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "move",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.10.visibility",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "visibility",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.11.stats",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "stats",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.12.empty_trash",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "empty-trash",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.13.area_media",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "area-media",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.14.area_shares",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "area-shares",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.15.area_share_add",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "area-share-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.16.area_share_remove",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "area-share-remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.17.children",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "children",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.18.search",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "search",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.19.breadcrumb",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "breadcrumb",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.20.folder_create",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.21.folder_rename",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-rename",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.22.folder_move",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-move",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.23.folder_protect",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-protect",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.24.folder_delete",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.25.folder_restore",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-restore",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.26.folder_rights",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-rights",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.27.folder_right_add",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-right-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.28.folder_right_bulk",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-right-bulk",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.29.folder_right_delete",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "folder-right-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.30.papers",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "papers",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.31.paper_show",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "paper-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.32.paper_add",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "paper-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.33.paper_update",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "paper-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.34.paper_delete",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "paper-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.data.35.export_members_bookings",
+      "domain": "data",
+      "coverage_status": "covered",
+      "source_action": "export members|bookings",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "files.export",
+      "source_paths": [
+        "src/commands/data.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/data.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.01.list",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.02.show",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.03.create",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.04.update",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.05.delete",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.06.apply",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "apply",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.07.preview",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "preview",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.08.publish",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "publish",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "content.write",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.news.09.video_slideshow_result_teaser",
+      "domain": "news",
+      "coverage_status": "covered",
+      "source_action": "video slideshow|result|teaser",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/news.ts"
+      ],
+      "schema_source": "src/commands/news.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.01.list",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.02.show",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.03.create",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.04.update",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.05.delete",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.06.zone_list_create_update_delete_link_unlink",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "zone list|create|update|delete|link|unlink",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.07.table_create_duplicate_update_delete",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "table create|duplicate|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.08.marker_create_update_delete",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "marker create|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.09.guest_list_add_update_delete",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "guest list|add|update|delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.10.detail",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "detail",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.11.export",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "export",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "files.export",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.12.illustrate",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "illustrate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.plan.13.compose",
+      "domain": "plan",
+      "coverage_status": "covered",
+      "source_action": "compose",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/plan.ts"
+      ],
+      "schema_source": "src/commands/plan.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.01.series_list",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "series-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.02.series_show",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "series-show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.03.series_create",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "series-create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.04.series_update",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "series-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.05.series_delete",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "series-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.06.execution_create",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "execution-create",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.07.execution_link",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "execution-link",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.08.list",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.09.show",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.10.update",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.11.delete",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.12.status",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "status",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.13.participants",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "participants",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.14.mannschaft",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "mannschaft",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.15.participant",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "participant",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.16.participant_withdraw",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "participant-withdraw",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.17.participant_reinstate",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "participant-reinstate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.18.participant_remove",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "participant-remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.19.start",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "start",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.20.matches",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "matches",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.21.matches_clear",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "matches-clear",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.22.reset",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "reset",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.23.redraw",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "redraw",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.24.standings",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "standings",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.25.preview",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "preview",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "async_capable",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.26.draw",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "draw",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.27.draw_confirm",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "draw-confirm",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.28.schedule_generate",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "schedule-generate",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.29.match_schedule",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "match-schedule",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.30.match_delete",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "match-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.31.match_result",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "match-result",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "event.write",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.tournament.32.deadline",
+      "domain": "tournament",
+      "coverage_status": "covered",
+      "source_action": "deadline",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/tournament.ts"
+      ],
+      "schema_source": "src/commands/tournament.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.01.list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.02.show",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "show",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.03.add",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.04.update",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.05.delete",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.06.logo",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "logo",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.07.product_list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "product-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.08.product_add",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "product-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.09.product_update",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "product-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.10.product_delete",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "product-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.11.contract_list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "contract-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.12.contract_add",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "contract-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.13.contract_update",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "contract-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.14.contract_delete",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "contract-delete",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.15.assignment_list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "assignment-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.16.assign",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "assign",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.17.assignment_update",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "assignment-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.18.cancel",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "cancel",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.19.doc_list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "doc-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.20.doc_upload",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "doc-upload",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "async_capable",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.21.responsible_list",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "responsible-list",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "read",
+      "execution_mode": "inline",
+      "oauth_scope": "club.read",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.22.responsible_add",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "responsible-add",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.23.responsible_update",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "responsible-update",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "reversible_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    },
+    {
+      "id": "cai.sponsor.24.responsible_remove",
+      "domain": "sponsor",
+      "coverage_status": "covered",
+      "source_action": "responsible-remove",
+      "delivery": "typed_mcp_tool",
+      "risk_class": "critical_write",
+      "execution_mode": "inline",
+      "oauth_scope": "admin.write",
+      "source_paths": [
+        "src/commands/sponsor.ts",
+        "src/util/upload.ts"
+      ],
+      "schema_source": "src/commands/sponsor.ts",
+      "route_contract": "comvenio-ai-connector-v1-routes.yaml; filtered by source_paths and statically verified source branch",
+      "backend_capability": "ROUTE_RBAC_DEPENDENCY"
+    }
+  ]
+}

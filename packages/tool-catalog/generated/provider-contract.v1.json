@@ -1,0 +1,224 @@
+{
+  "contract_version": "1.0.0",
+  "source_action_contract": "comvenio-ai-connector-v1-actions.yaml",
+  "source_route_contract": "comvenio-ai-connector-v1-routes.yaml",
+  "inventory_projection_tool": "tools/generate-provider-contract.mjs",
+  "runtime_generator_target": "comvenio-cli/packages/tool-catalog/src/generate-provider-contract.ts",
+  "generated_artifact": "comvenio-cli/packages/tool-catalog/generated/provider-tools.v1.yaml",
+  "operation_source_artifact": "comvenio-cli/packages/tool-catalog/generated/operations.v1.yaml",
+  "backend_permission_audit_artifact": "comvenio-cli/packages/tool-catalog/generated/backend-route-permissions.v1.json",
+  "current_cli_action_count": 303,
+  "current_cli_callsite_count": 560,
+  "expected_virtual_tool_count": 8,
+  "generated_domain_tool_count": "determined only from audited OperationDefinition groups",
+  "max_tool_name_length": 64,
+  "rules": [
+    "A published tool contains exactly one risk class; read and write operations are never bundled.",
+    "A published tool contains exactly one execution_mode; inline and async_job operations are never bundled.",
+    "A published tool contains exactly one canonical required_scopes set, idempotency mode and confirmation mode; mixed groups fail generation.",
+    "Every operation is a discriminated oneOf branch with a const operation_id and exact input/output JSON-Schema refs.",
+    "Every operation dispatches only through its shared_handler_ref and verified route_trace_fixture_ref; arbitrary URL, method, header and service inputs are forbidden.",
+    "Every route permission is an exact key from role-service/app/initial_data/permission_definitions.json or one of public/authenticated_club_member.",
+    "The exact backend permission predicate must be read from backend-route-permissions.v1.json; Unclassified, unknown keys or mismatch fail catalog generation.",
+    "A critical_write tool always returns ActionPreviewView before mutation and requires the separate confirmation call.",
+    "Annotation derivation is exact: readOnlyHint iff risk=read; destructiveHint iff risk=critical_write; idempotentHint iff idempotency is read/key_required; openWorldHint iff external_effect is comvenio_public/third_party.",
+    "Publish and public state changes are critical_write, confirmation-required, destructiveHint=true and openWorldHint=true.",
+    "All private tools require explicit club_id; public tools accept only the public allowlist identifiers.",
+    "Titles, descriptions, schemas, scopes, operation bindings and annotations are identical for OpenAI and Anthropic."
+  ],
+  "generated_schema_contract": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "club_id",
+        "operation_id",
+        "input"
+      ],
+      "properties": {
+        "club_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "operation_id": {
+          "type": "string",
+          "description": "const value in each generated oneOf branch"
+        },
+        "input": {
+          "description": "exact generated operation input schema; never free-form"
+        }
+      },
+      "oneOf_rule": "one branch per operation_id: operation_id const + input $ref generated/operations/<operation_id>.input.schema.json"
+    },
+    "output": {
+      "oneOf_rule": "one branch per operation_id: operation_id const + result $ref generated/operations/<operation_id>.output.schema.json"
+    },
+    "dispatch": {
+      "shape": "Record<operation_id, {shared_handler_ref,route_trace_fixture_ref,operation_input_fixture_ref,input_symbol,output_symbol}>",
+      "path_builder_rule": "owned by the extracted shared handler and verified with a recording ComvenioClient; never generated from a raw path expression"
+    }
+  },
+  "virtual_tools": [
+    {
+      "tool_name": "cv_whoami_read",
+      "title": "Comvenio: Eigene Verbindung",
+      "description": "Zeigt ausschließlich die eigene Comvenio-Identität, den gewählten Verein und die aktiven Scopes.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_whoami_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_whoami_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_permissions_explain_read",
+      "title": "Comvenio: Eigene Rechte erklären",
+      "description": "Erklärt nur die eigenen effektiven Rechte im explizit gewählten Verein.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_permissions_explain_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_permissions_explain_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_schema_read",
+      "title": "Comvenio: Verfügbare Aktionen erklären",
+      "description": "Liefert die freigegebenen Eingabe- und Ausgabeschemata der aktuell sichtbaren Comvenio-Aktionen.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_schema_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_schema_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_job_status_read",
+      "title": "Comvenio: Auftragsstatus",
+      "description": "Zeigt den Status eines eigenen asynchronen Auftrags im angegebenen Verein.",
+      "risk_class": "read",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_job_status_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_job_status_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_job_cancel_write",
+      "title": "Comvenio: Auftrag abbrechen",
+      "description": "Bricht einen eigenen Auftrag nur vor dessen irreversiblem Upstream-Commit ab.",
+      "risk_class": "reversible_write",
+      "permission": "authenticated_club_member",
+      "oauth_scopes": [
+        "club.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_job_cancel_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_job_cancel_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_file_upload_start_write",
+      "title": "Comvenio: Datei-Upload starten",
+      "description": "Erstellt ein eigenes, vereinsgebundenes Quarantäne-Upload-Handle nach Rechte-, MIME- und Größenprüfung.",
+      "risk_class": "reversible_write",
+      "permission": "write_files",
+      "oauth_scopes": [
+        "files.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_upload_start_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_upload_start_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_file_upload_complete_write",
+      "title": "Comvenio: Datei-Upload prüfen",
+      "description": "Finalisiert einen eigenen Upload erst nach Hash-, MIME-, Magic-Byte- und Malwareprüfung.",
+      "risk_class": "reversible_write",
+      "permission": "write_files",
+      "oauth_scopes": [
+        "files.write"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_upload_complete_write.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_upload_complete_write.output.schema.json",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "tool_name": "cv_file_get_read",
+      "title": "Comvenio: Eigene Datei abrufen",
+      "description": "Liefert eine kurzlebige Referenz nur nach erneuter Nutzer-, Vereins-, Eigentümer- und Rechteprüfung.",
+      "risk_class": "read",
+      "permission": "read_files",
+      "oauth_scopes": [
+        "files.read"
+      ],
+      "input_schema_ref": "generated/virtual/cv_file_get_read.input.schema.json",
+      "output_schema_ref": "generated/virtual/cv_file_get_read.output.schema.json",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "verification": {
+    "commands": [
+      "node comvenio-tools/AI-docs/concepts/architecture/comvenio-ai-connector/tools/extract-cli-routes.mjs --check",
+      "node comvenio-tools/AI-docs/concepts/architecture/comvenio-ai-connector/tools/generate-provider-contract.mjs",
+      "node comvenio-tools/AI-docs/concepts/architecture/comvenio-ai-connector/tools/verify-concept-contracts.mjs"
+    ],
+    "required_assertions": [
+      "303 legacy workflow entries are covered by one or more audited OperationDefinition entries",
+      "all 560 current ComvenioClient call sites remain traceable as migration inventory",
+      "raw call sites are never compiled directly to runtime tools or action bindings",
+      "all tool_name lengths <= 64",
+      "no tool contains more than one risk_class",
+      "all schema refs resolve and contain no unknown/additionalProperties escape hatch",
+      "all permissions come from the exact backend audit and resolve to the authoritative role-service definition file",
+      "semantic route-trace fixtures pass for every operation_id; publish/public-state fixtures are critical and open-world"
+    ]
+  }
+}

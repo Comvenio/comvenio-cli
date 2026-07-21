@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0.0",
+  "tool_name": "cv_permissions_explain_read",
+  "synthetic_data_only": true,
+  "expected": { "outcome": "success", "data_policy": "own_effective_permissions_only", "backend_rbac_recheck_required": true }
+}

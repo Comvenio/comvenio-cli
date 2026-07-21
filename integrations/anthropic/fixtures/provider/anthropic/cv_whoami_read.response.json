@@ -1,0 +1,1 @@
+{ "schema_version": "1.0.0", "tool_name": "cv_whoami_read", "synthetic_data_only": true, "expected": { "outcome": "success", "permission_denied_outcome": "not_found", "data_policy": "own_identity_minimized", "backend_rbac_recheck_required": true } }

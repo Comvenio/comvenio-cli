@@ -1,0 +1,53 @@
+import { CLAUDE_DIRECTORY_MANIFEST_SCHEMA } from "./schemas.ts";
+import type { ClaudeDirectoryManifest } from "./types.ts";
+
+export function buildClaudeDirectoryManifest(toolSyncVersion: string): ClaudeDirectoryManifest {
+  return CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({
+    schema_version: "1.0.0",
+    product_name: "Comvenio",
+    tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.",
+    short_description: "Vereinsarbeit sicher organisieren, Termine finden und erlaubte Aufgaben direkt im Chat erledigen.",
+    publisher_name: "Comvenio",
+    categories: ["Productivity"],
+    website_url: "https://www.comvenio.app",
+    documentation_url: "https://www.comvenio.app/hilfe",
+    privacy_url: "https://www.comvenio.app/datenschutz",
+    terms_url: "https://www.comvenio.app/agb",
+    imprint_url: "https://www.comvenio.app/impressum",
+    support_email: "support@comvenio.de",
+    locale: "de-DE",
+    provider: "anthropic",
+    submission_kind: "remote_mcp_with_mcp_apps",
+    directory_slug: "comvenio",
+    remote_mcp_url: "https://mcp.comvenio.app/mcp",
+    transport: "streamable_http",
+    oauth_protected_resource_url: "https://mcp.comvenio.app/.well-known/oauth-protected-resource",
+    oauth_metadata_url: "https://api.comvenio.app/auth/.well-known/oauth-authorization-server",
+    auth: {
+      type: "oauth_cimd",
+      client_type: "public",
+      token_endpoint_auth_method: "none",
+      pkce_method: "S256",
+      dynamic_client_registration: false,
+      anthropic_held_credentials: false,
+    },
+    capabilities: { tools: true, prompts: true, resources: true, mcp_apps: true },
+    allowed_link_uris: [],
+    widget_resource_uris: [
+      "ui://comvenio/event-calendar",
+      "ui://comvenio/member-management",
+      "ui://comvenio/booking-object",
+      "ui://comvenio/news",
+      "ui://comvenio/action-confirmation",
+    ],
+    tool_sync_version: toolSyncVersion,
+    assets: { icon: "./assets/icon.svg", logo: "./assets/logo.png" },
+    screenshots: [
+      { resource_uri: "ui://comvenio/event-calendar", path: "./screenshots/event-mobile.png", prompt: "Welche Termine stehen diese Woche in meinem Verein an?", format: "png", app_response_only: true, synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/member-management", path: "./screenshots/members-desktop.png", prompt: "Zeige mir die Mitgliederansicht, die ich mit meinen aktuellen Rechten sehen darf.", format: "png", app_response_only: true, synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/booking-object", path: "./screenshots/booking-mobile.png", prompt: "Welche Vereinsobjekte kann ich am Dienstag reservieren?", format: "png", app_response_only: true, synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/news", path: "./screenshots/news-desktop.png", prompt: "Zeige mir die neuesten News meines Vereins.", format: "png", app_response_only: true, synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/action-confirmation", path: "./screenshots/confirmation-mobile.png", prompt: "Bereite die Veröffentlichung des geprüften News-Entwurfs vor.", format: "png", app_response_only: true, synthetic_data_only: true },
+    ],
+  });
+}

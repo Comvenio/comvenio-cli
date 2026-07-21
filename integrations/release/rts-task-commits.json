@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "feature_id": "c5a5cb4f-7fcf-4975-8fb3-cb8aad928381",
+  "tasks": [
+    { "key": "K1", "task_id": "a4d0325e-102c-464d-acf9-c3cb26dc7326", "commit": "36b2f312d039cdffd537102f2b74b989833069af" },
+    { "key": "K2", "task_id": "f908062b-6eaf-4f59-be69-2219324b2fa9", "commit": "707a3f43a9aa0c9c86adb630918eca11f856b3db" },
+    { "key": "K3", "task_id": "85c614f3-d7c9-4cad-ab6c-fe7712033760", "commit": "c6a46eccb0e60e7cac82d4b3620aad3344801e78" },
+    { "key": "K4", "task_id": "10d77376-cd26-4900-84fc-2373509f8e85", "commit": "30be00d87d01e35ad1100fbdac77eeeb2ad49a0e" },
+    { "key": "K5", "task_id": "485a56b8-596c-437c-bb29-22c2e0cdb8ac", "commit": "589e0ddf9c03da02d170a83e160a97e31fdf89f0" },
+    { "key": "K6", "task_id": "0a5cf26b-59e2-499f-8359-ff96ec1a013a", "commit": "9758986fb990000b279be407f3aa69e5017b5650" },
+    { "key": "K7", "task_id": "c80e26a4-6412-4c49-9e06-caf091defa4d", "commit": "5199aa3d5e7de855c98dda8d6cba4c6cd96aa153" },
+    { "key": "K8", "task_id": "a255a903-0344-4ab6-8418-c8715c4c6d7d", "commit": "65fd139cfb67c21f0f15a6d325e9f4b8b8119fa5" },
+    { "key": "K9", "task_id": "ed1fcb19-2f65-4f27-9e1d-4b2ef3c60616", "commit": "5abd2d3d9ca3ae3840e3f08aa95d68bb0a69f8ff" },
+    { "key": "K10", "task_id": "e30cb2ee-2a63-466a-8cb7-98de17b47125", "commit": "5adba21d3e44ee430357780f8e0a22e439ab1a09" },
+    { "key": "K11", "task_id": "5161ad38-b4a1-4181-8b0f-bb31771c6071", "commit": "412fe84a7d71501f0bec5e4900bd41d12917f46f" },
+    { "key": "K12", "task_id": "dba438dc-c617-456f-95eb-33da68016efb", "commit": "070aee3eeaae32222b4d5153da70de733188049d" },
+    { "key": "K13", "task_id": "ef41f24a-0af0-458a-9122-ed92c1e74aef", "commit": "c86c7c37986f2510fbdefcda34da5b8626b1623d" },
+    { "key": "K14", "task_id": "f8e82b79-b225-48d5-9828-145369358819", "commit": "b341d8376bae9407452dbdda19dd422b7d2f1e72" },
+    { "key": "K15", "task_id": "627a78ad-681d-4aff-9edb-c528d1af33e9", "commit": "a577bf852fc8047974cd808ecf2d26542c3a367d" },
+    { "key": "K16", "task_id": "0f5fd0f1-6e29-4ce0-aed4-ad00d0f77adc", "commit": "fdafe01af86ce72ad46eb7be2011c9043d048dab" },
+    { "key": "K17", "task_id": "ddb3558a-4fa7-46d2-b8df-180664cab656", "commit": "1588396b0042e25ac5dcf5e4b9484683229c5ed2" },
+    { "key": "K18", "task_id": "fed5c0d2-7626-4334-b1c9-d6dd8b40ee48", "commit": "a4da4a4738cb74d1749a1d2be96e5fb82a61937b" },
+    { "key": "K19", "task_id": "a825eab7-29aa-4152-8233-01480e3bb261", "commit": "63bc2c7033963b7dde81ae4c063a2bdcb2be0fb9" },
+    { "key": "K20", "task_id": "defd866c-4a3d-4a3d-9f72-979edcf51ce2", "commit": "4f4796f2db5faf0c21a3f4394f9753a3b77a1039" },
+    { "key": "K21", "task_id": "b41258a2-912a-4dfc-b34c-8b5fb04abc23", "commit": "99d9815dffd08580a92c07b2dabf2e6bd0d3162a" },
+    { "key": "K22", "task_id": "15162b8d-a2bb-4736-a598-561d68004653", "commit": "c5878cb8f56cfcbcc96da2c570482a71a3362bc2" },
+    { "key": "K23", "task_id": "9525e49f-a241-4658-9a91-ed8e8500b102", "commit": "bb65681f9dd7f2fc99bcdb240249182d7b297180" }
+  ]
+}
