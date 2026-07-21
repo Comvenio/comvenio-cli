@@ -30,7 +30,7 @@ export interface ConnectorEvalReport {
   schema_version: "1.0.0";
   suite: "ConnectorEvalSuite";
   status: "pass" | "blocked";
-  published_tool_count: number;
+  evaluated_candidate_tool_count: number;
   tested_tool_count: number;
   results: ConnectorEvalToolResult[];
   blockers: string[];

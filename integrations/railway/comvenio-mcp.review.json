@@ -1,8 +1,17 @@
 {
   "schema_version": "1.0.0",
   "release_state": "BLOCKED",
-  "reason": "Railway resource IDs, DNS ownership and secret presence require environment verification before deployment.",
+  "reason": "The executable process is implemented locally, but live Railway health, provider-native handshake evidence, catalog, OAuth/capability wiring, canonical DNS and production readiness still require release evidence.",
   "service": "comvenio-mcp-server",
+  "runtime": {
+    "config_file": "railway.json",
+    "build_command": "bun run build:mcp",
+    "start_command": "bun run start:mcp",
+    "bind_host": "0.0.0.0",
+    "port_variable": "PORT",
+    "review_domain": "comvenio-cli-production.up.railway.app",
+    "publication_mode": "fail_closed"
+  },
   "environments": {
     "development": {
       "domain": "mcpdev.comvenio.app",

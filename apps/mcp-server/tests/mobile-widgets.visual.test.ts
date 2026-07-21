@@ -144,17 +144,22 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(new Set(traceability.tasks.map((item) => item.task_id)).size).toBe(23);
   });
 
-  test("TC-03: 303 workflows, 560 routes and all eight published virtual tools have exact eval parity", () => {
+  test("TC-03: 303 workflows, 560 routes and all eight virtual tool candidates have exact eval parity", () => {
     const inventory = loadReviewInventory();
     const report = buildAutomatedConnectorEvalReport();
     expect(inventory.actions.entries).toHaveLength(303);
     expect(inventory.routes.routes).toHaveLength(560);
     expect(inventory.migration.discovered_candidates.length + inventory.migration.oauth_lifecycle_replacements.length).toBe(303);
     expect(inventory.migration.discovered_candidates.every((candidate) => candidate.published === false && candidate.blockers.length > 0)).toBe(true);
-    expect(report).toMatchObject({ status: "pass", published_tool_count: 8, tested_tool_count: 8, blockers: [] });
+    expect(report).toMatchObject({
+      status: "pass",
+      evaluated_candidate_tool_count: 8,
+      tested_tool_count: 8,
+      blockers: [],
+    });
     expect(report.results.map((result) => result.tool_name)).toEqual(inventory.provider_contract.virtual_tools.map((tool) => tool.tool_name).sort());
 
-    const mismatched = new ConnectorEvalSuite().evaluate({ published_tool_names: ["cv_schema_read"], results: [] });
+    const mismatched = new ConnectorEvalSuite().evaluate({ candidate_tool_names: ["cv_schema_read"], results: [] });
     expect(mismatched).toMatchObject({ status: "blocked", blockers: ["TOOL_EVAL_PARITY"] });
     expect(new TenantIsolationSuite().evaluate([])).toMatchObject({ status: "blocked", blockers: ["TENANT_SCENARIO_PARITY"] });
   });

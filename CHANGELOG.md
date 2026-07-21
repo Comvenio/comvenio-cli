@@ -9,6 +9,9 @@ Die Einträge folgen
 
 ### Added
 
+- Ausführbarer, fail-closed Remote-MCP-Prozess für Railway mit Streamable HTTP,
+  OAuth-Resource-Metadaten, Liveness- und Readiness-Trennung sowie Graceful Shutdown.
+- Railway-Konfiguration für den getrennten MCP-Build und Start auf `0.0.0.0:$PORT`.
 - Source-Available-Lizenz für die ausschließliche Verwendung mit Comvenio.
 - Strukturierte Formulare für Fehler, Wünsche und Supportfragen.
 - Privater Meldeweg und Sicherheitsrichtlinie für Schwachstellen.
@@ -16,5 +19,7 @@ Die Einträge folgen
 
 ### Changed
 
+- Der Railway-Healthcheck nutzt `/health`; die Produktfreigabe bleibt unabhängig
+  davon über `/ready` gesperrt, bis Katalog, OAuth und Capability-Gates erfüllt sind.
 - Das Paket ist gegen eine versehentliche Veröffentlichung bei npm geschützt.
 

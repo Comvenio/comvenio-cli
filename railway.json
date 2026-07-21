@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "bun run build:mcp"
+  },
+  "deploy": {
+    "startCommand": "bun run start:mcp",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 60,
+    "drainingSeconds": 20
+  }
+}

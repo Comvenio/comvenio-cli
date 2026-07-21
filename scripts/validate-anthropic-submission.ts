@@ -37,4 +37,4 @@ for (const forbidden of [".claude-plugin/plugin.json", ".mcp.json", "manifest.js
   if (existsSync(resolve(root, forbidden))) throw new Error(`Claude-Code-Plugin ist kein Directory-Artefakt: ${forbidden}`);
 }
 
-console.log(`Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tools, ${manifest.screenshots.length} MCP Apps.`);
+console.log(`Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} MCP Apps.`);

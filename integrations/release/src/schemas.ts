@@ -14,7 +14,7 @@ export const CONNECTOR_EVAL_REPORT_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   suite: z.literal("ConnectorEvalSuite"),
   status: z.enum(["pass", "blocked"]),
-  published_tool_count: z.number().int().nonnegative(),
+  evaluated_candidate_tool_count: z.number().int().nonnegative(),
   tested_tool_count: z.number().int().nonnegative(),
   results: z.array(z.object({
     tool_name: z.string().regex(/^[a-z0-9_.:-]{1,64}$/u),

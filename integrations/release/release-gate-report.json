@@ -29,7 +29,7 @@
     "schema_version": "1.0.0",
     "suite": "ConnectorEvalSuite",
     "status": "pass",
-    "published_tool_count": 8,
+    "evaluated_candidate_tool_count": 8,
     "tested_tool_count": 8,
     "results": [
       {

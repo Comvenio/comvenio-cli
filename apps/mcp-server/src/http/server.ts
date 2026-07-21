@@ -9,7 +9,10 @@ import type {
   Request,
   Response,
 } from "express";
-import { createBearerChallenge } from "@comvenio/auth";
+import {
+  createBearerChallenge,
+  createProtectedResourceMetadata,
+} from "@comvenio/auth";
 import type { ProviderId, UUID } from "@comvenio/connector-contracts";
 
 import { StatelessTransportContextFactory } from "./context.ts";
@@ -32,6 +35,8 @@ import { mountNewsWidgetAssets } from "../widgets/news/assets.ts";
 const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
 const READY_ROUTE = "/ready" as const;
+const PROTECTED_RESOURCE_ROUTE = "/.well-known/oauth-protected-resource" as const;
+const RESOURCE_DOCUMENTATION = "https://www.comvenio.app/datenschutz" as const;
 
 function validateRuntimeOptions(options: McpRuntimeOptions): void {
   if (options.allowed_hosts.length === 0
@@ -164,6 +169,28 @@ export class McpHttpServer {
         provider: null,
         authenticated: false,
         route: HEALTH_ROUTE,
+        method: methodForTelemetry(request.method),
+        status_code: 200,
+        duration_ms: Date.now() - startedAt,
+        outcome: "success",
+        recorded_at: this.#now().toISOString(),
+      });
+    });
+
+    this.app.get(PROTECTED_RESOURCE_ROUTE, (request, response) => {
+      const requestId = this.#newRequestId();
+      const startedAt = Date.now();
+      response.setHeader("cache-control", "public, max-age=300");
+      response.setHeader("x-request-id", requestId);
+      response.status(200).json(createProtectedResourceMetadata(
+        this.#options.environment,
+        RESOURCE_DOCUMENTATION,
+      ));
+      void this.#record({
+        request_id: requestId,
+        provider: null,
+        authenticated: false,
+        route: PROTECTED_RESOURCE_ROUTE,
         method: methodForTelemetry(request.method),
         status_code: 200,
         duration_ms: Date.now() - startedAt,

@@ -108,7 +108,7 @@ if (releaseGate.evidence.action_classification_count !== inventory.actions.entry
 }
 const inventoryToolNames = inventory.provider_contract.virtual_tools.map((tool) => tool.tool_name).sort();
 const evalToolNames = evalReport.results.map((result) => result.tool_name).sort();
-assertSame(evalToolNames, inventoryToolNames, "ConnectorEvalSuite deckt nicht exakt die acht veröffentlichten virtuellen Tools ab.");
+assertSame(evalToolNames, inventoryToolNames, "ConnectorEvalSuite deckt nicht exakt die acht evaluierten virtuellen Tool-Kandidaten ab.");
 
 const migrationCandidatesPublished = inventory.migration.discovered_candidates.every((entry) => entry.published === true);
 if (releaseGate.evidence.audited_operation_catalog_published !== migrationCandidatesPublished) {

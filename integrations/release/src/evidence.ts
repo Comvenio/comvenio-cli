@@ -20,7 +20,7 @@ import type {
 
 export const RELEASE_GENERATED_AT = "2026-07-21T00:00:00.000Z" as const;
 
-export const PUBLISHED_VIRTUAL_TOOL_NAMES = [
+export const EVALUATED_VIRTUAL_TOOL_NAMES = [
   "cv_file_get_read",
   "cv_file_upload_complete_write",
   "cv_file_upload_start_write",
@@ -50,8 +50,8 @@ function evalResult(toolName: string): ConnectorEvalToolResult {
 
 export function buildAutomatedConnectorEvalReport(): ConnectorEvalReport {
   return new ConnectorEvalSuite().evaluate({
-    published_tool_names: [...PUBLISHED_VIRTUAL_TOOL_NAMES],
-    results: PUBLISHED_VIRTUAL_TOOL_NAMES.map(evalResult),
+    candidate_tool_names: [...EVALUATED_VIRTUAL_TOOL_NAMES],
+    results: EVALUATED_VIRTUAL_TOOL_NAMES.map(evalResult),
   });
 }
 

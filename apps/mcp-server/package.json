@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Stateless Streamable HTTP runtime for the remote Comvenio MCP connector.",
   "scripts": {
-    "start": "bun run src/index.ts",
+    "build": "bun build src/main.ts --outdir dist --target bun",
+    "start": "bun run dist/main.js",
+    "start:source": "bun run src/main.ts",
     "test": "bun test tests",
     "typecheck": "tsc --noEmit --project ../../tsconfig.json"
   },

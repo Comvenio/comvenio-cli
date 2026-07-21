@@ -32,4 +32,4 @@ for (const forbidden of [".codex-plugin/plugin.json", ".mcp.json", ".app.json"])
   if (existsSync(resolve(root, forbidden))) throw new Error(`Codex-Artefakt ist im OpenAI-Paket nicht zulässig: ${forbidden}`);
 }
 
-console.log(`OpenAI-Submission-Artefakte gültig: ${plan.cases.length} Tools, ${manifest.screenshots.length} Widgets.`);
+console.log(`OpenAI-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} Widgets.`);

@@ -43,15 +43,40 @@ um sie auszuführen.
 
 Die Root-Kommandos `bun run build` und `bun run start` gehören zum weiterhin
 einsatzfähigen CLI. Sie bauen beziehungsweise starten **nicht** den
-Remote-MCP-Server. Das Repository darf deshalb in Railway nicht mit diesen
-beiden Root-Kommandos als MCP-Service konfiguriert werden.
+Remote-MCP-Server. Für Railway legt [`railway.json`](railway.json) deshalb
+explizit diese getrennten Kommandos fest:
+
+```bash
+bun run build:mcp
+bun run start:mcp
+```
+
+Der MCP-Prozess bindet an `0.0.0.0:$PORT`; ohne Railway-Portvorgabe gilt lokal
+Port `8080`. `GET /health` dient als Railway-Healthcheck. Die von Railway
+bereitgestellte Domain und der offizielle Healthcheck-Host
+`healthcheck.railway.app` werden automatisch in die Host-Allowlist aufgenommen.
 
 Der Remote-MCP unter `apps/mcp-server` enthält den getesteten
-Streamable-HTTP-Kern, ist aber noch nicht als produktiver Dienst freigegeben.
-Ein ausführbarer Produktions-Bootstrap, der auditierte Tool-Katalog sowie die
-reale Auth-/Capability-Anbindung und der DEV-Health-/Readiness-Nachweis sind
-weiterhin Release-Gates. Der maschinenlesbare Stand steht in
+Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der aktuelle
+Deployment-Kandidat startet bewusst **fail-closed**: `/health` antwortet, die
+OAuth-Resource-Metadaten und fünf Widget-Ressourcen sind vorhanden, aber es
+werden keine Tools veröffentlicht. `GET /ready` bleibt mit HTTP 503 gesperrt,
+bis der auditierte Tool-Katalog sowie die reale OAuth-/Capability-Anbindung
+freigegeben und produktiv verifiziert sind. Der maschinenlesbare Stand steht in
 [`integrations/release/release-gate-report.json`](integrations/release/release-gate-report.json).
+
+Die Railway-Review-Domain
+`https://comvenio-cli-production.up.railway.app` ist für den technischen
+Deployment-Nachweis vorgesehen. Der Nachweis ist erst erbracht, wenn der neue
+Commit dort ausgerollt wurde und `/health` HTTP 200 liefert. Für ChatGPT und Claude bleibt
+`https://mcp.comvenio.app/mcp` der kanonische Produktionsendpunkt. Die
+Review-Domain darf bis zum grünen `/ready`-Gate nicht im Marketplace oder
+Connector Directory eingereicht werden.
+
+Der lokale MCP-Initialize-Test verwendet aktuell den internen Testhinweis
+`X-Comvenio-Provider`. Ein provider-nativer Handshake von ChatGPT und Claude
+gegen die öffentliche Domain ist damit noch nicht belegt und bleibt ein
+eigenes Release-Gate.
 
 Vor jedem Railway-Build muss der Workspace-Lockfile aktuell sein:
 

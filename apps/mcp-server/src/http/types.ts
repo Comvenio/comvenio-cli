@@ -104,7 +104,7 @@ export interface SafeTelemetryRecord {
   request_id: UUID;
   provider: ProviderId | null;
   authenticated: boolean;
-  route: "/mcp" | "/health" | "/ready";
+  route: "/mcp" | "/health" | "/ready" | "/.well-known/oauth-protected-resource";
   method: "POST" | "GET" | "DELETE";
   status_code: number;
   duration_ms: number;
