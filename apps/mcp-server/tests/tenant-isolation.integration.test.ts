@@ -38,6 +38,13 @@ import {
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
 import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets, createK13ToolSet } from "../src/tools/index.ts";
+import {
+  AsyncJobService,
+  FairUseService,
+  MemoryFairUseStore,
+  MemoryJobQueue,
+  bundledRateLimitConfig,
+} from "../src/jobs/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -1137,5 +1144,102 @@ describe("K14 write-safety tenant, RBAC and retry isolation", () => {
     expect(replay).toEqual(first);
     expect(writes).toBe(1);
     expect(retryCase.backendChecks()).toBe(3);
+  });
+});
+
+describe("K15 job ownership, RBAC and confirmed export isolation", () => {
+  const operationReference = "51515151-5151-4151-8151-515151515151";
+  const jobIdempotencyKey = "52525252-5252-4252-8252-525252525252";
+  const exportToolName = "cv_member_export_write_12345678";
+
+  function setupJobs() {
+    let allowed = true;
+    let checks = 0;
+    const queue = new MemoryJobQueue();
+    const fairUse = new FairUseService(bundledRateLimitConfig(), new MemoryFairUseStore());
+    const jobs = new AsyncJobService(queue, {
+      async reauthorize(input) {
+        checks++;
+        if (!input.context.scopes.includes("files.export")) {
+          throw createConnectorError({ code: "SCOPE_REQUIRED", message: "Der Scope files.export fehlt.", request_id: input.context.request_id, retryable: false, required_scope: "files.export" });
+        }
+        if (!allowed) {
+          throw createConnectorError({ code: "PERMISSION_DENIED", message: "Der Fachservice hat das Exportrecht entzogen.", request_id: input.context.request_id, retryable: false });
+        }
+        return { capability_version: "job-cap-v1" };
+      },
+    }, fairUse);
+    return { jobs, deny() { allowed = false; }, checks() { return checks; } };
+  }
+
+  function jobStart(jobs: AsyncJobService) {
+    return jobs.start({
+      context: { ...context, scopes: ["member.read.details", "files.export"] },
+      club_id: clubId,
+      tool_name: exportToolName,
+      operation_reference: operationReference,
+      idempotency_key: jobIdempotencyKey,
+      fair_use_bucket: "import_export",
+      cancellable: true,
+    });
+  }
+
+  test("TC-04: foreign users and clubs cannot inspect jobs and permission loss blocks status", async () => {
+    const setup = setupJobs();
+    const started = await jobStart(setup.jobs);
+    await expect(setup.jobs.status({
+      context: { ...context, subject_id: "53535353-5353-4353-8353-535353535353", scopes: ["files.export"] },
+      club_id: clubId,
+      job_id: started.job_id,
+    })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(setup.jobs.status({
+      context: { ...context, club_id: otherClubId, scopes: ["files.export"] },
+      club_id: clubId,
+      job_id: started.job_id,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    setup.deny();
+    await expect(setup.jobs.status({
+      context: { ...context, scopes: ["files.export"] },
+      club_id: clubId,
+      job_id: started.job_id,
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    expect(setup.checks()).toBe(2);
+  });
+
+  test("TC-05: confirmed personal export and its provider retry enqueue exactly once", async () => {
+    const setup = setupJobs();
+    const safety = new WriteSafetyService({
+      store: new MemoryAtomicSafetyStore(),
+      authorization: { async reauthorize() { return { capability_version: "job-cap-v1" }; } },
+    });
+    const writeContext = { ...context, scopes: ["member.read.details", "files.export"] as RequestContext["scopes"] };
+    const preview = await safety.createCriticalPreview({
+      context: writeContext,
+      operation: { tool_name: exportToolName, risk_class: "critical_write", execution_mode: "async_job" },
+      normalized_input: { club_id: clubId, export_scope: "personal" },
+      target: { type: "member_export", id: null, label: "Mitgliederexport" },
+      impact: { creates: 0, updates: 0, deletes: 0, publishes: 0, imports: 0, exports: 1, affected_total: 1, summary: "Eine personenbezogene Exportdatei wird erzeugt." },
+      masked_fields: ["email"],
+      safe_summary: "Ein personenbezogener Export wird gestartet.",
+      object_version: "members-v1",
+    });
+    let enqueues = 0;
+    const request = {
+      context: writeContext,
+      tool_name: exportToolName,
+      preview_id: preview.preview.preview_id,
+      confirmation_token: preview.confirmation_token,
+      idempotency_key: jobIdempotencyKey,
+      current_object_version: "members-v1",
+    };
+    const mutation = async () => {
+      enqueues++;
+      await jobStart(setup.jobs);
+      return { target_ids: [], changed_count: 1, unchanged_count: 0, failed_count: 0, result_summary: "Der Exportjob wurde gestartet.", object_versions: [], safe_next_actions: [] };
+    };
+    const first = await safety.confirmCriticalWrite(request, mutation);
+    const replay = await safety.confirmCriticalWrite(request, mutation);
+    expect(replay).toEqual(first);
+    expect(enqueues).toBe(1);
   });
 });

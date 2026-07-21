@@ -27,6 +27,9 @@ const DEPLOYMENTS: Record<OAuthEnvironment, RailwayDeploymentConfig> = {
     secret_namespace: "MCP_DEV",
     required_secret_names: [
       "MCP_DEV_AUTH_BASE_URL",
+      "MCP_DEV_CLAMD_HOST",
+      "MCP_DEV_FILE_STORAGE_BUCKET",
+      "MCP_DEV_REDIS_URL",
       "MCP_DEV_SERVICE_TOKEN",
       "MCP_DEV_ALLOWED_ORIGINS",
     ],
@@ -46,6 +49,9 @@ const DEPLOYMENTS: Record<OAuthEnvironment, RailwayDeploymentConfig> = {
     secret_namespace: "MCP_PROD",
     required_secret_names: [
       "MCP_PROD_AUTH_BASE_URL",
+      "MCP_PROD_CLAMD_HOST",
+      "MCP_PROD_FILE_STORAGE_BUCKET",
+      "MCP_PROD_REDIS_URL",
       "MCP_PROD_SERVICE_TOKEN",
       "MCP_PROD_ALLOWED_ORIGINS",
     ],

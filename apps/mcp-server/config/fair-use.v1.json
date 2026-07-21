@@ -1,0 +1,44 @@
+{
+  "contract_version": "1.0.0",
+  "policies": [
+    {
+      "bucket": "public_read",
+      "limit": 60,
+      "window_seconds": 60,
+      "key_dimensions": ["ip", "club_id"]
+    },
+    {
+      "bucket": "private_read",
+      "limit": 120,
+      "window_seconds": 60,
+      "key_dimensions": ["subject_id", "club_id"]
+    },
+    {
+      "bucket": "reversible_write",
+      "limit": 20,
+      "window_seconds": 60,
+      "key_dimensions": ["subject_id", "club_id"]
+    },
+    {
+      "bucket": "critical_flow",
+      "limit": 10,
+      "window_seconds": 60,
+      "key_dimensions": ["subject_id", "club_id"]
+    },
+    {
+      "bucket": "import_export",
+      "limit": 3,
+      "window_seconds": 3600,
+      "key_dimensions": ["subject_id", "club_id"]
+    },
+    {
+      "bucket": "heavy_job",
+      "limit": 5,
+      "window_seconds": 3600,
+      "key_dimensions": ["subject_id", "club_id"]
+    }
+  ],
+  "max_concurrent_heavy_jobs_per_subject_club": 1,
+  "polling_seconds": [1, 2, 4, 8, 15],
+  "polling_jitter_percent": 20
+}
