@@ -44,6 +44,19 @@ import {
   stableTournamentMatches,
   type K9ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/meeting-tournament/index.ts";
+import {
+  AvailabilityContract,
+  BookingConflictPolicy,
+  K10_ACTION_DEFINITIONS,
+  K10_ACTION_IDS,
+  K10_ACTION_SCHEMAS,
+  K10_BOOKING_ACTION_IDS,
+  K10_OBJECT_ACTION_IDS,
+  K10_TASK_ACTION_IDS,
+  createK10ToolSets,
+  minimizeGuestStatistics,
+  type K10ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/booking-object-task/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -496,7 +509,7 @@ describe("K8 event and plan adapter contract", () => {
 
   test("TC-05: publish/delete produce a server-side preview and mutate only after a matching second confirmation", async () => {
     let patches = 0;
-    const client = k7Client(async (request) => {
+    const client = k7Client(async (request): Promise<JsonValue> => {
       if (request.method === "GET") return { id: k8EventId, title: "Sommerfest", status: "draft", visibility_scope: "member" };
       if (request.method === "PATCH") {
         patches++;
@@ -684,5 +697,126 @@ describe("K9 meeting and tournament adapter contract", () => {
     expect(K9_ACTION_SCHEMAS["cai.meeting.11.attachment_list_add_remove"].input.parse({ club_id: k7ClubId, operation: "add", entry_id: k9AgendaId, file_id: k7MemberId })).toMatchObject({ file_id: k7MemberId });
     expect(() => K9_ACTION_SCHEMAS["cai.meeting.11.attachment_list_add_remove"].input.parse({ club_id: k7ClubId, operation: "add", entry_id: k9AgendaId, file_id: "C:\\private\\protocol.pdf" })).toThrow();
     expect(JSON.stringify(K9_ACTION_DEFINITIONS)).not.toMatch(/log-service|log_service|meetinglogtool|synchronoustournamentbulkrun/iu);
+  });
+});
+
+const k10ObjectId = "12121212-1212-4212-8212-121212121212";
+const k10ReservationId = "13131313-1313-4313-8313-131313131313";
+
+function k10Dependencies(client: ComvenioApiClient): K10ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+  };
+}
+
+describe("K10 booking, object and task adapter contract", () => {
+  test("TC-01/TC-02: exposes all required entities and exactly 12/9/14 action contracts", () => {
+    expect(K10_BOOKING_ACTION_IDS).toHaveLength(12);
+    expect(K10_OBJECT_ACTION_IDS).toHaveLength(9);
+    expect(K10_TASK_ACTION_IDS).toHaveLength(14);
+    expect(K10_ACTION_IDS).toHaveLength(35);
+    expect(Object.keys(K10_ACTION_DEFINITIONS)).toHaveLength(35);
+    expect(Object.keys(K10_ACTION_SCHEMAS)).toHaveLength(35);
+    const client = k7Client(async () => []);
+    const availability = new AvailabilityContract(client);
+    expect(new BookingConflictPolicy(availability)).toBeInstanceOf(BookingConflictPolicy);
+    const sets = createK10ToolSets(k10Dependencies(client));
+    expect(sets.booking.listDefinitions()).toHaveLength(12);
+    expect(sets.object.listDefinitions()).toHaveLength(9);
+    expect(sets.task.listDefinitions()).toHaveLength(14);
+  });
+
+  test("TC-03: booking reads require an explicit club, bounded range and IANA timezone", () => {
+    const schema = K10_ACTION_SCHEMAS["cai.booking.01.list"].input;
+    expect(schema.parse({
+      club_id: k7ClubId,
+      operation: "list",
+      from: "2026-07-21T08:00:00+02:00",
+      to: "2026-07-21T18:00:00+02:00",
+      timezone: "Europe/Berlin",
+    })).toMatchObject({ club_id: k7ClubId, timezone: "Europe/Berlin", limit: 50, offset: 0 });
+    expect(() => schema.parse({ club_id: k7ClubId, operation: "list", timezone: "Europe/Berlin" })).toThrow();
+    expect(() => schema.parse({ club_id: k7ClubId, operation: "list", from: "2026-07-21", to: "2026-07-22", timezone: "GMT+2" })).toThrow();
+  });
+
+  test("TC-04: a conflict introduced after preview prevents every booking mutation", async () => {
+    let reservationReads = 0;
+    let posts = 0;
+    const client = k7Client(async (request): Promise<JsonValue> => {
+      if (request.method === "POST") {
+        posts++;
+        return { id: k10ReservationId, club_id: k7ClubId, object_id: k10ObjectId };
+      }
+      if (request.path === `/objects/${k10ObjectId}`) return {
+        id: k10ObjectId, club_id: k7ClubId, name: "Vereinsheim", is_active: true, booking_granularity: "30min", min_duration_minutes: 30, max_duration_minutes: 480,
+      };
+      if (request.path === `/object-reservations/object/${k10ObjectId}`) {
+        reservationReads++;
+        return reservationReads === 1 ? [] : [{
+          id: "14141414-1414-4414-8414-141414141414", club_id: k7ClubId, object_id: k10ObjectId,
+          start_time: "2026-07-21T10:30:00+02:00", end_time: "2026-07-21T11:30:00+02:00", status: "approved",
+          title: "Private Buchung", resp_member_id: k7MemberId,
+        }];
+      }
+      if (request.path === `/object-booking-rules/object/${k10ObjectId}`) return [];
+      return null;
+    });
+    const booking = createK10ToolSets(k10Dependencies(client)).booking;
+    const request = {
+      action_id: "cai.booking.03.create" as const,
+      input: {
+        club_id: k7ClubId, object_id: k10ObjectId,
+        start_time: "2026-07-21T10:00:00+02:00", end_time: "2026-07-21T12:00:00+02:00", timezone: "Europe/Berlin", title: "Training",
+      },
+      context: k8Context(["booking.write", "object.read"]),
+      capability_snapshot: k8Capability({}),
+    };
+    const first = await booking.execute(request);
+    expect(first.status).toBe("confirmation_required");
+    expect(posts).toBe(0);
+    const preview = (first.result as Record<string, JsonValue>).preview as Record<string, JsonValue>;
+    expect(JSON.stringify(preview)).not.toMatch(/Private Buchung|resp_member_id/iu);
+    await expect(booking.execute({
+      ...request,
+      input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } },
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(posts).toBe(0);
+  });
+
+  test("TC-05: users without object management can read objects but cannot see write actions", () => {
+    const object = createK10ToolSets(k10Dependencies(k7Client(async () => []))).object;
+    const visible = object.listVisible({
+      context: k8Context(["object.read", "object.write"]),
+      capability_snapshot: k8Capability({}),
+    });
+    expect(visible.map((definition) => definition.action_id)).toContain("cai.object.01.list");
+    expect(visible.map((definition) => definition.action_id)).not.toContain("cai.object.03.create");
+    expect(visible.map((definition) => definition.action_id)).not.toContain("cai.object.04.update");
+  });
+
+  test("TC-06: schemas exclude implicit reservations, cross-club task moves, logs and free payloads", () => {
+    expect(() => K10_ACTION_SCHEMAS["cai.task.07.update"].input.parse({
+      club_id: k7ClubId, task_id: k10ReservationId, changes: { task_context_id: k10ObjectId },
+    })).toThrow();
+    expect(() => K10_ACTION_SCHEMAS["cai.booking.03.create"].input.parse({
+      club_id: k7ClubId, object_id: k10ObjectId, start_time: "2026-07-21T10:00:00+02:00", end_time: "2026-07-21T12:00:00+02:00",
+      timezone: "Europe/Berlin", reservation_hold: true,
+    })).toThrow();
+    const serialized = JSON.stringify(K10_ACTION_DEFINITIONS);
+    expect(serialized).not.toMatch(/log-service|log_service|implicitreservation|crossclubtaskmove/iu);
+    expect(serialized).not.toMatch(/local_path|file_path|credential|secret/iu);
+  });
+
+  test("guest statistics are aggregate-only and omit guest/member identifiers", () => {
+    const result = minimizeGuestStatistics({
+      club_id: k7ClubId, total_guests: 2, total_fee: 10,
+      members: [{ resp_member_id: k7MemberId, total_guests: 2, total_bookings_with_guests: 1, total_fee: 10, guests: [{ guest_name: "Privat", guest_email: "privat@example.org" }] }],
+    });
+    expect(result).toEqual({
+      club_id: k7ClubId, from_date: null, to_date: null, total_guests: 2, total_fee: 10,
+      members: [{ total_guests: 2, total_bookings_with_guests: 1, total_fee: 10 }], truncated: false,
+    });
+    expect(JSON.stringify(result)).not.toMatch(/resp_member_id|guest_name|guest_email|privat@example/iu);
   });
 });

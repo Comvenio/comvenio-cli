@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets, createK8ToolSets, createK9ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -786,5 +786,67 @@ describe("K9 meeting and tournament tenant/RBAC isolation", () => {
       capability_snapshot: { ...capabilitySnapshot, permissions: { manage_tournaments: true } },
     })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Meeting-/Turnier-Aktion im aktuellen Kontext abgelehnt." });
     expect(forbidden).toBe(1);
+  });
+});
+
+describe("K10 booking, object and task tenant/RBAC isolation", () => {
+  const objectId = "12121212-1212-4212-8212-121212121212";
+
+  function adapterClient(handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>): ComvenioApiClient {
+    return {
+      timeout_ms: 15000,
+      async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        return await handler(request) as T;
+      },
+    };
+  }
+
+  test("rejects a foreign club before any booking backend call", async () => {
+    let calls = 0;
+    const booking = createK10ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).booking;
+    await expect(booking.execute({
+      action_id: "cai.booking.01.list",
+      input: {
+        club_id: otherClubId, operation: "list", from: "2026-07-21T08:00:00+02:00", to: "2026-07-21T18:00:00+02:00", timezone: "Europe/Berlin",
+      },
+      context: { ...context, scopes: ["booking.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("normalizes backend RBAC denials and records the recheck without leaking details", async () => {
+    let forbidden = 0;
+    const object = createK10ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({ code: "PERMISSION_DENIED", message: "private object denial", request_id: request.context.request_id, retryable: false });
+      }),
+      on_backend_forbidden() { forbidden++; },
+    }).object;
+    await expect(object.execute({
+      action_id: "cai.object.02.show",
+      input: { club_id: clubId, object_id: objectId },
+      context: { ...context, scopes: ["object.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Aktion im aktuellen Kontext abgelehnt." });
+    expect(forbidden).toBe(1);
+  });
+
+  test("keeps object writes hidden without manage_objects while task reads stay available", () => {
+    const sets = createK10ToolSets({
+      client: adapterClient(async () => []),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    });
+    const objectDefinitions = sets.object.listVisible({
+      context: { ...context, scopes: ["object.read", "object.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    });
+    expect(objectDefinitions.map((definition) => definition.action_id)).toContain("cai.object.01.list");
+    expect(objectDefinitions.map((definition) => definition.action_id)).not.toContain("cai.object.03.create");
+    const taskDefinitions = sets.task.listVisible({
+      context: { ...context, scopes: ["task.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    });
+    expect(taskDefinitions.map((definition) => definition.action_id)).toContain("cai.task.01.list");
   });
 });
