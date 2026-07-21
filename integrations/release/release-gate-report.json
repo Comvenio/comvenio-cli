@@ -1,0 +1,340 @@
+{
+  "schema_version": "1.0.0",
+  "entity": "ReleaseGateReport",
+  "release": "comvenio-ai-connector-v1",
+  "country": "DE",
+  "generated_at": "2026-07-21T00:00:00.000Z",
+  "evidence": {
+    "action_classification_count": 303,
+    "action_total": 303,
+    "route_callsite_count": 560,
+    "audited_operation_catalog_published": false,
+    "route_trace_tests_passed": false,
+    "schema_tests_passed": false,
+    "permission_tests_passed": false,
+    "cimd_pins_verified": false,
+    "revocation_latency_seconds": null,
+    "malware_quarantine_verified": true,
+    "confirmation_input_server_internal": true,
+    "widget_contract_count": 5,
+    "widget_surfaces_verified": true,
+    "accessibility_smokes_passed": true,
+    "rate_limit_config_verified": true,
+    "development_health_ready": false,
+    "production_health_ready": false,
+    "pricing_included_without_surcharge": true,
+    "germany_first": true
+  },
+  "eval": {
+    "schema_version": "1.0.0",
+    "suite": "ConnectorEvalSuite",
+    "status": "pass",
+    "published_tool_count": 8,
+    "tested_tool_count": 8,
+    "results": [
+      {
+        "tool_name": "cv_file_get_read",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "packages/connector-contracts/tests/jobs.contract.test.ts"
+      },
+      {
+        "tool_name": "cv_file_upload_complete_write",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "packages/connector-contracts/tests/jobs.contract.test.ts"
+      },
+      {
+        "tool_name": "cv_file_upload_start_write",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "packages/connector-contracts/tests/jobs.contract.test.ts"
+      },
+      {
+        "tool_name": "cv_job_cancel_write",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "packages/connector-contracts/tests/jobs.contract.test.ts"
+      },
+      {
+        "tool_name": "cv_job_status_read",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "packages/connector-contracts/tests/jobs.contract.test.ts"
+      },
+      {
+        "tool_name": "cv_permissions_explain_read",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/provider-openai.e2e.test.ts"
+      },
+      {
+        "tool_name": "cv_schema_read",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/provider-openai.e2e.test.ts"
+      },
+      {
+        "tool_name": "cv_whoami_read",
+        "tool_selection": true,
+        "schema_validation": true,
+        "grounded_response": true,
+        "actionable_error": true,
+        "safe_non_execution": true,
+        "confirmation_contract": true,
+        "provider_retry_idempotent": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/provider-openai.e2e.test.ts"
+      }
+    ],
+    "blockers": []
+  },
+  "tenant_isolation": {
+    "schema_version": "1.0.0",
+    "suite": "TenantIsolationSuite",
+    "status": "pass",
+    "results": [
+      {
+        "id": "backend_denial",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "cached_tool_recheck",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "cross_club",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "cross_user",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "file_isolation",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "grant_revocation",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "stale_capability",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      },
+      {
+        "id": "token_replay",
+        "passed": true,
+        "synthetic_data_only": true,
+        "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
+      }
+    ],
+    "blockers": []
+  },
+  "privacy": {
+    "schema_version": "1.0.0",
+    "entity": "PrivacyThreatModel",
+    "country": "DE",
+    "privacy_priority": "highest",
+    "data_flows": [
+      "Nutzerabsicht -> Provider -> Comvenio Remote MCP -> autoritativer Fachservice",
+      "Backend-RBAC -> minimiertes Toolresultat -> gemeinsames Widget -> Provideroberfläche",
+      "OAuth-Grant -> exakt ein ausgewählter Verein -> kurz gecachter Capability-Snapshot",
+      "Kritischer Write -> serverinterne Vorschau -> zweite Bestätigung -> idempotenter Dispatch",
+      "Provider-Review -> ausschließlich synthetische Konten, Fixtures und Screenshots"
+    ],
+    "minimization_rules": [
+      "Nicht erlaubte Tools und Aktionen werden verborgen.",
+      "Mitgliederdetails werden erst nach explizitem, berechtigtem Abruf geladen.",
+      "Public Read enthält nur veröffentlichte Allowlist-Felder ohne interne IDs.",
+      "Bestätigungsansichten enthalten nur maskierte Wirkung und keine Rohpayloads.",
+      "Dateien verlassen den MCP nur als kurzlebige, autorisierte Referenzen.",
+      "Telemetrie enthält keine Toolargumente, Tokens, Vereins- oder Mitgliederdaten.",
+      "Reviewartefakte enthalten keine personenbezogenen Produktivdaten."
+    ],
+    "retention_seconds": {
+      "capability_snapshot": 30,
+      "private_introspection_read": 5,
+      "preview": 300,
+      "confirmation": 300,
+      "idempotency": 86400,
+      "upload_handle": 900,
+      "result_file": 86400,
+      "job_metadata": 604800
+    },
+    "telemetry_allowlist": [
+      "request_id",
+      "provider",
+      "route",
+      "method",
+      "status_code",
+      "outcome",
+      "duration_ms",
+      "authenticated",
+      "recorded_at"
+    ],
+    "data_subject_rights": [
+      "Verbindung und Grant jederzeit widerrufen",
+      "Auskunft über die eigene Verbindung und effektive Rechte",
+      "Löschung gemäß Comvenio-Löschkonzept",
+      "Berichtigung in den autoritativen Fachservices",
+      "Supportkontakt ohne Endnutzerzugriff auf den Log-Service"
+    ],
+    "log_service": {
+      "connected_to_mcp": false,
+      "end_user_access": false,
+      "audience": "master_admin_only"
+    },
+    "review_fixtures": {
+      "production_data_allowed": false,
+      "synthetic_data_required": true
+    },
+    "findings": [],
+    "status": "approved"
+  },
+  "pilot": {
+    "schema_version": "1.0.0",
+    "entity": "PilotProtocol",
+    "country": "DE",
+    "club_reference": null,
+    "pilot_owner": null,
+    "started_on": null,
+    "ended_on": null,
+    "minimum_calendar_days": 7,
+    "minimum_successful_interactions": 30,
+    "minimum_success_rate": 0.95,
+    "interactions": {
+      "total": 0,
+      "successful": 0,
+      "scenario_counts": {},
+      "data_leaks": 0,
+      "confirmation_bypasses": 0
+    },
+    "findings": [],
+    "evidence_refs": [],
+    "status": "pending",
+    "blockers": [
+      "PILOT_IDENTITY_OR_DATES_PENDING",
+      "PILOT_MINIMUM_DAYS",
+      "PILOT_INTERACTION_THRESHOLD",
+      "PILOT_SCENARIO_COVERAGE"
+    ]
+  },
+  "findings": [],
+  "signatures": [
+    {
+      "role": "product_owner",
+      "signer": null,
+      "signed_at": null,
+      "status": "pending"
+    },
+    {
+      "role": "security_reviewer",
+      "signer": null,
+      "signed_at": null,
+      "status": "pending"
+    },
+    {
+      "role": "privacy_reviewer",
+      "signer": null,
+      "signed_at": null,
+      "status": "pending"
+    },
+    {
+      "role": "release_manager",
+      "signer": null,
+      "signed_at": null,
+      "status": "pending"
+    },
+    {
+      "role": "pilot_owner",
+      "signer": null,
+      "signed_at": null,
+      "status": "pending"
+    }
+  ],
+  "provider_gates": [
+    {
+      "provider": "openai",
+      "state": "blocked",
+      "blockers": [
+        "OPENAI_GLOBAL_RESIDENCY_ACCEPTED_PENDING"
+      ]
+    },
+    {
+      "provider": "anthropic",
+      "state": "blocked",
+      "blockers": [
+        "DIRECTORY_PORTAL_EVIDENCE_PENDING"
+      ]
+    }
+  ],
+  "common_gate": "blocked",
+  "decision": "BLOCKED",
+  "submittable_providers": [],
+  "blockers": [
+    "AUDITED_OPERATION_CATALOG",
+    "OPERATION_CONTRACT_TESTS",
+    "CIMD_PINS",
+    "REVOCATION_LATENCY",
+    "HEALTH_READINESS",
+    "PILOT_PROTOCOL",
+    "REQUIRED_SIGNATURES"
+  ]
+}

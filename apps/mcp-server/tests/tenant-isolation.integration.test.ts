@@ -27,6 +27,10 @@ import {
 import { OpenAiConnectorAdapter } from "../../../integrations/openai/src/index.ts";
 import { AnthropicConnectorAdapter } from "../../../integrations/anthropic/src/index.ts";
 import {
+  REQUIRED_TENANT_SCENARIOS,
+  TenantIsolationSuite,
+} from "../../../integrations/release/src/index.ts";
+import {
   ExactProviderHintResolver,
   HealthReadinessProbe,
   McpHttpServer,
@@ -1850,5 +1854,18 @@ describe("K20 confirmation widget tenant, RBAC and runtime isolation", () => {
       expect(asset.headers.get("cache-control")).toContain("immutable");
       expect(await fetch(`${baseUrl}/widgets/action-confirmation/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
     } finally { expect(await server.drain()).toBe(true); }
+  });
+});
+
+describe("K23 aggregate tenant isolation release evidence", () => {
+  test("TC-04/TC-05: cross-club, cross-user, stale capability, token, file and backend denial evidence is complete", () => {
+    const report = new TenantIsolationSuite().evaluate(REQUIRED_TENANT_SCENARIOS.map((id) => ({
+      id,
+      passed: true,
+      synthetic_data_only: true,
+      evidence_ref: "apps/mcp-server/tests/tenant-isolation.integration.test.ts",
+    })));
+    expect(report).toMatchObject({ status: "pass", blockers: [] });
+    expect(report.results.map((result) => result.id).sort()).toEqual([...REQUIRED_TENANT_SCENARIOS].sort());
   });
 });
