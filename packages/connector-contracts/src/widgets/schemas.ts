@@ -245,3 +245,94 @@ export const MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Dieser Mitgliederzustand benötigt eine sichere Nutzerinformation." });
   }
 });
+
+export const BOOKING_OBJECT_SUMMARY_SCHEMA = z.object({
+  object_id: uuid,
+  name: safeText(300),
+  type: safeText(100),
+  status: safeText(100),
+}).strict();
+
+export const BOOKING_SLOT_SCHEMA = z.object({
+  from: instant,
+  to: instant,
+  state: z.enum(["available", "occupied", "blocked", "unknown"]),
+  booking_id: uuid.nullable(),
+  label: safeText(160),
+}).strict().superRefine((slot, context) => {
+  if (Date.parse(slot.to) <= Date.parse(slot.from)) {
+    context.addIssue({ code: "custom", message: "Das Slotende muss nach dem Start liegen.", path: ["to"] });
+  }
+  if (slot.state !== "occupied" && slot.booking_id !== null) {
+    context.addIssue({ code: "custom", message: "Nur ein belegter Slot darf eine Buchungsreferenz tragen.", path: ["booking_id"] });
+  }
+});
+
+export const BOOKING_OBJECT_DATA_SCHEMA = z.object({
+  range: z.object({ from: instant, to: instant }).strict().refine((range) => Date.parse(range.to) > Date.parse(range.from)),
+  objects: z.array(BOOKING_OBJECT_SUMMARY_SCHEMA).max(100),
+  selected_object_id: uuid.nullable(),
+  slots: z.array(BOOKING_SLOT_SCHEMA).max(200),
+}).strict().superRefine((data, context) => {
+  if (data.selected_object_id !== null && !data.objects.some((object) => object.object_id === data.selected_object_id)) {
+    context.addIssue({ code: "custom", message: "Das ausgewählte Objekt muss in der sichtbaren Objektliste liegen.", path: ["selected_object_id"] });
+  }
+  if (data.selected_object_id === null && data.slots.length > 0) {
+    context.addIssue({ code: "custom", message: "Slots benötigen ein explizit ausgewähltes Objekt.", path: ["slots"] });
+  }
+  if (data.slots.some((slot) => Date.parse(slot.from) < Date.parse(data.range.from) || Date.parse(slot.to) > Date.parse(data.range.to))) {
+    context.addIssue({ code: "custom", message: "Alle Slots müssen innerhalb des angefragten Zeitraums liegen.", path: ["slots"] });
+  }
+});
+
+export const BOOKING_OBJECT_WIDGET_SCHEMA = z.object({
+  widget: z.literal("booking_object"),
+  contract_version: z.literal("1.0.0"),
+  title: safeText(120),
+  club: CLUB_CHIP_SCHEMA,
+  capability_version: z.string().trim().min(1).max(200).nullable(),
+  generated_at: instant,
+  data: BOOKING_OBJECT_DATA_SCHEMA,
+  actions: z.array(VISIBLE_SERVER_ACTION_DESCRIPTOR_SCHEMA).max(50),
+  empty_state: z.object({ title: safeText(120), description: safeText(500) }).strict().nullable(),
+}).strict().superRefine((widget, context) => {
+  if ((widget.data.objects.length === 0) !== (widget.empty_state !== null)) {
+    context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Objektliste passen." });
+  }
+  if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
+    || action.input.club_id !== widget.club.club_id
+    || (typeof action.input.object_id === "string" && action.input.object_id !== widget.data.selected_object_id))) {
+    context.addIssue({ code: "custom", message: "Jede Buchungsaktion muss an Verein und ausgewähltes Objekt gebunden sein." });
+  }
+  if (widget.actions.some((action) => action.risk_class !== "read"
+    && (action.risk_class !== "critical_write" || !action.requires_confirmation))) {
+    context.addIssue({ code: "custom", message: "Reservierungsaktionen dürfen nur über den Bestätigungsflow laufen." });
+  }
+});
+
+export const BOOKING_OBJECT_PHASE_SCHEMA = z.enum([
+  "loading", "empty", "ready", "partial", "conflict", "auth_required", "permission_changed", "error",
+]);
+
+export const BOOKING_OBJECT_WIDGET_STATE_SCHEMA = z.object({
+  phase: BOOKING_OBJECT_PHASE_SCHEMA,
+  model: BOOKING_OBJECT_WIDGET_SCHEMA.nullable(),
+  message: z.string().trim().min(1).max(500).nullable(),
+  retryable: z.boolean(),
+}).strict().superRefine((state, context) => {
+  if (["empty", "ready", "partial", "conflict", "permission_changed"].includes(state.phase) && state.model === null) {
+    context.addIssue({ code: "custom", message: "Ein darstellbarer Buchungszustand benötigt ein Modell." });
+  }
+  if (["loading", "auth_required"].includes(state.phase) && state.model !== null) {
+    context.addIssue({ code: "custom", message: "Vor Anmeldung oder Laden dürfen keine Buchungsdaten vorliegen." });
+  }
+  if (["loading", "partial", "conflict", "auth_required", "permission_changed", "error"].includes(state.phase) && state.message === null) {
+    context.addIssue({ code: "custom", message: "Dieser Buchungszustand benötigt eine sichere Nutzerinformation." });
+  }
+  if (["empty", "ready", "partial"].includes(state.phase) && state.model?.capability_version == null) {
+    context.addIssue({ code: "custom", message: "Ein aktiver Buchungszustand benötigt die Capability-Version." });
+  }
+  if (["conflict", "permission_changed"].includes(state.phase) && state.model?.actions.length !== 0) {
+    context.addIssue({ code: "custom", message: "Nach Konflikt oder Rechtewechsel dürfen keine alten Reservierungsaktionen verbleiben." });
+  }
+});

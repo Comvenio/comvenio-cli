@@ -46,6 +46,11 @@ import {
   bundledRateLimitConfig,
 } from "../src/jobs/index.ts";
 import {
+  BOOKING_OBJECT_WIDGET_ASSET_PATH,
+  BOOKING_OBJECT_WIDGET_CLIENT,
+  BOOKING_OBJECT_WIDGET_RESOURCE_URI,
+  BookingObjectWidgetProjector,
+  BookingWidgetCapabilityPolicy,
   EVENT_CALENDAR_WIDGET_ASSET_PATH,
   EVENT_CALENDAR_WIDGET_CLIENT,
   EVENT_CALENDAR_WIDGET_RESOURCE_URI,
@@ -58,6 +63,7 @@ import {
   MemberManagementWidgetProjector,
   MemberWidgetCapabilityPolicy,
   registerMemberManagementWidgetResource,
+  registerBookingObjectWidgetResource,
 } from "../src/widgets/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
@@ -1506,6 +1512,97 @@ describe("K17 member management widget tenant and runtime isolation", () => {
       expect(asset.status).toBe(200);
       expect(await asset.text()).toBe(MEMBER_MANAGEMENT_WIDGET_CLIENT);
       expect(await fetch(`${baseUrl}/widgets/member-management/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
+    } finally {
+      expect(await server.drain()).toBe(true);
+    }
+  });
+});
+
+describe("K18 booking object widget tenant and runtime isolation", () => {
+  const objectId = "92929292-9292-4292-8292-929292929292";
+  const bookingContext: RequestContext = {
+    ...context,
+    scopes: ["object.read", "booking.read", "booking.write"],
+  };
+  const bookingCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: {} };
+  const range = { from: "2026-07-22T08:00:00+02:00", to: "2026-07-22T10:00:00+02:00" };
+  const action = {
+    action_id: "booking.create",
+    label: "Reservierung vorbereiten",
+    tool_name: "cv_booking_create",
+    input: { club_id: clubId, object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    visibility: "visible" as const,
+    enabled: true,
+    risk_class: "critical_write" as const,
+    requires_confirmation: true,
+    disabled_reason: null,
+  };
+  const availability = {
+    club_id: clubId,
+    object_id: objectId,
+    from: range.from,
+    to: range.to,
+    timezone: "Europe/Berlin",
+    status: "AVAILABLE" as const,
+    slots: [{ from: range.from, to: range.to, status: "AVAILABLE" as const, reason: null }],
+    booking_rules_observed: 1,
+  };
+
+  function bookingInput(overrides: Record<string, unknown> = {}) {
+    return {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: bookingContext,
+      capability_snapshot: bookingCapability,
+      object_source: [{ id: objectId, club_id: clubId, name: "Tennisplatz 1", object_type: "Sportplatz", is_active: true }],
+      selected_object_id: objectId,
+      availability_source: availability,
+      range,
+      action_candidates: [action],
+      ...overrides,
+    } as any;
+  }
+
+  test("TC-04/TC-05: projection binds tenant, current scopes and visible server policy", () => {
+    const projector = new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([action.tool_name]));
+    expect(projector.project(bookingInput()).actions).toHaveLength(1);
+    expect(() => projector.project(bookingInput({
+      object_source: [{ id: objectId, club_id: otherClubId, name: "Fremder Platz", object_type: "Sportplatz" }],
+    }))).toThrow();
+    expect(() => projector.project(bookingInput({
+      availability_source: { ...availability, club_id: otherClubId },
+    }))).toThrow();
+    expect(new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([])).project(bookingInput()).actions).toEqual([]);
+    expect(() => projector.project(bookingInput({ context: { ...bookingContext, scopes: ["object.read", "booking.read"] } }))).not.toThrow();
+    expect(projector.project(bookingInput({ context: { ...bookingContext, scopes: ["object.read", "booking.read"] } })).actions).toEqual([]);
+  });
+
+  test("TC-01/TC-06: booking MCP resource and immutable asset carry no tenant data", async () => {
+    const server = new McpHttpServer(runtimeOptions({
+      server_factory(contextInput) {
+        const runtime = runtimeOptions().server_factory(contextInput);
+        return Promise.resolve(runtime).then((mcpServer) => {
+          registerBookingObjectWidgetResource(mcpServer, "development");
+          return mcpServer;
+        });
+      },
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 1, method: "resources/list", params: {} });
+      expect(list.status).toBe(200);
+      expect((await list.json() as any).result.resources.some((resource: any) => resource.uri === BOOKING_OBJECT_WIDGET_RESOURCE_URI)).toBe(true);
+      const read = await postMcp(baseUrl, { jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: BOOKING_OBJECT_WIDGET_RESOURCE_URI } });
+      const resource = await read.json() as any;
+      expect(read.status).toBe(200);
+      expect(resource.result.contents[0].text).toContain(BOOKING_OBJECT_WIDGET_ASSET_PATH);
+      expect(resource.result.contents[0].text).not.toContain(objectId);
+      expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(BOOKING_OBJECT_WIDGET_RESOURCE_URI);
+      const asset = await fetch(`${baseUrl}${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe(BOOKING_OBJECT_WIDGET_CLIENT);
+      expect(asset.headers.get("cache-control")).toContain("immutable");
+      expect(await fetch(`${baseUrl}/widgets/booking-object/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
     } finally {
       expect(await server.drain()).toBe(true);
     }

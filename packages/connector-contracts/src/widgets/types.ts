@@ -150,3 +150,48 @@ export interface MemberManagementWidgetState {
   message: string | null;
   retryable: boolean;
 }
+
+export interface BookingObjectSummary extends Record<string, JsonValue> {
+  object_id: UUID;
+  name: string;
+  type: string;
+  status: string;
+}
+
+export interface BookingSlot extends Record<string, JsonValue> {
+  from: string;
+  to: string;
+  state: "available" | "occupied" | "blocked" | "unknown";
+  booking_id: UUID | null;
+  label: string;
+}
+
+export interface BookingObjectData extends Record<string, JsonValue> {
+  range: { from: string; to: string };
+  objects: BookingObjectSummary[];
+  selected_object_id: UUID | null;
+  slots: BookingSlot[];
+}
+
+export interface ObjectSelector { objects: BookingObjectSummary[]; selected_object_id: UUID | null; }
+export interface BookingSlotGrid { slots: BookingSlot[]; timezone: IanaTimeZone; }
+export interface AvailabilityBadge { state: BookingSlot["state"]; label: string; checked_at: string; }
+export interface ReservationActionBar { actions: ServerActionDescriptor[]; }
+export type BookingObjectWidget = WidgetEnvelope<BookingObjectData, "booking_object"> & { club: ClubChip };
+
+export type BookingObjectPhase =
+  | "loading"
+  | "empty"
+  | "ready"
+  | "partial"
+  | "conflict"
+  | "auth_required"
+  | "permission_changed"
+  | "error";
+
+export interface BookingObjectWidgetState {
+  phase: BookingObjectPhase;
+  model: BookingObjectWidget | null;
+  message: string | null;
+  retryable: boolean;
+}

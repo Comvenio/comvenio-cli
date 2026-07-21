@@ -23,6 +23,7 @@ import type {
 } from "./types.ts";
 import { createAuthChallenge } from "../public/auth-challenge.ts";
 import type { AuthChallenge } from "../public/types.ts";
+import { mountBookingObjectWidgetAssets } from "../widgets/booking-object/assets.ts";
 import { mountEventCalendarWidgetAssets } from "../widgets/event-calendar/assets.ts";
 import { mountMemberManagementWidgetAssets } from "../widgets/member-management/assets.ts";
 
@@ -77,6 +78,7 @@ export class McpHttpServer {
       host: "0.0.0.0",
       allowedHosts: [...options.allowed_hosts],
     });
+    mountBookingObjectWidgetAssets(this.app, options.environment);
     mountEventCalendarWidgetAssets(this.app, options.environment);
     mountMemberManagementWidgetAssets(this.app, options.environment);
     this.#mountRoutes();

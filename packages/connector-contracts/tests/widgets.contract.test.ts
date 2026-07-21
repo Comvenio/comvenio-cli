@@ -2,15 +2,40 @@ import { describe, expect, test } from "bun:test";
 
 import type { CapabilitySnapshot } from "../../auth/src/index.ts";
 import {
+  BOOKING_OBJECT_WIDGET_SCHEMA,
+  BOOKING_OBJECT_WIDGET_STATE_SCHEMA,
   EVENT_CALENDAR_WIDGET_SCHEMA,
   EVENT_CALENDAR_WIDGET_STATE_SCHEMA,
   MEMBER_MANAGEMENT_WIDGET_SCHEMA,
   MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA,
+  type BookingObjectWidget,
   type EventCalendarWidget,
   type MemberManagementWidget,
   type RequestContext,
   type ServerActionDescriptor,
 } from "../src/index.ts";
+import {
+  AvailabilityBadge,
+  BOOKING_OBJECT_WIDGET_ASSET_PATH,
+  BOOKING_WIDGET_AVAILABILITY_MAX_AGE_SECONDS,
+  BOOKING_OBJECT_WIDGET_CLIENT,
+  BOOKING_OBJECT_WIDGET_CSP,
+  BOOKING_WIDGET_OBJECT_MAX,
+  BOOKING_OBJECT_WIDGET_RESOURCE_URI,
+  BOOKING_WIDGET_SLOT_MAX,
+  BOOKING_OBJECT_WIDGET_CSS,
+  BOOKING_WIDGET_FIRST_RENDER_BUDGET_MS,
+  BookingObjectWidget as renderBookingObjectWidget,
+  BookingObjectWidgetProjector,
+  BookingSlotGrid,
+  BookingWidgetCapabilityPolicy,
+  ObjectSelector,
+  ReservationActionBar,
+  bookingObjectState,
+  bookingObjectToolMetadata,
+  bookingObjectWidgetHtml,
+  safeBookingWidgetTelemetry,
+} from "../../../apps/mcp-server/src/widgets/booking-object/index.ts";
 import {
   ClubContextChip,
   EVENT_CALENDAR_WIDGET_ASSET_PATH,
@@ -426,5 +451,173 @@ describe("K17 member management widget contracts", () => {
     expect(MEMBER_MANAGEMENT_WIDGET_CSP).toContain("default-src 'none'");
     expect(memberManagementWidgetHtml("production")).toContain(`https://mcp.comvenio.app${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
     expect(memberManagementToolMetadata("production")._meta.ui.resourceUri).toBe(MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI);
+  });
+});
+
+describe("K18 booking object widget contracts", () => {
+  const objectId = "91919191-9191-4191-8191-919191919191";
+  const bookingContext: RequestContext = {
+    ...context,
+    scopes: ["object.read", "booking.read", "booking.write"],
+  };
+  const bookingCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: {} };
+  const objectSource = [{
+    id: objectId,
+    club_id: clubId,
+    name: "Tennisplatz 1",
+    object_type: "Sportplatz",
+    is_active: true,
+    contact_email: "private@example.org",
+  }];
+  const availability = {
+    club_id: clubId,
+    object_id: objectId,
+    from: range.from,
+    to: range.to,
+    timezone: "Europe/Berlin",
+    status: "AVAILABLE" as const,
+    slots: [{ from: range.from, to: range.to, status: "AVAILABLE" as const, reason: null }],
+    booking_rules_observed: 1,
+  };
+  const selectAction: ServerActionDescriptor = {
+    action_id: "object.availability",
+    label: "Verfügbarkeit anzeigen",
+    tool_name: "cv_object_availability",
+    input: { club_id: clubId, object_id: objectId },
+    visibility: "visible",
+    enabled: true,
+    risk_class: "read",
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+  const reserveAction: ServerActionDescriptor = {
+    action_id: "booking.create",
+    label: "Reservierung vorbereiten",
+    tool_name: "cv_booking_create",
+    input: { club_id: clubId, object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    visibility: "visible",
+    enabled: true,
+    risk_class: "critical_write",
+    requires_confirmation: true,
+    disabled_reason: null,
+  };
+
+  function bookingWidget(tools: string[] = [selectAction.tool_name, reserveAction.tool_name]): BookingObjectWidget {
+    return new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy(tools)).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: bookingContext,
+      capability_snapshot: bookingCapability,
+      object_source: objectSource,
+      selected_object_id: objectId,
+      availability_source: availability,
+      range,
+      action_candidates: [selectAction, reserveAction],
+      generated_at: "2026-07-21T09:00:00+02:00",
+    });
+  }
+
+  test("TC-01/TC-02: all named booking entities render the bound mockup shell", () => {
+    const model = bookingWidget();
+    expect(BOOKING_OBJECT_WIDGET_SCHEMA.parse(model)).toEqual(model);
+    expect(ObjectSelector({ model: { objects: model.data.objects, selected_object_id: objectId } })).toContain("object-selector");
+    expect(BookingSlotGrid({ model: { slots: model.data.slots, timezone: model.club.timezone } })).toContain("slot-grid");
+    expect(AvailabilityBadge({ model: { state: "available", label: "frei", checked_at: model.generated_at } })).toContain("frei");
+    expect(ReservationActionBar({ model: { actions: model.actions } })).toContain("Vorschau");
+    const html = renderBookingObjectWidget({ model });
+    expect(html).toContain("booking-layout");
+    expect(html).toContain("Tennisplatz 1");
+    expect(html).not.toContain(objectId);
+    expect(html).not.toContain(clubId);
+    expect(JSON.stringify(model)).not.toContain("private@example.org");
+  });
+
+  test("TC-03: 390px layout has two bounded slots and textual states", () => {
+    expect(BOOKING_OBJECT_WIDGET_CSS).toContain("@media (max-width:559px)");
+    expect(BOOKING_OBJECT_WIDGET_CSS).toContain("grid-template-columns:repeat(2,minmax(0,1fr))");
+    expect(BOOKING_OBJECT_WIDGET_CSS).toContain("overflow-x:hidden");
+    expect(BOOKING_OBJECT_WIDGET_CSS).toContain("min-height:44px");
+    const model = bookingWidget();
+    expect(renderBookingObjectWidget({ model })).toContain("frei");
+    const tooMany = structuredClone(model);
+    tooMany.data.slots = Array.from({ length: 201 }, () => structuredClone(model.data.slots[0]!));
+    expect(BOOKING_OBJECT_WIDGET_SCHEMA.safeParse(tooMany).success).toBe(false);
+  });
+
+  test("TC-04: foreign-club objects and availability are rejected instead of filtered", () => {
+    const projector = new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([]));
+    const base = {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: bookingContext,
+      capability_snapshot: bookingCapability,
+      selected_object_id: objectId,
+      range,
+    } as const;
+    expect(() => projector.project({ ...base, object_source: [{ ...objectSource[0], club_id: "44444444-4444-4444-8444-444444444444" }] })).toThrow();
+    expect(() => projector.project({ ...base, object_source: objectSource, availability_source: { ...availability, club_id: "44444444-4444-4444-8444-444444444444" } })).toThrow();
+  });
+
+  test("TC-05: reservation intent is preview-only and governed by current policy", () => {
+    expect(bookingWidget([]).actions).toEqual([]);
+    expect(bookingWidget().actions.map((action) => action.tool_name)).toEqual([selectAction.tool_name, reserveAction.tool_name]);
+    expect(bookingWidget().actions[1]).toMatchObject({ risk_class: "critical_write", requires_confirmation: true });
+    const unsafe = { ...reserveAction, risk_class: "reversible_write" as const, requires_confirmation: false };
+    const projected = new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([unsafe.tool_name])).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, context: bookingContext,
+      capability_snapshot: bookingCapability, object_source: objectSource, selected_object_id: objectId,
+      availability_source: availability, range, action_candidates: [unsafe],
+    });
+    expect(projected.actions).toEqual([]);
+  });
+
+  test("TC-06: conflict replaces stale availability and removes reservation actions", () => {
+    const model = bookingWidget();
+    const current = {
+      ...availability,
+      status: "BUSY" as const,
+      slots: [{ from: range.from, to: range.to, status: "BUSY" as const, reason: "RESERVATION_CONFLICT" }],
+    };
+    const conflict = bookingObjectState({ phase: "conflict", model, current_availability: current, message: "Der Zeitraum wurde inzwischen belegt. Wähle eine aktuelle Alternative." });
+    expect(conflict.model?.actions).toEqual([]);
+    expect(conflict.model?.data.slots).toEqual([{ from: range.from, to: range.to, state: "occupied", booking_id: null, label: "belegt" }]);
+    expect(BOOKING_OBJECT_WIDGET_STATE_SCHEMA.parse(conflict)).toEqual(conflict);
+    const permission = bookingObjectState({ phase: "permission_changed", model, message: "Bitte neu laden." });
+    expect(permission.model?.actions).toEqual([]);
+    expect(permission.model?.capability_version).toBeNull();
+    const telemetry = safeBookingWidgetTelemetry({ phase: "conflict", model: conflict.model, render_duration_ms: 33.7, outcome: "rejected" });
+    expect(telemetry).toMatchObject({ widget: "booking_object", phase: "conflict", object_count_bucket: "1-20", slot_count_bucket: "1-20", availability_state: "occupied", render_duration_ms: 34 });
+    expect(JSON.stringify(telemetry)).not.toContain(objectId);
+    expect(JSON.stringify(telemetry)).not.toContain(clubId);
+    expect(BOOKING_WIDGET_FIRST_RENDER_BUDGET_MS).toBe(1_000);
+    expect(BOOKING_WIDGET_AVAILABILITY_MAX_AGE_SECONDS).toBe(30);
+    expect(BOOKING_WIDGET_OBJECT_MAX).toBe(100);
+    expect(BOOKING_WIDGET_SLOT_MAX).toBe(200);
+  });
+
+  test("covers safe states and the provider-neutral MCP App resource", () => {
+    const model = bookingWidget();
+    const empty = new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([])).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, context: bookingContext,
+      capability_snapshot: bookingCapability, object_source: [], range,
+    });
+    const states = [
+      bookingObjectState({ phase: "loading", message: "Buchungsansicht wird geladen." }),
+      bookingObjectState({ phase: "empty", model: empty }),
+      bookingObjectState({ phase: "ready", model }),
+      bookingObjectState({ phase: "partial", model, message: "Ein Teil der Verfügbarkeit fehlt.", retryable: true }),
+      bookingObjectState({ phase: "auth_required", message: "Bitte verbinde Comvenio." }),
+      bookingObjectState({ phase: "permission_changed", model, message: "Bitte neu laden." }),
+      bookingObjectState({ phase: "error", model, message: "Ansicht nicht aktualisiert.", retryable: true }),
+    ];
+    expect(states.every((state) => BOOKING_OBJECT_WIDGET_STATE_SCHEMA.safeParse(state).success)).toBe(true);
+    expect(BOOKING_OBJECT_WIDGET_RESOURCE_URI).toBe("ui://comvenio/booking-object");
+    expect(BOOKING_OBJECT_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/booking-object\/assets\/booking-object\.[a-f0-9]{64}\.js$/u);
+    expect(BOOKING_OBJECT_WIDGET_CLIENT).toContain("ui/notifications/tool-result");
+    expect(BOOKING_OBJECT_WIDGET_CLIENT).toContain("tools/call");
+    expect(BOOKING_OBJECT_WIDGET_CLIENT).not.toContain("window.openai");
+    expect(BOOKING_OBJECT_WIDGET_CLIENT).not.toContain("fetch(");
+    expect(() => new Function(BOOKING_OBJECT_WIDGET_CLIENT)).not.toThrow();
+    expect(BOOKING_OBJECT_WIDGET_CSP).toContain("default-src 'none'");
+    expect(bookingObjectWidgetHtml("production")).toContain(`https://mcp.comvenio.app${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
+    expect(bookingObjectToolMetadata("production")._meta.ui.resourceUri).toBe(BOOKING_OBJECT_WIDGET_RESOURCE_URI);
   });
 });
