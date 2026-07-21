@@ -18,6 +18,20 @@ import {
   createK7ToolSets,
   type K7ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/identity-club-member-team-role/index.ts";
+import {
+  EventConfirmationPolicy,
+  K8_ACTION_DEFINITIONS,
+  K8_ACTION_IDS,
+  K8_ACTION_SCHEMAS,
+  K8_EVENT_ACTION_IDS,
+  K8_PLAN_ACTION_IDS,
+  createK8ToolSets,
+  eventDaySegments,
+  localDateBoundaryUtc,
+  publicCalendarEvent,
+  redactEventPlanValue,
+  type K8ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/event-plan/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -368,5 +382,182 @@ describe("K7 identity, club, member, team and role contract", () => {
     const serialized = JSON.stringify({ definitions: K7_ACTION_DEFINITIONS, ids: K7_ACTION_IDS });
     expect(serialized).not.toMatch(/log-service|log_service|logincommandtool|master.?admin/iu);
     expect(serialized).not.toMatch(/stripe|secret_key|payment_settings|subscription_settings/iu);
+  });
+});
+
+const k8EventId = "77777777-7777-4777-8777-777777777777";
+const k8PlanId = "88888888-8888-4888-8888-888888888888";
+
+function k8Context(scopes: OAuthScope[]): RequestContext {
+  return {
+    request_id: "11111111-1111-4111-8111-111111111111",
+    surface: "mcp",
+    provider: "anthropic",
+    subject_id: k7SubjectId,
+    oauth_grant_id: k7GrantId,
+    club_id: k7ClubId,
+    department_id: null,
+    scopes,
+    capability_version: "E".repeat(43),
+    locale: "de-DE",
+    timezone: "Europe/Berlin",
+  };
+}
+
+function k8Capability(permissions: Record<string, boolean>): CapabilitySnapshot {
+  return {
+    subject_id: k7SubjectId,
+    member_id: k7MemberId,
+    club_id: k7ClubId,
+    department_ids: [],
+    permissions,
+    sources: [],
+    capability_version: "E".repeat(43),
+    generated_at: "2026-07-21T12:00:00.000Z",
+    observed_at: "2026-07-21T12:00:00.000Z",
+    expires_at: "2099-07-21T12:05:00.000Z",
+  };
+}
+
+function k8Dependencies(client: ComvenioApiClient): K8ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+    job_starter: { async start() { return { job_id: "99999999-9999-4999-8999-999999999999", status: "queued" }; } },
+  };
+}
+
+describe("K8 event and plan adapter contract", () => {
+  test("TC-01/TC-02: exposes EventToolSet, PlanToolSet, preview policy and exactly 28/13 action contracts", () => {
+    expect(K8_EVENT_ACTION_IDS).toHaveLength(28);
+    expect(K8_PLAN_ACTION_IDS).toHaveLength(13);
+    expect(K8_ACTION_IDS).toHaveLength(41);
+    expect(Object.keys(K8_ACTION_DEFINITIONS)).toHaveLength(41);
+    expect(Object.keys(K8_ACTION_SCHEMAS)).toHaveLength(41);
+    expect(new EventConfirmationPolicy()).toBeInstanceOf(EventConfirmationPolicy);
+
+    const sets = createK8ToolSets(k8Dependencies(k7Client(async () => null)));
+    expect(sets.event.listDefinitions()).toHaveLength(28);
+    expect(sets.plan.listDefinitions()).toHaveLength(13);
+    for (const definition of Object.values(K8_ACTION_DEFINITIONS)) {
+      expect(Object.keys(definition.operations).length).toBeGreaterThan(0);
+    }
+  });
+
+  test("uses branch-specific write policies instead of legacy aggregate read metadata", () => {
+    const sponsor = K8_ACTION_DEFINITIONS["cai.event.18.sponsor_and_sponsor_program_workflows"];
+    expect(sponsor.operations.link_list!).toMatchObject({ risk_class: "read", required_scopes: ["event.read"] });
+    expect(sponsor.operations.link_add!).toMatchObject({ risk_class: "reversible_write", required_scopes: ["event.write"] });
+    expect(sponsor.operations.link_delete!).toMatchObject({ risk_class: "critical_write", execution_gate: "event_confirmation" });
+    expect(K8_ACTION_DEFINITIONS["cai.plan.10.detail"].operations.create!).toMatchObject({
+      risk_class: "reversible_write",
+      required_scopes: ["event.write"],
+    });
+    expect(K8_ACTION_DEFINITIONS["cai.plan.11.export"].operations.export!.required_scopes).toEqual(["files.export", "event.read"]);
+  });
+
+  test("TC-03: minimizes public calendar data and rejects untyped or invalid time input", () => {
+    const result = publicCalendarEvent({
+      id: k8EventId,
+      club_id: k7ClubId,
+      department_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      title: "Sommerfest",
+      description: "Öffentlich",
+      location: "Vereinsheim",
+      start_time: "2026-03-28T23:30:00.000Z",
+      end_time: "2026-03-30T00:30:00.000Z",
+      event_type: "party",
+      status: "confirmed",
+      created_by: k7SubjectId,
+      external_email: "private@example.org",
+    }, "Europe/Berlin") as Record<string, JsonValue>;
+    expect(Object.keys(result).sort()).toEqual([
+      "day_segments", "description", "end_time", "event_type", "location", "start_time", "status", "timezone", "title",
+    ]);
+    expect(JSON.stringify(result)).not.toMatch(/club_id|department_id|created_by|external_email|private@example/iu);
+    expect(() => K8_ACTION_SCHEMAS["cai.event.01.list"].input.parse({
+      club_id: k7ClubId,
+      range: { from: "2026-07-01", to: "2026-08-01", timezone: "GMT+2" },
+    })).toThrow();
+    expect(() => K8_ACTION_SCHEMAS["cai.event.02.show"].input.parse({ club_id: k7ClubId, event_id: k8EventId, include_tokens: true })).toThrow();
+  });
+
+  test("TC-05: publish/delete produce a server-side preview and mutate only after a matching second confirmation", async () => {
+    let patches = 0;
+    const client = k7Client(async (request) => {
+      if (request.method === "GET") return { id: k8EventId, title: "Sommerfest", status: "draft", visibility_scope: "member" };
+      if (request.method === "PATCH") {
+        patches++;
+        return { id: k8EventId, title: "Sommerfest", status: "confirmed", visibility_scope: "public" };
+      }
+      return null;
+    });
+    const event = createK8ToolSets(k8Dependencies(client)).event;
+    const request = {
+      action_id: "cai.event.05.publish" as const,
+      input: { club_id: k7ClubId, event_id: k8EventId, make_public: true },
+      context: k8Context(["event.write"]),
+      capability_snapshot: k8Capability({ manage_events: true }),
+    };
+    const first = await event.execute(request);
+    expect(first.status).toBe("confirmation_required");
+    expect(patches).toBe(0);
+    const preview = ((first.result as Record<string, JsonValue>).preview as Record<string, JsonValue>);
+    expect(preview).toMatchObject({ action_id: request.action_id, operation: "publish", subject: "Sommerfest" });
+
+    const second = await event.execute({
+      ...request,
+      input: {
+        ...request.input,
+        confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token },
+      },
+    });
+    expect(second.status).toBe("completed");
+    expect(patches).toBe(1);
+  });
+
+  test("TC-06: preserves local calendar days across the Europe/Berlin DST transition", () => {
+    expect(localDateBoundaryUtc("2026-03-29", "Europe/Berlin")).toBe("2026-03-28T23:00:00.000Z");
+    expect(localDateBoundaryUtc("2026-03-30", "Europe/Berlin")).toBe("2026-03-29T22:00:00.000Z");
+    expect(eventDaySegments("2026-03-28T23:30:00.000Z", "2026-03-30T00:30:00.000Z", "Europe/Berlin"))
+      .toEqual([
+        { local_date: "2026-03-29", timezone: "Europe/Berlin", starts_on_day: true, ends_on_day: false },
+        { local_date: "2026-03-30", timezone: "Europe/Berlin", starts_on_day: false, ends_on_day: true },
+      ]);
+  });
+
+  test("file-producing plan actions accept remote file IDs and never local paths", () => {
+    expect(K8_ACTION_SCHEMAS["cai.plan.13.compose"].input.parse({
+      club_id: k7ClubId,
+      event_id: k8EventId,
+      plan_id: k8PlanId,
+      illustration_file_id: "99999999-9999-4999-8999-999999999999",
+    })).toMatchObject({ draw_lines: true, output_format: "png" });
+    expect(() => K8_ACTION_SCHEMAS["cai.plan.13.compose"].input.parse({
+      club_id: k7ClubId,
+      event_id: k8EventId,
+      plan_id: k8PlanId,
+      illustration_file_id: "C:\\private\\plan.png",
+    })).toThrow();
+    expect(JSON.stringify({ definitions: K8_ACTION_DEFINITIONS, schemas: Object.keys(K8_ACTION_SCHEMAS) }))
+      .not.toMatch(/readFileSync|frontend-base|playwright-cli|--out|local_path/iu);
+  });
+
+  test("redacts nested tokens, credentials and attendee identifiers independent of key spelling", () => {
+    const safe = redactEventPlanValue({
+      id: k8EventId,
+      OAuthToken: "secret-token",
+      api_key: "secret-api-key",
+      nested: {
+        invitation_token_hash: "secret-hash",
+        assigned_user_id: k7SubjectId,
+        member_id: k7MemberId,
+        external_email: "anna@example.org",
+        external_name: "Anna Beispiel",
+      },
+    });
+    const serialized = JSON.stringify(safe);
+    expect(serialized).not.toMatch(/secret-token|secret-api-key|secret-hash|assigned_user_id|member_id|anna@example|Anna Beispiel/iu);
+    expect(serialized).toContain("external_email_masked");
   });
 });

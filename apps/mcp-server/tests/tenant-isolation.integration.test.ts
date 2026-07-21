@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -642,6 +642,92 @@ describe("K7 adapter tenant and RBAC isolation", () => {
       },
       context: scopedContext,
       capability_snapshot: scopedSnapshot,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+});
+
+describe("K8 event and plan tenant/RBAC isolation", () => {
+  const eventId = "77777777-7777-4777-8777-777777777777";
+  const departmentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const otherDepartmentId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  function adapterClient(
+    handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>,
+  ): ComvenioApiClient {
+    return {
+      timeout_ms: 15000,
+      async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        return await handler(request) as T;
+      },
+    };
+  }
+
+  test("TC-04: private calendar reads require event.read and view_events", () => {
+    const eventContext: RequestContext = { ...context, scopes: ["event.read"] };
+    const allowed = createK8ToolSets({ client: adapterClient(async () => []) }).event;
+    expect(allowed.listVisible({
+      context: eventContext,
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_events: true } },
+    }).map((definition) => definition.action_id)).toContain("cai.event.01.list");
+    expect(allowed.listVisible({
+      context: eventContext,
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    }).map((definition) => definition.action_id)).not.toContain("cai.event.01.list");
+    expect(allowed.listVisible({
+      context: { ...eventContext, scopes: [] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_events: true } },
+    }).map((definition) => definition.action_id)).not.toContain("cai.event.01.list");
+  });
+
+  test("TC-04: a backend RBAC denial is rechecked, recorded and normalized", async () => {
+    let backendForbidden = 0;
+    const plan = createK8ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({ code: "PERMISSION_DENIED", message: "sensitive backend detail", request_id: request.context.request_id, retryable: false });
+      }),
+      on_backend_forbidden() { backendForbidden++; },
+    }).plan;
+    await expect(plan.execute({
+      action_id: "cai.plan.01.list",
+      input: { club_id: clubId, event_id: eventId },
+      context: { ...context, scopes: ["event.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_events: true } },
+    })).rejects.toMatchObject({
+      code: "PERMISSION_DENIED",
+      message: "Der Fachservice hat die Event-/Plan-Aktion im aktuellen Kontext abgelehnt.",
+    });
+    expect(backendForbidden).toBe(1);
+  });
+
+  test("TC-05: rejects a foreign club and department before any event backend call", async () => {
+    let calls = 0;
+    const event = createK8ToolSets({
+      client: adapterClient(async () => { calls++; return null; }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).event;
+    await expect(event.execute({
+      action_id: "cai.event.02.show",
+      input: { club_id: otherClubId, event_id: eventId },
+      context: { ...context, scopes: ["event.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_events: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+
+    await expect(event.execute({
+      action_id: "cai.event.03.create",
+      input: {
+        club_id: clubId,
+        event: {
+          department_id: otherDepartmentId,
+          title: "Fremder Termin",
+          event_type: "meeting",
+          visibility_scope: "department",
+          organizer_type: "member",
+        },
+      },
+      context: { ...context, department_id: departmentId, scopes: ["event.write"] },
+      capability_snapshot: { ...capabilitySnapshot, department_ids: [departmentId], permissions: { create_events: true } },
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
     expect(calls).toBe(0);
   });
