@@ -561,7 +561,7 @@ export function registerPlanCommands(cli: CAC): void {
           const outPath = resolve(opts.out ?? "lageplan.png");
           const overlayPath = outPath.replace(/\.(png|jpe?g)$/i, "") + "-overlay.html";
           const withLines = opts.lines !== false;
-          // Gelbe Label-Fahnen + Verbindungslinie zum Anker — Referenz-Look (Tom-Screenshot 2026-07-02).
+          // Gelbe Label-Fahnen + Verbindungslinie zum Anker — freigegebene Designreferenz.
           const pins = labels
             .map((l) => {
               const flag = `<div class="flag">${escapeHtmlText(l.text)}</div>`;

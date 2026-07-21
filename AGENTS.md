@@ -21,6 +21,10 @@ Veranstaltungen, News — **nie** über Interna:
   FAQ, Paketmetadaten, Agentenhinweise und Quelltextkommentare beschreiben nur das
   Comvenio CLI und seine Kundenworkflows. Interne Repositories, Roadmap-IDs,
   Entwickler-CLIs und interne Dateipfade bleiben intern.
+- **Keine personenbezogenen Entwicklerhinweise veröffentlichen:** Arbeitsregeln,
+  Entscheidungen und Quelltextkommentare werden rollenbasiert und fachlich
+  formuliert. Namen einzelner Teammitglieder gehören in Git- und ADR-Historie,
+  nicht in allgemeingültige Produktanweisungen.
 - `--env`/`--gateway` sind reine Betriebs-Flags. Nutze sie still; erkläre sie dem
   Kunden nicht als „Produktivumgebung".
 
@@ -35,7 +39,7 @@ Aufgaben, Speisekarte, Vereins-Homepage). Dieses CLI verwaltet einen Verein
 keinen Agenten/Chat dazwischen. Rechte (RBAC) werden **serverseitig** geprüft —
 das CLI sendet nur dein opakes Device-Token.
 
-## Eiserne Regel: NUR das CLI — nie direkte API-Calls (BLOCKIEREND — Tom 2026-07-08)
+## Eiserne Regel: NUR das CLI — nie direkte API-Calls (BLOCKIEREND)
 
 Dieses CLI ist die **einzige** erlaubte Schnittstelle zum Comvenio-Backend. **NIEMALS**
 direkte HTTP-/API-Calls (`curl`, PowerShell `Invoke-RestMethod`, Python `urllib`/`requests`,
@@ -48,9 +52,8 @@ prüft es und deckt Lücken/Bugs auf. Ein API-Call umgeht das und lässt CLI-Feh
 **Fehlt ein Command?** Dann wird das CLI **erweitert**, nicht umgangen — in
 `src/commands/<domain>.ts`: Feld in `type Opts` + `.option("--…")` + neuer `case` im
 `switch (action)` + Aktion in Command-Beschreibung UND `default`-Fehlerliste. Danach
-Typecheck `~/.bun/bin/bun.exe x tsc --noEmit` + Build
-`~/.bun/bin/bun.exe build src/index.ts --compile --outfile comvenio` (NICHT `bun run build` —
-der npm-`bun` auf dem PATH ist auf Windows kaputt). Beispiel: `tournament match-result
+`bun run typecheck`, die relevanten Tests und `bun run build` ausführen. Das Build-Skript
+kompiliert `src/index.ts` als eigenständige Plattform-Binary. Beispiel: `tournament match-result
 <match-id> --home <n> --away <n>` wurde am 2026-07-08 ergänzt, weil Ergebnisse zuvor
 fälschlich per `POST /matches/{id}/result` gesetzt wurden.
 
