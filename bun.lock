@@ -10,16 +10,60 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
+        "@comvenio/comvenio-client": "workspace:*",
+        "@comvenio/connector-contracts": "workspace:*",
         "@types/bun": "^1.1.0",
         "openapi-typescript": "^7.13.0",
         "typescript": "^5.4.0",
       },
+    },
+    "apps/cli": {
+      "name": "@comvenio/cli",
+      "version": "0.1.0",
+      "bin": {
+        "comvenio": "./src/index.ts",
+      },
+    },
+    "apps/mcp-server": {
+      "name": "@comvenio/mcp-server",
+      "version": "0.1.0",
+    },
+    "packages/auth": {
+      "name": "@comvenio/auth",
+      "version": "0.1.0",
+    },
+    "packages/comvenio-client": {
+      "name": "@comvenio/comvenio-client",
+      "version": "0.1.0",
+      "dependencies": {
+        "@comvenio/connector-contracts": "workspace:*",
+      },
+    },
+    "packages/connector-contracts": {
+      "name": "@comvenio/connector-contracts",
+      "version": "0.1.0",
+    },
+    "packages/tool-catalog": {
+      "name": "@comvenio/tool-catalog",
+      "version": "0.1.0",
     },
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 
     "@babel/helper-validator-identifier": ["@babel/helper-validator-identifier@7.29.7", "", {}, "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg=="],
+
+    "@comvenio/auth": ["@comvenio/auth@workspace:packages/auth"],
+
+    "@comvenio/cli": ["@comvenio/cli@workspace:apps/cli"],
+
+    "@comvenio/comvenio-client": ["@comvenio/comvenio-client@workspace:packages/comvenio-client"],
+
+    "@comvenio/connector-contracts": ["@comvenio/connector-contracts@workspace:packages/connector-contracts"],
+
+    "@comvenio/mcp-server": ["@comvenio/mcp-server@workspace:apps/mcp-server"],
+
+    "@comvenio/tool-catalog": ["@comvenio/tool-catalog@workspace:packages/tool-catalog"],
 
     "@pdf-lib/standard-fonts": ["@pdf-lib/standard-fonts@1.0.0", "", { "dependencies": { "pako": "^1.0.6" } }, "sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA=="],
 
