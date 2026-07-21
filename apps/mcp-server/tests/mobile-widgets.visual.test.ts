@@ -138,6 +138,10 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
       "ConnectorEvalSuite", "TenantIsolationSuite", "PrivacyThreatModel", "PilotProtocol", "ReleaseGateReport", "SupportRunbook",
     ]);
     expect(pending.release_gate).toMatchObject({ decision: "BLOCKED", common_gate: "blocked", submittable_providers: [] });
+    const traceability = json(resolve(releaseRoot, "rts-task-commits.json")) as { tasks: Array<{ key: string; task_id: string; commit: string }> };
+    expect(traceability.tasks).toHaveLength(23);
+    expect(traceability.tasks.map((item) => item.key)).toEqual(Array.from({ length: 23 }, (_, index) => `K${index + 1}`));
+    expect(new Set(traceability.tasks.map((item) => item.task_id)).size).toBe(23);
   });
 
   test("TC-03: 303 workflows, 560 routes and all eight published virtual tools have exact eval parity", () => {

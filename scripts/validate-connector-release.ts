@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 import { z } from "zod";
 
@@ -49,7 +50,7 @@ if (writeMode) {
   writeFileSync(resolve(releaseRoot, "rate-limit-config.json"), stable(fairUse), "utf8");
 }
 
-for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "support-runbook.md", "cimd-client-allowlist.v1.json"]) {
+for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "support-runbook.md", "cimd-client-allowlist.v1.json", "rts-task-commits.json"]) {
   if (!existsSync(resolve(releaseRoot, fileName))) throw new Error(`Releaseartefakt fehlt: integrations/release/${fileName}`);
 }
 
@@ -59,6 +60,27 @@ const privacy = PRIVACY_THREAT_MODEL_SCHEMA.parse(readJson(resolve(releaseRoot, 
 const pilot = PILOT_PROTOCOL_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.pilot)));
 const releaseGate = RELEASE_GATE_REPORT_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.release_gate)));
 const support = SUPPORT_RUNBOOK_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.support)));
+
+const traceabilitySchema = z.object({
+  schema_version: z.literal("1.0.0"),
+  feature_id: z.literal("c5a5cb4f-7fcf-4975-8fb3-cb8aad928381"),
+  tasks: z.array(z.object({
+    key: z.string().regex(/^K(?:[1-9]|1\d|2[0-3])$/u),
+    task_id: z.string().uuid(),
+    commit: z.string().regex(/^[a-f0-9]{40}$/u),
+  }).strict()).length(23),
+}).strict();
+const traceability = traceabilitySchema.parse(readJson(resolve(releaseRoot, "rts-task-commits.json")));
+const orderedTraceability = [...traceability.tasks].sort((left, right) => Number(left.key.slice(1)) - Number(right.key.slice(1)));
+if (new Set(orderedTraceability.map((item) => item.task_id)).size !== 23
+  || orderedTraceability.some((item, index) => item.key !== `K${index + 1}`)) {
+  throw new Error("RTS-Traceability muss K1 bis K23 mit eindeutigen Task-IDs enthalten.");
+}
+for (const item of orderedTraceability) {
+  const resolvedCommit = execFileSync("git", ["show", "-s", "--format=%H", item.commit], { cwd: workspaceRoot, encoding: "utf8" }).trim();
+  if (resolvedCommit !== item.commit) throw new Error(`${item.key}: Implementierungscommit ist nicht exakt auflösbar.`);
+  execFileSync("git", ["merge-base", "--is-ancestor", item.commit, "HEAD"], { cwd: workspaceRoot, stdio: "ignore" });
+}
 
 assertSame(releaseGate.eval, evalReport, "ReleaseGateReport und ConnectorEvalSuite sind nicht synchron.");
 assertSame(releaseGate.tenant_isolation, tenantIsolation, "ReleaseGateReport und TenantIsolationSuite sind nicht synchron.");
