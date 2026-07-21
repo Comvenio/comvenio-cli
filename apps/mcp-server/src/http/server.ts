@@ -24,6 +24,7 @@ import type {
 import { createAuthChallenge } from "../public/auth-challenge.ts";
 import type { AuthChallenge } from "../public/types.ts";
 import { mountEventCalendarWidgetAssets } from "../widgets/event-calendar/assets.ts";
+import { mountMemberManagementWidgetAssets } from "../widgets/member-management/assets.ts";
 
 const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
@@ -77,6 +78,7 @@ export class McpHttpServer {
       allowedHosts: [...options.allowed_hosts],
     });
     mountEventCalendarWidgetAssets(this.app, options.environment);
+    mountMemberManagementWidgetAssets(this.app, options.environment);
     this.#mountRoutes();
   }
 

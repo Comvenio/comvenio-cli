@@ -4,7 +4,10 @@ import type { CapabilitySnapshot } from "../../auth/src/index.ts";
 import {
   EVENT_CALENDAR_WIDGET_SCHEMA,
   EVENT_CALENDAR_WIDGET_STATE_SCHEMA,
+  MEMBER_MANAGEMENT_WIDGET_SCHEMA,
+  MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA,
   type EventCalendarWidget,
+  type MemberManagementWidget,
   type RequestContext,
   type ServerActionDescriptor,
 } from "../src/index.ts";
@@ -29,6 +32,27 @@ import {
   eventCalendarWidgetHtml,
   safeEventWidgetTelemetry,
 } from "../../../apps/mcp-server/src/widgets/event-calendar/index.ts";
+import {
+  MEMBER_DETAIL_MAX_AGE_SECONDS,
+  MEMBER_MANAGEMENT_WIDGET_ASSET_PATH,
+  MEMBER_MANAGEMENT_WIDGET_CLIENT,
+  MEMBER_MANAGEMENT_WIDGET_CSP,
+  MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI,
+  MEMBER_MANAGEMENT_WIDGET_CSS,
+  MEMBER_WIDGET_FIRST_RENDER_BUDGET_MS,
+  MEMBER_WIDGET_PAGE_MAX,
+  MemberActionBar,
+  MemberDetailPanel,
+  MemberManagementWidget as renderMemberManagementWidget,
+  MemberManagementWidgetProjector,
+  MemberSummaryRow,
+  MemberWidgetCapabilityPolicy,
+  PermissionExplanation,
+  memberManagementState,
+  memberManagementToolMetadata,
+  memberManagementWidgetHtml,
+  safeMemberWidgetTelemetry,
+} from "../../../apps/mcp-server/src/widgets/member-management/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const subjectId = "22222222-2222-4222-8222-222222222222";
@@ -223,5 +247,184 @@ describe("K16 event calendar widget contracts", () => {
     expect(html).toContain(`https://mcp.comvenio.app${EVENT_CALENDAR_WIDGET_ASSET_PATH}`);
     expect(html).not.toContain("<script>");
     expect(eventCalendarToolMetadata("production")._meta.ui.resourceUri).toBe(EVENT_CALENDAR_WIDGET_RESOURCE_URI);
+  });
+});
+
+describe("K17 member management widget contracts", () => {
+  const memberId = "88888888-8888-4888-8888-888888888888";
+  const memberContext: RequestContext = {
+    ...context,
+    scopes: ["member.read.basic", "member.read.details", "admin.write"],
+  };
+  const memberCapability: CapabilitySnapshot = {
+    ...capabilitySnapshot,
+    permissions: { view_members: true, view_members_details: true, manage_members: true },
+  };
+  const row = {
+    member_id: memberId,
+    display_name: "Anna M.",
+    status_label: "aktiv",
+    department_labels: ["Team U18"],
+    email_masked: "a***@b***.de",
+    phone_masked: "***1234",
+  };
+  const detailAction: ServerActionDescriptor = {
+    action_id: "member.detail",
+    label: "Details anzeigen",
+    tool_name: "cv_member_show",
+    input: { club_id: clubId, member_id: memberId },
+    visibility: "visible",
+    enabled: true,
+    risk_class: "read",
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+  const manageAction: ServerActionDescriptor = {
+    action_id: "member.update",
+    label: "Änderung vorbereiten",
+    tool_name: "cv_member_update",
+    input: { club_id: clubId, member_id: memberId },
+    visibility: "visible",
+    enabled: true,
+    risk_class: "reversible_write",
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+
+  function memberWidget(input: { detail?: boolean; tools?: string[]; capability?: CapabilitySnapshot } = {}): MemberManagementWidget {
+    const capability = input.capability ?? memberCapability;
+    return new MemberManagementWidgetProjector(new MemberWidgetCapabilityPolicy(input.tools ?? [detailAction.tool_name, manageAction.tool_name])).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: memberContext,
+      capability_snapshot: capability,
+      list_source: { items: [row], limit: 50, offset: 0, total: 1 },
+      detail_request: input.detail ? {
+        member_id: memberId,
+        source: {
+          member_id: memberId,
+          first_name: "Anna",
+          last_name: "Muster",
+          email: "anna@example.org",
+          phone_number: "+49 123 4567",
+          birthdate: "1990-05-10",
+          address: "Vereinsweg 1",
+          postal_code: "12345",
+          city: "Musterstadt",
+          state: "Bayern",
+          country: "Deutschland",
+          joined_at: "2022-01-01",
+          left_at: null,
+        },
+        masked_fields: ["email"],
+      } : null,
+      action_candidates: [detailAction, manageAction],
+      generated_at: "2026-07-21T09:00:00+02:00",
+    });
+  }
+
+  test("TC-01/TC-02: all named member entities render the bound list/detail shell", () => {
+    const model = memberWidget({ detail: true });
+    expect(MEMBER_MANAGEMENT_WIDGET_SCHEMA.parse(model)).toEqual(model);
+    expect(MemberSummaryRow({ model: model.data.rows[0]!, detailActionIndex: 0 })).toContain("member-row");
+    expect(MemberDetailPanel({ model: model.data.selected })).toContain("member-detail-panel");
+    expect(PermissionExplanation({ model: { messages: model.data.selected!.permission_explanation } })).toContain("permission-note");
+    expect(MemberActionBar({ model: { actions: model.actions } })).toContain("actions");
+    const html = renderMemberManagementWidget({ model });
+    expect(html).toContain("member-layout");
+    expect(html).toContain("preview member-detail-panel");
+    expect(html).toContain("Details anzeigen");
+    expect(html).not.toContain(memberId);
+    expect(html).not.toContain(clubId);
+  });
+
+  test("TC-03: base rows reject raw personal fields and never prerender contacts", () => {
+    const basic = memberWidget();
+    const html = renderMemberManagementWidget({ model: basic });
+    expect(html).not.toContain("anna@example.org");
+    expect(html).not.toContain("a***@b***.de");
+    expect(html).not.toContain("Vereinsweg");
+    expect(MEMBER_MANAGEMENT_WIDGET_SCHEMA.safeParse({
+      ...basic,
+      data: { ...basic.data, rows: [{ ...row, email: "raw@example.org", birthdate: "1990-05-10" }] },
+    }).success).toBe(false);
+    expect(MEMBER_MANAGEMENT_WIDGET_CSS).toContain("@media (max-width:899px)");
+    expect(MEMBER_MANAGEMENT_WIDGET_CSS).toContain("min-height:44px");
+    expect(MEMBER_MANAGEMENT_WIDGET_CSS).toContain("overflow-x:hidden");
+  });
+
+  test("TC-04: details load only on explicit request with detail scope and capability", () => {
+    expect(memberWidget().data.selected).toBeNull();
+    const selected = memberWidget({ detail: true }).data.selected!;
+    expect(selected.fields.first_name).toBe("Anna");
+    expect(selected.fields.email).toBeUndefined();
+    expect(selected.masked_fields).toEqual(["email"]);
+    expect(() => memberWidget({
+      detail: true,
+      capability: { ...memberCapability, permissions: { view_members: true, view_members_details: false, manage_members: true } },
+    })).toThrow();
+  });
+
+  test("TC-05: without manage_members all member writes disappear", () => {
+    const noManage = memberWidget({
+      capability: { ...memberCapability, permissions: { view_members: true, view_members_details: true, manage_members: false } },
+    });
+    expect(noManage.actions.map((action) => action.tool_name)).toEqual([detailAction.tool_name]);
+    expect(memberWidget({ tools: [] }).actions).toEqual([]);
+  });
+
+  test("TC-06: permission change removes loaded details, actions and identifiers from telemetry", () => {
+    const changed = memberManagementState({
+      phase: "permission_changed",
+      model: memberWidget({ detail: true }),
+      message: "Deine Rechte haben sich geändert. Bitte lade die Ansicht neu.",
+    });
+    expect(changed.model?.data.selected).toBeNull();
+    expect(changed.model?.actions).toEqual([]);
+    expect(changed.model?.capability_version).toBeNull();
+    const telemetry = safeMemberWidgetTelemetry({ phase: "permission_changed", row_count: 1, detail_loaded: false, render_duration_ms: 42.8, outcome: "rejected" });
+    expect(telemetry).toEqual({ widget: "member_management", phase: "permission_changed", row_count_bucket: "1-20", detail_loaded: false, render_duration_ms: 43, outcome: "rejected" });
+    expect(JSON.stringify(telemetry)).not.toContain(memberId);
+    expect(JSON.stringify(telemetry)).not.toContain(clubId);
+    expect(MEMBER_WIDGET_FIRST_RENDER_BUDGET_MS).toBe(1_000);
+    expect(MEMBER_WIDGET_PAGE_MAX).toBe(100);
+    expect(MEMBER_DETAIL_MAX_AGE_SECONDS).toBe(30);
+  });
+
+  test("validates every member state, empty state and the 100-row boundary", () => {
+    const basic = memberWidget();
+    const detail = memberWidget({ detail: true });
+    const empty = new MemberManagementWidgetProjector(new MemberWidgetCapabilityPolicy([])).project({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: memberContext,
+      capability_snapshot: memberCapability,
+      list_source: { items: [], limit: 50, offset: 0, total: 0 },
+    });
+    const states = [
+      memberManagementState({ phase: "loading", message: "Mitglieder werden geladen." }),
+      memberManagementState({ phase: "empty", model: empty }),
+      memberManagementState({ phase: "ready_basic", model: basic }),
+      memberManagementState({ phase: "ready_detail", model: detail }),
+      memberManagementState({ phase: "partial", model: basic, message: "Ein Teil ist verfügbar.", retryable: true }),
+      memberManagementState({ phase: "auth_required", message: "Bitte verbinde Comvenio." }),
+      memberManagementState({ phase: "permission_changed", model: detail, message: "Bitte neu laden." }),
+      memberManagementState({ phase: "error", model: basic, message: "Ansicht nicht aktualisiert.", retryable: true }),
+    ];
+    expect(states.every((state) => MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA.safeParse(state).success)).toBe(true);
+    const tooMany = structuredClone(basic);
+    tooMany.data.rows = Array.from({ length: 101 }, () => structuredClone(row));
+    expect(MEMBER_MANAGEMENT_WIDGET_SCHEMA.safeParse(tooMany).success).toBe(false);
+  });
+
+  test("uses a provider-neutral, CSP-constrained member resource", () => {
+    expect(MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI).toBe("ui://comvenio/member-management");
+    expect(MEMBER_MANAGEMENT_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/member-management\/assets\/member-management\.[a-f0-9]{64}\.js$/u);
+    expect(MEMBER_MANAGEMENT_WIDGET_CLIENT).toContain("ui/notifications/tool-result");
+    expect(MEMBER_MANAGEMENT_WIDGET_CLIENT).toContain("tools/call");
+    expect(MEMBER_MANAGEMENT_WIDGET_CLIENT).not.toContain("window.openai");
+    expect(MEMBER_MANAGEMENT_WIDGET_CLIENT).not.toContain("fetch(");
+    expect(() => new Function(MEMBER_MANAGEMENT_WIDGET_CLIENT)).not.toThrow();
+    expect(MEMBER_MANAGEMENT_WIDGET_CSP).toContain("default-src 'none'");
+    expect(memberManagementWidgetHtml("production")).toContain(`https://mcp.comvenio.app${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
+    expect(memberManagementToolMetadata("production")._meta.ui.resourceUri).toBe(MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI);
   });
 });

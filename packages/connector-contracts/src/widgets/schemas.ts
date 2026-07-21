@@ -139,3 +139,109 @@ export const EVENT_CALENDAR_WIDGET_STATE_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Vor Anmeldung oder Laden dürfen keine Kalenderdaten vorliegen." });
   }
 });
+
+const maskedContact = z.string().trim().min(1).max(320).refine(
+  (value) => value.includes("*") || value.includes("•"),
+  { message: "Kontaktdaten der Basisliste müssen maskiert sein." },
+).nullable();
+
+export const MEMBER_SUMMARY_ROW_SCHEMA = z.object({
+  member_id: uuid,
+  display_name: safeText(200),
+  status_label: nullableText(160),
+  department_labels: z.array(safeText(160)).max(50).refine((values) => new Set(values).size === values.length),
+  email_masked: maskedContact,
+  phone_masked: maskedContact,
+}).strict();
+
+export const MEMBER_DETAIL_FIELDS_SCHEMA = z.object({
+  first_name: safeText(160).optional(),
+  last_name: safeText(160).optional(),
+  email: z.string().email().max(320).nullable().optional(),
+  phone_number: z.string().trim().min(1).max(100).nullable().optional(),
+  birthdate: z.string().date().nullable().optional(),
+  address: z.string().trim().min(1).max(500).nullable().optional(),
+  postal_code: z.string().trim().min(1).max(32).nullable().optional(),
+  city: z.string().trim().min(1).max(160).nullable().optional(),
+  state: z.string().trim().min(1).max(160).nullable().optional(),
+  country: z.string().trim().min(1).max(160).nullable().optional(),
+  joined_at: z.string().date().nullable().optional(),
+  left_at: z.string().date().nullable().optional(),
+}).strict();
+
+const memberDetailFieldName = z.enum([
+  "first_name", "last_name", "email", "phone_number", "birthdate", "address",
+  "postal_code", "city", "state", "country", "joined_at", "left_at",
+]);
+
+export const MEMBER_DETAIL_PANEL_SCHEMA = z.object({
+  member_id: uuid,
+  display_name: safeText(200),
+  fields: MEMBER_DETAIL_FIELDS_SCHEMA,
+  masked_fields: z.array(memberDetailFieldName).max(12).refine((values) => new Set(values).size === values.length),
+  permission_explanation: z.array(safeText(500)).max(50),
+}).strict();
+
+export const MEMBER_MANAGEMENT_DATA_SCHEMA = z.object({
+  query: z.string().trim().max(200).nullable(),
+  rows: z.array(MEMBER_SUMMARY_ROW_SCHEMA).max(100),
+  selected: MEMBER_DETAIL_PANEL_SCHEMA.nullable(),
+}).strict().superRefine((data, context) => {
+  if (data.selected && !data.rows.some((row) => row.member_id === data.selected?.member_id)) {
+    context.addIssue({ code: "custom", message: "Die Detailansicht muss zu einer sichtbaren Mitgliederzeile gehören.", path: ["selected"] });
+  }
+});
+
+export const MEMBER_MANAGEMENT_WIDGET_SCHEMA = z.object({
+  widget: z.literal("member_management"),
+  contract_version: z.literal("1.0.0"),
+  title: safeText(120),
+  club: CLUB_CHIP_SCHEMA,
+  capability_version: z.string().trim().min(1).max(200).nullable(),
+  generated_at: instant,
+  data: MEMBER_MANAGEMENT_DATA_SCHEMA,
+  actions: z.array(VISIBLE_SERVER_ACTION_DESCRIPTOR_SCHEMA).max(50),
+  empty_state: z.object({ title: safeText(120), description: safeText(500) }).strict().nullable(),
+}).strict().superRefine((widget, context) => {
+  if ((widget.data.rows.length === 0) !== (widget.empty_state !== null)) {
+    context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Mitgliederliste passen." });
+  }
+  if (widget.actions.some((action) => action.input === null || typeof action.input !== "object"
+    || Array.isArray(action.input) || action.input.club_id !== widget.club.club_id)) {
+    context.addIssue({ code: "custom", message: "Jede Mitgliederaktion muss an denselben Verein gebunden sein." });
+  }
+});
+
+export const MEMBER_MANAGEMENT_PHASE_SCHEMA = z.enum([
+  "loading", "empty", "ready_basic", "ready_detail", "partial", "auth_required", "permission_changed", "error",
+]);
+
+export const MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA = z.object({
+  phase: MEMBER_MANAGEMENT_PHASE_SCHEMA,
+  model: MEMBER_MANAGEMENT_WIDGET_SCHEMA.nullable(),
+  message: z.string().trim().min(1).max(500).nullable(),
+  retryable: z.boolean(),
+}).strict().superRefine((state, context) => {
+  if (["empty", "ready_basic", "ready_detail", "partial", "permission_changed"].includes(state.phase) && state.model === null) {
+    context.addIssue({ code: "custom", message: "Ein darstellbarer Mitgliederzustand benötigt ein Modell." });
+  }
+  if (state.phase === "ready_basic" && state.model?.data.selected !== null) {
+    context.addIssue({ code: "custom", message: "Der Basiszustand darf keine Detaildaten halten." });
+  }
+  if (state.phase === "ready_detail" && state.model?.data.selected == null) {
+    context.addIssue({ code: "custom", message: "Der Detailzustand benötigt explizit geladene Detaildaten." });
+  }
+  if (["empty", "ready_basic", "ready_detail", "partial"].includes(state.phase)
+    && state.model?.capability_version == null) {
+    context.addIssue({ code: "custom", message: "Ein aktiver Mitgliederzustand benötigt die aktuelle Capability-Version." });
+  }
+  if (state.phase === "permission_changed" && state.model?.capability_version !== null) {
+    context.addIssue({ code: "custom", message: "Nach einem Rechtewechsel darf keine alte Capability-Version verbleiben." });
+  }
+  if (["loading", "auth_required"].includes(state.phase) && state.model !== null) {
+    context.addIssue({ code: "custom", message: "Vor Anmeldung oder Laden dürfen keine Mitgliederdaten vorliegen." });
+  }
+  if (["loading", "partial", "auth_required", "permission_changed", "error"].includes(state.phase) && state.message === null) {
+    context.addIssue({ code: "custom", message: "Dieser Mitgliederzustand benötigt eine sichere Nutzerinformation." });
+  }
+});

@@ -52,6 +52,12 @@ import {
   EventCalendarWidgetProjector,
   EventWidgetCapabilityPolicy,
   registerEventCalendarWidgetResource,
+  MEMBER_MANAGEMENT_WIDGET_ASSET_PATH,
+  MEMBER_MANAGEMENT_WIDGET_CLIENT,
+  MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI,
+  MemberManagementWidgetProjector,
+  MemberWidgetCapabilityPolicy,
+  registerMemberManagementWidgetResource,
 } from "../src/widgets/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
@@ -1379,6 +1385,127 @@ describe("K16 event calendar widget tenant and runtime isolation", () => {
       expect(asset.headers.get("cache-control")).toContain("immutable");
       expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
       expect(await fetch(`${baseUrl}/widgets/event-calendar/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
+    } finally {
+      expect(await server.drain()).toBe(true);
+    }
+  });
+});
+
+describe("K17 member management widget tenant and runtime isolation", () => {
+  const memberId = "71717171-7171-4171-8171-717171717171";
+  const memberContext: RequestContext = {
+    ...context,
+    scopes: ["member.read.basic", "member.read.details", "admin.write"],
+  };
+  const memberCapability: CapabilitySnapshot = {
+    ...capabilitySnapshot,
+    permissions: { view_members: true, view_members_details: true, manage_members: true },
+  };
+  const manageAction = {
+    action_id: "member.update",
+    label: "Änderung vorbereiten",
+    tool_name: "cv_member_update",
+    input: { club_id: clubId, member_id: memberId },
+    visibility: "visible" as const,
+    enabled: true,
+    risk_class: "reversible_write" as const,
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+  const listSource = {
+    items: [{
+      member_id: memberId,
+      display_name: "Anna M.",
+      status_label: "aktiv",
+      department_labels: ["Team U18"],
+      email_masked: "a***@b***.de",
+      phone_masked: "***1234",
+    }],
+    limit: 50,
+    offset: 0,
+    total: 1,
+  };
+
+  function memberWidgetInput(overrides: Record<string, unknown> = {}) {
+    return {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
+      context: memberContext,
+      capability_snapshot: memberCapability,
+      list_source: listSource,
+      action_candidates: [manageAction],
+      ...overrides,
+    } as any;
+  }
+
+  test("TC-04/TC-05: projection binds tenant and hides details or writes without current rights", () => {
+    const allowed = new MemberManagementWidgetProjector(new MemberWidgetCapabilityPolicy([manageAction.tool_name]));
+    expect(allowed.project(memberWidgetInput()).actions).toHaveLength(1);
+    expect(() => allowed.project(memberWidgetInput({
+      club: { club_id: otherClubId, name: "Fremder Verein", timezone: "Europe/Berlin" },
+    }))).toThrow();
+    expect(new MemberManagementWidgetProjector(new MemberWidgetCapabilityPolicy([manageAction.tool_name])).project(memberWidgetInput({
+      capability_snapshot: { ...memberCapability, permissions: { view_members: true, view_members_details: true, manage_members: false } },
+    })).actions).toEqual([]);
+    expect(() => allowed.project(memberWidgetInput({
+      context: { ...memberContext, scopes: ["member.read.basic"] },
+      detail_request: {
+        member_id: memberId,
+        source: { member_id: memberId, first_name: "Anna", last_name: "Muster", email: "anna@example.org" },
+      },
+    }))).toThrow();
+  });
+
+  test("TC-05: a visible member action is still rejected by a fresh backend RBAC check", async () => {
+    let calls = 0;
+    let forbidden = 0;
+    const projector = new MemberManagementWidgetProjector(new MemberWidgetCapabilityPolicy([manageAction.tool_name]));
+    expect(projector.project(memberWidgetInput()).actions).toHaveLength(1);
+    const member = createK7ToolSets({
+      client: {
+        timeout_ms: 15000,
+        async request(request) {
+          calls++;
+          throw createConnectorError({ code: "PERMISSION_DENIED", message: "private backend detail", request_id: request.context.request_id, retryable: false });
+        },
+      },
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+      on_backend_forbidden() { forbidden++; },
+    }).member;
+    await expect(member.execute({
+      action_id: "cai.member.04.update",
+      input: { club_id: clubId, member_id: memberId, changes: { first_name: "Anna-Maria" } },
+      context: memberContext,
+      capability_snapshot: memberCapability,
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Aktion im aktuellen Kontext abgelehnt." });
+    expect(calls).toBe(1);
+    expect(forbidden).toBe(1);
+  });
+
+  test("TC-01/TC-06: member MCP resource and hashed asset carry no member data", async () => {
+    const server = new McpHttpServer(runtimeOptions({
+      server_factory(contextInput) {
+        const runtime = runtimeOptions().server_factory(contextInput);
+        return Promise.resolve(runtime).then((mcpServer) => {
+          registerMemberManagementWidgetResource(mcpServer, "development");
+          return mcpServer;
+        });
+      },
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 1, method: "resources/list", params: {} });
+      expect(list.status).toBe(200);
+      expect((await list.json() as any).result.resources.some((resource: any) => resource.uri === MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI)).toBe(true);
+      const read = await postMcp(baseUrl, { jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI } });
+      const resource = await read.json() as any;
+      expect(read.status).toBe(200);
+      expect(resource.result.contents[0].text).toContain(MEMBER_MANAGEMENT_WIDGET_ASSET_PATH);
+      expect(resource.result.contents[0].text).not.toContain(memberId);
+      const asset = await fetch(`${baseUrl}${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe(MEMBER_MANAGEMENT_WIDGET_CLIENT);
+      expect(await fetch(`${baseUrl}/widgets/member-management/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
     } finally {
       expect(await server.drain()).toBe(true);
     }

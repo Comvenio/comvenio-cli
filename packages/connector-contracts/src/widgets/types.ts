@@ -89,3 +89,64 @@ export interface EventCalendarWidgetState {
   message: string | null;
   retryable: boolean;
 }
+
+export interface MemberSummaryRow extends Record<string, JsonValue> {
+  member_id: UUID;
+  display_name: string;
+  status_label: string | null;
+  department_labels: string[];
+  email_masked: string | null;
+  phone_masked: string | null;
+}
+
+export interface MemberDetailFields {
+  first_name?: string;
+  last_name?: string;
+  email?: string | null;
+  phone_number?: string | null;
+  birthdate?: string | null;
+  address?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  joined_at?: string | null;
+  left_at?: string | null;
+}
+
+export type MemberDetailFieldName = keyof MemberDetailFields;
+
+export interface MemberDetailPanel extends Record<string, JsonValue> {
+  member_id: UUID;
+  display_name: string;
+  fields: MemberDetailFields & Record<string, JsonValue>;
+  masked_fields: MemberDetailFieldName[];
+  permission_explanation: string[];
+}
+
+export interface MemberManagementData extends Record<string, JsonValue> {
+  query: string | null;
+  rows: MemberSummaryRow[];
+  selected: MemberDetailPanel | null;
+}
+
+export interface PermissionExplanation { messages: string[]; }
+export interface MemberActionBar { actions: ServerActionDescriptor[]; }
+export type MemberManagementWidget = WidgetEnvelope<MemberManagementData, "member_management"> & { club: ClubChip };
+
+export type MemberManagementPhase =
+  | "loading"
+  | "empty"
+  | "ready_basic"
+  | "ready_detail"
+  | "partial"
+  | "auth_required"
+  | "permission_changed"
+  | "error";
+
+export interface MemberManagementWidgetState {
+  phase: MemberManagementPhase;
+  model: MemberManagementWidget | null;
+  message: string | null;
+  retryable: boolean;
+}
