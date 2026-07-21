@@ -35,7 +35,7 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
-import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets } from "../src/tools/index.ts";
+import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets } from "../src/tools/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const otherClubId = "44444444-4444-4444-8444-444444444444";
@@ -848,5 +848,65 @@ describe("K10 booking, object and task tenant/RBAC isolation", () => {
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     });
     expect(taskDefinitions.map((definition) => definition.action_id)).toContain("cai.task.01.list");
+  });
+});
+
+describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
+  const recipeId = "15151515-1515-4515-8515-151515151515";
+
+  function adapterClient(handler: (request: ComvenioApiRequest) => Promise<import("@comvenio/connector-contracts").JsonValue>): ComvenioApiClient {
+    return {
+      timeout_ms: 15000,
+      async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        return await handler(request) as T;
+      },
+    };
+  }
+
+  test("rejects a foreign club before any supply backend call", async () => {
+    let calls = 0;
+    const recipe = createK11ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).recipe;
+    await expect(recipe.execute({
+      action_id: "cai.recipe.03.list",
+      input: { club_id: otherClubId },
+      context: { ...context, scopes: ["supply.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { manage_menus: true } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("normalizes backend RBAC denials and records the recheck without leaking details", async () => {
+    let forbidden = 0;
+    const recipe = createK11ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({ code: "PERMISSION_DENIED", message: "private supplier and cost denial", request_id: request.context.request_id, retryable: false });
+      }),
+      on_backend_forbidden() { forbidden++; },
+    }).recipe;
+    await expect(recipe.execute({
+      action_id: "cai.recipe.04.show",
+      input: { club_id: clubId, recipe_id: recipeId, portions: 1 },
+      context: { ...context, scopes: ["supply.read"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { manage_menus: true } },
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    expect(forbidden).toBe(1);
+  });
+
+  test("keeps shopping and ingredient writes hidden from menu-only roles", () => {
+    const sets = createK11ToolSets({
+      client: adapterClient(async () => []),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    });
+    const menuRole = {
+      context: { ...context, scopes: ["supply.read", "supply.write"] as RequestContext["scopes"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { create_menus: true, manage_menus: true } },
+    };
+    expect(sets.menu.listVisible(menuRole).map((definition) => definition.action_id)).toContain("cai.menu.01.create");
+    expect(sets.shopping.listVisible(menuRole)).toHaveLength(0);
+    const creatorOnly = {
+      context: { ...context, scopes: ["supply.read", "supply.write"] as RequestContext["scopes"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: { create_menus: true } },
+    };
+    expect(sets.ingredient.listVisible(creatorOnly).map((definition) => definition.action_id)).not.toContain("cai.ingredient.03.create");
   });
 });

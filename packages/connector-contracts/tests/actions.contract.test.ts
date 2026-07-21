@@ -57,6 +57,20 @@ import {
   minimizeGuestStatistics,
   type K10ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/booking-object-task/index.ts";
+import { PublicResponseRedactor } from "../../../apps/mcp-server/src/public/index.ts";
+import {
+  K11_ACTION_DEFINITIONS,
+  K11_ACTION_IDS,
+  K11_ACTION_SCHEMAS,
+  K11_INGREDIENT_ACTION_IDS,
+  K11_INGREDIENT_CATEGORY_ACTION_IDS,
+  K11_MENU_ACTION_IDS,
+  K11_RECIPE_ACTION_IDS,
+  K11_SHOPPING_ACTION_IDS,
+  K11_TEMPLATE_ACTION_IDS,
+  createK11ToolSets,
+  type K11ExecutionDependencies,
+} from "../../../apps/mcp-server/src/tools/supply-menu-shopping/index.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -818,5 +832,183 @@ describe("K10 booking, object and task adapter contract", () => {
       members: [{ total_guests: 2, total_bookings_with_guests: 1, total_fee: 10 }], truncated: false,
     });
     expect(JSON.stringify(result)).not.toMatch(/resp_member_id|guest_name|guest_email|privat@example/iu);
+  });
+});
+
+const k11RecipeId = "15151515-1515-4515-8515-151515151515";
+const k11MenuId = "16161616-1616-4616-8616-161616161616";
+const k11ShoppingListId = "17171717-1717-4717-8717-171717171717";
+const k11IngredientId = "18181818-1818-4818-8818-181818181818";
+
+function k11Dependencies(client: ComvenioApiClient): K11ExecutionDependencies {
+  return {
+    client,
+    write_safety: { async execute(_request, mutation) { return mutation(); } },
+    job_starter: {
+      async start() {
+        return {
+          job_id: "19191919-1919-4919-8919-191919191919",
+          status: "queued",
+          file: { file_id: "20202020-2020-4020-8020-202020202020", mime_type: "application/pdf", name: "einkaufsliste.pdf" },
+        };
+      },
+    },
+  };
+}
+
+describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
+  test("TC-01/TC-02: exposes all six entities and exactly 6/5/11/15/2/10 actions", () => {
+    expect(K11_RECIPE_ACTION_IDS).toHaveLength(6);
+    expect(K11_INGREDIENT_ACTION_IDS).toHaveLength(5);
+    expect(K11_INGREDIENT_CATEGORY_ACTION_IDS).toHaveLength(11);
+    expect(K11_SHOPPING_ACTION_IDS).toHaveLength(15);
+    expect(K11_TEMPLATE_ACTION_IDS).toHaveLength(2);
+    expect(K11_MENU_ACTION_IDS).toHaveLength(10);
+    expect(K11_ACTION_IDS).toHaveLength(49);
+    expect(Object.keys(K11_ACTION_DEFINITIONS)).toHaveLength(49);
+    expect(Object.keys(K11_ACTION_SCHEMAS)).toHaveLength(49);
+    const sets = createK11ToolSets(k11Dependencies(k7Client(async () => [])));
+    expect({
+      recipe: sets.recipe.listDefinitions().length,
+      ingredient: sets.ingredient.listDefinitions().length,
+      ingredient_category: sets.ingredient_category.listDefinitions().length,
+      shopping: sets.shopping.listDefinitions().length,
+      template: sets.template.listDefinitions().length,
+      menu: sets.menu.listDefinitions().length,
+    }).toEqual({ recipe: 6, ingredient: 5, ingredient_category: 11, shopping: 15, template: 2, menu: 10 });
+  });
+
+  test("corrects the legacy from-template risk and confirms implicit ingredient creation", () => {
+    const operation = K11_ACTION_DEFINITIONS["cai.recipe.02.from_template"].operations.create!;
+    expect(operation).toMatchObject({ risk_class: "critical_write", execution_gate: "confirmation", required_scopes: ["supply.write"] });
+    expect(operation.backend_routes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ method: "POST", normalized_path_template: "/global-dish-templates/create-recipe" }),
+    ]));
+  });
+
+  test("TC-03: anonymous menus reuse the public contract and strip costs, suppliers and tenant internals", () => {
+    const contracts = createK11ToolSets(k11Dependencies(k7Client(async () => null))).menu.publicReadContracts();
+    expect(contracts.map((contract) => contract.alias)).toEqual(["public_menu", "public_event_menu"]);
+    expect(contracts[0]).toMatchObject({ normalized_path_template: "/menu/club/{club_id}/menus/{menu_id}/public" });
+    const result = new PublicResponseRedactor().redact({
+      alias: "public_menu",
+      request_id: k8Context([]).request_id,
+      expected_club_id: k7ClubId,
+      response: {
+        id: k11MenuId,
+        club_id: k7ClubId,
+        name: "Sommerfest",
+        description: "Speisen und Getränke",
+        category: "Fest",
+        supplier: { name: "Interner Lieferant", price_list: "secret" },
+        total_ingredient_cost: 99.5,
+        design_config: { internal_draft_id: "secret" },
+        items: [{
+          id: k11IngredientId,
+          name: "Vereinsburger",
+          selling_price: 7.5,
+          ingredient_cost: 2.25,
+          supplier_id: k11RecipeId,
+          is_active: true,
+        }],
+      },
+    });
+    expect(result).toEqual({
+      id: k11MenuId,
+      name: "Sommerfest",
+      description: "Speisen und Getränke",
+      category: "Fest",
+      design: null,
+      items: [{ id: k11IngredientId, name: "Vereinsburger", description: null, price: 7.5, category: null, type: null, is_available: true }],
+    });
+    expect(JSON.stringify(result)).not.toMatch(/club_id|supplier|ingredient_cost|internal|secret/iu);
+  });
+
+  test("TC-04: quantity scaling is read-only and missing prices remain UNKNOWN", async () => {
+    const methods: string[] = [];
+    const recipe = createK11ToolSets(k11Dependencies(k7Client(async (request) => {
+      methods.push(request.method);
+      return {
+        id: k11RecipeId,
+        club_id: k7ClubId,
+        name: "Pfannkuchen",
+        total_ingredient_cost: null,
+        recipe_ingredients: [
+          { ingredient_id: k11IngredientId, quantity: 1.5, unit: "kg", ingredient: { id: k11IngredientId, name: "Mehl" } },
+          { ingredient_id: k11MenuId, quantity: null, unit: null, ingredient: { id: k11MenuId, name: "Salz" } },
+        ],
+      };
+    }))).recipe;
+    const result = await recipe.execute({
+      action_id: "cai.recipe.04.show",
+      input: { club_id: k7ClubId, recipe_id: k11RecipeId, portions: 4 },
+      context: k8Context(["supply.read"]),
+      capability_snapshot: k8Capability({ manage_menus: true }),
+    });
+    expect(methods).toEqual(["GET"]);
+    expect(result.result).toMatchObject({
+      requested_portions: 4,
+      cost_state: "UNKNOWN",
+      scaled_ingredients: [
+        expect.objectContaining({ ingredient_id: k11IngredientId, quantity: 6, unit: "kg", quantity_state: "KNOWN" }),
+        expect.objectContaining({ ingredient_id: k11MenuId, quantity: null, unit: null, quantity_state: "MISSING" }),
+      ],
+    });
+  });
+
+  test("TC-05: large shopping exports return a job and remote file reference without a synchronous backend call", async () => {
+    let backendCalls = 0;
+    const shopping = createK11ToolSets(k11Dependencies(k7Client(async () => { backendCalls++; return null; }))).shopping;
+    const result = await shopping.execute({
+      action_id: "cai.shopping.06.show",
+      input: { club_id: k7ClubId, operation: "export", shopping_list_id: k11ShoppingListId, format: "pdf" },
+      context: k8Context(["supply.read", "files.export"]),
+      capability_snapshot: k8Capability({ manage_shopping_lists: true }),
+    });
+    expect(result.status).toBe("queued");
+    expect(result.result).toEqual({
+      job_id: "19191919-1919-4919-8919-191919191919",
+      status: "queued",
+      file: { file_id: "20202020-2020-4020-8020-202020202020", mime_type: "application/pdf", name: "einkaufsliste.pdf" },
+    });
+    expect(backendCalls).toBe(0);
+  });
+
+  test("permission-filtered discovery separates menu writers from shopping managers", () => {
+    const sets = createK11ToolSets(k11Dependencies(k7Client(async () => [])));
+    const menuWriter = {
+      context: k8Context(["supply.read", "supply.write", "files.export"]),
+      capability_snapshot: k8Capability({ create_menus: true, manage_menus: true }),
+    };
+    expect(sets.menu.listVisible(menuWriter).map((definition) => definition.action_id)).toContain("cai.menu.01.create");
+    expect(sets.shopping.listVisible(menuWriter)).toHaveLength(0);
+
+    const shoppingManager = {
+      context: k8Context(["supply.read", "supply.write", "files.export"]),
+      capability_snapshot: k8Capability({ manage_shopping_lists: true }),
+    };
+    expect(sets.shopping.listVisible(shoppingManager).map((definition) => definition.action_id)).toContain("cai.shopping.07.create");
+    expect(sets.ingredient.listVisible(shoppingManager).map((definition) => definition.action_id)).not.toContain("cai.ingredient.03.create");
+  });
+
+  test("TC-06: schemas exclude auto-purchase, hidden costs, unsafe CSS, local paths and free payloads", () => {
+    expect(() => K11_ACTION_SCHEMAS["cai.recipe.01.create"].input.parse({
+      club_id: k7ClubId,
+      name: "Suppe",
+      auto_purchase: true,
+      hidden_cost: 5,
+    })).toThrow();
+    expect(() => K11_ACTION_SCHEMAS["cai.menu.08.style"].input.parse({
+      club_id: k7ClubId,
+      menu_id: k11MenuId,
+      design: { custom_css: "@import url('https://example.org/private.css')" },
+    })).toThrow();
+    expect(() => K11_ACTION_SCHEMAS["cai.menu.08.style"].input.parse({
+      club_id: k7ClubId,
+      menu_id: k11MenuId,
+      design: { headerImageUrl: "C:\\private\\menu.png" },
+    })).toThrow();
+    const serialized = JSON.stringify({ definitions: K11_ACTION_DEFINITIONS, schemas: Object.keys(K11_ACTION_SCHEMAS) });
+    expect(serialized).not.toMatch(/automaticpurchaseorder|hidden.?cost.?disclosure|backend.?llm|local_path|file_path/iu);
   });
 });
