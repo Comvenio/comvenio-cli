@@ -26,6 +26,7 @@ import type { AuthChallenge } from "../public/types.ts";
 import { mountBookingObjectWidgetAssets } from "../widgets/booking-object/assets.ts";
 import { mountEventCalendarWidgetAssets } from "../widgets/event-calendar/assets.ts";
 import { mountMemberManagementWidgetAssets } from "../widgets/member-management/assets.ts";
+import { mountNewsWidgetAssets } from "../widgets/news/assets.ts";
 
 const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
@@ -81,6 +82,7 @@ export class McpHttpServer {
     mountBookingObjectWidgetAssets(this.app, options.environment);
     mountEventCalendarWidgetAssets(this.app, options.environment);
     mountMemberManagementWidgetAssets(this.app, options.environment);
+    mountNewsWidgetAssets(this.app, options.environment);
     this.#mountRoutes();
   }
 

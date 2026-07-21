@@ -8,9 +8,12 @@ import {
   EVENT_CALENDAR_WIDGET_STATE_SCHEMA,
   MEMBER_MANAGEMENT_WIDGET_SCHEMA,
   MEMBER_MANAGEMENT_WIDGET_STATE_SCHEMA,
+  NEWS_WIDGET_SCHEMA,
+  NEWS_WIDGET_STATE_SCHEMA,
   type BookingObjectWidget,
   type EventCalendarWidget,
   type MemberManagementWidget,
+  type NewsWidget,
   type RequestContext,
   type ServerActionDescriptor,
 } from "../src/index.ts";
@@ -78,6 +81,28 @@ import {
   memberManagementWidgetHtml,
   safeMemberWidgetTelemetry,
 } from "../../../apps/mcp-server/src/widgets/member-management/index.ts";
+import {
+  NEWS_PREVIEW_MAX_AGE_SECONDS,
+  NEWS_WIDGET_ASSET_PATH,
+  NEWS_WIDGET_CLIENT,
+  NEWS_WIDGET_CSP,
+  NEWS_WIDGET_CSS,
+  NEWS_WIDGET_FIRST_RENDER_BUDGET_MS,
+  NEWS_WIDGET_PAGE_MAX,
+  NEWS_WIDGET_RESOURCE_URI,
+  NewsActionBar,
+  NewsPreviewPanel,
+  NewsStatusFilter,
+  NewsSummaryCard,
+  NewsWidget as renderNewsWidget,
+  NewsWidgetCapabilityPolicy,
+  NewsWidgetProjector,
+  newsToolMetadata,
+  newsWidgetHtml,
+  newsWidgetState,
+  safeNewsWidgetTelemetry,
+  sanitizeNewsHtml,
+} from "../../../apps/mcp-server/src/widgets/news/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
 const subjectId = "22222222-2222-4222-8222-222222222222";
@@ -619,5 +644,128 @@ describe("K18 booking object widget contracts", () => {
     expect(BOOKING_OBJECT_WIDGET_CSP).toContain("default-src 'none'");
     expect(bookingObjectWidgetHtml("production")).toContain(`https://mcp.comvenio.app${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
     expect(bookingObjectToolMetadata("production")._meta.ui.resourceUri).toBe(BOOKING_OBJECT_WIDGET_RESOURCE_URI);
+  });
+});
+
+describe("K19 news widget contracts", () => {
+  const newsId = "93939393-9393-4393-8393-939393939393";
+  const draftId = "94949494-9494-4494-8494-949494949494";
+  const newsContext: RequestContext = { ...context, scopes: ["content.read", "content.write"] };
+  const newsCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: { read_news: true, manage_news: true } };
+  const manageList = { items: [
+    { news_id: newsId, title: "Jugendturnier", teaser: "Ein sportlicher Tag.", category: "Verein", published_at: "2026-07-18T10:00:00+02:00", is_draft: false },
+    { news_id: draftId, title: "Neue Trainingszeiten", teaser: "Vorschau", category: "Training", published_at: null, is_draft: true },
+  ], returned: 2, truncated: false };
+  const selectAction: ServerActionDescriptor = { action_id: "news.show", label: "Vorschau anzeigen", tool_name: "cv_news_show", input: { club_id: clubId, news_id: newsId }, visibility: "visible", enabled: true, risk_class: "read", requires_confirmation: false, disabled_reason: null };
+  const draftAction: ServerActionDescriptor = { action_id: "news.create.draft", label: "Entwurf erstellen", tool_name: "cv_news_create_draft", input: { club_id: clubId }, visibility: "visible", enabled: true, risk_class: "reversible_write", requires_confirmation: false, disabled_reason: null };
+  const publishAction: ServerActionDescriptor = { action_id: "news.publish", label: "Publikation vorbereiten", tool_name: "cv_news_publish", input: { club_id: clubId, news_id: newsId }, visibility: "visible", enabled: true, risk_class: "critical_write", requires_confirmation: true, disabled_reason: null };
+
+  function manageWidget(tools: string[] = [selectAction.tool_name, draftAction.tool_name, publishAction.tool_name]): NewsWidget {
+    return new NewsWidgetProjector(new NewsWidgetCapabilityPolicy(tools)).private({
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, context: newsContext,
+      capability_snapshot: newsCapability, list_source: manageList, filter: "all_authorized", selected_news_id: newsId,
+      detail_source: { news_id: newsId, title: "Jugendturnier", teaser: "Ein sportlicher Tag.", published_at: "2026-07-18T10:00:00+02:00", is_draft: false, content: `<h2 onclick="steal()">Rückblick</h2><p>Viele <strong>Helferinnen</strong>.</p><script>steal()</script><a href="https://comvenio.de/news" style="color:red">Mehr</a><iframe src="https://evil.example"></iframe>` },
+      preview_source: { news_id: newsId, html: `<h2>Homepage-Vorschau</h2><p>Ein <em>sportlicher</em> Tag.</p>`, expires_at: "2026-07-21T09:05:00+02:00" },
+      action_candidates: [selectAction, draftAction, publishAction], generated_at: "2026-07-21T09:00:00+02:00",
+    });
+  }
+
+  test("TC-01/TC-02: all named News entities render the NWS-01 list/preview shell", () => {
+    const model = manageWidget();
+    expect(NEWS_WIDGET_SCHEMA.parse(model)).toEqual(model);
+    expect(NewsSummaryCard({ model: model.data.articles[0]!, selected: true, index: 0 })).toContain("news-card");
+    expect(NewsPreviewPanel({ model: { article: model.data.articles[0]! } })).toContain("Homepage-Vorschau");
+    expect(NewsStatusFilter({ model: { value: "all_authorized", options: ["all_authorized", "draft"] } })).toContain("Nur Entwürfe");
+    expect(NewsActionBar({ model: { actions: model.actions } })).toContain("Wirkung prüfen");
+    const html = renderNewsWidget({ model });
+    expect(html).toContain("news-layout");
+    expect(html).toContain("Jugendturnier");
+    expect(html).not.toContain(newsId);
+    expect(html).not.toContain(clubId);
+    expect(html).not.toContain("Jetzt veröffentlichen");
+    expect(html).not.toContain("DirectPublishButton");
+  });
+
+  test("TC-03: anonymous status is public-only and raw drafts fail closed", () => {
+    const projector = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([]));
+    const model = projector.public({ club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, selected_news_id: newsId, source: [{ id: newsId, title: "Jugendturnier", summary: "Öffentlicher Rückblick", published_at: "2026-07-18T10:00:00+02:00", visibility_scope: "public", is_draft: false }] });
+    expect(model.data.filter).toBe("public");
+    expect(model.data.articles.every((article) => article.status === "published")).toBe(true);
+    expect(model.actions).toEqual([]);
+    expect(model.capability_version).toBeNull();
+    expect(NewsStatusFilter({ model: { value: model.data.filter, options: ["public"] } })).not.toContain("Entwürfe");
+    expect(() => projector.public({ club: model.club, source: [{ id: draftId, title: "Leaker", summary: "intern", published_at: "2026-07-18T10:00:00+02:00", is_draft: true }] })).toThrow();
+    const tooMany = structuredClone(model);
+    tooMany.data.articles = Array.from({ length: 101 }, () => structuredClone(model.data.articles[0]!));
+    expect(NEWS_WIDGET_SCHEMA.safeParse(tooMany).success).toBe(false);
+  });
+
+  test("TC-04: preview uses doubly allowlisted rich content with safe text fallback", () => {
+    const sanitized = sanitizeNewsHtml(`<h2 onclick="x()">Titel</h2><p>Text</p><script>secret()</script><a href="http://unsafe.example">Unsicher</a><a href="https://comvenio.de">Sicher</a>`)!;
+    expect(sanitized).toContain("<h2>Titel</h2>");
+    expect(sanitized).not.toContain("onclick");
+    expect(sanitized).not.toContain("script");
+    expect(sanitized).not.toContain("http://unsafe");
+    expect(sanitized).toContain(`target="_blank" rel="noopener noreferrer"`);
+    expect(NEWS_WIDGET_SCHEMA.safeParse({ ...manageWidget(), data: { ...manageWidget().data, articles: [{ ...manageWidget().data.articles[0], sanitized_html: `<img src=x onerror=steal()>` }, manageWidget().data.articles[1]] } }).success).toBe(false);
+    const article = { ...manageWidget().data.articles[0]!, sanitized_html: null, summary: `<script>nicht rendern</script>` };
+    const html = NewsPreviewPanel({ model: { article } });
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).not.toContain("<script>");
+  });
+
+  test("TC-05/TC-06: management actions require current manage rights and publish stays a confirmation intent", () => {
+    expect(manageWidget([]).actions).toEqual([]);
+    const model = manageWidget();
+    expect(model.actions.map((action) => action.tool_name)).toEqual([selectAction.tool_name, draftAction.tool_name, publishAction.tool_name]);
+    expect(model.actions[2]).toMatchObject({ risk_class: "critical_write", requires_confirmation: true });
+    const noManage = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([selectAction.tool_name, draftAction.tool_name, publishAction.tool_name])).private({
+      club: model.club, context: { ...newsContext, scopes: ["content.read"] }, capability_snapshot: { ...newsCapability, permissions: { read_news: true, manage_news: false } },
+      list_source: manageList, selected_news_id: newsId, action_candidates: [selectAction, draftAction, publishAction],
+    });
+    expect(noManage.actions.map((action) => action.tool_name)).toEqual([selectAction.tool_name]);
+    const unsafePublish = { ...publishAction, risk_class: "reversible_write" as const, requires_confirmation: false };
+    const unsafeModel = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([unsafePublish.tool_name])).private({ club: model.club, context: newsContext, capability_snapshot: newsCapability, list_source: manageList, selected_news_id: newsId, action_candidates: [unsafePublish] });
+    expect(unsafeModel.actions).toEqual([]);
+  });
+
+  test("safe states discard expired preview and all private data after permission changes", () => {
+    const model = manageWidget();
+    const expired = newsWidgetState({ phase: "preview_expired", model, message: "Die Vorschau ist abgelaufen. Bitte erneuern." });
+    expect(expired.model?.data.articles.find((article) => article.news_id === newsId)?.sanitized_html).toBeNull();
+    expect(expired.model?.actions).toEqual([]);
+    const changed = newsWidgetState({ phase: "permission_changed", model, message: "Deine Rechte haben sich geändert." });
+    expect(changed.model?.data.filter).toBe("public");
+    expect(changed.model?.data.articles.every((article) => article.status === "published")).toBe(true);
+    expect(changed.model?.data.articles.some((article) => article.news_id === draftId)).toBe(false);
+    expect(changed.model?.actions).toEqual([]);
+    expect(changed.model?.capability_version).toBeNull();
+    const publicModel = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([])).public({ club: model.club, source: [] });
+    const states = [newsWidgetState({ phase: "loading", message: "News werden geladen." }), newsWidgetState({ phase: "empty", model: publicModel }), newsWidgetState({ phase: "ready_public", model: new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([])).public({ club: model.club, source: [{ id: newsId, title: "X", summary: "Y", published_at: "2026-07-18T10:00:00+02:00" }] }) }), newsWidgetState({ phase: "ready_manage", model }), newsWidgetState({ phase: "partial", model, message: "Ein Teil fehlt." }), expired, newsWidgetState({ phase: "auth_required", message: "Bitte verbinden." }), changed, newsWidgetState({ phase: "error", model, message: "Nicht aktualisiert.", retryable: true })];
+    expect(states.every((state) => NEWS_WIDGET_STATE_SCHEMA.safeParse(state).success)).toBe(true);
+  });
+
+  test("telemetry, responsive shell and MCP App resource remain provider-neutral", () => {
+    const model = manageWidget();
+    const telemetry = safeNewsWidgetTelemetry({ phase: "ready_manage", model, render_duration_ms: 44.6, outcome: "success" });
+    expect(telemetry).toMatchObject({ widget: "news", article_count_bucket: "1-20", mode: "manage", preview_loaded: true, render_duration_ms: 45 });
+    expect(JSON.stringify(telemetry)).not.toContain(newsId);
+    expect(JSON.stringify(telemetry)).not.toContain(clubId);
+    expect(NEWS_WIDGET_FIRST_RENDER_BUDGET_MS).toBe(1_000);
+    expect(NEWS_WIDGET_PAGE_MAX).toBe(100);
+    expect(NEWS_PREVIEW_MAX_AGE_SECONDS).toBe(300);
+    expect(NEWS_WIDGET_CSS).toContain("@media (max-width:559px)");
+    expect(NEWS_WIDGET_CSS).toContain("overflow-x:hidden");
+    expect(NEWS_WIDGET_CSS).toContain("min-height:44px");
+    expect(NEWS_WIDGET_RESOURCE_URI).toBe("ui://comvenio/news");
+    expect(NEWS_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/news\/assets\/news\.[a-f0-9]{64}\.js$/u);
+    expect(NEWS_WIDGET_CLIENT).toContain("ui/notifications/tool-result");
+    expect(NEWS_WIDGET_CLIENT).toContain("tools/call");
+    expect(NEWS_WIDGET_CLIENT).not.toContain("window.openai");
+    expect(NEWS_WIDGET_CLIENT).not.toContain("fetch(");
+    expect(() => new Function(NEWS_WIDGET_CLIENT)).not.toThrow();
+    expect(NEWS_WIDGET_CSP).toContain("frame-src 'none'");
+    expect(newsWidgetHtml("production")).toContain(`https://mcp.comvenio.app${NEWS_WIDGET_ASSET_PATH}`);
+    expect(newsToolMetadata("production")._meta.ui.resourceUri).toBe(NEWS_WIDGET_RESOURCE_URI);
   });
 });

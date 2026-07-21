@@ -64,6 +64,12 @@ import {
   MemberWidgetCapabilityPolicy,
   registerMemberManagementWidgetResource,
   registerBookingObjectWidgetResource,
+  NEWS_WIDGET_ASSET_PATH,
+  NEWS_WIDGET_CLIENT,
+  NEWS_WIDGET_RESOURCE_URI,
+  NewsWidgetCapabilityPolicy,
+  NewsWidgetProjector,
+  registerNewsWidgetResource,
 } from "../src/widgets/index.ts";
 
 const clubId = "33333333-3333-4333-8333-333333333333";
@@ -1606,5 +1612,80 @@ describe("K18 booking object widget tenant and runtime isolation", () => {
     } finally {
       expect(await server.drain()).toBe(true);
     }
+  });
+});
+
+describe("K19 news widget tenant and runtime isolation", () => {
+  const newsId = "95959595-9595-4595-8595-959595959595";
+  const newsContext: RequestContext = { ...context, scopes: ["content.read", "content.write"] };
+  const newsCapability: CapabilitySnapshot = { ...capabilitySnapshot, permissions: { read_news: true, manage_news: true } };
+  const previewAction = {
+    action_id: "news.preview",
+    label: "Homepage-Vorschau",
+    tool_name: "cv_news_preview",
+    input: { club_id: clubId, news_id: newsId },
+    visibility: "visible" as const,
+    enabled: true,
+    risk_class: "read" as const,
+    requires_confirmation: false,
+    disabled_reason: null,
+  };
+  const listSource = { items: [{ news_id: newsId, title: "Jugendturnier", teaser: "Rückblick", published_at: "2026-07-18T10:00:00+02:00", is_draft: false }], returned: 1, truncated: false };
+
+  function newsInput(overrides: Record<string, unknown> = {}) {
+    return {
+      club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, context: newsContext,
+      capability_snapshot: newsCapability, list_source: listSource, selected_news_id: newsId,
+      preview_source: { news_id: newsId, html: "<h2>Vorschau</h2><p>Sicherer Inhalt</p>", expires_at: "2026-07-21T10:00:00+02:00" },
+      action_candidates: [previewAction], generated_at: "2026-07-21T09:00:00+02:00", ...overrides,
+    } as any;
+  }
+
+  test("TC-04/TC-05: private projection binds tenant, selected article and current manage capability", () => {
+    const projector = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([previewAction.tool_name]));
+    expect(projector.private(newsInput()).actions).toHaveLength(1);
+    expect(() => projector.private(newsInput({ club: { club_id: otherClubId, name: "Fremder Verein", timezone: "Europe/Berlin" } }))).toThrow();
+    expect(() => projector.private(newsInput({ preview_source: { news_id: "96969696-9696-4696-8696-969696969696", html: "<p>Fremd</p>" } }))).toThrow();
+    const noManage = projector.private(newsInput({ context: { ...newsContext, scopes: ["content.read"] }, capability_snapshot: { ...newsCapability, permissions: { read_news: true, manage_news: false } } }));
+    expect(noManage.actions).toEqual([]);
+  });
+
+  test("TC-05: a visible preview intent is still rejected by fresh backend RBAC", async () => {
+    let calls = 0;
+    let forbidden = 0;
+    const projector = new NewsWidgetProjector(new NewsWidgetCapabilityPolicy([previewAction.tool_name]));
+    expect(projector.private(newsInput()).actions).toHaveLength(1);
+    const client: ComvenioApiClient = { timeout_ms: 15000, async request<T extends import("@comvenio/connector-contracts").JsonValue>(request: ComvenioApiRequest): Promise<T> { calls++; throw createConnectorError({ code: "PERMISSION_DENIED", message: "private news detail", request_id: request.context.request_id, retryable: false }); } };
+    const news = createK12ToolSets({ client, on_backend_forbidden() { forbidden++; } }).news;
+    await expect(news.execute({
+      action_id: "cai.news.07.preview",
+      input: { club_id: clubId, title: "Jugendturnier", content: "<p>Rückblick</p>" },
+      context: newsContext,
+      capability_snapshot: newsCapability,
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Content-Aktion im aktuellen Kontext abgelehnt." });
+    expect(calls).toBe(1);
+    expect(forbidden).toBe(1);
+  });
+
+  test("TC-01/TC-06: news MCP resource and immutable asset contain no article or tenant data", async () => {
+    const server = new McpHttpServer(runtimeOptions({ server_factory(contextInput) { const runtime = runtimeOptions().server_factory(contextInput); return Promise.resolve(runtime).then((mcpServer) => { registerNewsWidgetResource(mcpServer, "development"); return mcpServer; }); } }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 1, method: "resources/list", params: {} });
+      expect(list.status).toBe(200);
+      expect((await list.json() as any).result.resources.some((resource: any) => resource.uri === NEWS_WIDGET_RESOURCE_URI)).toBe(true);
+      const read = await postMcp(baseUrl, { jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: NEWS_WIDGET_RESOURCE_URI } });
+      const resource = await read.json() as any;
+      expect(read.status).toBe(200);
+      expect(resource.result.contents[0].text).toContain(NEWS_WIDGET_ASSET_PATH);
+      expect(resource.result.contents[0].text).not.toContain(newsId);
+      expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(NEWS_WIDGET_RESOURCE_URI);
+      const asset = await fetch(`${baseUrl}${NEWS_WIDGET_ASSET_PATH}`);
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe(NEWS_WIDGET_CLIENT);
+      expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(await fetch(`${baseUrl}/widgets/news/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
+    } finally { expect(await server.drain()).toBe(true); }
   });
 });

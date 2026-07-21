@@ -336,3 +336,101 @@ export const BOOKING_OBJECT_WIDGET_STATE_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Nach Konflikt oder Rechtewechsel dürfen keine alten Reservierungsaktionen verbleiben." });
   }
 });
+
+function allowlistedNewsHtml(value: string): boolean {
+  if (/<!--|<\/?(?:script|style|iframe|form|input|button|img|svg|math|object|embed|template|link|meta)\b/iu.test(value)) return false;
+  const allowedTag = /^<\/?(?:p|br|h2|h3|strong|em|ul|ol|li|blockquote)>$/iu;
+  const allowedLink = /^<a href="https:\/\/[^"<>\s]+" target="_blank" rel="noopener noreferrer">$/u;
+  for (const match of value.matchAll(/<[^>]*>/gu)) {
+    if (!allowedTag.test(match[0]) && !allowedLink.test(match[0]) && match[0] !== "</a>") return false;
+  }
+  return !/(?:javascript\s*:|data\s*:|\son[a-z]+\s*=|\sstyle\s*=)/iu.test(value);
+}
+
+export const NEWS_ARTICLE_SCHEMA = z.object({
+  news_id: uuid,
+  title: safeText(300),
+  summary: z.string().trim().max(2_000),
+  hero_url: z.string().url().refine((value) => new URL(value).protocol === "https:", { message: "News-Bilder benötigen HTTPS." }).nullable(),
+  published_at: instant.nullable(),
+  status: z.enum(["draft", "published", "archived"]),
+  sanitized_html: z.string().max(200_000).refine(allowlistedNewsHtml, { message: "Der News-Inhalt verletzt die HTML-Allowlist." }).nullable(),
+}).strict().superRefine((article, context) => {
+  if (article.status === "published" && article.published_at === null) {
+    context.addIssue({ code: "custom", message: "Ein veröffentlichter Beitrag benötigt ein Veröffentlichungsdatum.", path: ["published_at"] });
+  }
+});
+
+export const NEWS_DATA_SCHEMA = z.object({
+  filter: z.enum(["public", "draft", "all_authorized"]),
+  articles: z.array(NEWS_ARTICLE_SCHEMA).max(100),
+  selected_news_id: uuid.nullable(),
+}).strict().superRefine((data, context) => {
+  if (data.selected_news_id !== null && !data.articles.some((article) => article.news_id === data.selected_news_id)) {
+    context.addIssue({ code: "custom", message: "Der ausgewählte News-Beitrag muss in der sichtbaren Liste liegen.", path: ["selected_news_id"] });
+  }
+  if (data.filter === "public" && data.articles.some((article) => article.status !== "published")) {
+    context.addIssue({ code: "custom", message: "Der öffentliche Filter darf ausschließlich veröffentlichte Beiträge enthalten.", path: ["articles"] });
+  }
+  if (data.filter === "draft" && data.articles.some((article) => article.status !== "draft")) {
+    context.addIssue({ code: "custom", message: "Der Entwurfsfilter darf ausschließlich Entwürfe enthalten.", path: ["articles"] });
+  }
+});
+
+export const NEWS_WIDGET_SCHEMA = z.object({
+  widget: z.literal("news"),
+  contract_version: z.literal("1.0.0"),
+  title: safeText(120),
+  club: CLUB_CHIP_SCHEMA,
+  capability_version: z.string().trim().min(1).max(200).nullable(),
+  generated_at: instant,
+  data: NEWS_DATA_SCHEMA,
+  actions: z.array(VISIBLE_SERVER_ACTION_DESCRIPTOR_SCHEMA).max(50),
+  empty_state: z.object({ title: safeText(120), description: safeText(500) }).strict().nullable(),
+}).strict().superRefine((widget, context) => {
+  if ((widget.data.articles.length === 0) !== (widget.empty_state !== null)) {
+    context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Newsliste passen." });
+  }
+  if (widget.data.filter === "public" && (widget.capability_version !== null || widget.actions.length > 0)) {
+    context.addIssue({ code: "custom", message: "Der öffentliche Newsfeed darf keine Capability oder Verwaltungsaktionen enthalten." });
+  }
+  if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
+    || action.input.club_id !== widget.club.club_id
+    || (typeof action.input.news_id === "string" && action.input.news_id !== widget.data.selected_news_id))) {
+    context.addIssue({ code: "custom", message: "Jede News-Aktion muss an Verein und ausgewählten Beitrag gebunden sein." });
+  }
+  if (widget.actions.some((action) => /publish|veroeffentlich/iu.test(action.action_id)
+    && (action.risk_class !== "critical_write" || !action.requires_confirmation))) {
+    context.addIssue({ code: "custom", message: "Öffentliche News-Wirkungen dürfen nur über den Bestätigungsflow laufen." });
+  }
+});
+
+export const NEWS_WIDGET_PHASE_SCHEMA = z.enum([
+  "loading", "empty", "ready_public", "ready_manage", "partial", "preview_expired", "auth_required", "permission_changed", "error",
+]);
+
+export const NEWS_WIDGET_STATE_SCHEMA = z.object({
+  phase: NEWS_WIDGET_PHASE_SCHEMA,
+  model: NEWS_WIDGET_SCHEMA.nullable(),
+  message: z.string().trim().min(1).max(500).nullable(),
+  retryable: z.boolean(),
+}).strict().superRefine((state, context) => {
+  if (["empty", "ready_public", "ready_manage", "partial", "preview_expired", "permission_changed"].includes(state.phase) && state.model === null) {
+    context.addIssue({ code: "custom", message: "Ein darstellbarer Newszustand benötigt ein Modell." });
+  }
+  if (["loading", "auth_required"].includes(state.phase) && state.model !== null) {
+    context.addIssue({ code: "custom", message: "Vor Anmeldung oder Laden dürfen keine privaten Newsdaten vorliegen." });
+  }
+  if (["loading", "partial", "preview_expired", "auth_required", "permission_changed", "error"].includes(state.phase) && state.message === null) {
+    context.addIssue({ code: "custom", message: "Dieser Newszustand benötigt eine sichere Nutzerinformation." });
+  }
+  if (state.phase === "ready_public" && state.model?.data.filter !== "public") {
+    context.addIssue({ code: "custom", message: "Der öffentliche Zustand benötigt den öffentlichen Filter." });
+  }
+  if (["ready_manage", "partial"].includes(state.phase) && state.model?.capability_version == null) {
+    context.addIssue({ code: "custom", message: "Ein verwaltender Newszustand benötigt die aktuelle Capability-Version." });
+  }
+  if (["preview_expired", "permission_changed"].includes(state.phase) && state.model?.actions.length !== 0) {
+    context.addIssue({ code: "custom", message: "Nach Ablauf oder Rechtewechsel dürfen keine alten Newsaktionen verbleiben." });
+  }
+});

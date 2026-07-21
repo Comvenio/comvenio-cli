@@ -195,3 +195,43 @@ export interface BookingObjectWidgetState {
   message: string | null;
   retryable: boolean;
 }
+
+export interface NewsArticle extends Record<string, JsonValue> {
+  news_id: UUID;
+  title: string;
+  summary: string;
+  hero_url: string | null;
+  published_at: string | null;
+  status: "draft" | "published" | "archived";
+  sanitized_html: string | null;
+}
+
+export interface NewsData extends Record<string, JsonValue> {
+  filter: "public" | "draft" | "all_authorized";
+  articles: NewsArticle[];
+  selected_news_id: UUID | null;
+}
+
+export type NewsSummaryCard = NewsArticle;
+export interface NewsPreviewPanel { article: NewsArticle | null; }
+export interface NewsStatusFilter { value: NewsData["filter"]; options: NewsData["filter"][]; }
+export interface NewsActionBar { actions: ServerActionDescriptor[]; }
+export type NewsWidget = WidgetEnvelope<NewsData, "news"> & { club: ClubChip };
+
+export type NewsWidgetPhase =
+  | "loading"
+  | "empty"
+  | "ready_public"
+  | "ready_manage"
+  | "partial"
+  | "preview_expired"
+  | "auth_required"
+  | "permission_changed"
+  | "error";
+
+export interface NewsWidgetState {
+  phase: NewsWidgetPhase;
+  model: NewsWidget | null;
+  message: string | null;
+  retryable: boolean;
+}
