@@ -58,6 +58,9 @@
     "packages/connector-contracts": {
       "name": "@comvenio/connector-contracts",
       "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
     },
     "packages/tool-catalog": {
       "name": "@comvenio/tool-catalog",

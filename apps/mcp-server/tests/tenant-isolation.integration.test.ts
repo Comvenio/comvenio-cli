@@ -4,6 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import {
+  MemoryAtomicSafetyStore,
+  WriteSafetyService,
   createConnectorError,
   type RequestContext,
 } from "@comvenio/connector-contracts";
@@ -1017,5 +1019,123 @@ describe("K13 sponsor and marketing tenant/RBAC isolation", () => {
     expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).not.toContain("cai.sponsor.21.responsible_list");
     const memberReader = { ...reader, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true, view_members: true } } };
     expect(sponsor.listVisible(memberReader).map((definition) => definition.action_id)).toContain("cai.sponsor.21.responsible_list");
+  });
+});
+
+describe("K14 write-safety tenant, RBAC and retry isolation", () => {
+  const safetyToolName = "cv_event_publish_safety_12345678";
+  const safetyTargetId = "41414141-4141-4141-8141-414141414141";
+  const safetyIdempotencyKey = "42424242-4242-4242-8242-424242424242";
+
+  function writeEffect() {
+    return {
+      target_ids: [safetyTargetId],
+      changed_count: 1,
+      unchanged_count: 0,
+      failed_count: 0,
+      result_summary: "Die Veranstaltung wurde veröffentlicht.",
+      object_versions: [{ target_id: safetyTargetId, version: "event-v2" }],
+      safe_next_actions: [],
+    };
+  }
+
+  function setup() {
+    let backendAllowed = true;
+    let backendChecks = 0;
+    const service = new WriteSafetyService({
+      store: new MemoryAtomicSafetyStore(),
+      authorization: {
+        async reauthorize(input) {
+          backendChecks++;
+          if (!input.context.scopes.includes("event.write")) {
+            throw createConnectorError({
+              code: "SCOPE_REQUIRED",
+              message: "Der Scope event.write fehlt.",
+              request_id: input.context.request_id,
+              retryable: false,
+              required_scope: "event.write",
+            });
+          }
+          if (!backendAllowed) {
+            throw createConnectorError({
+              code: "PERMISSION_DENIED",
+              message: "Der Event-Service hat die Berechtigung entzogen.",
+              request_id: input.context.request_id,
+              retryable: false,
+            });
+          }
+          return { capability_version: "safety-cap-v1" };
+        },
+      },
+    });
+    return {
+      service,
+      denyBackend() { backendAllowed = false; },
+      backendChecks() { return backendChecks; },
+    };
+  }
+
+  async function createPreview(service: WriteSafetyService) {
+    return service.createCriticalPreview({
+      context: { ...context, scopes: ["event.read", "event.write"] },
+      operation: { tool_name: safetyToolName, risk_class: "critical_write", execution_mode: "inline" },
+      normalized_input: { club_id: clubId, event_id: safetyTargetId, publish: true },
+      target: { type: "event", id: safetyTargetId, label: "Sommerfest" },
+      impact: { creates: 0, updates: 0, deletes: 0, publishes: 1, imports: 0, exports: 0, affected_total: 1, summary: "Eine Veranstaltung wird veröffentlicht." },
+      masked_fields: [],
+      safe_summary: "Die Veranstaltung Sommerfest wird veröffentlicht.",
+      object_version: "event-v1",
+    });
+  }
+
+  test("TC-04: a Club-A token cannot cross tenants and permission loss blocks confirm", async () => {
+    const tenantCase = setup();
+    const challenge = await createPreview(tenantCase.service);
+    let writes = 0;
+    const mutation = async () => { writes++; return writeEffect(); };
+
+    await expect(tenantCase.service.confirmCriticalWrite({
+      context: { ...context, club_id: otherClubId, scopes: ["event.write"] },
+      tool_name: safetyToolName,
+      preview_id: challenge.preview.preview_id,
+      confirmation_token: challenge.confirmation_token,
+      idempotency_key: safetyIdempotencyKey,
+      current_object_version: "event-v1",
+    }, mutation)).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+    expect(writes).toBe(0);
+
+    tenantCase.denyBackend();
+    await expect(tenantCase.service.confirmCriticalWrite({
+      context: { ...context, scopes: ["event.write"] },
+      tool_name: safetyToolName,
+      preview_id: challenge.preview.preview_id,
+      confirmation_token: challenge.confirmation_token,
+      idempotency_key: safetyIdempotencyKey,
+      current_object_version: "event-v1",
+    }, mutation)).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    expect(tenantCase.backendChecks()).toBe(3);
+    expect(writes).toBe(0);
+  });
+
+  test("TC-05: provider retry rechecks RBAC but receives one durable write receipt", async () => {
+    const retryCase = setup();
+    const challenge = await createPreview(retryCase.service);
+    let writes = 0;
+    const request = {
+      context: { ...context, scopes: ["event.write"] as RequestContext["scopes"] },
+      tool_name: safetyToolName,
+      preview_id: challenge.preview.preview_id,
+      confirmation_token: challenge.confirmation_token,
+      idempotency_key: safetyIdempotencyKey,
+      current_object_version: "event-v1",
+    };
+    const mutation = async () => { writes++; return writeEffect(); };
+
+    const first = await retryCase.service.confirmCriticalWrite(request, mutation);
+    const replay = await retryCase.service.confirmCriticalWrite(request, mutation);
+
+    expect(replay).toEqual(first);
+    expect(writes).toBe(1);
+    expect(retryCase.backendChecks()).toBe(3);
   });
 });
