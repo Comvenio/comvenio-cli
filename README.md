@@ -73,10 +73,12 @@ Commit dort ausgerollt wurde und `/health` HTTP 200 liefert. Für ChatGPT und Cl
 Review-Domain darf bis zum grünen `/ready`-Gate nicht im Marketplace oder
 Connector Directory eingereicht werden.
 
-Der lokale MCP-Initialize-Test verwendet aktuell den internen Testhinweis
-`X-Comvenio-Provider`. Ein provider-nativer Handshake von ChatGPT und Claude
-gegen die öffentliche Domain ist damit noch nicht belegt und bleibt ein
-eigenes Release-Gate.
+Die lokalen Contract-Tests initialisieren Claude-, Codex- und unbekannte
+Standard-MCP-Clients ohne proprietären Provider-Header. Ein optionaler
+`X-Comvenio-Provider`-Hinweis bleibt ausschließlich für Diagnose und
+Konsistenzprüfung verfügbar; OAuth, Scopes, Capability-Snapshot und
+Backend-RBAC bestimmen weiterhin Identität und Rechte. Der reale Handshake der
+Provider gegen die öffentliche Domain bleibt ein eigenes Release-Gate.
 
 Vor jedem Railway-Build muss der Workspace-Lockfile aktuell sein:
 

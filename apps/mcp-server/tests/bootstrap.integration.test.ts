@@ -83,7 +83,6 @@ describe("production MCP process bootstrap", () => {
       headers: {
         accept: "application/json, text/event-stream",
         "content-type": "application/json",
-        "x-comvenio-provider": "openai",
       },
       body: JSON.stringify({
         jsonrpc: "2.0",

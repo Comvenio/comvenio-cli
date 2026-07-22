@@ -19,6 +19,10 @@ Die Einträge folgen
 
 ### Changed
 
+- Standard-MCP-Clients wie Claude und Codex können ohne den proprietären
+  `X-Comvenio-Provider`-Header initialisieren. Authentifizierte Provider werden
+  weiterhin aus dem geprüften OAuth-Principal abgeleitet; Client- und
+  Provider-Metadaten beeinflussen keine Berechtigungen.
 - Der Railway-Healthcheck nutzt `/health`; die Produktfreigabe bleibt unabhängig
   davon über `/ready` gesperrt, bis Katalog, OAuth und Capability-Gates erfüllt sind.
 - Das Paket ist gegen eine versehentliche Veröffentlichung bei npm geschützt.

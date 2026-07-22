@@ -402,7 +402,6 @@ async function postMcp(baseUrl: string, body: unknown, token?: string): Promise<
       Accept: "application/json, text/event-stream",
       "Content-Type": "application/json",
       "MCP-Protocol-Version": "2025-06-18",
-      "X-Comvenio-Provider": token?.endsWith("anthropic") ? "anthropic" : "openai",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(body),
@@ -423,18 +422,25 @@ describe("Remote MCP runtime", () => {
     const address = await server.listen(0, "127.0.0.1");
     const baseUrl = `http://127.0.0.1:${address.port}`;
     try {
-      const initialize = await postMcp(baseUrl, {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2025-06-18",
-          capabilities: {},
-          clientInfo: { name: "comvenio-contract-test", version: "1.0.0" },
-        },
-      });
-      expect(initialize.status).toBe(200);
-      expect((await initialize.json() as any).result.serverInfo.name).toBe("comvenio-runtime-test");
+      for (const [index, clientName] of [
+        "Claude",
+        "Codex",
+        "ChatGPT",
+        "comvenio-contract-test",
+      ].entries()) {
+        const initialize = await postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: index + 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2025-06-18",
+            capabilities: {},
+            clientInfo: { name: clientName, version: "1.0.0" },
+          },
+        });
+        expect(initialize.status).toBe(200);
+        expect((await initialize.json() as any).result.serverInfo.name).toBe("comvenio-runtime-test");
+      }
 
       const list = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -489,6 +495,7 @@ describe("Remote MCP runtime", () => {
     expect(first.request.request_id).not.toBe(second.request.request_id);
     expect(Object.keys(first.provider_request).sort()).toEqual([
       "authenticated",
+      "client_kind",
       "protocol_version",
       "provider",
       "received_at",
@@ -498,6 +505,60 @@ describe("Remote MCP runtime", () => {
       authorization: "Bearer token-openai",
       provider_hint: "openai",
       body: { method: "tools/call", params: { arguments: { club_id: otherClubId } } },
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+  });
+
+  test("accepts Claude, Codex and ChatGPT without a proprietary provider header", async () => {
+    const factory = new StatelessTransportContextFactory(runtimeOptions());
+    const claude = await factory.create({
+      body: {
+        method: "initialize",
+        params: { clientInfo: { name: "Claude", version: "1.0.0" } },
+      },
+    });
+    const codex = await factory.create({
+      body: {
+        method: "initialize",
+        params: { clientInfo: { name: "Codex", version: "1.0.0" } },
+      },
+    });
+    const chatgpt = await factory.create({
+      body: {
+        method: "initialize",
+        params: { clientInfo: { name: "ChatGPT", version: "1.0.0" } },
+      },
+    });
+    const authenticated = await factory.create({
+      authorization: "Bearer token-openai",
+      body: { method: "tools/list", params: {} },
+    });
+
+    expect(claude.provider_request).toMatchObject({
+      provider: null,
+      client_kind: "claude",
+      authenticated: false,
+    });
+    expect(codex.provider_request).toMatchObject({
+      provider: null,
+      client_kind: "codex",
+      authenticated: false,
+    });
+    expect(chatgpt.provider_request).toMatchObject({
+      provider: null,
+      client_kind: "chatgpt",
+      authenticated: false,
+    });
+    expect(authenticated.provider_request).toMatchObject({
+      provider: "openai",
+      client_kind: "unknown",
+      authenticated: true,
+    });
+    expect(authenticated.request.scopes).toEqual(["club.read", "member.read.basic"]);
+
+    await expect(factory.create({
+      authorization: "Bearer token-openai",
+      provider_hint: "anthropic",
+      body: { method: "tools/list", params: {} },
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
   });
 
@@ -534,9 +595,22 @@ describe("Remote MCP runtime", () => {
     const server = new McpHttpServer(runtimeOptions({ telemetry }));
     const address = await server.listen(0, "127.0.0.1");
     try {
-      const response = await postMcp(`http://127.0.0.1:${address.port}`, {
+      const initialize = await postMcp(`http://127.0.0.1:${address.port}`, {
         jsonrpc: "2.0",
         id: 4,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-06-18",
+          capabilities: {},
+          clientInfo: { name: "Claude-CLIENTINFO-GEHEIM", version: "PRIVATE-VERSION" },
+        },
+      });
+      expect(initialize.status).toBe(200);
+      await initialize.json();
+
+      const response = await postMcp(`http://127.0.0.1:${address.port}`, {
+        jsonrpc: "2.0",
+        id: 5,
         method: "tools/call",
         params: {
           name: "cv_runtime_context_read",
@@ -551,6 +625,8 @@ describe("Remote MCP runtime", () => {
       await Bun.sleep(10);
       const serialized = JSON.stringify(telemetry.list());
       expect(serialized).not.toContain("MITGLIED-GEHEIM");
+      expect(serialized).not.toContain("CLIENTINFO-GEHEIM");
+      expect(serialized).not.toContain("PRIVATE-VERSION");
       expect(serialized).not.toContain("token-openai");
       expect(serialized).not.toContain(clubId);
       expect(Object.keys(telemetry.list()[0] ?? {}).sort()).toEqual([
