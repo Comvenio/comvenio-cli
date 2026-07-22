@@ -53,6 +53,9 @@ export function runAnthropicSubmissionPreflight(input: {
   const resultTools = input.evidence.tool_results.map((item) => item.tool_name).sort();
   const expectedWidgets = [...input.manifest.widget_resource_uris].sort();
   const evidenceWidgets = input.evidence.widget_surfaces.map((item) => item.resource_uri).sort();
+  const publishedWidgets = new Set<string>(input.manifest.widget_resource_uris);
+  const screenshotWidgets = new Set<string>(input.manifest.screenshots.map((item) => item.resource_uri));
+  const screenshotPaths = input.manifest.screenshots.map((item) => item.path);
   const artifacts = [
     input.manifest.assets.icon,
     input.manifest.assets.logo,
@@ -61,6 +64,7 @@ export function runAnthropicSubmissionPreflight(input: {
     "./submission/connector-profile.json",
     "./submission/tool-test-plan.json",
     "./submission/reviewer-runbook.md",
+    "./submission/directory-submission-checklist.md",
   ];
   const checks = [
     check("DIRECTORY_ORGANIZATION", ["team", "enterprise"].includes(input.evidence.organization_plan), "Claude Directory benötigt eine Team- oder Enterprise-Organisation."),
@@ -72,7 +76,13 @@ export function runAnthropicSubmissionPreflight(input: {
     check("PUBLIC_TRUST_DOCS", input.evidence.public_documentation_verified && input.evidence.privacy_policy_verified && input.evidence.support_verified, "Dokumentation, Datenschutz und Support müssen öffentlich erreichbar sein."),
     check("FIRST_PARTY_POLICY", input.evidence.first_party_api_verified && input.evidence.unsupported_use_cases_absent, "Nur eigene Comvenio-APIs und zulässige Directory-Anwendungsfälle dürfen enthalten sein."),
     check("REAL_ARTIFACTS", artifacts.every((path) => realFile(input.artifact_root, path)), "Alle Profile, Assets, Screenshots, Fixtures und Reviewer-Dokumente müssen real vorhanden sein."),
-    check("WIDGET_SCREENSHOTS", input.manifest.screenshots.length === input.manifest.widget_resource_uris.length && input.manifest.screenshots.every((item) => item.format === "png" && item.app_response_only && item.synthetic_data_only && item.prompt.trim().length > 0 && validCarouselPng(input.artifact_root, item.path)), "Jede veröffentlichte MCP App benötigt einen synthetischen PNG-Nachweis mit mindestens 1000 Pixel Breite."),
+    check("WIDGET_SCREENSHOTS", input.manifest.screenshots.length >= 3
+      && input.manifest.screenshots.length <= 5
+      && new Set(screenshotPaths).size === screenshotPaths.length
+      && input.manifest.screenshots.every((item) => publishedWidgets.has(item.resource_uri)
+        && item.format === "png" && item.app_response_only && item.synthetic_data_only
+        && item.prompt.trim().length > 0 && validCarouselPng(input.artifact_root, item.path))
+      && [...publishedWidgets].every((resourceUri) => screenshotWidgets.has(resourceUri)), "Die Claude-Submission benötigt drei bis fünf eindeutige synthetische PNG-Carousel-Bilder mit mindestens 1000 Pixel Breite und mindestens einem Nachweis je veröffentlichtem Widget."),
     check("PUBLISHED_TOOLS", input.tools.length > 0, "Eine Directory-Einreichung ohne veröffentlichte Tools ist nicht zulässig."),
     check("TOOL_COPY_ANNOTATIONS", input.tools.every(safeToolCopy), "Jedes Tool benötigt kurzen Namen, Titel, enge Beschreibung und widerspruchsfreie gemeinsame Annotationen."),
     check("TOOL_SYNC", input.evidence.tool_sync_report.status === "pass" && input.evidence.tool_sync_report.tool_sync_version === input.manifest.tool_sync_version && input.evidence.tool_sync_report.expected_tool_count === input.tools.length, "Der deterministische Tool-Sync muss ohne Missing, Extra oder Drift bestehen."),

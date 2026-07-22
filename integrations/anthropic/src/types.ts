@@ -46,7 +46,7 @@ export interface ClaudeDirectoryManifest {
     dynamic_client_registration: false;
     anthropic_held_credentials: false;
   };
-  capabilities: { tools: true; prompts: true; resources: true; mcp_apps: true };
+  capabilities: { tools: true; prompts: false; resources: true; mcp_apps: true };
   allowed_link_uris: [];
   widget_resource_uris: [...typeof ANTHROPIC_RELEASE_WIDGET_RESOURCE_URIS];
   tool_sync_version: string;

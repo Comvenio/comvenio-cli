@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { JsonSchemaDocument, OperationDefinition, ToolCatalogSnapshot, ToolDefinition } from "@comvenio/tool-catalog";
@@ -107,17 +107,11 @@ function evidence(manifest: ClaudeDirectoryManifest, plan: ClaudeToolSyncPlan): 
   };
 }
 
-function pngWidth(path: string): number {
-  const image = readFileSync(path);
-  expect(image.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
-  return image.readUInt32BE(16);
-}
-
 describe("Anthropic Connector Directory provider package", () => {
   const adapter = new AnthropicConnectorAdapter();
   const expectedTools = adapter.adapt({ catalog, schemas });
 
-  test("TC-01/TC-02: builds and validates all five K22 entities and a ready bundle", () => {
+  test("TC-01/TC-02: builds all five K22 entities and blocks the incomplete Directory draft", () => {
     expect(adapter.validate({ catalog, schemas })).toEqual({ valid: true, tool_count: 2, tool_sync_version: catalogHash });
     const manifest = buildClaudeDirectoryManifest(catalogHash);
     const plan = new ClaudeToolSyncSuite().buildPlan(catalog);
@@ -125,8 +119,10 @@ describe("Anthropic Connector Directory provider package", () => {
     const bundle = buildClaudeSubmissionBundle({ artifact_root: artifactRoot, catalog, schemas, observed_tools: structuredClone(expectedTools), evidence: evidence(manifest, plan) });
     expect([adapter, manifest, bundle, new ClaudeToolSyncSuite(), runbook]).toHaveLength(5);
     expect(bundle.tool_sync_report.status).toBe("pass");
-    expect(bundle.preflight.state).toBe("ready");
-    expect(() => assertAnthropicSubmissionReady(bundle.preflight)).not.toThrow();
+    expect(manifest.capabilities.prompts).toBe(false);
+    expect(bundle.preflight.state).toBe("blocked");
+    expect(bundle.preflight.checks).toContainEqual(expect.objectContaining({ code: "WIDGET_SCREENSHOTS", status: "block" }));
+    expect(() => assertAnthropicSubmissionReady(bundle.preflight)).toThrow("WIDGET_SCREENSHOTS");
   });
 
   test("TC-03: detects every missing, extra or drifted tool and validates empty and schema boundaries", () => {
@@ -139,18 +135,20 @@ describe("Anthropic Connector Directory provider package", () => {
     expect(suite.compare({ tool_sync_version: catalogHash, expected: [], observed: [] }).status).toBe("blocked");
     expect(() => adapter.adapt({ catalog, schemas: new Map() })).toThrow("Schema fehlt");
     expect(() => suite.buildPlan({ ...catalog, tools: [{ ...publicTool, tool_name: `cv_${"x".repeat(64)}` }] })).toThrow();
+    const draft = buildClaudeDirectoryManifest(catalogHash);
+    const eventScreenshot = { resource_uri: "ui://comvenio/event-calendar" as const, path: "./screenshots/event-calendar.png", prompt: "Welche Termine stehen diese Woche in meinem Verein an?", format: "png" as const, app_response_only: true as const, synthetic_data_only: true as const };
+    const newsScreenshot = { ...eventScreenshot, resource_uri: "ui://comvenio/news" as const, path: "./screenshots/news-list.png", prompt: "Zeige mir die neuesten News meines Vereins." };
+    const eventDetailScreenshot = { ...eventScreenshot, path: "./screenshots/event-calendar-detail.png", prompt: "Zeige mir die Details zum nächsten Vereinstermin." };
+    expect(CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, eventDetailScreenshot] }).screenshots).toHaveLength(3);
+    expect(() => CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, { ...eventDetailScreenshot, resource_uri: "ui://comvenio/member-management" }] })).toThrow("veröffentlichte Widgets");
+    expect(() => CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, { ...eventDetailScreenshot, path: eventScreenshot.path }] })).toThrow("eindeutigen Artefaktpfad");
   });
 
-  test("TC-04: validates the released synthetic app-response PNGs with at least 1000px width", () => {
+  test("TC-04: keeps unverified planning mockups out of the submission manifest", () => {
     const staticManifest = CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/connector-profile.json"), "utf8")));
     const staticPlan = CLAUDE_TOOL_SYNC_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/tool-test-plan.json"), "utf8")));
     expect(staticManifest.tool_sync_version).toBe(staticPlan.tool_sync_version);
-    expect(staticManifest.screenshots).toHaveLength(2);
-    for (const screenshot of staticManifest.screenshots) {
-      expect(statSync(resolve(artifactRoot, screenshot.path)).size).toBeGreaterThan(0);
-      expect(pngWidth(resolve(artifactRoot, screenshot.path))).toBeGreaterThanOrEqual(1_000);
-      expect(screenshot).toMatchObject({ format: "png", app_response_only: true, synthetic_data_only: true });
-    }
+    expect(staticManifest.screenshots).toEqual([]);
     for (const item of staticPlan.cases) expect(existsSync(resolve(artifactRoot, item.expected_response_fixture))).toBe(true);
   });
 

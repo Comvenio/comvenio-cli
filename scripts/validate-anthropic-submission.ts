@@ -23,6 +23,17 @@ if (manifest.tool_sync_version !== runtimeVersion
   || JSON.stringify(plan.cases.map((item) => item.tool_name).sort()) !== JSON.stringify(runtimeTools)) {
   throw new Error("Claude-Submission und produktiv veröffentlichte Runtime-Tools weichen voneinander ab.");
 }
+if (manifest.screenshots.length < 3 || manifest.screenshots.length > 5) {
+  throw new Error(`Claude-Submission benötigt drei bis fünf Carousel-Screenshots; vorhanden: ${manifest.screenshots.length}.`);
+}
+if (new Set(manifest.screenshots.map((item) => item.path)).size !== manifest.screenshots.length) {
+  throw new Error("Claude-Submission enthält doppelte Carousel-Screenshot-Pfade.");
+}
+for (const resourceUri of manifest.widget_resource_uris) {
+  if (!manifest.screenshots.some((item) => item.resource_uri === resourceUri)) {
+    throw new Error(`Claude-Submission enthält keinen Carousel-Nachweis für ${resourceUri}.`);
+  }
+}
 
 const required = [
   manifest.assets.icon,
@@ -30,6 +41,7 @@ const required = [
   ...manifest.screenshots.map((item) => item.path),
   ...plan.cases.map((item) => `./${item.expected_response_fixture}`),
   "./submission/reviewer-runbook.md",
+  "./submission/directory-submission-checklist.md",
 ];
 for (const relativePath of required) {
   const path = resolve(root, relativePath.replace(/^\.\//u, ""));
@@ -45,4 +57,4 @@ for (const forbidden of [".claude-plugin/plugin.json", ".mcp.json", "manifest.js
   if (existsSync(resolve(root, forbidden))) throw new Error(`Claude-Code-Plugin ist kein Directory-Artefakt: ${forbidden}`);
 }
 
-console.log(`Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} MCP Apps.`);
+console.log(`Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} Carousel-Screenshots.`);

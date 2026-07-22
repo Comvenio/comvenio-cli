@@ -39,7 +39,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
     dynamic_client_registration: z.literal(false),
     anthropic_held_credentials: z.literal(false),
   }).strict(),
-  capabilities: z.object({ tools: z.literal(true), prompts: z.literal(true), resources: z.literal(true), mcp_apps: z.literal(true) }).strict(),
+  capabilities: z.object({ tools: z.literal(true), prompts: z.literal(false), resources: z.literal(true), mcp_apps: z.literal(true) }).strict(),
   allowed_link_uris: z.tuple([]),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
@@ -54,14 +54,17 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
     format: z.literal("png"),
     app_response_only: z.literal(true),
     synthetic_data_only: z.literal(true),
-  }).strict()).length(2),
+  }).strict()).max(5),
 }).strict().superRefine((manifest, context) => {
   if (manifest.product_name.length > 100 || manifest.tagline.length > 55 || manifest.short_description.length > 2_000) {
     context.addIssue({ code: "custom", message: "Directory-Name, Tagline oder Beschreibung überschreiten die Portalgrenze." });
   }
-  if (new Set(manifest.widget_resource_uris).size !== 2
-    || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== manifest.screenshots.length) {
-    context.addIssue({ code: "custom", message: "Widget- und Screenshot-Referenzen müssen eindeutig sein." });
+  const publishedWidgets = new Set<string>(manifest.widget_resource_uris);
+  if (publishedWidgets.size !== 2 || manifest.screenshots.some((item) => !publishedWidgets.has(item.resource_uri))) {
+    context.addIssue({ code: "custom", message: "Screenshots dürfen nur veröffentlichte Widgets zeigen." });
+  }
+  if (new Set(manifest.screenshots.map((item) => item.path)).size !== manifest.screenshots.length) {
+    context.addIssue({ code: "custom", message: "Jeder Carousel-Screenshot benötigt einen eindeutigen Artefaktpfad." });
   }
 });
 

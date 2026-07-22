@@ -190,7 +190,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(openAi.widget_resource_uris).toEqual(anthropic.widget_resource_uris);
     expect(new Set(openAi.widget_resource_uris).size).toBe(2);
     expect(new Set(openAi.screenshots.map((item) => item.resource_uri))).toEqual(new Set(openAi.widget_resource_uris));
-    expect(new Set(anthropic.screenshots.map((item) => item.resource_uri))).toEqual(new Set(anthropic.widget_resource_uris));
+    expect(anthropic.screenshots).toEqual([]);
 
     const widgetBuilds = [
       [EVENT_CALENDAR_WIDGET_CSS, EVENT_CALENDAR_WIDGET_CLIENT],

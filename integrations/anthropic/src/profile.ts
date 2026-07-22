@@ -31,7 +31,7 @@ export function buildClaudeDirectoryManifest(toolSyncVersion: string): ClaudeDir
       dynamic_client_registration: false,
       anthropic_held_credentials: false,
     },
-    capabilities: { tools: true, prompts: true, resources: true, mcp_apps: true },
+    capabilities: { tools: true, prompts: false, resources: true, mcp_apps: true },
     allowed_link_uris: [],
     widget_resource_uris: [
       "ui://comvenio/event-calendar",
@@ -39,9 +39,6 @@ export function buildClaudeDirectoryManifest(toolSyncVersion: string): ClaudeDir
     ],
     tool_sync_version: toolSyncVersion,
     assets: { icon: "./assets/icon.svg", logo: "./assets/logo.png" },
-    screenshots: [
-      { resource_uri: "ui://comvenio/event-calendar", path: "./screenshots/event-mobile.png", prompt: "Welche Termine stehen diese Woche in meinem Verein an?", format: "png", app_response_only: true, synthetic_data_only: true },
-      { resource_uri: "ui://comvenio/news", path: "./screenshots/news-desktop.png", prompt: "Zeige mir die neuesten News meines Vereins.", format: "png", app_response_only: true, synthetic_data_only: true },
-    ],
+    screenshots: [],
   });
 }

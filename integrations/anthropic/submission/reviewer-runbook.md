@@ -28,7 +28,9 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 
 - Jedes veröffentlichte Tool im MCP Inspector und als Claude Custom Connector mit Happy Path und Permission-Denial ausführen.
 - Kalender- und News-App mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
-- Die Widgetbilder enthalten ausschließlich die jeweilige App-Antwort mit synthetischen Daten; die Prompts stehen separat im Profil.
+- Drei bis fünf unterschiedliche PNG-Carousel-Bilder mit mindestens 1000 Pixeln Breite enthalten
+  ausschließlich die jeweilige App-Antwort mit synthetischen Daten; die Prompts stehen separat im
+  Profil. Beide veröffentlichten Widgets sind mindestens einmal vertreten.
 - Externe News-Links sind nicht vorab freigegeben und behalten deshalb Claudes Bestätigungsdialog.
 
 Ein offenes Finding blockiert nur die Claude-Publikation. Der ChatGPT-Freigabestatus wird dadurch nicht automatisch verändert.
