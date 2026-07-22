@@ -1,6 +1,16 @@
 {
   "contract_version": "1.0.0",
   "release_state": "BLOCKED",
-  "pins": [],
-  "notice": "OpenAI- und Anthropic-CIMD-URLs werden erst nach Beobachtung im Provider-Portal und Security-Review mit exaktem SHA-256-Fingerprint und minimaler serverseitiger allowed_scopes-Liste eingetragen. Wildcards sind verboten."
+  "pins": [
+    {
+      "client_id": "https://chatgpt.com/oauth/pxWqQ6tZWG5k/client.json",
+      "provider": "openai",
+      "metadata_sha256": "7d8b74f3544d90c33f4e6df0b46cc23c4ef928d7398bfede623c70555790aa36",
+      "allowed_scopes": [
+        "club.read"
+      ],
+      "enabled": true
+    }
+  ],
+  "notice": "Der OpenAI-CIMD-Client wurde am 22.07.2026 im ChatGPT-Connector-Portal beobachtet, bytegenau geprüft und mit minimalem club.read-Scope gepinnt. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
 }
