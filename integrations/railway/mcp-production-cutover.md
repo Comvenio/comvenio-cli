@@ -17,14 +17,13 @@ Der OAuth-Authorization-Server bleibt `https://api.comvenio.app/auth`. Die kanon
 
 Repository und Verzeichnis: `comvenio-tools/cloudflare-worker-gateway/`.
 
-1. Im DNS der Zone `comvenio.app` den proxied Host `mcp.comvenio.app` nach dem bestehenden Worker-DNS-Muster anlegen.
-2. Die Route `mcp.comvenio.app/*` dem Worker `comvenio-api-gateway` zuordnen. Sie steht versioniert in `wrangler.toml`.
-3. Ein kryptografisch zufälliges Secret mit mindestens 32 Zeichen als Worker-Secret `MCP_ORIGIN_SHARED_SECRET` hinterlegen. Nicht unter `[vars]` eintragen.
-4. Den Worker deployen. Er muss Upstream-Redirects manuell behandeln, externe OAuth-Callbacks unverändert weiterreichen und den Header `X-Comvenio-Edge-Secret` selbst setzen.
+1. Die Custom Domain `mcp.comvenio.app` dem Worker `comvenio-api-gateway` zuordnen. Sie steht als `custom_domain = true` versioniert in `wrangler.toml`; Wrangler erzeugt DNS-Eintrag und Zertifikat automatisch.
+2. Ein kryptografisch zufälliges Secret mit mindestens 32 Zeichen als Worker-Secret `MCP_ORIGIN_SHARED_SECRET` hinterlegen. Nicht unter `[vars]` eintragen.
+3. Den Worker deployen. Er muss Upstream-Redirects manuell behandeln, externe OAuth-Callbacks unverändert weiterreichen und den Header `X-Comvenio-Edge-Secret` selbst setzen.
 
 Der Worker kann vor dem Railway-Cutover bereitgestellt werden: Der bisherige MCP-Server ignoriert den zusätzlichen Header. Damit lässt sich DNS und Routing vorab stabilisieren.
 
-## 2. Railway – Service `comvenio-mcp-server`
+## 2. Railway – Service `comvenio-cli`
 
 Repository: `comvenio-cli`; Railway-Konfiguration: `railway.json`.
 
@@ -57,11 +56,11 @@ Alle neu ausgestellten Connector-Access-Tokens müssen anschließend `aud=https:
 
 ## 4. Reihenfolge und produktiver Nachweis
 
-1. Cloudflare-DNS, Worker-Route und Worker-Secret vorab bereitstellen.
+1. Cloudflare-Custom-Domain und Worker-Secret per Wrangler vorab bereitstellen.
 2. Neue Connector-Verbindungen für das kurze Cutover-Fenster pausieren. Der Wechsel der Audience
    ist nicht rückwärtskompatibel; ein Zwischenstand muss bewusst fail-closed bleiben.
 3. `auth-service` mit der neuen Resource deployen und unmittelbar danach
-   `comvenio-mcp-server` mit demselben Edge-Secret und
+   `comvenio-cli` mit demselben Edge-Secret und
    `MCP_PUBLIC_ORIGIN=https://mcp.comvenio.app` deployen.
 4. Erst nach erfolgreichem Deploy in ChatGPT den Connector-Endpoint auf `https://mcp.comvenio.app/mcp` ändern beziehungsweise neu scannen.
 5. Die vom Portal tatsächlich gelieferte CIMD-Client-ID und den Metadaten-Fingerprint beobachten. Den Pin nur ändern, wenn sich einer dieser Werte wirklich geändert hat.
@@ -72,5 +71,5 @@ Alle neu ausgestellten Connector-Access-Tokens müssen anschließend `aud=https:
 
 - Worker ohne gültiges Secret: `mcp.comvenio.app` antwortet 503 und kontaktiert Railway nicht.
 - Direkter Origin-Aufruf ohne Secret: MCP-Server antwortet außerhalb `/health` mit 403.
-- OAuth-Resource-Mismatch: Connector-Verbindung stoppen; `MCP_PUBLIC_ORIGIN` in `auth-service` und `comvenio-mcp-server` auf exakte Gleichheit prüfen.
+- OAuth-Resource-Mismatch: Connector-Verbindung stoppen; `MCP_PUBLIC_ORIGIN` in `auth-service` und `comvenio-cli` auf exakte Gleichheit prüfen.
 - Fehlerhafter Release: vorherige erfolgreiche Railway-Deployments beider Services wiederherstellen und ihre Variablen gemeinsam zurücksetzen; anschließend den vorherigen Worker-Deploy wiederherstellen. Kein einzelner Teil-Rollback mit gemischten Audiences.
