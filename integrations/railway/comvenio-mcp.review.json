@@ -20,7 +20,7 @@
       "secret_namespace": "MCP_DEV"
     },
     "production": {
-      "domain": "mcp.comvenio.app",
+      "domain": "comvenio-cli-production.up.railway.app",
       "healthcheck": "/health",
       "readiness": "/ready",
       "secret_namespace": "MCP_PROD"

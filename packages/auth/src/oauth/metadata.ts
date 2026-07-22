@@ -21,9 +21,18 @@ function assertHttps(value: string, field: string): asserts value is HttpsUrl {
   }
 }
 
-export function oauthEndpoints(environment: OAuthEnvironment): OAuthEndpoints {
+export function oauthEndpoints(
+  environment: OAuthEnvironment,
+  publicOrigin?: HttpsUrl,
+): OAuthEndpoints {
   const production = environment === "production";
-  const resource = `https://${production ? "mcp" : "mcpdev"}.comvenio.app` as HttpsUrl;
+  const resource = publicOrigin ?? (production
+    ? "https://comvenio-cli-production.up.railway.app"
+    : "https://mcpdev.comvenio.app");
+  assertHttps(resource, "MCP_PUBLIC_ORIGIN");
+  if (new URL(resource).origin !== resource) {
+    throw new OAuthContractError("invalid_request", "MCP_PUBLIC_ORIGIN muss ein HTTPS-Origin ohne Pfad sein.");
+  }
   const authorizationServer = `https://${production ? "api" : "apidev"}.comvenio.app/auth` as HttpsUrl;
   return {
     resource,
@@ -54,9 +63,10 @@ export function createAuthorizationServerMetadata(
 export function createProtectedResourceMetadata(
   environment: OAuthEnvironment,
   resourceDocumentation: string,
+  publicOrigin?: HttpsUrl,
 ): OAuthProtectedResourceMetadata {
   assertHttps(resourceDocumentation, "resource_documentation");
-  const endpoints = oauthEndpoints(environment);
+  const endpoints = oauthEndpoints(environment, publicOrigin);
   return {
     resource: endpoints.resource,
     authorization_servers: [endpoints.authorization_server],

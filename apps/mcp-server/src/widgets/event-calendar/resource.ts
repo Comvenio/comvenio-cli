@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { OAuthEnvironment } from "@comvenio/auth";
+import { oauthEndpoints, type HttpsUrl, type OAuthEnvironment } from "@comvenio/auth";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { EVENT_CALENDAR_WIDGET_CLIENT } from "./client.ts";
@@ -13,10 +13,10 @@ export const EVENT_CALENDAR_WIDGET_CLIENT_HASH = createHash("sha256")
   .digest("hex");
 export const EVENT_CALENDAR_WIDGET_ASSET_PATH = `/widgets/event-calendar/assets/event-calendar.${EVENT_CALENDAR_WIDGET_CLIENT_HASH}.js` as const;
 
-export const EVENT_CALENDAR_WIDGET_CSP = "default-src 'none'; script-src 'self'; img-src https:; style-src 'self' 'unsafe-inline'; connect-src https://mcp.comvenio.app https://mcpdev.comvenio.app; font-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'" as const;
+export const EVENT_CALENDAR_WIDGET_CSP = "default-src 'none'; script-src 'self'; img-src https:; style-src 'self' 'unsafe-inline'; connect-src https://comvenio-cli-production.up.railway.app https://mcpdev.comvenio.app; font-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'" as const;
 
-export function eventCalendarWidgetOrigin(environment: OAuthEnvironment): "https://mcp.comvenio.app" | "https://mcpdev.comvenio.app" {
-  return environment === "production" ? "https://mcp.comvenio.app" : "https://mcpdev.comvenio.app";
+export function eventCalendarWidgetOrigin(environment: OAuthEnvironment): HttpsUrl {
+  return oauthEndpoints(environment).resource;
 }
 
 export function eventCalendarWidgetHtml(environment: OAuthEnvironment): string {

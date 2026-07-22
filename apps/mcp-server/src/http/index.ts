@@ -6,3 +6,4 @@ export * from "./health.ts";
 export * from "./server.ts";
 export * from "./telemetry.ts";
 export * from "./types.ts";
+export * from "./upstreams.ts";
