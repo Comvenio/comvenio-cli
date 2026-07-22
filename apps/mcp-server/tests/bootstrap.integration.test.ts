@@ -5,6 +5,7 @@ import {
   readMcpProcessConfig,
 } from "../src/bootstrap.ts";
 import type { McpHttpServer } from "../src/http/server.ts";
+import { NEWS_WIDGET_ASSET_PATH } from "../src/widgets/news/resource.ts";
 
 let activeServer: McpHttpServer | null = null;
 
@@ -18,7 +19,8 @@ describe("production MCP process bootstrap", () => {
     expect(readMcpProcessConfig({
       PORT: "8080",
       RAILWAY_PUBLIC_DOMAIN: "comvenio-cli-production.up.railway.app",
-      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp-review.comvenio.app",
       MCP_PROD_ALLOWED_ORIGINS: "https://chatgpt.com,https://claude.ai",
@@ -26,13 +28,15 @@ describe("production MCP process bootstrap", () => {
       environment: "production",
       host: "0.0.0.0",
       port: 8080,
-      public_origin: "https://comvenio-cli-production.up.railway.app",
+      public_origin: "https://mcp.comvenio.app",
+      edge_shared_secret: "test-only-mcp-edge-secret-32-characters",
       api_base_url: "https://api.comvenio.app",
       auth_base_url: "https://api.comvenio.app/auth",
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: null,
       cimd_client_pins: expect.objectContaining({ contract_version: "1.0.0", pins: [] }),
       allowed_hosts: [
+        "mcp.comvenio.app",
         "comvenio-cli-production.up.railway.app",
         "healthcheck.railway.app",
         "mcp-review.comvenio.app",
@@ -44,14 +48,28 @@ describe("production MCP process bootstrap", () => {
   test("rejects invalid ports and duplicate allowlist entries", () => {
     expect(() => readMcpProcessConfig({
       PORT: "0",
-      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
       INTERNAL_API_KEY: "test-internal-key",
     })).toThrow("PORT");
     expect(() => readMcpProcessConfig({
-      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp.example.test,mcp.example.test",
     })).toThrow("doppelte");
+  });
+
+  test("requires a strong edge secret in production", () => {
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("MCP_EDGE_SHARED_SECRET");
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "too-short",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("MCP_EDGE_SHARED_SECRET");
   });
 
   test("starts on TCP, serves health and OAuth metadata, and stays fail-closed", async () => {
@@ -59,7 +77,8 @@ describe("production MCP process bootstrap", () => {
       environment: "production",
       host: "0.0.0.0",
       port: 8080,
-      public_origin: "https://comvenio-cli-production.up.railway.app",
+      public_origin: "https://mcp.comvenio.app",
+      edge_shared_secret: "test-only-mcp-edge-secret-32-characters",
       api_base_url: "https://api.comvenio.app",
       auth_base_url: "https://api.comvenio.app/auth",
       internal_api_key: "test-internal-key",
@@ -85,20 +104,33 @@ describe("production MCP process bootstrap", () => {
     });
     expect(rejectedHost.status).toBe(403);
 
-    const metadata = await fetch(`${base}/.well-known/oauth-protected-resource`);
+    const directMetadata = await fetch(`${base}/.well-known/oauth-protected-resource`);
+    expect(directMetadata.status).toBe(403);
+
+    const edgeHeaders = { "x-comvenio-edge-secret": "test-only-mcp-edge-secret-32-characters" };
+    const metadata = await fetch(`${base}/.well-known/oauth-protected-resource`, {
+      headers: edgeHeaders,
+    });
     expect(metadata.status).toBe(200);
     expect(await metadata.json()).toEqual(expect.objectContaining({
-      resource: "https://comvenio-cli-production.up.railway.app",
+      resource: "https://mcp.comvenio.app",
       authorization_servers: ["https://api.comvenio.app/auth"],
       resource_documentation: "https://www.comvenio.app/datenschutz",
     }));
 
-    const challenge = await fetch(`${base}/.well-known/openai-apps-challenge`);
+    const challenge = await fetch(`${base}/.well-known/openai-apps-challenge`, {
+      headers: edgeHeaders,
+    });
     expect(challenge.status).toBe(200);
     expect(challenge.headers.get("cache-control")).toBe("no-store");
     expect(await challenge.text()).toBe("openai-domain-proof-token");
 
-    const readiness = await fetch(`${base}/ready`);
+    const directWidgetAsset = await fetch(`${base}${NEWS_WIDGET_ASSET_PATH}`);
+    expect(directWidgetAsset.status).toBe(403);
+    const widgetAsset = await fetch(`${base}${NEWS_WIDGET_ASSET_PATH}`, { headers: edgeHeaders });
+    expect(widgetAsset.status).toBe(200);
+
+    const readiness = await fetch(`${base}/ready`, { headers: edgeHeaders });
     expect(readiness.status).toBe(503);
     expect(await readiness.json()).toEqual({ status: "not_ready" });
 
@@ -107,6 +139,7 @@ describe("production MCP process bootstrap", () => {
       headers: {
         accept: "application/json, text/event-stream",
         "content-type": "application/json",
+        ...edgeHeaders,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -133,6 +166,7 @@ describe("production MCP process bootstrap", () => {
       headers: {
         accept: "application/json, text/event-stream",
         "content-type": "application/json",
+        ...edgeHeaders,
       },
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "resources/list", params: {} }),
     });
@@ -151,6 +185,7 @@ describe("production MCP process bootstrap", () => {
       headers: {
         accept: "application/json, text/event-stream",
         "content-type": "application/json",
+        ...edgeHeaders,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",

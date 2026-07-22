@@ -9,7 +9,8 @@
     "start_command": "bun run start:mcp",
     "bind_host": "0.0.0.0",
     "port_variable": "PORT",
-    "review_domain": "comvenio-cli-production.up.railway.app",
+    "review_domain": "mcp.comvenio.app",
+    "railway_origin_domain": "comvenio-cli-production.up.railway.app",
     "publication_mode": "fail_closed"
   },
   "environments": {
@@ -20,7 +21,8 @@
       "secret_namespace": "MCP_DEV"
     },
     "production": {
-      "domain": "comvenio-cli-production.up.railway.app",
+      "domain": "mcp.comvenio.app",
+      "railway_origin_domain": "comvenio-cli-production.up.railway.app",
       "healthcheck": "/health",
       "readiness": "/ready",
       "secret_namespace": "MCP_PROD"

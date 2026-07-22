@@ -27,9 +27,9 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   provider: z.literal("anthropic"),
   submission_kind: z.literal("remote_mcp_with_mcp_apps"),
   directory_slug: z.literal("comvenio"),
-  remote_mcp_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/mcp")),
+  remote_mcp_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/mcp")),
   transport: z.literal("streamable_http"),
-  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource")),
+  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/.well-known/oauth-protected-resource")),
   oauth_metadata_url: httpsUrl.pipe(z.literal("https://api.comvenio.app/auth/.well-known/oauth-authorization-server")),
   auth: z.object({
     type: z.literal("oauth_cimd"),

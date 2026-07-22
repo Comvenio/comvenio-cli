@@ -19,6 +19,9 @@ export interface RailwayDeploymentConfig {
 function deployment(environment: OAuthEnvironment): RailwayDeploymentConfig {
   const audience = oauthEndpoints(environment).resource;
   const prefix = environment === "production" ? "MCP_PROD" : "MCP_DEV";
+  const edgeSecretNames = environment === "production"
+    ? ["MCP_EDGE_SHARED_SECRET"]
+    : [];
   return {
     environment,
     domain: new URL(audience).hostname,
@@ -29,6 +32,7 @@ function deployment(environment: OAuthEnvironment): RailwayDeploymentConfig {
     secret_namespace: prefix,
     required_secret_names: [
       "MCP_PUBLIC_ORIGIN",
+      ...edgeSecretNames,
       "COMVENIO_API_BASE_URL",
       "AUTH_SERVICE_BASE_URL",
       "INTERNAL_API_KEY",
@@ -59,7 +63,9 @@ export function railwayDeploymentConfig(environment: OAuthEnvironment): RailwayD
 export function validateRailwayDeploymentConfig(config: RailwayDeploymentConfig): void {
   const expected = DEPLOYMENTS[config.environment];
   if (JSON.stringify(config) !== JSON.stringify(expected)
-    || !config.required_secret_names.includes("MCP_PUBLIC_ORIGIN")) {
+    || !config.required_secret_names.includes("MCP_PUBLIC_ORIGIN")
+    || (config.environment === "production"
+      && !config.required_secret_names.includes("MCP_EDGE_SHARED_SECRET"))) {
     throw new Error("Die Railway-Deployment-Konfiguration ist ungültig.");
   }
 }

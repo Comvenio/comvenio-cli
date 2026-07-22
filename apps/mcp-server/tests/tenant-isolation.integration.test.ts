@@ -339,6 +339,7 @@ function runtimeOptions(overrides: Partial<McpRuntimeOptions> = {}): McpRuntimeO
   return {
     environment: "development",
     public_origin: "https://mcpdev.comvenio.app",
+    edge_shared_secret: null,
     allowed_hosts: ["127.0.0.1"],
     allowed_origins: [],
     authenticator: {
@@ -585,11 +586,12 @@ describe("Remote MCP runtime", () => {
     validateRailwayDeploymentConfig(development);
     validateRailwayDeploymentConfig(production);
     expect(development.domain).toBe("mcpdev.comvenio.app");
-    expect(production.domain).toBe("comvenio-cli-production.up.railway.app");
+    expect(production.domain).toBe("mcp.comvenio.app");
     expect(development.audience).not.toBe(production.audience);
     expect(development.secret_namespace).not.toBe(production.secret_namespace);
     expect(development.required_secret_names.some((name) => name.startsWith("MCP_PROD_"))).toBe(false);
     expect(production.required_secret_names.some((name) => name.startsWith("MCP_DEV_"))).toBe(false);
+    expect(production.required_secret_names).toContain("MCP_EDGE_SHARED_SECRET");
   });
 
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {

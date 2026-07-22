@@ -27,7 +27,7 @@ export function oauthEndpoints(
 ): OAuthEndpoints {
   const production = environment === "production";
   const resource = publicOrigin ?? (production
-    ? "https://comvenio-cli-production.up.railway.app"
+    ? "https://mcp.comvenio.app"
     : "https://mcpdev.comvenio.app");
   assertHttps(resource, "MCP_PUBLIC_ORIGIN");
   if (new URL(resource).origin !== resource) {

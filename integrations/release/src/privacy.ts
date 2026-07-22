@@ -13,7 +13,7 @@ export function buildPrivacyThreatModel(findings: SecurityPrivacyFinding[] = [])
     country: "DE",
     privacy_priority: "highest",
     data_flows: [
-      "Nutzerabsicht -> Provider -> Comvenio Remote MCP -> autoritativer Fachservice",
+      "Nutzerabsicht -> Provider -> Cloudflare Edge -> Comvenio Remote MCP -> autoritativer Fachservice",
       "Backend-RBAC -> minimiertes Toolresultat -> gemeinsames Widget -> Provideroberfläche",
       "OAuth-Grant -> exakt ein ausgewählter Verein -> kurz gecachter Capability-Snapshot",
       "Kritischer Write -> serverinterne Vorschau -> zweite Bestätigung -> idempotenter Dispatch",
@@ -26,6 +26,7 @@ export function buildPrivacyThreatModel(findings: SecurityPrivacyFinding[] = [])
       "Bestätigungsansichten enthalten nur maskierte Wirkung und keine Rohpayloads.",
       "Dateien verlassen den MCP nur als kurzlebige, autorisierte Referenzen.",
       "Telemetrie enthält keine Toolargumente, Tokens, Vereins- oder Mitgliederdaten.",
+      "Das Edge-Secret erscheint weder in Providerantworten noch in Telemetrie oder Releaseartefakten.",
       "Reviewartefakte enthalten keine personenbezogenen Produktivdaten.",
     ],
     retention_seconds: { capability_snapshot: 30, private_introspection_read: 5, preview: 300, confirmation: 300, idempotency: 86_400, upload_handle: 900, result_file: 86_400, job_metadata: 604_800 },

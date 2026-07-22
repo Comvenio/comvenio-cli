@@ -4,7 +4,7 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 
 ## Verbindung
 
-1. `https://comvenio-cli-production.up.railway.app/mcp` als Streamable-HTTP-Connector verbinden.
+1. `https://mcp.comvenio.app/mcp` als Streamable-HTTP-Connector verbinden.
 2. Vor Einreichung die Verfügbarkeit des permanenten Directory-Slugs `comvenio` im Portal bestätigen.
 3. Public Read ohne Anmeldung mit veröffentlichten Events und News prüfen.
 4. Eigene Rechte oder sichtbare Aktionen abfragen und OAuth-CIMD mit öffentlichem Client, `none` und PKCE S256 abschließen.

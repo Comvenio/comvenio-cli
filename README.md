@@ -72,10 +72,11 @@ erst nach OAuth-Introspection, kurzlebigem Actor-Token, expliziter Vereinsbindun
 und aktuellem Self-Capability-Read sichtbar; das Fachbackend prüft RBAC weiterhin
 autoritativ. Der Log-Service ist kein MCP-Upstream.
 
-Die Railway-Review-Domain
-`https://comvenio-cli-production.up.railway.app` ist der initiale kanonische
-Produktions-Origin. Der gemeinsame Endpoint für ChatGPT und Claude lautet
-`https://comvenio-cli-production.up.railway.app/mcp`. Eingereicht wird er erst,
+Der kanonische Produktions-Origin liegt hinter dem bestehenden Cloudflare-Worker
+`comvenio-api-gateway`. Der gemeinsame Endpoint für ChatGPT und Claude lautet
+`https://mcp.comvenio.app/mcp`. Die Railway-Domain
+`https://comvenio-cli-production.up.railway.app` bleibt ausschließlich technischer
+Origin. Eingereicht wird der Connector erst,
 wenn der neue Commit dort ausgerollt wurde, `/health` HTTP 200 und `/ready`
 HTTP 200 liefern sowie OAuth-Discovery, Widerruf und Provider-Handshakes
 produktiv belegt sind.
@@ -84,14 +85,19 @@ Für den Railway-Produktionsdienst sind mindestens folgende Variablen nötig:
 
 ```text
 COMVENIO_MCP_ENV=production
-MCP_PUBLIC_ORIGIN=https://comvenio-cli-production.up.railway.app
+MCP_PUBLIC_ORIGIN=https://mcp.comvenio.app
+MCP_EDGE_SHARED_SECRET=<identisch mit MCP_ORIGIN_SHARED_SECRET im Cloudflare-Worker>
 COMVENIO_API_BASE_URL=https://api.comvenio.app
 AUTH_SERVICE_BASE_URL=https://api.comvenio.app/auth
-MCP_PROD_ALLOWED_HOSTS=comvenio-cli-production.up.railway.app
+MCP_PROD_ALLOWED_HOSTS=mcp.comvenio.app
 MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
 INTERNAL_API_KEY=<identischer interner Key wie im Auth-Service>
 MCP_CIMD_CLIENT_PINS_JSON=<reviewte Client-IDs, Fingerprints und allowed_scopes>
 ```
+
+Die exakten Einstellungen für den Cloudflare-Worker `comvenio-api-gateway`, den
+Railway-Service `comvenio-mcp-server` und den Railway-Service `auth-service`
+stehen im [Produktions-Cutover-Runbook](integrations/railway/mcp-production-cutover.md).
 
 `OPENAI_APPS_CHALLENGE_TOKEN` wird ausschließlich mit dem exakten Wert aus dem
 OpenAI-Submission-Portal gesetzt. Ohne diesen Wert liefert

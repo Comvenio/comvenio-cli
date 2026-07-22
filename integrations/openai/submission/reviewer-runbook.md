@@ -4,8 +4,8 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
 
 ## Voraussetzungen
 
-- Universeller MCP-Endpunkt: `https://comvenio-cli-production.up.railway.app/mcp`
-- OAuth-Metadaten: `https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource`
+- Universeller MCP-Endpunkt: `https://mcp.comvenio.app/mcp`
+- OAuth-Metadaten: `https://mcp.comvenio.app/.well-known/oauth-protected-resource`
 - Zwei Konten im Reviewverein: `member` und `manager`
 - Beide Konten sind ohne MFA, SMS-, E-Mail- oder sonstige Nachprüfung nutzbar.
 - Zugangsdaten stehen ausschließlich im verschlüsselten Submission-Secret; dieses Repository enthält keine Zugangsdaten.

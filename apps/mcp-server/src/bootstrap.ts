@@ -21,6 +21,7 @@ export interface McpProcessEnvironment {
   COMVENIO_MCP_ENV?: string;
   INTERNAL_API_KEY?: string;
   MCP_CIMD_CLIENT_PINS_JSON?: string;
+  MCP_EDGE_SHARED_SECRET?: string;
   MCP_DEV_ALLOWED_HOSTS?: string;
   MCP_DEV_ALLOWED_ORIGINS?: string;
   MCP_PROD_ALLOWED_HOSTS?: string;
@@ -36,6 +37,7 @@ export interface McpProcessConfig {
   host: "0.0.0.0";
   port: number;
   public_origin: HttpsUrl;
+  edge_shared_secret: string | null;
   api_base_url: HttpsUrl;
   auth_base_url: HttpsUrl;
   internal_api_key: string;
@@ -99,6 +101,25 @@ function openAiChallengeToken(value: string | undefined): string | null {
   return value;
 }
 
+function edgeSharedSecret(
+  value: string | undefined,
+  selectedEnvironment: OAuthEnvironment,
+): string | null {
+  if (value === undefined || value === "") {
+    if (selectedEnvironment === "production") {
+      throw new Error("MCP_EDGE_SHARED_SECRET ist für Production erforderlich.");
+    }
+    return null;
+  }
+  if (value !== value.trim()
+    || value.length < 32
+    || value.length > 512
+    || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw new Error("MCP_EDGE_SHARED_SECRET ist ungültig.");
+  }
+  return value;
+}
+
 export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessConfig {
   const selectedEnvironment = environment(input.COMVENIO_MCP_ENV);
   const prefix = selectedEnvironment === "production" ? "MCP_PROD" : "MCP_DEV";
@@ -130,6 +151,7 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     host: "0.0.0.0",
     port: port(input.PORT),
     public_origin: publicOrigin,
+    edge_shared_secret: edgeSharedSecret(input.MCP_EDGE_SHARED_SECRET, selectedEnvironment),
     api_base_url: apiBaseUrl,
     auth_base_url: authBaseUrl,
     internal_api_key: internalApiKey,
@@ -190,6 +212,7 @@ export function createMcpDeploymentCandidate(config: McpProcessConfig): McpHttpS
   return new McpHttpServer({
     environment: config.environment,
     public_origin: config.public_origin,
+    edge_shared_secret: config.edge_shared_secret,
     openai_apps_challenge_token: config.openai_apps_challenge_token,
     allowed_hosts: config.allowed_hosts,
     allowed_origins: config.allowed_origins,

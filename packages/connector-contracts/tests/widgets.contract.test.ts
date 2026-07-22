@@ -319,7 +319,7 @@ describe("K16 event calendar widget contracts", () => {
     expect(EVENT_CALENDAR_WIDGET_CSP).toContain("default-src 'none'");
     expect(EVENT_CALENDAR_WIDGET_CSP).toContain("object-src 'none'");
     const html = eventCalendarWidgetHtml("production");
-    expect(html).toContain(`https://comvenio-cli-production.up.railway.app${EVENT_CALENDAR_WIDGET_ASSET_PATH}`);
+    expect(html).toContain(`https://mcp.comvenio.app${EVENT_CALENDAR_WIDGET_ASSET_PATH}`);
     expect(html).not.toContain("<script>");
     expect(eventCalendarToolMetadata("production")._meta.ui.resourceUri).toBe(EVENT_CALENDAR_WIDGET_RESOURCE_URI);
   });
@@ -499,7 +499,7 @@ describe("K17 member management widget contracts", () => {
     expect(MEMBER_MANAGEMENT_WIDGET_CLIENT).not.toContain("fetch(");
     expect(() => new Function(MEMBER_MANAGEMENT_WIDGET_CLIENT)).not.toThrow();
     expect(MEMBER_MANAGEMENT_WIDGET_CSP).toContain("default-src 'none'");
-    expect(memberManagementWidgetHtml("production")).toContain(`https://comvenio-cli-production.up.railway.app${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
+    expect(memberManagementWidgetHtml("production")).toContain(`https://mcp.comvenio.app${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
     expect(memberManagementToolMetadata("production")._meta.ui.resourceUri).toBe(MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI);
   });
 });
@@ -667,7 +667,7 @@ describe("K18 booking object widget contracts", () => {
     expect(BOOKING_OBJECT_WIDGET_CLIENT).not.toContain("fetch(");
     expect(() => new Function(BOOKING_OBJECT_WIDGET_CLIENT)).not.toThrow();
     expect(BOOKING_OBJECT_WIDGET_CSP).toContain("default-src 'none'");
-    expect(bookingObjectWidgetHtml("production")).toContain(`https://comvenio-cli-production.up.railway.app${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
+    expect(bookingObjectWidgetHtml("production")).toContain(`https://mcp.comvenio.app${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
     expect(bookingObjectToolMetadata("production")._meta.ui.resourceUri).toBe(BOOKING_OBJECT_WIDGET_RESOURCE_URI);
   });
 });
@@ -790,7 +790,7 @@ describe("K19 news widget contracts", () => {
     expect(NEWS_WIDGET_CLIENT).not.toContain("fetch(");
     expect(() => new Function(NEWS_WIDGET_CLIENT)).not.toThrow();
     expect(NEWS_WIDGET_CSP).toContain("frame-src 'none'");
-    expect(newsWidgetHtml("production")).toContain(`https://comvenio-cli-production.up.railway.app${NEWS_WIDGET_ASSET_PATH}`);
+    expect(newsWidgetHtml("production")).toContain(`https://mcp.comvenio.app${NEWS_WIDGET_ASSET_PATH}`);
     expect(newsToolMetadata("production")._meta.ui.resourceUri).toBe(NEWS_WIDGET_RESOURCE_URI);
   });
 });
@@ -924,7 +924,7 @@ describe("K20 universal preview and confirmation widget contracts", () => {
     expect(CONFIRMATION_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/action-confirmation\/assets\/action-confirmation\.[a-f0-9]{64}\.js$/u);
     expect(CONFIRMATION_WIDGET_CSP).toContain("default-src 'none'");
     const html = confirmationWidgetHtml("production");
-    expect(html).toContain(`https://comvenio-cli-production.up.railway.app${CONFIRMATION_WIDGET_ASSET_PATH}`);
+    expect(html).toContain(`https://mcp.comvenio.app${CONFIRMATION_WIDGET_ASSET_PATH}`);
     for (const secret of [previewId, clubId, confirmationToken, idempotencyKey]) expect(html).not.toContain(secret);
     expect(confirmationToolMetadata("production")._meta.ui.resourceUri).toBe(CONFIRMATION_WIDGET_RESOURCE_URI);
   });

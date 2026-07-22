@@ -90,7 +90,7 @@ describe("OAuth metadata and scopes", () => {
       "production",
       "https://www.comvenio.app/datenschutz",
     )).toEqual({
-      resource: "https://comvenio-cli-production.up.railway.app",
+      resource: "https://mcp.comvenio.app",
       authorization_servers: ["https://api.comvenio.app/auth"],
       scopes_supported: [...OAUTH_SCOPE_VALUES],
       resource_documentation: "https://www.comvenio.app/datenschutz",
@@ -163,7 +163,7 @@ describe("authorization, PKCE and token wire", () => {
         client_id: clientId,
         redirect_uri: redirectUri,
         code_verifier: verifier,
-        resource: "https://comvenio-cli-production.up.railway.app",
+        resource: "https://mcp.comvenio.app",
       }),
       registration,
       environment: "production",
@@ -185,7 +185,7 @@ describe("authorization, PKCE and token wire", () => {
           grant_type: "refresh_token",
           refresh_token: "cvn_local_cli_token",
           client_id: clientId,
-          resource: "https://comvenio-cli-production.up.railway.app",
+          resource: "https://mcp.comvenio.app",
         }),
         registration,
         environment: "production",
@@ -203,20 +203,20 @@ describe("authorization, PKCE and token wire", () => {
       params: new URLSearchParams({
         token: "opaque-connector-access-token",
         token_type_hint: "access_token",
-        resource: "https://comvenio-cli-production.up.railway.app",
+        resource: "https://mcp.comvenio.app",
       }),
       environment: "production",
     })).toEqual({
       token: "opaque-connector-access-token",
       token_type_hint: "access_token",
-      resource: "https://comvenio-cli-production.up.railway.app",
+      resource: "https://mcp.comvenio.app",
     });
     expect(oauthNoStoreHeaders()).toEqual({
       "Cache-Control": "no-store",
       Pragma: "no-cache",
     });
     expect(createBearerChallenge("production", "event.read"))
-      .toBe('Bearer resource_metadata="https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource", scope="event.read"');
+      .toBe('Bearer resource_metadata="https://mcp.comvenio.app/.well-known/oauth-protected-resource", scope="event.read"');
   });
 });
 
@@ -253,7 +253,7 @@ describe("authorization-code consumption and refresh rotation", () => {
       code_verifier: verifier,
       client_id: clientId,
       redirect_uri: redirectUri,
-      resource: "https://comvenio-cli-production.up.railway.app",
+      resource: "https://mcp.comvenio.app",
     })).resolves.toMatchObject({ consumed_at: "2026-07-21T10:00:30.000Z" });
     expect(received?.code_hash_sha256).toHaveLength(64);
     expect(JSON.stringify(received)).not.toContain("one-time-authorization-code");
@@ -270,7 +270,7 @@ describe("authorization-code consumption and refresh rotation", () => {
       client_id: clientId,
       club_id: clubA,
       scope: "club.read event.read",
-      aud: "https://comvenio-cli-production.up.railway.app" as const,
+      aud: "https://mcp.comvenio.app" as const,
       iat: 1_774_000_000,
       exp: 1_774_003_600,
       jti: "66666666-6666-4666-8666-666666666666",
@@ -501,7 +501,7 @@ describe("revocation and bounded introspection caching", () => {
     client_id: clientId,
     club_id: clubA,
     scope: "club.read event.read",
-    aud: "https://comvenio-cli-production.up.railway.app" as const,
+    aud: "https://mcp.comvenio.app" as const,
     iat: 1_774_000_000,
     exp: 1_774_003_600,
     jti: "66666666-6666-4666-8666-666666666666",

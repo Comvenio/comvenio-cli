@@ -13,7 +13,7 @@ export const EVENT_CALENDAR_WIDGET_CLIENT_HASH = createHash("sha256")
   .digest("hex");
 export const EVENT_CALENDAR_WIDGET_ASSET_PATH = `/widgets/event-calendar/assets/event-calendar.${EVENT_CALENDAR_WIDGET_CLIENT_HASH}.js` as const;
 
-export const EVENT_CALENDAR_WIDGET_CSP = "default-src 'none'; script-src 'self'; img-src https:; style-src 'self' 'unsafe-inline'; connect-src https://comvenio-cli-production.up.railway.app https://mcpdev.comvenio.app; font-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'" as const;
+export const EVENT_CALENDAR_WIDGET_CSP = "default-src 'none'; script-src 'self'; img-src https:; style-src 'self' 'unsafe-inline'; connect-src https://mcp.comvenio.app https://mcpdev.comvenio.app; font-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'" as const;
 
 export function eventCalendarWidgetOrigin(environment: OAuthEnvironment): HttpsUrl {
   return oauthEndpoints(environment).resource;
