@@ -4,7 +4,7 @@
   "country": "DE",
   "privacy_priority": "highest",
   "data_flows": [
-    "Nutzerabsicht -> Provider -> Comvenio Remote MCP -> autoritativer Fachservice",
+    "Nutzerabsicht -> Provider -> Cloudflare Edge -> Comvenio Remote MCP -> autoritativer Fachservice",
     "Backend-RBAC -> minimiertes Toolresultat -> gemeinsames Widget -> Provideroberfläche",
     "OAuth-Grant -> exakt ein ausgewählter Verein -> kurz gecachter Capability-Snapshot",
     "Kritischer Write -> serverinterne Vorschau -> zweite Bestätigung -> idempotenter Dispatch",
@@ -17,6 +17,7 @@
     "Bestätigungsansichten enthalten nur maskierte Wirkung und keine Rohpayloads.",
     "Dateien verlassen den MCP nur als kurzlebige, autorisierte Referenzen.",
     "Telemetrie enthält keine Toolargumente, Tokens, Vereins- oder Mitgliederdaten.",
+    "Das Edge-Secret erscheint weder in Providerantworten noch in Telemetrie oder Releaseartefakten.",
     "Reviewartefakte enthalten keine personenbezogenen Produktivdaten."
   ],
   "retention_seconds": {

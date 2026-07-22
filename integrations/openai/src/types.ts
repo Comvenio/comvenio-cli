@@ -30,14 +30,14 @@ export interface DistributionProfile {
   imprint_url: "https://www.comvenio.app/impressum";
   support_email: "support@comvenio.de";
   locale: "de-DE";
-  mcp_endpoint: "https://comvenio-cli-production.up.railway.app/mcp";
+  mcp_endpoint: "https://mcp.comvenio.app/mcp";
   starter_prompts: [string, string, string];
 }
 
 export interface ChatGptAppManifest extends DistributionProfile {
   provider: "openai";
   submission_kind: "plugin_with_mcp_app";
-  oauth_protected_resource_url: "https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource";
+  oauth_protected_resource_url: "https://mcp.comvenio.app/.well-known/oauth-protected-resource";
   support_runbook_url: "https://www.comvenio.app/hilfe";
   widget_resource_uris: [...typeof OPENAI_RELEASE_WIDGET_RESOURCE_URIS];
   tool_catalog_version: string;

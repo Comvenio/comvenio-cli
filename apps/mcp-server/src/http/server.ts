@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Server as NodeHttpServer } from "node:http";
 
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
@@ -38,8 +38,29 @@ const READY_ROUTE = "/ready" as const;
 const PROTECTED_RESOURCE_ROUTE = "/.well-known/oauth-protected-resource" as const;
 const OPENAI_APPS_CHALLENGE_ROUTE = "/.well-known/openai-apps-challenge" as const;
 const RESOURCE_DOCUMENTATION = "https://www.comvenio.app/datenschutz" as const;
+const MCP_EDGE_HEADER = "x-comvenio-edge-secret" as const;
+
+function validEdgeSecret(secret: string): boolean {
+  return secret.length >= 32
+    && secret.length <= 512
+    && secret === secret.trim()
+    && !/[\u0000-\u001f\u007f]/u.test(secret);
+}
+
+function edgeSecretMatches(expected: string | null, received: string | undefined): boolean {
+  if (expected === null) return true;
+  if (received === undefined) return false;
+  const expectedBytes = Buffer.from(expected, "utf8");
+  const receivedBytes = Buffer.from(received, "utf8");
+  return expectedBytes.length === receivedBytes.length
+    && timingSafeEqual(expectedBytes, receivedBytes);
+}
 
 function validateRuntimeOptions(options: McpRuntimeOptions): void {
+  if ((options.environment === "production" && options.edge_shared_secret === null)
+    || (options.edge_shared_secret !== null && !validEdgeSecret(options.edge_shared_secret))) {
+    throw new Error("Das MCP-Edge-Secret ist ungültig.");
+  }
   if (options.allowed_hosts.length === 0
     || options.allowed_hosts.some((host) => !host || /[\s/:]/u.test(host))) {
     throw new Error("Mindestens ein gültiger Host muss freigegeben sein.");
@@ -85,6 +106,15 @@ export class McpHttpServer {
     this.app = createMcpExpressApp({
       host: "0.0.0.0",
       allowedHosts: [...options.allowed_hosts],
+    });
+    this.app.use((request: Request, response: Response, next: NextFunction) => {
+      if (request.path === HEALTH_ROUTE
+        || edgeSecretMatches(options.edge_shared_secret, request.get(MCP_EDGE_HEADER))) {
+        next();
+        return;
+      }
+      response.setHeader("cache-control", "no-store");
+      response.status(403).json({ error: "Forbidden" });
     });
     // Future widget bundles remain immutable test assets, but only resources
     // registered by the runtime catalog are advertised to providers.

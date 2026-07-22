@@ -133,6 +133,7 @@ export interface TelemetrySink {
 export interface McpRuntimeOptions {
   environment: OAuthEnvironment;
   public_origin: HttpsUrl;
+  edge_shared_secret: string | null;
   openai_apps_challenge_token?: string | null;
   allowed_hosts: string[];
   allowed_origins: string[];

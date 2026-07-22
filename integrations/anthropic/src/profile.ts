@@ -19,9 +19,9 @@ export function buildClaudeDirectoryManifest(toolSyncVersion: string): ClaudeDir
     provider: "anthropic",
     submission_kind: "remote_mcp_with_mcp_apps",
     directory_slug: "comvenio",
-    remote_mcp_url: "https://comvenio-cli-production.up.railway.app/mcp",
+    remote_mcp_url: "https://mcp.comvenio.app/mcp",
     transport: "streamable_http",
-    oauth_protected_resource_url: "https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource",
+    oauth_protected_resource_url: "https://mcp.comvenio.app/.well-known/oauth-protected-resource",
     oauth_metadata_url: "https://api.comvenio.app/auth/.well-known/oauth-authorization-server",
     auth: {
       type: "oauth_cimd",

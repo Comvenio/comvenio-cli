@@ -40,7 +40,15 @@ describe("Railway MCP deployment contract", () => {
       runtime: {
         build_command: string;
         start_command: string;
+        review_domain: string;
+        railway_origin_domain: string;
         publication_mode: string;
+      };
+      environments: {
+        production: {
+          domain: string;
+          railway_origin_domain: string;
+        };
       };
     }>("integrations/railway/comvenio-mcp.review.json");
 
@@ -58,7 +66,13 @@ describe("Railway MCP deployment contract", () => {
     expect(review.runtime).toEqual(expect.objectContaining({
       build_command: railway.build.buildCommand,
       start_command: railway.deploy.startCommand,
+      review_domain: "mcp.comvenio.app",
+      railway_origin_domain: "comvenio-cli-production.up.railway.app",
       publication_mode: "fail_closed",
+    }));
+    expect(review.environments.production).toEqual(expect.objectContaining({
+      domain: "mcp.comvenio.app",
+      railway_origin_domain: "comvenio-cli-production.up.railway.app",
     }));
   });
 });

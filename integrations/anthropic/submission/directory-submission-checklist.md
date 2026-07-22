@@ -19,7 +19,7 @@ Anthropic-Portal hinterlegt.
 - Name: `Comvenio`
 - Tagline: `Dein Verein. Dein KI-Agent. Direkt im Chat.`
 - Kategorie: `Productivity`
-- MCP-URL: `https://comvenio-cli-production.up.railway.app/mcp`
+- MCP-URL: `https://mcp.comvenio.app/mcp`
 - Website: `https://www.comvenio.app`
 - Dokumentation: `https://www.comvenio.app/hilfe`
 - Datenschutz: `https://www.comvenio.app/datenschutz`

@@ -23,7 +23,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   imprint_url: httpsUrl.pipe(z.literal("https://www.comvenio.app/impressum")),
   support_email: z.literal("support@comvenio.de"),
   locale: z.literal("de-DE"),
-  mcp_endpoint: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/mcp")),
+  mcp_endpoint: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/mcp")),
   starter_prompts: z.tuple([
     z.literal("Welche Termine stehen diese Woche in meinem Verein an?"),
     z.literal("Zeige mir die neuesten News meines Vereins."),
@@ -31,7 +31,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   ]),
   provider: z.literal("openai"),
   submission_kind: z.literal("plugin_with_mcp_app"),
-  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource")),
+  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/.well-known/oauth-protected-resource")),
   support_runbook_url: httpsUrl.pipe(z.literal("https://www.comvenio.app/hilfe")),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
