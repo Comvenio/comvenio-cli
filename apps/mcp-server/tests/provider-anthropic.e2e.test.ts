@@ -141,11 +141,11 @@ describe("Anthropic Connector Directory provider package", () => {
     expect(() => suite.buildPlan({ ...catalog, tools: [{ ...publicTool, tool_name: `cv_${"x".repeat(64)}` }] })).toThrow();
   });
 
-  test("TC-04: validates five real synthetic app-response PNGs with at least 1000px width", () => {
+  test("TC-04: validates the released synthetic app-response PNGs with at least 1000px width", () => {
     const staticManifest = CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/connector-profile.json"), "utf8")));
     const staticPlan = CLAUDE_TOOL_SYNC_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/tool-test-plan.json"), "utf8")));
     expect(staticManifest.tool_sync_version).toBe(staticPlan.tool_sync_version);
-    expect(staticManifest.screenshots).toHaveLength(5);
+    expect(staticManifest.screenshots).toHaveLength(2);
     for (const screenshot of staticManifest.screenshots) {
       expect(statSync(resolve(artifactRoot, screenshot.path)).size).toBeGreaterThan(0);
       expect(pngWidth(resolve(artifactRoot, screenshot.path))).toBeGreaterThanOrEqual(1_000);
@@ -154,12 +154,12 @@ describe("Anthropic Connector Directory provider package", () => {
     for (const item of staticPlan.cases) expect(existsSync(resolve(artifactRoot, item.expected_response_fixture))).toBe(true);
   });
 
-  test("TC-05: preserves exact scopes, annotations and the five shared widgets on every Claude surface", () => {
+  test("TC-05: preserves exact scopes, annotations and released widgets on every Claude surface", () => {
     expect(expectedTools.map((item) => item.name)).toEqual([publicTool.tool_name, privateTool.tool_name]);
     expect(expectedTools[0]).toMatchObject({ requiredScopes: ["public.read"], annotations: publicTool.annotations, _meta: { ui: { resourceUri: "ui://comvenio/news" } } });
     expect(expectedTools[1]).toMatchObject({ requiredScopes: ["club.read", "member.read.basic"], annotations: privateTool.annotations, _meta: { ui: { resourceUri: "ui://comvenio/member-management" } } });
     const manifest = buildClaudeDirectoryManifest(catalogHash);
-    expect(new Set(manifest.widget_resource_uris).size).toBe(5);
+    expect(new Set(manifest.widget_resource_uris).size).toBe(2);
     expect(evidence(manifest, new ClaudeToolSyncSuite().buildPlan(catalog)).widget_surfaces.every((item) => item.same_widget_build && item.surfaces.join(",") === "web,desktop,mobile")).toBe(true);
   });
 

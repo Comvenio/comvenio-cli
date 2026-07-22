@@ -6,6 +6,7 @@ import { PositiveReadIntrospectionCache } from "./revocation.ts";
 import type {
   AuthorizationCodeRecord,
   HttpsUrl,
+  OAuthRedirectUri,
 } from "./types.ts";
 import { OAUTH_DEFAULTS, OAuthContractError } from "./types.ts";
 import { validateAuthorizationCodeRecord } from "./wire.ts";
@@ -24,7 +25,7 @@ export interface AuthorizationCodeStore {
   consume_authorization_code(input: {
     code_hash_sha256: string;
     client_id: HttpsUrl;
-    redirect_uri: HttpsUrl;
+    redirect_uri: OAuthRedirectUri;
     resource: HttpsUrl;
     code_challenge_s256: string;
     consumed_at: string;
@@ -47,7 +48,7 @@ export class AuthorizationCodeFlow {
     raw_code: string;
     code_verifier: string;
     client_id: HttpsUrl;
-    redirect_uri: HttpsUrl;
+    redirect_uri: OAuthRedirectUri;
     resource: HttpsUrl;
   }): Promise<AuthorizationCodeRecord> {
     if (!input.raw_code || /^cvn_/u.test(input.raw_code) || !VERIFIER_PATTERN.test(input.code_verifier)) {

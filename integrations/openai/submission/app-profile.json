@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "product_name": "Comvenio",
   "tagline": "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-  "short_description": "Vereinsarbeit sicher organisieren, Termine finden und erlaubte Aufgaben direkt im Chat erledigen.",
+  "short_description": "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.",
   "publisher_name": "Comvenio",
   "category": "Productivity",
   "website_url": "https://www.comvenio.app",
@@ -11,7 +11,7 @@
   "imprint_url": "https://www.comvenio.app/impressum",
   "support_email": "support@comvenio.de",
   "locale": "de-DE",
-  "mcp_endpoint": "https://mcp.comvenio.app/mcp",
+  "mcp_endpoint": "https://comvenio-cli-production.up.railway.app/mcp",
   "starter_prompts": [
     "Welche Termine stehen diese Woche in meinem Verein an?",
     "Zeige mir die neuesten News meines Vereins.",
@@ -19,26 +19,20 @@
   ],
   "provider": "openai",
   "submission_kind": "plugin_with_mcp_app",
-  "oauth_protected_resource_url": "https://mcp.comvenio.app/.well-known/oauth-protected-resource",
+  "oauth_protected_resource_url": "https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource",
   "support_runbook_url": "https://www.comvenio.app/hilfe",
   "widget_resource_uris": [
     "ui://comvenio/event-calendar",
-    "ui://comvenio/member-management",
-    "ui://comvenio/booking-object",
-    "ui://comvenio/news",
-    "ui://comvenio/action-confirmation"
+    "ui://comvenio/news"
   ],
-  "tool_catalog_version": "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417ba5a7",
+  "tool_catalog_version": "08fb376f4d8f63ebbe9e608cb5636016711ab7a95b07a416a31decc94b9d53e0",
   "assets": {
     "icon": "./assets/icon.svg",
     "logo": "./assets/logo.png"
   },
   "screenshots": [
     { "resource_uri": "ui://comvenio/event-calendar", "surface": "mobile", "path": "./screenshots/event-mobile.png", "synthetic_data_only": true },
-    { "resource_uri": "ui://comvenio/member-management", "surface": "web", "path": "./screenshots/members-desktop.png", "synthetic_data_only": true },
-    { "resource_uri": "ui://comvenio/booking-object", "surface": "mobile", "path": "./screenshots/booking-mobile.png", "synthetic_data_only": true },
-    { "resource_uri": "ui://comvenio/news", "surface": "web", "path": "./screenshots/news-desktop.png", "synthetic_data_only": true },
-    { "resource_uri": "ui://comvenio/action-confirmation", "surface": "mobile", "path": "./screenshots/confirmation-mobile.png", "synthetic_data_only": true }
+    { "resource_uri": "ui://comvenio/news", "surface": "web", "path": "./screenshots/news-desktop.png", "synthetic_data_only": true }
   ],
   "release_gate": "OPENAI_GLOBAL_RESIDENCY_ACCEPTED"
 }

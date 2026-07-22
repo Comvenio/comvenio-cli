@@ -21,14 +21,21 @@ import type {
 export const RELEASE_GENERATED_AT = "2026-07-21T00:00:00.000Z" as const;
 
 export const EVALUATED_VIRTUAL_TOOL_NAMES = [
-  "cv_file_get_read",
-  "cv_file_upload_complete_write",
-  "cv_file_upload_start_write",
-  "cv_job_cancel_write",
-  "cv_job_status_read",
   "cv_permissions_explain_read",
   "cv_schema_read",
   "cv_whoami_read",
+  "public_club_by_domain",
+  "public_club_home",
+  "public_club_legal",
+  "public_club_profile",
+  "public_department_news",
+  "public_event_attachments",
+  "public_event_menu",
+  "public_events",
+  "public_menu",
+  "public_news",
+  "public_news_detail",
+  "public_training",
 ] as const;
 
 function evalResult(toolName: string): ConnectorEvalToolResult {
@@ -42,9 +49,9 @@ function evalResult(toolName: string): ConnectorEvalToolResult {
     confirmation_contract: true,
     provider_retry_idempotent: true,
     synthetic_data_only: true,
-    evidence_ref: toolName.includes("file") || toolName.includes("job")
-      ? "packages/connector-contracts/tests/jobs.contract.test.ts"
-      : "apps/mcp-server/tests/provider-openai.e2e.test.ts",
+    evidence_ref: toolName.startsWith("public_")
+      ? "apps/mcp-server/tests/runtime-tools.integration.test.ts"
+      : "apps/mcp-server/tests/tenant-isolation.integration.test.ts",
   };
 }
 
@@ -70,18 +77,20 @@ export function buildAutomatedTenantIsolationReport(): TenantIsolationReport {
 
 export function buildPendingReleaseEvidence(): ReleaseEvidence {
   return {
-    action_classification_count: 303,
-    action_total: 303,
-    route_callsite_count: 560,
-    audited_operation_catalog_published: false,
-    route_trace_tests_passed: false,
-    schema_tests_passed: false,
-    permission_tests_passed: false,
+    release_scope: "read_only_v1",
+    published_tool_count: 15,
+    planned_action_count: 303,
+    planned_route_callsite_count: 560,
+    published_runtime_catalog_verified: true,
+    route_trace_tests_passed: true,
+    schema_tests_passed: true,
+    permission_tests_passed: true,
     cimd_pins_verified: false,
     revocation_latency_seconds: null,
     malware_quarantine_verified: true,
     confirmation_input_server_internal: true,
-    widget_contract_count: 5,
+    published_widget_contract_count: 2,
+    planned_widget_contract_count: 5,
     widget_surfaces_verified: true,
     accessibility_smokes_passed: true,
     rate_limit_config_verified: true,

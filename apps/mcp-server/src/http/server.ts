@@ -36,6 +36,7 @@ const MCP_ROUTE = "/mcp" as const;
 const HEALTH_ROUTE = "/health" as const;
 const READY_ROUTE = "/ready" as const;
 const PROTECTED_RESOURCE_ROUTE = "/.well-known/oauth-protected-resource" as const;
+const OPENAI_APPS_CHALLENGE_ROUTE = "/.well-known/openai-apps-challenge" as const;
 const RESOURCE_DOCUMENTATION = "https://www.comvenio.app/datenschutz" as const;
 
 function validateRuntimeOptions(options: McpRuntimeOptions): void {
@@ -85,6 +86,8 @@ export class McpHttpServer {
       host: "0.0.0.0",
       allowedHosts: [...options.allowed_hosts],
     });
+    // Future widget bundles remain immutable test assets, but only resources
+    // registered by the runtime catalog are advertised to providers.
     mountBookingObjectWidgetAssets(this.app, options.environment);
     mountConfirmationWidgetAssets(this.app, options.environment);
     mountEventCalendarWidgetAssets(this.app, options.environment);
@@ -185,6 +188,7 @@ export class McpHttpServer {
       response.status(200).json(createProtectedResourceMetadata(
         this.#options.environment,
         RESOURCE_DOCUMENTATION,
+        this.#options.public_origin,
       ));
       void this.#record({
         request_id: requestId,
@@ -195,6 +199,29 @@ export class McpHttpServer {
         status_code: 200,
         duration_ms: Date.now() - startedAt,
         outcome: "success",
+        recorded_at: this.#now().toISOString(),
+      });
+    });
+
+    this.app.get(OPENAI_APPS_CHALLENGE_ROUTE, (request, response) => {
+      const requestId = this.#newRequestId();
+      const startedAt = Date.now();
+      const token = this.#options.openai_apps_challenge_token;
+      const statusCode = token ? 200 : 404;
+      response.setHeader("cache-control", "no-store");
+      response.setHeader("content-type", "text/plain; charset=utf-8");
+      response.setHeader("x-content-type-options", "nosniff");
+      response.setHeader("x-request-id", requestId);
+      response.status(statusCode).send(token ?? "Not found");
+      void this.#record({
+        request_id: requestId,
+        provider: null,
+        authenticated: false,
+        route: OPENAI_APPS_CHALLENGE_ROUTE,
+        method: methodForTelemetry(request.method),
+        status_code: statusCode,
+        duration_ms: Date.now() - startedAt,
+        outcome: statusCode === 200 ? "success" : "rejected",
         recorded_at: this.#now().toISOString(),
       });
     });
@@ -302,6 +329,7 @@ export class McpHttpServer {
           environment: this.#options.environment,
           request_id: context.request.request_id,
           required_scopes: accessDecision.required_scopes,
+          public_origin: this.#options.public_origin,
         });
         throw runtimeError({
           code: "AUTH_REQUIRED",
@@ -327,7 +355,7 @@ export class McpHttpServer {
         response.setHeader(
           "WWW-Authenticate",
           authChallenge?.www_authenticate
-            ?? createBearerChallenge(this.#options.environment, "public.read"),
+            ?? createBearerChallenge(this.#options.environment, "public.read", this.#options.public_origin),
         );
       }
       response.setHeader("x-request-id", requestId);

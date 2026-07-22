@@ -2,6 +2,7 @@ import type { OAuthScope, ProviderId, UUID } from "@comvenio/connector-contracts
 
 export type OAuthEnvironment = "development" | "production";
 export type HttpsUrl = `https://${string}`;
+export type OAuthRedirectUri = HttpsUrl | `http://localhost${string}` | `http://127.0.0.1${string}`;
 
 export interface OAuthAuthorizationServerMetadata {
   issuer: HttpsUrl;
@@ -33,7 +34,7 @@ export interface OAuthEndpoints {
 export interface OAuthClientRegistration {
   client_id: HttpsUrl;
   provider: ProviderId;
-  redirect_uris: HttpsUrl[];
+  redirect_uris: OAuthRedirectUri[];
   allowed_scopes: OAuthScope[];
   token_endpoint_auth_method: "none";
   pkce_method: "S256";
@@ -58,7 +59,7 @@ export interface AuthorizationCodeRecord {
   code_hash_sha256: string;
   client_id: OAuthClientRegistration["client_id"];
   subject_id: UUID;
-  redirect_uri: HttpsUrl;
+  redirect_uri: OAuthRedirectUri;
   code_challenge_s256: string;
   selected_club_id: UUID | null;
   scopes: OAuthScope[];
@@ -70,7 +71,7 @@ export interface AuthorizationCodeRecord {
 
 export interface ConnectorAccessClaims {
   iss: HttpsUrl;
-  aud: "https://mcp.comvenio.app" | "https://mcpdev.comvenio.app";
+  aud: HttpsUrl;
   sub: UUID;
   grant_id: UUID;
   client_id: OAuthClientRegistration["client_id"];
@@ -90,7 +91,7 @@ export interface ClubSelectionContext {
 export interface AuthorizationRequest {
   response_type: "code";
   client_id: HttpsUrl;
-  redirect_uri: HttpsUrl;
+  redirect_uri: OAuthRedirectUri;
   code_challenge: string;
   code_challenge_method: "S256";
   state: string;
@@ -102,7 +103,7 @@ export interface AuthorizationCodeTokenRequest {
   grant_type: "authorization_code";
   code: string;
   client_id: HttpsUrl;
-  redirect_uri: HttpsUrl;
+  redirect_uri: OAuthRedirectUri;
   code_verifier: string;
   resource: HttpsUrl;
 }

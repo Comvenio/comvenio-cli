@@ -5,6 +5,7 @@ import type {
   CapabilitySnapshot,
   OAuthClientRegistration,
   OAuthEnvironment,
+  HttpsUrl,
 } from "@comvenio/auth";
 import type {
   McpClientKind,
@@ -34,6 +35,7 @@ export interface AuthenticatedConnectorPrincipal {
   club_id: UUID | null;
   scopes: OAuthScope[];
   expires_at_epoch_seconds: number;
+  backend_actor_token: string;
 }
 
 export interface BearerAuthenticator {
@@ -49,13 +51,21 @@ export interface IntrospectionPort {
   introspect(input: {
     raw_token: string;
     request_id: UUID;
-    audience: "https://mcp.comvenio.app" | "https://mcpdev.comvenio.app";
+    audience: HttpsUrl;
     force_fresh: boolean;
   }): Promise<unknown>;
 }
 
 export interface ProviderRegistrationResolver {
   resolve(clientId: ActiveIntrospection["client_id"]): Promise<OAuthClientRegistration | null>;
+}
+
+export interface ActorTokenPort {
+  exchange(input: {
+    raw_token: string;
+    request_id: UUID;
+    audience: HttpsUrl;
+  }): Promise<unknown>;
 }
 
 export interface ProviderResolverInput {
@@ -73,6 +83,7 @@ export interface CapabilityContextResolver {
   resolve(input: {
     context: RequestContext;
     force_recheck: boolean;
+    backend_actor_token: string;
   }): Promise<CapabilitySnapshot>;
 }
 
@@ -80,6 +91,7 @@ export interface StatelessTransportContext {
   provider_request: ProviderRequestContext;
   request: RequestContext;
   capability_snapshot: CapabilitySnapshot | null;
+  backend_actor_token: string | null;
   risk: RequestRisk;
 }
 
@@ -106,7 +118,7 @@ export interface SafeTelemetryRecord {
   request_id: UUID;
   provider: ProviderId | null;
   authenticated: boolean;
-  route: "/mcp" | "/health" | "/ready" | "/.well-known/oauth-protected-resource";
+  route: "/mcp" | "/health" | "/ready" | "/.well-known/oauth-protected-resource" | "/.well-known/openai-apps-challenge";
   method: "POST" | "GET" | "DELETE";
   status_code: number;
   duration_ms: number;
@@ -120,6 +132,8 @@ export interface TelemetrySink {
 
 export interface McpRuntimeOptions {
   environment: OAuthEnvironment;
+  public_origin: HttpsUrl;
+  openai_apps_challenge_token?: string | null;
   allowed_hosts: string[];
   allowed_origins: string[];
   authenticator: BearerAuthenticator;

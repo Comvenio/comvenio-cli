@@ -10,6 +10,7 @@ import {
 import type {
   HttpsUrl,
   OAuthClientRegistration,
+  OAuthRedirectUri,
 } from "./types.ts";
 import { OAUTH_DEFAULTS, OAuthContractError } from "./types.ts";
 
@@ -17,6 +18,7 @@ export interface CimdClientPin {
   client_id: HttpsUrl;
   provider: ProviderId;
   metadata_sha256: string;
+  allowed_scopes: OAuthScope[];
   enabled: boolean;
 }
 
@@ -93,10 +95,25 @@ function validateClientId(value: string): { client_id: HttpsUrl; hostname: strin
   return { client_id: value as HttpsUrl, hostname: url.hostname };
 }
 
+function validateRedirectUri(value: string): OAuthRedirectUri {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new OAuthContractError("invalid_client", "Die Redirect-URI ist ungültig.");
+  }
+  const loopbackHttp = url.protocol === "http:"
+    && ["localhost", "127.0.0.1"].includes(url.hostname);
+  if ((url.protocol !== "https:" && !loopbackHttp) || url.username || url.password || url.hash) {
+    throw new OAuthContractError("invalid_client", "Die Redirect-URI ist nicht zulässig.");
+  }
+  return value as OAuthRedirectUri;
+}
+
 function parseRegistration(
   body: Uint8Array,
   pin: CimdClientPin,
-  redirectUri: HttpsUrl,
+  redirectUri: OAuthRedirectUri,
 ): OAuthClientRegistration {
   let value: unknown;
   try {
@@ -109,24 +126,34 @@ function parseRegistration(
   }
   const document = value as Record<string, unknown>;
   const redirectUris = document.redirect_uris;
-  const allowedScopes = document.allowed_scopes;
+  const clientName = document.client_name;
+  const singularAuthMethod = document.token_endpoint_auth_method;
+  const supportedAuthMethods = document.token_endpoint_auth_methods_supported;
+  const supportsPublicClient = singularAuthMethod === "none"
+    || (Array.isArray(supportedAuthMethods) && supportedAuthMethods.includes("none"));
+  const grantTypes = document.grant_types;
+  const responseTypes = document.response_types;
   if (document.client_id !== pin.client_id
-    || !Array.isArray(redirectUris) || !redirectUris.every((uri) => typeof uri === "string")
+    || typeof clientName !== "string" || clientName.trim().length === 0 || clientName.length > 200
+    || !Array.isArray(redirectUris) || redirectUris.length === 0
+    || !redirectUris.every((uri) => typeof uri === "string")
     || new Set(redirectUris).size !== redirectUris.length
     || !redirectUris.includes(redirectUri)
-    || !Array.isArray(allowedScopes) || !allowedScopes.every((scope) =>
-      typeof scope === "string" && KNOWN_SCOPES.has(scope))
-    || allowedScopes.length === 0 || new Set(allowedScopes).size !== allowedScopes.length
-    || document.token_endpoint_auth_method !== "none"
-    || document.pkce_method !== "S256") {
+    || !supportsPublicClient
+    || (grantTypes !== undefined && (!Array.isArray(grantTypes)
+      || !grantTypes.every((item) => typeof item === "string")
+      || !grantTypes.includes("authorization_code")))
+    || (responseTypes !== undefined && (!Array.isArray(responseTypes)
+      || !responseTypes.every((item) => typeof item === "string")
+      || !responseTypes.includes("code")))) {
     throw new OAuthContractError("invalid_client", "Das Client-Metadatendokument ist nicht freigegeben.");
   }
-  for (const uri of redirectUris) validateClientId(uri);
+  const validatedRedirectUris = redirectUris.map((uri) => validateRedirectUri(uri as string));
   return {
     client_id: pin.client_id,
     provider: pin.provider,
-    redirect_uris: [...new Set(redirectUris as HttpsUrl[])].sort(),
-    allowed_scopes: [...new Set(allowedScopes as OAuthScope[])].sort(),
+    redirect_uris: [...new Set(validatedRedirectUris)].sort(),
+    allowed_scopes: [...pin.allowed_scopes].sort(),
     token_endpoint_auth_method: "none",
     pkce_method: "S256",
     metadata_sha256: pin.metadata_sha256,
@@ -143,6 +170,9 @@ export class HardenedCimdResolver {
     pins.forEach((pin) => validateClientId(pin.client_id));
     if (pins.some((pin) => !SHA256_PATTERN.test(pin.metadata_sha256))
       || pins.some((pin) => pin.client_id.includes("*"))
+      || pins.some((pin) => !Array.isArray(pin.allowed_scopes) || pin.allowed_scopes.length === 0
+        || new Set(pin.allowed_scopes).size !== pin.allowed_scopes.length
+        || pin.allowed_scopes.some((scope) => !KNOWN_SCOPES.has(scope)))
       || new Set(pins.map((pin) => pin.client_id)).size !== pins.length) {
       throw new OAuthContractError("invalid_client", "Die CIMD-Allowlist ist ungültig.");
     }
@@ -152,7 +182,7 @@ export class HardenedCimdResolver {
 
   async resolve(input: { client_id: string; redirect_uri: string }): Promise<OAuthClientRegistration> {
     const { client_id: clientId, hostname } = validateClientId(input.client_id);
-    const { client_id: redirectUri } = validateClientId(input.redirect_uri);
+    const redirectUri = validateRedirectUri(input.redirect_uri);
     const pin = this.#pins.get(clientId);
     if (!pin?.enabled) throw new OAuthContractError("invalid_client", "Der OAuth-Client ist nicht freigegeben.");
     const cached = this.#cache.get(clientId);
@@ -194,7 +224,10 @@ export class HardenedCimdResolver {
 }
 
 export function assertCimdReleaseReady(pins: readonly CimdClientPin[]): void {
-  if (pins.some((pin) => pin.client_id.includes("*") || !SHA256_PATTERN.test(pin.metadata_sha256))) {
+  if (pins.some((pin) => pin.client_id.includes("*") || !SHA256_PATTERN.test(pin.metadata_sha256)
+    || !Array.isArray(pin.allowed_scopes) || pin.allowed_scopes.length === 0
+    || new Set(pin.allowed_scopes).size !== pin.allowed_scopes.length
+    || pin.allowed_scopes.some((scope) => !KNOWN_SCOPES.has(scope)))) {
     throw new OAuthContractError("invalid_client", "Die Provider-CIMD-Pins sind nicht releasebereit.");
   }
   const enabledProviders = new Set(pins.filter((pin) => pin.enabled).map((pin) => pin.provider));

@@ -18,14 +18,21 @@ describe("production MCP process bootstrap", () => {
     expect(readMcpProcessConfig({
       PORT: "8080",
       RAILWAY_PUBLIC_DOMAIN: "comvenio-cli-production.up.railway.app",
+      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp-review.comvenio.app",
       MCP_PROD_ALLOWED_ORIGINS: "https://chatgpt.com,https://claude.ai",
     })).toEqual({
       environment: "production",
       host: "0.0.0.0",
       port: 8080,
+      public_origin: "https://comvenio-cli-production.up.railway.app",
+      api_base_url: "https://api.comvenio.app",
+      auth_base_url: "https://api.comvenio.app/auth",
+      internal_api_key: "test-internal-key",
+      openai_apps_challenge_token: null,
+      cimd_client_pins: expect.objectContaining({ contract_version: "1.0.0", pins: [] }),
       allowed_hosts: [
-        "mcp.comvenio.app",
         "comvenio-cli-production.up.railway.app",
         "healthcheck.railway.app",
         "mcp-review.comvenio.app",
@@ -35,8 +42,14 @@ describe("production MCP process bootstrap", () => {
   });
 
   test("rejects invalid ports and duplicate allowlist entries", () => {
-    expect(() => readMcpProcessConfig({ PORT: "0" })).toThrow("PORT");
     expect(() => readMcpProcessConfig({
+      PORT: "0",
+      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("PORT");
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://comvenio-cli-production.up.railway.app",
+      INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp.example.test,mcp.example.test",
     })).toThrow("doppelte");
   });
@@ -46,6 +59,12 @@ describe("production MCP process bootstrap", () => {
       environment: "production",
       host: "0.0.0.0",
       port: 8080,
+      public_origin: "https://comvenio-cli-production.up.railway.app",
+      api_base_url: "https://api.comvenio.app",
+      auth_base_url: "https://api.comvenio.app/auth",
+      internal_api_key: "test-internal-key",
+      openai_apps_challenge_token: "openai-domain-proof-token",
+      cimd_client_pins: { contract_version: "1.0.0", release_state: "BLOCKED", pins: [] },
       allowed_hosts: ["127.0.0.1", "healthcheck.railway.app"],
       allowed_origins: [],
     });
@@ -69,10 +88,15 @@ describe("production MCP process bootstrap", () => {
     const metadata = await fetch(`${base}/.well-known/oauth-protected-resource`);
     expect(metadata.status).toBe(200);
     expect(await metadata.json()).toEqual(expect.objectContaining({
-      resource: "https://mcp.comvenio.app",
+      resource: "https://comvenio-cli-production.up.railway.app",
       authorization_servers: ["https://api.comvenio.app/auth"],
       resource_documentation: "https://www.comvenio.app/datenschutz",
     }));
+
+    const challenge = await fetch(`${base}/.well-known/openai-apps-challenge`);
+    expect(challenge.status).toBe(200);
+    expect(challenge.headers.get("cache-control")).toBe("no-store");
+    expect(await challenge.text()).toBe("openai-domain-proof-token");
 
     const readiness = await fetch(`${base}/ready`);
     expect(readiness.status).toBe(503);
@@ -100,8 +124,49 @@ describe("production MCP process bootstrap", () => {
       jsonrpc: "2.0",
       id: 1,
       result: expect.objectContaining({
-        serverInfo: { name: "comvenio-mcp-server", version: "0.1.0" },
+        serverInfo: { name: "comvenio-mcp-server", version: "1.0.0" },
       }),
     }));
+
+    const resources = await fetch(`${base}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "resources/list", params: {} }),
+    });
+    expect(resources.status).toBe(200);
+    expect(await resources.json()).toMatchObject({
+      result: {
+        resources: [
+          { uri: "ui://comvenio/event-calendar" },
+          { uri: "ui://comvenio/news" },
+        ],
+      },
+    });
+
+    const widget = await fetch(`${base}/mcp`, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 3,
+        method: "resources/read",
+        params: { uri: "ui://comvenio/news" },
+      }),
+    });
+    expect(widget.status).toBe(200);
+    expect(await widget.json()).toMatchObject({
+      result: {
+        contents: [{
+          uri: "ui://comvenio/news",
+          mimeType: "text/html;profile=mcp-app",
+        }],
+      },
+    });
   });
 });

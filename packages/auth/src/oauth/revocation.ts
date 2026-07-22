@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { OAUTH_SCOPE_VALUES, type UUID } from "@comvenio/connector-contracts";
 
-import { OAUTH_DEFAULTS, OAuthContractError } from "./types.ts";
+import { OAUTH_DEFAULTS, OAuthContractError, type HttpsUrl } from "./types.ts";
 
 export interface ActiveIntrospection {
   active: true;
@@ -11,7 +11,7 @@ export interface ActiveIntrospection {
   client_id: `https://${string}`;
   club_id: UUID | null;
   scope: string;
-  aud: "https://mcp.comvenio.app" | "https://mcpdev.comvenio.app";
+  aud: HttpsUrl;
   iat: number;
   exp: number;
   jti: UUID;
@@ -53,7 +53,7 @@ export function validateIntrospectionResult(value: unknown): IntrospectionResult
     || typeof result.jti !== "string" || !UUID_PATTERN.test(result.jti)
     || (result.club_id !== null && (typeof result.club_id !== "string" || !UUID_PATTERN.test(result.club_id)))
     || typeof result.client_id !== "string" || !result.client_id.startsWith("https://")
-    || !["https://mcp.comvenio.app", "https://mcpdev.comvenio.app"].includes(result.aud as string)
+    || typeof result.aud !== "string"
     || typeof result.iat !== "number" || typeof result.exp !== "number" || result.exp <= result.iat
     || typeof result.scope !== "string") {
     throw new OAuthContractError("invalid_grant", "Die Introspection-Antwort ist ungültig.");
@@ -69,6 +69,9 @@ export function validateIntrospectionResult(value: unknown): IntrospectionResult
   try {
     const clientUrl = new URL(result.client_id);
     if (clientUrl.protocol !== "https:" || clientUrl.username || clientUrl.password) throw new Error();
+    const audience = new URL(result.aud as string);
+    if (audience.protocol !== "https:" || audience.username || audience.password
+      || audience.origin !== result.aud || audience.pathname !== "/") throw new Error();
   } catch {
     throw new OAuthContractError("invalid_grant", "Die Introspection-Antwort ist ungültig.");
   }
@@ -79,7 +82,7 @@ export function validateIntrospectionResult(value: unknown): IntrospectionResult
     client_id: result.client_id as `https://${string}`,
     club_id: result.club_id as UUID | null,
     scope: [...scopes].sort().join(" "),
-    aud: result.aud as ActiveIntrospection["aud"],
+    aud: result.aud as HttpsUrl,
     iat: result.iat,
     exp: result.exp,
     jti: result.jti,

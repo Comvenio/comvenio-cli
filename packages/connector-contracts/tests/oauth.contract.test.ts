@@ -90,7 +90,7 @@ describe("OAuth metadata and scopes", () => {
       "production",
       "https://www.comvenio.app/datenschutz",
     )).toEqual({
-      resource: "https://mcp.comvenio.app",
+      resource: "https://comvenio-cli-production.up.railway.app",
       authorization_servers: ["https://api.comvenio.app/auth"],
       scopes_supported: [...OAUTH_SCOPE_VALUES],
       resource_documentation: "https://www.comvenio.app/datenschutz",
@@ -163,7 +163,7 @@ describe("authorization, PKCE and token wire", () => {
         client_id: clientId,
         redirect_uri: redirectUri,
         code_verifier: verifier,
-        resource: "https://mcp.comvenio.app",
+        resource: "https://comvenio-cli-production.up.railway.app",
       }),
       registration,
       environment: "production",
@@ -185,7 +185,7 @@ describe("authorization, PKCE and token wire", () => {
           grant_type: "refresh_token",
           refresh_token: "cvn_local_cli_token",
           client_id: clientId,
-          resource: "https://mcp.comvenio.app",
+          resource: "https://comvenio-cli-production.up.railway.app",
         }),
         registration,
         environment: "production",
@@ -203,20 +203,20 @@ describe("authorization, PKCE and token wire", () => {
       params: new URLSearchParams({
         token: "opaque-connector-access-token",
         token_type_hint: "access_token",
-        resource: "https://mcp.comvenio.app",
+        resource: "https://comvenio-cli-production.up.railway.app",
       }),
       environment: "production",
     })).toEqual({
       token: "opaque-connector-access-token",
       token_type_hint: "access_token",
-      resource: "https://mcp.comvenio.app",
+      resource: "https://comvenio-cli-production.up.railway.app",
     });
     expect(oauthNoStoreHeaders()).toEqual({
       "Cache-Control": "no-store",
       Pragma: "no-cache",
     });
     expect(createBearerChallenge("production", "event.read"))
-      .toBe('Bearer resource_metadata="https://mcp.comvenio.app/.well-known/oauth-protected-resource", scope="event.read"');
+      .toBe('Bearer resource_metadata="https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource", scope="event.read"');
   });
 });
 
@@ -253,7 +253,7 @@ describe("authorization-code consumption and refresh rotation", () => {
       code_verifier: verifier,
       client_id: clientId,
       redirect_uri: redirectUri,
-      resource: "https://mcp.comvenio.app",
+      resource: "https://comvenio-cli-production.up.railway.app",
     })).resolves.toMatchObject({ consumed_at: "2026-07-21T10:00:30.000Z" });
     expect(received?.code_hash_sha256).toHaveLength(64);
     expect(JSON.stringify(received)).not.toContain("one-time-authorization-code");
@@ -270,7 +270,7 @@ describe("authorization-code consumption and refresh rotation", () => {
       client_id: clientId,
       club_id: clubA,
       scope: "club.read event.read",
-      aud: "https://mcp.comvenio.app" as const,
+      aud: "https://comvenio-cli-production.up.railway.app" as const,
       iat: 1_774_000_000,
       exp: 1_774_003_600,
       jti: "66666666-6666-4666-8666-666666666666",
@@ -358,15 +358,17 @@ describe("club selection and connector grants", () => {
 describe("CIMD SSRF and release pinning", () => {
   const documentBody = new TextEncoder().encode(JSON.stringify({
     client_id: clientId,
+    client_name: "Comvenio OpenAI Test Client",
     redirect_uris: [redirectUri],
-    allowed_scopes: ["club.read", "event.read"],
-    token_endpoint_auth_method: "none",
-    pkce_method: "S256",
+    token_endpoint_auth_methods_supported: ["none"],
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
   }));
   const pin: CimdClientPin = {
     client_id: clientId,
     provider: "openai",
     metadata_sha256: createHash("sha256").update(documentBody).digest("hex"),
+    allowed_scopes: ["club.read", "event.read"],
     enabled: true,
   };
 
@@ -394,6 +396,7 @@ describe("CIMD SSRF and release pinning", () => {
       .resolves.toMatchObject({
         client_id: clientId,
         provider: "openai",
+        allowed_scopes: ["club.read", "event.read"],
         token_endpoint_auth_method: "none",
         pkce_method: "S256",
       });
@@ -401,6 +404,63 @@ describe("CIMD SSRF and release pinning", () => {
     expect(isForbiddenCimdIpAddress("10.0.0.1")).toBe(true);
     expect(isForbiddenCimdIpAddress("::1")).toBe(true);
     expect(isForbiddenCimdIpAddress("93.184.216.34")).toBe(false);
+  });
+
+  test("accepts standard singular auth metadata and exact loopback inspector redirects", async () => {
+    const loopback = "http://127.0.0.1:6274/oauth/callback";
+    const body = new TextEncoder().encode(JSON.stringify({
+      client_id: clientId,
+      client_name: "Claude Inspector",
+      redirect_uris: [redirectUri, loopback],
+      token_endpoint_auth_method: "none",
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+    }));
+    const resolver = new HardenedCimdResolver([{
+      ...pin,
+      provider: "anthropic",
+      metadata_sha256: createHash("sha256").update(body).digest("hex"),
+      allowed_scopes: ["public.read", "club.read"],
+    }], dependencies({
+      fetch_document: async () => ({
+        status: 200,
+        content_type: "application/json",
+        body,
+        redirected: false,
+      }),
+    }));
+    await expect(resolver.resolve({ client_id: clientId, redirect_uri: loopback }))
+      .resolves.toMatchObject({
+        provider: "anthropic",
+        redirect_uris: [loopback, redirectUri].sort(),
+        allowed_scopes: ["club.read", "public.read"],
+      });
+  });
+
+  test("rejects remote HTTP redirects and never trusts client-declared scopes", async () => {
+    const body = new TextEncoder().encode(JSON.stringify({
+      client_id: clientId,
+      client_name: "Untrusted Client",
+      redirect_uris: ["http://attacker.example/callback"],
+      token_endpoint_auth_method: "none",
+      allowed_scopes: ["admin.write"],
+    }));
+    const resolver = new HardenedCimdResolver([{
+      ...pin,
+      metadata_sha256: createHash("sha256").update(body).digest("hex"),
+      allowed_scopes: ["club.read"],
+    }], dependencies({
+      fetch_document: async () => ({
+        status: 200,
+        content_type: "application/json",
+        body,
+        redirected: false,
+      }),
+    }));
+    await expect(resolver.resolve({
+      client_id: clientId,
+      redirect_uri: "http://attacker.example/callback",
+    })).rejects.toThrow("Redirect-URI");
   });
 
   test("rejects private DNS, redirects, fingerprint drift and incomplete release pins", async () => {
@@ -441,7 +501,7 @@ describe("revocation and bounded introspection caching", () => {
     client_id: clientId,
     club_id: clubA,
     scope: "club.read event.read",
-    aud: "https://mcp.comvenio.app" as const,
+    aud: "https://comvenio-cli-production.up.railway.app" as const,
     iat: 1_774_000_000,
     exp: 1_774_003_600,
     jti: "66666666-6666-4666-8666-666666666666",

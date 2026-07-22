@@ -173,7 +173,7 @@ export class StatelessTransportContextFactory {
         retryable: false,
       });
     }
-    const provider = principal?.provider ?? detectedProvider;
+    const provider = principal?.provider ?? null;
     if (principal?.club_id && tenant.club_id && principal.club_id !== tenant.club_id) {
       throw runtimeError({
         code: "TENANT_MISMATCH",
@@ -207,7 +207,11 @@ export class StatelessTransportContextFactory {
     const requiresCapability = request.subject_id !== null && request.club_id !== null
       && request.scopes.some((scope) => scope !== "public.read");
     const capabilitySnapshot = requiresCapability
-      ? await this.#capabilityResolver.resolve({ context: request, force_recheck: risk === "write" })
+      ? await this.#capabilityResolver.resolve({
+        context: request,
+        force_recheck: risk === "write",
+        backend_actor_token: principal!.backend_actor_token,
+      })
       : null;
     if (capabilitySnapshot) {
       if (capabilitySnapshot.subject_id !== request.subject_id
@@ -235,6 +239,7 @@ export class StatelessTransportContextFactory {
       },
       request,
       capability_snapshot: capabilitySnapshot,
+      backend_actor_token: principal?.backend_actor_token ?? null,
       risk,
     };
   }
@@ -259,5 +264,6 @@ export function assertStatelessContext(value: StatelessTransportContext): Statel
     provider_request: { ...value.provider_request },
     request: normalized,
     capability_snapshot: value.capability_snapshot ? structuredClone(value.capability_snapshot) : null,
+    backend_actor_token: value.backend_actor_token,
   };
 }

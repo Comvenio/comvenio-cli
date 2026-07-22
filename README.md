@@ -58,20 +58,45 @@ bereitgestellte Domain und der offizielle Healthcheck-Host
 
 Der Remote-MCP unter `apps/mcp-server` enthält den getesteten
 Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der aktuelle
-Deployment-Kandidat startet bewusst **fail-closed**: `/health` antwortet, die
-OAuth-Resource-Metadaten und fünf Widget-Ressourcen sind vorhanden, aber es
-werden keine Tools veröffentlicht. `GET /ready` bleibt mit HTTP 503 gesperrt,
-bis der auditierte Tool-Katalog sowie die reale OAuth-/Capability-Anbindung
-freigegeben und produktiv verifiziert sind. Der maschinenlesbare Stand steht in
+`read_only_v1`-Kandidat veröffentlicht zwölf minimierte Public-Read-Tools und
+drei geschützte Self-Service-Tools. Event/Kalender und News sind die zwei
+beworbenen Widget-Ressourcen. Mitgliederverwaltung, Buchung und Bestätigung
+bleiben als getesteter Ausbauplan vorhanden, werden aber noch nicht im
+Runtime-Katalog angeboten. Der maschinenlesbare Stand steht in
 [`integrations/release/release-gate-report.json`](integrations/release/release-gate-report.json).
 
+Der Prozess startet bewusst **fail-closed**. `/health` ist nur die technische
+Liveness. `/ready` bleibt HTTP 503, solange Auth-/Role-Upstreams oder die exakt
+gepinnten OpenAI-/Anthropic-CIMD-Registrierungen fehlen. Geschützte Tools werden
+erst nach OAuth-Introspection, kurzlebigem Actor-Token, expliziter Vereinsbindung
+und aktuellem Self-Capability-Read sichtbar; das Fachbackend prüft RBAC weiterhin
+autoritativ. Der Log-Service ist kein MCP-Upstream.
+
 Die Railway-Review-Domain
-`https://comvenio-cli-production.up.railway.app` ist für den technischen
-Deployment-Nachweis vorgesehen. Der Nachweis ist erst erbracht, wenn der neue
-Commit dort ausgerollt wurde und `/health` HTTP 200 liefert. Für ChatGPT und Claude bleibt
-`https://mcp.comvenio.app/mcp` der kanonische Produktionsendpunkt. Die
-Review-Domain darf bis zum grünen `/ready`-Gate nicht im Marketplace oder
-Connector Directory eingereicht werden.
+`https://comvenio-cli-production.up.railway.app` ist der initiale kanonische
+Produktions-Origin. Der gemeinsame Endpoint für ChatGPT und Claude lautet
+`https://comvenio-cli-production.up.railway.app/mcp`. Eingereicht wird er erst,
+wenn der neue Commit dort ausgerollt wurde, `/health` HTTP 200 und `/ready`
+HTTP 200 liefern sowie OAuth-Discovery, Widerruf und Provider-Handshakes
+produktiv belegt sind.
+
+Für den Railway-Produktionsdienst sind mindestens folgende Variablen nötig:
+
+```text
+COMVENIO_MCP_ENV=production
+MCP_PUBLIC_ORIGIN=https://comvenio-cli-production.up.railway.app
+COMVENIO_API_BASE_URL=https://api.comvenio.app
+AUTH_SERVICE_BASE_URL=https://api.comvenio.app/auth
+MCP_PROD_ALLOWED_HOSTS=comvenio-cli-production.up.railway.app
+MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
+INTERNAL_API_KEY=<identischer interner Key wie im Auth-Service>
+MCP_CIMD_CLIENT_PINS_JSON=<reviewte Client-IDs, Fingerprints und allowed_scopes>
+```
+
+`OPENAI_APPS_CHALLENGE_TOKEN` wird ausschließlich mit dem exakten Wert aus dem
+OpenAI-Submission-Portal gesetzt. Ohne diesen Wert liefert
+`/.well-known/openai-apps-challenge` bewusst 404. Geheimnisse und CIMD-Werte
+werden nicht geraten oder ins Repository committed.
 
 Die lokalen Contract-Tests initialisieren Claude-, Codex- und unbekannte
 Standard-MCP-Clients ohne proprietären Provider-Header. Ein optionaler
@@ -79,6 +104,10 @@ Standard-MCP-Clients ohne proprietären Provider-Header. Ein optionaler
 Konsistenzprüfung verfügbar; OAuth, Scopes, Capability-Snapshot und
 Backend-RBAC bestimmen weiterhin Identität und Rechte. Der reale Handshake der
 Provider gegen die öffentliche Domain bleibt ein eigenes Release-Gate.
+
+Die OpenAI-Einreichung erfolgt über das offizielle Plugin-Submission-Portal,
+die Claude-Einreichung über das Connector Directory. Dafür ist kein lokaler
+`.codex`-Ordner im Repository erforderlich.
 
 Vor jedem Railway-Build muss der Workspace-Lockfile aktuell sein:
 

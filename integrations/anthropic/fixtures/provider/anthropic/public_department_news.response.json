@@ -1,0 +1,9 @@
+{
+  "tool_name": "public_department_news",
+  "synthetic_data_only": true,
+  "expected": {
+    "status": "success",
+    "authorization": "public.read",
+    "data_policy": "published_allowlist_only"
+  }
+}

@@ -298,7 +298,7 @@ describe("public lazy-auth allowlist", () => {
       required_scopes: privateDecision.required_scopes,
     });
     expect(challenge.www_authenticate).toBe(
-      "Bearer resource_metadata=\"https://mcp.comvenio.app/.well-known/oauth-protected-resource\", scope=\"member.write\"",
+      "Bearer resource_metadata=\"https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource\", scope=\"member.write\"",
     );
     expect(JSON.stringify(challenge)).not.toMatch(/client_id|token|member_id/iu);
   });

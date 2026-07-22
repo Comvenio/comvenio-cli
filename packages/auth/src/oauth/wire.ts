@@ -10,6 +10,7 @@ import type {
   HttpsUrl,
   OAuthClientRegistration,
   OAuthEnvironment,
+  OAuthRedirectUri,
   OAuthTokenRequest,
 } from "./types.ts";
 import { OAUTH_DEFAULTS, OAuthContractError } from "./types.ts";
@@ -49,6 +50,21 @@ function httpsUrl(value: string, field: string): HttpsUrl {
   return value as HttpsUrl;
 }
 
+function redirectUrl(value: string): OAuthRedirectUri {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new OAuthContractError("invalid_request", "redirect_uri ist ungültig.");
+  }
+  const loopbackHttp = url.protocol === "http:"
+    && ["localhost", "127.0.0.1"].includes(url.hostname);
+  if ((url.protocol !== "https:" && !loopbackHttp) || url.username || url.password || url.hash) {
+    throw new OAuthContractError("invalid_request", "redirect_uri ist ungültig.");
+  }
+  return value as OAuthRedirectUri;
+}
+
 function assertRegistration(
   registration: OAuthClientRegistration,
   clientId: string,
@@ -60,7 +76,7 @@ function assertRegistration(
   if (registration.token_endpoint_auth_method !== "none" || registration.pkce_method !== "S256") {
     throw new OAuthContractError("invalid_client", "Der OAuth-Clientvertrag ist ungültig.");
   }
-  if (redirectUri && !registration.redirect_uris.includes(redirectUri as HttpsUrl)) {
+  if (redirectUri && !registration.redirect_uris.includes(redirectUri as OAuthRedirectUri)) {
     throw new OAuthContractError("invalid_request", "Die Redirect-URI ist nicht freigegeben.");
   }
 }
@@ -89,7 +105,7 @@ export function parseAuthorizationRequest(input: {
   exactFields(input.params, fields);
   const responseType = one(input.params, "response_type");
   const clientId = httpsUrl(one(input.params, "client_id"), "client_id");
-  const redirectUri = httpsUrl(one(input.params, "redirect_uri"), "redirect_uri");
+  const redirectUri = redirectUrl(one(input.params, "redirect_uri"));
   const challenge = one(input.params, "code_challenge");
   const challengeMethod = one(input.params, "code_challenge_method");
   const state = one(input.params, "state");
@@ -125,7 +141,7 @@ export function parseTokenRequest(input: {
     const fields = ["grant_type", "code", "client_id", "redirect_uri", "code_verifier", "resource"];
     exactFields(input.params, fields);
     const clientId = httpsUrl(one(input.params, "client_id"), "client_id");
-    const redirectUri = httpsUrl(one(input.params, "redirect_uri"), "redirect_uri");
+    const redirectUri = redirectUrl(one(input.params, "redirect_uri"));
     const code = one(input.params, "code");
     const codeVerifier = one(input.params, "code_verifier");
     const resource = httpsUrl(one(input.params, "resource"), "resource");
@@ -240,10 +256,11 @@ export function oauthNoStoreHeaders(): Readonly<Record<string, string>> {
 export function createBearerChallenge(
   environment: OAuthEnvironment,
   requiredScope: OAuthScope,
+  publicOrigin?: HttpsUrl,
 ): string {
   if (!(OAUTH_SCOPE_VALUES as readonly string[]).includes(requiredScope)) {
     throw new OAuthContractError("invalid_scope", "Der erforderliche Scope ist ungültig.");
   }
-  const metadata = oauthEndpoints(environment).protected_resource_metadata;
+  const metadata = oauthEndpoints(environment, publicOrigin).protected_resource_metadata;
   return `Bearer resource_metadata="${metadata}", scope="${requiredScope}"`;
 }

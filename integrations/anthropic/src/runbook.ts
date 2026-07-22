@@ -15,9 +15,9 @@ export function buildClaudeReviewerRunbook(): ClaudeReviewerRunbook {
       { id: "club-selection", title: "Explizite Vereinsauswahl", account_role: "member", surfaces: allSurfaces, expected: "Private Tools erscheinen erst nach eindeutiger club_id-Bindung." },
       { id: "rbac-hidden", title: "Nicht erlaubte Aktionen bleiben verborgen", account_role: "member", surfaces: allSurfaces, expected: "Verwaltungsaktionen fehlen vollständig in Tool- und Widgetdarstellung." },
       { id: "backend-denial", title: "Backend-RBAC wird erneut geprüft", account_role: "member", surfaces: allSurfaces, expected: "Ein aktuelles Backend-403 wird sicher normalisiert und bewirkt keine Mutation." },
-      { id: "preview-confirm", title: "Kritische Wirkung zweimal bestätigen", account_role: "manager", surfaces: allSurfaces, expected: "Maskierte Vorschau, kurzlebiges Token und exakt eine gebundene Bestätigung." },
       { id: "revocation", title: "Grant widerrufen", account_role: "manager", surfaces: allSurfaces, expected: "Der nächste private Aufruf fordert erneut Authentifizierung; alter Zugriff bleibt gesperrt." },
-      { id: "widgets", title: "Fünf identische MCP Apps", account_role: "manager", surfaces: allSurfaces, expected: "Gemeinsame Builds rendern responsiv und ohne Produktivdaten." },
+      { id: "widgets", title: "Kalender- und News-App", account_role: "manager", surfaces: allSurfaces, expected: "Gemeinsame Builds rendern responsiv und ohne Produktivdaten." },
+      { id: "public-minimization", title: "Public Read bleibt minimiert", account_role: "anonymous", surfaces: allSurfaces, expected: "Nur veröffentlichte Allowlist-Felder; Entwürfe, interne IDs und personenbezogene Daten fehlen." },
       { id: "tool-sync", title: "Jedes Tool im Inspector und als Custom Connector", account_role: "manager", surfaces: allSurfaces, expected: "Happy Path und Permission-Denial stimmen mit Tooltitel, Schema und Annotationen überein." },
     ],
   });

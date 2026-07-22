@@ -4,10 +4,10 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 
 ## Verbindung
 
-1. `https://mcp.comvenio.app/mcp` als Streamable-HTTP-Connector verbinden.
+1. `https://comvenio-cli-production.up.railway.app/mcp` als Streamable-HTTP-Connector verbinden.
 2. Vor Einreichung die Verfügbarkeit des permanenten Directory-Slugs `comvenio` im Portal bestätigen.
 3. Public Read ohne Anmeldung mit veröffentlichten Events und News prüfen.
-4. Private Aktion starten und OAuth-CIMD mit öffentlichem Client, `none` und PKCE S256 abschließen.
+4. Eigene Rechte oder sichtbare Aktionen abfragen und OAuth-CIMD mit öffentlichem Client, `none` und PKCE S256 abschließen.
 5. Bei mehreren Vereinen den synthetischen Reviewverein ausdrücklich wählen.
 
 ## Konten
@@ -20,15 +20,15 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 1. Nicht erlaubte Tools und Widget-Aktionen müssen beim `member` vollständig verborgen sein.
 2. Ein absichtlicher Backend-403 muss sicher normalisiert werden und darf keine Mutation auslösen.
 3. Ein Cross-Tenant-Aufruf mit fremder `club_id` muss vor dem Fachservice scheitern.
-4. Kritische Publikation, Löschung sowie Import/Export müssen Vorschau und zweite Bestätigung verlangen.
+4. Nicht veröffentlichte News, private Termine und Mitgliederdaten dürfen im v1-Umfang weder als Tool angeboten noch offengelegt werden.
 5. Nach Grant-Widerruf muss der nächste private Aufruf eine neue Anmeldung verlangen.
 6. Toolargumente, Tokens, Mitgliederdaten und Resultinhalte dürfen nicht in Telemetrie erscheinen.
 
 ## Tool-Sync und Oberflächen
 
 - Jedes veröffentlichte Tool im MCP Inspector und als Claude Custom Connector mit Happy Path und Permission-Denial ausführen.
-- Alle fünf MCP Apps mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
-- Die fünf Karussellbilder enthalten ausschließlich die jeweilige App-Antwort mit synthetischen Daten; die Prompts stehen separat im Profil.
+- Kalender- und News-App mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
+- Die Widgetbilder enthalten ausschließlich die jeweilige App-Antwort mit synthetischen Daten; die Prompts stehen separat im Profil.
 - Externe News-Links sind nicht vorab freigegeben und behalten deshalb Claudes Bestätigungsdialog.
 
 Ein offenes Finding blockiert nur die Claude-Publikation. Der ChatGPT-Freigabestatus wird dadurch nicht automatisch verändert.

@@ -1,10 +1,10 @@
-import type { OAuthEnvironment } from "@comvenio/auth";
+import { oauthEndpoints, type HttpsUrl, type OAuthEnvironment } from "@comvenio/auth";
 
 export interface RailwayDeploymentConfig {
   environment: OAuthEnvironment;
-  domain: "mcpdev.comvenio.app" | "mcp.comvenio.app";
-  endpoint: "https://mcpdev.comvenio.app/mcp" | "https://mcp.comvenio.app/mcp";
-  audience: "https://mcpdev.comvenio.app" | "https://mcp.comvenio.app";
+  domain: string;
+  endpoint: `${HttpsUrl}/mcp`;
+  audience: HttpsUrl;
   health_path: "/health";
   readiness_path: "/ready";
   secret_namespace: "MCP_DEV" | "MCP_PROD";
@@ -16,50 +16,39 @@ export interface RailwayDeploymentConfig {
   };
 }
 
+function deployment(environment: OAuthEnvironment): RailwayDeploymentConfig {
+  const audience = oauthEndpoints(environment).resource;
+  const prefix = environment === "production" ? "MCP_PROD" : "MCP_DEV";
+  return {
+    environment,
+    domain: new URL(audience).hostname,
+    endpoint: `${audience}/mcp`,
+    audience,
+    health_path: "/health",
+    readiness_path: "/ready",
+    secret_namespace: prefix,
+    required_secret_names: [
+      "MCP_PUBLIC_ORIGIN",
+      "COMVENIO_API_BASE_URL",
+      "AUTH_SERVICE_BASE_URL",
+      "INTERNAL_API_KEY",
+      `${prefix}_ALLOWED_ORIGINS`,
+      `${prefix}_ALLOWED_HOSTS`,
+    ],
+    rollback: {
+      strategy: "railway_previous_successful_deployment",
+      readiness_gate_required: true,
+      drain_timeout_seconds: 20,
+    },
+  };
+}
+
 const DEPLOYMENTS: Record<OAuthEnvironment, RailwayDeploymentConfig> = {
   development: {
-    environment: "development",
-    domain: "mcpdev.comvenio.app",
-    endpoint: "https://mcpdev.comvenio.app/mcp",
-    audience: "https://mcpdev.comvenio.app",
-    health_path: "/health",
-    readiness_path: "/ready",
-    secret_namespace: "MCP_DEV",
-    required_secret_names: [
-      "MCP_DEV_AUTH_BASE_URL",
-      "MCP_DEV_CLAMD_HOST",
-      "MCP_DEV_FILE_STORAGE_BUCKET",
-      "MCP_DEV_REDIS_URL",
-      "MCP_DEV_SERVICE_TOKEN",
-      "MCP_DEV_ALLOWED_ORIGINS",
-    ],
-    rollback: {
-      strategy: "railway_previous_successful_deployment",
-      readiness_gate_required: true,
-      drain_timeout_seconds: 20,
-    },
+    ...deployment("development"),
   },
   production: {
-    environment: "production",
-    domain: "mcp.comvenio.app",
-    endpoint: "https://mcp.comvenio.app/mcp",
-    audience: "https://mcp.comvenio.app",
-    health_path: "/health",
-    readiness_path: "/ready",
-    secret_namespace: "MCP_PROD",
-    required_secret_names: [
-      "MCP_PROD_AUTH_BASE_URL",
-      "MCP_PROD_CLAMD_HOST",
-      "MCP_PROD_FILE_STORAGE_BUCKET",
-      "MCP_PROD_REDIS_URL",
-      "MCP_PROD_SERVICE_TOKEN",
-      "MCP_PROD_ALLOWED_ORIGINS",
-    ],
-    rollback: {
-      strategy: "railway_previous_successful_deployment",
-      readiness_gate_required: true,
-      drain_timeout_seconds: 20,
-    },
+    ...deployment("production"),
   },
 };
 
@@ -70,7 +59,7 @@ export function railwayDeploymentConfig(environment: OAuthEnvironment): RailwayD
 export function validateRailwayDeploymentConfig(config: RailwayDeploymentConfig): void {
   const expected = DEPLOYMENTS[config.environment];
   if (JSON.stringify(config) !== JSON.stringify(expected)
-    || !config.required_secret_names.every((name) => name.startsWith(`${config.secret_namespace}_`))) {
+    || !config.required_secret_names.includes("MCP_PUBLIC_ORIGIN")) {
     throw new Error("Die Railway-Deployment-Konfiguration ist ungültig.");
   }
 }

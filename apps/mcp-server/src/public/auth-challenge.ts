@@ -1,5 +1,6 @@
 import {
   oauthEndpoints,
+  type HttpsUrl,
   type OAuthEnvironment,
 } from "@comvenio/auth";
 import {
@@ -16,12 +17,13 @@ export function createAuthChallenge(input: {
   environment: OAuthEnvironment;
   request_id: UUID;
   required_scopes: readonly OAuthScope[];
+  public_origin?: HttpsUrl;
 }): AuthChallenge {
   const requiredScopes = [...new Set(input.required_scopes)].sort();
   if (requiredScopes.length === 0 || !requiredScopes.every((scope) => KNOWN_SCOPES.has(scope))) {
     throw new Error("Die OAuth-Challenge enthält ungültige Scopes.");
   }
-  const resourceMetadata = oauthEndpoints(input.environment).protected_resource_metadata;
+  const resourceMetadata = oauthEndpoints(input.environment, input.public_origin).protected_resource_metadata;
   return Object.freeze({
     status: 401 as const,
     request_id: input.request_id,

@@ -310,6 +310,7 @@ function runtimePrincipal(token: string): AuthenticatedConnectorPrincipal {
     club_id: token.startsWith("token-other") ? otherClubId : clubId,
     scopes: ["club.read", "member.read.basic"],
     expires_at_epoch_seconds: Math.floor(Date.now() / 1_000) + 900,
+    backend_actor_token: "backend-actor-token",
   };
 }
 
@@ -337,6 +338,7 @@ function runtimeCapability(club: string, requestSubject = runtimeSubjectId): Cap
 function runtimeOptions(overrides: Partial<McpRuntimeOptions> = {}): McpRuntimeOptions {
   return {
     environment: "development",
+    public_origin: "https://mcpdev.comvenio.app",
     allowed_hosts: ["127.0.0.1"],
     allowed_origins: [],
     authenticator: {
@@ -583,7 +585,7 @@ describe("Remote MCP runtime", () => {
     validateRailwayDeploymentConfig(development);
     validateRailwayDeploymentConfig(production);
     expect(development.domain).toBe("mcpdev.comvenio.app");
-    expect(production.domain).toBe("mcp.comvenio.app");
+    expect(production.domain).toBe("comvenio-cli-production.up.railway.app");
     expect(development.audience).not.toBe(production.audience);
     expect(development.secret_namespace).not.toBe(production.secret_namespace);
     expect(development.required_secret_names.some((name) => name.startsWith("MCP_PROD_"))).toBe(false);

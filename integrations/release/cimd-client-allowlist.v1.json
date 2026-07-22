@@ -2,5 +2,5 @@
   "contract_version": "1.0.0",
   "release_state": "BLOCKED",
   "pins": [],
-  "notice": "OpenAI- und Anthropic-CIMD-URLs werden erst nach Beobachtung im Provider-Portal und Security-Review mit exaktem SHA-256-Fingerprint eingetragen. Wildcards sind verboten."
+  "notice": "OpenAI- und Anthropic-CIMD-URLs werden erst nach Beobachtung im Provider-Portal und Security-Review mit exaktem SHA-256-Fingerprint und minimaler serverseitiger allowed_scopes-Liste eingetragen. Wildcards sind verboten."
 }
