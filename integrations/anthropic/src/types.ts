@@ -9,6 +9,11 @@ export const ANTHROPIC_WIDGET_RESOURCE_URIS = [
   "ui://comvenio/action-confirmation",
 ] as const;
 
+export const ANTHROPIC_RELEASE_WIDGET_RESOURCE_URIS = [
+  "ui://comvenio/event-calendar",
+  "ui://comvenio/news",
+] as const;
+
 export type AnthropicWidgetResourceUri = typeof ANTHROPIC_WIDGET_RESOURCE_URIS[number];
 export type ClaudeSurface = "web" | "desktop" | "mobile";
 
@@ -16,7 +21,7 @@ export interface ClaudeDirectoryManifest {
   schema_version: "1.0.0";
   product_name: "Comvenio";
   tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.";
-  short_description: "Vereinsarbeit sicher organisieren, Termine finden und erlaubte Aufgaben direkt im Chat erledigen.";
+  short_description: "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.";
   publisher_name: "Comvenio";
   categories: ["Productivity"];
   website_url: "https://www.comvenio.app";
@@ -29,9 +34,9 @@ export interface ClaudeDirectoryManifest {
   provider: "anthropic";
   submission_kind: "remote_mcp_with_mcp_apps";
   directory_slug: "comvenio";
-  remote_mcp_url: "https://mcp.comvenio.app/mcp";
+  remote_mcp_url: "https://comvenio-cli-production.up.railway.app/mcp";
   transport: "streamable_http";
-  oauth_protected_resource_url: "https://mcp.comvenio.app/.well-known/oauth-protected-resource";
+  oauth_protected_resource_url: "https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource";
   oauth_metadata_url: "https://api.comvenio.app/auth/.well-known/oauth-authorization-server";
   auth: {
     type: "oauth_cimd";
@@ -43,7 +48,7 @@ export interface ClaudeDirectoryManifest {
   };
   capabilities: { tools: true; prompts: true; resources: true; mcp_apps: true };
   allowed_link_uris: [];
-  widget_resource_uris: [...typeof ANTHROPIC_WIDGET_RESOURCE_URIS];
+  widget_resource_uris: [...typeof ANTHROPIC_RELEASE_WIDGET_RESOURCE_URIS];
   tool_sync_version: string;
   assets: { icon: "./assets/icon.svg"; logo: "./assets/logo.png" };
   screenshots: Array<{

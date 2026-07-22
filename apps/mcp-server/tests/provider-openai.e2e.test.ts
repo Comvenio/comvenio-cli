@@ -150,7 +150,7 @@ describe("OpenAI Marketplace provider package", () => {
     const staticManifest = CHAT_GPT_APP_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/app-profile.json"), "utf8")));
     const staticPlan = OPENAI_TOOL_TEST_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/tool-test-plan.json"), "utf8")));
     expect(staticManifest.tool_catalog_version).toBe(staticPlan.catalog_source_hash_sha256);
-    expect(staticPlan.cases).toHaveLength(8);
+    expect(staticPlan.cases).toHaveLength(15);
     for (const url of [staticManifest.website_url, staticManifest.privacy_url, staticManifest.terms_url, staticManifest.imprint_url, staticManifest.mcp_endpoint]) {
       expect(new URL(url).protocol).toBe("https:");
     }
@@ -191,9 +191,9 @@ describe("OpenAI Marketplace provider package", () => {
     expect(() => assertOpenAiSubmissionReady(report)).toThrow(/GLOBAL_PROJECT.*REVIEWER_ACCOUNTS.*PRIVACY_ACCEPTANCE/u);
   });
 
-  test("TC-05: binds all five common widgets and requires Web plus Mobile evidence", () => {
+  test("TC-05: binds the released calendar and news widgets and requires Web plus Mobile evidence", () => {
     const manifest = buildChatGptAppManifest(catalogHash);
-    expect(new Set(manifest.widget_resource_uris).size).toBe(5);
+    expect(new Set(manifest.widget_resource_uris).size).toBe(2);
     expect(new Set(manifest.screenshots.map((item) => item.resource_uri))).toEqual(new Set(manifest.widget_resource_uris));
     const plan = buildOpenAiToolTestPlan(catalog);
     const incomplete = evidence(manifest, plan);

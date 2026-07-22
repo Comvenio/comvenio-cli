@@ -14,7 +14,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Vereinsarbeit sicher organisieren, Termine finden und erlaubte Aufgaben direkt im Chat erledigen."),
+  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen."),
   publisher_name: z.literal("Comvenio"),
   category: z.literal("Productivity"),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),
@@ -23,7 +23,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   imprint_url: httpsUrl.pipe(z.literal("https://www.comvenio.app/impressum")),
   support_email: z.literal("support@comvenio.de"),
   locale: z.literal("de-DE"),
-  mcp_endpoint: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/mcp")),
+  mcp_endpoint: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/mcp")),
   starter_prompts: z.tuple([
     z.literal("Welche Termine stehen diese Woche in meinem Verein an?"),
     z.literal("Zeige mir die neuesten News meines Vereins."),
@@ -31,22 +31,20 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   ]),
   provider: z.literal("openai"),
   submission_kind: z.literal("plugin_with_mcp_app"),
-  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/.well-known/oauth-protected-resource")),
+  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource")),
   support_runbook_url: httpsUrl.pipe(z.literal("https://www.comvenio.app/hilfe")),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
-    z.literal("ui://comvenio/member-management"),
-    z.literal("ui://comvenio/booking-object"),
     z.literal("ui://comvenio/news"),
-    z.literal("ui://comvenio/action-confirmation"),
   ]),
   tool_catalog_version: z.string().regex(/^[a-f0-9]{64}$/u),
   assets: z.object({ icon: z.literal("./assets/icon.svg"), logo: z.literal("./assets/logo.png") }).strict(),
-  screenshots: z.array(z.object({ resource_uri: resourceUri, surface: z.enum(["web", "mobile"]), path: localArtifact, synthetic_data_only: z.literal(true) }).strict()).length(5),
+  screenshots: z.array(z.object({ resource_uri: resourceUri, surface: z.enum(["web", "mobile"]), path: localArtifact, synthetic_data_only: z.literal(true) }).strict()).length(2),
   release_gate: z.literal("OPENAI_GLOBAL_RESIDENCY_ACCEPTED"),
 }).strict().superRefine((manifest, context) => {
-  if (new Set(manifest.widget_resource_uris).size !== 5 || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== 5) {
-    context.addIssue({ code: "custom", message: "Jede der fünf MCP Apps benötigt genau einen Screenshot-Nachweis." });
+  if (new Set(manifest.widget_resource_uris).size !== 2
+    || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== 2) {
+    context.addIssue({ code: "custom", message: "Jede veröffentlichte MCP App benötigt genau einen Screenshot-Nachweis." });
   }
   if (manifest.starter_prompts.some((prompt) => prompt.length > 128)) {
     context.addIssue({ code: "custom", message: "Starter-Prompts dürfen höchstens 128 Zeichen enthalten." });
@@ -64,9 +62,20 @@ export const OPENAI_TOOL_TEST_PLAN_SCHEMA = z.object({
     required_surfaces: z.tuple([z.literal("web"), z.literal("mobile")]),
     verifies: z.tuple([z.literal("schema"), z.literal("security_schemes"), z.literal("annotations"), z.literal("rbac_recheck")]),
   }).strict()),
+  submission_examples: z.array(z.object({
+    id: z.string().regex(/^[a-z0-9-]+$/u),
+    polarity: z.enum(["positive", "negative"]),
+    prompt: z.string().trim().min(1).max(500),
+    expected_behavior: z.string().trim().min(1).max(1_000),
+  }).strict()).length(8),
 }).strict().superRefine((plan, context) => {
   if (new Set(plan.cases.map((item) => item.tool_name)).size !== plan.cases.length) {
     context.addIssue({ code: "custom", message: "Jedes veröffentlichte Tool darf nur einen Reviewfall besitzen." });
+  }
+  if (plan.submission_examples.filter((item) => item.polarity === "positive").length !== 5
+    || plan.submission_examples.filter((item) => item.polarity === "negative").length !== 3
+    || new Set(plan.submission_examples.map((item) => item.id)).size !== plan.submission_examples.length) {
+    context.addIssue({ code: "custom", message: "Die Einreichung benötigt genau fünf positive und drei negative eindeutige Beispiele." });
   }
 });
 

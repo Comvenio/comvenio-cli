@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { z } from "zod";
 
 import { loadReviewInventory } from "../packages/tool-catalog/src/index.ts";
+import { publishedRuntimeToolNames } from "../apps/mcp-server/src/runtime-tools.ts";
 import {
   CONNECTOR_EVAL_REPORT_SCHEMA,
   PILOT_PROTOCOL_SCHEMA,
@@ -101,18 +102,17 @@ const recomputed = buildReleaseGateReport({
 assertSame(releaseGate, recomputed, "ReleaseGateReport entspricht nicht der aktuellen Gate-Logik.");
 
 const inventory = loadReviewInventory();
-if (releaseGate.evidence.action_classification_count !== inventory.actions.entry_count
-  || releaseGate.evidence.action_total !== inventory.manifest.action_count
-  || releaseGate.evidence.route_callsite_count !== inventory.routes.entry_count) {
+if (releaseGate.evidence.planned_action_count !== inventory.actions.entry_count
+  || releaseGate.evidence.planned_action_count !== inventory.manifest.action_count
+  || releaseGate.evidence.planned_route_callsite_count !== inventory.routes.entry_count) {
   throw new Error("ReleaseGateReport weicht vom generierten 303/560-Inventar ab.");
 }
-const inventoryToolNames = inventory.provider_contract.virtual_tools.map((tool) => tool.tool_name).sort();
+const runtimeToolNames = publishedRuntimeToolNames("production");
 const evalToolNames = evalReport.results.map((result) => result.tool_name).sort();
-assertSame(evalToolNames, inventoryToolNames, "ConnectorEvalSuite deckt nicht exakt die acht evaluierten virtuellen Tool-Kandidaten ab.");
-
-const migrationCandidatesPublished = inventory.migration.discovered_candidates.every((entry) => entry.published === true);
-if (releaseGate.evidence.audited_operation_catalog_published !== migrationCandidatesPublished) {
-  throw new Error("Der Operationskatalog-Publikationsstatus ist nicht aus der Migrationsspur abgeleitet.");
+assertSame(evalToolNames, runtimeToolNames, "ConnectorEvalSuite deckt nicht exakt die produktiv veröffentlichten Runtime-Tools ab.");
+if (releaseGate.evidence.published_tool_count !== runtimeToolNames.length
+  || !releaseGate.evidence.published_runtime_catalog_verified) {
+  throw new Error("Der veröffentlichte Runtime-Katalog ist nicht als verifiziert belegt.");
 }
 
 const fairUse = readJson(resolve(workspaceRoot, "apps/mcp-server/config/fair-use.v1.json"));
@@ -126,6 +126,7 @@ const cimdSchema = z.object({
     client_id: z.string().url().startsWith("https://"),
     provider: z.enum(["openai", "anthropic"]),
     metadata_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
+    allowed_scopes: z.array(z.string().trim().min(1)).min(1),
     enabled: z.boolean(),
   }).strict()),
   notice: z.string().trim().min(1),

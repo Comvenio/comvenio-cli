@@ -14,7 +14,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Vereinsarbeit sicher organisieren, Termine finden und erlaubte Aufgaben direkt im Chat erledigen."),
+  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen."),
   publisher_name: z.literal("Comvenio"),
   categories: z.tuple([z.literal("Productivity")]),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),
@@ -27,9 +27,9 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   provider: z.literal("anthropic"),
   submission_kind: z.literal("remote_mcp_with_mcp_apps"),
   directory_slug: z.literal("comvenio"),
-  remote_mcp_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/mcp")),
+  remote_mcp_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/mcp")),
   transport: z.literal("streamable_http"),
-  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://mcp.comvenio.app/.well-known/oauth-protected-resource")),
+  oauth_protected_resource_url: httpsUrl.pipe(z.literal("https://comvenio-cli-production.up.railway.app/.well-known/oauth-protected-resource")),
   oauth_metadata_url: httpsUrl.pipe(z.literal("https://api.comvenio.app/auth/.well-known/oauth-authorization-server")),
   auth: z.object({
     type: z.literal("oauth_cimd"),
@@ -43,10 +43,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   allowed_link_uris: z.tuple([]),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
-    z.literal("ui://comvenio/member-management"),
-    z.literal("ui://comvenio/booking-object"),
     z.literal("ui://comvenio/news"),
-    z.literal("ui://comvenio/action-confirmation"),
   ]),
   tool_sync_version: z.string().regex(/^[a-f0-9]{64}$/u),
   assets: z.object({ icon: z.literal("./assets/icon.svg"), logo: z.literal("./assets/logo.png") }).strict(),
@@ -57,12 +54,13 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
     format: z.literal("png"),
     app_response_only: z.literal(true),
     synthetic_data_only: z.literal(true),
-  }).strict()).min(3).max(5),
+  }).strict()).length(2),
 }).strict().superRefine((manifest, context) => {
   if (manifest.product_name.length > 100 || manifest.tagline.length > 55 || manifest.short_description.length > 2_000) {
     context.addIssue({ code: "custom", message: "Directory-Name, Tagline oder Beschreibung überschreiten die Portalgrenze." });
   }
-  if (new Set(manifest.widget_resource_uris).size !== 5 || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== manifest.screenshots.length) {
+  if (new Set(manifest.widget_resource_uris).size !== 2
+    || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== manifest.screenshots.length) {
     context.addIssue({ code: "custom", message: "Widget- und Screenshot-Referenzen müssen eindeutig sein." });
   }
 });

@@ -28,6 +28,7 @@ import {
 } from "../../../integrations/release/src/index.ts";
 import { buildChatGptAppManifest } from "../../../integrations/openai/src/index.ts";
 import { buildClaudeDirectoryManifest } from "../../../integrations/anthropic/src/index.ts";
+import { publishedRuntimeToolNames } from "../src/runtime-tools.ts";
 import {
   BOOKING_OBJECT_WIDGET_CLIENT,
   BOOKING_OBJECT_WIDGET_CSS,
@@ -64,10 +65,11 @@ function passedPilot() {
 
 function readyEvidence(): ReleaseEvidence {
   return {
-    action_classification_count: 303,
-    action_total: 303,
-    route_callsite_count: 560,
-    audited_operation_catalog_published: true,
+    release_scope: "read_only_v1",
+    published_tool_count: 15,
+    planned_action_count: 303,
+    planned_route_callsite_count: 560,
+    published_runtime_catalog_verified: true,
     route_trace_tests_passed: true,
     schema_tests_passed: true,
     permission_tests_passed: true,
@@ -75,7 +77,8 @@ function readyEvidence(): ReleaseEvidence {
     revocation_latency_seconds: 5,
     malware_quarantine_verified: true,
     confirmation_input_server_internal: true,
-    widget_contract_count: 5,
+    published_widget_contract_count: 2,
+    planned_widget_contract_count: 5,
     widget_surfaces_verified: true,
     accessibility_smokes_passed: true,
     rate_limit_config_verified: true,
@@ -144,7 +147,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(new Set(traceability.tasks.map((item) => item.task_id)).size).toBe(23);
   });
 
-  test("TC-03: 303 workflows, 560 routes and all eight virtual tool candidates have exact eval parity", () => {
+  test("TC-03: future inventory and the 15 published runtime tools have exact eval parity", () => {
     const inventory = loadReviewInventory();
     const report = buildAutomatedConnectorEvalReport();
     expect(inventory.actions.entries).toHaveLength(303);
@@ -153,11 +156,11 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(inventory.migration.discovered_candidates.every((candidate) => candidate.published === false && candidate.blockers.length > 0)).toBe(true);
     expect(report).toMatchObject({
       status: "pass",
-      evaluated_candidate_tool_count: 8,
-      tested_tool_count: 8,
+      evaluated_candidate_tool_count: 15,
+      tested_tool_count: 15,
       blockers: [],
     });
-    expect(report.results.map((result) => result.tool_name)).toEqual(inventory.provider_contract.virtual_tools.map((tool) => tool.tool_name).sort());
+    expect(report.results.map((result) => result.tool_name)).toEqual(publishedRuntimeToolNames("production"));
 
     const mismatched = new ConnectorEvalSuite().evaluate({ candidate_tool_names: ["cv_schema_read"], results: [] });
     expect(mismatched).toMatchObject({ status: "blocked", blockers: ["TOOL_EVAL_PARITY"] });
@@ -181,11 +184,11 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     });
   });
 
-  test("TC-05: the same five responsive, accessible widget builds cover ChatGPT and Claude surfaces", () => {
+  test("TC-05: two released widgets share provider surfaces while all five planned builds stay accessible", () => {
     const openAi = buildChatGptAppManifest(catalogHash);
     const anthropic = buildClaudeDirectoryManifest(catalogHash);
     expect(openAi.widget_resource_uris).toEqual(anthropic.widget_resource_uris);
-    expect(new Set(openAi.widget_resource_uris).size).toBe(5);
+    expect(new Set(openAi.widget_resource_uris).size).toBe(2);
     expect(new Set(openAi.screenshots.map((item) => item.resource_uri))).toEqual(new Set(openAi.widget_resource_uris));
     expect(new Set(anthropic.screenshots.map((item) => item.resource_uri))).toEqual(new Set(anthropic.widget_resource_uris));
 

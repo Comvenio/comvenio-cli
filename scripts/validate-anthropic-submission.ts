@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -6,15 +7,22 @@ import {
   CLAUDE_TOOL_SYNC_PLAN_SCHEMA,
   buildClaudeDirectoryManifest,
 } from "../integrations/anthropic/src/index.ts";
+import { publishedRuntimeToolNames } from "../apps/mcp-server/src/runtime-tools.ts";
 
 const root = resolve(import.meta.dir, "../integrations/anthropic");
 const manifest = CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(root, "submission/connector-profile.json"), "utf8")));
 const plan = CLAUDE_TOOL_SYNC_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(root, "submission/tool-test-plan.json"), "utf8")));
+const runtimeTools = publishedRuntimeToolNames("production");
+const runtimeVersion = createHash("sha256").update(runtimeTools.join("\n"), "utf8").digest("hex");
 
 if (JSON.stringify(manifest) !== JSON.stringify(buildClaudeDirectoryManifest(manifest.tool_sync_version))) {
   throw new Error("Statisches Claude-Directory-Profil weicht vom generierten Profil ab.");
 }
 if (manifest.tool_sync_version !== plan.tool_sync_version) throw new Error("Claude-Profil und Tool-Testplan referenzieren unterschiedliche Sync-Versionen.");
+if (manifest.tool_sync_version !== runtimeVersion
+  || JSON.stringify(plan.cases.map((item) => item.tool_name).sort()) !== JSON.stringify(runtimeTools)) {
+  throw new Error("Claude-Submission und produktiv veröffentlichte Runtime-Tools weichen voneinander ab.");
+}
 
 const required = [
   manifest.assets.icon,

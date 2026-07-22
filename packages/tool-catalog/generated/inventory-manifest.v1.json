@@ -7,7 +7,7 @@
   "virtual_tool_count": 8,
   "source_sha256": {
     "actions": "1794879d639f33afcac7977d05342eafca3a37e47b9b2e7c8a159b86401e777d",
-    "routes": "df1d8adfa10e023cb8e7bd60161b42174ec3b5fe68544435ac852c7d6a7e5bd1",
+    "routes": "816c38d355f3625412e36591b815ce8dde8564cf8adad9f7164f8fa1774eb033",
     "provider_tools": "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417ba5a7",
     "backend_rbac_audit": "e2d68d99baf6e774c07481c554928d07fc3752a491cf1aaa446fc21f31d8bbde"
   }

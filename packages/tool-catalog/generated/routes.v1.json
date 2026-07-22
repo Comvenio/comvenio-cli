@@ -7,7 +7,7 @@
     "count_unit": "one statically detected ComvenioClient call site in src/commands, including service and postForm",
     "inventory_only": true,
     "publication_rule": "a call site is never a permission or dispatch authority; only an audited OperationDefinition may be published",
-    "source_hash_sha256": "d7e4078080e5069506ad7357c9fe461f30426f8323de2383fa1dee46fad087a1"
+    "source_hash_sha256": "c40de3372172c9d11849d7dff70c221089df8faab1a153faadd8f03a58b864c6"
   },
   "routes": [
     {

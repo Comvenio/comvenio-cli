@@ -127,10 +127,11 @@ export interface ProviderGateResult {
 }
 
 export interface ReleaseEvidence {
-  action_classification_count: number;
-  action_total: number;
-  route_callsite_count: number;
-  audited_operation_catalog_published: boolean;
+  release_scope: "read_only_v1";
+  published_tool_count: number;
+  planned_action_count: number;
+  planned_route_callsite_count: number;
+  published_runtime_catalog_verified: boolean;
   route_trace_tests_passed: boolean;
   schema_tests_passed: boolean;
   permission_tests_passed: boolean;
@@ -138,7 +139,8 @@ export interface ReleaseEvidence {
   revocation_latency_seconds: number | null;
   malware_quarantine_verified: boolean;
   confirmation_input_server_internal: boolean;
-  widget_contract_count: number;
+  published_widget_contract_count: number;
+  planned_widget_contract_count: number;
   widget_surfaces_verified: boolean;
   accessibility_smokes_passed: boolean;
   rate_limit_config_verified: boolean;
