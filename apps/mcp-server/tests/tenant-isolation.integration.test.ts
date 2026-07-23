@@ -1848,6 +1848,12 @@ describe("Remote MCP runtime", () => {
     expect(development.required_secret_names.some((name) => name.startsWith("MCP_PROD_"))).toBe(false);
     expect(production.required_secret_names.some((name) => name.startsWith("MCP_DEV_"))).toBe(false);
     expect(production.required_secret_names).toContain("MCP_EDGE_SHARED_SECRET");
+    expect(production.required_secret_names).toContain(
+      "MCP_SHARED_STATE_REDIS_URL",
+    );
+    expect(production.required_secret_names).toContain(
+      "MCP_SHARED_STATE_ENCRYPTION_KEY",
+    );
   });
 
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {

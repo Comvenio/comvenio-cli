@@ -42,6 +42,7 @@ export interface McpProcessEnvironment {
   MCP_PROD_ALLOWED_ORIGINS?: string;
   MCP_PUBLIC_ORIGIN?: string;
   MCP_RELEASE_SCOPE?: string;
+  MCP_SHARED_STATE_ENCRYPTION_KEY?: string;
   MCP_SHARED_STATE_REDIS_URL?: string;
   OPENAI_APPS_CHALLENGE_TOKEN?: string;
   PORT?: string;
@@ -60,6 +61,7 @@ export interface McpProcessConfig {
   internal_api_key: string;
   openai_apps_challenge_token: string | null;
   release_scope: ConnectorReleaseScope;
+  shared_state_encryption_key: string | null;
   shared_state_redis_url: string | null;
   cimd_client_pins: unknown;
   allowed_hosts: string[];
@@ -172,6 +174,34 @@ function sharedStateRedisUrl(
   return value;
 }
 
+function sharedStateEncryptionKey(
+  value: string | undefined,
+  selectedEnvironment: OAuthEnvironment,
+): string | null {
+  if (value === undefined || value === "") {
+    if (selectedEnvironment === "production") {
+      throw new Error(
+        "MCP_SHARED_STATE_ENCRYPTION_KEY ist für Production erforderlich.",
+      );
+    }
+    return null;
+  }
+  let decoded: Buffer;
+  try {
+    decoded = Buffer.from(value, "base64url");
+  } catch {
+    throw new Error("MCP_SHARED_STATE_ENCRYPTION_KEY ist ungültig.");
+  }
+  if (
+    value !== value.trim()
+    || decoded.length !== 32
+    || decoded.toString("base64url") !== value.replace(/=+$/u, "")
+  ) {
+    throw new Error("MCP_SHARED_STATE_ENCRYPTION_KEY ist ungültig.");
+  }
+  return value;
+}
+
 export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessConfig {
   const selectedEnvironment = environment(input.COMVENIO_MCP_ENV);
   const prefix = selectedEnvironment === "production" ? "MCP_PROD" : "MCP_DEV";
@@ -191,6 +221,23 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
   if (!internalApiKey || /[\r\n]/u.test(internalApiKey)) {
     throw new Error("INTERNAL_API_KEY ist für den MCP-Gateway erforderlich.");
   }
+  const configuredEdgeSecret = edgeSharedSecret(
+    input.MCP_EDGE_SHARED_SECRET,
+    selectedEnvironment,
+  );
+  const sharedStateRedis = sharedStateRedisUrl(
+    input.MCP_SHARED_STATE_REDIS_URL ?? input.REDIS_URL,
+    selectedEnvironment,
+  );
+  const sharedStateEncryption = sharedStateEncryptionKey(
+    input.MCP_SHARED_STATE_ENCRYPTION_KEY,
+    selectedEnvironment,
+  );
+  if (Boolean(sharedStateRedis) !== Boolean(sharedStateEncryption)) {
+    throw new Error(
+      "Shared-State-Redis und Verschlüsselungsschlüssel müssen gemeinsam konfiguriert sein.",
+    );
+  }
   const configuredHosts = csv(input[`${prefix}_ALLOWED_HOSTS`]);
   const railwayHost = input.RAILWAY_PUBLIC_DOMAIN?.trim();
   const allowedHosts = [...new Set([
@@ -203,16 +250,14 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     host: "0.0.0.0",
     port: port(input.PORT),
     public_origin: publicOrigin,
-    edge_shared_secret: edgeSharedSecret(input.MCP_EDGE_SHARED_SECRET, selectedEnvironment),
+    edge_shared_secret: configuredEdgeSecret,
     api_base_url: apiBaseUrl,
     auth_base_url: authBaseUrl,
     internal_api_key: internalApiKey,
     openai_apps_challenge_token: openAiChallengeToken(input.OPENAI_APPS_CHALLENGE_TOKEN),
     release_scope: releaseScope(input.MCP_RELEASE_SCOPE),
-    shared_state_redis_url: sharedStateRedisUrl(
-      input.MCP_SHARED_STATE_REDIS_URL ?? input.REDIS_URL,
-      selectedEnvironment,
-    ),
+    shared_state_encryption_key: sharedStateEncryption,
+    shared_state_redis_url: sharedStateRedis,
     cimd_client_pins: parsePins(input.MCP_CIMD_CLIENT_PINS_JSON),
     allowed_hosts: allowedHosts,
     allowed_origins: csv(input[`${prefix}_ALLOWED_ORIGINS`]),
@@ -328,6 +373,7 @@ export async function startMcpDeploymentCandidate(
 }> {
   const config = readMcpProcessConfig(input);
   const stateStore = config.shared_state_redis_url
+    && config.shared_state_encryption_key
     ? new RedisDomainStateStore(new IORedis(
       config.shared_state_redis_url,
       {
@@ -335,7 +381,7 @@ export async function startMcpDeploymentCandidate(
         maxRetriesPerRequest: 3,
         enableReadyCheck: true,
       },
-    ))
+    ), Buffer.from(config.shared_state_encryption_key, "base64url"))
     : new InMemoryDomainStateStore();
   try {
     if (!await stateStore.ready()) {
