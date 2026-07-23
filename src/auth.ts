@@ -1,20 +1,42 @@
-// State-file authentication for the Comvenio CLI.
-// The token is an opaque device token (cvn_...), not a JWT. We never decode it;
-// the server validates its expiry.
-import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export const STATE_FILE = join(homedir(), ".comvenio-cli-state.json");
-const LOGIN_HINT = 'Nicht eingeloggt. Fuehre "comvenio login --token cvn_..." aus.';
+import {
+  clearOAuthCredentials,
+  loadOAuthCredentials,
+  saveOAuthCredentials,
+  type OAuthCredentials,
+} from "./oauth/credential-store.ts";
+import {
+  exchangeCliActorToken,
+  oauthRuntime,
+  refreshOAuthCredentials,
+  type OAuthRuntime,
+} from "./oauth/client.ts";
 
-export type ComvenioCliState = {
-  token: string; // opaque, starts with "cvn_" — NOT a JWT, never decoded
-  gatewayBaseUrl: string; // e.g. "https://api.comvenio.app"
+export const STATE_FILE = join(homedir(), ".comvenio-cli-state.json");
+const LOGIN_HINT = 'Nicht eingeloggt. Führe "comvenio login" aus.';
+const EXPIRY_SKEW_MS = 30_000;
+
+export type StoredComvenioCliState = {
+  schemaVersion: 1 | 2;
+  authMode: "device_token" | "oauth";
+  token?: string;
+  gatewayBaseUrl: string;
   clubId?: string;
-  environment: string; // "prod" | "dev" | "local"
+  environment: string;
   userId?: string;
   userEmail?: string;
+  oauth?: {
+    clientId: string;
+    resource: string;
+    scopes: string[];
+  };
+};
+
+export type ComvenioCliState = Omit<StoredComvenioCliState, "token"> & {
+  token: string;
 };
 
 export class AuthError extends Error {
@@ -24,81 +46,160 @@ export class AuthError extends Error {
   }
 }
 
-/**
- * Read + validate ~/.comvenio-cli-state.json. Throws AuthError with a login
- * hint when the file is missing, malformed, or missing required fields.
- * NO JWT-expiry check — the token is opaque, the server checks validity.
- */
-export function loadState(): ComvenioCliState {
+function parseStoredState(): StoredComvenioCliState {
   if (!existsSync(STATE_FILE)) {
     throw new AuthError(`State-File nicht gefunden: ${STATE_FILE}\n${LOGIN_HINT}`);
   }
-
-  let raw: string;
-  try {
-    raw = readFileSync(STATE_FILE, "utf8");
-  } catch (err) {
-    throw new AuthError(
-      `State-File konnte nicht gelesen werden: ${(err as Error).message}`,
-    );
-  }
-
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    throw new AuthError(
-      `State-File ist kein gueltiges JSON: ${(err as Error).message}`,
-    );
-  }
-
-  if (typeof parsed.token !== "string" || !parsed.token) {
-    throw new AuthError(LOGIN_HINT);
+    parsed = JSON.parse(readFileSync(STATE_FILE, "utf8"));
+  } catch (error) {
+    throw new AuthError(`State-File ist ungültig: ${(error as Error).message}`);
   }
   if (typeof parsed.gatewayBaseUrl !== "string" || !parsed.gatewayBaseUrl) {
     throw new AuthError(`Pflichtfeld "gatewayBaseUrl" fehlt. ${LOGIN_HINT}`);
   }
-
+  const legacyToken = typeof parsed.token === "string" ? parsed.token : undefined;
+  const authMode = parsed.authMode === "oauth"
+    ? "oauth"
+    : "device_token";
+  const oauth = parsed.oauth;
+  if (
+    authMode === "oauth"
+    && (
+      typeof oauth !== "object"
+      || oauth === null
+      || typeof (oauth as Record<string, unknown>).clientId !== "string"
+      || typeof (oauth as Record<string, unknown>).resource !== "string"
+      || !Array.isArray((oauth as Record<string, unknown>).scopes)
+    )
+  ) {
+    throw new AuthError(`OAuth-Metadaten fehlen. ${LOGIN_HINT}`);
+  }
+  if (authMode === "device_token" && (!legacyToken || !legacyToken.startsWith("cvn_"))) {
+    throw new AuthError(LOGIN_HINT);
+  }
   return {
-    token: parsed.token as string,
-    gatewayBaseUrl: (parsed.gatewayBaseUrl as string).replace(/\/+$/, ""),
+    schemaVersion: authMode === "oauth" ? 2 : 1,
+    authMode,
+    token: legacyToken,
+    gatewayBaseUrl: parsed.gatewayBaseUrl.replace(/\/+$/, ""),
     clubId: typeof parsed.clubId === "string" ? parsed.clubId : undefined,
-    environment:
-      typeof parsed.environment === "string" ? parsed.environment : "prod",
+    environment: typeof parsed.environment === "string" ? parsed.environment : "prod",
     userId: typeof parsed.userId === "string" ? parsed.userId : undefined,
-    userEmail:
-      typeof parsed.userEmail === "string" ? parsed.userEmail : undefined,
+    userEmail: typeof parsed.userEmail === "string" ? parsed.userEmail : undefined,
+    oauth: authMode === "oauth"
+      ? {
+          clientId: (oauth as Record<string, unknown>).clientId as string,
+          resource: (oauth as Record<string, unknown>).resource as string,
+          scopes: [...((oauth as Record<string, unknown>).scopes as string[])],
+        }
+      : undefined,
   };
 }
 
-/**
- * Persist a partial state with MERGE semantics: read the existing file, merge
- * the partial on top, then write. NEVER overwrite the whole file — that would
- * drop clubId/env/userId (Gotcha infrastructure.md "State-Files immer merge").
- * undefined values in `partial` are stripped so they don't clobber stored keys.
- */
-export function writeState(partial: Partial<ComvenioCliState>): void {
+function runtimeForState(state: StoredComvenioCliState): OAuthRuntime {
+  const runtime = oauthRuntime(state.gatewayBaseUrl);
+  if (
+    state.oauth?.clientId !== runtime.clientId
+    || state.oauth?.resource !== runtime.resource
+  ) {
+    throw new AuthError("Der gespeicherte OAuth-Client passt nicht zur aktuellen Umgebung. Bitte erneut anmelden.");
+  }
+  return {
+    ...runtime,
+    scopes: state.oauth.scopes as OAuthRuntime["scopes"],
+  };
+}
+
+async function resolveOAuthCredentials(
+  state: StoredComvenioCliState,
+): Promise<OAuthCredentials> {
+  let credentials: OAuthCredentials;
+  try {
+    const loaded = loadOAuthCredentials();
+    if (!loaded) throw new Error("kein Credential-Eintrag");
+    credentials = loaded;
+  } catch (error) {
+    throw new AuthError(`OAuth-Credentials fehlen oder sind nicht lesbar: ${(error as Error).message}`);
+  }
+  const runtime = runtimeForState(state);
+  try {
+    if (credentials.accessExpiresAt <= Date.now() + EXPIRY_SKEW_MS) {
+      credentials = await refreshOAuthCredentials(runtime, credentials);
+    }
+    if (
+      !credentials.actorToken
+      || !credentials.actorExpiresAt
+      || credentials.actorExpiresAt <= Date.now() + EXPIRY_SKEW_MS
+    ) {
+      credentials = await exchangeCliActorToken(runtime, credentials);
+    }
+    saveOAuthCredentials(credentials);
+    return credentials;
+  } catch (firstError) {
+    try {
+      credentials = await refreshOAuthCredentials(runtime, credentials);
+      credentials = await exchangeCliActorToken(runtime, credentials);
+      saveOAuthCredentials(credentials);
+      return credentials;
+    } catch {
+      throw new AuthError(
+        `Die OAuth-Sitzung ist abgelaufen oder wurde widerrufen. Bitte erneut anmelden. (${(firstError as Error).message})`,
+      );
+    }
+  }
+}
+
+export async function loadState(): Promise<ComvenioCliState> {
+  const state = parseStoredState();
+  if (state.authMode === "device_token") {
+    return { ...state, token: state.token as string };
+  }
+  const credentials = await resolveOAuthCredentials(state);
+  return { ...state, token: credentials.actorToken as string };
+}
+
+export function readStoredState(): StoredComvenioCliState {
+  return parseStoredState();
+}
+
+export function writeState(partial: Partial<StoredComvenioCliState>): void {
   let current: Record<string, unknown> = {};
   if (existsSync(STATE_FILE)) {
     try {
       current = JSON.parse(readFileSync(STATE_FILE, "utf8"));
     } catch {
-      // Corrupt existing file — start fresh rather than fail the write.
       current = {};
     }
   }
   const clean: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(partial)) {
-    if (v !== undefined) clean[k] = v;
+  for (const [key, value] of Object.entries(partial)) {
+    if (value !== undefined) clean[key] = value;
   }
-  writeFileSync(
-    STATE_FILE,
-    JSON.stringify({ ...current, ...clean }, null, 2),
-    "utf8",
-  );
+  writeFileSync(STATE_FILE, JSON.stringify({ ...current, ...clean }, null, 2), "utf8");
 }
 
-/** Remove the state file (logout). No-op if it does not exist. */
+export function writeOAuthState(
+  state: Omit<StoredComvenioCliState, "schemaVersion" | "authMode" | "token">,
+): void {
+  const serializable = {
+    ...state,
+    schemaVersion: 2 as const,
+    authMode: "oauth" as const,
+  };
+  const encoded = JSON.stringify(serializable, null, 2);
+  if (/access[_T]oken|refresh[_T]oken|actor[_T]oken|cvn_/u.test(encoded)) {
+    throw new AuthError("OAuth-Secrets dürfen nicht im CLI-State gespeichert werden.");
+  }
+  writeFileSync(STATE_FILE, encoded, "utf8");
+}
+
 export function clearState(): void {
   if (existsSync(STATE_FILE)) rmSync(STATE_FILE);
+}
+
+export function clearAllAuthState(): void {
+  clearOAuthCredentials();
+  clearState();
 }
