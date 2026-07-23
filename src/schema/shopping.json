@@ -70,7 +70,7 @@
     "description": { "type": "string", "max_length": 500 }
   },
   "procurement_location_rule": "Exakt eines von building_id oder room_id ist bei neuen Positionen und Vorlagen erforderlich.",
-  "procurement_article_rule": "Exakt eines von name oder ingredient_id ist bei neuen Positionen und Vorlagen erforderlich.",
+  "procurement_article_rule": "Mindestens eines von name oder ingredient_id ist bei neuen Positionen und Vorlagen erforderlich; beide dürfen gemeinsam gesetzt sein.",
   "procurement_item_create_required_fields": ["quantity", "unit"],
   "procurement_item_create_optional_fields": [
     "name",

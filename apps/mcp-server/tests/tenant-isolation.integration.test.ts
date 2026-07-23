@@ -2589,8 +2589,9 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     });
   });
 
-  test("validates procurement XOR and performs exactly one Supply mutation", async () => {
+  test("validates procurement location and article contracts before one Supply mutation", async () => {
     const roomId = "25252525-2525-4525-8525-252525252525";
+    const ingredientId = "29292929-2929-4929-8929-292929292929";
     const calls: ComvenioApiRequest[] = [];
     const shopping = createK11ToolSets({
       client: adapterClient(async (request) => {
@@ -2600,6 +2601,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
           club_id: clubId,
           name: "Klopapier",
           reported_by: "private-actor-id",
+          purchased_by: "private-purchaser-id",
         };
       }),
       write_safety: { async execute(_request, mutation) { return mutation(); } },
@@ -2620,11 +2622,38 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     expect(calls).toHaveLength(0);
 
+    await expect(shopping.execute({
+      action_id: "cai.shopping.procurement.add",
+      input: {
+        club_id: clubId,
+        name: "Klopapier",
+        quantity: 4,
+        unit: "pc",
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls).toHaveLength(0);
+
+    await expect(shopping.execute({
+      action_id: "cai.shopping.procurement.add",
+      input: {
+        club_id: clubId,
+        quantity: 4,
+        unit: "pc",
+        room_id: roomId,
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls).toHaveLength(0);
+
     const result = await shopping.execute({
       action_id: "cai.shopping.procurement.add",
       input: {
         club_id: clubId,
         name: "Klopapier",
+        ingredient_id: ingredientId,
         quantity: 4,
         unit: "pc",
         room_id: roomId,
@@ -2641,12 +2670,14 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
       query: { club_id: clubId },
       body: {
         name: "Klopapier",
+        ingredient_id: ingredientId,
         quantity: 4,
         unit: "pc",
         room_id: roomId,
       },
     });
     expect(JSON.stringify(result.result)).not.toContain("private-actor-id");
+    expect(JSON.stringify(result.result)).not.toContain("private-purchaser-id");
   });
 
   test("returns the structured non-retryable duplicate activation conflict", async () => {

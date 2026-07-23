@@ -99,10 +99,10 @@ const procurementItemCreate = single({
       message: "Exakt ein Gebäude oder Raum ist erforderlich.",
     });
   }
-  if (Boolean(value.name) === Boolean(value.ingredient_id)) {
+  if (!value.name && !value.ingredient_id) {
     context.addIssue({
       code: "custom",
-      message: "Exakt ein Name oder Supply-Artikel ist erforderlich.",
+      message: "Ein Name oder Supply-Artikel ist erforderlich.",
     });
   }
 });
@@ -119,10 +119,10 @@ const procurementTemplateCreate = single({
       message: "Exakt ein Gebäude oder Raum ist erforderlich.",
     });
   }
-  if (Boolean(value.name) === Boolean(value.ingredient_id)) {
+  if (!value.name && !value.ingredient_id) {
     context.addIssue({
       code: "custom",
-      message: "Exakt ein Name oder Supply-Artikel ist erforderlich.",
+      message: "Ein Name oder Supply-Artikel ist erforderlich.",
     });
   }
 });
