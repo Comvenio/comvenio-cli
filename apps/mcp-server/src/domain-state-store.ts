@@ -154,17 +154,20 @@ function parseRecord(
   if (typeof value !== "string") return null;
   try {
     const parsed: unknown = JSON.parse(value);
+    const record = parsed as Record<string, unknown>;
+    const matchHash = record?.match_hash;
+    const sealedPayload = record?.sealed_payload;
     if (
       !parsed
       || typeof parsed !== "object"
       || Array.isArray(parsed)
-      || typeof (parsed as Record<string, unknown>).match_hash !== "string"
-      || typeof (parsed as Record<string, unknown>).sealed_payload !== "string"
+      || typeof matchHash !== "string"
+      || typeof sealedPayload !== "string"
     ) {
       throw new Error("shape");
     }
     const payload = openJson(
-      (parsed as Record<string, unknown>).sealed_payload,
+      sealedPayload,
       key,
       aad,
     );
@@ -173,7 +176,7 @@ function parseRecord(
     }
     return {
       ...(payload as Record<string, JsonValue>),
-      match_hash: (parsed as Record<string, string>).match_hash,
+      match_hash: matchHash,
     };
   } catch {
     throw new Error("Der persistierte Bestätigungszustand ist beschädigt.");

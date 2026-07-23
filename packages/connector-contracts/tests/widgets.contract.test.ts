@@ -162,7 +162,7 @@ const writeAction: ServerActionDescriptor = {
   action_id: "event.plan",
   label: "Termin planen",
   tool_name: "cv_event_create",
-  input: { club_id: clubId },
+  input: {},
   visibility: "visible",
   enabled: true,
   risk_class: "reversible_write",
@@ -347,7 +347,7 @@ describe("K17 member management widget contracts", () => {
     action_id: "member.detail",
     label: "Details anzeigen",
     tool_name: "cv_member_show",
-    input: { club_id: clubId, member_id: memberId },
+    input: { member_id: memberId },
     visibility: "visible",
     enabled: true,
     risk_class: "read",
@@ -358,7 +358,7 @@ describe("K17 member management widget contracts", () => {
     action_id: "member.update",
     label: "Änderung vorbereiten",
     tool_name: "cv_member_update",
-    input: { club_id: clubId, member_id: memberId },
+    input: { member_id: memberId },
     visibility: "visible",
     enabled: true,
     risk_class: "reversible_write",
@@ -533,7 +533,7 @@ describe("K18 booking object widget contracts", () => {
     action_id: "object.availability",
     label: "Verfügbarkeit anzeigen",
     tool_name: "cv_object_availability",
-    input: { club_id: clubId, object_id: objectId },
+    input: { object_id: objectId },
     visibility: "visible",
     enabled: true,
     risk_class: "read",
@@ -544,7 +544,7 @@ describe("K18 booking object widget contracts", () => {
     action_id: "booking.create",
     label: "Reservierung vorbereiten",
     tool_name: "cv_booking_create",
-    input: { club_id: clubId, object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    input: { object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
     visibility: "visible",
     enabled: true,
     risk_class: "critical_write",
@@ -681,9 +681,9 @@ describe("K19 news widget contracts", () => {
     { news_id: newsId, title: "Jugendturnier", teaser: "Ein sportlicher Tag.", category: "Verein", published_at: "2026-07-18T10:00:00+02:00", is_draft: false },
     { news_id: draftId, title: "Neue Trainingszeiten", teaser: "Vorschau", category: "Training", published_at: null, is_draft: true },
   ], returned: 2, truncated: false };
-  const selectAction: ServerActionDescriptor = { action_id: "news.show", label: "Vorschau anzeigen", tool_name: "cv_news_show", input: { club_id: clubId, news_id: newsId }, visibility: "visible", enabled: true, risk_class: "read", requires_confirmation: false, disabled_reason: null };
-  const draftAction: ServerActionDescriptor = { action_id: "news.create.draft", label: "Entwurf erstellen", tool_name: "cv_news_create_draft", input: { club_id: clubId }, visibility: "visible", enabled: true, risk_class: "reversible_write", requires_confirmation: false, disabled_reason: null };
-  const publishAction: ServerActionDescriptor = { action_id: "news.publish", label: "Publikation vorbereiten", tool_name: "cv_news_publish", input: { club_id: clubId, news_id: newsId }, visibility: "visible", enabled: true, risk_class: "critical_write", requires_confirmation: true, disabled_reason: null };
+  const selectAction: ServerActionDescriptor = { action_id: "news.show", label: "Vorschau anzeigen", tool_name: "cv_news_show", input: { news_id: newsId }, visibility: "visible", enabled: true, risk_class: "read", requires_confirmation: false, disabled_reason: null };
+  const draftAction: ServerActionDescriptor = { action_id: "news.create.draft", label: "Entwurf erstellen", tool_name: "cv_news_create_draft", input: {}, visibility: "visible", enabled: true, risk_class: "reversible_write", requires_confirmation: false, disabled_reason: null };
+  const publishAction: ServerActionDescriptor = { action_id: "news.publish", label: "Publikation vorbereiten", tool_name: "cv_news_publish", input: { news_id: newsId }, visibility: "visible", enabled: true, risk_class: "critical_write", requires_confirmation: true, disabled_reason: null };
 
   function manageWidget(tools: string[] = [selectAction.tool_name, draftAction.tool_name, publishAction.tool_name]): NewsWidget {
     return new NewsWidgetProjector(new NewsWidgetCapabilityPolicy(tools)).private({
@@ -831,7 +831,12 @@ describe("K20 universal preview and confirmation widget contracts", () => {
       action_id: "action.confirm",
       label: "Jetzt bestätigen",
       tool_name: "action_confirm",
-      input: { preview_id: previewId, idempotency_key: idempotencyKey, ...input },
+      input: {
+        preview_id: previewId,
+        confirmation_token: confirmationToken,
+        idempotency_key: idempotencyKey,
+        ...input,
+      },
       visibility: "visible",
       enabled: true,
       risk_class: "critical_write",

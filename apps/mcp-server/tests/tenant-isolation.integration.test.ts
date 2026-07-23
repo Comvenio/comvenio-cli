@@ -583,8 +583,9 @@ describe("Remote MCP runtime", () => {
           },
         },
       }, "token-anthropic");
-      expect(rejectedContext.status).toBe(200);
-      expect((await rejectedContext.json() as any).result.isError).toBe(true);
+      expect(rejectedContext.status).toBe(403);
+      expect((await rejectedContext.json() as any).error.data.code)
+        .toBe("TENANT_MISMATCH");
       expect(requests).toHaveLength(1);
     } finally {
       expect(await server.drain()).toBe(true);
@@ -1056,6 +1057,16 @@ describe("Remote MCP runtime", () => {
         },
       }, "token-critical-openai");
       const previewResult = await previewResponse.json() as any;
+      if (previewResult.result?.isError === true) {
+        throw new Error(
+          `Kritische Vorschau fehlgeschlagen: ${
+            JSON.stringify({
+              content: previewResult.result.content,
+              structuredContent: previewResult.result.structuredContent,
+            })
+          }`,
+        );
+      }
       expect(previewResult.result.isError).not.toBe(true);
       expect(previewResult.result.structuredContent).toMatchObject({
         widget: "confirmation",
@@ -1089,6 +1100,16 @@ describe("Remote MCP runtime", () => {
         },
       }, "token-critical-openai");
       const confirmResult = await confirmResponse.json() as any;
+      if (confirmResult.result?.isError === true) {
+        throw new Error(
+          `Kritische Bestätigung fehlgeschlagen: ${
+            JSON.stringify({
+              content: confirmResult.result.content,
+              structuredContent: confirmResult.result.structuredContent,
+            })
+          }`,
+        );
+      }
       expect(confirmResult.result.isError).not.toBe(true);
       expect(confirmResult.result.structuredContent).toMatchObject({
         action_id: "cai.member.05.remove",
