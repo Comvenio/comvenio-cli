@@ -759,6 +759,7 @@ describe("Remote MCP runtime", () => {
         return Response.json({ error: "unexpected_request" }, { status: 404 });
       },
     });
+    const domainStateStore = new InMemoryDomainStateStore();
     const fullRuntimeOptions: Partial<McpRuntimeOptions> = {
       capability_resolver: {
         async resolve(input) {
@@ -783,7 +784,7 @@ describe("Remote MCP runtime", () => {
         "full_connector_v1",
       ),
       server_factory: (requestContext) => createRuntimeServer({
-        domain_state_store: new InMemoryDomainStateStore(),
+        domain_state_store: domainStateStore,
         environment: "development",
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
@@ -1189,6 +1190,7 @@ describe("Remote MCP runtime", () => {
       expect((await foreignClub.json() as any).result.isError).toBe(true);
     } finally {
       expect(await server.drain()).toBe(true);
+      await domainStateStore.close();
       await api.stop(true);
     }
   });
