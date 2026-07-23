@@ -10,6 +10,7 @@ import {
 import { publishedRuntimeToolNames } from "../apps/mcp-server/src/runtime-tools.ts";
 
 const root = resolve(import.meta.dir, "../integrations/anthropic");
+const allowBlockedDraft = process.argv.includes("--allow-blocked-draft");
 const manifest = CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(root, "submission/connector-profile.json"), "utf8")));
 const plan = CLAUDE_TOOL_SYNC_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(root, "submission/tool-test-plan.json"), "utf8")));
 const runtimeTools = publishedRuntimeToolNames("production");
@@ -23,13 +24,17 @@ if (manifest.tool_sync_version !== runtimeVersion
   || JSON.stringify(plan.cases.map((item) => item.tool_name).sort()) !== JSON.stringify(runtimeTools)) {
   throw new Error("Claude-Submission und produktiv veröffentlichte Runtime-Tools weichen voneinander ab.");
 }
-if (manifest.screenshots.length < 3 || manifest.screenshots.length > 5) {
+if (!allowBlockedDraft && (manifest.screenshots.length < 3 || manifest.screenshots.length > 5)) {
   throw new Error(`Claude-Submission benötigt drei bis fünf Carousel-Screenshots; vorhanden: ${manifest.screenshots.length}.`);
+}
+if (allowBlockedDraft && manifest.screenshots.length !== 0
+  && (manifest.screenshots.length < 3 || manifest.screenshots.length > 5)) {
+  throw new Error(`Ein Claude-Entwurf darf keine unvollständige Carousel-Evidence enthalten; vorhanden: ${manifest.screenshots.length}.`);
 }
 if (new Set(manifest.screenshots.map((item) => item.path)).size !== manifest.screenshots.length) {
   throw new Error("Claude-Submission enthält doppelte Carousel-Screenshot-Pfade.");
 }
-for (const resourceUri of manifest.widget_resource_uris) {
+for (const resourceUri of manifest.screenshots.length === 0 ? [] : manifest.widget_resource_uris) {
   if (!manifest.screenshots.some((item) => item.resource_uri === resourceUri)) {
     throw new Error(`Claude-Submission enthält keinen Carousel-Nachweis für ${resourceUri}.`);
   }
@@ -53,8 +58,19 @@ for (const screenshot of manifest.screenshots) {
     throw new Error(`Claude-Karussellbild ist kein PNG mit mindestens 1000 Pixel Breite: ${screenshot.path}`);
   }
 }
+if (allowBlockedDraft && manifest.screenshots.length === 0) {
+  const checklist = readFileSync(resolve(root, "submission/directory-submission-checklist.md"), "utf8");
+  if (!checklist.includes("Status: **BLOCKED")
+    || !checklist.includes("DIRECTORY_PORTAL_EVIDENCE_PENDING")) {
+    throw new Error("Der screenshotlose Claude-Entwurf muss ausdrücklich als blockiert dokumentiert sein.");
+  }
+}
 for (const forbidden of [".claude-plugin/plugin.json", ".mcp.json", "manifest.json"]) {
   if (existsSync(resolve(root, forbidden))) throw new Error(`Claude-Code-Plugin ist kein Directory-Artefakt: ${forbidden}`);
 }
 
-console.log(`Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} Carousel-Screenshots.`);
+console.log(
+  allowBlockedDraft && manifest.screenshots.length === 0
+    ? `Anthropic-Directory-Entwurf gültig und blockiert: ${plan.cases.length} Tool-Kandidaten, reale Carousel-Evidence ausstehend.`
+    : `Anthropic-Submission-Artefakte gültig: ${plan.cases.length} Tool-Kandidaten, ${manifest.screenshots.length} Carousel-Screenshots.`,
+);

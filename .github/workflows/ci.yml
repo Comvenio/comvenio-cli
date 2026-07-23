@@ -42,7 +42,7 @@ jobs:
         run: |
           bun run gen:coverage:check
           bun run gen:openai-submission:check
-          bun run gen:anthropic-submission:check
+          bun run gen:anthropic-submission:draft:check
           bun run gen:connector-release:check
 
       - name: Build CLI
