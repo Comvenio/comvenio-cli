@@ -7,6 +7,7 @@ import type {
   ConnectorPermissionSource,
 } from "./types.ts";
 import {
+  compareConnectorPermissionSources,
   validateCapabilityUuid,
   validateEffectivePermissionRead,
 } from "./validation.ts";
@@ -29,7 +30,7 @@ function canonicalize(value: unknown): string {
 }
 
 function normalizedSources(sources: readonly ConnectorPermissionSource[]): ConnectorPermissionSource[] {
-  return [...sources].map((source) => ({ ...source })).sort((left, right) => canonicalize(left).localeCompare(canonicalize(right)));
+  return [...sources].map((source) => ({ ...source })).sort(compareConnectorPermissionSources);
 }
 
 export function capabilityVersionPayload(

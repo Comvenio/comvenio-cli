@@ -10,7 +10,10 @@ import type {
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const CAPABILITY_KEY_PATTERN = /^[a-z][a-z0-9_.:-]{0,127}$/u;
 const CAPABILITY_VERSION_PATTERN = /^[A-Za-z0-9_-]{43}$/u;
-const UTC_INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u;
+// FastAPI/Pydantic emits RFC 3339 UTC instants with variable sub-second
+// precision and may serialize UTC as either Z or +00:00.
+const UTC_INSTANT_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(?:Z|\+00:00)$/u;
 
 const EFFECTIVE_KEYS = [
   "member_id",
@@ -31,6 +34,41 @@ const SOURCE_KEYS = [
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validUtcInstant(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = UTC_INSTANT_PATTERN.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysPerMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return month >= 1
+    && month <= 12
+    && day >= 1
+    && day <= daysPerMonth[month - 1]!
+    && hour <= 23
+    && minute <= 59
+    && second <= 59
+    && Number.isFinite(Date.parse(value));
 }
 
 function assertExactKeys(value: Record<string, unknown>, expected: readonly string[], field: string): void {
@@ -86,14 +124,29 @@ function validatePermissionSource(value: unknown): ConnectorPermissionSource {
   };
 }
 
-function sourceSortKey(source: ConnectorPermissionSource): string {
-  return [
-    source.permission_key,
-    source.allowed ? "1" : "0",
-    source.scope,
-    source.department_id ?? "",
-    source.assignment_type,
-  ].join("\u0000");
+export function compareConnectorPermissionSources(
+  left: ConnectorPermissionSource,
+  right: ConnectorPermissionSource,
+): number {
+  const leftKey = [
+    left.permission_key,
+    left.allowed ? "1" : "0",
+    left.scope,
+    left.department_id ?? "",
+    left.assignment_type,
+  ];
+  const rightKey = [
+    right.permission_key,
+    right.allowed ? "1" : "0",
+    right.scope,
+    right.department_id ?? "",
+    right.assignment_type,
+  ];
+  for (let index = 0; index < leftKey.length; index += 1) {
+    if (leftKey[index]! < rightKey[index]!) return -1;
+    if (leftKey[index]! > rightKey[index]!) return 1;
+  }
+  return 0;
 }
 
 export function validateEffectivePermissionRead(value: unknown): ConnectorEffectivePermissionRead {
@@ -123,7 +176,7 @@ export function validateEffectivePermissionRead(value: unknown): ConnectorEffect
   assertCapability(Array.isArray(value.sources), "CAPABILITY_INVALID",
     "Die Capability-Provenienz ist ungültig.");
   const sources = value.sources.map(validatePermissionSource)
-    .sort((left, right) => sourceSortKey(left).localeCompare(sourceSortKey(right)));
+    .sort(compareConnectorPermissionSources);
   for (const source of sources) {
     assertCapability(Object.hasOwn(permissions, source.permission_key), "CAPABILITY_INVALID",
       "Eine Provenienz verweist auf eine unbekannte Capability.");
@@ -134,10 +187,9 @@ export function validateEffectivePermissionRead(value: unknown): ConnectorEffect
   }
 
   const capabilityVersion = validateCapabilityVersion(value.capability_version);
-  assertCapability(typeof value.generated_at === "string"
-    && UTC_INSTANT_PATTERN.test(value.generated_at)
-    && Number.isFinite(Date.parse(value.generated_at)), "CAPABILITY_INVALID",
-  "Der Erzeugungszeitpunkt ist ungültig.");
+  const generatedAt = value.generated_at;
+  assertCapability(validUtcInstant(generatedAt), "CAPABILITY_INVALID",
+    "Der Erzeugungszeitpunkt ist ungültig.");
 
   return {
     member_id: memberId,
@@ -146,7 +198,7 @@ export function validateEffectivePermissionRead(value: unknown): ConnectorEffect
     permissions,
     sources,
     capability_version: capabilityVersion,
-    generated_at: new Date(value.generated_at).toISOString(),
+    generated_at: new Date(generatedAt).toISOString(),
   };
 }
 

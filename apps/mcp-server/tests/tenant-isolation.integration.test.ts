@@ -32,6 +32,7 @@ import {
 } from "../../../integrations/release/src/index.ts";
 import {
   ExactProviderHintResolver,
+  ConsoleTelemetrySink,
   HealthReadinessProbe,
   McpHttpServer,
   MemoryTelemetrySink,
@@ -595,6 +596,43 @@ describe("Remote MCP runtime", () => {
   });
 
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {
+    const lines: string[] = [];
+    new ConsoleTelemetrySink((line) => lines.push(line)).record({
+      request_id: requestId,
+      provider: "openai",
+      authenticated: true,
+      route: "/mcp",
+      method: "POST",
+      status_code: 503,
+      duration_ms: 12,
+      outcome: "failed",
+      recorded_at: "2026-07-23T06:45:00.000Z",
+    });
+    expect(lines).toHaveLength(1);
+    expect(Object.keys(JSON.parse(lines[0]!) as Record<string, unknown>).sort()).toEqual([
+      "authenticated",
+      "duration_ms",
+      "method",
+      "outcome",
+      "provider",
+      "recorded_at",
+      "request_id",
+      "route",
+      "status_code",
+    ]);
+    expect(() => new ConsoleTelemetrySink((line) => lines.push(line)).record({
+      request_id: "Bearer PRIVATE-TOKEN" as never,
+      provider: "openai",
+      authenticated: true,
+      route: "/mcp",
+      method: "POST",
+      status_code: 503,
+      duration_ms: 12,
+      outcome: "failed",
+      recorded_at: "2026-07-23T06:45:00.000Z",
+    })).toThrow("ungültige Werte");
+    expect(JSON.stringify(lines)).not.toContain("PRIVATE-TOKEN");
+
     const telemetry = new MemoryTelemetrySink();
     const server = new McpHttpServer(runtimeOptions({ telemetry }));
     const address = await server.listen(0, "127.0.0.1");

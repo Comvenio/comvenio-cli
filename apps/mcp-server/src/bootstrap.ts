@@ -4,6 +4,7 @@ import cimdPins from "../../../integrations/release/cimd-client-allowlist.v1.jso
 import { IntrospectionBearerAuthenticator } from "./http/auth.ts";
 import { ExactProviderHintResolver } from "./http/context.ts";
 import { McpHttpServer } from "./http/server.ts";
+import { ConsoleTelemetrySink } from "./http/telemetry.ts";
 import {
   HttpActorTokenPort,
   HttpCapabilityContextResolver,
@@ -227,7 +228,7 @@ export function createMcpDeploymentCandidate(config: McpProcessConfig): McpHttpS
     access_policy: createRuntimeAccessPolicy(config.environment),
     server_factory: runtimeServerFactory(config),
     readiness_dependencies: runtimeReadiness({ config, registrations }),
-    telemetry: { record() {} },
+    telemetry: new ConsoleTelemetrySink(),
   });
 }
 

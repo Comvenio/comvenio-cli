@@ -111,6 +111,74 @@ describe("effective permission self contract", () => {
     })).toThrow("stimmt nicht");
   });
 
+  test("matches the role-service digest and accepts FastAPI UTC precision", () => {
+    const otherDepartmentId = "77777777-7777-4777-8777-777777777777";
+    const roleServiceRead: ConnectorEffectivePermissionRead = {
+      member_id: memberId,
+      club_id: clubId,
+      department_ids: [otherDepartmentId, departmentId],
+      permissions: { view_members: true },
+      sources: [{
+        permission_key: "view_members",
+        allowed: true,
+        scope: "department",
+        department_id: otherDepartmentId,
+        assignment_type: "position",
+      }, {
+        permission_key: "view_members",
+        allowed: false,
+        scope: "department",
+        department_id: otherDepartmentId,
+        assignment_type: "position",
+      }, {
+        permission_key: "view_members",
+        allowed: true,
+        scope: "club",
+        department_id: null,
+        assignment_type: "direct",
+      }, {
+        permission_key: "view_members",
+        allowed: false,
+        scope: "club",
+        department_id: null,
+        assignment_type: "position",
+      }, {
+        permission_key: "view_members",
+        allowed: false,
+        scope: "department",
+        department_id: departmentId,
+        assignment_type: "direct",
+      }, {
+        permission_key: "view_members",
+        allowed: false,
+        scope: "club",
+        department_id: null,
+        assignment_type: "direct",
+      }],
+      capability_version: "rbwuEmmAqKgGYscAiXI1MFR5x8gBGl6yHmJunRjYHfg",
+      generated_at: "2026-07-21T10:10:00.123456Z",
+    };
+    expect(computeCapabilityVersion(roleServiceRead))
+      .toBe(roleServiceRead.capability_version);
+    expect(validateEffectivePermissionRead(roleServiceRead).generated_at)
+      .toBe("2026-07-21T10:10:00.123Z");
+
+    expect(validateEffectivePermissionRead({
+      ...roleServiceRead,
+      generated_at: "2026-07-21T10:10:00.123456+00:00",
+    }).generated_at).toBe("2026-07-21T10:10:00.123Z");
+    for (const generatedAt of [
+      "2026-07-21T11:10:00.123456+01:00",
+      "2026-02-30T10:10:00Z",
+      "2026-07-21T24:00:00Z",
+    ]) {
+      expect(() => validateEffectivePermissionRead({
+        ...roleServiceRead,
+        generated_at: generatedAt,
+      })).toThrow("Erzeugungszeitpunkt");
+    }
+  });
+
   test("supports an empty effective permission state without widening access", () => {
     const empty = effectiveRead();
     empty.permissions = {};
