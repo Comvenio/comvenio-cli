@@ -691,13 +691,19 @@ function genEvent(): unknown {
 // ─── Domain: task ────────────────────────────────────────────────────────────
 
 const TASK_MODEL = "Backend/Microservice-Backend/task-service/app/models/task.py";
+const TASK_REMINDER_ROUTES = "Backend/Microservice-Backend/automation-service/app/routes/notifications.py";
 
 function genTask(): unknown {
   const src = readSource(TASK_MODEL);
+  const reminderRoutes = readSource(TASK_REMINDER_ROUTES);
+  if (!reminderRoutes.includes('"/custom_reminders/task"')
+    || !reminderRoutes.includes('"/custom_reminders/task/by-task/{task_id}"')) {
+    throw new Error("Persönlicher Task-Reminder-Vertrag fehlt in automation-service.");
+  }
   return {
     domain: "task",
     generated: true,
-    source: [slash(TASK_MODEL)],
+    source: [slash(TASK_MODEL), slash(TASK_REMINDER_ROUTES)],
     note:
       "status/priority/phase aus den task-service Enum-Klassen (task.py). " +
       "context_type ist im task-service ein eigener TaskContextType-Enum (club/event/object/meeting/supply) — " +
@@ -710,6 +716,7 @@ function genTask(): unknown {
     },
     commands: {
       task: ["list", "show", "create", "bulk", "update", "assign", "done", "delete"],
+      reminder: ["set", "list", "delete"],
       context: ["list", "show", "create", "update", "delete"],
       assignment: ["list", "show", "update", "delete"],
       note: ["list", "add", "update", "delete"],
@@ -725,6 +732,7 @@ function genTask(): unknown {
       "task create braucht zwingend task_context_id (kein 'Default-Context'-Lookup) — via task context list/create.",
       "task assign erwartet member_id, NICHT user_id.",
       "task done = PUT /tasks/{id} status=completed + completed_at (CLI setzt completed_at selbst).",
+      "task reminder ist ausschließlich subject-gebunden und akzeptiert keine Empfänger-, Club- oder Abteilungs-ID.",
       "completed/cancelled koennen NICHT zurueck auf open gesetzt werden (Backend-Guard).",
     ],
   };

@@ -292,6 +292,7 @@
         "assign",
         "done",
         "delete",
+        "reminder set|list|delete",
         "context list|show|create|update|delete",
         "assignment list|show|update|delete",
         "note list|add|update|delete",

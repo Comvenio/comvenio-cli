@@ -103,7 +103,7 @@ export function registerTaskCommands(cli: CAC): void {
   cli
     .command(
       "task <action> [arg1] [arg2]",
-      "Aufgaben sowie Contexts, Zuweisungen, Notizen und Checklisten verwalten",
+      "Aufgaben sowie persönliche Erinnerungen, Contexts, Zuweisungen, Notizen und Checklisten verwalten",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--mine", "Nur mir zugewiesene Tasks (list)")
@@ -541,7 +541,7 @@ export function registerTaskCommands(cli: CAC): void {
           }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, bulk, update, assign, done, delete, context, assignment, note, checklist`,
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, bulk, update, assign, done, delete, reminder, context, assignment, note, checklist`,
             );
         }
       },
