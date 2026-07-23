@@ -27,8 +27,18 @@ const TITLES: Record<PublicResolverAlias, string> = {
   public_sponsors: "Veröffentlichte Sponsoren anzeigen",
 };
 
+const CONNECTED_CLUB_HINT =
+  "Bei einer aktiven Verbindung zuerst cv_whoami_read ohne Eingabe aufrufen und dessen club_id verwenden; den Nutzer nicht nach Club-ID oder Vereinsdomain fragen.";
+
 const USAGE_HINTS: Partial<Record<PublicResolverAlias, string>> = {
-  public_events: "Bei einer aktiven Verbindung zuerst cv_whoami_read ohne Eingabe aufrufen und dessen club_id verwenden.",
+  public_club_by_domain: "Nur ohne aktive Verbindung verwenden, wenn der Nutzer selbst eine konkrete Vereinsdomain genannt hat; nicht nach einer Domain fragen, solange cv_whoami_read verfügbar ist.",
+  public_club_profile: CONNECTED_CLUB_HINT,
+  public_club_home: CONNECTED_CLUB_HINT,
+  public_club_legal: CONNECTED_CLUB_HINT,
+  public_events: CONNECTED_CLUB_HINT,
+  public_training: CONNECTED_CLUB_HINT,
+  public_news: CONNECTED_CLUB_HINT,
+  public_department_news: CONNECTED_CLUB_HINT,
 };
 
 function rpcMessages(body: unknown): Array<Record<string, unknown>> {

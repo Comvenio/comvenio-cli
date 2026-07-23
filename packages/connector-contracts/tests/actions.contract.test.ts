@@ -97,6 +97,8 @@ import {
 import {
   FULL_CONNECTOR_REPLACEMENTS,
   fullDomainCatalogSummary,
+  fullDomainProtectedToolDescriptors,
+  fullDomainReviewToolSummaries,
 } from "../../../apps/mcp-server/src/domain-runtime.ts";
 
 describe("Comvenio connector inventory contract", () => {
@@ -211,6 +213,18 @@ describe("Comvenio connector inventory contract", () => {
       ...Object.keys(FULL_CONNECTOR_REPLACEMENTS),
     ]);
     expect([...coveredActionIds].sort()).toEqual(inventoryActionIds);
+
+    const reviewScopes = new Map(fullDomainReviewToolSummaries().map((tool) => [
+      tool.name,
+      tool.required_scopes,
+    ]));
+    const accessScopes = new Map(fullDomainProtectedToolDescriptors().map((tool) => [
+      tool.tool_name,
+      tool.required_scopes,
+    ]));
+    expect(accessScopes).toEqual(reviewScopes);
+    expect(accessScopes.get("cv_event_01_list")).toEqual(["event.read"]);
+    expect(accessScopes.get("cv_member_03_add")).toEqual(["admin.write"]);
   });
 
   test("fails published parity until audited operations replace discovered candidates", () => {

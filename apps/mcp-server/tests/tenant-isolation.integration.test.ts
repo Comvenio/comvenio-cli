@@ -1532,6 +1532,9 @@ describe("Remote MCP runtime", () => {
       const whoami = tools
         .find((tool: any) => tool.name === "cv_whoami_read");
       expect(whoami.description).toContain("Ohne Eingabe");
+      expect(whoami.description).toContain(
+        "niemals nach Club-ID, Vereinsdomain",
+      );
       expect(whoami.inputSchema).toMatchObject({
         type: "object",
         properties: {},
@@ -1580,6 +1583,22 @@ describe("Remote MCP runtime", () => {
       expect(publicEvents._meta.securitySchemes).toEqual(publicEvents.securitySchemes);
       expect(tools.find((tool: any) => tool.name === "public_events").description)
         .toContain("cv_whoami_read");
+      expect(publicEvents.description).toContain(
+        "nicht nach Club-ID oder Vereinsdomain fragen",
+      );
+      for (const connectedClubToolName of [
+        "public_club_profile",
+        "public_club_home",
+        "public_club_legal",
+        "public_training",
+        "public_news",
+        "public_department_news",
+      ]) {
+        expect(tools.find((tool: any) =>
+          tool.name === connectedClubToolName).description).toContain(
+          "cv_whoami_read",
+        );
+      }
 
       const call = await postMcp(baseUrl, {
         jsonrpc: "2.0",

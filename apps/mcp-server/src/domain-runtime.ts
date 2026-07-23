@@ -1001,22 +1001,15 @@ export function fullDomainProtectedToolDescriptors(): Array<{
   tool_name: string;
   required_scopes: OAuthScope[];
 }> {
-  const names = ALL_DEFINITION_MAPS.flatMap((items) => Object.values(items))
-    .filter((definition) => definition.publication_state === "implemented")
-    .map((definition) => actionToolName(definition.action_id));
+  const summaries = fullDomainReviewToolSummaries();
+  const names = summaries.map((summary) => summary.name);
   if (new Set(names).size !== names.length) {
     throw new Error("Der vollständige Domain-Katalog enthält kollidierende Toolnamen.");
   }
-  return [
-    ...names.sort().map((tool_name) => ({
-      tool_name,
-      required_scopes: ["club.read"] as OAuthScope[],
-    })),
-    {
-      tool_name: ACTION_CONFIRM_TOOL_SUMMARY.name,
-      required_scopes: [...ACTION_CONFIRM_TOOL_SUMMARY.required_scopes],
-    },
-  ].sort((left, right) => left.tool_name.localeCompare(right.tool_name));
+  return summaries.map((summary) => ({
+    tool_name: summary.name,
+    required_scopes: [...summary.required_scopes],
+  })).sort((left, right) => left.tool_name.localeCompare(right.tool_name));
 }
 
 export function registerFullDomainRuntime(input: {

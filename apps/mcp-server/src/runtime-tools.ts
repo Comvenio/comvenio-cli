@@ -187,7 +187,7 @@ const TOOL_SCOPES = Object.freeze({
 const TOOL_COPY = Object.freeze({
   cv_whoami_read: {
     title: "Comvenio: Eigene Verbindung",
-    description: "Ohne Eingabe aufrufen, wenn Vereinskontext oder Verbindung unklar sind. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes.",
+    description: "Ohne Eingabe aufrufen, wenn Vereinskontext oder Verbindung unklar sind oder der Nutzer „mein Verein“ sagt. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes. Bei aktiver Verbindung niemals nach Club-ID, Vereinsdomain oder einer erneuten Vereinsauswahl fragen.",
   },
   cv_permissions_explain_read: {
     title: "Comvenio: Eigene Rechte erklären",
