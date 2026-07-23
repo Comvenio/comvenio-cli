@@ -1,5 +1,6 @@
 import {
   ACTION_CONFIRM_INPUT_SCHEMA,
+  ACTION_CONFIRM_WIDGET_INPUT_SCHEMA,
   CONFIRMATION_CHALLENGE_SCHEMA,
   CONFIRMATION_WIDGET_SCHEMA,
   SERVER_ACTION_DESCRIPTOR_SCHEMA,
@@ -41,10 +42,24 @@ export class ConfirmationWidgetProjector {
       || !confirmInput.success || confirmInput.data.preview_id !== challenge.preview.preview_id || confirmInput.data.confirmation_token !== challenge.confirmation_token) {
       throw createConnectorError({ code: "VALIDATION_FAILED", message: "Die Bestätigungsaktion ist nicht exakt an die Vorschau gebunden.", request_id: binding.context.request_id, retryable: false });
     }
+    const widgetAction = SERVER_ACTION_DESCRIPTOR_SCHEMA.parse({
+      ...action,
+      input: ACTION_CONFIRM_WIDGET_INPUT_SCHEMA.parse({
+        preview_id: confirmInput.data.preview_id,
+        idempotency_key: confirmInput.data.idempotency_key,
+      }),
+    });
     return CONFIRMATION_WIDGET_SCHEMA.parse({
       widget: "confirmation", contract_version: "1.0.0", title: "Aktion bestätigen", club: input.club,
       capability_version: binding.snapshot.capability_version, generated_at: generatedAt,
-      data: challenge, actions: [action], empty_state: null,
+      data: {
+        preview: challenge.preview,
+        confirm_label: challenge.confirm_label,
+        cancel_label: challenge.cancel_label,
+        acknowledgement_required: challenge.acknowledgement_required,
+      },
+      actions: [widgetAction],
+      empty_state: null,
     });
   }
 }

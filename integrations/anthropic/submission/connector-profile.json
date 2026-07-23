@@ -2,9 +2,11 @@
   "schema_version": "1.0.0",
   "product_name": "Comvenio",
   "tagline": "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-  "short_description": "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.",
+  "short_description": "Vereinsdaten, Events, News, Aufgaben, Mitglieder, Buchungen und weitere Comvenio-Workflows rollenbasiert lesen und sicher bearbeiten.",
   "publisher_name": "Comvenio",
-  "categories": ["Productivity"],
+  "categories": [
+    "Productivity"
+  ],
   "website_url": "https://www.comvenio.app",
   "documentation_url": "https://www.comvenio.app/hilfe",
   "privacy_url": "https://www.comvenio.app/datenschutz",
@@ -27,13 +29,65 @@
     "dynamic_client_registration": false,
     "anthropic_held_credentials": false
   },
-  "capabilities": { "tools": true, "prompts": false, "resources": true, "mcp_apps": true },
+  "capabilities": {
+    "tools": true,
+    "prompts": false,
+    "resources": true,
+    "mcp_apps": true
+  },
   "allowed_link_uris": [],
   "widget_resource_uris": [
     "ui://comvenio/event-calendar",
-    "ui://comvenio/news"
+    "ui://comvenio/member-management",
+    "ui://comvenio/booking-object",
+    "ui://comvenio/news",
+    "ui://comvenio/action-confirmation"
   ],
-  "tool_sync_version": "bff90bc850764627e9e4c21b5da7ef5a3b21575410593cefdd665564ee071216",
-  "assets": { "icon": "./assets/icon.svg", "logo": "./assets/logo.png" },
-  "screenshots": []
+  "tool_sync_version": "243c942eb9be6a782df0e1b9d80c5472e5e86986e5979152ad7cdee45f7a9127",
+  "assets": {
+    "icon": "./assets/icon.svg",
+    "logo": "./assets/logo.png"
+  },
+  "screenshots": [
+    {
+      "resource_uri": "ui://comvenio/event-calendar",
+      "path": "./screenshots/event-mobile.png",
+      "prompt": "Welche Termine stehen diese Woche in meinem Verein an?",
+      "format": "png",
+      "app_response_only": true,
+      "synthetic_data_only": true
+    },
+    {
+      "resource_uri": "ui://comvenio/member-management",
+      "path": "./screenshots/members-desktop.png",
+      "prompt": "Zeige mir die für mich freigegebene Mitgliederübersicht.",
+      "format": "png",
+      "app_response_only": true,
+      "synthetic_data_only": true
+    },
+    {
+      "resource_uri": "ui://comvenio/booking-object",
+      "path": "./screenshots/booking-mobile.png",
+      "prompt": "Welche Vereinsräume kann ich am Samstag buchen?",
+      "format": "png",
+      "app_response_only": true,
+      "synthetic_data_only": true
+    },
+    {
+      "resource_uri": "ui://comvenio/news",
+      "path": "./screenshots/news-desktop.png",
+      "prompt": "Zeige mir die neuesten News meines Vereins.",
+      "format": "png",
+      "app_response_only": true,
+      "synthetic_data_only": true
+    },
+    {
+      "resource_uri": "ui://comvenio/action-confirmation",
+      "path": "./screenshots/confirmation-mobile.png",
+      "prompt": "Zeige vor der Veröffentlichung die sichere Wirkungsvorschau.",
+      "format": "png",
+      "app_response_only": true,
+      "synthetic_data_only": true
+    }
+  ]
 }

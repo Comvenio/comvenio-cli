@@ -1,10 +1,10 @@
 # CLI-Coverage
 
-Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-14.
+Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-23.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
-> Workflow-Registry für die 26 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
+> Workflow-Registry für die 27 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
 
 ## Statusmodell
 
@@ -42,6 +42,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `plan` | `covered` | list<br>show<br>create<br>update<br>delete<br>zone list|create|update|delete|link|unlink<br>table create|duplicate|update|delete<br>marker create|update|delete<br>guest list|add|update|delete<br>detail<br>export<br>illustrate<br>compose | Keine bekannte Kernlücke. |
 | `tournament` | `covered` | series-list<br>series-show<br>series-create<br>series-update<br>series-delete<br>execution-create<br>execution-link<br>list<br>show<br>update<br>delete<br>status<br>participants<br>mannschaft<br>participant<br>participant-withdraw<br>participant-reinstate<br>participant-remove<br>start<br>matches<br>matches-clear<br>reset<br>redraw<br>standings<br>preview<br>draw<br>draw-confirm<br>schedule-generate<br>match-schedule<br>match-delete<br>match-result<br>deadline | Keine bekannte Kernlücke. |
 | `sponsor` | `covered` | list<br>show<br>add<br>update<br>delete<br>logo<br>product-list<br>product-add<br>product-update<br>product-delete<br>contract-list<br>contract-add<br>contract-update<br>contract-delete<br>assignment-list<br>assign<br>assignment-update<br>cancel<br>doc-list<br>doc-upload<br>responsible-list<br>responsible-add<br>responsible-update<br>responsible-remove | Keine bekannte Kernlücke. |
+| `agent` | `core-partial` | chat | Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions. |
 
 ## Verbindliche Nutzungsregeln
 
@@ -62,29 +63,11 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 | Gebiet | Service | Verdikt | Fehlende Club-Admin-Workflows |
 |---|---|---|---|
-| `agent` | ai-service (ClubAgent) | `gap` | Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)<br>Autonomie-/Skill-Pakete installieren und listen<br>Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)<br>Vereinseigene Slash-Kommandos definieren<br>Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)<br>Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)<br>Watch-Rules pflegen (worauf reagiert der Bot autonom)<br>Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)<br>Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung) |
 | `channel` | message-service | `gap` | Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)<br>Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)<br>Forum-Boards anlegen und deren Permissions setzen<br>Thread-Moderation (sperren, anpinnen, als gelöst markieren)<br>Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)<br>Vereins-Posts und Umfragen im Feed veröffentlichen |
 | `finance` | finance-service | `partial-gap` | Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)<br>Vereins-Rechnungen einsehen<br>Auszahlungshistorie einsehen und Auszahlung anstoßen |
 | `marketing-platform` | marketing-service | `no-gap` | — |
 | `notify` | notify-service | `no-gap` | — |
 | `automation` | automation-service | `no-gap` | — |
-
-### agent (ai-service (ClubAgent))
-
-- Verdikt: `gap`
-- Der Verein kann seinen eigenen Bot nicht per CLI verwalten. Rund 45 club-admin-relevante Routen, davon 0 Prozent abgedeckt.
-- Fehlende Club-Admin-Workflows:
-  - Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)
-  - Autonomie-/Skill-Pakete installieren und listen
-  - Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)
-  - Vereinseigene Slash-Kommandos definieren
-  - Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)
-  - Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)
-  - Watch-Rules pflegen (worauf reagiert der Bot autonom)
-  - Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)
-  - Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung)
-- Vorgeschlagene Actions: `agent info|update`, `agent skill-package list|install`, `agent skill list|enable|disable`, `agent command list|create|update`, `agent plan list|create|update|run`, `agent approval list|approve|reject`, `agent watch-rule list|create|update|test`, `agent journal|memory list`, `agent status`
-- Begründung: Bot-Konfiguration, Guardrails und Freigaben sind Vereins-Policy-Entscheidungen, keine Runtime-Interna. Achtung: der bestehende Command plan ist der Geländeplan (event-service), NICHT der ai-service-AgentPlan.
 
 ### channel (message-service)
 
@@ -425,3 +408,15 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
   - Globaler Anzeigenmarktplatz und Plattform-Abrechnung liegen außerhalb des lokalen Club-Sponsorings.
 - Geprüfte Quellen: `src/commands/sponsor.ts`, `src/util/upload.ts`
 - Weiterführende Doku: `docs/sponsoring.md`, `docs/dateien.md`
+
+## agent
+
+- Status: `core-partial`
+- Actions: `chat`
+- Wichtige Lücken:
+  - Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions.
+- Bewusste Ausschlüsse:
+  - Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.
+  - Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem Device-Token geprüft.
+- Geprüfte Quellen: `src/commands/agent.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
+- Weiterführende Doku: `docs/club-agent.md`

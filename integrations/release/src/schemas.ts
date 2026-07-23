@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { CONNECTOR_RELEASE_SCOPE_VALUES } from "@comvenio/connector-contracts";
+
 const evidenceRef = z.string().regex(/^(?:tests|apps|packages|integrations|reports)\/[a-z0-9._/-]+$/u);
 const finding = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/u),
@@ -111,8 +113,9 @@ export const RELEASE_GATE_REPORT_SCHEMA = z.object({
   country: z.literal("DE"),
   generated_at: z.string().datetime(),
   evidence: z.object({
-    release_scope: z.literal("personal_productivity_v1"),
+    release_scope: z.enum(CONNECTOR_RELEASE_SCOPE_VALUES),
     published_tool_count: z.number().int().nonnegative(),
+    runtime_tool_catalog_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     planned_action_count: z.number().int().nonnegative(),
     planned_route_callsite_count: z.number().int().nonnegative(),
     published_runtime_catalog_verified: z.boolean(),
@@ -124,6 +127,7 @@ export const RELEASE_GATE_REPORT_SCHEMA = z.object({
     malware_quarantine_verified: z.boolean(),
     confirmation_input_server_internal: z.boolean(),
     published_widget_contract_count: z.number().int().nonnegative(),
+    widget_resource_catalog_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     planned_widget_contract_count: z.number().int().nonnegative(),
     widget_surfaces_verified: z.boolean(),
     accessibility_smokes_passed: z.boolean(),

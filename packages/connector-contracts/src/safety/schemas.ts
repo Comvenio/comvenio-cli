@@ -20,4 +20,8 @@ export const WRITE_RECEIPT_SCHEMA = z.object({ receipt_id: uuid, request_id: uui
 export const IDEMPOTENCY_RECORD_SCHEMA = z.object({ subject_id: uuid, club_id: uuid, tool_name: toolName, idempotency_key: uuid, payload_hash_sha256: sha256, state: z.enum(["started", "succeeded", "failed"]), receipt: WRITE_RECEIPT_SCHEMA.nullable(), created_at: instant, expires_at: instant }).strict();
 export const CONFIRMATION_CHALLENGE_SCHEMA = z.object({ preview: ACTION_PREVIEW_VIEW_SCHEMA, confirmation_token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u), confirm_label: z.string().trim().min(1).max(100), cancel_label: z.literal("Abbrechen"), acknowledgement_required: z.boolean() }).strict();
 export const ACTION_CONFIRM_INPUT_SCHEMA = z.object({ preview_id: uuid, confirmation_token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u), idempotency_key: uuid }).strict();
+export const ACTION_CONFIRM_WIDGET_INPUT_SCHEMA = z.object({
+  preview_id: uuid,
+  idempotency_key: uuid,
+}).strict();
 export const SAFE_WRITE_EFFECT_SCHEMA = z.object({ target_ids: z.array(uuid).max(10_000), changed_count: z.number().int().nonnegative(), unchanged_count: z.number().int().nonnegative(), failed_count: z.number().int().nonnegative(), result_summary: z.string().trim().min(1).max(1_000), object_versions: z.array(z.object({ target_id: uuid, version: z.string().trim().min(1).max(256) }).strict()).max(10_000), safe_next_actions: z.array(safeNextAction).max(20) }).strict();

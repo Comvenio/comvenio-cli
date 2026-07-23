@@ -1,13 +1,13 @@
 {
   "registry_version": "1.0.0",
   "cli_version": "0.1.0",
-  "verified_at": "2026-07-14",
+  "verified_at": "2026-07-23",
   "coverage_model": {
     "covered": "Der vorgesehene Club-Admin-Workflow ist über das CLI verfügbar. Das bedeutet nicht, dass jede technische Backend-Route eine eigene Action braucht.",
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
     "intentional-exclusion": "Der Top-Level-Command ist ausschließlich als bewusstes Nicht-Ziel dokumentiert."
   },
-  "scope_note": "Workflow-Registry für die 26 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
+  "scope_note": "Workflow-Registry für die 27 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
   "domains": [
     {
       "id": "login",
@@ -754,6 +754,28 @@
         "docs/sponsoring.md",
         "docs/dateien.md"
       ]
+    },
+    {
+      "id": "agent",
+      "status": "core-partial",
+      "actions": [
+        "chat"
+      ],
+      "gaps": [
+        "Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions."
+      ],
+      "intentional_exclusions": [
+        "Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.",
+        "Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem Device-Token geprüft."
+      ],
+      "source": [
+        "src/commands/agent.ts",
+        "Backend/Microservice-Backend/ai-service/app/routes/chat.py",
+        "Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/"
+      ],
+      "docs": [
+        "docs/club-agent.md"
+      ]
     }
   ],
   "uncovered_model": {
@@ -763,35 +785,6 @@
     "backend-missing": "Der Workflow existiert serverseitig noch nicht (z. B. HTTP 501). Zuerst Backend, dann CLI — keine CLI-Lücke."
   },
   "uncovered_domains": [
-    {
-      "id": "agent",
-      "service": "ai-service (ClubAgent)",
-      "verdict": "gap",
-      "summary": "Der Verein kann seinen eigenen Bot nicht per CLI verwalten. Rund 45 club-admin-relevante Routen, davon 0 Prozent abgedeckt.",
-      "missing_workflows": [
-        "Bot-Grundkonfiguration (Name, Persona, Status, Modellprofil)",
-        "Autonomie-/Skill-Pakete installieren und listen",
-        "Skills einzeln aktivieren und mit Guardrails versehen (Approval-Policy, Audience, Risiko)",
-        "Vereinseigene Slash-Kommandos definieren",
-        "Routinen/Pläne anlegen und ausführen (wiederkehrende Bot-Aufträge)",
-        "Freigaben erteilen (der Mensch-im-Loop-Schritt bei schreibenden Bot-Aktionen)",
-        "Watch-Rules pflegen (worauf reagiert der Bot autonom)",
-        "Journal und Memory einsehen (Transparenz gegenüber den Mitgliedern)",
-        "Betriebsstatus prüfen (Autonomiegrad, Nutzung, Zustellung)"
-      ],
-      "proposed_actions": [
-        "agent info|update",
-        "agent skill-package list|install",
-        "agent skill list|enable|disable",
-        "agent command list|create|update",
-        "agent plan list|create|update|run",
-        "agent approval list|approve|reject",
-        "agent watch-rule list|create|update|test",
-        "agent journal|memory list",
-        "agent status"
-      ],
-      "rationale": "Bot-Konfiguration, Guardrails und Freigaben sind Vereins-Policy-Entscheidungen, keine Runtime-Interna. Achtung: der bestehende Command plan ist der Geländeplan (event-service), NICHT der ai-service-AgentPlan."
-    },
     {
       "id": "channel",
       "service": "message-service",

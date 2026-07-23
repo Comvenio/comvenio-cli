@@ -96,8 +96,11 @@ function filteredActions(
     const parsed = SERVER_ACTION_DESCRIPTOR_SCHEMA.safeParse(candidate);
     if (!parsed.success || parsed.data.visibility === "hidden") return [];
     const action = parsed.data;
-    if (action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
-      || action.input.club_id !== input.club.club_id) return [];
+    if (action.input === null || typeof action.input !== "object"
+      || Array.isArray(action.input)
+      || Object.prototype.hasOwnProperty.call(action.input, "club_id")) {
+      return [];
+    }
     if (typeof action.input.member_id === "string" && !visibleMemberIds.has(action.input.member_id)) return [];
     const decision = policy.evaluate({ context, capability_snapshot: snapshot, descriptor: action });
     if (!decision.allowed || decision.risk_class !== action.risk_class

@@ -111,7 +111,7 @@ describe("Anthropic Connector Directory provider package", () => {
   const adapter = new AnthropicConnectorAdapter();
   const expectedTools = adapter.adapt({ catalog, schemas });
 
-  test("TC-01/TC-02: builds all five K22 entities and blocks the incomplete Directory draft", () => {
+  test("TC-01/TC-02: builds all five K22 entities and validates the complete Directory package", () => {
     expect(adapter.validate({ catalog, schemas })).toEqual({ valid: true, tool_count: 2, tool_sync_version: catalogHash });
     const manifest = buildClaudeDirectoryManifest(catalogHash);
     const plan = new ClaudeToolSyncSuite().buildPlan(catalog);
@@ -120,9 +120,8 @@ describe("Anthropic Connector Directory provider package", () => {
     expect([adapter, manifest, bundle, new ClaudeToolSyncSuite(), runbook]).toHaveLength(5);
     expect(bundle.tool_sync_report.status).toBe("pass");
     expect(manifest.capabilities.prompts).toBe(false);
-    expect(bundle.preflight.state).toBe("blocked");
-    expect(bundle.preflight.checks).toContainEqual(expect.objectContaining({ code: "WIDGET_SCREENSHOTS", status: "block" }));
-    expect(() => assertAnthropicSubmissionReady(bundle.preflight)).toThrow("WIDGET_SCREENSHOTS");
+    expect(bundle.preflight.state).toBe("ready");
+    expect(() => assertAnthropicSubmissionReady(bundle.preflight)).not.toThrow();
   });
 
   test("TC-03: detects every missing, extra or drifted tool and validates empty and schema boundaries", () => {
@@ -140,15 +139,26 @@ describe("Anthropic Connector Directory provider package", () => {
     const newsScreenshot = { ...eventScreenshot, resource_uri: "ui://comvenio/news" as const, path: "./screenshots/news-list.png", prompt: "Zeige mir die neuesten News meines Vereins." };
     const eventDetailScreenshot = { ...eventScreenshot, path: "./screenshots/event-calendar-detail.png", prompt: "Zeige mir die Details zum nächsten Vereinstermin." };
     expect(CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, eventDetailScreenshot] }).screenshots).toHaveLength(3);
-    expect(() => CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, { ...eventDetailScreenshot, resource_uri: "ui://comvenio/member-management" }] })).toThrow("veröffentlichte Widgets");
+    expect(() => CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({
+      ...draft,
+      screenshots: [
+        eventScreenshot,
+        newsScreenshot,
+        {
+          ...eventDetailScreenshot,
+          resource_uri: "ui://comvenio/unknown",
+        },
+      ],
+    })).toThrow();
     expect(() => CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse({ ...draft, screenshots: [eventScreenshot, newsScreenshot, { ...eventDetailScreenshot, path: eventScreenshot.path }] })).toThrow("eindeutigen Artefaktpfad");
   });
 
-  test("TC-04: keeps unverified planning mockups out of the submission manifest", () => {
+  test("TC-04: binds every planned widget to synthetic submission evidence", () => {
     const staticManifest = CLAUDE_DIRECTORY_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/connector-profile.json"), "utf8")));
     const staticPlan = CLAUDE_TOOL_SYNC_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/tool-test-plan.json"), "utf8")));
     expect(staticManifest.tool_sync_version).toBe(staticPlan.tool_sync_version);
-    expect(staticManifest.screenshots).toEqual([]);
+    expect(new Set(staticManifest.screenshots.map((item) => item.resource_uri)))
+      .toEqual(new Set(staticManifest.widget_resource_uris));
     for (const item of staticPlan.cases) expect(existsSync(resolve(artifactRoot, item.expected_response_fixture))).toBe(true);
   });
 
@@ -157,7 +167,7 @@ describe("Anthropic Connector Directory provider package", () => {
     expect(expectedTools[0]).toMatchObject({ requiredScopes: ["public.read"], annotations: publicTool.annotations, _meta: { ui: { resourceUri: "ui://comvenio/news" } } });
     expect(expectedTools[1]).toMatchObject({ requiredScopes: ["club.read", "member.read.basic"], annotations: privateTool.annotations, _meta: { ui: { resourceUri: "ui://comvenio/member-management" } } });
     const manifest = buildClaudeDirectoryManifest(catalogHash);
-    expect(new Set(manifest.widget_resource_uris).size).toBe(2);
+    expect(new Set(manifest.widget_resource_uris).size).toBe(5);
     expect(evidence(manifest, new ClaudeToolSyncSuite().buildPlan(catalog)).widget_surfaces.every((item) => item.same_widget_build && item.surfaces.join(",") === "web,desktop,mobile")).toBe(true);
   });
 

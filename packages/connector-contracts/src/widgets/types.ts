@@ -239,7 +239,6 @@ export interface NewsWidgetState {
 
 export interface ConfirmationData extends Record<string, JsonValue> {
   preview: ActionPreviewView & Record<string, JsonValue>;
-  confirmation_token: string;
   confirm_label: string;
   cancel_label: "Abbrechen";
   acknowledgement_required: boolean;
