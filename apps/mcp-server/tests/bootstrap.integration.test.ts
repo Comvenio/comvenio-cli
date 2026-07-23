@@ -34,7 +34,17 @@ describe("production MCP process bootstrap", () => {
       auth_base_url: "https://api.comvenio.app/auth",
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: null,
-      cimd_client_pins: expect.objectContaining({ contract_version: "1.0.0", pins: [] }),
+      cimd_client_pins: expect.objectContaining({
+        contract_version: "1.0.0",
+        release_state: "BLOCKED",
+        pins: [
+          expect.objectContaining({
+            provider: "openai",
+            enabled: true,
+            allowed_scopes: ["club.read", "task.read", "task.write"],
+          }),
+        ],
+      }),
       allowed_hosts: [
         "mcp.comvenio.app",
         "comvenio-cli-production.up.railway.app",

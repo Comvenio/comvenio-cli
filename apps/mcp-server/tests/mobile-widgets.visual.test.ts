@@ -63,7 +63,7 @@ function testedConnectorEvalReport() {
     confirmation_contract: true,
     provider_retry_idempotent: true,
     synthetic_data_only: true,
-    evidence_ref: "test-fixture:mobile-widgets.visual.test.ts",
+    evidence_ref: "apps/mcp-server/tests/mobile-widgets.visual.test.ts",
   }));
   return new ConnectorEvalSuite().evaluate({
     candidate_tool_names: toolNames,
@@ -77,7 +77,7 @@ function testedTenantIsolationReport() {
       id,
       passed: true,
       synthetic_data_only: true,
-      evidence_ref: "test-fixture:mobile-widgets.visual.test.ts",
+      evidence_ref: "apps/mcp-server/tests/mobile-widgets.visual.test.ts",
     }),
   );
   return new TenantIsolationSuite().evaluate(results);

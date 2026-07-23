@@ -13,7 +13,9 @@ export function buildOpenAiToolTestPlan(catalog: ToolCatalogSnapshot): OpenAiToo
       prompt: `Prüfe „${tool.title}“ mit synthetischen Daten im ausgewählten Testverein.`,
       expected_response_fixture: `fixtures/provider/openai/${tool.tool_name}.response.json`,
       required_surfaces: ["web", "mobile"],
-      verifies: ["schema", "security_schemes", "annotations", "rbac_recheck"],
+      verifies: tool.tool_name === "public_events"
+        ? ["schema", "security_schemes", "annotations", "rbac_recheck", "oauth_bound_club_discovery"]
+        : ["schema", "security_schemes", "annotations", "rbac_recheck"],
     })),
     submission_examples: [
       { id: "positive-my-tasks", polarity: "positive", prompt: "Welche offenen Aufgaben habe ich diese Woche und erinnere mich morgen um 18 Uhr an die erste?", expected_behavior: "Leitet Verein und Mitglied ausschließlich aus OAuth ab, zeigt mit task.read nur die eigenen Aufgaben und setzt mit task.write genau für den verbundenen Nutzer eine persönliche Erinnerung ohne Empfänger-ID." },

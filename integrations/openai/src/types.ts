@@ -71,7 +71,7 @@ export interface ToolTestCase {
   prompt: string;
   expected_response_fixture: string;
   required_surfaces: ["web", "mobile"];
-  verifies: ["schema", "security_schemes", "annotations", "rbac_recheck"];
+  verifies: ["schema", "security_schemes", "annotations", "rbac_recheck", "oauth_bound_club_discovery"?];
 }
 
 export interface OpenAiToolTestPlan {
