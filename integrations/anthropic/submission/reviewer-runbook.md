@@ -13,10 +13,11 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
    `cv_my_tasks_read` mit dem Zeitraum und `task.read` verwenden, ohne Domain,
    Club-ID oder Mitglieds-ID zu erfragen.
 7. „Erinnere mich morgen um 18 Uhr an meine erste offene Aufgabe“ abfragen.
-   Claude muss `cv_my_task_reminder_write` mit `task.read` und `task.write`
-   verwenden. Club, Benutzer und Empfänger dürfen nicht als Toolargument
+   Claude muss `cv_my_task_reminder_write` mit `task.read` verwenden;
+   `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
+   Club, Benutzer und Empfänger dürfen nicht als Toolargument
    gesendet werden; ausschließlich das verbundene Reviewkonto erhält die
-   Erinnerung. Ohne beide Scopes bleibt das Tool verborgen. Das Löschen
+   Erinnerung. Ohne `task.read` bleibt das Tool verborgen. Das Löschen
    verwendet dieselbe Task-ID und keine separate Reminder-ID.
 
 ## Konten

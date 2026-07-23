@@ -19,10 +19,11 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
 5. Frage „Welche offenen Aufgaben habe ich diese Woche?“. ChatGPT muss `cv_my_tasks_read` direkt mit Zeitgrenzen aufrufen; Verein, Domain, Club-ID und Mitglieds-ID dürfen nicht nachgefragt oder als Toolargument gesendet werden. Der Grant benötigt `task.read`.
 6. Nutze das `member`-Konto. Es dürfen nur die eigenen zugewiesenen Aufgaben im Zeitfenster erscheinen; Verwaltungsaktionen müssen in Tool-Liste und Widgets vollständig verborgen bleiben.
 7. Bitte um „Erinnere mich morgen um 18 Uhr an meine erste offene Aufgabe“.
-   ChatGPT muss `cv_my_task_reminder_write` mit `task.read` und `task.write`
-   verwenden. Das Toolargument darf weder `club_id` noch `user_id`,
+   ChatGPT muss `cv_my_task_reminder_write` mit `task.read` verwenden.
+   `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
+   Das Toolargument darf weder `club_id` noch `user_id`,
    `member_id` oder eine Empfängerliste enthalten. Nur das verbundene
-   Reviewkonto darf die Benachrichtigung erhalten. Ohne beide Scopes muss das
+   Reviewkonto darf die Benachrichtigung erhalten. Ohne `task.read` muss das
    Tool vollständig verborgen bleiben.
 8. Lösche dieselbe Erinnerung über dieselbe Task-ID wieder. Die Toolargumente
    dürfen keine Reminder-ID oder fremde Identität enthalten.

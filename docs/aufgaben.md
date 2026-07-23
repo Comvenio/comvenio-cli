@@ -168,6 +168,10 @@ Backend aktuelle Reminder-Generation, Aufgabenexistenz und aktive
 Mitgliedschaft erneut. Ersetzte, gelöschte oder nach einem Vereinsaustritt
 nicht mehr zulässige Reminder werden nicht zugestellt.
 
+Für den persönlichen Reminder genügt der OAuth-Scope `task.read`, weil der
+Nutzer keine gemeinsame Aufgabe ändert, sondern nur seine eigene Präferenz.
+`task.write` ist dafür ausdrücklich nicht erforderlich.
+
 ## Abgrenzung
 
 Interne Automation-Routen, Poll-/Matrix-Spezialmodelle und serviceweite Admin-Cleanup-Endpunkte sind

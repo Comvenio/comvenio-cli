@@ -498,7 +498,7 @@ describe("CIMD SSRF and release pinning", () => {
     const releasePin = releasePins.pins[0]!;
     expect(releasePin.provider).toBe("openai");
     expect(releasePin.enabled).toBe(true);
-    expect(releasePin.allowed_scopes).toEqual(["club.read", "task.read", "task.write"]);
+    expect(releasePin.allowed_scopes).toEqual(["club.read", "task.read"]);
     expect(releasePin.client_id).toMatch(/^https:\/\/chatgpt\.com\/oauth\//u);
     expect(releasePin.metadata_sha256).toMatch(/^[a-f0-9]{64}$/u);
     expect(releasePins.notice).not.toContain("*");

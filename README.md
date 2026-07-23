@@ -78,9 +78,10 @@ erst nach OAuth-Introspection, kurzlebigem Actor-Token, expliziter Vereinsbindun
 und aktuellem Self-Capability-Read sichtbar; das Fachbackend prüft RBAC weiterhin
 autoritativ. Der Log-Service ist kein MCP-Upstream.
 
-Persönliche Aufgaben benötigen den minimalen OAuth-Scope `task.read`; das
-Setzen oder Löschen einer persönlichen Aufgaben-Erinnerung zusätzlich
-`task.write`. Fehlt ein Scope
+Persönliche Aufgaben und das Setzen oder Löschen der eigenen
+Aufgaben-Erinnerung benötigen nur den minimalen OAuth-Scope `task.read`.
+`task.write` bleibt fachlichen Änderungen am gemeinsamen Aufgabenobjekt
+vorbehalten. Fehlt `task.read`
 bei einer bestehenden Verbindung, wird das betroffene Tool nicht angeboten;
 nach erneuter Autorisierung mit dem benötigten Scope wird es sichtbar. Ein
 Scope-Verlust während eines bereits begonnenen Aufrufs liefert zusätzlich eine

@@ -102,7 +102,7 @@ const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_permissions_explain_read", required_scopes: ["club.read"] },
   { tool_name: "cv_schema_read", required_scopes: ["club.read"] },
   { tool_name: "cv_my_tasks_read", required_scopes: ["task.read"] },
-  { tool_name: "cv_my_task_reminder_write", required_scopes: ["task.read", "task.write"] },
+  { tool_name: "cv_my_task_reminder_write", required_scopes: ["task.read"] },
 ] satisfies ProtectedToolDescriptor[]);
 
 const TOOL_SCOPES = Object.freeze({
@@ -110,7 +110,7 @@ const TOOL_SCOPES = Object.freeze({
   cv_permissions_explain_read: ["club.read"],
   cv_schema_read: ["club.read"],
   cv_my_tasks_read: ["task.read"],
-  cv_my_task_reminder_write: ["task.read", "task.write"],
+  cv_my_task_reminder_write: ["task.read"],
 } satisfies Record<(typeof PROTECTED_TOOLS)[number]["tool_name"], OAuthScope[]>);
 
 const TOOL_COPY = Object.freeze({
@@ -628,14 +628,8 @@ export function createRuntimeServer(input: {
         });
       }
 
-      if (
-        input.context.request.scopes.includes("task.read")
-        && input.context.request.scopes.includes("task.write")
-      ) {
-        const taskReminderSecuritySchemes = oauthSecuritySchemes([
-          "task.read",
-          "task.write",
-        ]);
+      if (input.context.request.scopes.includes("task.read")) {
+        const taskReminderSecuritySchemes = oauthSecuritySchemes(["task.read"]);
         advertisedSecuritySchemes.set(
           "cv_my_task_reminder_write",
           taskReminderSecuritySchemes,
@@ -653,10 +647,8 @@ export function createRuntimeServer(input: {
           },
         }, async (arguments_) => {
           const parsed = taskReminderSchema.parse(arguments_);
-          for (const scope of ["task.read", "task.write"] as const) {
-            if (!input.context.request.scopes.includes(scope)) {
-              return insufficientScopeResult(input.public_origin, scope);
-            }
+          if (!input.context.request.scopes.includes("task.read")) {
+            return insufficientScopeResult(input.public_origin, "task.read");
           }
 
           try {

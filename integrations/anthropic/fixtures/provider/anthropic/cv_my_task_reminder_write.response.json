@@ -7,8 +7,7 @@
     "permission_denied_outcome": "not_found",
     "data_policy": "oauth_subject_only",
     "required_scopes": [
-      "task.read",
-      "task.write"
+      "task.read"
     ],
     "backend_rbac_recheck_required": true,
     "recipient_input_allowed": false,

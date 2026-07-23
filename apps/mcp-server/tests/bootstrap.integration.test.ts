@@ -41,7 +41,7 @@ describe("production MCP process bootstrap", () => {
           expect.objectContaining({
             provider: "openai",
             enabled: true,
-            allowed_scopes: ["club.read", "task.read", "task.write"],
+            allowed_scopes: ["club.read", "task.read"],
           }),
         ],
       }),

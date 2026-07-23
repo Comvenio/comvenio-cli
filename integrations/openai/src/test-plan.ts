@@ -18,7 +18,7 @@ export function buildOpenAiToolTestPlan(catalog: ToolCatalogSnapshot): OpenAiToo
         : ["schema", "security_schemes", "annotations", "rbac_recheck"],
     })),
     submission_examples: [
-      { id: "positive-my-tasks", polarity: "positive", prompt: "Welche offenen Aufgaben habe ich diese Woche und erinnere mich morgen um 18 Uhr an die erste?", expected_behavior: "Leitet Verein und Mitglied ausschließlich aus OAuth ab, zeigt mit task.read nur die eigenen Aufgaben und setzt mit task.write genau für den verbundenen Nutzer eine persönliche Erinnerung ohne Empfänger-ID." },
+      { id: "positive-my-tasks", polarity: "positive", prompt: "Welche offenen Aufgaben habe ich diese Woche und erinnere mich morgen um 18 Uhr an die erste?", expected_behavior: "Leitet Verein und Mitglied ausschließlich aus OAuth ab, zeigt mit task.read nur die eigenen Aufgaben und setzt mit demselben Scope genau für den verbundenen Nutzer eine persönliche Erinnerung ohne Empfänger-ID; task.write ist nicht erforderlich." },
       { id: "positive-events", polarity: "positive", prompt: "Welche öffentlichen Termine stehen diese Woche an?", expected_behavior: "Zeigt nur veröffentlichte Termine und rendert das Kalender-Widget." },
       { id: "positive-news", polarity: "positive", prompt: "Zeige die neuesten öffentlichen Vereinsnews.", expected_behavior: "Zeigt nur veröffentlichte News und rendert das News-Widget." },
       { id: "positive-menu", polarity: "positive", prompt: "Zeige die öffentliche Speisekarte des Vereins.", expected_behavior: "Liefert nur die veröffentlichte Karte ohne interne Kalkulationsdaten." },

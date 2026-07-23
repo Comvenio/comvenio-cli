@@ -8,11 +8,10 @@
       "metadata_sha256": "7d8b74f3544d90c33f4e6df0b46cc23c4ef928d7398bfede623c70555790aa36",
       "allowed_scopes": [
         "club.read",
-        "task.read",
-        "task.write"
+        "task.read"
       ],
       "enabled": true
     }
   ],
-  "notice": "Der aktuell verbundene OpenAI-CIMD-Client wurde am 23.07.2026 mit club.read und task.read sowie task.write ausschließlich für die persönliche Aufgaben-Erinnerung gepinnt. Empfänger werden nicht aus Toolargumenten übernommen, sondern aus dem OAuth-Subjekt abgeleitet. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
+  "notice": "Der aktuell verbundene OpenAI-CIMD-Client wurde am 23.07.2026 mit club.read und task.read gepinnt. task.read autorisiert ausschließlich sichtbare Aufgaben und die persönliche Aufgaben-Erinnerung; task.write bleibt fachlichen Änderungen am gemeinsamen Aufgabenobjekt vorbehalten. Empfänger werden nicht aus Toolargumenten übernommen, sondern aus dem OAuth-Subjekt abgeleitet. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
 }

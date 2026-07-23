@@ -658,7 +658,7 @@ describe("Remote MCP runtime", () => {
       expect(JSON.stringify(taskReminder.inputSchema)).not.toContain('"recipient"');
       expect(taskReminder.securitySchemes).toEqual([{
         type: "oauth2",
-        scopes: ["task.read", "task.write"],
+        scopes: ["task.read"],
       }]);
       expect(taskReminder._meta.securitySchemes).toEqual(taskReminder.securitySchemes);
       expect(JSON.stringify(taskReminder.outputSchema)).not.toContain('"user_id"');
@@ -734,7 +734,7 @@ describe("Remote MCP runtime", () => {
             to: "2026-08-10T00:00:00.000Z",
           },
         },
-      }, "token-openai");
+      }, "token-openai-task-read-only");
       expect(personalTasks.status).toBe(200);
       const personalTasksResult = await personalTasks.json() as any;
       expect(personalTasksResult.result.isError).not.toBe(true);
@@ -767,7 +767,7 @@ describe("Remote MCP runtime", () => {
             comment: "Bitte rechtzeitig erinnern",
           },
         },
-      }, "token-openai");
+      }, "token-openai-task-read-only");
       expect(personalReminder.status).toBe(200);
       const personalReminderResult = await personalReminder.json() as any;
       expect(personalReminderResult.result.isError).not.toBe(true);
@@ -803,7 +803,7 @@ describe("Remote MCP runtime", () => {
             user_id: runtimeSubjectId,
           },
         },
-      }, "token-openai");
+      }, "token-openai-task-read-only");
       expect(rejectedReminderContext.status).toBe(200);
       expect((await rejectedReminderContext.json() as any).result.isError).toBe(true);
 
@@ -819,7 +819,12 @@ describe("Remote MCP runtime", () => {
         reminderScopeResult.result.tools.map(
           (tool: { name: string }) => tool.name,
         ),
-      ).not.toContain("cv_my_task_reminder_write");
+      ).toContain("cv_my_task_reminder_write");
+      expect(
+        reminderScopeResult.result.tools.find(
+          (tool: { name: string }) => tool.name === "cv_my_task_reminder_write",
+        ).securitySchemes,
+      ).toEqual([{ type: "oauth2", scopes: ["task.read"] }]);
 
       const deniedReminder = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -833,7 +838,7 @@ describe("Remote MCP runtime", () => {
             reminder_at: reminderAt,
           },
         },
-      }, "token-openai");
+      }, "token-openai-task-read-only");
       expect(deniedReminder.status).toBe(200);
       const deniedReminderResult = await deniedReminder.json() as any;
       expect(deniedReminderResult.result.isError).toBe(true);
@@ -851,7 +856,7 @@ describe("Remote MCP runtime", () => {
             task_id: openTaskId,
           },
         },
-      }, "token-openai");
+      }, "token-openai-task-read-only");
       expect(deletedReminder.status).toBe(200);
       expect((await deletedReminder.json() as any).result.structuredContent).toEqual({
         operation: "delete",
