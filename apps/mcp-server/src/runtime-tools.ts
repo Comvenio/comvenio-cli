@@ -25,6 +25,7 @@ import {
   registerFullDomainRuntime,
   type DomainToolSummary,
 } from "./domain-runtime.ts";
+import type { DomainStateStore } from "./domain-state-store.ts";
 import { PublicAccessPolicy } from "./public/policy.ts";
 import { PublicResponseRedactor } from "./public/redaction.ts";
 import { PUBLIC_INPUT_SCHEMAS } from "./public/schemas.ts";
@@ -658,6 +659,7 @@ export function createRuntimeServer(input: {
   api_base_url: string;
   public_origin: string;
   context: StatelessTransportContext;
+  domain_state_store: DomainStateStore;
   release_scope?: ConnectorReleaseScope;
 }): McpServer {
   const server = new McpServer({ name: "comvenio-mcp-server", version: "1.0.0" });
@@ -803,6 +805,7 @@ export function createRuntimeServer(input: {
           context: input.context.request,
           capability_snapshot: input.context.capability_snapshot,
           environment: input.environment,
+          state_store: input.domain_state_store,
           advertised_security_schemes: advertisedSecuritySchemes,
         });
         const domainRuntime = registerFullDomainRuntime({

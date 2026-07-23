@@ -3,8 +3,14 @@ import {
   parseConnectorReleaseScope,
   type ConnectorReleaseScope,
 } from "@comvenio/connector-contracts";
+import IORedis from "ioredis";
 
 import cimdPins from "../../../integrations/release/cimd-client-allowlist.v1.json";
+import {
+  InMemoryDomainStateStore,
+  RedisDomainStateStore,
+  type DomainStateStore,
+} from "./domain-state-store.ts";
 import { IntrospectionBearerAuthenticator } from "./http/auth.ts";
 import { ExactProviderHintResolver } from "./http/context.ts";
 import { McpHttpServer } from "./http/server.ts";
@@ -36,9 +42,11 @@ export interface McpProcessEnvironment {
   MCP_PROD_ALLOWED_ORIGINS?: string;
   MCP_PUBLIC_ORIGIN?: string;
   MCP_RELEASE_SCOPE?: string;
+  MCP_SHARED_STATE_REDIS_URL?: string;
   OPENAI_APPS_CHALLENGE_TOKEN?: string;
   PORT?: string;
   RAILWAY_PUBLIC_DOMAIN?: string;
+  REDIS_URL?: string;
 }
 
 export interface McpProcessConfig {
@@ -52,6 +60,7 @@ export interface McpProcessConfig {
   internal_api_key: string;
   openai_apps_challenge_token: string | null;
   release_scope: ConnectorReleaseScope;
+  shared_state_redis_url: string | null;
   cimd_client_pins: unknown;
   allowed_hosts: string[];
   allowed_origins: string[];
@@ -134,6 +143,35 @@ function edgeSharedSecret(
   return value;
 }
 
+function sharedStateRedisUrl(
+  value: string | undefined,
+  selectedEnvironment: OAuthEnvironment,
+): string | null {
+  if (value === undefined || value.trim() === "") {
+    if (selectedEnvironment === "production") {
+      throw new Error(
+        "MCP_SHARED_STATE_REDIS_URL ist für Production erforderlich.",
+      );
+    }
+    return null;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("MCP_SHARED_STATE_REDIS_URL ist ungültig.");
+  }
+  if (
+    value !== value.trim()
+    || !["redis:", "rediss:"].includes(parsed.protocol)
+    || !parsed.hostname
+    || parsed.hash
+  ) {
+    throw new Error("MCP_SHARED_STATE_REDIS_URL ist ungültig.");
+  }
+  return value;
+}
+
 export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessConfig {
   const selectedEnvironment = environment(input.COMVENIO_MCP_ENV);
   const prefix = selectedEnvironment === "production" ? "MCP_PROD" : "MCP_DEV";
@@ -171,6 +209,10 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     internal_api_key: internalApiKey,
     openai_apps_challenge_token: openAiChallengeToken(input.OPENAI_APPS_CHALLENGE_TOKEN),
     release_scope: releaseScope(input.MCP_RELEASE_SCOPE),
+    shared_state_redis_url: sharedStateRedisUrl(
+      input.MCP_SHARED_STATE_REDIS_URL ?? input.REDIS_URL,
+      selectedEnvironment,
+    ),
     cimd_client_pins: parsePins(input.MCP_CIMD_CLIENT_PINS_JSON),
     allowed_hosts: allowedHosts,
     allowed_origins: csv(input[`${prefix}_ALLOWED_ORIGINS`]),
@@ -180,6 +222,7 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
 function runtimeReadiness(input: {
   config: McpProcessConfig;
   registrations: PinnedProviderRegistrationResolver;
+  state_store: DomainStateStore;
 }): ReadinessDependency[] {
   return [
     { name: "catalog", required: true, check: async () => true },
@@ -196,6 +239,11 @@ function runtimeReadiness(input: {
       check: async () => input.registrations.isReleaseReady(),
     },
     {
+      name: "shared_state",
+      required: true,
+      check: async () => input.state_store.ready(),
+    },
+    {
       name: "capabilities",
       required: true,
       check: createHttpReadinessCheck({ url: `${input.config.api_base_url}/role/health` }),
@@ -203,20 +251,36 @@ function runtimeReadiness(input: {
   ];
 }
 
-function runtimeServerFactory(config: McpProcessConfig): McpRuntimeOptions["server_factory"] {
+function runtimeServerFactory(
+  config: McpProcessConfig,
+  stateStore: DomainStateStore,
+): McpRuntimeOptions["server_factory"] {
   return (context) => {
     const server = createRuntimeServer({
       environment: config.environment,
       api_base_url: config.api_base_url,
       public_origin: config.public_origin,
       context,
+      domain_state_store: stateStore,
       release_scope: config.release_scope,
     });
     return server;
   };
 }
 
-export function createMcpDeploymentCandidate(config: McpProcessConfig): McpHttpServer {
+export function createMcpDeploymentCandidate(
+  config: McpProcessConfig,
+  stateStore?: DomainStateStore,
+): McpHttpServer {
+  const domainStateStore = stateStore
+    ?? (config.environment === "development"
+      ? new InMemoryDomainStateStore()
+      : null);
+  if (!domainStateStore) {
+    throw new Error(
+      "Production benötigt einen expliziten gemeinsamen MCP-Zustandsspeicher.",
+    );
+  }
   const registrations = new PinnedProviderRegistrationResolver(config.cimd_client_pins);
   const introspection = new HttpIntrospectionPort({
     auth_base_url: config.auth_base_url,
@@ -245,17 +309,43 @@ export function createMcpDeploymentCandidate(config: McpProcessConfig): McpHttpS
       config.environment,
       config.release_scope,
     ),
-    server_factory: runtimeServerFactory(config),
-    readiness_dependencies: runtimeReadiness({ config, registrations }),
+    server_factory: runtimeServerFactory(config, domainStateStore),
+    readiness_dependencies: runtimeReadiness({
+      config,
+      registrations,
+      state_store: domainStateStore,
+    }),
     telemetry: new ConsoleTelemetrySink(),
   });
 }
 
 export async function startMcpDeploymentCandidate(
   input: McpProcessEnvironment,
-): Promise<{ server: McpHttpServer; config: McpProcessConfig }> {
+): Promise<{
+  server: McpHttpServer;
+  config: McpProcessConfig;
+  state_store: DomainStateStore;
+}> {
   const config = readMcpProcessConfig(input);
-  const server = createMcpDeploymentCandidate(config);
-  await server.listen(config.port, config.host);
-  return { server, config };
+  const stateStore = config.shared_state_redis_url
+    ? new RedisDomainStateStore(new IORedis(
+      config.shared_state_redis_url,
+      {
+        lazyConnect: true,
+        maxRetriesPerRequest: 3,
+        enableReadyCheck: true,
+      },
+    ))
+    : new InMemoryDomainStateStore();
+  try {
+    if (!await stateStore.ready()) {
+      throw new Error("Der gemeinsame MCP-Zustandsspeicher ist nicht bereit.");
+    }
+    const server = createMcpDeploymentCandidate(config, stateStore);
+    await server.listen(config.port, config.host);
+    return { server, config, state_store: stateStore };
+  } catch (error) {
+    await stateStore.close();
+    throw error;
+  }
 }

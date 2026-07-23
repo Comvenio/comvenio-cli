@@ -49,6 +49,7 @@ import {
   createRuntimeAccessPolicy,
   createRuntimeServer,
 } from "../src/runtime-tools.ts";
+import { InMemoryDomainStateStore } from "../src/domain-state-store.ts";
 import { domainToolName } from "../src/domain-runtime.ts";
 import {
   BOOKING_OBJECT_WIDGET_TOOL_NAME,
@@ -491,6 +492,7 @@ describe("Remote MCP runtime", () => {
         "club_agent_bridge_v1",
       ),
       server_factory: (requestContext) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
         environment: "development",
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
@@ -780,6 +782,7 @@ describe("Remote MCP runtime", () => {
         "full_connector_v1",
       ),
       server_factory: (requestContext) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
         environment: "development",
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
@@ -1350,6 +1353,7 @@ describe("Remote MCP runtime", () => {
     const server = new McpHttpServer(runtimeOptions({
       access_policy: createRuntimeAccessPolicy("development"),
       server_factory: (context) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
         environment: "development",
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
