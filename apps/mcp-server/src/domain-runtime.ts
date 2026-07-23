@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import type {
   CapabilitySnapshot,
@@ -21,6 +21,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
+import {
+  confirmationMatchHash,
+  type DomainStateStore,
+} from "./domain-state-store.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
   ConfirmationWidgetCapabilityPolicy,
@@ -54,7 +58,6 @@ import {
   BookingConflictPolicy,
   K10_ACTION_DEFINITIONS,
   K10_ACTION_SCHEMAS,
-  createBookingConflictPreviewStore,
   createK10ToolSets,
 } from "./tools/booking-object-task/index.ts";
 import {
@@ -130,26 +133,8 @@ interface DomainCallSafety {
   idempotency_key: string | null;
 }
 
-interface StoredWrite {
-  payload_hash: string;
-  state: "running" | "completed";
-  result: JsonValue | null;
-  expires_at: number;
-}
-
-interface StoredConfirmation {
-  action_id: string;
-  operation: string;
-  subject_id: string;
-  club_id: string;
-  payload_hash: string;
-  token_hash: string;
-  expires_at: number;
-}
-
 interface PendingDomainConfirmation {
   preview_id: string;
-  token_hash: string;
   subject_id: string;
   club_id: string;
   capability_version: string;
@@ -238,17 +223,19 @@ const domainOutputSchema = z.object({
   ]).optional(),
   result: z.json(),
 }).strict();
-const domainRuntimeOutputSchema = z.union([
-  domainOutputSchema,
-  CONFIRMATION_WIDGET_SCHEMA,
-]);
-
-const eventConfirmation = new EventConfirmationPolicy();
-const agendaConfirmation = new AgendaActionPolicy();
-const supplyConfirmation = new SupplyChangeConfirmationPolicy();
-const contentConfirmation = new ContentChangeConfirmationPolicy();
-const sponsorConfirmation = new SponsorConfirmationPolicy();
-const bookingPreviewStore = createBookingConflictPreviewStore();
+const pendingDomainConfirmationSchema = z.object({
+  match_hash: z.string().length(64),
+  preview_id: z.string().uuid(),
+  subject_id: z.string().min(1),
+  club_id: z.string().uuid(),
+  capability_version: z.string().min(1),
+  action_id: z.string().min(1),
+  tool_name: z.string().min(1),
+  operation: z.string().min(1),
+  input: z.json(),
+  idempotency_key: z.string().min(1),
+  expires_at: z.number().int().positive(),
+}).strict();
 
 function canonical(value: JsonValue): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -274,8 +261,9 @@ function digest(value: JsonValue): string {
 
 class DomainWriteCoordinator {
   readonly #calls = new AsyncLocalStorage<DomainCallSafety>();
-  readonly #writes = new Map<string, StoredWrite>();
   readonly #ttlMs = 24 * 60 * 60 * 1_000;
+
+  constructor(private readonly stateStore: DomainStateStore) {}
 
   run<T>(context: DomainCallSafety, execute: () => Promise<T>): Promise<T> {
     return this.#calls.run(context, execute);
@@ -296,68 +284,70 @@ class DomainWriteCoordinator {
         retryable: false,
       });
     }
-    this.#prune();
-    const key = [
+    const key = confirmationMatchHash(
       subjectId,
       clubId,
       call.action_id,
       call.operation,
       call.idempotency_key,
-    ].join("\u0000");
+    );
     const payloadHash = digest(request.input);
-    const existing = this.#writes.get(key);
-    if (existing) {
-      if (existing.payload_hash !== payloadHash) {
-        throw createConnectorError({
-          code: "CONFLICT",
-          message: "Der Idempotenzschlüssel gehört zu einer anderen Wirkung.",
-          request_id: request.context.request_id,
-          retryable: false,
-        });
-      }
-      if (existing.state === "running" || existing.result === null) {
-        throw createConnectorError({
-          code: "CONFLICT",
-          message: "Eine identische Schreibaktion wird bereits verarbeitet.",
-          request_id: request.context.request_id,
-          retryable: false,
-        });
-      }
-      return structuredClone(existing.result);
+    const ownerToken = randomUUID();
+    const acquired = await this.stateStore.acquireWrite(
+      key,
+      payloadHash,
+      ownerToken,
+      this.#ttlMs,
+    );
+    if (acquired.status === "conflict") {
+      throw createConnectorError({
+        code: "CONFLICT",
+        message: "Der Idempotenzschlüssel gehört zu einer anderen Wirkung.",
+        request_id: request.context.request_id,
+        retryable: false,
+      });
+    }
+    if (acquired.status === "running") {
+      throw createConnectorError({
+        code: "CONFLICT",
+        message: "Eine identische Schreibaktion wird bereits verarbeitet.",
+        request_id: request.context.request_id,
+        retryable: true,
+      });
+    }
+    if (acquired.status === "completed") {
+      return structuredClone(acquired.result);
     }
 
-    this.#writes.set(key, {
-      payload_hash: payloadHash,
-      state: "running",
-      result: null,
-      expires_at: Date.now() + this.#ttlMs,
-    });
     try {
       const result = await mutation();
-      this.#writes.set(key, {
-        payload_hash: payloadHash,
-        state: "completed",
-        result: structuredClone(result),
-        expires_at: Date.now() + this.#ttlMs,
-      });
+      const completed = await this.stateStore.completeWrite(
+        key,
+        payloadHash,
+        ownerToken,
+        result,
+        this.#ttlMs,
+      );
+      if (!completed) {
+        throw createConnectorError({
+          code: "CONFLICT",
+          message: "Der Schreibnachweis ist während der Ausführung abgelaufen.",
+          request_id: request.context.request_id,
+          retryable: false,
+        });
+      }
       return result;
     } catch (error) {
-      this.#writes.delete(key);
+      await this.stateStore.abortWrite(key, payloadHash, ownerToken);
       throw error;
-    }
-  }
-
-  #prune(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.#writes) {
-      if (entry.expires_at <= now) this.#writes.delete(key);
     }
   }
 }
 
 class K7ConfirmationCoordinator {
-  readonly #previews = new Map<string, StoredConfirmation>();
   readonly #ttlMs = 5 * 60 * 1_000;
+
+  constructor(private readonly stateStore: DomainStateStore) {}
 
   async confirmOrPreview<T>(input: {
     action_id: string;
@@ -377,21 +367,34 @@ class K7ConfirmationCoordinator {
         retryable: false,
       });
     }
-    this.#prune();
     const payloadHash = digest(input.payload);
     if (!input.confirmation) {
       const previewId = randomUUID();
       const token = randomBytes(32).toString("base64url");
       const expiresAt = Date.now() + this.#ttlMs;
-      this.#previews.set(previewId, {
-        action_id: input.action_id,
-        operation: input.operation,
-        subject_id: subjectId,
-        club_id: clubId,
-        payload_hash: payloadHash,
-        token_hash: createHash("sha256").update(token).digest("hex"),
-        expires_at: expiresAt,
-      });
+      const created = await this.stateStore.putConfirmation(
+        "k7",
+        previewId,
+        {
+          match_hash: confirmationMatchHash(
+            input.action_id,
+            input.operation,
+            subjectId,
+            clubId,
+            payloadHash,
+            token,
+          ),
+        },
+        this.#ttlMs,
+      );
+      if (!created) {
+        throw createConnectorError({
+          code: "CONFLICT",
+          message: "Die Wirkungsvorschau konnte nicht eindeutig gespeichert werden.",
+          request_id: input.context.request_id,
+          retryable: true,
+        });
+      }
       return {
         action_id: input.action_id,
         operation: input.operation,
@@ -410,23 +413,19 @@ class K7ConfirmationCoordinator {
       };
     }
 
-    const stored = this.#previews.get(input.confirmation.preview_id);
-    const supplied = Buffer.from(
-      createHash("sha256").update(input.confirmation.confirmation_token).digest("hex"),
+    const stored = await this.stateStore.consumeConfirmation(
+      "k7",
+      input.confirmation.preview_id,
+      confirmationMatchHash(
+        input.action_id,
+        input.operation,
+        subjectId,
+        clubId,
+        payloadHash,
+        input.confirmation.confirmation_token,
+      ),
     );
-    const expected = Buffer.from(stored?.token_hash ?? "0".repeat(64));
-    const valid = Boolean(
-      stored
-      && stored.action_id === input.action_id
-      && stored.operation === input.operation
-      && stored.subject_id === subjectId
-      && stored.club_id === clubId
-      && stored.payload_hash === payloadHash
-      && stored.expires_at > Date.now()
-      && supplied.length === expected.length
-      && timingSafeEqual(supplied, expected),
-    );
-    if (!valid) {
+    if (!stored) {
       throw createConnectorError({
         code: "CONFIRMATION_MISMATCH",
         message: "Die Bestätigung ist ungültig, abgelaufen oder gehört zu einer anderen Wirkung.",
@@ -434,59 +433,78 @@ class K7ConfirmationCoordinator {
         retryable: false,
       });
     }
-    this.#previews.delete(input.confirmation.preview_id);
     return input.execute();
-  }
-
-  #prune(): void {
-    const now = Date.now();
-    for (const [key, preview] of this.#previews) {
-      if (preview.expires_at <= now) this.#previews.delete(key);
-    }
   }
 }
 
 class DomainConfirmationRouter {
-  readonly #pending = new Map<string, PendingDomainConfirmation>();
+  readonly #ttlMs = 10 * 60 * 1_000;
 
-  register(input: Omit<PendingDomainConfirmation, "token_hash"> & {
+  constructor(private readonly stateStore: DomainStateStore) {}
+
+  async register(input: PendingDomainConfirmation & {
     confirmation_token: string;
-  }): void {
-    this.#prune();
-    const { confirmation_token: confirmationToken, ...pending } = input;
-    this.#pending.set(input.preview_id, {
-      ...pending,
-      token_hash: createHash("sha256")
-        .update(confirmationToken)
-        .digest("hex"),
-    });
+    request_id: string;
+  }): Promise<void> {
+    const {
+      confirmation_token: confirmationToken,
+      request_id: requestId,
+      ...pending
+    } = input;
+    const matchHash = confirmationMatchHash(
+      pending.subject_id,
+      pending.club_id,
+      pending.capability_version,
+      pending.idempotency_key,
+      confirmationToken,
+    );
+    const ttlMs = Math.min(
+      this.#ttlMs,
+      Math.max(1, pending.expires_at - Date.now()),
+    );
+    const created = await this.stateStore.putConfirmation(
+      "domain-router",
+      input.preview_id,
+      pendingDomainConfirmationSchema.parse({
+        ...pending,
+        match_hash: matchHash,
+      }),
+      ttlMs,
+    );
+    if (!created) {
+      throw createConnectorError({
+        code: "CONFLICT",
+        message: "Die Wirkungsvorschau konnte nicht eindeutig gebunden werden.",
+        request_id: requestId,
+        retryable: true,
+      });
+    }
   }
 
-  consume(input: {
+  async consume(input: {
     preview_id: string;
     confirmation_token: string;
     idempotency_key: string;
     context: RequestContext;
-  }): PendingDomainConfirmation {
-    this.#prune();
-    const pending = this.#pending.get(input.preview_id);
-    const supplied = Buffer.from(
-      createHash("sha256")
-        .update(input.confirmation_token)
-        .digest("hex"),
-    );
-    const expected = Buffer.from(pending?.token_hash ?? "0".repeat(64));
-    const valid = Boolean(
-      pending
-      && input.context.subject_id === pending.subject_id
-      && input.context.club_id === pending.club_id
-      && input.context.capability_version === pending.capability_version
-      && input.idempotency_key === pending.idempotency_key
-      && pending.expires_at > Date.now()
-      && supplied.length === expected.length
-      && timingSafeEqual(supplied, expected),
-    );
-    if (!valid || !pending) {
+  }): Promise<PendingDomainConfirmation> {
+    const subjectId = input.context.subject_id;
+    const clubId = input.context.club_id;
+    const capabilityVersion = input.context.capability_version;
+    const stored = subjectId && clubId && capabilityVersion
+      ? await this.stateStore.consumeConfirmation(
+        "domain-router",
+        input.preview_id,
+        confirmationMatchHash(
+          subjectId,
+          clubId,
+          capabilityVersion,
+          input.idempotency_key,
+          input.confirmation_token,
+        ),
+      )
+      : null;
+    const parsed = pendingDomainConfirmationSchema.safeParse(stored);
+    if (!parsed.success || parsed.data.expires_at <= Date.now()) {
       throw createConnectorError({
         code: "CONFIRMATION_MISMATCH",
         message: "Die Bestätigung ist ungültig, abgelaufen oder gehört zu einer anderen Wirkung.",
@@ -494,21 +512,13 @@ class DomainConfirmationRouter {
         retryable: false,
       });
     }
-    this.#pending.delete(input.preview_id);
+    const {
+      match_hash: _matchHash,
+      ...pending
+    } = parsed.data;
     return pending;
   }
-
-  #prune(): void {
-    const now = Date.now();
-    for (const [previewId, pending] of this.#pending) {
-      if (pending.expires_at <= now) this.#pending.delete(previewId);
-    }
-  }
 }
-
-const writeCoordinator = new DomainWriteCoordinator();
-const k7Confirmation = new K7ConfirmationCoordinator();
-const domainConfirmationRouter = new DomainConfirmationRouter();
 
 function actionToolName(actionId: string): string {
   const base = actionId.replace(/^cai\./u, "cv_").replace(/[^a-z0-9]+/gu, "_")
@@ -516,6 +526,33 @@ function actionToolName(actionId: string): string {
   if (base.length <= 64) return base;
   const hash = createHash("sha256").update(actionId).digest("hex").slice(0, 8);
   return `${base.slice(0, 55).replace(/_+$/u, "")}_${hash}`;
+}
+
+function actionOutputSchema(
+  definition: DomainDefinition,
+  resultSchema: z.ZodType,
+): z.ZodType {
+  const operations = definitionOperations(definition);
+  const operationNames = operations.map((operation) => operation.operation);
+  const operationSchema = operationNames.length === 1
+    ? z.literal(operationNames[0]!)
+    : z.enum(operationNames as [string, ...string[]]);
+  return z.object({
+    action_id: z.literal(definition.action_id),
+    operation: operationSchema.optional(),
+    status: z.enum([
+      "completed",
+      "confirmation_required",
+      "queued",
+    ]).optional(),
+    result: resultSchema,
+  }).strict();
+}
+
+function outputUnion(schemas: z.ZodType[]): z.ZodType {
+  if (schemas.length === 0) return domainOutputSchema;
+  if (schemas.length === 1) return schemas[0]!;
+  return z.union(schemas as [z.ZodType, z.ZodType, ...z.ZodType[]]);
 }
 
 export function domainToolName(actionId: string): string {
@@ -981,11 +1018,34 @@ export function registerFullDomainRuntime(input: {
   context: RequestContext;
   capability_snapshot: CapabilitySnapshot;
   environment: OAuthEnvironment;
+  state_store: DomainStateStore;
   advertised_security_schemes: Map<string, readonly ToolSecurityScheme[]>;
 }): DomainRuntimeRegistration {
+  const writeCoordinator = new DomainWriteCoordinator(input.state_store);
+  const k7Confirmation = new K7ConfirmationCoordinator(input.state_store);
+  const domainConfirmationRouter = new DomainConfirmationRouter(
+    input.state_store,
+  );
+  const eventConfirmation = new EventConfirmationPolicy({
+    state_store: input.state_store,
+  });
+  const agendaConfirmation = new AgendaActionPolicy({
+    state_store: input.state_store,
+  });
+  const supplyConfirmation = new SupplyChangeConfirmationPolicy({
+    state_store: input.state_store,
+  });
+  const contentConfirmation = new ContentChangeConfirmationPolicy(
+    undefined,
+    input.state_store,
+  );
+  const sponsorConfirmation = new SponsorConfirmationPolicy(
+    undefined,
+    input.state_store,
+  );
   const bookingConfirmation = new BookingConflictPolicy(
     new AvailabilityContract(input.client),
-    { preview_store: bookingPreviewStore },
+    { preview_store: input.state_store },
   );
   const writeSafety = {
     execute: (
@@ -1070,6 +1130,7 @@ export function registerFullDomainRuntime(input: {
     set: DomainToolSet;
     definition: DomainDefinition;
     schema: DomainSchemaContract;
+    output_schema: z.ZodType;
     tool_name: string;
   }
 
@@ -1125,7 +1186,11 @@ export function registerFullDomainRuntime(input: {
           execute,
         })
       : await execute();
-    return z.record(z.string(), z.json()).parse(result);
+    const parsedResult = z.record(z.string(), z.json()).parse(result);
+    if (!confirmationPreview(parsedResult)) {
+      input_.runtime.output_schema.parse(parsedResult);
+    }
+    return parsedResult;
   }
 
   for (const group of groups) {
@@ -1165,6 +1230,7 @@ export function registerFullDomainRuntime(input: {
           set,
           definition: canonicalDefinition,
           schema,
+          output_schema: actionOutputSchema(canonicalDefinition, schema.output),
           tool_name: toolName,
         };
         runtimeActions.set(definition.action_id, runtime);
@@ -1173,8 +1239,11 @@ export function registerFullDomainRuntime(input: {
           ...copy,
           inputSchema,
           outputSchema: riskClass === "critical_write"
-            ? domainRuntimeOutputSchema
-            : domainOutputSchema,
+            ? z.union([
+              runtime.output_schema,
+              CONFIRMATION_WIDGET_SCHEMA,
+            ])
+            : runtime.output_schema,
           annotations: annotations(operations),
           _meta: {
             ...(riskClass === "critical_write"
@@ -1225,9 +1294,10 @@ export function registerFullDomainRuntime(input: {
                   retryable: false,
                 });
               }
-              domainConfirmationRouter.register({
+              await domainConfirmationRouter.register({
                 preview_id: preview.preview_id,
                 confirmation_token: preview.confirmation_token,
+                request_id: input.context.request_id,
                 subject_id: input.context.subject_id,
                 club_id: input.context.club_id,
                 capability_version: input.context.capability_version,
@@ -1270,6 +1340,9 @@ export function registerFullDomainRuntime(input: {
     highestRisk(definitionOperations(runtime.definition))
     === "critical_write");
   if (visibleCritical.length > 0) {
+    const confirmedActionOutputSchema = outputUnion(
+      visibleCritical.map((runtime) => runtime.output_schema),
+    );
     const securitySchemes: ToolSecurityScheme[] = [{
       type: "oauth2",
       scopes: ["club.read"],
@@ -1282,7 +1355,7 @@ export function registerFullDomainRuntime(input: {
       title: ACTION_CONFIRM_TOOL_SUMMARY.title,
       description: ACTION_CONFIRM_TOOL_SUMMARY.description,
       inputSchema: ACTION_CONFIRM_INPUT_SCHEMA,
-      outputSchema: domainOutputSchema,
+      outputSchema: confirmedActionOutputSchema,
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -1296,7 +1369,7 @@ export function registerFullDomainRuntime(input: {
     }, async (arguments_) => {
       try {
         const parsed = ACTION_CONFIRM_INPUT_SCHEMA.parse(arguments_);
-        const pending = domainConfirmationRouter.consume({
+        const pending = await domainConfirmationRouter.consume({
           ...parsed,
           context: input.context,
         });

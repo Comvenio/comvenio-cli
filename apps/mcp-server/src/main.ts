@@ -15,7 +15,12 @@ try {
   const shutdown = async (signal: "SIGINT" | "SIGTERM"): Promise<void> => {
     if (shuttingDown) return;
     shuttingDown = true;
-    const drained = await started.server.drain(20_000);
+    let drained = false;
+    try {
+      drained = await started.server.drain(20_000);
+    } finally {
+      await started.state_store.close();
+    }
     console.error(JSON.stringify({ event: "comvenio_mcp_stopped", signal, drained }));
     process.exit(drained ? 0 : 1);
   };
