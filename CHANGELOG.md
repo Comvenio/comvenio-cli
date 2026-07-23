@@ -23,6 +23,10 @@ Die Einträge folgen
   `X-Comvenio-Provider`-Header initialisieren. Authentifizierte Provider werden
   weiterhin aus dem geprüften OAuth-Principal abgeleitet; Client- und
   Provider-Metadaten beeinflussen keine Berechtigungen.
+- `cv_whoami_read` benötigt keine Domain oder Club-ID mehr. ChatGPT, Claude und
+  Codex können den im OAuth-Grant gebundenen Verein ohne Eingabe auflösen und
+  damit öffentliche Termine des verbundenen Vereins abrufen; abweichende
+  Vereins-IDs bleiben fail-closed.
 - Der Railway-Healthcheck nutzt `/health`; die Produktfreigabe bleibt unabhängig
   davon über `/ready` gesperrt, bis Katalog, OAuth und Capability-Gates erfüllt sind.
 - Das Paket ist gegen eine versehentliche Veröffentlichung bei npm geschützt.

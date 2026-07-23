@@ -45,6 +45,10 @@ import {
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
 import { PublicToolSubset } from "../src/public/index.ts";
+import {
+  createRuntimeAccessPolicy,
+  createRuntimeServer,
+} from "../src/runtime-tools.ts";
 import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets, createK13ToolSet } from "../src/tools/index.ts";
 import {
   AsyncJobService,
@@ -473,6 +477,131 @@ describe("Remote MCP runtime", () => {
       expect(capabilityChecks).toEqual([false, true]);
     } finally {
       expect(await server.drain()).toBe(true);
+    }
+  });
+
+  test("resolves the OAuth-bound club without requiring domain or club_id input", async () => {
+    const eventId = "33333333-3333-4333-8333-333333333333";
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      fetch(request) {
+        const url = new URL(request.url);
+        if (request.method !== "GET" || url.pathname !== `/event/public/clubs/${clubId}/events`) {
+          return Response.json({ error: "unexpected_request" }, { status: 404 });
+        }
+        return Response.json([{
+          id: eventId,
+          club_id: clubId,
+          title: "Saisoneröffnung",
+          summary: "Öffentlicher Termin",
+          start: "2026-08-01T10:00:00.000Z",
+          end: "2026-08-01T12:00:00.000Z",
+          timezone: "Europe/Berlin",
+          location: "Vereinsheim",
+          visibility_scope: "public",
+          status: "confirmed",
+        }]);
+      },
+    });
+    const server = new McpHttpServer(runtimeOptions({
+      access_policy: createRuntimeAccessPolicy("development"),
+      server_factory: (context) => createRuntimeServer({
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        context,
+      }),
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 20,
+        method: "tools/list",
+        params: {},
+      }, "token-openai");
+      expect(list.status).toBe(200);
+      const tools = (await list.json() as any).result.tools;
+      const whoami = tools
+        .find((tool: any) => tool.name === "cv_whoami_read");
+      expect(whoami.description).toContain("Ohne Eingabe");
+      expect(whoami.inputSchema).toMatchObject({
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      });
+      expect(whoami.inputSchema.required ?? []).toEqual([]);
+      expect(tools.find((tool: any) => tool.name === "public_events").description)
+        .toContain("cv_whoami_read");
+
+      const call = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 21,
+        method: "tools/call",
+        params: {
+          name: "cv_whoami_read",
+        },
+      }, "token-openai");
+      expect(call.status).toBe(200);
+      const result = await call.json() as any;
+      expect(result.result.isError).not.toBe(true);
+      expect(result.result.structuredContent).toMatchObject({
+        club_id: clubId,
+        provider: "openai",
+        scopes: expect.arrayContaining(["club.read"]),
+      });
+
+      const rejectedInput = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 22,
+        method: "tools/call",
+        params: {
+          name: "cv_whoami_read",
+          arguments: { club_id: clubId },
+        },
+      }, "token-openai");
+      expect(rejectedInput.status).toBe(200);
+      const rejectedInputResult = await rejectedInput.json() as any;
+      expect(rejectedInputResult.result.isError).toBe(true);
+      expect(rejectedInputResult.result.content[0].text).toContain("Input validation error");
+
+      const events = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 23,
+        method: "tools/call",
+        params: {
+          name: "public_events",
+          arguments: {
+            club_id: result.result.structuredContent.club_id,
+            from: "2026-08-01T00:00:00.000Z",
+            to: "2026-08-02T00:00:00.000Z",
+          },
+        },
+      }, "token-openai");
+      expect(events.status).toBe(200);
+      const eventsResult = await events.json() as any;
+      expect(eventsResult.result.isError).not.toBe(true);
+      expect(eventsResult.result.content[0].text).toContain("Saisoneröffnung");
+
+      const mismatch = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 24,
+        method: "tools/call",
+        params: {
+          name: "public_events",
+          arguments: {
+            club_id: otherClubId,
+            from: "2026-08-01T00:00:00.000Z",
+            to: "2026-08-02T00:00:00.000Z",
+          },
+        },
+      }, "token-openai");
+      expect(mismatch.status).toBe(403);
+      expect((await mismatch.json() as any).error.data.code).toBe("TENANT_MISMATCH");
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
     }
   });
 
