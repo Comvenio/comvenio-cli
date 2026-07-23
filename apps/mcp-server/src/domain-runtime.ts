@@ -143,6 +143,7 @@ interface PendingDomainConfirmation {
   operation: string;
   input: JsonValue;
   idempotency_key: string;
+  execution_confirmation_match_hash: string | null;
   expires_at: number;
 }
 
@@ -234,6 +235,7 @@ const pendingDomainConfirmationSchema = z.object({
   operation: z.string().min(1),
   input: z.json(),
   idempotency_key: z.string().min(1),
+  execution_confirmation_match_hash: z.string().length(64).nullable(),
   expires_at: z.number().int().positive(),
 }).strict();
 
@@ -257,6 +259,24 @@ function withoutConfirmation(value: JsonValue): JsonValue {
 
 function digest(value: JsonValue): string {
   return createHash("sha256").update(canonical(withoutConfirmation(value))).digest("hex");
+}
+
+function criticalConfirmationMatchHash(input: {
+  action_id: string;
+  operation: string;
+  subject_id: string;
+  club_id: string;
+  payload: JsonValue;
+  confirmation_token: string;
+}): string {
+  return confirmationMatchHash(
+    input.action_id,
+    input.operation,
+    input.subject_id,
+    input.club_id,
+    digest(input.payload),
+    input.confirmation_token,
+  );
 }
 
 class DomainWriteCoordinator {
@@ -355,6 +375,7 @@ class K7ConfirmationCoordinator {
     payload: JsonValue;
     context: RequestContext;
     confirmation: z.infer<typeof confirmationSchema> | null;
+    server_match_hash: string | null;
     execute: () => Promise<T>;
   }): Promise<T | Record<string, JsonValue>> {
     const subjectId = input.context.subject_id;
@@ -367,7 +388,6 @@ class K7ConfirmationCoordinator {
         retryable: false,
       });
     }
-    const payloadHash = digest(input.payload);
     if (!input.confirmation) {
       const previewId = randomUUID();
       const token = randomBytes(32).toString("base64url");
@@ -376,14 +396,14 @@ class K7ConfirmationCoordinator {
         "k7",
         previewId,
         {
-          match_hash: confirmationMatchHash(
-            input.action_id,
-            input.operation,
-            subjectId,
-            clubId,
-            payloadHash,
-            token,
-          ),
+          match_hash: criticalConfirmationMatchHash({
+            action_id: input.action_id,
+            operation: input.operation,
+            subject_id: subjectId,
+            club_id: clubId,
+            payload: input.payload,
+            confirmation_token: token,
+          }),
         },
         this.#ttlMs,
       );
@@ -413,18 +433,13 @@ class K7ConfirmationCoordinator {
       };
     }
 
-    const stored = await this.stateStore.consumeConfirmation(
-      "k7",
-      input.confirmation.preview_id,
-      confirmationMatchHash(
-        input.action_id,
-        input.operation,
-        subjectId,
-        clubId,
-        payloadHash,
-        input.confirmation.confirmation_token,
-      ),
-    );
+    const stored = input.server_match_hash
+      ? await this.stateStore.consumeConfirmation(
+        "k7",
+        input.confirmation.preview_id,
+        input.server_match_hash,
+      )
+      : null;
     if (!stored) {
       throw createConnectorError({
         code: "CONFIRMATION_MISMATCH",
@@ -1150,6 +1165,7 @@ export function registerFullDomainRuntime(input: {
     parsed_input: JsonValue;
     idempotency_key: string | null;
     confirmation: z.infer<typeof confirmationSchema> | null;
+    execution_confirmation_match_hash: string | null;
   }): Promise<Record<string, JsonValue>> {
     const definition = input_.runtime.definition;
     const k7Critical = !definition.operations
@@ -1190,6 +1206,7 @@ export function registerFullDomainRuntime(input: {
           payload: input_.parsed_input,
           context: input.context,
           confirmation: input_.confirmation,
+          server_match_hash: input_.execution_confirmation_match_hash,
           execute,
         })
       : await execute();
@@ -1273,6 +1290,7 @@ export function registerFullDomainRuntime(input: {
               parsed_input: parsedInput,
               idempotency_key: parsed.idempotency_key ?? null,
               confirmation: null,
+              execution_confirmation_match_hash: null,
             });
             const preview = confirmationPreview(result);
             if (preview) {
@@ -1313,6 +1331,18 @@ export function registerFullDomainRuntime(input: {
                 operation: operation.operation,
                 input: parsedInput,
                 idempotency_key: parsed.idempotency_key,
+                execution_confirmation_match_hash:
+                  !canonicalDefinition.operations
+                    && canonicalDefinition.risk_class === "critical_write"
+                    ? criticalConfirmationMatchHash({
+                        action_id: canonicalDefinition.action_id,
+                        operation: operation.operation,
+                        subject_id: input.context.subject_id,
+                        club_id: input.context.club_id,
+                        payload: parsedInput,
+                        confirmation_token: preview.confirmation_token,
+                      })
+                    : null,
                 expires_at: Date.parse(preview.expires_at),
               });
               return confirmationWidgetResult({
@@ -1423,6 +1453,8 @@ export function registerFullDomainRuntime(input: {
             preview_id: parsed.preview_id,
             confirmation_token: parsed.confirmation_token,
           },
+          execution_confirmation_match_hash:
+            pending.execution_confirmation_match_hash,
         });
         if (confirmationPreview(result)) {
           throw createConnectorError({
