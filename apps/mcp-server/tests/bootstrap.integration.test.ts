@@ -6,6 +6,7 @@ import {
 } from "../src/bootstrap.ts";
 import { InMemoryDomainStateStore } from "../src/domain-state-store.ts";
 import type { McpHttpServer } from "../src/http/server.ts";
+import { mcpStartupFailureRecord } from "../src/startup-diagnostics.ts";
 import { NEWS_WIDGET_ASSET_PATH } from "../src/widgets/news/resource.ts";
 
 let activeServer: McpHttpServer | null = null;
@@ -17,6 +18,37 @@ afterEach(async () => {
 });
 
 describe("production MCP process bootstrap", () => {
+  test("classifies startup failures without logging secrets or connection targets", () => {
+    expect(mcpStartupFailureRecord(
+      new Error("MCP_SHARED_STATE_REDIS_URL ist für Production erforderlich."),
+    )).toEqual({
+      event: "comvenio_mcp_start_failed",
+      reason: "invalid_runtime_configuration",
+      configuration_field: "MCP_SHARED_STATE_REDIS_URL",
+    });
+
+    const redisError = Object.assign(
+      new Error("connect ECONNREFUSED redis.internal:6379"),
+      { code: "ECONNREFUSED" },
+    );
+    expect(mcpStartupFailureRecord(redisError)).toEqual({
+      event: "comvenio_mcp_start_failed",
+      reason: "shared_state_unavailable",
+      error_code: "ECONNREFUSED",
+    });
+    expect(JSON.stringify(mcpStartupFailureRecord(redisError))).not.toContain("redis.internal");
+
+    const listenerError = Object.assign(
+      new Error("listen EADDRINUSE: address already in use"),
+      { code: "EADDRINUSE" },
+    );
+    expect(mcpStartupFailureRecord(listenerError)).toEqual({
+      event: "comvenio_mcp_start_failed",
+      reason: "listener_unavailable",
+      error_code: "EADDRINUSE",
+    });
+  });
+
   test("derives a strict production host allowlist and Railway port", () => {
     expect(readMcpProcessConfig({
       PORT: "8080",

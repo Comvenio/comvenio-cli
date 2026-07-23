@@ -1,4 +1,5 @@
 import { startMcpDeploymentCandidate } from "./bootstrap.ts";
+import { mcpStartupFailureRecord } from "./startup-diagnostics.ts";
 
 try {
   const started = await startMcpDeploymentCandidate(process.env);
@@ -27,10 +28,7 @@ try {
 
   process.once("SIGINT", () => void shutdown("SIGINT"));
   process.once("SIGTERM", () => void shutdown("SIGTERM"));
-} catch {
-  console.error(JSON.stringify({
-    event: "comvenio_mcp_start_failed",
-    reason: "invalid_or_unavailable_runtime_configuration",
-  }));
+} catch (error) {
+  console.error(JSON.stringify(mcpStartupFailureRecord(error)));
   process.exit(1);
 }

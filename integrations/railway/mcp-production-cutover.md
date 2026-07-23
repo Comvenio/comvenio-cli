@@ -39,9 +39,20 @@ MCP_PROD_ALLOWED_HOSTS=mcp.comvenio.app
 MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
 INTERNAL_API_KEY=<identischer interner Key wie im auth-service>
 MCP_CIMD_CLIENT_PINS_JSON=<CIMD-Pin mit allowed_scopes ["club.read","task.read"]>
+MCP_SHARED_STATE_REDIS_URL=<private redis://- oder rediss://-URL der Railway-Redis-Instanz>
+MCP_SHARED_STATE_ENCRYPTION_KEY=<separater base64url-kodierter 32-Byte-Schlüssel>
+MCP_RELEASE_SCOPE=full_connector_v1
 ```
 
 `RAILWAY_PUBLIC_DOMAIN` wird von Railway bereitgestellt und nur für Host-Allowlist sowie `/health` verwendet. Nach dem Deploy müssen direkte Railway-Aufrufe auf `/.well-known/*`, `/ready`, `/mcp` und `/widgets/*` ohne Edge-Secret mit 403 enden. `GET /health` bleibt erreichbar.
+
+`MCP_SHARED_STATE_REDIS_URL` und `MCP_SHARED_STATE_ENCRYPTION_KEY` sind in
+Production ein Pflichtpaar. Fehlt einer der Werte, ist die Redis-URL ungültig,
+ist der decodierte Schlüssel nicht exakt 32 Byte lang oder ist Redis beim
+Prozessstart nicht erreichbar, beendet sich der MCP-Prozess bewusst fail-closed.
+Der Schlüssel wird beispielsweise als 43 Zeichen langer, ungepaddeter
+base64url-Wert gespeichert und darf weder aus `MCP_EDGE_SHARED_SECRET` noch aus
+`INTERNAL_API_KEY` abgeleitet werden.
 
 ## 3. Railway – Service `auth-service`
 
@@ -84,4 +95,11 @@ Alle neu ausgestellten Connector-Access-Tokens müssen anschließend `aud=https:
 - Worker ohne gültiges Secret: `mcp.comvenio.app` antwortet 503 und kontaktiert Railway nicht.
 - Direkter Origin-Aufruf ohne Secret: MCP-Server antwortet außerhalb `/health` mit 403.
 - OAuth-Resource-Mismatch: Connector-Verbindung stoppen; `MCP_PUBLIC_ORIGIN` in `auth-service` und `comvenio-cli` auf exakte Gleichheit prüfen.
+- Container beendet sich vor `/health`: im Railway-Service `comvenio-cli` den
+  JSON-Eintrag `comvenio_mcp_start_failed` prüfen. Bei
+  `invalid_runtime_configuration` nennt `configuration_field` ausschließlich
+  den fehlenden oder ungültigen Variablennamen. `shared_state_unavailable`
+  bedeutet, dass Redis nicht erreichbar ist oder die Authentifizierung
+  ablehnt. Geheimwerte, interne Hosts und Verbindungsadressen werden nicht
+  protokolliert.
 - Fehlerhafter Release: vorherige erfolgreiche Railway-Deployments beider Services wiederherstellen und ihre Variablen gemeinsam zurücksetzen; anschließend den vorherigen Worker-Deploy wiederherstellen. Kein einzelner Teil-Rollback mit gemischten Audiences.
