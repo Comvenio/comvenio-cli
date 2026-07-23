@@ -42,6 +42,73 @@ export interface ConnectorEvalReport {
   blockers: string[];
 }
 
+export type ResponseQualityProvider = "openai" | "anthropic";
+export type ResponseQualityActorState =
+  | "anonymous"
+  | "connected_member"
+  | "connected_manager";
+export type ResponseQualityIntentClass =
+  | "direct_tool"
+  | "club_agent_if_released";
+export type ForbiddenAssistantBehavior =
+  | "ask_for_club_id_when_connected"
+  | "ask_for_domain_when_connected"
+  | "claim_tool_missing_when_advertised"
+  | "expose_internal_identifier"
+  | "infer_or_override_rbac"
+  | "use_master_admin_log_service"
+  | "claim_success_without_tool_result"
+  | "mutate_without_confirmation"
+  | "target_other_user_reminder"
+  | "hallucinate_non_empty_result"
+  | "invoke_unreleased_club_agent";
+export type ResponseContract =
+  | "grounded_list_or_explicit_empty"
+  | "self_only_reminder_result"
+  | "actionable_scope_reconnect"
+  | "actionable_permission_denial"
+  | "confirmation_preview_then_result"
+  | "governed_agent_turn_or_actionable_denial"
+  | "public_minimized_list"
+  | "connection_identity_summary";
+
+export interface ResponseQualityScenario {
+  id: string;
+  release_scopes: ConnectorReleaseScope[];
+  actor_state: ResponseQualityActorState;
+  intent_class: ResponseQualityIntentClass;
+  prompt: string;
+  required_tool_sequence: string[];
+  forbidden_behaviors: ForbiddenAssistantBehavior[];
+  response_contract: ResponseContract;
+}
+
+export interface ResponseQualityResult {
+  provider: ResponseQualityProvider;
+  scenario_id: string;
+  tool_selection: boolean;
+  grounded_response: boolean;
+  actionable_error: boolean;
+  forbidden_behaviors_absent: boolean;
+  privacy_preserved: boolean;
+  synthetic_data_only: boolean;
+  evidence_ref: string;
+}
+
+export interface ResponseQualityReport {
+  schema_version: "1.0.0";
+  suite: "ResponseQualitySuite";
+  release_scope: ConnectorReleaseScope;
+  runtime_tool_catalog_sha256: string;
+  providers: [ResponseQualityProvider, ResponseQualityProvider];
+  scenarios: ResponseQualityScenario[];
+  expected_result_count: number;
+  tested_result_count: number;
+  results: ResponseQualityResult[];
+  status: "pass" | "blocked";
+  blockers: string[];
+}
+
 export type TenantScenarioId = "cross_club" | "cross_user" | "stale_capability" | "token_replay" | "file_isolation" | "backend_denial" | "cached_tool_recheck" | "grant_revocation";
 
 export interface TenantScenarioResult {
@@ -166,6 +233,7 @@ export interface ReleaseGateReport {
   generated_at: string;
   evidence: ReleaseEvidence;
   eval: ConnectorEvalReport;
+  response_quality: ResponseQualityReport;
   tenant_isolation: TenantIsolationReport;
   privacy: PrivacyThreatModel;
   pilot: PilotProtocol;

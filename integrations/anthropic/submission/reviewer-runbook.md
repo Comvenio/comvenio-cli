@@ -58,5 +58,14 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
   noch gültigen Intent einmalig ausführen; Replay und Rechteverlust werden
   fail-closed abgelehnt.
 - Externe News-Links sind nicht vorab freigegeben und behalten deshalb Claudes Bestätigungsdialog.
+- Alle Claude-Fälle aus
+  `integrations/release/response-quality-suite.json` werden ausgeführt. Eine
+  aktive Verbindung darf keine erneute Club-ID- oder Domain-Abfrage auslösen.
+  Leere Ergebnisse werden ausdrücklich als leer benannt; fehlende Scopes und
+  Backend-Ablehnungen bleiben handlungsfähig und frei von internen Kennungen.
+- `cv_club_agent_converse` darf nur bei gültigem, signiertem
+  Capability-Release für Verein und Kanal sichtbar sein. Ohne Freigabe darf
+  Claude die Fähigkeit weder behaupten noch einen ungeprüften Agentenpfad
+  aufrufen.
 
 Ein offenes Finding blockiert nur die Claude-Publikation. Der ChatGPT-Freigabestatus wird dadurch nicht automatisch verändert.

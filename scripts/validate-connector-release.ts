@@ -17,6 +17,7 @@ import {
   CONNECTOR_EVAL_REPORT_SCHEMA,
   PILOT_PROTOCOL_SCHEMA,
   PRIVACY_THREAT_MODEL_SCHEMA,
+  RESPONSE_QUALITY_REPORT_SCHEMA,
   RELEASE_GATE_REPORT_SCHEMA,
   SUPPORT_RUNBOOK_SCHEMA,
   TENANT_ISOLATION_REPORT_SCHEMA,
@@ -30,6 +31,7 @@ const writeMode = process.argv.includes("--write");
 
 const fileNames = {
   eval: "connector-eval-suite.json",
+  response_quality: "response-quality-suite.json",
   tenant_isolation: "tenant-isolation-suite.json",
   privacy: "privacy-threat-model.json",
   pilot: "pilot-protocol.json",
@@ -85,6 +87,7 @@ for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "
 }
 
 const evalReport = CONNECTOR_EVAL_REPORT_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.eval)));
+const responseQuality = RESPONSE_QUALITY_REPORT_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.response_quality)));
 const tenantIsolation = TENANT_ISOLATION_REPORT_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.tenant_isolation)));
 const privacy = PRIVACY_THREAT_MODEL_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.privacy)));
 const pilot = PILOT_PROTOCOL_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.pilot)));
@@ -113,6 +116,7 @@ for (const item of orderedTraceability) {
 }
 
 assertSame(releaseGate.eval, evalReport, "ReleaseGateReport und ConnectorEvalSuite sind nicht synchron.");
+assertSame(releaseGate.response_quality, responseQuality, "ReleaseGateReport und ResponseQualitySuite sind nicht synchron.");
 assertSame(releaseGate.tenant_isolation, tenantIsolation, "ReleaseGateReport und TenantIsolationSuite sind nicht synchron.");
 assertSame(releaseGate.privacy, privacy, "ReleaseGateReport und PrivacyThreatModel sind nicht synchron.");
 assertSame(releaseGate.pilot, pilot, "ReleaseGateReport und PilotProtocol sind nicht synchron.");
@@ -121,6 +125,7 @@ const recomputed = buildReleaseGateReport({
   generated_at: releaseGate.generated_at,
   evidence: releaseGate.evidence,
   eval: evalReport,
+  response_quality: responseQuality,
   tenant_isolation: tenantIsolation,
   privacy,
   pilot,
@@ -152,6 +157,10 @@ if (releaseGate.evidence.runtime_tool_catalog_sha256 !== runtimeCatalog.tool_cat
   || releaseGate.evidence.published_widget_contract_count !== runtimeCatalog.widget_contract_count
   || releaseGate.evidence.widget_resource_catalog_sha256 !== runtimeCatalog.widget_catalog_sha256) {
   throw new Error("Release-Evidence ist nicht exakt an den Tool-/Widget-Katalog gebunden.");
+}
+if (responseQuality.runtime_tool_catalog_sha256 !== runtimeCatalog.tool_catalog_sha256
+  || responseQuality.release_scope !== releaseGate.evidence.release_scope) {
+  throw new Error("ResponseQualitySuite ist nicht exakt an Release-Scope und Runtime-Katalog gebunden.");
 }
 if (releaseGate.evidence.published_runtime_catalog_verified) {
   assertSame(evalToolNames, runtimeToolNames, "ConnectorEvalSuite deckt nicht exakt die produktiv veröffentlichten Runtime-Tools ab.");
@@ -195,7 +204,15 @@ if (pilot.status !== "passed" && releaseGate.decision !== "BLOCKED") throw new E
 if (releaseGate.findings.some((finding) => finding.status === "open" && ["critical", "high"].includes(finding.severity))
   && releaseGate.decision !== "BLOCKED") throw new Error("Critical/High-Findings dürfen nicht freigegeben werden.");
 
-const serialized = JSON.stringify({ evalReport, tenantIsolation, privacy, pilot, releaseGate, support });
+const serialized = JSON.stringify({
+  evalReport,
+  responseQuality,
+  tenantIsolation,
+  privacy,
+  pilot,
+  releaseGate,
+  support,
+});
 if (/access[_-]?token|refresh[_-]?token|password|MITGLIED-GEHEIM/iu.test(serialized)) {
   throw new Error("Releaseartefakte enthalten ein mögliches Geheimnis.");
 }

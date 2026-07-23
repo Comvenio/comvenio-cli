@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "243c942eb9be6a782df0e1b9d80c5472e5e86986e5979152ad7cdee45f7a9127",
+  "runtime_tool_catalog_sha256": "352a403cb4c1fdba81bf5b26514a7c8dae5f39927778167472dcd7cc57a4f278",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -4302,6 +4302,158 @@
         "secret_or_token_echo_forbidden": true,
         "delegated_capability_confirmation": false,
         "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_activate",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_purchase",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_template_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_template_deactivate",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_template_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_shopping_procurement_templates",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {

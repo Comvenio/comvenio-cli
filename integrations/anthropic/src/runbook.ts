@@ -19,6 +19,10 @@ export function buildClaudeReviewerRunbook(): ClaudeReviewerRunbook {
       { id: "widgets", title: "Kalender- und News-App", account_role: "manager", surfaces: allSurfaces, expected: "Gemeinsame Builds rendern responsiv und ohne Produktivdaten." },
       { id: "public-minimization", title: "Public Read bleibt minimiert", account_role: "anonymous", surfaces: allSurfaces, expected: "Nur veröffentlichte Allowlist-Felder; Entwürfe, interne IDs und personenbezogene Daten fehlen." },
       { id: "tool-sync", title: "Jedes Tool im Inspector und als Custom Connector", account_role: "manager", surfaces: allSurfaces, expected: "Happy Path und Permission-Denial stimmen mit Tooltitel, Schema und Annotationen überein." },
+      { id: "connected-context", title: "Verbundener Verein ohne erneute Kennung", account_role: "member", surfaces: allSurfaces, expected: "Bei „mein Verein“ wird cv_whoami_read ohne Eingabe genutzt; Claude fragt weder Club-ID noch Domain erneut ab." },
+      { id: "personal-reminder", title: "Persönliche Aufgaben-Erinnerung", account_role: "member", surfaces: allSurfaces, expected: "Aufgabe wird mit cv_my_tasks_read ermittelt und die Erinnerung ausschließlich für das OAuth-Subjekt ohne Empfänger-ID gesetzt." },
+      { id: "grounded-empty-error", title: "Leere Ergebnisse und sichere Ablehnungen", account_role: "member", surfaces: allSurfaces, expected: "Leere Listen werden wahrheitsgemäß benannt; fehlender Scope oder Backend-403 führt zu einer handlungsfähigen Antwort ohne interne Kennungen." },
+      { id: "club-agent-gate", title: "Club-Agent nur mit Freigabeartefakt", account_role: "manager", surfaces: allSurfaces, expected: "Komplexe Orchestrierung nutzt cv_club_agent_converse nur bei gültigem Capability-Release; sonst folgt eine handlungsfähige Ablehnung." },
     ],
   });
 }

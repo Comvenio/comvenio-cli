@@ -38,6 +38,62 @@ export const CONNECTOR_EVAL_REPORT_SCHEMA = z.object({
   blockers: z.array(z.string()),
 }).strict();
 
+const responseQualityScenario = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/u),
+  release_scopes: z.array(z.enum(CONNECTOR_RELEASE_SCOPE_VALUES)).min(1),
+  actor_state: z.enum(["anonymous", "connected_member", "connected_manager"]),
+  intent_class: z.enum(["direct_tool", "club_agent_if_released"]),
+  prompt: z.string().trim().min(1),
+  required_tool_sequence: z.array(z.string().regex(/^[a-z0-9_.:-]{1,64}$/u)),
+  forbidden_behaviors: z.array(z.enum([
+    "ask_for_club_id_when_connected",
+    "ask_for_domain_when_connected",
+    "claim_tool_missing_when_advertised",
+    "expose_internal_identifier",
+    "infer_or_override_rbac",
+    "use_master_admin_log_service",
+    "claim_success_without_tool_result",
+    "mutate_without_confirmation",
+    "target_other_user_reminder",
+    "hallucinate_non_empty_result",
+    "invoke_unreleased_club_agent",
+  ])).min(1),
+  response_contract: z.enum([
+    "grounded_list_or_explicit_empty",
+    "self_only_reminder_result",
+    "actionable_scope_reconnect",
+    "actionable_permission_denial",
+    "confirmation_preview_then_result",
+    "governed_agent_turn_or_actionable_denial",
+    "public_minimized_list",
+    "connection_identity_summary",
+  ]),
+}).strict();
+
+export const RESPONSE_QUALITY_REPORT_SCHEMA = z.object({
+  schema_version: z.literal("1.0.0"),
+  suite: z.literal("ResponseQualitySuite"),
+  release_scope: z.enum(CONNECTOR_RELEASE_SCOPE_VALUES),
+  runtime_tool_catalog_sha256: z.string().regex(/^[a-f0-9]{64}$/u),
+  providers: z.tuple([z.literal("openai"), z.literal("anthropic")]),
+  scenarios: z.array(responseQualityScenario).min(1),
+  expected_result_count: z.number().int().positive(),
+  tested_result_count: z.number().int().nonnegative(),
+  results: z.array(z.object({
+    provider: z.enum(["openai", "anthropic"]),
+    scenario_id: z.string().regex(/^[a-z0-9-]+$/u),
+    tool_selection: z.boolean(),
+    grounded_response: z.boolean(),
+    actionable_error: z.boolean(),
+    forbidden_behaviors_absent: z.boolean(),
+    privacy_preserved: z.boolean(),
+    synthetic_data_only: z.boolean(),
+    evidence_ref: evidenceRef,
+  }).strict()),
+  status: z.enum(["pass", "blocked"]),
+  blockers: z.array(z.string()),
+}).strict();
+
 export const TENANT_ISOLATION_REPORT_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   suite: z.literal("TenantIsolationSuite"),
@@ -94,6 +150,7 @@ export const PILOT_PROTOCOL_SCHEMA = z.object({
 }).strict();
 
 const evalSchema = CONNECTOR_EVAL_REPORT_SCHEMA;
+const responseQualitySchema = RESPONSE_QUALITY_REPORT_SCHEMA;
 const tenantSchema = TENANT_ISOLATION_REPORT_SCHEMA;
 const privacySchema = PRIVACY_THREAT_MODEL_SCHEMA;
 const pilotSchema = PILOT_PROTOCOL_SCHEMA;
@@ -143,6 +200,7 @@ export const RELEASE_GATE_REPORT_SCHEMA = z.object({
     germany_first: z.boolean(),
   }).strict(),
   eval: evalSchema,
+  response_quality: responseQualitySchema,
   tenant_isolation: tenantSchema,
   privacy: privacySchema,
   pilot: pilotSchema,

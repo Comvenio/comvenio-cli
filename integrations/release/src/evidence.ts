@@ -4,6 +4,7 @@ import { publishedRuntimeCatalog } from "../../../apps/mcp-server/src/runtime-to
 import { ConnectorEvalSuite } from "./eval.ts";
 import { buildPilotProtocol } from "./pilot.ts";
 import { buildPrivacyThreatModel } from "./privacy.ts";
+import { ResponseQualitySuite } from "./response-quality.ts";
 import { buildReleaseGateReport } from "./release-gate.ts";
 import { buildSupportRunbook } from "./support.ts";
 import { TenantIsolationSuite } from "./tenant-isolation.ts";
@@ -12,6 +13,7 @@ import type {
   PilotProtocol,
   PrivacyThreatModel,
   ProviderGateResult,
+  ResponseQualityReport,
   ReleaseEvidence,
   ReleaseGateReport,
   ReleaseSignature,
@@ -38,6 +40,18 @@ function buildPendingConnectorEvalReport(
 
 function buildPendingTenantIsolationReport(): TenantIsolationReport {
   return new TenantIsolationSuite().evaluate([]);
+}
+
+function buildPendingResponseQualityReport(
+  releaseScope: ConnectorReleaseScope,
+): ResponseQualityReport {
+  const catalog = publishedRuntimeCatalog("production", releaseScope);
+  return new ResponseQualitySuite().evaluate({
+    release_scope: releaseScope,
+    runtime_tool_catalog_sha256: catalog.tool_catalog_sha256,
+    runtime_tool_names: catalog.tool_names,
+    results: [],
+  });
 }
 
 export function buildPendingReleaseEvidence(
@@ -89,6 +103,7 @@ export function buildPendingProviderGates(): [ProviderGateResult, ProviderGateRe
 
 export interface ReleaseArtifactSet {
   eval: ConnectorEvalReport;
+  response_quality: ResponseQualityReport;
   tenant_isolation: TenantIsolationReport;
   privacy: PrivacyThreatModel;
   pilot: PilotProtocol;
@@ -100,11 +115,13 @@ export function buildPendingReleaseArtifacts(
   releaseScope: ConnectorReleaseScope,
 ): ReleaseArtifactSet {
   const evalReport = buildPendingConnectorEvalReport(releaseScope);
+  const responseQuality = buildPendingResponseQualityReport(releaseScope);
   const tenantIsolation = buildPendingTenantIsolationReport();
   const privacy = buildPrivacyThreatModel();
   const pilot = buildPilotProtocol();
   return {
     eval: evalReport,
+    response_quality: responseQuality,
     tenant_isolation: tenantIsolation,
     privacy,
     pilot,
@@ -112,6 +129,7 @@ export function buildPendingReleaseArtifacts(
       generated_at: RELEASE_GENERATED_AT,
       evidence: buildPendingReleaseEvidence(releaseScope),
       eval: evalReport,
+      response_quality: responseQuality,
       tenant_isolation: tenantIsolation,
       privacy,
       pilot,

@@ -7,12 +7,15 @@ import {
   CONNECTOR_EVAL_REPORT_SCHEMA,
   PILOT_PROTOCOL_SCHEMA,
   PRIVACY_THREAT_MODEL_SCHEMA,
+  RESPONSE_QUALITY_REPORT_SCHEMA,
   RELEASE_GATE_REPORT_SCHEMA,
+  RESPONSE_QUALITY_SCENARIOS,
   REQUIRED_PILOT_SCENARIOS,
   REQUIRED_TENANT_SCENARIOS,
   SUPPORT_RUNBOOK_SCHEMA,
   TENANT_ISOLATION_REPORT_SCHEMA,
   ConnectorEvalSuite,
+  ResponseQualitySuite,
   TenantIsolationSuite,
   assertProviderReleaseReady,
   buildPendingReleaseArtifacts,
@@ -23,6 +26,7 @@ import {
   type ProviderGateResult,
   type ConnectorEvalToolResult,
   type ReleaseEvidence,
+  type ResponseQualityResult,
   type ReleaseSignature,
   type SecurityPrivacyFinding,
   type TenantScenarioResult,
@@ -144,6 +148,27 @@ function testedTenantIsolationReport() {
   return new TenantIsolationSuite().evaluate(results);
 }
 
+function testedResponseQualityReport() {
+  const results: ResponseQualityResult[] = ["openai", "anthropic"]
+    .flatMap((provider) => RESPONSE_QUALITY_SCENARIOS.map((scenario) => ({
+      provider: provider as ResponseQualityResult["provider"],
+      scenario_id: scenario.id,
+      tool_selection: true,
+      grounded_response: true,
+      actionable_error: true,
+      forbidden_behaviors_absent: true,
+      privacy_preserved: true,
+      synthetic_data_only: true,
+      evidence_ref: "apps/mcp-server/tests/mobile-widgets.visual.test.ts",
+    })));
+  return new ResponseQualitySuite().evaluate({
+    release_scope: releaseScope,
+    runtime_tool_catalog_sha256: runtimeCatalog.tool_catalog_sha256,
+    runtime_tool_names: runtimeCatalog.tool_names,
+    results,
+  });
+}
+
 function passedPilot() {
   return buildPilotProtocol({
     club_reference: "pilot-club:auftraggeber-verein",
@@ -203,12 +228,14 @@ function signedRelease(): ReleaseSignature[] {
 
 function release(input: { pilot?: ReturnType<typeof passedPilot>; findings?: SecurityPrivacyFinding[]; provider_gates?: [ProviderGateResult, ProviderGateResult] } = {}) {
   const evalReport = testedConnectorEvalReport();
+  const responseQuality = testedResponseQualityReport();
   const tenant = testedTenantIsolationReport();
   const privacy = buildPrivacyThreatModel();
   return buildReleaseGateReport({
     generated_at: "2026-07-08T11:00:00.000Z",
     evidence: readyEvidence(),
     eval: evalReport,
+    response_quality: responseQuality,
     tenant_isolation: tenant,
     privacy,
     pilot: input.pilot ?? passedPilot(),
@@ -222,10 +249,11 @@ function release(input: { pilot?: ReturnType<typeof passedPilot>; findings?: Sec
 }
 
 describe("K23 Connector quality, privacy, pilot and release gates", () => {
-  test("TC-01/TC-02: all six versioned entities are built, statically stored and schema-valid", () => {
+  test("TC-01/TC-02: all seven versioned entities are built, statically stored and schema-valid", () => {
     const pending = buildPendingReleaseArtifacts(releaseScope);
     const stored = {
       eval: CONNECTOR_EVAL_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "connector-eval-suite.json"))),
+      response_quality: RESPONSE_QUALITY_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "response-quality-suite.json"))),
       tenant_isolation: TENANT_ISOLATION_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "tenant-isolation-suite.json"))),
       privacy: PRIVACY_THREAT_MODEL_SCHEMA.parse(json(resolve(releaseRoot, "privacy-threat-model.json"))),
       pilot: PILOT_PROTOCOL_SCHEMA.parse(json(resolve(releaseRoot, "pilot-protocol.json"))),
@@ -233,8 +261,8 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
       support: SUPPORT_RUNBOOK_SCHEMA.parse(json(resolve(releaseRoot, "support-runbook.json"))),
     };
     expect(stored).toEqual(pending);
-    expect([pending.eval.suite, pending.tenant_isolation.suite, pending.privacy.entity, pending.pilot.entity, pending.release_gate.entity, pending.support.entity]).toEqual([
-      "ConnectorEvalSuite", "TenantIsolationSuite", "PrivacyThreatModel", "PilotProtocol", "ReleaseGateReport", "SupportRunbook",
+    expect([pending.eval.suite, pending.response_quality.suite, pending.tenant_isolation.suite, pending.privacy.entity, pending.pilot.entity, pending.release_gate.entity, pending.support.entity]).toEqual([
+      "ConnectorEvalSuite", "ResponseQualitySuite", "TenantIsolationSuite", "PrivacyThreatModel", "PilotProtocol", "ReleaseGateReport", "SupportRunbook",
     ]);
     expect(pending.release_gate).toMatchObject({ decision: "BLOCKED", common_gate: "blocked", submittable_providers: [] });
     const traceability = json(resolve(releaseRoot, "rts-task-commits.json")) as { tasks: Array<{ key: string; task_id: string; commit: string }> };
@@ -263,6 +291,33 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     const mismatched = new ConnectorEvalSuite().evaluate({ candidate_tool_names: ["cv_schema_read"], results: [] });
     expect(mismatched).toMatchObject({ status: "blocked", blockers: ["TOOL_EVAL_PARITY"] });
     expect(new TenantIsolationSuite().evaluate([])).toMatchObject({ status: "blocked", blockers: ["TENANT_SCENARIO_PARITY"] });
+  });
+
+  test("TC-03a: OpenAI and Anthropic must pass every connected-context response scenario", () => {
+    const report = testedResponseQualityReport();
+    expect(report).toMatchObject({
+      status: "pass",
+      expected_result_count: RESPONSE_QUALITY_SCENARIOS.length * 2,
+      tested_result_count: RESPONSE_QUALITY_SCENARIOS.length * 2,
+      blockers: [],
+    });
+    expect(report.scenarios.find((scenario) =>
+      scenario.id === "connected-personal-tasks")).toMatchObject({
+      required_tool_sequence: ["cv_my_tasks_read"],
+      forbidden_behaviors: expect.arrayContaining([
+        "ask_for_club_id_when_connected",
+        "ask_for_domain_when_connected",
+      ]),
+    });
+    expect(new ResponseQualitySuite().evaluate({
+      release_scope: releaseScope,
+      runtime_tool_catalog_sha256: runtimeCatalog.tool_catalog_sha256,
+      runtime_tool_names: runtimeCatalog.tool_names,
+      results: [],
+    })).toMatchObject({
+      status: "blocked",
+      blockers: ["RESPONSE_EVAL_PARITY"],
+    });
   });
 
   test("TC-04: pilot boundaries enforce seven days, 30 successes, 95 percent and every denial scenario", () => {
@@ -324,6 +379,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
       generated_at: base.generated_at,
       evidence: base.evidence,
       eval: base.eval,
+      response_quality: base.response_quality,
       tenant_isolation: base.tenant_isolation,
       privacy: base.privacy,
       pilot: base.pilot,

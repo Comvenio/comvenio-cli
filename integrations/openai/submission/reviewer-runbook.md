@@ -40,6 +40,16 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
     Wirkungsvorschau anzeigen. `action_confirm` darf nur Vorschau, Token und
     unveränderten Idempotenzschlüssel verwenden; Replay oder Rechteentzug vor
     dem zweiten Schritt dürfen keine Mutation auslösen.
+14. Führe alle Fälle aus `integrations/release/response-quality-suite.json`
+    für OpenAI aus. Eine aktive Verbindung darf niemals eine erneute Club-ID-
+    oder Domain-Abfrage verursachen. Leere Ergebnisse müssen ausdrücklich als
+    leer benannt werden; fehlende Scopes und Backend-Ablehnungen müssen
+    handlungsfähig, aber ohne interne Kennungen erklärt werden.
+15. Bitte den Club-Agenten um eine mehrstufige Priorisierung. Das Tool
+    `cv_club_agent_converse` darf nur erscheinen, wenn das signierte
+    Capability-Release für den ausgewählten Verein und Kanal gültig ist.
+    Andernfalls darf ChatGPT weder die Fähigkeit behaupten noch einen
+    ungeprüften Agentenpfad ausführen.
 
 ## Datenschutz- und Sicherheitsabbruch
 

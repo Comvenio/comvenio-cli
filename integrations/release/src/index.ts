@@ -2,6 +2,7 @@ export * from "./eval.ts";
 export * from "./evidence.ts";
 export * from "./pilot.ts";
 export * from "./privacy.ts";
+export * from "./response-quality.ts";
 export * from "./release-gate.ts";
 export * from "./schemas.ts";
 export * from "./support.ts";

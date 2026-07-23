@@ -5,6 +5,7 @@ import type {
   PilotProtocol,
   PrivacyThreatModel,
   ProviderGateResult,
+  ResponseQualityReport,
   ReleaseEvidence,
   ReleaseGateReport,
   ReleaseSignature,
@@ -62,6 +63,7 @@ export function buildReleaseGateReport(input: {
   generated_at: string;
   evidence: ReleaseEvidence;
   eval: ConnectorEvalReport;
+  response_quality: ResponseQualityReport;
   tenant_isolation: TenantIsolationReport;
   privacy: PrivacyThreatModel;
   pilot: PilotProtocol;
@@ -71,6 +73,9 @@ export function buildReleaseGateReport(input: {
 }): ReleaseGateReport {
   const blockers = evidenceBlockers(input.evidence);
   if (input.eval.status !== "pass") blockers.push("CONNECTOR_EVAL");
+  if (input.response_quality.status !== "pass") {
+    blockers.push("RESPONSE_QUALITY");
+  }
   if (input.tenant_isolation.status !== "pass") blockers.push("TENANT_ISOLATION");
   if (input.privacy.status !== "approved") blockers.push("PRIVACY_THREAT_MODEL");
   if (input.pilot.status !== "passed") blockers.push("PILOT_PROTOCOL");
@@ -93,6 +98,7 @@ export function buildReleaseGateReport(input: {
     generated_at: input.generated_at,
     evidence: input.evidence,
     eval: input.eval,
+    response_quality: input.response_quality,
     tenant_isolation: input.tenant_isolation,
     privacy: input.privacy,
     pilot: input.pilot,
