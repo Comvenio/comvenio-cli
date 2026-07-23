@@ -1,16 +1,22 @@
+import { writeSync } from "node:fs";
+
 import { startMcpDeploymentCandidate } from "./bootstrap.ts";
-import { mcpStartupFailureRecord } from "./startup-diagnostics.ts";
+import { serializeMcpStartupFailure } from "./startup-diagnostics.ts";
+
+function writeLifecycleRecord(record: object): void {
+  writeSync(2, `${JSON.stringify(record)}\n`);
+}
 
 try {
   const started = await startMcpDeploymentCandidate(process.env);
 
-  console.error(JSON.stringify({
+  writeLifecycleRecord({
     event: "comvenio_mcp_started",
     environment: started.config.environment,
     host: started.config.host,
     port: started.config.port,
     readiness: "blocked_until_catalog_and_auth_release_gates_pass",
-  }));
+  });
 
   let shuttingDown = false;
   const shutdown = async (signal: "SIGINT" | "SIGTERM"): Promise<void> => {
@@ -22,13 +28,13 @@ try {
     } finally {
       await started.state_store.close();
     }
-    console.error(JSON.stringify({ event: "comvenio_mcp_stopped", signal, drained }));
+    writeLifecycleRecord({ event: "comvenio_mcp_stopped", signal, drained });
     process.exit(drained ? 0 : 1);
   };
 
   process.once("SIGINT", () => void shutdown("SIGINT"));
   process.once("SIGTERM", () => void shutdown("SIGTERM"));
 } catch (error) {
-  console.error(JSON.stringify(mcpStartupFailureRecord(error)));
-  process.exit(1);
+  writeSync(2, serializeMcpStartupFailure(error));
+  process.exitCode = 1;
 }

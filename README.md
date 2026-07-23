@@ -120,8 +120,19 @@ MCP_PROD_ALLOWED_HOSTS=mcp.comvenio.app
 MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
 INTERNAL_API_KEY=<identischer interner Key wie im Auth-Service>
 MCP_CIMD_CLIENT_PINS_JSON=<reviewte Client-IDs, Fingerprints und allowed_scopes>
+MCP_SHARED_STATE_REDIS_URL=<Railway-Referenz auf Redis-Data.REDIS_URL>
+MCP_SHARED_STATE_ENCRYPTION_KEY=<separater, ungepaddeter 32-Byte-Base64URL-Schlüssel>
 MCP_RELEASE_SCOPE=full_connector_v1
 ```
+
+Die letzten drei Variablen sind ein verpflichtendes Deployment-Gate des
+produktiven Shared-State- und Release-Scope-Vertrags. Sie werden unter
+**Railway → Projekt `comvenio` → Environment `production` → Service
+`comvenio-cli` → Variables** gesetzt. Die Redis-URL muss über **Add Reference**
+aus dem Service `Redis-Data` und dessen Variable `REDIS_URL` stammen; ein
+unaufgelöster `${{...}}`-Text ist keine gültige URL. Fehlt eine dieser
+Variablen, beendet sich der Prozess bewusst vor `/health` und schreibt einen
+strukturierten `comvenio_mcp_start_failed`-Datensatz in das Deployment-Log.
 
 Die exakten Einstellungen für den Cloudflare-Worker `comvenio-api-gateway`, den
 Railway-Service `comvenio-mcp-server` und den Railway-Service `auth-service`

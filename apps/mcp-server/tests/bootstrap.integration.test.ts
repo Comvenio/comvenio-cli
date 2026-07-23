@@ -6,7 +6,10 @@ import {
 } from "../src/bootstrap.ts";
 import { InMemoryDomainStateStore } from "../src/domain-state-store.ts";
 import type { McpHttpServer } from "../src/http/server.ts";
-import { mcpStartupFailureRecord } from "../src/startup-diagnostics.ts";
+import {
+  mcpStartupFailureRecord,
+  serializeMcpStartupFailure,
+} from "../src/startup-diagnostics.ts";
 import { NEWS_WIDGET_ASSET_PATH } from "../src/widgets/news/resource.ts";
 
 let activeServer: McpHttpServer | null = null;
@@ -37,6 +40,10 @@ describe("production MCP process bootstrap", () => {
       error_code: "ECONNREFUSED",
     });
     expect(JSON.stringify(mcpStartupFailureRecord(redisError))).not.toContain("redis.internal");
+    expect(serializeMcpStartupFailure(redisError)).toBe(
+      "{\"event\":\"comvenio_mcp_start_failed\",\"reason\":\"shared_state_unavailable\",\"error_code\":\"ECONNREFUSED\"}\n",
+    );
+    expect(serializeMcpStartupFailure(redisError)).not.toContain("redis.internal");
 
     const listenerError = Object.assign(
       new Error("listen EADDRINUSE: address already in use"),

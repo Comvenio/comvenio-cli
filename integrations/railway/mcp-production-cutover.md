@@ -44,6 +44,10 @@ MCP_SHARED_STATE_ENCRYPTION_KEY=<separater base64url-kodierter 32-Byte-Schlüsse
 MCP_RELEASE_SCOPE=full_connector_v1
 ```
 
+Die Variablen gehören exakt nach **Railway → Projekt `comvenio` → Environment
+`production` → Service `comvenio-cli` → Variables**. Sie gehören weder in den
+`auth-service` noch in `Redis-Data` oder Cloudflare.
+
 Existiert im Production-Environment noch kein Redis-Service, wird dort zuerst
 über `+ New` → `Database` → `Redis` eine private Instanz angelegt. Anschließend
 wird `MCP_SHARED_STATE_REDIS_URL` im Service `comvenio-cli` über
@@ -61,6 +65,17 @@ Prozessstart nicht erreichbar, beendet sich der MCP-Prozess bewusst fail-closed.
 Der Schlüssel wird beispielsweise als 43 Zeichen langer, ungepaddeter
 base64url-Wert gespeichert und darf weder aus `MCP_EDGE_SHARED_SECRET` noch aus
 `INTERNAL_API_KEY` abgeleitet werden.
+
+Ein geeigneter Schlüssel kann lokal in PowerShell erzeugt und ohne Ausgabe im
+Terminal direkt in die Zwischenablage kopiert werden:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$key = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
+Set-Clipboard $key
+Write-Host 'MCP-Schlüssel wurde in die Zwischenablage kopiert.'
+```
 
 ## 3. Railway – Service `auth-service`
 

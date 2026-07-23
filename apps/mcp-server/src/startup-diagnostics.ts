@@ -94,3 +94,7 @@ export function mcpStartupFailureRecord(error: unknown): McpStartupFailureRecord
     reason: "unknown_startup_failure",
   };
 }
+
+export function serializeMcpStartupFailure(error: unknown): string {
+  return `${JSON.stringify(mcpStartupFailureRecord(error))}\n`;
+}
