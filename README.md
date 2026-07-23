@@ -135,7 +135,7 @@ Variablen, beendet sich der Prozess bewusst vor `/health` und schreibt einen
 strukturierten `comvenio_mcp_start_failed`-Datensatz in das Deployment-Log.
 
 Die exakten Einstellungen für den Cloudflare-Worker `comvenio-api-gateway`, den
-Railway-Service `comvenio-mcp-server` und den Railway-Service `auth-service`
+Railway-Service `comvenio-cli` und den Railway-Service `auth-service`
 stehen im [Produktions-Cutover-Runbook](integrations/railway/mcp-production-cutover.md).
 
 `OPENAI_APPS_CHALLENGE_TOKEN` wird ausschließlich mit dem exakten Wert aus dem
