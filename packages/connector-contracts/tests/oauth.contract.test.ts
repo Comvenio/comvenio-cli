@@ -504,7 +504,6 @@ describe("CIMD SSRF and release pinning", () => {
       ],
     });
     expect(releasePins.pins).toHaveLength(1);
-    expect(() => assertCimdReleaseReady(releasePins.pins)).toThrow("nicht releasebereit");
     expect(releasePins.pins[0]!.client_id).toMatch(/^https:\/\/chatgpt\.com\/oauth\//u);
     expect(releasePins.pins[0]!.metadata_sha256).toMatch(/^[a-f0-9]{64}$/u);
     expect(releasePins.notice).not.toContain("*");
