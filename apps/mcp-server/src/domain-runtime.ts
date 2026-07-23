@@ -771,7 +771,7 @@ function callSchema(
 function externalDomainInputSchema(inputSchema: z.ZodType): z.ZodType {
   if (inputSchema instanceof z.ZodDiscriminatedUnion) {
     const options = inputSchema.options.map((option) =>
-      externalDomainInputSchema(option)) as [
+      externalDomainInputSchema(option as z.ZodType)) as [
         z.ZodObject,
         z.ZodObject,
         ...z.ZodObject[],
@@ -783,7 +783,7 @@ function externalDomainInputSchema(inputSchema: z.ZodType): z.ZodType {
   }
   if (inputSchema instanceof z.ZodUnion) {
     const options = inputSchema.options.map((option) =>
-      externalDomainInputSchema(option)) as [
+      externalDomainInputSchema(option as z.ZodType)) as [
         z.ZodType,
         z.ZodType,
         ...z.ZodType[],
