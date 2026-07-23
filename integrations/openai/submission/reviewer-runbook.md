@@ -31,8 +31,15 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
    Ein bereits geplanter Reminder darf nach Verlust der aktiven
    Clubmitgliedschaft nicht mehr zugestellt werden.
 10. Widerrufe den Grant. Der nächste private Aufruf muss erneut eine Verbindung verlangen.
-11. Öffne Kalender- und News-Widget jeweils auf ChatGPT Web und Mobile. Fachvertrag und erlaubte Aktionen müssen identisch sein; Layout, Fokus und Touchziele müssen funktionieren.
+11. Öffne Event/Kalender, Mitgliederverwaltung, Buchung, News und
+    Bestätigungs-Widget jeweils auf ChatGPT Web und Mobile. Fachvertrag und
+    erlaubte Aktionen müssen identisch sein; Layout, Fokus und Touchziele
+    müssen funktionieren.
 12. Führe jeden Fall sowie die fünf positiven und drei negativen Beispiele aus `tool-test-plan.json` aus und vergleiche die Antwort mit der benannten synthetischen Fixture.
+13. Starte eine kritische Schreibaktion. ChatGPT muss zuerst die
+    Wirkungsvorschau anzeigen. `action_confirm` darf nur Vorschau, Token und
+    unveränderten Idempotenzschlüssel verwenden; Replay oder Rechteentzug vor
+    dem zweiten Schritt dürfen keine Mutation auslösen.
 
 ## Datenschutz- und Sicherheitsabbruch
 

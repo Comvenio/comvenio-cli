@@ -28,6 +28,9 @@
     "gen:openai-submission:check": "bun run scripts/validate-openai-submission.ts",
     "gen:anthropic-submission:check": "bun run scripts/validate-anthropic-submission.ts",
     "gen:anthropic-submission:draft:check": "bun run scripts/validate-anthropic-submission.ts --allow-blocked-draft",
+    "gen:provider-submissions": "bun run scripts/sync-provider-submission-scope.ts",
+    "gen:provider-submissions:check": "bun run scripts/sync-provider-submission-scope.ts --check",
+    "gen:connector-release": "bun run scripts/validate-connector-release.ts --write",
     "gen:connector-release:check": "bun run scripts/validate-connector-release.ts",
     "gen:api": "echo 'Placeholder — per service: openapi-typescript https://api.comvenio.app/{service}/openapi.json -o src/api/{service}.ts (Folge-Straenge comvenio-cli-04..09)'"
   },

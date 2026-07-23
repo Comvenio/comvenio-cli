@@ -831,7 +831,7 @@ describe("K20 universal preview and confirmation widget contracts", () => {
       action_id: "action.confirm",
       label: "Jetzt bestätigen",
       tool_name: "action_confirm",
-      input: { preview_id: previewId, confirmation_token: confirmationToken, idempotency_key: idempotencyKey, ...input },
+      input: { preview_id: previewId, idempotency_key: idempotencyKey, ...input },
       visibility: "visible",
       enabled: true,
       risk_class: "critical_write",
@@ -902,13 +902,16 @@ describe("K20 universal preview and confirmation widget contracts", () => {
     }
   });
 
-  test("TC-05: confirm transports exactly preview id, token and idempotency key", () => {
+  test("TC-05: the model-visible action excludes the app-only confirmation credential", () => {
     const model = widget();
-    expect(Object.keys(model.actions[0]!.input as Record<string, unknown>).sort()).toEqual(["confirmation_token", "idempotency_key", "preview_id"]);
+    expect(Object.keys(model.actions[0]!.input as Record<string, unknown>).sort()).toEqual(["idempotency_key", "preview_id"]);
+    expect(JSON.stringify(model)).not.toContain("confirmation_token");
     expect(CONFIRMATION_WIDGET_SCHEMA.safeParse({ ...model, actions: [confirmAction({ normalized_input: { publish: false } })] }).success).toBe(false);
-    expect(CONFIRMATION_WIDGET_CLIENT).toContain('Object.keys(input).sort().join(",")==="confirmation_token,idempotency_key,preview_id"');
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('Object.keys(input).sort().join(",")==="idempotency_key,preview_id"');
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('value["comvenio/confirmation"]');
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain("toolResponseMetadata");
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain("confirmation_token:credential.confirmation_token");
     expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("normalized_input");
-    expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("window.openai");
     expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("fetch(");
     expect(() => new Function(CONFIRMATION_WIDGET_CLIENT)).not.toThrow();
   });

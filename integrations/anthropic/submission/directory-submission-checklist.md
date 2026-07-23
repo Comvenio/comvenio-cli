@@ -45,20 +45,20 @@ Das Portal verlangt drei bis fünf unterschiedliche PNG-Bilder mit mindestens 10
 Jedes Bild zeigt ausschließlich die App-Antwort mit synthetischen Daten; der Prompt wird getrennt
 im Portal hinterlegt. Video und GIF sind ausgeschlossen.
 
-Aktueller Stand: Es gibt noch keine freigegebene Submission-Evidence. Die vorhandenen Dateien
-`event-mobile.png` und `news-desktop.png` sind Planungsmockups. Sie zeigen Schreib- beziehungsweise
-Entwurfsfunktionen, die nicht zum veröffentlichten `personal_productivity_v1`-Umfang gehören, und werden im
-Connector-Profil deshalb bewusst nicht referenziert. Drei bis fünf reale Runtime-Captures fehlen.
-
-Mitgliederverwaltung, Buchung und universelle Bestätigung sind noch nicht veröffentlicht und
-dürfen deshalb nicht als dritter Screenshot verwendet werden. Beide veröffentlichten Widgets
-müssen im Carousel mindestens einmal vertreten sein.
+Der `full_connector_v1`-Kandidat referenziert fünf synthetische
+Submission-Bilder: Event/Kalender, Mitgliederverwaltung, Buchung, News und
+universelle Bestätigung. Sie bleiben Kandidaten, bis der Provider-Preflight
+belegt, dass alle Bilder aus demselben freigegebenen Runtime-Build stammen und
+den tatsächlichen Tool- und Widget-Vertrag wiedergeben. Jedes der fünf
+veröffentlichten Widgets muss im Carousel genau nachvollziehbar vertreten sein.
 
 ## Review-Evidence
 
 - Jedes produktiv veröffentlichte Tool im MCP Inspector und als Claude Custom Connector testen.
 - Pro Tool Happy Path und Permission-Denial dokumentieren.
-- Event/Kalender und News mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
+- Alle fünf Widgets mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
+- Den vollständigen Runtime-Katalog mit 322 Tools gegen
+  `tool-test-plan.json` und die Response-Matrix prüfen.
 - Vollständig befüllte synthetische `member`- und `manager`-Konten ohne MFA als verschlüsselte
   Submission-Secrets bereitstellen.
 - Datenverarbeitung, First-Party-API, Datenschutz und Supportfragen im Portal vollständig

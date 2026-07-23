@@ -1,3 +1,4 @@
+import { publishedRuntimeCatalog } from "../../../apps/mcp-server/src/runtime-tools.ts";
 import { RELEASE_GATE_REPORT_SCHEMA } from "./schemas.ts";
 import type {
   ConnectorEvalReport,
@@ -29,10 +30,15 @@ function findingsGate(findings: SecurityPrivacyFinding[]): boolean {
 
 function evidenceBlockers(evidence: ReleaseEvidence): string[] {
   const blockers: string[] = [];
-  if (evidence.release_scope !== "personal_productivity_v1") blockers.push("RELEASE_SCOPE");
+  const runtimeCatalog = publishedRuntimeCatalog(
+    "production",
+    evidence.release_scope,
+  );
   if (evidence.planned_action_count !== 303 || evidence.planned_route_callsite_count !== 560
     || evidence.planned_widget_contract_count !== 5) blockers.push("PLANNED_SCOPE_DRIFT");
-  if (evidence.published_tool_count !== 17 || !evidence.published_runtime_catalog_verified) {
+  if (evidence.published_tool_count !== runtimeCatalog.tool_count
+    || evidence.runtime_tool_catalog_sha256 !== runtimeCatalog.tool_catalog_sha256
+    || !evidence.published_runtime_catalog_verified) {
     blockers.push("PUBLISHED_RUNTIME_CATALOG");
   }
   if (!evidence.route_trace_tests_passed || !evidence.schema_tests_passed || !evidence.permission_tests_passed) blockers.push("OPERATION_CONTRACT_TESTS");
@@ -40,7 +46,8 @@ function evidenceBlockers(evidence: ReleaseEvidence): string[] {
   if (evidence.revocation_latency_seconds === null || evidence.revocation_latency_seconds > 5) blockers.push("REVOCATION_LATENCY");
   if (!evidence.malware_quarantine_verified
     || !evidence.confirmation_input_server_internal) blockers.push("DATA_SAFETY");
-  if (evidence.published_widget_contract_count !== 2
+  if (evidence.published_widget_contract_count !== runtimeCatalog.widget_contract_count
+    || evidence.widget_resource_catalog_sha256 !== runtimeCatalog.widget_catalog_sha256
     || !evidence.widget_surfaces_verified || !evidence.accessibility_smokes_passed) {
     blockers.push("WIDGET_SURFACES_ACCESSIBILITY");
   }

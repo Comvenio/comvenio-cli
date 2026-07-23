@@ -31,6 +31,7 @@ import { registerIngredientCommands } from "./commands/ingredient.ts";
 import { registerIngredientCategoryCommands } from "./commands/ingredient-category.ts";
 import { registerShoppingCommands } from "./commands/shopping.ts";
 import { registerRoleCommands } from "./commands/role.ts";
+import { registerAgentCommands } from "./commands/agent.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env → gateway base. Default prod. local note: the gateway routing does NOT
@@ -157,6 +158,7 @@ registerIngredientCommands(cli);
 registerIngredientCategoryCommands(cli);
 registerShoppingCommands(cli);
 registerRoleCommands(cli);
+registerAgentCommands(cli);
 
 cli.help();
 cli.version(pkg.version);

@@ -1,3 +1,6 @@
+import type { ConnectorReleaseScope } from "@comvenio/connector-contracts";
+
+import { publishedRuntimeCatalog } from "../../../apps/mcp-server/src/runtime-tools.ts";
 import { ConnectorEvalSuite } from "./eval.ts";
 import { buildPilotProtocol } from "./pilot.ts";
 import { buildPrivacyThreatModel } from "./privacy.ts";
@@ -18,29 +21,17 @@ import type {
 
 export const RELEASE_GENERATED_AT = "2026-07-23T00:00:00.000Z" as const;
 
-export const EVALUATED_VIRTUAL_TOOL_NAMES = [
-  "cv_my_task_reminder_write",
-  "cv_my_tasks_read",
-  "cv_permissions_explain_read",
-  "cv_schema_read",
-  "cv_whoami_read",
-  "public_club_by_domain",
-  "public_club_home",
-  "public_club_legal",
-  "public_club_profile",
-  "public_department_news",
-  "public_event_attachments",
-  "public_event_menu",
-  "public_events",
-  "public_menu",
-  "public_news",
-  "public_news_detail",
-  "public_training",
-] as const;
+export function evaluatedRuntimeToolNames(
+  releaseScope: ConnectorReleaseScope,
+): string[] {
+  return publishedRuntimeCatalog("production", releaseScope).tool_names;
+}
 
-function buildPendingConnectorEvalReport(): ConnectorEvalReport {
+function buildPendingConnectorEvalReport(
+  releaseScope: ConnectorReleaseScope,
+): ConnectorEvalReport {
   return new ConnectorEvalSuite().evaluate({
-    candidate_tool_names: [...EVALUATED_VIRTUAL_TOOL_NAMES],
+    candidate_tool_names: evaluatedRuntimeToolNames(releaseScope),
     results: [],
   });
 }
@@ -49,10 +40,14 @@ function buildPendingTenantIsolationReport(): TenantIsolationReport {
   return new TenantIsolationSuite().evaluate([]);
 }
 
-export function buildPendingReleaseEvidence(): ReleaseEvidence {
+export function buildPendingReleaseEvidence(
+  releaseScope: ConnectorReleaseScope,
+): ReleaseEvidence {
+  const catalog = publishedRuntimeCatalog("production", releaseScope);
   return {
-    release_scope: "personal_productivity_v1",
-    published_tool_count: 17,
+    release_scope: releaseScope,
+    published_tool_count: catalog.tool_count,
+    runtime_tool_catalog_sha256: catalog.tool_catalog_sha256,
     planned_action_count: 303,
     planned_route_callsite_count: 560,
     published_runtime_catalog_verified: false,
@@ -63,7 +58,8 @@ export function buildPendingReleaseEvidence(): ReleaseEvidence {
     revocation_latency_seconds: null,
     malware_quarantine_verified: false,
     confirmation_input_server_internal: true,
-    published_widget_contract_count: 2,
+    published_widget_contract_count: catalog.widget_contract_count,
+    widget_resource_catalog_sha256: catalog.widget_catalog_sha256,
     planned_widget_contract_count: 5,
     widget_surfaces_verified: false,
     accessibility_smokes_passed: false,
@@ -100,8 +96,10 @@ export interface ReleaseArtifactSet {
   support: SupportRunbook;
 }
 
-export function buildPendingReleaseArtifacts(): ReleaseArtifactSet {
-  const evalReport = buildPendingConnectorEvalReport();
+export function buildPendingReleaseArtifacts(
+  releaseScope: ConnectorReleaseScope,
+): ReleaseArtifactSet {
+  const evalReport = buildPendingConnectorEvalReport(releaseScope);
   const tenantIsolation = buildPendingTenantIsolationReport();
   const privacy = buildPrivacyThreatModel();
   const pilot = buildPilotProtocol();
@@ -112,7 +110,7 @@ export function buildPendingReleaseArtifacts(): ReleaseArtifactSet {
     pilot,
     release_gate: buildReleaseGateReport({
       generated_at: RELEASE_GENERATED_AT,
-      evidence: buildPendingReleaseEvidence(),
+      evidence: buildPendingReleaseEvidence(releaseScope),
       eval: evalReport,
       tenant_isolation: tenantIsolation,
       privacy,

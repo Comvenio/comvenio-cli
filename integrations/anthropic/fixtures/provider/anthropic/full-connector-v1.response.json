@@ -1,0 +1,5566 @@
+{
+  "schema_version": "1.0.0",
+  "entity": "ProviderResponseContractMatrix",
+  "release_scope": "full_connector_v1",
+  "runtime_tool_catalog_sha256": "243c942eb9be6a782df0e1b9d80c5472e5e86986e5979152ad7cdee45f7a9127",
+  "synthetic_data_only": true,
+  "cases": [
+    {
+      "tool_name": "action_confirm",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "booking.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "booking.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_03_create",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write",
+        "object.read"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_04_update",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write",
+        "object.read"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_05_approve",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_06_reject",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_07_cancel",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_08_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_09_bulk",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.write",
+        "object.read"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_10_participant_list_show_add_add_groups_update_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.read",
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_11_link_list_club_add_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.read",
+        "booking.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_12_stats_object_guests",
+      "risk_class": "read",
+      "required_scopes": [
+        "booking.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_booking_object_widget_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "booking.read",
+        "object.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_02_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_03_settings",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_04_settings_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_05_design",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_06_department_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_07_department_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_08_department_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_09_department_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_10_department_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_club_agent_converse",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_03_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_04_url",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_05_download",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.export",
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_06_upload",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.import",
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_07_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_08_restore",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_09_move",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_10_visibility",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_11_stats",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_12_empty_trash",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_13_area_media",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_14_area_shares",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_15_area_share_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_16_area_share_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_17_children",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_18_search",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_19_breadcrumb",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_20_folder_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_21_folder_rename",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_22_folder_move",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_23_folder_protect",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_24_folder_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_25_folder_restore",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_26_folder_rights",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_27_folder_right_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_28_folder_right_bulk",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_29_folder_right_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_30_papers",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_31_paper_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_32_paper_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_33_paper_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_34_paper_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_data_35_export_members_bookings",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "booking.read",
+        "files.export",
+        "member.read.details"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_05_publish",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_06_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_07_template_list_create_clone_instantiate",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_08_series_list_show_create_materialize_promote_56c35d49",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_09_area_list_add_show_update_delete_bulk_copy",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_10_assignment_list_add_remove_clear",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_11_lead_list_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_12_area_note_list_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_13_program_list_add_update_delete_reorder",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_14_contact_list_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_15_resource_list_add_set_remove_link_show_link_0b5cb96d",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_16_attachment_list_show_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_17_tag_category_and_assignment_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_18_sponsor_and_sponsor_program_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_19_invitation_and_club_invitation_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_20_registration_list_add_stats_show_update_adj_c0ffc0ba",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_21_budget_show_set_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_22_design_theme_and_asset_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write",
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_23_copy_set_reset",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_24_dj_settings_and_request_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_25_external_sync_workflows",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_26_instance_previous_next_compare_clone_next",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_27_child_list_create_invitation_summary",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_28_menu_list_assign_unassign",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_event_calendar_widget_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_homepage_01_preview",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.write"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_homepage_02_apply",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "club.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_homepage_03_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read",
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_02_roots",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_03_tree",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_04_by_ingredient",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_05_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_06_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_07_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_08_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_09_assign",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_10_unassign",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_ingredient_category_11_init",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_01_series_list_show_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_02_protocol_list_show_create_update_delete_a_45f094f0",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_03_agenda_list_show_create_update_delete_reo_81fa0e6b",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_04_note_list_list_protocol_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_05_participant_list_add_update_remove_valida_6b1434ca",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_06_decision_create_agenda_update_cancel_opti_f995ed5b",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_07_voting_open_close_results_eligible_tally",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_08_vote_cast_cast_bulk_proxy_proxy_bulk_opti_1b2fa558",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_09_resolution_list_list_protocol_show_histor_3fe6b694",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_10_entry_list_show_show_agenda_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_meeting_11_attachment_list_add_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.write",
+        "meeting.read",
+        "meeting.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.basic"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_03_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_05_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_06_import",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.import"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_07_family_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_08_family_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_09_family_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_10_family_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_11_family_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_12_status_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.basic"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_13_status_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_14_status_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_15_status_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_16_status_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_17_period_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.basic"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_18_period_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_19_period_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_20_period_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_21_period_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_member_management_widget_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.basic"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_01_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_02_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_03_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_04_add_item",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_05_update_item",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_06_delete_item",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_07_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_08_style",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_09_apply",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_menu_10_export",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.export",
+        "supply.read"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_my_task_reminder_write",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_my_tasks_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read",
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read",
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_03_create",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_04_update",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_06_apply",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_07_preview",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_08_publish",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "content.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_09_video_slideshow_result_teaser",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "content.read",
+        "content.write",
+        "files.export",
+        "files.import"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_news_widget_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "object.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "object.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "object.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "object.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "object.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_06_building_list_show_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "object.read",
+        "object.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_07_room_list_show_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "object.read",
+        "object.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_08_booking_rule_list_show_create_bulk_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "object.read",
+        "object.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_object_09_task_rule_list_show_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "object.read",
+        "object.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_permissions_explain_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_06_zone_list_create_update_delete_link_unlink",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_07_table_create_duplicate_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_08_marker_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_09_guest_list_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_10_detail",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_11_export",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "files.export"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_12_illustrate",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "files.export"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_plan_13_compose",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write",
+        "files.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_01_create",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_02_from_template",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_03_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_04_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_05_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_recipe_06_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_06_permission_defs",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_07_permission_set",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_08_permissions_show_apply",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_09_assign",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_10_unassign",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_11_assignments",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_12_position_link",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_13_position_unlink",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_role_14_position_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_schema_01_list_domains",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_schema_02_show_domain_schema",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_schema_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_02_active",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_03_completed",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_04_by_context",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_05_by_context_type",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_06_show",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.export",
+        "supply.read"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_07_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_08_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_09_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_10_item_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_11_item_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_12_item_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_13_purchased",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_14_generate_from_recipe",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.export",
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_shopping_15_generate_from_menu",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.export",
+        "supply.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_03_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_04_update",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_06_logo",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "files.read",
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_07_product_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_08_product_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_09_product_update",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_10_product_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_11_contract_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_12_contract_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.read",
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_13_contract_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.read",
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_14_contract_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_15_assignment_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_16_assign",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_17_assignment_update",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_18_cancel",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_19_doc_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.read",
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_20_doc_upload",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "files.import",
+        "files.write",
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_21_responsible_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "member.read.basic",
+        "sponsor.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_22_responsible_add",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_23_responsible_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_sponsor_24_responsible_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "sponsor.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_03_show_subtasks",
+      "risk_class": "read",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_04_show_chain",
+      "risk_class": "read",
+      "required_scopes": [
+        "task.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_05_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_06_bulk",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_07_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_08_assign",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_09_done",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_10_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_11_context_list_show_create_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.read",
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_12_assignment_list_show_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.read",
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_13_note_list_add_update_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.read",
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_task_14_checklist_list_add_update_toggle_delete_reorder",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "task.read",
+        "task.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_01_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_02_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_03_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_04_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_05_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_06_member_list_add_update_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_team_07_resource_list_add_update_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_template_01_dish",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_template_02_ingredient",
+      "risk_class": "read",
+      "required_scopes": [
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_01_series_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_02_series_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_03_series_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_04_series_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_05_series_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_06_execution_create",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_07_execution_link",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_08_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_09_show",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_10_update",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_11_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_12_status",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_13_participants",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_14_mannschaft",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_15_participant",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_16_participant_withdraw",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_17_participant_reinstate",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_18_participant_remove",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_19_start",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_20_matches",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_21_matches_clear",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_22_reset",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_23_redraw",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_24_standings",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_25_preview",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.read",
+        "files.export"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_26_draw",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_27_draw_confirm",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_28_schedule_generate",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_29_match_schedule",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_30_match_delete",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_31_match_result",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_tournament_32_deadline",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "event.read",
+        "event.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_01_url",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read",
+        "files.export"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_02_event",
+      "risk_class": "read",
+      "required_scopes": [
+        "event.read",
+        "files.export"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_03_menu",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.export",
+        "supply.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_04_homepage",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read",
+        "club.write",
+        "files.export"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_05_news",
+      "risk_class": "read",
+      "required_scopes": [
+        "content.read",
+        "files.export"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_verify_06_certificate",
+      "risk_class": "read",
+      "required_scopes": [
+        "files.export",
+        "member.read.details"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_whoami_01_whoami",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "cv_whoami_read",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_club_by_domain",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_club_home",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_club_legal",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_club_profile",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_department_news",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_event_attachments",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_event_menu",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_events",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_menu",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_news",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_news_detail",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    },
+    {
+      "tool_name": "public_training",
+      "risk_class": "read",
+      "required_scopes": [
+        "public.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": false,
+      "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true
+      }
+    }
+  ],
+  "provider": "anthropic"
+}

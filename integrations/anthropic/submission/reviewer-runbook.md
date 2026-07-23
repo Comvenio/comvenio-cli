@@ -36,17 +36,27 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
    darf keine fremden Details offenlegen. Ersetzte oder gelöschte Reminder und
    Reminder nach Verlust der aktiven Mitgliedschaft dürfen nicht zugestellt
    werden.
-6. Nicht veröffentlichte News, private Termine und Mitgliederdaten dürfen im v1-Umfang weder als Tool angeboten noch offengelegt werden.
+6. Entwürfe, private Termine und Mitgliederdaten dürfen nur bei passendem
+   Scope, aktuellem Capability-Snapshot und erfolgreichem Backend-RBAC-Recheck
+   angeboten werden. Ohne diese Freigabe bleiben Tool und Widget-Aktion
+   verborgen.
 7. Nach Grant-Widerruf muss der nächste private Aufruf eine neue Anmeldung verlangen.
 8. Toolargumente, Tokens, Mitgliederdaten und Resultinhalte dürfen nicht in Telemetrie erscheinen.
 
 ## Tool-Sync und Oberflächen
 
 - Jedes veröffentlichte Tool im MCP Inspector und als Claude Custom Connector mit Happy Path und Permission-Denial ausführen.
-- Kalender- und News-App mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
+- Event/Kalender, Mitgliederverwaltung, Buchung, News und
+  Bestätigungs-App mit demselben Build auf Claude Web, Desktop und Mobile
+  prüfen.
 - Drei bis fünf unterschiedliche PNG-Carousel-Bilder mit mindestens 1000 Pixeln Breite enthalten
   ausschließlich die jeweilige App-Antwort mit synthetischen Daten; die Prompts stehen separat im
-  Profil. Beide veröffentlichten Widgets sind mindestens einmal vertreten.
+  Profil. Alle fünf veröffentlichten Widgets sind genau nachvollziehbar
+  vertreten.
+- Kritische Schreibaktionen müssen zuerst die standardisierte
+  Wirkungsvorschau liefern. `action_confirm` darf nur den exakt gebundenen,
+  noch gültigen Intent einmalig ausführen; Replay und Rechteverlust werden
+  fail-closed abgelehnt.
 - Externe News-Links sind nicht vorab freigegeben und behalten deshalb Claudes Bestätigungsdialog.
 
 Ein offenes Finding blockiert nur die Claude-Publikation. Der ChatGPT-Freigabestatus wird dadurch nicht automatisch verändert.

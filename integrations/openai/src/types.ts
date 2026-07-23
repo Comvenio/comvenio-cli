@@ -11,7 +11,10 @@ export const OPENAI_WIDGET_RESOURCE_URIS = [
 
 export const OPENAI_RELEASE_WIDGET_RESOURCE_URIS = [
   "ui://comvenio/event-calendar",
+  "ui://comvenio/member-management",
+  "ui://comvenio/booking-object",
   "ui://comvenio/news",
+  "ui://comvenio/action-confirmation",
 ] as const;
 
 export type OpenAiWidgetResourceUri = typeof OPENAI_WIDGET_RESOURCE_URIS[number];
@@ -21,7 +24,7 @@ export interface DistributionProfile {
   schema_version: "1.0.0";
   product_name: "Comvenio";
   tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.";
-  short_description: "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.";
+  short_description: "Vereinsdaten, Events, News, Aufgaben, Mitglieder, Buchungen und weitere Comvenio-Workflows rollenbasiert lesen und sicher bearbeiten.";
   publisher_name: "Comvenio";
   category: "Productivity";
   website_url: "https://www.comvenio.app";

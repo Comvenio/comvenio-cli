@@ -57,18 +57,24 @@ bereitgestellte Domain und der offizielle Healthcheck-Host
 `healthcheck.railway.app` werden automatisch in die Host-Allowlist aufgenommen.
 
 Der Remote-MCP unter `apps/mcp-server` enthält den
-Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der aktuelle
-`personal_productivity_v1`-Kandidat veröffentlicht zwölf minimierte
-Public-Read-Tools und fünf geschützte Self-Service-Tools. Neben Verbindung,
-Rechten und sichtbaren Aktionen liefert `cv_my_tasks_read` die persönlichen
+Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der
+Produktionskandidat `full_connector_v1` veröffentlicht 322 aus dem
+ausführbaren Runtime-Katalog abgeleitete Tools: zwölf minimierte Public-Reads,
+fünf geschützte Self-Service-Tools, den Club-Agent-Dialog, 299 freigegebene
+K7–K13-Fachaktionen, den zentralen Bestätigungsaufruf und zwei explizite
+Widget-Projektionen. Neben Verbindung, Rechten und sichtbaren Aktionen liefert
+`cv_my_tasks_read` die persönlichen
 Aufgaben im gewünschten Zeitraum. `cv_my_task_reminder_write` setzt oder löscht
 eine frei gewählte Aufgaben-Erinnerung ausschließlich für den verbundenen
 Nutzer. Verein, Mitglied und Empfänger werden serverseitig aus OAuth,
 Backend-Actor und JWT-Subjekt abgeleitet; die Tools akzeptieren dafür keine
-Club-, Mitglieds-, Benutzer- oder Empfänger-ID. Event/Kalender und News sind die zwei
-beworbenen Widget-Ressourcen. Mitgliederverwaltung, Buchung und Bestätigung
-bleiben als getesteter Ausbauplan vorhanden, werden aber noch nicht im
-Runtime-Katalog angeboten. Der maschinenlesbare Stand steht in
+Club-, Mitglieds-, Benutzer- oder Empfänger-ID. Event/Kalender, News,
+Mitgliederverwaltung, Buchung und die universelle Wirkungsvorschau sind die
+fünf beworbenen Widget-Ressourcen. Mitglieder- und Buchungsansichten leiten den
+Verein aus OAuth ab; kritische Schreibaktionen bleiben an den zentralen
+Bestätigungs- und Idempotenzflow gebunden. Der kleinere
+`personal_productivity_v1`-Umfang bleibt als expliziter Fallback erhalten, ist
+aber nicht der Produktions-Submission-Scope. Der maschinenlesbare Stand steht in
 [`integrations/release/release-gate-report.json`](integrations/release/release-gate-report.json).
 
 Der Prozess startet bewusst **fail-closed**. `/health` ist nur die technische
@@ -114,6 +120,7 @@ MCP_PROD_ALLOWED_HOSTS=mcp.comvenio.app
 MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
 INTERNAL_API_KEY=<identischer interner Key wie im Auth-Service>
 MCP_CIMD_CLIENT_PINS_JSON=<reviewte Client-IDs, Fingerprints und allowed_scopes>
+MCP_RELEASE_SCOPE=full_connector_v1
 ```
 
 Die exakten Einstellungen für den Cloudflare-Worker `comvenio-api-gateway`, den

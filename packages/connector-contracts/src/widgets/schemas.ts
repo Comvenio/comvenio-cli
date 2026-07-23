@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTION_CONFIRM_INPUT_SCHEMA, ACTION_PREVIEW_VIEW_SCHEMA } from "../safety/schemas.ts";
+import { ACTION_CONFIRM_WIDGET_INPUT_SCHEMA, ACTION_PREVIEW_VIEW_SCHEMA } from "../safety/schemas.ts";
 
 const uuid = z.string().uuid();
 const instant = z.string().datetime({ offset: true });
@@ -98,10 +98,11 @@ export const EVENT_CALENDAR_WIDGET_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zu einer leeren Eventliste passen." });
   }
   if (widget.actions.some((action) => {
-    if (!widget.club || action.input === null || typeof action.input !== "object" || Array.isArray(action.input)) return true;
-    return action.input.club_id !== widget.club.club_id;
+    return !widget.club || action.input === null
+      || typeof action.input !== "object" || Array.isArray(action.input)
+      || Object.prototype.hasOwnProperty.call(action.input, "club_id");
   })) {
-    context.addIssue({ code: "custom", message: "Jede Widget-Aktion muss an denselben Verein gebunden sein." });
+    context.addIssue({ code: "custom", message: "Jede Widget-Aktion muss ein gültiges Eingabeobjekt besitzen." });
   }
 });
 
@@ -208,8 +209,9 @@ export const MEMBER_MANAGEMENT_WIDGET_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Mitgliederliste passen." });
   }
   if (widget.actions.some((action) => action.input === null || typeof action.input !== "object"
-    || Array.isArray(action.input) || action.input.club_id !== widget.club.club_id)) {
-    context.addIssue({ code: "custom", message: "Jede Mitgliederaktion muss an denselben Verein gebunden sein." });
+    || Array.isArray(action.input)
+    || Object.prototype.hasOwnProperty.call(action.input, "club_id"))) {
+    context.addIssue({ code: "custom", message: "Jede Mitgliederaktion muss ein gültiges Eingabeobjekt besitzen." });
   }
 });
 
@@ -300,10 +302,12 @@ export const BOOKING_OBJECT_WIDGET_SCHEMA = z.object({
   if ((widget.data.objects.length === 0) !== (widget.empty_state !== null)) {
     context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Objektliste passen." });
   }
+  const visibleObjectIds = new Set(widget.data.objects.map((object) => object.object_id));
   if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
-    || action.input.club_id !== widget.club.club_id
-    || (typeof action.input.object_id === "string" && action.input.object_id !== widget.data.selected_object_id))) {
-    context.addIssue({ code: "custom", message: "Jede Buchungsaktion muss an Verein und ausgewähltes Objekt gebunden sein." });
+    || Object.prototype.hasOwnProperty.call(action.input, "club_id")
+    || (typeof action.input.object_id === "string" && !visibleObjectIds.has(action.input.object_id))
+    || (action.risk_class !== "read" && action.input.object_id !== widget.data.selected_object_id))) {
+    context.addIssue({ code: "custom", message: "Jede Buchungsaktion muss an ein sichtbares beziehungsweise ausgewähltes Objekt gebunden sein." });
   }
   if (widget.actions.some((action) => action.risk_class !== "read"
     && (action.risk_class !== "critical_write" || !action.requires_confirmation))) {
@@ -395,10 +399,14 @@ export const NEWS_WIDGET_SCHEMA = z.object({
   if (widget.data.filter === "public" && (widget.capability_version !== null || widget.actions.length > 0)) {
     context.addIssue({ code: "custom", message: "Der öffentliche Newsfeed darf keine Capability oder Verwaltungsaktionen enthalten." });
   }
+  const visibleNewsIds = new Set(
+    widget.data.articles.map((article) => article.news_id),
+  );
   if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
-    || action.input.club_id !== widget.club.club_id
-    || (typeof action.input.news_id === "string" && action.input.news_id !== widget.data.selected_news_id))) {
-    context.addIssue({ code: "custom", message: "Jede News-Aktion muss an Verein und ausgewählten Beitrag gebunden sein." });
+    || Object.prototype.hasOwnProperty.call(action.input, "club_id")
+    || (typeof action.input.news_id === "string" && !visibleNewsIds.has(action.input.news_id))
+    || (action.risk_class !== "read" && action.input.news_id !== widget.data.selected_news_id))) {
+    context.addIssue({ code: "custom", message: "Jede News-Aktion muss an einen sichtbaren beziehungsweise ausgewählten Beitrag gebunden sein." });
   }
   if (widget.actions.some((action) => /publish|veroeffentlich/iu.test(action.action_id)
     && (action.risk_class !== "critical_write" || !action.requires_confirmation))) {
@@ -438,7 +446,6 @@ export const NEWS_WIDGET_STATE_SCHEMA = z.object({
 
 export const CONFIRMATION_DATA_SCHEMA = z.object({
   preview: ACTION_PREVIEW_VIEW_SCHEMA.extend({}).transform((value) => value),
-  confirmation_token: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
   confirm_label: safeText(100),
   cancel_label: z.literal("Abbrechen"),
   acknowledgement_required: z.boolean(),
@@ -466,11 +473,10 @@ export const CONFIRMATION_WIDGET_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Eine abgelaufene Vorschau darf nicht als bestätigbar gerendert werden." });
   }
   const action = widget.actions[0];
-  const input = ACTION_CONFIRM_INPUT_SCHEMA.safeParse(action?.input);
+  const input = ACTION_CONFIRM_WIDGET_INPUT_SCHEMA.safeParse(action?.input);
   if (!action || action.tool_name !== "action_confirm" || action.risk_class !== "critical_write" || !action.requires_confirmation
-    || !input.success || input.data.preview_id !== widget.data.preview.preview_id
-    || input.data.confirmation_token !== widget.data.confirmation_token) {
-    context.addIssue({ code: "custom", message: "Die Bestätigungsaktion muss exakt an Vorschau, Token und Idempotenzschlüssel gebunden sein." });
+    || !input.success || input.data.preview_id !== widget.data.preview.preview_id) {
+    context.addIssue({ code: "custom", message: "Die Bestätigungsaktion muss exakt an Vorschau und Idempotenzschlüssel gebunden sein." });
   }
 });
 

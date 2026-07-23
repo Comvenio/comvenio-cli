@@ -29,7 +29,10 @@ import {
 } from "../../../integrations/release/src/index.ts";
 import { buildChatGptAppManifest } from "../../../integrations/openai/src/index.ts";
 import { buildClaudeDirectoryManifest } from "../../../integrations/anthropic/src/index.ts";
-import { publishedRuntimeToolNames } from "../src/runtime-tools.ts";
+import {
+  publishedRuntimeCatalog,
+  publishedRuntimeToolNames,
+} from "../src/runtime-tools.ts";
 import {
   BOOKING_OBJECT_WIDGET_CLIENT,
   BOOKING_OBJECT_WIDGET_CSS,
@@ -46,13 +49,15 @@ import {
 const workspaceRoot = resolve(import.meta.dir, "../../..");
 const releaseRoot = resolve(workspaceRoot, "integrations/release");
 const catalogHash = "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417ba5a7";
+const releaseScope = "full_connector_v1" as const;
+const runtimeCatalog = publishedRuntimeCatalog("production", releaseScope);
 
 function json(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
 function testedConnectorEvalReport() {
-  const toolNames = publishedRuntimeToolNames("production");
+  const toolNames = publishedRuntimeToolNames("production", releaseScope);
   const results: ConnectorEvalToolResult[] = toolNames.map((toolName) => ({
     tool_name: toolName,
     tool_selection: true,
@@ -98,8 +103,9 @@ function passedPilot() {
 
 function readyEvidence(): ReleaseEvidence {
   return {
-    release_scope: "personal_productivity_v1",
-    published_tool_count: 17,
+    release_scope: releaseScope,
+    published_tool_count: runtimeCatalog.tool_count,
+    runtime_tool_catalog_sha256: runtimeCatalog.tool_catalog_sha256,
     planned_action_count: 303,
     planned_route_callsite_count: 560,
     published_runtime_catalog_verified: true,
@@ -110,7 +116,8 @@ function readyEvidence(): ReleaseEvidence {
     revocation_latency_seconds: 5,
     malware_quarantine_verified: true,
     confirmation_input_server_internal: true,
-    published_widget_contract_count: 2,
+    published_widget_contract_count: runtimeCatalog.widget_contract_count,
+    widget_resource_catalog_sha256: runtimeCatalog.widget_catalog_sha256,
     planned_widget_contract_count: 5,
     widget_surfaces_verified: true,
     accessibility_smokes_passed: true,
@@ -160,7 +167,7 @@ function release(input: { pilot?: ReturnType<typeof passedPilot>; findings?: Sec
 
 describe("K23 Connector quality, privacy, pilot and release gates", () => {
   test("TC-01/TC-02: all six versioned entities are built, statically stored and schema-valid", () => {
-    const pending = buildPendingReleaseArtifacts();
+    const pending = buildPendingReleaseArtifacts(releaseScope);
     const stored = {
       eval: CONNECTOR_EVAL_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "connector-eval-suite.json"))),
       tenant_isolation: TENANT_ISOLATION_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "tenant-isolation-suite.json"))),
@@ -180,7 +187,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(new Set(traceability.tasks.map((item) => item.task_id)).size).toBe(23);
   });
 
-  test("TC-03: future inventory and the 17 published runtime tools have exact eval parity", () => {
+  test("TC-03: future inventory and all published runtime tools have exact eval parity", () => {
     const inventory = loadReviewInventory();
     const report = testedConnectorEvalReport();
     expect(inventory.actions.entries).toHaveLength(303);
@@ -189,11 +196,13 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(inventory.migration.discovered_candidates.every((candidate) => candidate.published === false && candidate.blockers.length > 0)).toBe(true);
     expect(report).toMatchObject({
       status: "pass",
-      evaluated_candidate_tool_count: 17,
-      tested_tool_count: 17,
+      evaluated_candidate_tool_count: runtimeCatalog.tool_count,
+      tested_tool_count: runtimeCatalog.tool_count,
       blockers: [],
     });
-    expect(report.results.map((result) => result.tool_name)).toEqual(publishedRuntimeToolNames("production"));
+    expect(report.results.map((result) => result.tool_name)).toEqual(
+      publishedRuntimeToolNames("production", releaseScope),
+    );
 
     const mismatched = new ConnectorEvalSuite().evaluate({ candidate_tool_names: ["cv_schema_read"], results: [] });
     expect(mismatched).toMatchObject({ status: "blocked", blockers: ["TOOL_EVAL_PARITY"] });
@@ -217,13 +226,14 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     });
   });
 
-  test("TC-05: two released widgets share provider surfaces while all five planned builds stay accessible", () => {
+  test("TC-05: all five released widgets share provider surfaces", () => {
     const openAi = buildChatGptAppManifest(catalogHash);
     const anthropic = buildClaudeDirectoryManifest(catalogHash);
     expect(openAi.widget_resource_uris).toEqual(anthropic.widget_resource_uris);
-    expect(new Set(openAi.widget_resource_uris).size).toBe(2);
+    expect(new Set(openAi.widget_resource_uris).size).toBe(5);
     expect(new Set(openAi.screenshots.map((item) => item.resource_uri))).toEqual(new Set(openAi.widget_resource_uris));
-    expect(anthropic.screenshots).toEqual([]);
+    expect(new Set(anthropic.screenshots.map((item) => item.resource_uri)))
+      .toEqual(new Set(anthropic.widget_resource_uris));
 
     const widgetBuilds = [
       [EVENT_CALENDAR_WIDGET_CSS, EVENT_CALENDAR_WIDGET_CLIENT],
@@ -248,7 +258,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     const highFinding: SecurityPrivacyFinding = { id: "privacy-high", area: "privacy", severity: "high", status: "open", owner: null, mitigation: null };
     expect(release({ findings: [highFinding] })).toMatchObject({ decision: "BLOCKED", blockers: expect.arrayContaining(["SECURITY_PRIVACY_FINDINGS"]) });
 
-    const missingPilot = buildPendingReleaseArtifacts().pilot;
+    const missingPilot = buildPendingReleaseArtifacts(releaseScope).pilot;
     expect(release({ pilot: missingPilot })).toMatchObject({ decision: "BLOCKED", blockers: expect.arrayContaining(["PILOT_PROTOCOL"]) });
 
     const sameSigner = signedRelease();
@@ -268,7 +278,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
   });
 
   test("AK-N-01: minimization, TTLs, telemetry, fair use and log-service exclusion are release evidence", () => {
-    const artifacts = buildPendingReleaseArtifacts();
+    const artifacts = buildPendingReleaseArtifacts(releaseScope);
     expect(artifacts.privacy).toMatchObject({
       privacy_priority: "highest",
       log_service: { connected_to_mcp: false, end_user_access: false, audience: "master_admin_only" },

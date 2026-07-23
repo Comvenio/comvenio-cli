@@ -7,6 +7,29 @@ export type ClientSurface = "cli" | "mcp";
 export type ProviderId = "openai" | "anthropic";
 export type McpClientKind = "chatgpt" | "codex" | "claude" | "unknown";
 
+export const CONNECTOR_RELEASE_SCOPE_VALUES = [
+  "personal_productivity_v1",
+  "club_agent_bridge_v1",
+  "full_connector_v1",
+] as const;
+
+export type ConnectorReleaseScope =
+  (typeof CONNECTOR_RELEASE_SCOPE_VALUES)[number];
+
+export function parseConnectorReleaseScope(
+  value: string | undefined,
+  fallback: ConnectorReleaseScope = "personal_productivity_v1",
+): ConnectorReleaseScope {
+  const candidate = value ?? fallback;
+  if ((CONNECTOR_RELEASE_SCOPE_VALUES as readonly string[]).includes(candidate)) {
+    return candidate as ConnectorReleaseScope;
+  }
+  throw new Error(
+    "Der Connector-Release-Scope muss personal_productivity_v1, "
+    + "club_agent_bridge_v1 oder full_connector_v1 sein.",
+  );
+}
+
 export const OAUTH_SCOPE_VALUES = [
   "public.read",
   "club.read",

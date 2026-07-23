@@ -58,8 +58,8 @@ const validStatuses = new Set<CoverageStatus>([
   "intentional-exclusion",
 ]);
 
-if (registry.domains.length !== 26) {
-  throw new Error(`Coverage-Registry muss 26 Top-Level-Commands enthalten, gefunden: ${registry.domains.length}.`);
+if (registry.domains.length !== 27) {
+  throw new Error(`Coverage-Registry muss 27 Top-Level-Commands enthalten, gefunden: ${registry.domains.length}.`);
 }
 
 const ids = new Set<string>();

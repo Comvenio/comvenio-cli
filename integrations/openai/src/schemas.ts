@@ -27,7 +27,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten."),
+  short_description: z.literal("Vereinsdaten, Events, News, Aufgaben, Mitglieder, Buchungen und weitere Comvenio-Workflows rollenbasiert lesen und sicher bearbeiten."),
   publisher_name: z.literal("Comvenio"),
   category: z.literal("Productivity"),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),
@@ -48,15 +48,18 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   support_runbook_url: httpsUrl.pipe(z.literal("https://www.comvenio.app/hilfe")),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
+    z.literal("ui://comvenio/member-management"),
+    z.literal("ui://comvenio/booking-object"),
     z.literal("ui://comvenio/news"),
+    z.literal("ui://comvenio/action-confirmation"),
   ]),
   tool_catalog_version: z.string().regex(/^[a-f0-9]{64}$/u),
   assets: z.object({ icon: z.literal("./assets/icon.svg"), logo: z.literal("./assets/logo.png") }).strict(),
-  screenshots: z.array(z.object({ resource_uri: resourceUri, surface: z.enum(["web", "mobile"]), path: localArtifact, synthetic_data_only: z.literal(true) }).strict()).length(2),
+  screenshots: z.array(z.object({ resource_uri: resourceUri, surface: z.enum(["web", "mobile"]), path: localArtifact, synthetic_data_only: z.literal(true) }).strict()).length(5),
   release_gate: z.literal("OPENAI_GLOBAL_RESIDENCY_ACCEPTED"),
 }).strict().superRefine((manifest, context) => {
-  if (new Set(manifest.widget_resource_uris).size !== 2
-    || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== 2) {
+  if (new Set(manifest.widget_resource_uris).size !== 5
+    || new Set(manifest.screenshots.map((item) => item.resource_uri)).size !== 5) {
     context.addIssue({ code: "custom", message: "Jede veröffentlichte MCP App benötigt genau einen Screenshot-Nachweis." });
   }
   if (manifest.starter_prompts.some((prompt) => prompt.length > 128)) {
