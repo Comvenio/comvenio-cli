@@ -122,7 +122,16 @@ function openAiChallengeToken(value: string | undefined): string | null {
   return value;
 }
 
-function releaseScope(value: string | undefined): ConnectorReleaseScope {
+function releaseScope(
+  value: string | undefined,
+  selectedEnvironment: OAuthEnvironment,
+): ConnectorReleaseScope {
+  if (
+    selectedEnvironment === "production"
+    && (value === undefined || value.trim() === "")
+  ) {
+    throw new Error("MCP_RELEASE_SCOPE ist für Production erforderlich.");
+  }
   return parseConnectorReleaseScope(value);
 }
 
@@ -255,7 +264,7 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     auth_base_url: authBaseUrl,
     internal_api_key: internalApiKey,
     openai_apps_challenge_token: openAiChallengeToken(input.OPENAI_APPS_CHALLENGE_TOKEN),
-    release_scope: releaseScope(input.MCP_RELEASE_SCOPE),
+    release_scope: releaseScope(input.MCP_RELEASE_SCOPE, selectedEnvironment),
     shared_state_encryption_key: sharedStateEncryption,
     shared_state_redis_url: sharedStateRedis,
     cimd_client_pins: parsePins(input.MCP_CIMD_CLIENT_PINS_JSON),

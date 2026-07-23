@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   quality:
-    name: MCP quality gate
+    name: CLI and MCP quality gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -35,8 +35,14 @@ jobs:
       - name: Type-check
         run: bun run typecheck
 
-      - name: Test
-        run: bun run test
+      - name: Test CLI
+        run: bun run test:cli
+
+      - name: Test MCP
+        run: bun run test:mcp
+
+      - name: Test shared connector contracts
+        run: bun run test:contracts
 
       - name: Verify repository-local contracts
         run: |

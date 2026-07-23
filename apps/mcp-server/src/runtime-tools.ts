@@ -108,6 +108,10 @@ const myTasksSchema = z.object({
 });
 const taskReminderSchema = z.discriminatedUnion("operation", [
   z.object({
+    operation: z.literal("list"),
+    task_id: uuid.describe("Task-ID aus cv_my_tasks_read."),
+  }).strict(),
+  z.object({
     operation: z.literal("set"),
     task_id: uuid.describe("Task-ID aus cv_my_tasks_read."),
     reminder_at: dateTime.describe("Persönlicher Erinnerungszeitpunkt als RFC-3339-Zeitpunkt."),
@@ -124,11 +128,23 @@ const taskReminderResultSchema = z.object({
   reminder_at: dateTime,
   comment: z.string().nullable(),
 }).strict();
-const taskReminderOutputSchema = z.object({
-  operation: z.enum(["set", "delete"]),
-  task_id: uuid,
-  reminder: taskReminderResultSchema.nullable(),
-}).strict();
+const taskReminderOutputSchema = z.discriminatedUnion("operation", [
+  z.object({
+    operation: z.literal("list"),
+    task_id: uuid,
+    reminders: z.array(taskReminderResultSchema).max(1),
+  }).strict(),
+  z.object({
+    operation: z.literal("set"),
+    task_id: uuid,
+    reminder: taskReminderResultSchema,
+  }).strict(),
+  z.object({
+    operation: z.literal("delete"),
+    task_id: uuid,
+    reminder: z.null(),
+  }).strict(),
+]);
 const clubAgentConversationSchema = z.object({
   message: z.string().trim().min(1).max(4000)
     .describe("Komplexe Frage, Planung oder mehrstufige Aufgabe für den Club-Agenten."),
@@ -184,7 +200,7 @@ const TOOL_COPY = Object.freeze({
   },
   cv_my_task_reminder_write: {
     title: "Comvenio: Eigene Aufgaben-Erinnerung verwalten",
-    description: "Setzt oder löscht deine persönliche Erinnerung für eine Aufgabe. Verwende nur eine task_id aus cv_my_tasks_read; Verein und Benutzer werden sicher aus OAuth abgeleitet. Die Erinnerung wird ausschließlich dir zugestellt.",
+    description: "Zeigt, setzt oder löscht deine persönliche Erinnerung für eine Aufgabe. Verwende nur eine task_id aus cv_my_tasks_read; Verein und Benutzer werden sicher aus OAuth abgeleitet. Die Erinnerung wird ausschließlich dir zugestellt.",
   },
 });
 
@@ -599,7 +615,7 @@ function filterMyTasks(input: {
   };
 }
 
-function projectTaskReminder(value: JsonValue): z.infer<typeof taskReminderOutputSchema>["reminder"] {
+function projectTaskReminder(value: JsonValue): z.infer<typeof taskReminderResultSchema> {
   const source = record(value);
   const parsed = source
     ? taskReminderResultSchema.safeParse({
@@ -979,6 +995,38 @@ export function createRuntimeServer(input: {
           }
 
           try {
+            if (parsed.operation === "list") {
+              const response = await apiClient.request<JsonValue>({
+                method: "GET",
+                service: "automation",
+                path: (
+                  `/custom_reminders/task/`
+                  + encodeURIComponent(parsed.task_id)
+                ),
+                context: input.context.request,
+              });
+              if (!Array.isArray(response) || response.length > 1) {
+                throw new Error(
+                  "Der Automation-Service hat keine gültige Reminder-Liste geliefert.",
+                );
+              }
+              const output = {
+                operation: "list",
+                task_id: parsed.task_id,
+                reminders: response.map(projectTaskReminder),
+              } satisfies z.infer<typeof taskReminderOutputSchema>;
+              return toMcpResult(createProviderNeutralResult(
+                input.context.request,
+                output,
+                [{
+                  type: "text",
+                  text: output.reminders.length
+                    ? "Deine persönliche Aufgaben-Erinnerung ist gespeichert."
+                    : "Für diese Aufgabe ist keine persönliche Erinnerung gespeichert.",
+                }],
+              ));
+            }
+
             if (parsed.operation === "set") {
               if (Date.parse(parsed.reminder_at) <= Date.now()) {
                 return protectedToolError(

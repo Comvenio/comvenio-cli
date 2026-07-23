@@ -1,6 +1,6 @@
 import type { CAC } from "cac";
 import { loadState } from "../auth.ts";
-import { createClient } from "../http.ts";
+import { createClient, type ComvenioClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { prune } from "../util/body.ts";
@@ -94,6 +94,104 @@ export function normalizeFutureReminderAt(
   return parsed.toISOString();
 }
 
+export interface TaskReminderCommandOptions {
+  remindAt?: string;
+  comment?: string;
+}
+
+export interface TaskReminderCommandResult {
+  data: unknown;
+  text: string;
+}
+
+export async function executeTaskReminderCommand(input: {
+  subcommand: string | undefined;
+  taskId: string | undefined;
+  options: TaskReminderCommandOptions;
+  client: ComvenioClient;
+  nowMs?: number;
+}): Promise<TaskReminderCommandResult> {
+  const { subcommand, taskId, options, client } = input;
+  if (subcommand === "set") {
+    if (!taskId) {
+      throw new Error("task reminder set <task-id> benötigt eine Task-ID.");
+    }
+    if (!options.remindAt) {
+      throw new Error("task reminder set benötigt --remind-at <RFC-3339>.");
+    }
+    const normalizedReminderAt = normalizeFutureReminderAt(
+      options.remindAt,
+      input.nowMs,
+    );
+    const row = await client.post<TaskReminderRead>(
+      "automation",
+      "/custom_reminders/task",
+      prune({
+        task_id: taskId,
+        reminder_at: normalizedReminderAt,
+        comment: options.comment,
+      }),
+    );
+    return {
+      data: row,
+      text: `Persönliche Erinnerung gesetzt: ${row.task_title ?? taskId} am ${
+        row.reminder_at
+          ? new Date(row.reminder_at).toLocaleString("de-DE")
+          : new Date(normalizedReminderAt).toLocaleString("de-DE")
+      }`,
+    };
+  }
+
+  if (subcommand === "list") {
+    if (!taskId) {
+      throw new Error("task reminder list <task-id> benötigt eine Task-ID.");
+    }
+    const rows = await client.get<TaskReminderRead[]>(
+      "automation",
+      `/custom_reminders/task/${taskId}`,
+    );
+    return {
+      data: rows,
+      text: rows.length
+        ? renderTable(rows, [
+            { header: "ID", width: 36, get: (row) => String(row.id ?? "") },
+            {
+              header: "Zeitpunkt",
+              width: 22,
+              get: (row) =>
+                row.reminder_at
+                  ? new Date(row.reminder_at).toLocaleString("de-DE")
+                  : "–",
+            },
+            {
+              header: "Kommentar",
+              width: 36,
+              get: (row) => String(row.comment ?? "–"),
+            },
+          ])
+        : "Keine persönliche Erinnerung für diese Aufgabe.",
+    };
+  }
+
+  if (subcommand === "delete") {
+    if (!taskId) {
+      throw new Error("task reminder delete <task-id> benötigt eine Task-ID.");
+    }
+    await client.del(
+      "automation",
+      `/custom_reminders/task/by-task/${taskId}`,
+    );
+    return {
+      data: { deleted: true, task_id: taskId },
+      text: `Persönliche Erinnerung für Aufgabe gelöscht: ${taskId}`,
+    };
+  }
+
+  throw new Error(
+    "task reminder unterstützt: set <task-id>, list <task-id>, delete <task-id>.",
+  );
+}
+
 /**
  * `comvenio task <action> [arg1] [arg2]` dispatcher.
  *   task list [--mine] | task show <id> | task create | task assign <id> | task done <id>
@@ -137,89 +235,17 @@ export function registerTaskCommands(cli: CAC): void {
 
         // task reminder set|list|delete
         if (action === "reminder") {
-          const sub = arg1;
-          if (sub === "set") {
-            if (!arg2) {
-              throw new Error("task reminder set <task-id> benötigt eine Task-ID.");
-            }
-            if (!opts.remindAt) {
-              throw new Error("task reminder set benötigt --remind-at <RFC-3339>.");
-            }
-            const normalizedReminderAt = normalizeFutureReminderAt(opts.remindAt);
-            const row = await client.post<TaskReminderRead>(
-              "automation",
-              "/custom_reminders/task",
-              prune({
-                task_id: arg2,
-                reminder_at: normalizedReminderAt,
-                comment: opts.comment,
-              }),
-            );
-            output(
-              row,
-              opts.json,
-              () =>
-                `Persönliche Erinnerung gesetzt: ${row.task_title ?? arg2} am ${
-                  row.reminder_at
-                    ? new Date(row.reminder_at).toLocaleString("de-DE")
-                    : new Date(normalizedReminderAt).toLocaleString("de-DE")
-                }`,
-            );
-            return;
-          }
-          if (sub === "list") {
-            if (!arg2) {
-              throw new Error("task reminder list <task-id> benötigt eine Task-ID.");
-            }
-            const rows = await client.get<TaskReminderRead[]>(
-              "automation",
-              `/custom_reminders/task/${arg2}`,
-            );
-            output(
-              rows,
-              opts.json,
-              () =>
-                rows.length
-                  ? renderTable(rows, [
-                      { header: "ID", width: 36, get: (r) => String(r.id ?? "") },
-                      {
-                        header: "Zeitpunkt",
-                        width: 22,
-                        get: (r) =>
-                          r.reminder_at
-                            ? new Date(r.reminder_at).toLocaleString("de-DE")
-                            : "–",
-                      },
-                      {
-                        header: "Kommentar",
-                        width: 36,
-                        get: (r) => String(r.comment ?? "–"),
-                      },
-                    ])
-                  : "Keine persönliche Erinnerung für diese Aufgabe.",
-            );
-            return;
-          }
-          if (sub === "delete") {
-            if (!arg2) {
-              throw new Error(
-                "task reminder delete <task-id> benötigt eine Task-ID.",
-              );
-            }
-            await client.del(
-              "automation",
-              `/custom_reminders/task/by-task/${arg2}`,
-            );
-            output(
-              { deleted: true, task_id: arg2 },
-              opts.json,
-              () => `Persönliche Erinnerung für Aufgabe gelöscht: ${arg2}`,
-            );
-            return;
-          }
-          throw new Error(
-            "task reminder unterstützt: set <task-id>, list <task-id>, delete <task-id>.",
-          );
+          const result = await executeTaskReminderCommand({
+            subcommand: arg1,
+            taskId: arg2,
+            options: {
+              remindAt: opts.remindAt,
+              comment: opts.comment,
+            },
+            client,
+          });
+          output(result.data, opts.json, () => result.text);
+          return;
         }
 
         const clubId = requireClubId(state, opts.club);

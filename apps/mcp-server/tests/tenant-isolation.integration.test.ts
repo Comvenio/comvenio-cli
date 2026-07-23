@@ -1267,6 +1267,7 @@ describe("Remote MCP runtime", () => {
     const reminderAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     let taskActorTokenSeen = false;
     let reminderActorTokenSeen = false;
+    let reminderReadActorTokenSeen = false;
     let reminderDeleteActorTokenSeen = false;
     let reminderBody: Record<string, unknown> = {};
     const api = Bun.serve({
@@ -1344,6 +1345,24 @@ describe("Remote MCP runtime", () => {
             club_id: clubId,
             target_user_ids: [runtimeSubjectId],
           });
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === `/automation/custom_reminders/task/${openTaskId}`
+        ) {
+          reminderReadActorTokenSeen =
+            request.headers.get("authorization") === "Bearer backend-actor-token";
+          return reminderReadActorTokenSeen
+            ? Response.json([{
+                id: reminderId,
+                task_id: openTaskId,
+                reminder_at: reminderAt,
+                comment: "Bitte rechtzeitig erinnern",
+                user_id: runtimeSubjectId,
+                club_id: clubId,
+                target_user_ids: [runtimeSubjectId],
+              }])
+            : Response.json({ error: "missing_actor_token" }, { status: 401 });
         }
         if (
           request.method === "DELETE"
@@ -1589,6 +1608,36 @@ describe("Remote MCP runtime", () => {
       });
       expect(reminderBody).not.toHaveProperty("user_id");
       expect(reminderBody).not.toHaveProperty("target_user_ids");
+
+      const listedReminder = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 2411,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "list",
+            task_id: openTaskId,
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(listedReminder.status).toBe(200);
+      const listedReminderResult = await listedReminder.json() as any;
+      expect(listedReminderResult.result.isError).not.toBe(true);
+      expect(listedReminderResult.result.structuredContent).toEqual({
+        operation: "list",
+        task_id: openTaskId,
+        reminders: [{
+          id: reminderId,
+          task_id: openTaskId,
+          reminder_at: reminderAt,
+          comment: "Bitte rechtzeitig erinnern",
+        }],
+      });
+      expect(reminderReadActorTokenSeen).toBe(true);
+      expect(JSON.stringify(listedReminderResult)).not.toContain("user_id");
+      expect(JSON.stringify(listedReminderResult)).not.toContain("club_id");
+      expect(JSON.stringify(listedReminderResult)).not.toContain("target_user_ids");
 
       const rejectedReminderContext = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -1877,6 +1926,7 @@ describe("Remote MCP runtime", () => {
     expect(production.required_secret_names).toContain(
       "MCP_SHARED_STATE_ENCRYPTION_KEY",
     );
+    expect(production.required_secret_names).toContain("MCP_RELEASE_SCOPE");
   });
 
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {

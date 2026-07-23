@@ -36,6 +36,7 @@ function deployment(environment: OAuthEnvironment): RailwayDeploymentConfig {
       "COMVENIO_API_BASE_URL",
       "AUTH_SERVICE_BASE_URL",
       "INTERNAL_API_KEY",
+      "MCP_RELEASE_SCOPE",
       "MCP_SHARED_STATE_ENCRYPTION_KEY",
       "MCP_SHARED_STATE_REDIS_URL",
       `${prefix}_ALLOWED_ORIGINS`,
@@ -66,6 +67,7 @@ export function validateRailwayDeploymentConfig(config: RailwayDeploymentConfig)
   const expected = DEPLOYMENTS[config.environment];
   if (JSON.stringify(config) !== JSON.stringify(expected)
     || !config.required_secret_names.includes("MCP_PUBLIC_ORIGIN")
+    || !config.required_secret_names.includes("MCP_RELEASE_SCOPE")
     || !config.required_secret_names.includes("MCP_SHARED_STATE_ENCRYPTION_KEY")
     || !config.required_secret_names.includes("MCP_SHARED_STATE_REDIS_URL")
     || (config.environment === "production"

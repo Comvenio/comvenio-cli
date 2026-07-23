@@ -64,7 +64,7 @@ fünf geschützte Self-Service-Tools, den Club-Agent-Dialog, 299 freigegebene
 K7–K13-Fachaktionen, den zentralen Bestätigungsaufruf und zwei explizite
 Widget-Projektionen. Neben Verbindung, Rechten und sichtbaren Aktionen liefert
 `cv_my_tasks_read` die persönlichen
-Aufgaben im gewünschten Zeitraum. `cv_my_task_reminder_write` setzt oder löscht
+Aufgaben im gewünschten Zeitraum. `cv_my_task_reminder_write` zeigt, setzt oder löscht
 eine frei gewählte Aufgaben-Erinnerung ausschließlich für den verbundenen
 Nutzer. Verein, Mitglied und Empfänger werden serverseitig aus OAuth,
 Backend-Actor und JWT-Subjekt abgeleitet; die Tools akzeptieren dafür keine

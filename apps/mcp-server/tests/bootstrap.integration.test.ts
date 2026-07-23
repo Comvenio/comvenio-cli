@@ -57,6 +57,7 @@ describe("production MCP process bootstrap", () => {
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
       MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "rediss://redis.example.test:6380/0",
+      MCP_RELEASE_SCOPE: "full_connector_v1",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp-review.comvenio.app",
       MCP_PROD_ALLOWED_ORIGINS: "https://chatgpt.com,https://claude.ai",
@@ -70,7 +71,7 @@ describe("production MCP process bootstrap", () => {
       auth_base_url: "https://api.comvenio.app/auth",
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: null,
-      release_scope: "personal_productivity_v1",
+      release_scope: "full_connector_v1",
       shared_state_encryption_key: sharedStateEncryptionKey,
       shared_state_redis_url: "rediss://redis.example.test:6380/0",
       cimd_client_pins: expect.objectContaining({
@@ -166,6 +167,16 @@ describe("production MCP process bootstrap", () => {
       MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
       INTERNAL_API_KEY: "test-internal-key",
     })).toThrow("MCP_SHARED_STATE_ENCRYPTION_KEY");
+  });
+
+  test("requires an explicit release scope in production", () => {
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
+      MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("MCP_RELEASE_SCOPE");
   });
 
   test("starts on TCP, serves health and OAuth metadata, and stays fail-closed", async () => {
