@@ -19,6 +19,9 @@ export const K11_SHOPPING_ACTION_IDS = [
   "cai.shopping.01.list", "cai.shopping.02.active", "cai.shopping.03.completed", "cai.shopping.04.by_context", "cai.shopping.05.by_context_type",
   "cai.shopping.06.show", "cai.shopping.07.create", "cai.shopping.08.update", "cai.shopping.09.delete", "cai.shopping.10.item_add",
   "cai.shopping.11.item_update", "cai.shopping.12.item_delete", "cai.shopping.13.purchased", "cai.shopping.14.generate_from_recipe", "cai.shopping.15.generate_from_menu",
+  "cai.shopping.procurement.list", "cai.shopping.procurement.templates", "cai.shopping.procurement.activate", "cai.shopping.procurement.add",
+  "cai.shopping.procurement.purchase", "cai.shopping.procurement.template_create", "cai.shopping.procurement.template_update",
+  "cai.shopping.procurement.template_deactivate",
 ] as const;
 export const K11_TEMPLATE_ACTION_IDS = ["cai.template.01.dish", "cai.template.02.ingredient"] as const;
 export const K11_MENU_ACTION_IDS = [

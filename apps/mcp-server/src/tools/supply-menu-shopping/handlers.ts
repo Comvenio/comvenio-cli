@@ -11,6 +11,9 @@ function record(value: JsonValue): JsonObject { if (value === null || Array.isAr
 function string(input: JsonObject, key: string): string { const value = input[key]; if (typeof value !== "string") throw new Error(`${key} fehlt.`); return value; }
 function object(input: JsonObject, key: string): JsonObject { return record(input[key] ?? {}); }
 function query(input: JsonObject, keys: readonly string[]): Record<string, string> { return Object.fromEntries(keys.flatMap((key) => { const value = input[key]; return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? [[key, String(value)]] : []; })); }
+function pick(input: JsonObject, keys: readonly string[]): JsonObject {
+  return Object.fromEntries(keys.flatMap((key) => input[key] === undefined ? [] : [[key, input[key]!]]));
+}
 function assertClub(value: JsonValue, input: JsonObject, context: RequestContext): JsonValue {
   const clubId = string(input, "club_id");
   const list = Array.isArray(value) ? value : [value];
@@ -74,6 +77,37 @@ simple("cai.shopping.10.item_add", "add", "POST", (i) => `/shopping/club/${strin
 simple("cai.shopping.11.item_update", "update", "PUT", (i) => `/shopping/club/${string(i, "club_id")}/items/${string(i, "item_id")}`, { body: (i) => object(i, "changes") });
 simple("cai.shopping.12.item_delete", "delete", "DELETE", (i) => `/shopping/club/${string(i, "club_id")}/items/${string(i, "item_id")}`, { deleted_id: "item_id" });
 simple("cai.shopping.13.purchased", "set", "PATCH", (i) => `/shopping/club/${string(i, "club_id")}/items/${string(i, "item_id")}/purchased`, { query: (i) => ({ purchased: String(i.purchased) }) });
+simple("cai.shopping.procurement.list", "list", "GET", fixed("/procurement/ongoing"), {
+  query: (i) => query(i, ["club_id", "building_id", "room_id"]),
+  response: (value, input, context) => boundedList(assertClub(value, input, context), Number(input.limit)),
+});
+simple("cai.shopping.procurement.templates", "list", "GET", fixed("/procurement/templates"), {
+  query: (i) => query(i, ["club_id", "building_id", "room_id"]),
+  response: (value, input, context) => boundedList(assertClub(value, input, context), Number(input.limit)),
+});
+simple("cai.shopping.procurement.activate", "activate", "POST", (i) => `/procurement/templates/${string(i, "template_id")}/activate`, {
+  query: (i) => query(i, ["club_id"]),
+  body: (i) => pick(i, ["quantity", "notes"]),
+});
+simple("cai.shopping.procurement.add", "add", "POST", fixed("/procurement/items"), {
+  query: (i) => query(i, ["club_id"]),
+  body: (i) => pick(i, ["name", "ingredient_id", "quantity", "unit", "notes", "building_id", "room_id"]),
+});
+simple("cai.shopping.procurement.purchase", "purchase", "PATCH", (i) => `/procurement/items/${string(i, "item_id")}/purchase`, {
+  query: (i) => query(i, ["club_id"]),
+});
+simple("cai.shopping.procurement.template_create", "create", "POST", fixed("/procurement/templates"), {
+  query: (i) => query(i, ["club_id"]),
+  body: (i) => pick(i, ["name", "ingredient_id", "default_quantity", "unit", "notes", "building_id", "room_id"]),
+});
+simple("cai.shopping.procurement.template_update", "update", "PATCH", (i) => `/procurement/templates/${string(i, "template_id")}`, {
+  query: (i) => query(i, ["club_id"]),
+  body: (i) => object(i, "changes"),
+});
+simple("cai.shopping.procurement.template_deactivate", "deactivate", "PATCH", (i) => `/procurement/templates/${string(i, "template_id")}`, {
+  query: (i) => query(i, ["club_id"]),
+  body: () => ({ is_active: false }),
+});
 
 for (const [actionId, prefix] of [["cai.template.01.dish", "/global-dish-templates/"], ["cai.template.02.ingredient", "/global-ingredient-templates/"]] as const) {
   simple(actionId, "list", "GET", fixed(prefix), { query: (i) => query(i, ["search", "category", "common_only", "limit"]), templates: true });

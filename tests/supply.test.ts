@@ -181,6 +181,76 @@ describe("shopping CLI route contracts", () => {
         body: { description: "Alles fuer Samstag" },
       }]);
   });
+
+  test("covers ongoing procurement, templates and assigned-user mutations", async () => {
+    const itemFile = join(import.meta.dir, "fixtures", "procurement-item-create.json");
+    expect(await shopping("procurement-list", undefined, {
+      buildingId: "building-1",
+    })).toEqual([{
+      method: "GET",
+      service: "supply",
+      path: "/procurement/ongoing?club_id=club-1&building_id=building-1",
+      body: undefined,
+    }]);
+    expect(await shopping("procurement-templates", undefined, {
+      roomId: "room-1",
+    })).toEqual([{
+      method: "GET",
+      service: "supply",
+      path: "/procurement/templates?club_id=club-1&room_id=room-1",
+      body: undefined,
+    }]);
+    expect((await shopping("procurement-activate", "template-1"))[0]).toEqual({
+      method: "POST",
+      service: "supply",
+      path: "/procurement/templates/template-1/activate?club_id=club-1",
+      body: {},
+    });
+    expect((await shopping("procurement-add", undefined, { file: itemFile }))[0])
+      .toMatchObject({
+        method: "POST",
+        path: "/procurement/items?club_id=club-1",
+      });
+    expect((await shopping("procurement-purchase", "item-1"))[0]).toEqual({
+      method: "PATCH",
+      service: "supply",
+      path: "/procurement/items/item-1/purchase?club_id=club-1",
+      body: undefined,
+    });
+  });
+
+  test("covers Supply-RBAC protected procurement template management", async () => {
+    const createFile = join(
+      import.meta.dir,
+      "fixtures",
+      "procurement-template-create.json",
+    );
+    const updateFile = join(
+      import.meta.dir,
+      "fixtures",
+      "procurement-template-update.json",
+    );
+    expect((await shopping("procurement-template-create", undefined, {
+      file: createFile,
+    }))[0]).toMatchObject({
+      method: "POST",
+      path: "/procurement/templates?club_id=club-1",
+    });
+    expect((await shopping("procurement-template-update", "template-1", {
+      file: updateFile,
+    }))[0]).toMatchObject({
+      method: "PATCH",
+      path: "/procurement/templates/template-1?club_id=club-1",
+    });
+    expect(
+      (await shopping("procurement-template-deactivate", "template-1"))[0],
+    ).toEqual({
+      method: "PATCH",
+      service: "supply",
+      path: "/procurement/templates/template-1?club_id=club-1",
+      body: { is_active: false },
+    });
+  });
 });
 
 describe("supply machine-readable schemas", () => {
@@ -193,6 +263,8 @@ describe("supply machine-readable schemas", () => {
     expect(schema("ingredient-category").commands).toContain("assign");
     expect(schema("ingredient-category").notes.join(" ")).toContain("akzeptiert club_id im Body");
     expect(schema("shopping").commands.generate).toEqual(["generate-from-recipe", "generate-from-menu"]);
+    expect(schema("shopping").commands.procurement).toContain("procurement-template-deactivate");
+    expect(schema("shopping").procurement_location_rule).toContain("Exakt eines");
     expect(schema("shopping").excluded_routes).toContain("Interne Service-Routen");
   });
 });

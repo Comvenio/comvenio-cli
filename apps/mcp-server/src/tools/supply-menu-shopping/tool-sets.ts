@@ -94,6 +94,9 @@ export abstract class K11ToolSet {
       assertJson(parsed.data, context); return { action_id: definition.action_id, operation: operation.operation, status, result: parsed.data };
     } catch (error) {
       if (isConnectorError(error) && error.code === "PERMISSION_DENIED") { await this.#dependencies.on_backend_forbidden?.({ action_id: definition.action_id, operation: operation.operation, context }); throw connectorError(context, "PERMISSION_DENIED", "Der Supply-Service hat die Aktion im aktuellen Kontext abgelehnt."); }
+      if (isConnectorError(error) && error.code === "CONFLICT" && definition.action_id === "cai.shopping.procurement.activate") {
+        throw connectorError(context, "CONFLICT", "Bereits angelegt");
+      }
       if (isConnectorError(error) && error.code === "NOT_FOUND") throw connectorError(context, "NOT_FOUND", "Die angeforderte Supply-Ressource wurde nicht gefunden."); throw error;
     }
   }

@@ -3,12 +3,24 @@
   "generated": false,
   "source": [
     "Backend/Microservice-Backend/supply-service/app/routes/shopping.py",
-    "Backend/Microservice-Backend/supply-service/app/schemas/shopping.py"
+    "Backend/Microservice-Backend/supply-service/app/schemas/shopping.py",
+    "Backend/Microservice-Backend/supply-service/app/routes/procurement.py",
+    "Backend/Microservice-Backend/supply-service/app/schemas/procurement.py"
   ],
   "commands": {
     "list": ["list", "active", "completed", "by-context", "by-context-type", "show", "create", "update", "delete"],
     "item": ["item-add", "item-update", "item-delete", "purchased"],
-    "generate": ["generate-from-recipe", "generate-from-menu"]
+    "generate": ["generate-from-recipe", "generate-from-menu"],
+    "procurement": [
+      "procurement-list",
+      "procurement-templates",
+      "procurement-activate",
+      "procurement-add",
+      "procurement-purchase",
+      "procurement-template-create",
+      "procurement-template-update",
+      "procurement-template-deactivate"
+    ]
   },
   "enums": {
     "context_type": ["club", "event", "object", "meeting"],
@@ -57,9 +69,37 @@
     "name": { "type": "string", "max_length": 200 },
     "description": { "type": "string", "max_length": 500 }
   },
+  "procurement_location_rule": "Exakt eines von building_id oder room_id ist bei neuen Positionen und Vorlagen erforderlich.",
+  "procurement_article_rule": "Exakt eines von name oder ingredient_id ist bei neuen Positionen und Vorlagen erforderlich.",
+  "procurement_item_create_required_fields": ["quantity", "unit"],
+  "procurement_item_create_optional_fields": [
+    "name",
+    "ingredient_id",
+    "notes",
+    "building_id",
+    "room_id"
+  ],
+  "procurement_template_create_required_fields": ["default_quantity", "unit"],
+  "procurement_template_create_optional_fields": [
+    "name",
+    "ingredient_id",
+    "notes",
+    "building_id",
+    "room_id"
+  ],
+  "procurement_template_update_fields": [
+    "name",
+    "default_quantity",
+    "unit",
+    "notes",
+    "is_active"
+  ],
   "notes": [
     "Listen- und Positions-CRUD lesen komplexe Bodies aus --file.",
     "purchased sendet den booleschen Status als Query-Parameter, wie vom Backend verlangt.",
+    "Procurement-Mutationen reichen 403 und 409 unverändert vom Supply-Service durch und führen keinen eigenen Retry aus.",
+    "procurement-list und procurement-templates unterstützen --building-id oder --room-id.",
+    "Vorlagenverwaltung bleibt vollständig durch Supply-RBAC geschützt.",
     "RBAC wird ausschließlich serverseitig geprüft.",
     "GET /shopping/lists/{shopping_list_id} ist als eigenständige Detailroute registriert."
   ],
