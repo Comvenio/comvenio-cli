@@ -94,6 +94,10 @@ import {
   createK13ToolSet,
   type K13ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/sponsor-marketing/index.ts";
+import {
+  FULL_CONNECTOR_REPLACEMENTS,
+  fullDomainCatalogSummary,
+} from "../../../apps/mcp-server/src/domain-runtime.ts";
 
 describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
@@ -122,6 +126,91 @@ describe("Comvenio connector inventory contract", () => {
     expect(new Set([...candidateIds, ...replacementIds]).size).toBe(303);
     expect(inventory.migration.discovered_candidates.every((entry) =>
       entry.state === "DISCOVERED" && entry.published === false && entry.blockers.length === 5)).toBe(true);
+  });
+
+  test("covers all 303 CLI actions by an executable domain adapter or an exact platform replacement", () => {
+    const directActionIds = [
+      ...K7_ACTION_IDS,
+      ...K8_ACTION_IDS,
+      ...K9_ACTION_IDS,
+      ...K10_ACTION_IDS,
+      ...K11_ACTION_IDS,
+      ...K12_ACTION_IDS,
+      ...K13_SPONSOR_ACTION_IDS,
+    ];
+    const definitions = {
+      ...K7_ACTION_DEFINITIONS,
+      ...K8_ACTION_DEFINITIONS,
+      ...K9_ACTION_DEFINITIONS,
+      ...K10_ACTION_DEFINITIONS,
+      ...K11_ACTION_DEFINITIONS,
+      ...K12_ACTION_DEFINITIONS,
+      ...K13_ACTION_DEFINITIONS,
+    } as Record<string, {
+      publication_state: "implemented" | "blocked";
+      source_path: string;
+      backend_routes?: readonly unknown[];
+      operations?: Readonly<Record<string, {
+        backend_routes: readonly unknown[];
+      }>>;
+    }>;
+    const schemas = {
+      ...K7_ACTION_SCHEMAS,
+      ...K8_ACTION_SCHEMAS,
+      ...K9_ACTION_SCHEMAS,
+      ...K10_ACTION_SCHEMAS,
+      ...K11_ACTION_SCHEMAS,
+      ...K12_ACTION_SCHEMAS,
+      ...K13_ACTION_SCHEMAS,
+    } as Record<string, unknown>;
+    const inventoryActionIds = inventory.actions.entries
+      .map((entry) => entry.id)
+      .sort();
+    const candidateActionIds = inventory.migration.discovered_candidates
+      .map((entry) => entry.legacy_action_id)
+      .sort();
+    const summary = fullDomainCatalogSummary();
+
+    expect(directActionIds).toHaveLength(301);
+    expect(new Set(directActionIds).size).toBe(301);
+    expect([...directActionIds].sort()).toEqual(candidateActionIds);
+    expect(Object.keys(definitions).sort()).toEqual(candidateActionIds);
+    expect(Object.keys(schemas).sort()).toEqual(candidateActionIds);
+    expect(summary).toMatchObject({
+      discovered_actions: 301,
+      published_domain_actions: 299,
+      blocked_action_ids: [
+        "cai.club.01.info",
+        "cai.role.15.effective",
+      ],
+    });
+    expect(Object.keys(FULL_CONNECTOR_REPLACEMENTS).sort()).toEqual([
+      "cai.club.01.info",
+      "cai.login.01.login_token",
+      "cai.logout.01.logout",
+      "cai.role.15.effective",
+    ]);
+
+    for (const actionId of directActionIds) {
+      const definition = definitions[actionId]!;
+      expect(schemas[actionId]).toBeDefined();
+      expect(definition.source_path).toMatch(/^src\/commands\/.+\.ts$/u);
+      const routeCount = definition.backend_routes?.length
+        ?? Object.values(definition.operations ?? {})
+          .reduce((count, operation) => count + operation.backend_routes.length, 0);
+      expect(routeCount).toBeGreaterThan(0);
+      if (definition.publication_state === "blocked") {
+        expect(FULL_CONNECTOR_REPLACEMENTS).toHaveProperty(actionId);
+      }
+    }
+
+    const publishedDirectActionIds = directActionIds.filter((actionId) =>
+      definitions[actionId]!.publication_state === "implemented");
+    const coveredActionIds = new Set([
+      ...publishedDirectActionIds,
+      ...Object.keys(FULL_CONNECTOR_REPLACEMENTS),
+    ]);
+    expect([...coveredActionIds].sort()).toEqual(inventoryActionIds);
   });
 
   test("fails published parity until audited operations replace discovered candidates", () => {

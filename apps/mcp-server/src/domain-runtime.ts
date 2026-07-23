@@ -161,7 +161,7 @@ export interface DomainRuntimeRegistration {
 }
 
 export const FULL_CONNECTOR_REPLACEMENTS = Object.freeze({
-  "cai.login.01.login": "oauth_connect",
+  "cai.login.01.login_token": "oauth_connect",
   "cai.logout.01.logout": "oauth_disconnect",
   "cai.club.01.info": "cv_whoami_read",
   "cai.role.15.effective": "cv_permissions_explain_read",
