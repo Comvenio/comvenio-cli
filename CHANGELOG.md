@@ -9,6 +9,9 @@ Die Einträge folgen
 
 ### Added
 
+- GitHub-Actions-Qualitätsgate für Lockfile-Installation, TypeScript-Vertrag,
+  vollständige Tests, repository-lokale Connector-Verträge sowie CLI- und
+  MCP-Build.
 - Ausführbarer, fail-closed Remote-MCP-Prozess für Railway mit Streamable HTTP,
   OAuth-Resource-Metadaten, Liveness- und Readiness-Trennung sowie Graceful Shutdown.
 - Railway-Konfiguration für den getrennten MCP-Build und Start auf `0.0.0.0:$PORT`.
