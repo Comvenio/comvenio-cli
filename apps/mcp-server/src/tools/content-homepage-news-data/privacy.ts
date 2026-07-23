@@ -9,9 +9,23 @@ export function redactContentValue(value: JsonValue): JsonValue {
   if (value === null || typeof value !== "object") return value;
   return Object.fromEntries(Object.entries(value).filter(([key]) => !forbidden.test(key)).map(([key, entry]) => [key, redactContentValue(entry)]));
 }
-export function boundedContentList(value: JsonValue, limit: number, mapper: (entry: JsonValue) => JsonValue = redactContentValue): JsonValue {
+export function boundedContentList(
+  value: JsonValue,
+  limit: number,
+  mapper: (entry: JsonValue) => JsonValue = redactContentValue,
+  offset = 0,
+): JsonValue {
   const list = Array.isArray(value) ? value : [];
-  return { items: list.slice(0, limit).map(mapper), returned: Math.min(list.length, limit), truncated: list.length > limit };
+  const items = list.slice(offset, offset + limit).map(mapper);
+  const nextOffset = offset + items.length;
+  return {
+    items,
+    total_count: list.length,
+    returned: items.length,
+    has_more: nextOffset < list.length,
+    next_offset: nextOffset < list.length ? nextOffset : null,
+    truncated: nextOffset < list.length,
+  };
 }
 export function minimizeFile(value: JsonValue): JsonValue {
   const source = record(redactContentValue(value));

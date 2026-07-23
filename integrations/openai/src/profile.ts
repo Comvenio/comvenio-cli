@@ -12,7 +12,7 @@ export function buildChatGptAppManifest(toolCatalogVersion: string): ChatGptAppM
     schema_version: "1.0.0",
     product_name: "Comvenio",
     tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-    short_description: "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.",
+    short_description: "Vereinsdaten, Events, News, Aufgaben, Mitglieder, Buchungen und weitere Comvenio-Workflows rollenbasiert lesen und sicher bearbeiten.",
     publisher_name: "Comvenio",
     category: "Productivity",
     website_url: "https://www.comvenio.app",
@@ -29,13 +29,19 @@ export function buildChatGptAppManifest(toolCatalogVersion: string): ChatGptAppM
     support_runbook_url: "https://www.comvenio.app/hilfe",
     widget_resource_uris: [
       "ui://comvenio/event-calendar",
+      "ui://comvenio/member-management",
+      "ui://comvenio/booking-object",
       "ui://comvenio/news",
+      "ui://comvenio/action-confirmation",
     ],
     tool_catalog_version: toolCatalogVersion,
     assets: { icon: "./assets/icon.svg", logo: "./assets/logo.png" },
     screenshots: [
       { resource_uri: "ui://comvenio/event-calendar", surface: "mobile", path: "./screenshots/event-mobile.png", synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/member-management", surface: "web", path: "./screenshots/members-desktop.png", synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/booking-object", surface: "mobile", path: "./screenshots/booking-mobile.png", synthetic_data_only: true },
       { resource_uri: "ui://comvenio/news", surface: "web", path: "./screenshots/news-desktop.png", synthetic_data_only: true },
+      { resource_uri: "ui://comvenio/action-confirmation", surface: "mobile", path: "./screenshots/confirmation-mobile.png", synthetic_data_only: true },
     ],
     release_gate: "OPENAI_GLOBAL_RESIDENCY_ACCEPTED",
   });

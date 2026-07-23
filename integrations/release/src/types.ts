@@ -1,3 +1,5 @@
+import type { ConnectorReleaseScope } from "@comvenio/connector-contracts";
+
 export type GateState = "pass" | "block";
 export type ProviderReleaseState = "ready" | "blocked";
 export type PilotScenarioId =
@@ -127,8 +129,9 @@ export interface ProviderGateResult {
 }
 
 export interface ReleaseEvidence {
-  release_scope: "personal_productivity_v1";
+  release_scope: ConnectorReleaseScope;
   published_tool_count: number;
+  runtime_tool_catalog_sha256: string;
   planned_action_count: number;
   planned_route_callsite_count: number;
   published_runtime_catalog_verified: boolean;
@@ -140,6 +143,7 @@ export interface ReleaseEvidence {
   malware_quarantine_verified: boolean;
   confirmation_input_server_internal: boolean;
   published_widget_contract_count: number;
+  widget_resource_catalog_sha256: string;
   planned_widget_contract_count: number;
   widget_surfaces_verified: boolean;
   accessibility_smokes_passed: boolean;

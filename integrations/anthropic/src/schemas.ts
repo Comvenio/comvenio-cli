@@ -14,7 +14,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten."),
+  short_description: z.literal("Vereinsdaten, Events, News, Aufgaben, Mitglieder, Buchungen und weitere Comvenio-Workflows rollenbasiert lesen und sicher bearbeiten."),
   publisher_name: z.literal("Comvenio"),
   categories: z.tuple([z.literal("Productivity")]),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),
@@ -43,7 +43,10 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   allowed_link_uris: z.tuple([]),
   widget_resource_uris: z.tuple([
     z.literal("ui://comvenio/event-calendar"),
+    z.literal("ui://comvenio/member-management"),
+    z.literal("ui://comvenio/booking-object"),
     z.literal("ui://comvenio/news"),
+    z.literal("ui://comvenio/action-confirmation"),
   ]),
   tool_sync_version: z.string().regex(/^[a-f0-9]{64}$/u),
   assets: z.object({ icon: z.literal("./assets/icon.svg"), logo: z.literal("./assets/logo.png") }).strict(),
@@ -60,7 +63,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Directory-Name, Tagline oder Beschreibung überschreiten die Portalgrenze." });
   }
   const publishedWidgets = new Set<string>(manifest.widget_resource_uris);
-  if (publishedWidgets.size !== 2 || manifest.screenshots.some((item) => !publishedWidgets.has(item.resource_uri))) {
+  if (publishedWidgets.size !== 5 || manifest.screenshots.some((item) => !publishedWidgets.has(item.resource_uri))) {
     context.addIssue({ code: "custom", message: "Screenshots dürfen nur veröffentlichte Widgets zeigen." });
   }
   if (new Set(manifest.screenshots.map((item) => item.path)).size !== manifest.screenshots.length) {

@@ -1,4 +1,8 @@
 import type { HttpsUrl, OAuthEnvironment } from "@comvenio/auth";
+import {
+  parseConnectorReleaseScope,
+  type ConnectorReleaseScope,
+} from "@comvenio/connector-contracts";
 
 import cimdPins from "../../../integrations/release/cimd-client-allowlist.v1.json";
 import { IntrospectionBearerAuthenticator } from "./http/auth.ts";
@@ -16,7 +20,6 @@ import type { McpRuntimeOptions, ReadinessDependency } from "./http/types.ts";
 import {
   createRuntimeAccessPolicy,
   createRuntimeServer,
-  type ConnectorReleaseScope,
 } from "./runtime-tools.ts";
 
 export interface McpProcessEnvironment {
@@ -109,13 +112,7 @@ function openAiChallengeToken(value: string | undefined): string | null {
 }
 
 function releaseScope(value: string | undefined): ConnectorReleaseScope {
-  if (value === undefined || value === "personal_productivity_v1") {
-    return "personal_productivity_v1";
-  }
-  if (value === "full_connector_v1") return "full_connector_v1";
-  throw new Error(
-    "MCP_RELEASE_SCOPE muss personal_productivity_v1 oder full_connector_v1 sein.",
-  );
+  return parseConnectorReleaseScope(value);
 }
 
 function edgeSharedSecret(

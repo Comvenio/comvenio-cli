@@ -49,6 +49,13 @@ import {
   createRuntimeAccessPolicy,
   createRuntimeServer,
 } from "../src/runtime-tools.ts";
+import { domainToolName } from "../src/domain-runtime.ts";
+import {
+  BOOKING_OBJECT_WIDGET_TOOL_NAME,
+  EVENT_CALENDAR_WIDGET_TOOL_NAME,
+  MEMBER_MANAGEMENT_WIDGET_TOOL_NAME,
+  NEWS_WIDGET_TOOL_NAME,
+} from "../src/widget-runtime.ts";
 import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets, createK13ToolSet } from "../src/tools/index.ts";
 import {
   AsyncJobService,
@@ -313,7 +320,22 @@ function runtimePrincipal(token: string): AuthenticatedConnectorPrincipal {
     client_id: "https://provider.example/client.json",
     provider: token.endsWith("anthropic") ? "anthropic" : "openai",
     club_id: token.startsWith("token-other") ? otherClubId : clubId,
-    scopes: token === "token-openai-no-club"
+    scopes: token.startsWith("token-critical-")
+      ? ["admin.write", "club.read", "member.read.basic"]
+      : token.startsWith("token-full-")
+      ? [
+          "booking.read",
+          "booking.write",
+          "club.read",
+          "content.read",
+          "event.read",
+          "member.read.basic",
+          "member.read.details",
+          "object.read",
+          "task.read",
+          "task.write",
+        ]
+      : token === "token-openai-no-club"
       ? ["task.read", "task.write"]
       : token === "token-openai-club-only"
         ? ["club.read", "member.read.basic"]
@@ -332,7 +354,13 @@ function runtimeCapability(club: string, requestSubject = runtimeSubjectId): Cap
     member_id: runtimeMemberId,
     club_id: club,
     department_ids: [],
-    permissions: { view_members: true },
+    permissions: {
+      view_members: true,
+      view_members_details: true,
+      manage_members: true,
+      read_news: true,
+      view_events: true,
+    },
     sources: [{
       permission_key: "view_members",
       allowed: true,
@@ -424,6 +452,723 @@ async function postMcp(baseUrl: string, body: unknown, token?: string): Promise<
 }
 
 describe("Remote MCP runtime", () => {
+  test("routes complex turns through the tenant-bound Club-Agent for OpenAI and Anthropic", async () => {
+    const conversationId = "12121212-1212-4212-8212-121212121212";
+    const requests: Array<{
+      authorized: boolean;
+      query: string;
+      body: Record<string, unknown>;
+    }> = [];
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        const url = new URL(request.url);
+        if (request.method === "POST" && url.pathname === "/ai/chat/") {
+          const body = await request.json() as Record<string, unknown>;
+          requests.push({
+            authorized:
+              request.headers.get("authorization")
+              === "Bearer backend-actor-token",
+            query: url.search,
+            body,
+          });
+          return Response.json({
+            session_id: conversationId,
+            response: "Für das Sommerfest fehlen drei Helfer. Soll ich einen Aufruf vorbereiten?",
+            rate_limit: { remaining: 9 },
+            agent_card: {
+              internal_trace: "Darf nicht über den MCP ausgegeben werden.",
+            },
+          });
+        }
+        return Response.json({ error: "unexpected_request" }, { status: 404 });
+      },
+    });
+    const bridgeRuntimeOptions: Partial<McpRuntimeOptions> = {
+      access_policy: createRuntimeAccessPolicy(
+        "development",
+        "club_agent_bridge_v1",
+      ),
+      server_factory: (requestContext) => createRuntimeServer({
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        release_scope: "club_agent_bridge_v1",
+      }),
+    };
+    const server = new McpHttpServer(runtimeOptions(bridgeRuntimeOptions));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const toolLists = await Promise.all([
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 91,
+          method: "tools/list",
+          params: {},
+        }, "token-openai"),
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 92,
+          method: "tools/list",
+          params: {},
+        }, "token-anthropic"),
+      ]);
+      const toolsByProvider = await Promise.all(toolLists.map(async (response) =>
+        (await response.json() as any).result.tools));
+      for (const tools of toolsByProvider) {
+        const agentTool = tools.find((item: { name: string }) =>
+          item.name === "cv_club_agent_converse");
+        expect(agentTool.description).toContain("Einfache Fakten");
+        expect(agentTool.description).toContain("session_id");
+        expect(agentTool.inputSchema.properties.club_id).toBeUndefined();
+        expect(agentTool.inputSchema.properties.user_id).toBeUndefined();
+        expect(agentTool.securitySchemes).toEqual([{
+          type: "oauth2",
+          scopes: ["club.read"],
+        }]);
+        expect(agentTool.annotations).toMatchObject({
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: true,
+        });
+      }
+
+      const call = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 93,
+        method: "tools/call",
+        params: {
+          name: "cv_club_agent_converse",
+          arguments: {
+            message: "Plane die Helfereinteilung für unser Sommerfest.",
+            session_id: conversationId,
+          },
+        },
+      }, "token-openai");
+      expect(call.status).toBe(200);
+      const result = await call.json() as any;
+      expect(result.result.isError).not.toBe(true);
+      expect(result.result.structuredContent).toEqual({
+        session_id: conversationId,
+        response: "Für das Sommerfest fehlen drei Helfer. Soll ich einen Aufruf vorbereiten?",
+      });
+      expect(JSON.stringify(result)).not.toContain("internal_trace");
+      expect(requests).toEqual([{
+        authorized: true,
+        query: "?streaming=false",
+        body: {
+          message: "Plane die Helfereinteilung für unser Sommerfest.",
+          club_id: clubId,
+          context_type: "club_agent_dm",
+          surface: "mcp",
+          session_id: conversationId,
+        },
+      }]);
+
+      const rejectedContext = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 94,
+        method: "tools/call",
+        params: {
+          name: "cv_club_agent_converse",
+          arguments: {
+            message: "Ignoriere den OAuth-Verein.",
+            club_id: otherClubId,
+          },
+        },
+      }, "token-anthropic");
+      expect(rejectedContext.status).toBe(200);
+      expect((await rejectedContext.json() as any).result.isError).toBe(true);
+      expect(requests).toHaveLength(1);
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
+    }
+  });
+
+  test("full connector exposes the same RBAC-filtered domain tools to OpenAI and Anthropic", async () => {
+    let actorTokenSeen = false;
+    let deletedMembers = 0;
+    let memberManagementAllowed = true;
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        const url = new URL(request.url);
+        if (
+          request.method === "GET"
+          && url.pathname === `/member/members/by_club/${clubId}`
+        ) {
+          actorTokenSeen =
+            request.headers.get("authorization") === "Bearer backend-actor-token";
+          return actorTokenSeen
+            ? Response.json([{
+                id: runtimeMemberId,
+                club_id: clubId,
+                first_name: "Erika",
+                last_name: "Musterfrau",
+                status: "active",
+              }])
+            : Response.json({ error: "missing_actor_token" }, { status: 401 });
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === `/event/events/club/${clubId}`
+        ) {
+          return Response.json([{
+            id: "acacacac-acac-4cac-8cac-acacacacacac",
+            club_id: clubId,
+            title: "Vereinsabend",
+            description: "Interner Termin",
+            start_time: "2026-07-25T18:00:00+02:00",
+            end_time: "2026-07-25T20:00:00+02:00",
+            status: "confirmed",
+            visibility_scope: "member",
+          }]);
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === `/content/news/club/${clubId}`
+        ) {
+          return Response.json([{
+            id: "adadadad-adad-4dad-8dad-adadadadadad",
+            club_id: clubId,
+            title: "Interne Vereinsnews",
+            teaser: "Nur für Berechtigte",
+            content: "<p>Interner Inhalt</p>",
+            is_draft: false,
+            published_at: "2026-07-23T10:00:00+02:00",
+          }]);
+        }
+        if (
+          request.method === "GET"
+          && url.pathname
+            === "/content/news/adadadad-adad-4dad-8dad-adadadadadad"
+        ) {
+          return Response.json({
+            id: "adadadad-adad-4dad-8dad-adadadadadad",
+            club_id: clubId,
+            title: "Interne Vereinsnews",
+            teaser: "Nur für Berechtigte",
+            content: "<p>Interner Inhalt</p>",
+            is_draft: false,
+            published_at: "2026-07-23T10:00:00+02:00",
+          });
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === `/member/members/${runtimeMemberId}`
+        ) {
+          return Response.json({
+            id: runtimeMemberId,
+            club_id: clubId,
+            first_name: "Erika",
+            last_name: "Musterfrau",
+            email: "erika@example.test",
+            phone_number: null,
+            birthdate: null,
+            address: null,
+            postal_code: null,
+            city: null,
+            state: null,
+            country: null,
+            joined_at: null,
+            left_at: null,
+          });
+        }
+        if (
+          request.method === "DELETE"
+          && url.pathname === `/member/members/${runtimeMemberId}`
+        ) {
+          deletedMembers++;
+          return Response.json({ deleted: true });
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === `/object/objects/club/${clubId}`
+        ) {
+          return Response.json([{
+            id: "abababab-abab-4bab-8bab-abababababab",
+            club_id: clubId,
+            name: "Vereinsheim",
+            type: "static",
+            status: "available",
+            is_active: true,
+            booking_granularity: "hourly",
+          }]);
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === "/object/objects/abababab-abab-4bab-8bab-abababababab"
+        ) {
+          return Response.json({
+            id: "abababab-abab-4bab-8bab-abababababab",
+            club_id: clubId,
+            name: "Vereinsheim",
+            type: "static",
+            status: "available",
+            is_active: true,
+            booking_granularity: "hourly",
+          });
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === "/object/object-reservations/object/abababab-abab-4bab-8bab-abababababab"
+        ) {
+          return Response.json([]);
+        }
+        if (
+          request.method === "GET"
+          && url.pathname === "/object/object-booking-rules/object/abababab-abab-4bab-8bab-abababababab"
+        ) {
+          return Response.json([]);
+        }
+        if (
+          request.method === "GET"
+          && url.pathname.startsWith(
+            "/object/objects/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          )
+        ) {
+          return Response.json({
+            id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+            club_id: clubId,
+            name: "Nicht freigegebenes Objekt",
+            type: "static",
+            status: "available",
+            is_active: true,
+            booking_granularity: "hourly",
+          });
+        }
+        if (
+          request.method === "GET"
+          && (
+            url.pathname.includes(
+              "/object/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+            )
+          )
+        ) {
+          return Response.json([]);
+        }
+        return Response.json({ error: "unexpected_request" }, { status: 404 });
+      },
+    });
+    const fullRuntimeOptions: Partial<McpRuntimeOptions> = {
+      capability_resolver: {
+        async resolve(input) {
+          const snapshot = runtimeCapability(
+            input.context.club_id!,
+            input.context.subject_id!,
+          );
+          return memberManagementAllowed
+            ? snapshot
+            : {
+                ...snapshot,
+                permissions: {
+                  ...snapshot.permissions,
+                  manage_members: false,
+                },
+                capability_version: "D".repeat(43),
+              };
+        },
+      },
+      access_policy: createRuntimeAccessPolicy(
+        "development",
+        "full_connector_v1",
+      ),
+      server_factory: (requestContext) => createRuntimeServer({
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        release_scope: "full_connector_v1",
+      }),
+    };
+    const server = new McpHttpServer(runtimeOptions(fullRuntimeOptions));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const lists = await Promise.all([
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 101,
+          method: "tools/list",
+          params: {},
+        }, "token-full-openai"),
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 102,
+          method: "tools/list",
+          params: {},
+        }, "token-full-anthropic"),
+      ]);
+      const providerTools = await Promise.all(lists.map(async (response) => {
+        expect(response.status).toBe(200);
+        return (await response.json() as any).result.tools;
+      }));
+      const openAiNames = providerTools[0]
+        .map((item: { name: string }) => item.name)
+        .sort();
+      const anthropicNames = providerTools[1]
+        .map((item: { name: string }) => item.name)
+        .sort();
+      expect(anthropicNames).toEqual(openAiNames);
+      expect(openAiNames).toContain(MEMBER_MANAGEMENT_WIDGET_TOOL_NAME);
+      expect(openAiNames).toContain(BOOKING_OBJECT_WIDGET_TOOL_NAME);
+      expect(openAiNames).toContain(EVENT_CALENDAR_WIDGET_TOOL_NAME);
+      expect(openAiNames).toContain(NEWS_WIDGET_TOOL_NAME);
+      for (const widgetToolName of [
+        EVENT_CALENDAR_WIDGET_TOOL_NAME,
+        NEWS_WIDGET_TOOL_NAME,
+        MEMBER_MANAGEMENT_WIDGET_TOOL_NAME,
+        BOOKING_OBJECT_WIDGET_TOOL_NAME,
+      ]) {
+        const widgetDescriptor = providerTools[0]
+          .find((item: { name: string }) => item.name === widgetToolName);
+        expect(JSON.stringify(widgetDescriptor.inputSchema))
+          .not.toContain('"club_id"');
+      }
+
+      const memberListTool = domainToolName("cai.member.01.list");
+      expect(openAiNames).toContain(memberListTool);
+      const descriptor = providerTools[0]
+        .find((item: { name: string }) => item.name === memberListTool);
+      expect(descriptor.securitySchemes).toEqual([{
+        type: "oauth2",
+        scopes: ["member.read.basic"],
+      }]);
+      expect(JSON.stringify(descriptor.inputSchema)).not.toContain(
+        '"additionalProperties":true',
+      );
+      expect(JSON.stringify(descriptor.inputSchema)).not.toContain(
+        '"club_id"',
+      );
+
+      const call = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 103,
+        method: "tools/call",
+        params: {
+          name: memberListTool,
+          arguments: {
+            input: {
+              limit: 10,
+              offset: 0,
+            },
+          },
+        },
+      }, "token-full-openai");
+      expect(call.status).toBe(200);
+      const result = await call.json() as any;
+      expect(result.result.isError).not.toBe(true);
+      expect(result.result.structuredContent).toMatchObject({
+        action_id: "cai.member.01.list",
+      });
+      expect(actorTokenSeen).toBe(true);
+
+      const memberWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 105,
+        method: "tools/call",
+        params: {
+          name: MEMBER_MANAGEMENT_WIDGET_TOOL_NAME,
+          arguments: {
+            member_id: runtimeMemberId,
+            limit: 10,
+            offset: 0,
+          },
+        },
+      }, "token-full-openai");
+      expect(memberWidget.status).toBe(200);
+      const memberWidgetResult = await memberWidget.json() as any;
+      expect(memberWidgetResult.result.isError).not.toBe(true);
+      expect(memberWidgetResult.result.structuredContent).toMatchObject({
+        widget: "member_management",
+        club: { club_id: clubId },
+        data: {
+          selected: {
+            member_id: runtimeMemberId,
+            fields: { email: "erika@example.test" },
+          },
+        },
+      });
+      expect(
+        JSON.stringify(memberWidgetResult.result.structuredContent),
+      ).not.toContain("backend-actor-token");
+
+      const eventWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 1051,
+        method: "tools/call",
+        params: {
+          name: EVENT_CALENDAR_WIDGET_TOOL_NAME,
+          arguments: {
+            from: "2026-07-25",
+            to: "2026-07-26",
+            timezone: "Europe/Berlin",
+            view: "agenda",
+          },
+        },
+      }, "token-full-openai");
+      const eventWidgetResult = await eventWidget.json() as any;
+      expect(eventWidgetResult.result.isError).not.toBe(true);
+      expect(eventWidgetResult.result.structuredContent).toMatchObject({
+        widget: "event_calendar",
+        club: { club_id: clubId },
+        data: {
+          view: "agenda",
+          events: [expect.objectContaining({ title: "Vereinsabend" })],
+        },
+      });
+
+      const newsWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 1052,
+        method: "tools/call",
+        params: {
+          name: NEWS_WIDGET_TOOL_NAME,
+          arguments: {
+            selected_news_id:
+              "adadadad-adad-4dad-8dad-adadadadadad",
+            limit: 10,
+            offset: 0,
+          },
+        },
+      }, "token-full-anthropic");
+      const newsWidgetResult = await newsWidget.json() as any;
+      expect(newsWidgetResult.result.isError).not.toBe(true);
+      expect(newsWidgetResult.result.structuredContent).toMatchObject({
+        widget: "news",
+        club: { club_id: clubId },
+        data: {
+          selected_news_id:
+            "adadadad-adad-4dad-8dad-adadadadadad",
+          articles: [expect.objectContaining({
+            title: "Interne Vereinsnews",
+            sanitized_html: "<p>Interner Inhalt</p>",
+          })],
+        },
+      });
+      expect(
+        newsWidgetResult.result.structuredContent.actions[0].input,
+      ).not.toHaveProperty("club_id");
+
+      const bookingWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 106,
+        method: "tools/call",
+        params: {
+          name: BOOKING_OBJECT_WIDGET_TOOL_NAME,
+          arguments: {
+            from: "2026-07-25T10:00:00+02:00",
+            to: "2026-07-25T12:00:00+02:00",
+            timezone: "Europe/Berlin",
+            object_id: "abababab-abab-4bab-8bab-abababababab",
+          },
+        },
+      }, "token-full-openai");
+      expect(bookingWidget.status).toBe(200);
+      const bookingWidgetResult = await bookingWidget.json() as any;
+      expect(bookingWidgetResult.result.isError).not.toBe(true);
+      expect(bookingWidgetResult.result.structuredContent).toMatchObject({
+        widget: "booking_object",
+        club: { club_id: clubId },
+        data: {
+          selected_object_id: "abababab-abab-4bab-8bab-abababababab",
+          slots: [{ state: "available" }],
+        },
+      });
+      expect(
+        bookingWidgetResult.result.structuredContent.actions,
+      ).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          tool_name: BOOKING_OBJECT_WIDGET_TOOL_NAME,
+          input: expect.not.objectContaining({ club_id: clubId }),
+        }),
+      ]));
+
+      const hiddenBookingWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 1061,
+        method: "tools/call",
+        params: {
+          name: BOOKING_OBJECT_WIDGET_TOOL_NAME,
+          arguments: {
+            from: "2026-07-25T10:00:00+02:00",
+            to: "2026-07-25T12:00:00+02:00",
+            timezone: "Europe/Berlin",
+            object_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          },
+        },
+      }, "token-full-openai");
+      expect(hiddenBookingWidget.status).toBe(200);
+      const hiddenBookingResult = await hiddenBookingWidget.json() as any;
+      expect(hiddenBookingResult.result.isError).toBe(true);
+      expect(hiddenBookingResult.result.structuredContent).toEqual({
+        error: "not_found",
+      });
+
+      const criticalToolsResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 107,
+        method: "tools/list",
+        params: {},
+      }, "token-critical-openai");
+      const criticalTools = (await criticalToolsResponse.json() as any)
+        .result.tools;
+      const removeMemberTool = domainToolName("cai.member.05.remove");
+      expect(criticalTools.map((item: { name: string }) => item.name))
+        .toEqual(expect.arrayContaining([removeMemberTool, "action_confirm"]));
+      const confirmationTool = criticalTools.find(
+        (item: { name: string }) => item.name === "action_confirm",
+      );
+      expect(confirmationTool._meta.ui.visibility).toEqual(["app"]);
+      expect(
+        criticalTools.find(
+          (item: { name: string }) => item.name === removeMemberTool,
+        ).inputSchema.properties.input.properties.club_id,
+      ).toBeUndefined();
+      expect(JSON.stringify(
+        criticalTools.find(
+          (item: { name: string }) => item.name === removeMemberTool,
+        ).inputSchema,
+      )).not.toContain('"confirmation"');
+      const idempotencyKey =
+        "cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd";
+      const previewResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 108,
+        method: "tools/call",
+        params: {
+          name: removeMemberTool,
+          arguments: {
+            input: {
+              member_id: runtimeMemberId,
+            },
+            idempotency_key: idempotencyKey,
+          },
+        },
+      }, "token-critical-openai");
+      const previewResult = await previewResponse.json() as any;
+      expect(previewResult.result.isError).not.toBe(true);
+      expect(previewResult.result.structuredContent).toMatchObject({
+        widget: "confirmation",
+        club: { club_id: clubId },
+        actions: [{
+          tool_name: "action_confirm",
+          input: { idempotency_key: idempotencyKey },
+        }],
+      });
+      expect(JSON.stringify(previewResult.result.structuredContent))
+        .not.toContain("confirmation_token");
+      const hiddenConfirmation =
+        previewResult.result._meta["comvenio/confirmation"];
+      expect(hiddenConfirmation).toMatchObject({
+        preview_id:
+          previewResult.result.structuredContent.actions[0].input.preview_id,
+        idempotency_key: idempotencyKey,
+      });
+      expect(typeof hiddenConfirmation.confirmation_token).toBe("string");
+      const confirmationArguments = {
+        ...previewResult.result.structuredContent.actions[0].input,
+        confirmation_token: hiddenConfirmation.confirmation_token,
+      };
+      const confirmResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 109,
+        method: "tools/call",
+        params: {
+          name: "action_confirm",
+          arguments: confirmationArguments,
+        },
+      }, "token-critical-openai");
+      const confirmResult = await confirmResponse.json() as any;
+      expect(confirmResult.result.isError).not.toBe(true);
+      expect(confirmResult.result.structuredContent).toMatchObject({
+        action_id: "cai.member.05.remove",
+        result: { deleted: true, id: runtimeMemberId },
+      });
+      expect(deletedMembers).toBe(1);
+
+      const replayResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 110,
+        method: "tools/call",
+        params: {
+          name: "action_confirm",
+          arguments: confirmationArguments,
+        },
+      }, "token-critical-openai");
+      expect((await replayResponse.json() as any).result.isError).toBe(true);
+      expect(deletedMembers).toBe(1);
+
+      const revokedIdempotencyKey =
+        "dededede-dede-4ede-8ede-dededededede";
+      const revokedPreviewResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 111,
+        method: "tools/call",
+        params: {
+          name: removeMemberTool,
+          arguments: {
+            input: {
+              member_id: runtimeMemberId,
+            },
+            idempotency_key: revokedIdempotencyKey,
+          },
+        },
+      }, "token-critical-openai");
+      const revokedPreview = await revokedPreviewResponse.json() as any;
+      const revokedConfirmationArguments = {
+        ...revokedPreview.result.structuredContent.actions[0].input,
+        confirmation_token:
+          revokedPreview.result._meta["comvenio/confirmation"]
+            .confirmation_token,
+      };
+      memberManagementAllowed = false;
+      const revokedConfirmationResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 112,
+        method: "tools/call",
+        params: {
+          name: "action_confirm",
+          arguments: revokedConfirmationArguments,
+        },
+      }, "token-critical-openai");
+      const revokedConfirmation = await revokedConfirmationResponse.json() as any;
+      expect(
+        revokedConfirmation.error
+        || revokedConfirmation.result?.isError === true,
+      ).toBeTruthy();
+      expect(deletedMembers).toBe(1);
+      memberManagementAllowed = true;
+
+      const foreignClub = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 104,
+        method: "tools/call",
+        params: {
+          name: memberListTool,
+          arguments: {
+            input: {
+              club_id: otherClubId,
+              limit: 10,
+              offset: 0,
+            },
+          },
+        },
+      }, "token-full-openai");
+      expect(foreignClub.status).toBe(200);
+      expect((await foreignClub.json() as any).result.isError).toBe(true);
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
+    }
+  });
+
   test("TC-01/TC-02: implements the five entities and handles initialize, list and call", async () => {
     const capabilityChecks: boolean[] = [];
     const server = new McpHttpServer(runtimeOptions({
@@ -664,7 +1409,7 @@ describe("Remote MCP runtime", () => {
       expect(JSON.stringify(taskReminder.outputSchema)).not.toContain('"user_id"');
       expect(taskReminder.annotations).toMatchObject({
         readOnlyHint: false,
-        destructiveHint: true,
+        destructiveHint: false,
         idempotentHint: true,
         openWorldHint: false,
       });
@@ -740,7 +1485,10 @@ describe("Remote MCP runtime", () => {
       expect(personalTasksResult.result.isError).not.toBe(true);
       expect(personalTasksResult.result.structuredContent).toMatchObject({
         club_id: clubId,
+        total_count: 2,
         returned: 2,
+        has_more: false,
+        next_offset: null,
         truncated: false,
         undated_tasks_excluded: 1,
       });
@@ -753,6 +1501,31 @@ describe("Remote MCP runtime", () => {
       expect(personalTasksResult.result.structuredContent.tasks[0].assignments).toBeUndefined();
       expect(personalTasksResult.result.structuredContent.tasks[0].creator_id).toBeUndefined();
       expect(taskActorTokenSeen).toBe(true);
+
+      const firstTaskPage = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 240,
+        method: "tools/call",
+        params: {
+          name: "cv_my_tasks_read",
+          arguments: {
+            from: "2026-08-03T00:00:00.000Z",
+            to: "2026-08-10T00:00:00.000Z",
+            limit: 1,
+            offset: 0,
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(
+        (await firstTaskPage.json() as any).result.structuredContent,
+      ).toMatchObject({
+        total_count: 2,
+        returned: 1,
+        has_more: true,
+        next_offset: 1,
+        truncated: true,
+        tasks: [{ id: openTaskId }],
+      });
 
       const personalReminder = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -1926,7 +2699,7 @@ describe("K16 event calendar widget tenant and runtime isolation", () => {
     action_id: "event.plan",
     label: "Termin planen",
     tool_name: "cv_event_create",
-    input: { club_id: clubId },
+    input: {},
     visibility: "visible" as const,
     enabled: true,
     risk_class: "reversible_write" as const,
@@ -2059,7 +2832,7 @@ describe("K17 member management widget tenant and runtime isolation", () => {
     action_id: "member.update",
     label: "Änderung vorbereiten",
     tool_name: "cv_member_update",
-    input: { club_id: clubId, member_id: memberId },
+    input: { member_id: memberId },
     visibility: "visible" as const,
     enabled: true,
     risk_class: "reversible_write" as const,
@@ -2178,7 +2951,7 @@ describe("K18 booking object widget tenant and runtime isolation", () => {
     action_id: "booking.create",
     label: "Reservierung vorbereiten",
     tool_name: "cv_booking_create",
-    input: { club_id: clubId, object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    input: { object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
     visibility: "visible" as const,
     enabled: true,
     risk_class: "critical_write" as const,
@@ -2265,7 +3038,7 @@ describe("K19 news widget tenant and runtime isolation", () => {
     action_id: "news.preview",
     label: "Homepage-Vorschau",
     tool_name: "cv_news_preview",
-    input: { club_id: clubId, news_id: newsId },
+    input: { news_id: newsId },
     visibility: "visible" as const,
     enabled: true,
     risk_class: "read" as const,
@@ -2391,7 +3164,13 @@ describe("K20 confirmation widget tenant, RBAC and runtime isolation", () => {
       challenge,
       confirm_action: confirmAction(challenge),
     };
-    expect(projector.project(input).actions).toHaveLength(1);
+    const projected = projector.project(input);
+    expect(projected.actions).toHaveLength(1);
+    expect(projected.actions[0]!.input).toEqual({
+      preview_id: challenge.preview.preview_id,
+      idempotency_key: previewIdempotencyKey,
+    });
+    expect(JSON.stringify(projected)).not.toContain("confirmation_token");
     expect(() => projector.project({ ...input, club: { ...input.club, club_id: otherClubId } })).toThrow();
     expect(() => new ConfirmationWidgetProjector(new ConfirmationWidgetCapabilityPolicy([])).project(input)).toThrow();
 

@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto";
+
 import {
   PermissionsExplainTool,
   type OAuthEnvironment,
 } from "@comvenio/auth";
 import { createComvenioApiClient } from "@comvenio/comvenio-client";
 import {
+  type ConnectorReleaseScope,
   createProviderNeutralResult,
   isConnectorError,
   type JsonValue,
@@ -18,6 +21,7 @@ import { z } from "zod";
 import type { StatelessTransportContext } from "./http/types.ts";
 import {
   fullDomainProtectedToolDescriptors,
+  fullDomainReviewToolSummaries,
   registerFullDomainRuntime,
   type DomainToolSummary,
 } from "./domain-runtime.ts";
@@ -32,13 +36,27 @@ import type {
 } from "./public/types.ts";
 import { TaskToolSet } from "./tools/booking-object-task/index.ts";
 import {
+  BOOKING_OBJECT_WIDGET_RESOURCE_URI,
+  registerBookingObjectWidgetResource,
+} from "./widgets/booking-object/resource.ts";
+import {
+  CONFIRMATION_WIDGET_RESOURCE_URI,
+  registerConfirmationWidgetResource,
+} from "./widgets/confirmation/resource.ts";
+import {
   eventCalendarToolMetadata,
+  EVENT_CALENDAR_WIDGET_RESOURCE_URI,
   registerEventCalendarWidgetResource,
 } from "./widgets/event-calendar/resource.ts";
 import { EventCalendarWidgetProjector } from "./widgets/event-calendar/projector.ts";
 import { EventWidgetCapabilityPolicy } from "./widgets/event-calendar/policy.ts";
 import {
+  MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI,
+  registerMemberManagementWidgetResource,
+} from "./widgets/member-management/resource.ts";
+import {
   newsToolMetadata,
+  NEWS_WIDGET_RESOURCE_URI,
   registerNewsWidgetResource,
 } from "./widgets/news/resource.ts";
 import { NewsWidgetProjector } from "./widgets/news/projector.ts";
@@ -47,6 +65,11 @@ import {
   installToolSecuritySchemeProjection,
   type ToolSecurityScheme,
 } from "./tool-security-schemes.ts";
+import {
+  fullWidgetProtectedToolDescriptors,
+  fullWidgetReviewToolSummaries,
+  registerFullWidgetRuntime,
+} from "./widget-runtime.ts";
 
 const noInputSchema = z.object({}).strict();
 const dateTime = z.string().datetime({ offset: true });
@@ -65,7 +88,10 @@ const myTasksOutputSchema = z.object({
   club_id: uuid,
   range: z.object({ from: dateTime, to: dateTime }).strict(),
   tasks: z.array(myTaskSchema),
+  total_count: z.number().int().nonnegative(),
   returned: z.number().int().nonnegative(),
+  has_more: z.boolean(),
+  next_offset: z.number().int().nonnegative().nullable(),
   truncated: z.boolean(),
   undated_tasks_excluded: z.number().int().nonnegative(),
 }).strict();
@@ -74,6 +100,7 @@ const myTasksSchema = z.object({
   to: dateTime.describe("Exklusives Ende des gewünschten Zeitraums als RFC-3339-Zeitpunkt."),
   include_completed: z.boolean().default(false),
   limit: z.number().int().min(1).max(100).default(50),
+  offset: z.number().int().min(0).default(0),
 }).strict().refine((value) => Date.parse(value.from) < Date.parse(value.to), {
   message: "to muss nach from liegen.",
   path: ["to"],
@@ -101,6 +128,20 @@ const taskReminderOutputSchema = z.object({
   task_id: uuid,
   reminder: taskReminderResultSchema.nullable(),
 }).strict();
+const clubAgentConversationSchema = z.object({
+  message: z.string().trim().min(1).max(4000)
+    .describe("Komplexe Frage, Planung oder mehrstufige Aufgabe für den Club-Agenten."),
+  session_id: uuid.optional()
+    .describe("Session-ID aus der vorherigen Club-Agent-Antwort; für Rückfragen und Freigaben wiederverwenden."),
+}).strict();
+const clubAgentUpstreamSchema = z.object({
+  session_id: uuid,
+  response: z.string().min(1).max(100_000),
+}).passthrough();
+const clubAgentConversationOutputSchema = z.object({
+  session_id: uuid,
+  response: z.string().min(1).max(100_000),
+}).strict();
 
 const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_whoami_read", required_scopes: ["club.read"] },
@@ -109,6 +150,11 @@ const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_my_tasks_read", required_scopes: ["task.read"] },
   { tool_name: "cv_my_task_reminder_write", required_scopes: ["task.read"] },
 ] satisfies ProtectedToolDescriptor[]);
+
+const CLUB_AGENT_PROTECTED_TOOL = Object.freeze({
+  tool_name: "cv_club_agent_converse",
+  required_scopes: ["club.read"],
+} satisfies ProtectedToolDescriptor);
 
 const TOOL_SCOPES = Object.freeze({
   cv_whoami_read: ["club.read"],
@@ -141,14 +187,41 @@ const TOOL_COPY = Object.freeze({
   },
 });
 
+const CLUB_AGENT_TOOL_COPY = Object.freeze({
+  title: "Comvenio: Mit dem Club-Agenten sprechen",
+  description: "Nutze den vereinseigenen Club-Agenten nur für Beratung, Planung, proaktive Hinweise oder mehrstufige Aufgaben über mehrere Comvenio-Bereiche. Einfache Fakten wie Events, News, Aufgaben oder Mitglieder werden günstiger und zuverlässiger über die direkten MCP-Tools abgerufen. Verein und Benutzer werden aus OAuth abgeleitet; frage niemals nach club_id oder user_id. Für Rückfragen, Korrekturen und Freigaben muss die zuletzt erhaltene session_id wiederverwendet werden.",
+});
+
 export interface RuntimeToolCatalog {
   public_tools: PublicToolCandidate[];
   protected_tools: ProtectedToolDescriptor[];
 }
 
-export type ConnectorReleaseScope =
-  | "personal_productivity_v1"
-  | "full_connector_v1";
+export type { ConnectorReleaseScope } from "@comvenio/connector-contracts";
+
+export interface PublishedRuntimeCatalog {
+  release_scope: ConnectorReleaseScope;
+  tools: PublishedRuntimeToolContract[];
+  tool_names: string[];
+  tool_count: number;
+  tool_catalog_sha256: string;
+  widget_resource_uris: string[];
+  widget_contract_count: number;
+  widget_catalog_sha256: string;
+}
+
+export interface PublishedRuntimeToolContract {
+  name: string;
+  title: string;
+  description: string;
+  required_scopes: OAuthScope[];
+  risk_class: "read" | "reversible_write" | "critical_write";
+}
+
+function includesClubAgent(releaseScope: ConnectorReleaseScope): boolean {
+  return releaseScope === "club_agent_bridge_v1"
+    || releaseScope === "full_connector_v1";
+}
 
 function publicCandidates(environment: OAuthEnvironment): PublicToolCandidate[] {
   const policy = new PublicAccessPolicy();
@@ -174,8 +247,17 @@ export function createRuntimeToolCatalog(
         tool_name: tool.tool_name,
         required_scopes: [...tool.required_scopes],
       })),
+      ...(includesClubAgent(releaseScope)
+        ? [{
+          tool_name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
+          required_scopes: [...CLUB_AGENT_PROTECTED_TOOL.required_scopes],
+        }]
+        : []),
       ...(releaseScope === "full_connector_v1"
-        ? fullDomainProtectedToolDescriptors()
+        ? [
+            ...fullDomainProtectedToolDescriptors(),
+            ...fullWidgetProtectedToolDescriptors(),
+          ]
         : []),
     ],
   };
@@ -190,6 +272,92 @@ export function publishedRuntimeToolNames(
     ...catalog.public_tools.map((tool) => tool.tool_name),
     ...catalog.protected_tools.map((tool) => tool.tool_name),
   ].sort();
+}
+
+export function publishedWidgetResourceUris(
+  releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+): string[] {
+  return [
+    EVENT_CALENDAR_WIDGET_RESOURCE_URI,
+    NEWS_WIDGET_RESOURCE_URI,
+    ...(releaseScope === "full_connector_v1"
+      ? [
+          MEMBER_MANAGEMENT_WIDGET_RESOURCE_URI,
+          BOOKING_OBJECT_WIDGET_RESOURCE_URI,
+          CONFIRMATION_WIDGET_RESOURCE_URI,
+        ]
+      : []),
+  ].sort();
+}
+
+export function publishedRuntimeCatalog(
+  environment: OAuthEnvironment,
+  releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+): PublishedRuntimeCatalog {
+  const runtimeCatalog = createRuntimeToolCatalog(environment, releaseScope);
+  const publicTools: PublishedRuntimeToolContract[] = new PublicToolSubset({
+    public_tools: runtimeCatalog.public_tools,
+  }).list().map((tool) => ({
+    name: tool.resolver_alias,
+    title: tool.title,
+    description: tool.description,
+    required_scopes: ["public.read"],
+    risk_class: "read",
+  }));
+  const protectedTools: PublishedRuntimeToolContract[] = [
+    ...Object.entries(TOOL_COPY).map(([name, copy]) => ({
+      name,
+      ...copy,
+      required_scopes: [...TOOL_SCOPES[name as keyof typeof TOOL_SCOPES]],
+      risk_class: name === "cv_my_task_reminder_write"
+        ? "reversible_write" as const
+        : "read" as const,
+    })),
+    ...(includesClubAgent(releaseScope)
+      ? [{
+          name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
+          ...CLUB_AGENT_TOOL_COPY,
+          required_scopes: ["club.read"] as OAuthScope[],
+          risk_class: "reversible_write" as const,
+        }]
+      : []),
+    ...(releaseScope === "full_connector_v1"
+      ? [
+          ...fullDomainReviewToolSummaries(),
+          ...fullWidgetReviewToolSummaries(),
+        ].map((tool) => ({
+          name: tool.name,
+          title: tool.title,
+          description: tool.description,
+          required_scopes: tool.required_scopes,
+          risk_class: tool.risk_class,
+        }))
+      : []),
+  ];
+  const tools = [...publicTools, ...protectedTools]
+    .sort((left, right) => left.name.localeCompare(right.name));
+  const toolNames = tools.map((tool) => tool.name);
+  const expectedToolNames = publishedRuntimeToolNames(environment, releaseScope);
+  if (JSON.stringify(toolNames) !== JSON.stringify(expectedToolNames)) {
+    throw new Error(
+      "Der Runtime-Reviewkatalog driftet vom ausführbaren Toolkatalog.",
+    );
+  }
+  const widgetResourceUris = publishedWidgetResourceUris(releaseScope);
+  return {
+    release_scope: releaseScope,
+    tools,
+    tool_names: toolNames,
+    tool_count: toolNames.length,
+    tool_catalog_sha256: createHash("sha256")
+      .update(toolNames.join("\n"), "utf8")
+      .digest("hex"),
+    widget_resource_uris: widgetResourceUris,
+    widget_contract_count: widgetResourceUris.length,
+    widget_catalog_sha256: createHash("sha256")
+      .update(widgetResourceUris.join("\n"), "utf8")
+      .digest("hex"),
+  };
 }
 
 export function createRuntimeAccessPolicy(
@@ -385,9 +553,14 @@ function filterMyTasks(input: {
   to: string;
   include_completed: boolean;
   limit: number;
+  offset: number;
 }): Record<string, JsonValue> {
-  const source = Array.isArray(input.result)
-    ? input.result.filter((item): item is Record<string, JsonValue> =>
+  const resultRecord = record(input.result);
+  const resultItems = resultRecord && Array.isArray(resultRecord.items)
+    ? resultRecord.items
+    : input.result;
+  const source = Array.isArray(resultItems)
+    ? resultItems.filter((item): item is Record<string, JsonValue> =>
       item !== null && typeof item === "object" && !Array.isArray(item))
     : [];
   const from = Date.parse(input.from);
@@ -406,12 +579,21 @@ function filterMyTasks(input: {
     const projected = projectMyTask(task);
     return projected ? [projected] : [];
   });
-  const tasks = matching.slice(0, input.limit);
+  matching.sort((left, right) =>
+    (taskTimestamp(left) ?? Number.MAX_SAFE_INTEGER)
+    - (taskTimestamp(right) ?? Number.MAX_SAFE_INTEGER)
+    || left.id.localeCompare(right.id));
+  const tasks = matching.slice(input.offset, input.offset + input.limit);
+  const nextOffset = input.offset + tasks.length;
+  const hasMore = nextOffset < matching.length;
   return {
     range: { from: input.from, to: input.to },
     tasks,
+    total_count: matching.length,
     returned: tasks.length,
-    truncated: matching.length > input.limit,
+    has_more: hasMore,
+    next_offset: hasMore ? nextOffset : null,
+    truncated: hasMore,
     undated_tasks_excluded: undated,
   };
 }
@@ -483,6 +665,11 @@ export function createRuntimeServer(input: {
   registerEventCalendarWidgetResource(server, input.environment);
   registerNewsWidgetResource(server, input.environment);
   const releaseScope = input.release_scope ?? "personal_productivity_v1";
+  if (releaseScope === "full_connector_v1") {
+    registerMemberManagementWidgetResource(server, input.environment);
+    registerBookingObjectWidgetResource(server, input.environment);
+    registerConfirmationWidgetResource(server, input.environment);
+  }
   const catalog = createRuntimeToolCatalog(input.environment, releaseScope);
   const publicDescriptors = new PublicToolSubset({ public_tools: catalog.public_tools }).list();
   let domainTools: DomainToolSummary[] = [];
@@ -582,6 +769,14 @@ export function createRuntimeServer(input: {
             required_scopes: TOOL_SCOPES[name as keyof typeof TOOL_SCOPES],
             read_only: name !== "cv_my_task_reminder_write",
           })),
+        ...(includesClubAgent(releaseScope)
+          ? [{
+            name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
+            ...CLUB_AGENT_TOOL_COPY,
+            required_scopes: ["club.read"] as OAuthScope[],
+            read_only: false,
+          }]
+          : []),
         ...domainTools,
       ].sort((left, right) => left.name.localeCompare(right.name));
       return toMcpResult(createProviderNeutralResult(input.context.request, { tools }, [{
@@ -602,13 +797,105 @@ export function createRuntimeServer(input: {
         client: apiClient,
       });
       if (releaseScope === "full_connector_v1") {
-        domainTools = registerFullDomainRuntime({
+        const widgetRuntime = registerFullWidgetRuntime({
           server,
           client: apiClient,
           context: input.context.request,
           capability_snapshot: input.context.capability_snapshot,
+          environment: input.environment,
           advertised_security_schemes: advertisedSecuritySchemes,
-        }).tools;
+        });
+        const domainRuntime = registerFullDomainRuntime({
+          server,
+          client: apiClient,
+          context: input.context.request,
+          capability_snapshot: input.context.capability_snapshot,
+          environment: input.environment,
+          advertised_security_schemes: advertisedSecuritySchemes,
+        });
+        domainTools = [
+          ...widgetRuntime.tools,
+          ...domainRuntime.tools,
+        ].sort((left, right) => left.name.localeCompare(right.name));
+      }
+      if (includesClubAgent(releaseScope)) {
+        advertisedSecuritySchemes.set(
+          CLUB_AGENT_PROTECTED_TOOL.tool_name,
+          clubReadSecuritySchemes,
+        );
+        registerAppTool(server, CLUB_AGENT_PROTECTED_TOOL.tool_name, {
+          ...CLUB_AGENT_TOOL_COPY,
+          inputSchema: clubAgentConversationSchema,
+          outputSchema: clubAgentConversationOutputSchema,
+          _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: false,
+            openWorldHint: true,
+          },
+        }, async (arguments_) => {
+          const parsed = clubAgentConversationSchema.parse(arguments_);
+          try {
+            const response = clubAgentUpstreamSchema.parse(
+              await apiClient.request<JsonValue>({
+                method: "POST",
+                service: "ai",
+                path: "/chat/",
+                query: { streaming: "false" },
+                body: {
+                  message: parsed.message,
+                  club_id: clubId,
+                  context_type: "club_agent_dm",
+                  surface: "mcp",
+                  ...(parsed.session_id ? { session_id: parsed.session_id } : {}),
+                },
+                context: input.context.request,
+              }),
+            );
+            const output = {
+              session_id: response.session_id,
+              response: response.response,
+            } satisfies z.infer<typeof clubAgentConversationOutputSchema>;
+            return toMcpResult(createProviderNeutralResult(
+              input.context.request,
+              output,
+              [{ type: "text", text: response.response }],
+            ));
+          } catch (error) {
+            if (isConnectorError(error)) {
+              if (error.code === "PERMISSION_DENIED") {
+                return protectedToolError(
+                  input.context.request,
+                  "permission_denied",
+                  "Der Club-Agent ist in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar.",
+                );
+              }
+              if (error.code === "CONFLICT") {
+                return protectedToolError(
+                  input.context.request,
+                  "club_agent_not_ready",
+                  "Der Club-Agent ist für diesen Verein noch nicht vollständig eingerichtet.",
+                );
+              }
+              if (error.code === "RATE_LIMITED") {
+                return protectedToolError(
+                  input.context.request,
+                  "rate_limited",
+                  "Der Club-Agent ist vorübergehend ausgelastet. Bitte versuche es später erneut.",
+                );
+              }
+              if (error.code === "VALIDATION_FAILED") {
+                return protectedToolError(
+                  input.context.request,
+                  "validation_failed",
+                  "Die Anfrage an den Club-Agenten konnte nicht verarbeitet werden.",
+                );
+              }
+            }
+            throw error;
+          }
+        });
       }
       if (input.context.request.scopes.includes("task.read")) {
         advertisedSecuritySchemes.set("cv_my_tasks_read", taskReadSecuritySchemes);
@@ -645,6 +932,7 @@ export function createRuntimeServer(input: {
                 to: parsed.to,
                 include_completed: parsed.include_completed,
                 limit: parsed.limit,
+                offset: parsed.offset,
               }),
             } satisfies Record<string, JsonValue>;
             return toMcpResult(createProviderNeutralResult(
@@ -677,7 +965,7 @@ export function createRuntimeServer(input: {
           _meta: withSecurityMetadata(undefined, taskReminderSecuritySchemes),
           annotations: {
             readOnlyHint: false,
-            destructiveHint: true,
+            destructiveHint: false,
             idempotentHint: true,
             openWorldHint: false,
           },

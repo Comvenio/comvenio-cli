@@ -86,13 +86,21 @@ function bound(input: PrivateNewsProjectorInput): { context: RequestContext; sna
   return { context, snapshot };
 }
 
-function filteredActions(input: PrivateNewsProjectorInput, context: RequestContext, snapshot: CapabilitySnapshot, policy: NewsWidgetActionPolicy, selectedNewsId: string | null): ServerActionDescriptor[] {
+function filteredActions(input: PrivateNewsProjectorInput, context: RequestContext, snapshot: CapabilitySnapshot, policy: NewsWidgetActionPolicy, visibleNewsIds: ReadonlySet<string>, selectedNewsId: string | null): ServerActionDescriptor[] {
   return (input.action_candidates ?? []).flatMap((candidate) => {
     const parsed = SERVER_ACTION_DESCRIPTOR_SCHEMA.safeParse(candidate);
     if (!parsed.success || parsed.data.visibility === "hidden") return [];
     const action = parsed.data;
-    if (action.input === null || typeof action.input !== "object" || Array.isArray(action.input) || action.input.club_id !== input.club.club_id) return [];
-    if (typeof action.input.news_id === "string" && action.input.news_id !== selectedNewsId) return [];
+    if (action.input === null || typeof action.input !== "object"
+      || Array.isArray(action.input)
+      || Object.prototype.hasOwnProperty.call(action.input, "club_id")) {
+      return [];
+    }
+    const actionNewsId = typeof action.input.news_id === "string"
+      ? action.input.news_id
+      : null;
+    if (actionNewsId && !visibleNewsIds.has(actionNewsId)) return [];
+    if (action.risk_class !== "read" && actionNewsId !== selectedNewsId) return [];
     if (/publish|veroeffentlich/iu.test(action.action_id) && (action.risk_class !== "critical_write" || !action.requires_confirmation)) return [];
     const decision = policy.evaluate({ context, capability_snapshot: snapshot, descriptor: action });
     return decision.allowed && decision.risk_class === action.risk_class && decision.requires_confirmation === action.requires_confirmation ? [action] : [];
@@ -145,6 +153,9 @@ export class NewsWidgetProjector {
     const filter = input.filter ?? "all_authorized";
     let articles = items.map(articleFromPrivate).filter((article) => filter !== "draft" || article.status === "draft");
     const selectedNewsId = input.selected_news_id ?? null;
+    const visibleNewsIds = new Set(
+      articles.map((article) => article.news_id),
+    );
     if (selectedNewsId && !articles.some((article) => article.news_id === selectedNewsId)) {
       throw createConnectorError({ code: "NOT_FOUND", message: "Der ausgewählte Beitrag ist in dieser Ansicht nicht verfügbar.", request_id: binding.context.request_id, retryable: false });
     }
@@ -176,7 +187,14 @@ export class NewsWidgetProjector {
       widget: "news", contract_version: "1.0.0", title: "News", club: input.club,
       capability_version: binding.snapshot.capability_version, generated_at: input.generated_at ?? new Date().toISOString(),
       data: { filter, articles, selected_news_id: selectedNewsId },
-      actions: filteredActions(input, binding.context, binding.snapshot, this.actionPolicy, selectedNewsId),
+      actions: filteredActions(
+        input,
+        binding.context,
+        binding.snapshot,
+        this.actionPolicy,
+        visibleNewsIds,
+        selectedNewsId,
+      ),
       empty_state: articles.length === 0 ? { title: "Keine News gefunden", description: "Passe den Statusfilter an oder erstelle einen neuen Entwurf." } : null,
     });
   }

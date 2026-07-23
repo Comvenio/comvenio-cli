@@ -4,8 +4,15 @@ import { execFileSync } from "node:child_process";
 
 import { z } from "zod";
 
+import {
+  parseConnectorReleaseScope,
+  type ConnectorReleaseScope,
+} from "@comvenio/connector-contracts";
 import { loadReviewInventory } from "../packages/tool-catalog/src/index.ts";
-import { publishedRuntimeToolNames } from "../apps/mcp-server/src/runtime-tools.ts";
+import {
+  publishedRuntimeCatalog,
+  publishedRuntimeToolNames,
+} from "../apps/mcp-server/src/runtime-tools.ts";
 import {
   CONNECTOR_EVAL_REPORT_SCHEMA,
   PILOT_PROTOCOL_SCHEMA,
@@ -42,13 +49,35 @@ function assertSame(actual: unknown, expected: unknown, message: string): void {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);
 }
 
+function requestedWriteScope(): ConnectorReleaseScope {
+  const argument = process.argv.find((item) => item.startsWith("--scope="));
+  if (argument) {
+    return parseConnectorReleaseScope(argument.slice("--scope=".length));
+  }
+  const currentReportPath = resolve(releaseRoot, fileNames.release_gate);
+  if (existsSync(currentReportPath)) {
+    const current = z.object({
+      evidence: z.object({ release_scope: z.string() }).passthrough(),
+    }).passthrough().parse(readJson(currentReportPath));
+    return parseConnectorReleaseScope(current.evidence.release_scope);
+  }
+  throw new Error(
+    "Beim erstmaligen Schreiben ist --scope=<release-scope> erforderlich.",
+  );
+}
+
 if (writeMode) {
-  const artifacts = buildPendingReleaseArtifacts();
+  const artifacts = buildPendingReleaseArtifacts(requestedWriteScope());
   for (const [key, fileName] of Object.entries(fileNames)) {
     writeFileSync(resolve(releaseRoot, fileName), stable(artifacts[key as keyof typeof artifacts]), "utf8");
   }
   const fairUse = readJson(resolve(workspaceRoot, "apps/mcp-server/config/fair-use.v1.json"));
   writeFileSync(resolve(releaseRoot, "rate-limit-config.json"), stable(fairUse), "utf8");
+  console.log(
+    `Pending Connector-Releaseartefakte für `
+    + `${artifacts.release_gate.evidence.release_scope} geschrieben.`,
+  );
+  process.exit(0);
 }
 
 for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "support-runbook.md", "cimd-client-allowlist.v1.json", "rts-task-commits.json"]) {
@@ -107,10 +136,22 @@ if (releaseGate.evidence.planned_action_count !== inventory.actions.entry_count
   || releaseGate.evidence.planned_route_callsite_count !== inventory.routes.entry_count) {
   throw new Error("ReleaseGateReport weicht vom generierten 303/560-Inventar ab.");
 }
-const runtimeToolNames = publishedRuntimeToolNames("production");
+const runtimeCatalog = publishedRuntimeCatalog(
+  "production",
+  releaseGate.evidence.release_scope,
+);
+const runtimeToolNames = publishedRuntimeToolNames(
+  "production",
+  releaseGate.evidence.release_scope,
+);
 const evalToolNames = evalReport.results.map((result) => result.tool_name).sort();
 if (releaseGate.evidence.published_tool_count !== runtimeToolNames.length) {
   throw new Error("Die deklarierte Runtime-Toolanzahl weicht vom Katalog ab.");
+}
+if (releaseGate.evidence.runtime_tool_catalog_sha256 !== runtimeCatalog.tool_catalog_sha256
+  || releaseGate.evidence.published_widget_contract_count !== runtimeCatalog.widget_contract_count
+  || releaseGate.evidence.widget_resource_catalog_sha256 !== runtimeCatalog.widget_catalog_sha256) {
+  throw new Error("Release-Evidence ist nicht exakt an den Tool-/Widget-Katalog gebunden.");
 }
 if (releaseGate.evidence.published_runtime_catalog_verified) {
   assertSame(evalToolNames, runtimeToolNames, "ConnectorEvalSuite deckt nicht exakt die produktiv veröffentlichten Runtime-Tools ab.");

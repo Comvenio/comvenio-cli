@@ -75,6 +75,12 @@ describe("production MCP process bootstrap", () => {
       INTERNAL_API_KEY: "test-internal-key",
       MCP_RELEASE_SCOPE: "all",
     })).toThrow("MCP_RELEASE_SCOPE");
+    expect(readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      INTERNAL_API_KEY: "test-internal-key",
+      MCP_RELEASE_SCOPE: "club_agent_bridge_v1",
+    }).release_scope).toBe("club_agent_bridge_v1");
   });
 
   test("requires a strong edge secret in production", () => {
