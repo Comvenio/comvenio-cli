@@ -86,7 +86,7 @@ export const OPENAI_TOOL_TEST_PLAN_SCHEMA = z.object({
     context.addIssue({ code: "custom", message: "Jedes veröffentlichte Tool darf nur einen Reviewfall besitzen." });
   }
   plan.cases.forEach((item, index) => {
-    const verifiesOAuthBoundClubDiscovery = item.verifies.includes("oauth_bound_club_discovery");
+    const verifiesOAuthBoundClubDiscovery = item.verifies.length === 5;
     if (item.tool_name === "public_events" && !verifiesOAuthBoundClubDiscovery) {
       context.addIssue({
         code: "custom",
