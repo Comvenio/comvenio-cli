@@ -133,6 +133,8 @@ aus dem Service `Redis-Data` und dessen Variable `REDIS_URL` stammen; ein
 unaufgelöster `${{...}}`-Text ist keine gültige URL. Fehlt eine dieser
 Variablen, beendet sich der Prozess bewusst vor `/health` und schreibt einen
 strukturierten `comvenio_mcp_start_failed`-Datensatz in das Deployment-Log.
+Der kompatible PowerShell-Befehl zum Erzeugen des Schlüssels steht im
+[Produktions-Cutover-Runbook](integrations/railway/mcp-production-cutover.md).
 
 Die exakten Einstellungen für den Cloudflare-Worker `comvenio-api-gateway`, den
 Railway-Service `comvenio-cli` und den Railway-Service `auth-service`

@@ -265,6 +265,8 @@ describe("supply machine-readable schemas", () => {
     expect(schema("shopping").commands.generate).toEqual(["generate-from-recipe", "generate-from-menu"]);
     expect(schema("shopping").commands.procurement).toContain("procurement-template-deactivate");
     expect(schema("shopping").procurement_location_rule).toContain("Exakt eines");
+    expect(schema("shopping").procurement_article_rule).toContain("Mindestens eines");
+    expect(schema("shopping").procurement_article_rule).toContain("beide dürfen");
     expect(schema("shopping").excluded_routes).toContain("Interne Service-Routen");
   });
 });

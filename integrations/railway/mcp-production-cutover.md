@@ -70,10 +70,15 @@ Ein geeigneter Schlüssel kann lokal in PowerShell erzeugt und ohne Ausgabe im
 Terminal direkt in die Zwischenablage kopiert werden:
 
 ```powershell
-$bytes = [byte[]]::new(32)
-[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $rng.GetBytes($bytes)
+} finally {
+    $rng.Dispose()
+}
 $key = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
-Set-Clipboard $key
+Set-Clipboard -Value $key
 Write-Host 'MCP-Schlüssel wurde in die Zwischenablage kopiert.'
 ```
 
