@@ -19,7 +19,7 @@
     "build:mcp": "bun run --cwd apps/mcp-server build",
     "typecheck": "tsc --noEmit",
     "test": "bun run test:cli && bun run test:mcp && bun run test:contracts",
-    "test:cli": "bun test tests",
+    "test:cli": "bun test ./tests/",
     "test:mcp": "bun test apps/mcp-server/tests",
     "test:contracts": "bun test packages/comvenio-client/tests packages/connector-contracts/tests packages/tool-catalog/tests",
     "gen:schema": "bun run scripts/gen-schema.ts",
