@@ -49,6 +49,7 @@ import {
   createRuntimeAccessPolicy,
   createRuntimeServer,
 } from "../src/runtime-tools.ts";
+import { domainToolName } from "../src/domain-runtime.ts";
 import { createK7ToolSets, createK8ToolSets, createK9ToolSets, createK10ToolSets, createK11ToolSets, createK12ToolSets, createK13ToolSet } from "../src/tools/index.ts";
 import {
   AsyncJobService,
@@ -424,6 +425,133 @@ async function postMcp(baseUrl: string, body: unknown, token?: string): Promise<
 }
 
 describe("Remote MCP runtime", () => {
+  test("full connector exposes the same RBAC-filtered domain tools to OpenAI and Anthropic", async () => {
+    let actorTokenSeen = false;
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        const url = new URL(request.url);
+        if (
+          request.method === "GET"
+          && url.pathname === `/member/members/by_club/${clubId}`
+        ) {
+          actorTokenSeen =
+            request.headers.get("authorization") === "Bearer backend-actor-token";
+          return actorTokenSeen
+            ? Response.json([{
+                id: runtimeMemberId,
+                club_id: clubId,
+                first_name: "Erika",
+                last_name: "Musterfrau",
+                status: "active",
+              }])
+            : Response.json({ error: "missing_actor_token" }, { status: 401 });
+        }
+        return Response.json({ error: "unexpected_request" }, { status: 404 });
+      },
+    });
+    const fullRuntimeOptions: Partial<McpRuntimeOptions> = {
+      access_policy: createRuntimeAccessPolicy(
+        "development",
+        "full_connector_v1",
+      ),
+      server_factory: (requestContext) => createRuntimeServer({
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        release_scope: "full_connector_v1",
+      }),
+    };
+    const server = new McpHttpServer(runtimeOptions(fullRuntimeOptions));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const lists = await Promise.all([
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 101,
+          method: "tools/list",
+          params: {},
+        }, "token-openai"),
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 102,
+          method: "tools/list",
+          params: {},
+        }, "token-anthropic"),
+      ]);
+      const providerTools = await Promise.all(lists.map(async (response) => {
+        expect(response.status).toBe(200);
+        return (await response.json() as any).result.tools;
+      }));
+      const openAiNames = providerTools[0]
+        .map((item: { name: string }) => item.name)
+        .sort();
+      const anthropicNames = providerTools[1]
+        .map((item: { name: string }) => item.name)
+        .sort();
+      expect(anthropicNames).toEqual(openAiNames);
+
+      const memberListTool = domainToolName("cai.member.01.list");
+      expect(openAiNames).toContain(memberListTool);
+      const descriptor = providerTools[0]
+        .find((item: { name: string }) => item.name === memberListTool);
+      expect(descriptor.securitySchemes).toEqual([{
+        type: "oauth2",
+        scopes: ["member.read.basic"],
+      }]);
+      expect(JSON.stringify(descriptor.inputSchema)).not.toContain(
+        '"additionalProperties":true',
+      );
+
+      const call = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 103,
+        method: "tools/call",
+        params: {
+          name: memberListTool,
+          arguments: {
+            input: {
+              club_id: clubId,
+              limit: 10,
+              offset: 0,
+            },
+          },
+        },
+      }, "token-openai");
+      expect(call.status).toBe(200);
+      const result = await call.json() as any;
+      expect(result.result.isError).not.toBe(true);
+      expect(result.result.structuredContent).toMatchObject({
+        action_id: "cai.member.01.list",
+      });
+      expect(actorTokenSeen).toBe(true);
+
+      const foreignClub = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 104,
+        method: "tools/call",
+        params: {
+          name: memberListTool,
+          arguments: {
+            input: {
+              club_id: otherClubId,
+              limit: 10,
+              offset: 0,
+            },
+          },
+        },
+      }, "token-openai");
+      expect(foreignClub.status).toBe(200);
+      expect((await foreignClub.json() as any).result.isError).toBe(true);
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
+    }
+  });
+
   test("TC-01/TC-02: implements the five entities and handles initialize, list and call", async () => {
     const capabilityChecks: boolean[] = [];
     const server = new McpHttpServer(runtimeOptions({
