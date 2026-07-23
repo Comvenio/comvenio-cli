@@ -497,7 +497,7 @@ describe("Remote MCP runtime", () => {
     let taskActorTokenSeen = false;
     let reminderActorTokenSeen = false;
     let reminderDeleteActorTokenSeen = false;
-    let reminderBody: Record<string, unknown> | null = null;
+    let reminderBody: Record<string, unknown> = {};
     const api = Bun.serve({
       hostname: "127.0.0.1",
       port: 0,
@@ -1071,7 +1071,7 @@ describe("Remote MCP runtime", () => {
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {
     const lines: string[] = [];
     new ConsoleTelemetrySink((line) => lines.push(line)).record({
-      request_id: requestId,
+      request_id: context.request_id,
       provider: "openai",
       authenticated: true,
       route: "/mcp",
