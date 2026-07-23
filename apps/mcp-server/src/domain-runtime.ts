@@ -132,7 +132,7 @@ interface StoredConfirmation {
   expires_at: number;
 }
 
-export interface DomainToolSummary {
+export interface DomainToolSummary extends Record<string, JsonValue> {
   name: string;
   title: string;
   description: string;

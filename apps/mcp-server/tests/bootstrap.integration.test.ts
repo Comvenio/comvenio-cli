@@ -101,6 +101,7 @@ describe("production MCP process bootstrap", () => {
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: "openai-domain-proof-token",
       cimd_client_pins: { contract_version: "1.0.0", release_state: "BLOCKED", pins: [] },
+      release_scope: "personal_productivity_v1",
       allowed_hosts: ["127.0.0.1", "healthcheck.railway.app"],
       allowed_origins: [],
     });
