@@ -805,7 +805,6 @@ export function createRuntimeServer(input: {
           context: input.context.request,
           capability_snapshot: input.context.capability_snapshot,
           environment: input.environment,
-          state_store: input.domain_state_store,
           advertised_security_schemes: advertisedSecuritySchemes,
         });
         const domainRuntime = registerFullDomainRuntime({
@@ -814,6 +813,7 @@ export function createRuntimeServer(input: {
           context: input.context.request,
           capability_snapshot: input.context.capability_snapshot,
           environment: input.environment,
+          state_store: input.domain_state_store,
           advertised_security_schemes: advertisedSecuritySchemes,
         });
         domainTools = [

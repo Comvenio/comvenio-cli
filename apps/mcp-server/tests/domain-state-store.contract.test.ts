@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import type IORedis from "ioredis";
 
 import {
   confirmationMatchHash,
   InMemoryDomainStateStore,
+  RedisDomainStateStore,
 } from "../src/domain-state-store.ts";
 
 describe("shared MCP domain state contract", () => {
@@ -153,5 +155,73 @@ describe("shared MCP domain state contract", () => {
       { stale: false },
       100,
     )).toBe(true);
+  });
+
+  test("encrypts confirmation payloads before writing them to Redis", async () => {
+    let storedKey = "";
+    let storedValue = "";
+    const redis = {
+      status: "ready",
+      async ping() {
+        return "PONG";
+      },
+      async quit() {
+        return "OK";
+      },
+      async set(key: string, value: string) {
+        storedKey = key;
+        storedValue = value;
+        return "OK";
+      },
+      async eval(
+        _script: string,
+        _numberOfKeys: number,
+        key: string,
+        matchHash: string,
+      ) {
+        if (key !== storedKey) return null;
+        const parsed = JSON.parse(storedValue) as {
+          match_hash: string;
+        };
+        if (parsed.match_hash !== matchHash) return null;
+        const consumed = storedValue;
+        storedValue = "";
+        return consumed;
+      },
+    } as unknown as IORedis;
+    const store = new RedisDomainStateStore(
+      redis,
+      Buffer.alloc(32, 7),
+      "test:mcp",
+    );
+    const matchHash = confirmationMatchHash("actor", "token");
+
+    expect(await store.putConfirmation(
+      "domain-router",
+      "preview-encrypted",
+      {
+        match_hash: matchHash,
+        input: {
+          title: "Vertraulicher Vorstandstermin",
+          member_id: "member-sensitive",
+        },
+      },
+      60_000,
+    )).toBe(true);
+    expect(storedValue).not.toContain("Vertraulicher Vorstandstermin");
+    expect(storedValue).not.toContain("member-sensitive");
+    expect(storedKey).not.toContain("preview-encrypted");
+
+    expect(await store.consumeConfirmation(
+      "domain-router",
+      "preview-encrypted",
+      matchHash,
+    )).toEqual({
+      match_hash: matchHash,
+      input: {
+        title: "Vertraulicher Vorstandstermin",
+        member_id: "member-sensitive",
+      },
+    });
   });
 });

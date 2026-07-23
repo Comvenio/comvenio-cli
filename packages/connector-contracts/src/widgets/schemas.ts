@@ -402,10 +402,25 @@ export const NEWS_WIDGET_SCHEMA = z.object({
   const visibleNewsIds = new Set(
     widget.data.articles.map((article) => article.news_id),
   );
-  if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
-    || Object.prototype.hasOwnProperty.call(action.input, "club_id")
-    || (typeof action.input.news_id === "string" && !visibleNewsIds.has(action.input.news_id))
-    || (action.risk_class !== "read" && action.input.news_id !== widget.data.selected_news_id))) {
+  if (widget.actions.some((action) => {
+    if (
+      action.input === null
+      || typeof action.input !== "object"
+      || Array.isArray(action.input)
+      || Object.prototype.hasOwnProperty.call(action.input, "club_id")
+    ) return true;
+    const actionNewsId = typeof action.input.news_id === "string"
+      ? action.input.news_id
+      : null;
+    const createsDraft = actionNewsId === null
+      && /(?:create|draft)/iu.test(action.action_id);
+    return (actionNewsId !== null && !visibleNewsIds.has(actionNewsId))
+      || (
+        action.risk_class !== "read"
+        && !createsDraft
+        && actionNewsId !== widget.data.selected_news_id
+      );
+  })) {
     context.addIssue({ code: "custom", message: "Jede News-Aktion muss an einen sichtbaren beziehungsweise ausgewählten Beitrag gebunden sein." });
   }
   if (widget.actions.some((action) => /publish|veroeffentlich/iu.test(action.action_id)
@@ -445,7 +460,7 @@ export const NEWS_WIDGET_STATE_SCHEMA = z.object({
 });
 
 export const CONFIRMATION_DATA_SCHEMA = z.object({
-  preview: ACTION_PREVIEW_VIEW_SCHEMA.extend({}).transform((value) => value),
+  preview: ACTION_PREVIEW_VIEW_SCHEMA,
   confirm_label: safeText(100),
   cancel_label: z.literal("Abbrechen"),
   acknowledgement_required: z.boolean(),

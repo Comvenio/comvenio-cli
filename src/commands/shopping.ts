@@ -220,9 +220,35 @@ export async function handleShoppingOperation(args: {
       return;
     }
 
+    case "procurement-list": {
+      const rows = await client.get<ShoppingListRead[]>("supply", `/procurement/ongoing?club_id=${clubId}`);
+      output(rows, opts.json, () => rows.length ? JSON.stringify(rows, null, 2) : "Keine offenen Beschaffungspositionen.");
+      return;
+    }
+
+    case "procurement-activate": {
+      if (!id) throw new Error("shopping procurement-activate <template-id> benötigt eine Vorlagen-ID.");
+      const row = await client.post("supply", `/procurement/templates/${id}/activate?club_id=${clubId}`, opts.file ? jsonObject(opts.file, "shopping procurement-activate") : {});
+      output(row, opts.json, () => "Beschaffungsposition angelegt.");
+      return;
+    }
+
+    case "procurement-add": {
+      const row = await client.post("supply", `/procurement/items?club_id=${clubId}`, jsonObject(opts.file, "shopping procurement-add"));
+      output(row, opts.json, () => "Freie Beschaffungsposition angelegt.");
+      return;
+    }
+
+    case "procurement-purchase": {
+      if (!id) throw new Error("shopping procurement-purchase <item-id> benötigt eine Positions-ID.");
+      const row = await client.patch("supply", `/procurement/items/${id}/purchase?club_id=${clubId}`);
+      output(row, opts.json, () => "Beschaffungsposition abgehakt.");
+      return;
+    }
+
     default:
       throw new Error(
-        `Unbekannte Aktion "${action}". Verfügbar: list, active, completed, by-context, by-context-type, show, create, update, delete, item-add, item-update, item-delete, purchased, generate-from-recipe, generate-from-menu`,
+        `Unbekannte Aktion "${action}". Verfügbar: list, active, completed, by-context, by-context-type, show, create, update, delete, item-add, item-update, item-delete, purchased, generate-from-recipe, generate-from-menu, procurement-list, procurement-activate, procurement-add, procurement-purchase`,
       );
   }
 }
@@ -231,7 +257,7 @@ export function registerShoppingCommands(cli: CAC): void {
   cli
     .command(
       "shopping <action> [id]",
-      "Einkaufslisten: list | active | completed | by-context | by-context-type | show | create | update | delete | item-add | item-update | item-delete | purchased | generate-from-recipe | generate-from-menu",
+      "Einkaufslisten und Beschaffung: list | … | procurement-list | procurement-activate | procurement-add | procurement-purchase",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "JSON-Payload für Listen-/Positions-CRUD")

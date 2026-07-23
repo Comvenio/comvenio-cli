@@ -1,4 +1,9 @@
-import { createHash } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
 
 import type { JsonValue } from "@comvenio/connector-contracts";
 import type IORedis from "ioredis";
@@ -83,19 +88,96 @@ function ttlSeconds(ttlMs: number): number {
   return Math.max(1, Math.ceil(ttlMs / 1_000));
 }
 
-function parseRecord(value: unknown): ConfirmationStateRecord | null {
+function encryptionKey(value: Uint8Array): Buffer {
+  const key = Buffer.from(value);
+  if (key.length !== 32) {
+    throw new Error("Der Shared-State-Verschlüsselungsschlüssel ist ungültig.");
+  }
+  return key;
+}
+
+function sealJson(value: JsonValue, key: Buffer, aad: string): string {
+  const nonce = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, nonce);
+  cipher.setAAD(Buffer.from(aad, "utf8"));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(value), "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return [
+    "v1",
+    nonce.toString("base64url"),
+    tag.toString("base64url"),
+    ciphertext.toString("base64url"),
+  ].join(".");
+}
+
+function openJson(value: unknown, key: Buffer, aad: string): JsonValue {
+  if (typeof value !== "string") {
+    throw new Error("Der verschlüsselte Shared State ist beschädigt.");
+  }
+  const [version, nonceValue, tagValue, ciphertextValue, extra] =
+    value.split(".");
+  if (
+    version !== "v1"
+    || !nonceValue
+    || !tagValue
+    || ciphertextValue === undefined
+    || extra !== undefined
+  ) {
+    throw new Error("Der verschlüsselte Shared State ist beschädigt.");
+  }
+  try {
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(nonceValue, "base64url"),
+    );
+    decipher.setAAD(Buffer.from(aad, "utf8"));
+    decipher.setAuthTag(Buffer.from(tagValue, "base64url"));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(ciphertextValue, "base64url")),
+      decipher.final(),
+    ]).toString("utf8");
+    return JSON.parse(plaintext) as JsonValue;
+  } catch {
+    throw new Error("Der verschlüsselte Shared State konnte nicht geöffnet werden.");
+  }
+}
+
+function parseRecord(
+  value: unknown,
+  key: Buffer,
+  aad: string,
+): ConfirmationStateRecord | null {
   if (typeof value !== "string") return null;
   try {
     const parsed: unknown = JSON.parse(value);
+    const record = parsed as Record<string, unknown>;
+    const matchHash = record?.match_hash;
+    const sealedPayload = record?.sealed_payload;
     if (
       !parsed
       || typeof parsed !== "object"
       || Array.isArray(parsed)
-      || typeof (parsed as Record<string, unknown>).match_hash !== "string"
+      || typeof matchHash !== "string"
+      || typeof sealedPayload !== "string"
     ) {
       throw new Error("shape");
     }
-    return parsed as ConfirmationStateRecord;
+    const payload = openJson(
+      sealedPayload,
+      key,
+      aad,
+    );
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      throw new Error("shape");
+    }
+    return {
+      ...(payload as Record<string, JsonValue>),
+      match_hash: matchHash,
+    };
   } catch {
     throw new Error("Der persistierte Bestätigungszustand ist beschädigt.");
   }
@@ -249,10 +331,10 @@ if not encoded then
 end
 local record = cjson.decode(encoded)
 if record.payload_hash ~= ARGV[1] then return {'conflict'} end
-if record.state == 'running' or record.result == cjson.null then
+if record.state == 'running' or record.result_ciphertext == cjson.null then
   return {'running'}
 end
-return {'completed', cjson.encode(record.result)}
+return {'completed', record.result_ciphertext}
 `;
 
 const COMPLETE_WRITE_LUA = `
@@ -279,10 +361,15 @@ return 0
 `;
 
 export class RedisDomainStateStore implements DomainStateStore {
+  readonly #encryptionKey: Buffer;
+
   constructor(
     private readonly redis: IORedis,
+    stateEncryptionKey: Uint8Array,
     private readonly prefix = "comvenio:mcp",
-  ) {}
+  ) {
+    this.#encryptionKey = encryptionKey(stateEncryptionKey);
+  }
 
   async ready(): Promise<boolean> {
     if (this.redis.status === "wait") await this.redis.connect();
@@ -300,9 +387,14 @@ export class RedisDomainStateStore implements DomainStateStore {
     ttlMs: number,
   ): Promise<boolean> {
     const ttl = ttlMilliseconds(ttlMs);
+    const key = redisKey(this.prefix, namespace, previewId);
+    const { match_hash: matchHash, ...payload } = record;
     const result = await this.redis.set(
-      redisKey(this.prefix, namespace, previewId),
-      JSON.stringify(record),
+      key,
+      JSON.stringify({
+        match_hash: matchHash,
+        sealed_payload: sealJson(payload, this.#encryptionKey, key),
+      }),
       "PX",
       ttl,
       "NX",
@@ -315,13 +407,14 @@ export class RedisDomainStateStore implements DomainStateStore {
     previewId: string,
     matchHash: string,
   ): Promise<ConfirmationStateRecord | null> {
+    const key = redisKey(this.prefix, namespace, previewId);
     const value = await this.redis.eval(
       CONSUME_CONFIRMATION_LUA,
       1,
-      redisKey(this.prefix, namespace, previewId),
+      key,
       matchHash,
     );
-    return parseRecord(value);
+    return parseRecord(value, this.#encryptionKey, key);
   }
 
   async acquireWrite(
@@ -335,12 +428,13 @@ export class RedisDomainStateStore implements DomainStateStore {
       payload_hash: payloadHash,
       owner_token: ownerToken,
       state: "running",
-      result: null,
+      result_ciphertext: null,
     });
+    const storageKey = redisKey(this.prefix, "write", key);
     const value = await this.redis.eval(
       ACQUIRE_WRITE_LUA,
       1,
-      redisKey(this.prefix, "write", key),
+      storageKey,
       payloadHash,
       ownerToken,
       running,
@@ -353,7 +447,14 @@ export class RedisDomainStateStore implements DomainStateStore {
     if (value[0] === "conflict") return { status: "conflict" };
     if (value[0] === "running") return { status: "running" };
     if (value[0] === "completed" && typeof value[1] === "string") {
-      return { status: "completed", result: JSON.parse(value[1]) as JsonValue };
+      return {
+        status: "completed",
+        result: openJson(
+          value[1],
+          this.#encryptionKey,
+          storageKey,
+        ),
+      };
     }
     throw new Error("Redis lieferte einen unbekannten Schreibzustand.");
   }
@@ -370,7 +471,11 @@ export class RedisDomainStateStore implements DomainStateStore {
       payload_hash: payloadHash,
       owner_token: ownerToken,
       state: "completed",
-      result,
+      result_ciphertext: sealJson(
+        result,
+        this.#encryptionKey,
+        redisKey(this.prefix, "write", key),
+      ),
     });
     const value = await this.redis.eval(
       COMPLETE_WRITE_LUA,
@@ -401,9 +506,10 @@ export class RedisDomainStateStore implements DomainStateStore {
 
 export function redisDomainStateStore(
   redis: IORedis,
+  stateEncryptionKey: Uint8Array,
   prefix = "comvenio:mcp",
 ): DomainStateStore {
-  return new RedisDomainStateStore(redis, prefix);
+  return new RedisDomainStateStore(redis, stateEncryptionKey, prefix);
 }
 
 export const DOMAIN_STATE_TTL_SECONDS = Object.freeze({

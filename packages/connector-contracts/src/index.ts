@@ -25,7 +25,7 @@ export function parseConnectorReleaseScope(
     return candidate as ConnectorReleaseScope;
   }
   throw new Error(
-    "Der Connector-Release-Scope muss personal_productivity_v1, "
+    "MCP_RELEASE_SCOPE muss personal_productivity_v1, "
     + "club_agent_bridge_v1 oder full_connector_v1 sein.",
   );
 }

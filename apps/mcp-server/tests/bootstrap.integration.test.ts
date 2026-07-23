@@ -9,6 +9,7 @@ import type { McpHttpServer } from "../src/http/server.ts";
 import { NEWS_WIDGET_ASSET_PATH } from "../src/widgets/news/resource.ts";
 
 let activeServer: McpHttpServer | null = null;
+const sharedStateEncryptionKey = "A".repeat(43);
 
 afterEach(async () => {
   if (activeServer) await activeServer.drain(2_000);
@@ -22,6 +23,7 @@ describe("production MCP process bootstrap", () => {
       RAILWAY_PUBLIC_DOMAIN: "comvenio-cli-production.up.railway.app",
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "rediss://redis.example.test:6380/0",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp-review.comvenio.app",
@@ -37,6 +39,7 @@ describe("production MCP process bootstrap", () => {
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: null,
       release_scope: "personal_productivity_v1",
+      shared_state_encryption_key: sharedStateEncryptionKey,
       shared_state_redis_url: "rediss://redis.example.test:6380/0",
       cimd_client_pins: expect.objectContaining({
         contract_version: "1.0.0",
@@ -64,12 +67,14 @@ describe("production MCP process bootstrap", () => {
       PORT: "0",
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
       INTERNAL_API_KEY: "test-internal-key",
     })).toThrow("PORT");
     expect(() => readMcpProcessConfig({
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp.example.test,mcp.example.test",
@@ -77,6 +82,7 @@ describe("production MCP process bootstrap", () => {
     expect(() => readMcpProcessConfig({
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_RELEASE_SCOPE: "all",
@@ -84,6 +90,7 @@ describe("production MCP process bootstrap", () => {
     expect(readMcpProcessConfig({
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
       MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: sharedStateEncryptionKey,
       MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
       INTERNAL_API_KEY: "test-internal-key",
       MCP_RELEASE_SCOPE: "club_agent_bridge_v1",
@@ -114,6 +121,19 @@ describe("production MCP process bootstrap", () => {
       MCP_SHARED_STATE_REDIS_URL: "https://redis.example.test",
       INTERNAL_API_KEY: "test-internal-key",
     })).toThrow("MCP_SHARED_STATE_REDIS_URL");
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("MCP_SHARED_STATE_ENCRYPTION_KEY");
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      MCP_SHARED_STATE_ENCRYPTION_KEY: "too-short",
+      MCP_SHARED_STATE_REDIS_URL: "redis://redis.example.test:6379/0",
+      INTERNAL_API_KEY: "test-internal-key",
+    })).toThrow("MCP_SHARED_STATE_ENCRYPTION_KEY");
   });
 
   test("starts on TCP, serves health and OAuth metadata, and stays fail-closed", async () => {
@@ -123,6 +143,7 @@ describe("production MCP process bootstrap", () => {
       port: 8080,
       public_origin: "https://mcp.comvenio.app",
       edge_shared_secret: "test-only-mcp-edge-secret-32-characters",
+      shared_state_encryption_key: sharedStateEncryptionKey,
       shared_state_redis_url: "redis://redis.example.test:6379/0",
       api_base_url: "https://api.comvenio.app",
       auth_base_url: "https://api.comvenio.app/auth",
