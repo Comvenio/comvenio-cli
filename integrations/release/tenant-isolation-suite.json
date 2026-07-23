@@ -1,56 +1,9 @@
 {
   "schema_version": "1.0.0",
   "suite": "TenantIsolationSuite",
-  "status": "pass",
-  "results": [
-    {
-      "id": "backend_denial",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "cached_tool_recheck",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "cross_club",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "cross_user",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "file_isolation",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "grant_revocation",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "stale_capability",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    },
-    {
-      "id": "token_replay",
-      "passed": true,
-      "synthetic_data_only": true,
-      "evidence_ref": "apps/mcp-server/tests/tenant-isolation.integration.test.ts"
-    }
-  ],
-  "blockers": []
+  "status": "blocked",
+  "results": [],
+  "blockers": [
+    "TENANT_SCENARIO_PARITY"
+  ]
 }

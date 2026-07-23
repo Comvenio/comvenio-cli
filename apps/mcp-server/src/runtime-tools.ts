@@ -5,11 +5,13 @@ import {
 import { createComvenioApiClient } from "@comvenio/comvenio-client";
 import {
   createProviderNeutralResult,
+  isConnectorError,
   type JsonValue,
   type OAuthScope,
   type RequestContext,
 } from "@comvenio/connector-contracts";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
@@ -23,6 +25,7 @@ import type {
   PublicResolverAlias,
   PublicToolCandidate,
 } from "./public/types.ts";
+import { TaskToolSet } from "./tools/booking-object-task/index.ts";
 import {
   eventCalendarToolMetadata,
   registerEventCalendarWidgetResource,
@@ -35,29 +38,101 @@ import {
 } from "./widgets/news/resource.ts";
 import { NewsWidgetProjector } from "./widgets/news/projector.ts";
 import { NewsWidgetCapabilityPolicy } from "./widgets/news/policy.ts";
+import {
+  installToolSecuritySchemeProjection,
+  type ToolSecurityScheme,
+} from "./tool-security-schemes.ts";
 
-const uuid = z.string().uuid();
-const clubContextSchema = z.object({ club_id: uuid, department_id: uuid.optional() }).strict();
 const noInputSchema = z.object({}).strict();
+const dateTime = z.string().datetime({ offset: true });
+const uuid = z.string().uuid();
+const myTaskSchema = z.object({
+  id: uuid,
+  title: z.string(),
+  description: z.string().nullable(),
+  status: z.string().nullable(),
+  priority: z.string().nullable(),
+  due_date: dateTime.nullable(),
+  scheduled_start: dateTime.nullable(),
+  scheduled_end: dateTime.nullable(),
+}).strict();
+const myTasksOutputSchema = z.object({
+  club_id: uuid,
+  range: z.object({ from: dateTime, to: dateTime }).strict(),
+  tasks: z.array(myTaskSchema),
+  returned: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+  undated_tasks_excluded: z.number().int().nonnegative(),
+}).strict();
+const myTasksSchema = z.object({
+  from: dateTime.describe("Inklusiver Beginn des gewünschten Zeitraums als RFC-3339-Zeitpunkt."),
+  to: dateTime.describe("Exklusives Ende des gewünschten Zeitraums als RFC-3339-Zeitpunkt."),
+  include_completed: z.boolean().default(false),
+  limit: z.number().int().min(1).max(100).default(50),
+}).strict().refine((value) => Date.parse(value.from) < Date.parse(value.to), {
+  message: "to muss nach from liegen.",
+  path: ["to"],
+});
+const taskReminderSchema = z.discriminatedUnion("operation", [
+  z.object({
+    operation: z.literal("set"),
+    task_id: uuid.describe("Task-ID aus cv_my_tasks_read."),
+    reminder_at: dateTime.describe("Persönlicher Erinnerungszeitpunkt als RFC-3339-Zeitpunkt."),
+    comment: z.string().trim().max(500).optional(),
+  }).strict(),
+  z.object({
+    operation: z.literal("delete"),
+    task_id: uuid.describe("Task-ID aus cv_my_tasks_read."),
+  }).strict(),
+]);
+const taskReminderResultSchema = z.object({
+  id: uuid,
+  task_id: uuid,
+  reminder_at: dateTime,
+  comment: z.string().nullable(),
+}).strict();
+const taskReminderOutputSchema = z.object({
+  operation: z.enum(["set", "delete"]),
+  task_id: uuid,
+  reminder: taskReminderResultSchema.nullable(),
+}).strict();
 
 const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_whoami_read", required_scopes: ["club.read"] },
   { tool_name: "cv_permissions_explain_read", required_scopes: ["club.read"] },
   { tool_name: "cv_schema_read", required_scopes: ["club.read"] },
+  { tool_name: "cv_my_tasks_read", required_scopes: ["task.read"] },
+  { tool_name: "cv_my_task_reminder_write", required_scopes: ["task.read", "task.write"] },
 ] satisfies ProtectedToolDescriptor[]);
+
+const TOOL_SCOPES = Object.freeze({
+  cv_whoami_read: ["club.read"],
+  cv_permissions_explain_read: ["club.read"],
+  cv_schema_read: ["club.read"],
+  cv_my_tasks_read: ["task.read"],
+  cv_my_task_reminder_write: ["task.read", "task.write"],
+} satisfies Record<(typeof PROTECTED_TOOLS)[number]["tool_name"], OAuthScope[]>);
 
 const TOOL_COPY = Object.freeze({
   cv_whoami_read: {
     title: "Comvenio: Eigene Verbindung",
-    description: "Ohne Eingabe aufrufen, wenn Domain oder club_id fehlen. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes.",
+    description: "Ohne Eingabe aufrufen, wenn Vereinskontext oder Verbindung unklar sind. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes.",
   },
   cv_permissions_explain_read: {
     title: "Comvenio: Eigene Rechte erklären",
-    description: "Erklärt ausschließlich deine effektiven Rechte im gewählten Verein.",
+    description: "Ohne Eingabe aufrufen. Erklärt ausschließlich deine effektiven Rechte im über OAuth gewählten Verein.",
   },
   cv_schema_read: {
     title: "Comvenio: Verfügbare Aktionen erklären",
-    description: "Listet die aktuell in deinem Rechtekontext sichtbaren Comvenio-Aktionen.",
+    description: "Ohne Eingabe aufrufen. Listet die aktuell in deinem OAuth- und Rechtekontext sichtbaren Comvenio-Aktionen.",
+  },
+  cv_my_tasks_read: {
+    title: "Comvenio: Eigene Aufgaben anzeigen",
+    description: "Zeigt deine persönlichen, dir zugewiesenen Aufgaben im gewünschten Zeitraum. Verein und Mitglied werden sicher aus deiner OAuth-Verbindung abgeleitet; frage niemals nach club_id, Vereinsdomain oder Mitglieds-ID.",
+  },
+  cv_my_task_reminder_write: {
+    title: "Comvenio: Eigene Aufgaben-Erinnerung verwalten",
+    description: "Setzt oder löscht deine persönliche Erinnerung für eine Aufgabe. Verwende nur eine task_id aus cv_my_tasks_read; Verein und Benutzer werden sicher aus OAuth abgeleitet. Die Erinnerung wird ausschließlich dir zugestellt.",
   },
 });
 
@@ -144,6 +219,24 @@ function widgetMetadata(alias: PublicResolverAlias, environment: OAuthEnvironmen
     return newsToolMetadata(environment)._meta;
   }
   return undefined;
+}
+
+function noAuthSecuritySchemes(): ToolSecurityScheme[] {
+  return [{ type: "noauth" }];
+}
+
+function oauthSecuritySchemes(scopes: OAuthScope[]): ToolSecurityScheme[] {
+  return [{ type: "oauth2", scopes: [...scopes] }];
+}
+
+function withSecurityMetadata(
+  metadata: Record<string, unknown> | undefined,
+  securitySchemes: ToolSecurityScheme[],
+): Record<string, unknown> {
+  return {
+    ...(metadata ?? {}),
+    securitySchemes: structuredClone(securitySchemes),
+  };
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -239,27 +332,140 @@ async function executePublic(input: {
   ));
 }
 
-function assertClub(input: unknown, context: RequestContext): { club_id: string; department_id?: string } {
-  const parsed = clubContextSchema.parse(input);
-  if (context.club_id !== parsed.club_id || context.department_id !== (parsed.department_id ?? null)) {
-    throw new Error("Der Tool-Aufruf passt nicht zum gewählten Vereins- oder Abteilungskontext.");
+function taskTimestamp(task: Record<string, unknown>): number | null {
+  for (const key of ["due_date", "scheduled_start", "scheduled_end"] as const) {
+    const value = task[key];
+    if (typeof value !== "string") continue;
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
   }
-  return parsed;
+  return null;
+}
+
+function projectMyTask(task: Record<string, JsonValue>): z.infer<typeof myTaskSchema> | null {
+  const parsed = myTaskSchema.safeParse({
+    id: task.id,
+    title: task.title,
+    description: typeof task.description === "string" ? task.description : null,
+    status: typeof task.status === "string" ? task.status : null,
+    priority: typeof task.priority === "string" ? task.priority : null,
+    due_date: typeof task.due_date === "string" ? task.due_date : null,
+    scheduled_start: typeof task.scheduled_start === "string" ? task.scheduled_start : null,
+    scheduled_end: typeof task.scheduled_end === "string" ? task.scheduled_end : null,
+  });
+  return parsed.success ? parsed.data : null;
+}
+
+function filterMyTasks(input: {
+  result: JsonValue;
+  from: string;
+  to: string;
+  include_completed: boolean;
+  limit: number;
+}): Record<string, JsonValue> {
+  const source = Array.isArray(input.result)
+    ? input.result.filter((item): item is Record<string, JsonValue> =>
+      item !== null && typeof item === "object" && !Array.isArray(item))
+    : [];
+  const from = Date.parse(input.from);
+  const to = Date.parse(input.to);
+  let undated = 0;
+  const matching = source.flatMap((task) => {
+    const timestamp = taskTimestamp(task);
+    if (timestamp === null) {
+      undated++;
+      return [];
+    }
+    if (task.status === "cancelled" || (!input.include_completed && task.status === "completed")) {
+      return [];
+    }
+    if (timestamp < from || timestamp >= to) return [];
+    const projected = projectMyTask(task);
+    return projected ? [projected] : [];
+  });
+  const tasks = matching.slice(0, input.limit);
+  return {
+    range: { from: input.from, to: input.to },
+    tasks,
+    returned: tasks.length,
+    truncated: matching.length > input.limit,
+    undated_tasks_excluded: undated,
+  };
+}
+
+function projectTaskReminder(value: JsonValue): z.infer<typeof taskReminderOutputSchema>["reminder"] {
+  const source = record(value);
+  const parsed = source
+    ? taskReminderResultSchema.safeParse({
+        id: source.id,
+        task_id: source.task_id,
+        reminder_at: source.reminder_at,
+        comment: typeof source.comment === "string" ? source.comment : null,
+      })
+    : null;
+  if (!parsed || !parsed.success) {
+    throw new Error("Der Automation-Service hat keine gültige Reminder-Antwort geliefert.");
+  }
+  return parsed.data;
+}
+
+function protectedToolError(
+  context: RequestContext,
+  code: string,
+  text: string,
+): CallToolResult {
+  return {
+    content: [{ type: "text", text }],
+    structuredContent: { error: code },
+    _meta: {
+      request_id: context.request_id,
+      ...(context.capability_version
+        ? { capability_version: context.capability_version }
+        : {}),
+    },
+    isError: true,
+  };
+}
+
+function insufficientScopeResult(
+  publicOrigin: string,
+  scope: OAuthScope,
+): CallToolResult {
+  const challenge = `Bearer resource_metadata="${publicOrigin}/.well-known/oauth-protected-resource", error="insufficient_scope", error_description="Für persönliche Aufgaben wird der OAuth-Scope ${scope} benötigt.", scope="${scope}"`;
+  return {
+    content: [{
+      type: "text",
+      text: `Deine Comvenio-Verbindung benötigt zusätzlich den OAuth-Scope ${scope}. Bitte autorisiere die Verbindung erneut.`,
+    }],
+    structuredContent: {
+      error: "insufficient_scope",
+      required_scope: scope,
+    },
+    _meta: {
+      "mcp/www_authenticate": [challenge],
+    },
+    isError: true,
+  };
 }
 
 export function createRuntimeServer(input: {
   environment: OAuthEnvironment;
   api_base_url: string;
+  public_origin: string;
   context: StatelessTransportContext;
 }): McpServer {
   const server = new McpServer({ name: "comvenio-mcp-server", version: "1.0.0" });
+  const advertisedSecuritySchemes = new Map<string, readonly ToolSecurityScheme[]>();
   registerEventCalendarWidgetResource(server, input.environment);
   registerNewsWidgetResource(server, input.environment);
   const catalog = createRuntimeToolCatalog(input.environment);
   const publicDescriptors = new PublicToolSubset({ public_tools: catalog.public_tools }).list();
   for (const descriptor of publicDescriptors) {
     const alias = descriptor.resolver_alias;
-    server.registerTool(alias, {
+    const securitySchemes = noAuthSecuritySchemes();
+    advertisedSecuritySchemes.set(alias, securitySchemes);
+    const metadata = widgetMetadata(alias, input.environment);
+    registerAppTool(server, alias, {
       title: descriptor.title,
       description: descriptor.description,
       inputSchema: PUBLIC_INPUT_SCHEMAS[alias],
@@ -269,7 +475,7 @@ export function createRuntimeServer(input: {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...(widgetMetadata(alias, input.environment) ? { _meta: widgetMetadata(alias, input.environment) } : {}),
+      _meta: withSecurityMetadata(metadata, securitySchemes),
     }, async (arguments_) => executePublic({
       alias,
       arguments: arguments_,
@@ -278,10 +484,17 @@ export function createRuntimeServer(input: {
     }));
   }
 
-  if (input.context.provider_request.authenticated && input.context.capability_snapshot) {
-    server.registerTool("cv_whoami_read", {
+  if (
+    input.context.provider_request.authenticated
+    && input.context.capability_snapshot
+    && input.context.request.scopes.includes("club.read")
+  ) {
+    const clubReadSecuritySchemes = oauthSecuritySchemes(["club.read"]);
+    advertisedSecuritySchemes.set("cv_whoami_read", clubReadSecuritySchemes);
+    registerAppTool(server, "cv_whoami_read", {
       ...TOOL_COPY.cv_whoami_read,
       inputSchema: noInputSchema,
+      _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     }, async () => {
       const output = {
@@ -297,25 +510,34 @@ export function createRuntimeServer(input: {
       }]));
     });
 
-    server.registerTool("cv_permissions_explain_read", {
+    advertisedSecuritySchemes.set("cv_permissions_explain_read", clubReadSecuritySchemes);
+    registerAppTool(server, "cv_permissions_explain_read", {
       ...TOOL_COPY.cv_permissions_explain_read,
-      inputSchema: clubContextSchema,
+      inputSchema: noInputSchema,
+      _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    }, async (arguments_) => {
-      const parsed = assertClub(arguments_, input.context.request);
+    }, async () => {
+      const clubId = input.context.request.club_id;
+      if (!clubId) throw new Error("Der OAuth-Grant enthält keinen gebundenen Verein.");
       return toMcpResult(new PermissionsExplainTool().execute(
-        parsed,
+        {
+          club_id: clubId,
+          ...(input.context.request.department_id
+            ? { department_id: input.context.request.department_id }
+            : {}),
+        },
         input.context.request,
         input.context.capability_snapshot!,
       ));
     });
 
-    server.registerTool("cv_schema_read", {
+    advertisedSecuritySchemes.set("cv_schema_read", clubReadSecuritySchemes);
+    registerAppTool(server, "cv_schema_read", {
       ...TOOL_COPY.cv_schema_read,
-      inputSchema: clubContextSchema,
+      inputSchema: noInputSchema,
+      _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    }, async (arguments_) => {
-      assertClub(arguments_, input.context.request);
+    }, async () => {
       const tools = [
         ...publicDescriptors.map((tool) => ({
           name: tool.resolver_alias,
@@ -324,18 +546,197 @@ export function createRuntimeServer(input: {
           required_scopes: ["public.read"] as OAuthScope[],
           read_only: true,
         })),
-        ...Object.entries(TOOL_COPY).map(([name, copy]) => ({
-          name,
-          ...copy,
-          required_scopes: ["club.read"] as OAuthScope[],
-          read_only: true,
-        })),
+        ...Object.entries(TOOL_COPY)
+          .filter(([name]) =>
+            TOOL_SCOPES[name as keyof typeof TOOL_SCOPES].every((scope) =>
+              input.context.request.scopes.includes(scope)))
+          .map(([name, copy]) => ({
+            name,
+            ...copy,
+            required_scopes: TOOL_SCOPES[name as keyof typeof TOOL_SCOPES],
+            read_only: name !== "cv_my_task_reminder_write",
+          })),
       ].sort((left, right) => left.name.localeCompare(right.name));
       return toMcpResult(createProviderNeutralResult(input.context.request, { tools }, [{
         type: "text",
         text: `${tools.length} Aktionen sind in diesem Verbindungskontext verfügbar.`,
       }]));
     });
+
+    const clubId = input.context.request.club_id;
+    const backendActorToken = input.context.backend_actor_token;
+    if (clubId && backendActorToken) {
+      const taskReadSecuritySchemes = oauthSecuritySchemes(["task.read"]);
+      const apiClient = createComvenioApiClient({
+        gatewayBaseUrl: input.api_base_url,
+        accessToken: backendActorToken,
+      });
+      const tasks = new TaskToolSet({
+        client: apiClient,
+      });
+      if (input.context.request.scopes.includes("task.read")) {
+        advertisedSecuritySchemes.set("cv_my_tasks_read", taskReadSecuritySchemes);
+        registerAppTool(server, "cv_my_tasks_read", {
+          ...TOOL_COPY.cv_my_tasks_read,
+          inputSchema: myTasksSchema,
+          outputSchema: myTasksOutputSchema,
+          _meta: withSecurityMetadata(undefined, taskReadSecuritySchemes),
+          annotations: {
+            readOnlyHint: true,
+            destructiveHint: false,
+            idempotentHint: true,
+            openWorldHint: false,
+          },
+        }, async (arguments_) => {
+          const parsed = myTasksSchema.parse(arguments_);
+          try {
+            const result = await tasks.execute({
+              action_id: "cai.task.01.list",
+              input: {
+                club_id: clubId,
+                operation: "mine",
+                limit: 100,
+                offset: 0,
+              },
+              context: input.context.request,
+              capability_snapshot: input.context.capability_snapshot,
+            });
+            const output = {
+              club_id: clubId,
+              ...filterMyTasks({
+                result: result.result,
+                from: parsed.from,
+                to: parsed.to,
+                include_completed: parsed.include_completed,
+                limit: parsed.limit,
+              }),
+            } satisfies Record<string, JsonValue>;
+            return toMcpResult(createProviderNeutralResult(
+              input.context.request,
+              output,
+              [{ type: "text", text: safeText(output) }],
+            ));
+          } catch (error) {
+            if (isConnectorError(error) && error.code === "SCOPE_REQUIRED") {
+              return insufficientScopeResult(
+                input.public_origin,
+                error.required_scope ?? "task.read",
+              );
+            }
+            throw error;
+          }
+        });
+      }
+
+      if (
+        input.context.request.scopes.includes("task.read")
+        && input.context.request.scopes.includes("task.write")
+      ) {
+        const taskReminderSecuritySchemes = oauthSecuritySchemes([
+          "task.read",
+          "task.write",
+        ]);
+        advertisedSecuritySchemes.set(
+          "cv_my_task_reminder_write",
+          taskReminderSecuritySchemes,
+        );
+        registerAppTool(server, "cv_my_task_reminder_write", {
+          ...TOOL_COPY.cv_my_task_reminder_write,
+          inputSchema: taskReminderSchema,
+          outputSchema: taskReminderOutputSchema,
+          _meta: withSecurityMetadata(undefined, taskReminderSecuritySchemes),
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: true,
+            openWorldHint: false,
+          },
+        }, async (arguments_) => {
+          const parsed = taskReminderSchema.parse(arguments_);
+          for (const scope of ["task.read", "task.write"] as const) {
+            if (!input.context.request.scopes.includes(scope)) {
+              return insufficientScopeResult(input.public_origin, scope);
+            }
+          }
+
+          try {
+            if (parsed.operation === "set") {
+              if (Date.parse(parsed.reminder_at) <= Date.now()) {
+                return protectedToolError(
+                  input.context.request,
+                  "validation_failed",
+                  "Der Erinnerungszeitpunkt muss in der Zukunft liegen.",
+                );
+              }
+              const response = await apiClient.request<JsonValue>({
+                method: "POST",
+                service: "automation",
+                path: "/custom_reminders/task",
+                body: {
+                  task_id: parsed.task_id,
+                  reminder_at: parsed.reminder_at,
+                  ...(parsed.comment ? { comment: parsed.comment } : {}),
+                },
+                context: input.context.request,
+              });
+              const output = {
+                operation: "set",
+                task_id: parsed.task_id,
+                reminder: projectTaskReminder(response),
+              } satisfies z.infer<typeof taskReminderOutputSchema>;
+              return toMcpResult(createProviderNeutralResult(
+                input.context.request,
+                output,
+                [{
+                  type: "text",
+                  text: "Deine persönliche Aufgaben-Erinnerung wurde gespeichert.",
+                }],
+              ));
+            }
+
+            await apiClient.request({
+              method: "DELETE",
+              service: "automation",
+              path: (
+                `/custom_reminders/task/by-task/`
+                + encodeURIComponent(parsed.task_id)
+              ),
+              context: input.context.request,
+            });
+            const output = {
+              operation: "delete",
+              task_id: parsed.task_id,
+              reminder: null,
+            } satisfies z.infer<typeof taskReminderOutputSchema>;
+            return toMcpResult(createProviderNeutralResult(
+              input.context.request,
+              output,
+              [{
+                type: "text",
+                text: "Deine persönliche Aufgaben-Erinnerung wurde gelöscht.",
+              }],
+            ));
+          } catch (error) {
+            if (isConnectorError(error) && error.code === "PERMISSION_DENIED") {
+              return protectedToolError(
+                input.context.request,
+                "permission_denied",
+                "Die Aufgabe ist in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar.",
+              );
+            }
+            if (isConnectorError(error) && error.code === "NOT_FOUND") {
+              return protectedToolError(
+                input.context.request,
+                "not_found",
+                "Die Aufgabe oder Erinnerung wurde nicht gefunden.",
+              );
+            }
+            throw error;
+          }
+        });
+      }
+    }
   }
+  installToolSecuritySchemeProjection(server, advertisedSecuritySchemes);
   return server;
 }

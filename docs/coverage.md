@@ -249,7 +249,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## task
 
 - Status: `covered`
-- Actions: `list`, `show`, `show --subtasks`, `show --chain`, `create`, `bulk`, `update`, `assign`, `done`, `delete`, `context list|show|create|update|delete`, `assignment list|show|update|delete`, `note list|add|update|delete`, `checklist list|add|update|toggle|delete|reorder`
+- Actions: `list`, `show`, `show --subtasks`, `show --chain`, `create`, `bulk`, `update`, `assign`, `done`, `delete`, `reminder set|list|delete`, `context list|show|create|update|delete`, `assignment list|show|update|delete`, `note list|add|update|delete`, `checklist list|add|update|toggle|delete|reorder`
 - Wichtige Lücken:
   - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:

@@ -4,7 +4,7 @@ import { CHAT_GPT_APP_MANIFEST_SCHEMA } from "./schemas.ts";
 const STARTER_PROMPTS: ChatGptAppManifest["starter_prompts"] = [
   "Welche Termine stehen diese Woche in meinem Verein an?",
   "Zeige mir die neuesten News meines Vereins.",
-  "Welche Comvenio-Aktionen darf ich in diesem Verein ausführen?",
+  "Welche Aufgaben habe ich diese Woche?",
 ];
 
 export function buildChatGptAppManifest(toolCatalogVersion: string): ChatGptAppManifest {
@@ -12,7 +12,7 @@ export function buildChatGptAppManifest(toolCatalogVersion: string): ChatGptAppM
     schema_version: "1.0.0",
     product_name: "Comvenio",
     tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-    short_description: "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.",
+    short_description: "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.",
     publisher_name: "Comvenio",
     category: "Productivity",
     website_url: "https://www.comvenio.app",

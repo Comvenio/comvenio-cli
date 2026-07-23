@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "tool_name": "cv_my_task_reminder_write",
+  "synthetic_data_only": true,
+  "expected": {
+    "outcome": "success",
+    "permission_denied_outcome": "not_found",
+    "data_policy": "oauth_subject_only",
+    "required_scopes": [
+      "task.read",
+      "task.write"
+    ],
+    "backend_rbac_recheck_required": true,
+    "recipient_input_allowed": false,
+    "other_users_notified": false,
+    "idempotent_replacement": true
+  }
+}

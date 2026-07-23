@@ -194,6 +194,7 @@ function runtimeServerFactory(config: McpProcessConfig): McpRuntimeOptions["serv
     const server = createRuntimeServer({
       environment: config.environment,
       api_base_url: config.api_base_url,
+      public_origin: config.public_origin,
       context,
     });
     return server;

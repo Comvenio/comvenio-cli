@@ -14,7 +14,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen."),
+  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten."),
   publisher_name: z.literal("Comvenio"),
   category: z.literal("Productivity"),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),
@@ -27,7 +27,7 @@ export const CHAT_GPT_APP_MANIFEST_SCHEMA = z.object({
   starter_prompts: z.tuple([
     z.literal("Welche Termine stehen diese Woche in meinem Verein an?"),
     z.literal("Zeige mir die neuesten News meines Vereins."),
-    z.literal("Welche Comvenio-Aktionen darf ich in diesem Verein ausführen?"),
+    z.literal("Welche Aufgaben habe ich diese Woche?"),
   ]),
   provider: z.literal("openai"),
   submission_kind: z.literal("plugin_with_mcp_app"),

@@ -150,7 +150,7 @@ describe("OpenAI Marketplace provider package", () => {
     const staticManifest = CHAT_GPT_APP_MANIFEST_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/app-profile.json"), "utf8")));
     const staticPlan = OPENAI_TOOL_TEST_PLAN_SCHEMA.parse(JSON.parse(readFileSync(resolve(artifactRoot, "submission/tool-test-plan.json"), "utf8")));
     expect(staticManifest.tool_catalog_version).toBe(staticPlan.catalog_source_hash_sha256);
-    expect(staticPlan.cases).toHaveLength(15);
+    expect(staticPlan.cases).toHaveLength(17);
     for (const url of [staticManifest.website_url, staticManifest.privacy_url, staticManifest.terms_url, staticManifest.imprint_url, staticManifest.mcp_endpoint]) {
       expect(new URL(url).protocol).toBe("https:");
     }

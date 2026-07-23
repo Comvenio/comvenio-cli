@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "tool_name": "cv_my_tasks_read",
+  "synthetic_data_only": true,
+  "expected": {
+    "outcome": "success",
+    "permission_denied_outcome": "not_found",
+    "data_policy": "own_assigned_tasks_minimized",
+    "oauth_bound_club_context": true,
+    "required_scope": "task.read",
+    "backend_rbac_recheck_required": true,
+    "date_range_filtered": true
+  }
+}

@@ -6,7 +6,7 @@ export function buildClaudeDirectoryManifest(toolSyncVersion: string): ClaudeDir
     schema_version: "1.0.0",
     product_name: "Comvenio",
     tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-    short_description: "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.",
+    short_description: "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.",
     publisher_name: "Comvenio",
     categories: ["Productivity"],
     website_url: "https://www.comvenio.app",

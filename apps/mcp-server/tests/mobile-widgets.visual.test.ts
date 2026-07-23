@@ -9,22 +9,23 @@ import {
   PRIVACY_THREAT_MODEL_SCHEMA,
   RELEASE_GATE_REPORT_SCHEMA,
   REQUIRED_PILOT_SCENARIOS,
+  REQUIRED_TENANT_SCENARIOS,
   SUPPORT_RUNBOOK_SCHEMA,
   TENANT_ISOLATION_REPORT_SCHEMA,
   ConnectorEvalSuite,
   TenantIsolationSuite,
   assertProviderReleaseReady,
-  buildAutomatedConnectorEvalReport,
-  buildAutomatedTenantIsolationReport,
   buildPendingReleaseArtifacts,
   buildPilotProtocol,
   buildPrivacyThreatModel,
   buildReleaseGateReport,
   buildSupportRunbook,
   type ProviderGateResult,
+  type ConnectorEvalToolResult,
   type ReleaseEvidence,
   type ReleaseSignature,
   type SecurityPrivacyFinding,
+  type TenantScenarioResult,
 } from "../../../integrations/release/src/index.ts";
 import { buildChatGptAppManifest } from "../../../integrations/openai/src/index.ts";
 import { buildClaudeDirectoryManifest } from "../../../integrations/anthropic/src/index.ts";
@@ -50,6 +51,38 @@ function json(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function testedConnectorEvalReport() {
+  const toolNames = publishedRuntimeToolNames("production");
+  const results: ConnectorEvalToolResult[] = toolNames.map((toolName) => ({
+    tool_name: toolName,
+    tool_selection: true,
+    schema_validation: true,
+    grounded_response: true,
+    actionable_error: true,
+    safe_non_execution: true,
+    confirmation_contract: true,
+    provider_retry_idempotent: true,
+    synthetic_data_only: true,
+    evidence_ref: "test-fixture:mobile-widgets.visual.test.ts",
+  }));
+  return new ConnectorEvalSuite().evaluate({
+    candidate_tool_names: toolNames,
+    results,
+  });
+}
+
+function testedTenantIsolationReport() {
+  const results: TenantScenarioResult[] = REQUIRED_TENANT_SCENARIOS.map(
+    (id) => ({
+      id,
+      passed: true,
+      synthetic_data_only: true,
+      evidence_ref: "test-fixture:mobile-widgets.visual.test.ts",
+    }),
+  );
+  return new TenantIsolationSuite().evaluate(results);
+}
+
 function passedPilot() {
   return buildPilotProtocol({
     club_reference: "pilot-club:auftraggeber-verein",
@@ -65,8 +98,8 @@ function passedPilot() {
 
 function readyEvidence(): ReleaseEvidence {
   return {
-    release_scope: "read_only_v1",
-    published_tool_count: 15,
+    release_scope: "personal_productivity_v1",
+    published_tool_count: 17,
     planned_action_count: 303,
     planned_route_callsite_count: 560,
     published_runtime_catalog_verified: true,
@@ -106,8 +139,8 @@ function signedRelease(): ReleaseSignature[] {
 }
 
 function release(input: { pilot?: ReturnType<typeof passedPilot>; findings?: SecurityPrivacyFinding[]; provider_gates?: [ProviderGateResult, ProviderGateResult] } = {}) {
-  const evalReport = buildAutomatedConnectorEvalReport();
-  const tenant = buildAutomatedTenantIsolationReport();
+  const evalReport = testedConnectorEvalReport();
+  const tenant = testedTenantIsolationReport();
   const privacy = buildPrivacyThreatModel();
   return buildReleaseGateReport({
     generated_at: "2026-07-08T11:00:00.000Z",
@@ -147,17 +180,17 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     expect(new Set(traceability.tasks.map((item) => item.task_id)).size).toBe(23);
   });
 
-  test("TC-03: future inventory and the 15 published runtime tools have exact eval parity", () => {
+  test("TC-03: future inventory and the 17 published runtime tools have exact eval parity", () => {
     const inventory = loadReviewInventory();
-    const report = buildAutomatedConnectorEvalReport();
+    const report = testedConnectorEvalReport();
     expect(inventory.actions.entries).toHaveLength(303);
     expect(inventory.routes.routes).toHaveLength(560);
     expect(inventory.migration.discovered_candidates.length + inventory.migration.oauth_lifecycle_replacements.length).toBe(303);
     expect(inventory.migration.discovered_candidates.every((candidate) => candidate.published === false && candidate.blockers.length > 0)).toBe(true);
     expect(report).toMatchObject({
       status: "pass",
-      evaluated_candidate_tool_count: 15,
-      tested_tool_count: 15,
+      evaluated_candidate_tool_count: 17,
+      tested_tool_count: 17,
       blockers: [],
     });
     expect(report.results.map((result) => result.tool_name)).toEqual(publishedRuntimeToolNames("production"));

@@ -111,7 +111,7 @@ export const RELEASE_GATE_REPORT_SCHEMA = z.object({
   country: z.literal("DE"),
   generated_at: z.string().datetime(),
   evidence: z.object({
-    release_scope: z.literal("read_only_v1"),
+    release_scope: z.literal("personal_productivity_v1"),
     published_tool_count: z.number().int().nonnegative(),
     planned_action_count: z.number().int().nonnegative(),
     planned_route_callsite_count: z.number().int().nonnegative(),

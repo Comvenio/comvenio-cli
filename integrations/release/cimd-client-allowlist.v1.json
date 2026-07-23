@@ -3,14 +3,16 @@
   "release_state": "BLOCKED",
   "pins": [
     {
-      "client_id": "https://chatgpt.com/oauth/pxWqQ6tZWG5k/client.json",
+      "client_id": "https://chatgpt.com/oauth/rfJj5SYDCJQ5/client.json",
       "provider": "openai",
       "metadata_sha256": "7d8b74f3544d90c33f4e6df0b46cc23c4ef928d7398bfede623c70555790aa36",
       "allowed_scopes": [
-        "club.read"
+        "club.read",
+        "task.read",
+        "task.write"
       ],
       "enabled": true
     }
   ],
-  "notice": "Der OpenAI-CIMD-Client wurde am 22.07.2026 im ChatGPT-Connector-Portal beobachtet, bytegenau geprüft und mit minimalem club.read-Scope gepinnt. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
+  "notice": "Der aktuell verbundene OpenAI-CIMD-Client wurde am 23.07.2026 mit club.read und task.read sowie task.write ausschließlich für die persönliche Aufgaben-Erinnerung gepinnt. Empfänger werden nicht aus Toolargumenten übernommen, sondern aus dem OAuth-Subjekt abgeleitet. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
 }
