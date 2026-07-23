@@ -67,6 +67,76 @@ const shoppingListChanges = z.object({
   actual_cost: money.optional(), is_completed: z.boolean().optional(), items: z.array(shoppingItem).max(1_000).optional(), context_type: contextType.optional(), context_id: uuid.optional(),
 }).strict().refine((value) => Object.keys(value).length > 0);
 
+const procurementLocationFields = {
+  building_id: uuid.optional(),
+  room_id: uuid.optional(),
+} as const;
+const procurementArticleFields = {
+  name: short.max(200).optional(),
+  ingredient_id: uuid.optional(),
+} as const;
+const procurementLocationFilter = single({
+  ...procurementLocationFields,
+  limit: z.number().int().min(1).max(100).default(50),
+}).superRefine((value, context) => {
+  if (value.building_id && value.room_id) {
+    context.addIssue({
+      code: "custom",
+      message: "Gebäude und Raum dürfen nicht gleichzeitig gesetzt sein.",
+    });
+  }
+});
+const procurementItemCreate = single({
+  ...procurementArticleFields,
+  ...procurementLocationFields,
+  quantity,
+  unit,
+  notes: z.string().max(500).optional(),
+}).superRefine((value, context) => {
+  if (Boolean(value.building_id) === Boolean(value.room_id)) {
+    context.addIssue({
+      code: "custom",
+      message: "Exakt ein Gebäude oder Raum ist erforderlich.",
+    });
+  }
+  if (Boolean(value.name) === Boolean(value.ingredient_id)) {
+    context.addIssue({
+      code: "custom",
+      message: "Exakt ein Name oder Supply-Artikel ist erforderlich.",
+    });
+  }
+});
+const procurementTemplateCreate = single({
+  ...procurementArticleFields,
+  ...procurementLocationFields,
+  default_quantity: quantity,
+  unit,
+  notes: z.string().max(500).optional(),
+}).superRefine((value, context) => {
+  if (Boolean(value.building_id) === Boolean(value.room_id)) {
+    context.addIssue({
+      code: "custom",
+      message: "Exakt ein Gebäude oder Raum ist erforderlich.",
+    });
+  }
+  if (Boolean(value.name) === Boolean(value.ingredient_id)) {
+    context.addIssue({
+      code: "custom",
+      message: "Exakt ein Name oder Supply-Artikel ist erforderlich.",
+    });
+  }
+});
+const procurementTemplateChanges = z.object({
+  name: short.max(200).optional(),
+  default_quantity: quantity.optional(),
+  unit: unit.optional(),
+  notes: z.string().max(500).nullable().optional(),
+  is_active: z.boolean().optional(),
+}).strict().refine(
+  (value) => Object.keys(value).length > 0,
+  "Mindestens eine Vorlagenänderung ist erforderlich.",
+);
+
 const safeCss = z.string().max(50_000).refine((value) => !/@import|javascript\s*:|expression\s*\(|behavior\s*:|<\/?style|<script/iu.test(value), "Unsicheres CSS ist nicht zulässig.");
 const httpsUrl = z.string().url().max(2_000).refine((value) => value.startsWith("https://"), "Nur HTTPS-URLs sind zulässig.");
 const color = z.string().regex(/^#[0-9a-f]{6}$/iu);
@@ -134,6 +204,14 @@ export const K11_ACTION_SCHEMAS: Readonly<Record<K11ActionId, K11ActionSchemaCon
   "cai.shopping.13.purchased": contract(single({ item_id: uuid, purchased: z.boolean() })),
   "cai.shopping.14.generate_from_recipe": contract(single({ recipe_id: uuid, portions: z.number().int().min(1).max(500).default(1), name: short.max(200).optional(), description: z.string().max(500).optional(), output_format: z.enum(["json", "csv", "pdf"]).default("json") })),
   "cai.shopping.15.generate_from_menu": contract(single({ menu_id: uuid, name: short.max(200).optional(), description: z.string().max(500).optional(), output_format: z.enum(["json", "csv", "pdf"]).default("json") })),
+  "cai.shopping.procurement.list": contract(procurementLocationFilter),
+  "cai.shopping.procurement.templates": contract(procurementLocationFilter),
+  "cai.shopping.procurement.activate": contract(single({ template_id: uuid, quantity: quantity.optional(), notes: z.string().max(500).optional() })),
+  "cai.shopping.procurement.add": contract(procurementItemCreate),
+  "cai.shopping.procurement.purchase": contract(single({ item_id: uuid })),
+  "cai.shopping.procurement.template_create": contract(procurementTemplateCreate),
+  "cai.shopping.procurement.template_update": contract(single({ template_id: uuid, changes: procurementTemplateChanges })),
+  "cai.shopping.procurement.template_deactivate": contract(single({ template_id: uuid })),
 
   "cai.template.01.dish": contract(union([grouped("list", { search: z.string().max(200).optional(), category: z.string().max(100).optional(), common_only: z.boolean().default(false), limit: z.number().int().min(1).max(100).default(50) }), grouped("show", { template_id: uuid })])),
   "cai.template.02.ingredient": contract(union([grouped("list", { search: z.string().max(200).optional(), common_only: z.boolean().default(false), limit: z.number().int().min(1).max(100).default(50) }), grouped("show", { template_id: uuid })])),

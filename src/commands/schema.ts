@@ -94,7 +94,7 @@ const DOMAIN_SUMMARY: Record<string, string> = {
   object: "Objekte, Gebaeude, Raeume sowie Buchungs- und Task-Regeln",
   ingredient: "Club-Zutaten CRUD",
   "ingredient-category": "Zutatenkategorien, Baum und Zuweisungen",
-  shopping: "Einkaufslisten, Positionen und Generierung aus Rezept/Menu",
+  shopping: "Einkaufslisten, laufende Beschaffung, Vorlagen und Generierung aus Rezept/Menu",
   role: "Custom Roles, Berechtigungsmatrix, Zuweisungen und effektive Rechte",
   coverage: "Workflow-Abdeckung, bekannte Luecken und bewusste Ausschluesse aller CLI-Domaenen",
 };

@@ -17,6 +17,19 @@ type ShoppingListRead = {
   [key: string]: unknown;
 };
 
+type ProcurementRead = {
+  id?: string;
+  name?: string;
+  quantity?: number | string;
+  default_quantity?: number | string;
+  unit?: string;
+  building_name?: string;
+  room_name?: string;
+  is_active?: boolean;
+  can_activate?: boolean;
+  [key: string]: unknown;
+};
+
 export type ShoppingCommandOpts = {
   json?: boolean;
   club?: string;
@@ -31,6 +44,8 @@ export type ShoppingCommandOpts = {
   name?: string;
   description?: string;
   purchased?: string;
+  buildingId?: string;
+  roomId?: string;
 };
 
 function jsonObject(path: string | undefined, command: string): Record<string, unknown> {
@@ -64,6 +79,49 @@ function shoppingTable(rows: ShoppingListRead[]): string {
     { header: "Status", width: 11, get: (row) => String(row.status ?? "-") },
     { header: "Kontext", width: 10, get: (row) => String(row.context_type ?? "-") },
     { header: "Kosten", width: 10, get: (row) => String(row.total_estimated_cost ?? "-") },
+    { header: "ID", width: 36, get: (row) => String(row.id ?? "-") },
+  ]);
+}
+
+function procurementQuery(clubId: string, opts: ShoppingCommandOpts): string {
+  const query = new URLSearchParams({ club_id: clubId });
+  if (opts.buildingId) query.set("building_id", opts.buildingId);
+  if (opts.roomId) query.set("room_id", opts.roomId);
+  return query.toString();
+}
+
+function procurementTable(rows: ProcurementRead[], templates = false): string {
+  if (!rows.length) {
+    return templates
+      ? "Keine Beschaffungsvorlagen."
+      : "Keine offenen Beschaffungspositionen.";
+  }
+  return renderTable(rows, [
+    { header: "Artikel", width: 28, get: (row) => String(row.name ?? "-") },
+    {
+      header: "Menge",
+      width: 12,
+      get: (row) =>
+        `${row.quantity ?? row.default_quantity ?? "-"} ${row.unit ?? ""}`.trim(),
+    },
+    {
+      header: "Ort",
+      width: 28,
+      get: (row) =>
+        [row.building_name, row.room_name].filter(Boolean).join(" · ") || "-",
+    },
+    {
+      header: templates ? "Aktiv" : "Status",
+      width: 10,
+      get: (row) =>
+        templates
+          ? row.is_active === false
+            ? "nein"
+            : row.can_activate === false
+              ? "nur lesen"
+              : "ja"
+          : "offen",
+    },
     { header: "ID", width: 36, get: (row) => String(row.id ?? "-") },
   ]);
 }
@@ -221,21 +279,43 @@ export async function handleShoppingOperation(args: {
     }
 
     case "procurement-list": {
-      const rows = await client.get<ShoppingListRead[]>("supply", `/procurement/ongoing?club_id=${clubId}`);
-      output(rows, opts.json, () => rows.length ? JSON.stringify(rows, null, 2) : "Keine offenen Beschaffungspositionen.");
+      const rows = await client.get<ProcurementRead[]>(
+        "supply",
+        `/procurement/ongoing?${procurementQuery(clubId, opts)}`,
+      );
+      output(rows, opts.json, () => procurementTable(rows));
+      return;
+    }
+
+    case "procurement-templates": {
+      const rows = await client.get<ProcurementRead[]>(
+        "supply",
+        `/procurement/templates?${procurementQuery(clubId, opts)}`,
+      );
+      output(rows, opts.json, () => procurementTable(rows, true));
       return;
     }
 
     case "procurement-activate": {
       if (!id) throw new Error("shopping procurement-activate <template-id> benötigt eine Vorlagen-ID.");
-      const row = await client.post("supply", `/procurement/templates/${id}/activate?club_id=${clubId}`, opts.file ? jsonObject(opts.file, "shopping procurement-activate") : {});
+      const row = await client.post(
+        "supply",
+        `/procurement/templates/${id}/activate?club_id=${clubId}`,
+        opts.file
+          ? jsonObject(opts.file, "shopping procurement-activate")
+          : {},
+      );
       output(row, opts.json, () => "Beschaffungsposition angelegt.");
       return;
     }
 
     case "procurement-add": {
-      const row = await client.post("supply", `/procurement/items?club_id=${clubId}`, jsonObject(opts.file, "shopping procurement-add"));
-      output(row, opts.json, () => "Freie Beschaffungsposition angelegt.");
+      const row = await client.post(
+        "supply",
+        `/procurement/items?club_id=${clubId}`,
+        jsonObject(opts.file, "shopping procurement-add"),
+      );
+      output(row, opts.json, () => "Beschaffungsposition angelegt.");
       return;
     }
 
@@ -246,9 +326,49 @@ export async function handleShoppingOperation(args: {
       return;
     }
 
+    case "procurement-template-create": {
+      const row = await client.post(
+        "supply",
+        `/procurement/templates?club_id=${clubId}`,
+        jsonObject(opts.file, "shopping procurement-template-create"),
+      );
+      output(row, opts.json, () => "Beschaffungsvorlage angelegt.");
+      return;
+    }
+
+    case "procurement-template-update": {
+      if (!id) {
+        throw new Error(
+          "shopping procurement-template-update <template-id> benötigt eine Vorlagen-ID.",
+        );
+      }
+      const row = await client.patch(
+        "supply",
+        `/procurement/templates/${id}?club_id=${clubId}`,
+        jsonObject(opts.file, "shopping procurement-template-update"),
+      );
+      output(row, opts.json, () => "Beschaffungsvorlage aktualisiert.");
+      return;
+    }
+
+    case "procurement-template-deactivate": {
+      if (!id) {
+        throw new Error(
+          "shopping procurement-template-deactivate <template-id> benötigt eine Vorlagen-ID.",
+        );
+      }
+      const row = await client.patch(
+        "supply",
+        `/procurement/templates/${id}?club_id=${clubId}`,
+        { is_active: false },
+      );
+      output(row, opts.json, () => "Beschaffungsvorlage deaktiviert.");
+      return;
+    }
+
     default:
       throw new Error(
-        `Unbekannte Aktion "${action}". Verfügbar: list, active, completed, by-context, by-context-type, show, create, update, delete, item-add, item-update, item-delete, purchased, generate-from-recipe, generate-from-menu, procurement-list, procurement-activate, procurement-add, procurement-purchase`,
+        `Unbekannte Aktion "${action}". Verfügbar: list, active, completed, by-context, by-context-type, show, create, update, delete, item-add, item-update, item-delete, purchased, generate-from-recipe, generate-from-menu, procurement-list, procurement-templates, procurement-activate, procurement-add, procurement-purchase, procurement-template-create, procurement-template-update, procurement-template-deactivate`,
       );
   }
 }
@@ -257,7 +377,7 @@ export function registerShoppingCommands(cli: CAC): void {
   cli
     .command(
       "shopping <action> [id]",
-      "Einkaufslisten und Beschaffung: list | … | procurement-list | procurement-activate | procurement-add | procurement-purchase",
+      "Einkaufslisten und Beschaffung: list | … | procurement-list | procurement-templates | procurement-activate | procurement-add | procurement-purchase | procurement-template-*",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "JSON-Payload für Listen-/Positions-CRUD")
@@ -271,6 +391,8 @@ export function registerShoppingCommands(cli: CAC): void {
     .option("--name <name>", "Name der generierten Einkaufsliste")
     .option("--description <text>", "Beschreibung der generierten Einkaufsliste")
     .option("--purchased <bool>", "Kaufstatus true|false (purchased)")
+    .option("--building-id <id>", "Gebäudefilter für procurement-list/-templates")
+    .option("--room-id <id>", "Raumfilter für procurement-list/-templates")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: ShoppingCommandOpts) => {
       const state = loadState();

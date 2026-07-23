@@ -1,7 +1,7 @@
 import type { JsonValue } from "@comvenio/connector-contracts";
 
 type JsonObject = { [key: string]: JsonValue };
-const forbidden = /(?:^|_)(?:authorization|token|secret|password|credential|hash|user_id|created_by|updated_by|deleted_by|audit|internal_cursor|log)(?:$|_)/iu;
+const forbidden = /(?:^|_)(?:authorization|token|secret|password|credential|hash|user_id|created_by|updated_by|deleted_by|reported_by|purchased_by|audit|internal_cursor|log)(?:$|_)/iu;
 
 function record(value: JsonValue): JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};

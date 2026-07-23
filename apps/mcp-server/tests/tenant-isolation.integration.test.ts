@@ -2558,6 +2558,160 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     };
     expect(sets.ingredient.listVisible(creatorOnly).map((definition) => definition.action_id)).not.toContain("cai.ingredient.03.create");
   });
+
+  test("exposes procurement to club actors and delegates role checks to Supply", () => {
+    const sets = createK11ToolSets({
+      client: adapterClient(async () => []),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    });
+    const actor = {
+      context: {
+        ...context,
+        scopes: ["supply.read", "supply.write"] as RequestContext["scopes"],
+      },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    };
+
+    const definitions = sets.shopping.listVisible(actor);
+    const visible = definitions.map((definition) => definition.action_id);
+    expect(visible).toContain("cai.shopping.procurement.list");
+    expect(visible).toContain("cai.shopping.procurement.activate");
+    expect(visible).toContain("cai.shopping.procurement.template_deactivate");
+    expect(visible).not.toContain("cai.shopping.07.create");
+    expect(
+      definitions.find(
+        (definition) =>
+          definition.action_id === "cai.shopping.procurement.purchase",
+      )?.operations.purchase,
+    ).toMatchObject({
+      risk_class: "critical_write",
+      execution_gate: "confirmation",
+    });
+  });
+
+  test("validates procurement XOR and performs exactly one Supply mutation", async () => {
+    const roomId = "25252525-2525-4525-8525-252525252525";
+    const calls: ComvenioApiRequest[] = [];
+    const shopping = createK11ToolSets({
+      client: adapterClient(async (request) => {
+        calls.push(request);
+        return {
+          id: "26262626-2626-4626-8626-262626262626",
+          club_id: clubId,
+          name: "Klopapier",
+          reported_by: "private-actor-id",
+        };
+      }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).shopping;
+
+    await expect(shopping.execute({
+      action_id: "cai.shopping.procurement.add",
+      input: {
+        club_id: clubId,
+        name: "Klopapier",
+        quantity: 4,
+        unit: "pc",
+        building_id: clubId,
+        room_id: roomId,
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls).toHaveLength(0);
+
+    const result = await shopping.execute({
+      action_id: "cai.shopping.procurement.add",
+      input: {
+        club_id: clubId,
+        name: "Klopapier",
+        quantity: 4,
+        unit: "pc",
+        room_id: roomId,
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      service: "supply",
+      path: "/procurement/items",
+      query: { club_id: clubId },
+      body: {
+        name: "Klopapier",
+        quantity: 4,
+        unit: "pc",
+        room_id: roomId,
+      },
+    });
+    expect(JSON.stringify(result.result)).not.toContain("private-actor-id");
+  });
+
+  test("returns the structured non-retryable duplicate activation conflict", async () => {
+    const shopping = createK11ToolSets({
+      client: adapterClient(async (request) => {
+        throw createConnectorError({
+          code: "CONFLICT",
+          message: "private upstream response",
+          request_id: request.context.request_id,
+          retryable: false,
+        });
+      }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).shopping;
+
+    await expect(shopping.execute({
+      action_id: "cai.shopping.procurement.activate",
+      input: {
+        club_id: clubId,
+        template_id: "27272727-2727-4727-8727-272727272727",
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "Bereits angelegt",
+      retryable: false,
+    });
+  });
+
+  test("passes a procurement purchase through Supply RBAC without local state", async () => {
+    let calls = 0;
+    let forbidden = 0;
+    const shopping = createK11ToolSets({
+      client: adapterClient(async (request) => {
+        calls++;
+        throw createConnectorError({
+          code: "PERMISSION_DENIED",
+          message: "private assignment detail",
+          request_id: request.context.request_id,
+          retryable: false,
+        });
+      }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+      confirmation: {
+        async confirmOrPreview(_request, mutation) { return mutation(); },
+      },
+      on_backend_forbidden() { forbidden++; },
+    }).shopping;
+
+    await expect(shopping.execute({
+      action_id: "cai.shopping.procurement.purchase",
+      input: {
+        club_id: clubId,
+        item_id: "28282828-2828-4828-8828-282828282828",
+      },
+      context: { ...context, scopes: ["supply.write"] },
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({
+      code: "PERMISSION_DENIED",
+      message: "Der Supply-Service hat die Aktion im aktuellen Kontext abgelehnt.",
+    });
+    expect(calls).toBe(1);
+    expect(forbidden).toBe(1);
+  });
 });
 
 describe("K12 content, homepage, data and verify tenant/RBAC isolation", () => {
