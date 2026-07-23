@@ -398,6 +398,12 @@ Request-, Ergebnis- und Fehlerverträge gehören zu
 Tool-Katalog und den Remote-MCP-Server sind getrennt, damit Provider-Adapter
 keine Fachlogik oder Berechtigungsentscheidungen übernehmen.
 
+Bei einer OAuth-Verbindung ist der ausgewählte Verein bereits serverseitig im
+Grant gebunden. Der Remote-MCP löst diesen Kontext über `cv_whoami_read` ohne
+Domain oder Club-ID auf. Nachfolgende öffentliche Tools wie `public_events`
+verwenden genau diese ID; ein abweichender Mandant wird vor dem Fachaufruf
+abgewiesen.
+
 Bestehende CLI-Imports bleiben während der schrittweisen Umstellung über eine
 Kompatibilitätsfassade nutzbar. Fachliche Rechte werden weiterhin ausschließlich
 im Comvenio-Backend geprüft.

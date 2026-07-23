@@ -86,6 +86,26 @@ function methodForTelemetry(value: string): SafeTelemetryRecord["method"] {
   return value === "DELETE" ? "DELETE" : value === "POST" ? "POST" : "GET";
 }
 
+function normalizeOptionalToolArguments(body: unknown): unknown {
+  if (Array.isArray(body)) return body.map(normalizeOptionalToolArguments);
+  if (body === null || typeof body !== "object") return body;
+  const message = body as Record<string, unknown>;
+  if (message.method !== "tools/call"
+    || message.params === null
+    || typeof message.params !== "object"
+    || Array.isArray(message.params)
+    || Object.hasOwn(message.params, "arguments")) {
+    return body;
+  }
+  return {
+    ...message,
+    params: {
+      ...(message.params as Record<string, unknown>),
+      arguments: {},
+    },
+  };
+}
+
 export class McpHttpServer {
   readonly app: Express;
   readonly #options: McpRuntimeOptions;
@@ -344,6 +364,7 @@ export class McpHttpServer {
           retry_after_seconds: 5,
         });
       }
+      const body = normalizeOptionalToolArguments(request.body);
       context = await this.#contextFactory.create({
         authorization: request.get("authorization"),
         host: request.get("host"),
@@ -351,9 +372,9 @@ export class McpHttpServer {
         user_agent: request.get("user-agent"),
         provider_hint: request.get("x-comvenio-provider"),
         protocol_version: request.get("mcp-protocol-version"),
-        body: request.body,
+        body,
       });
-      const accessDecision = this.#options.access_policy.classify(request.body);
+      const accessDecision = this.#options.access_policy.classify(body);
       if (!context.provider_request.authenticated && !accessDecision.anonymous_allowed) {
         authChallenge = createAuthChallenge({
           environment: this.#options.environment,
@@ -376,7 +397,7 @@ export class McpHttpServer {
         enableJsonResponse: true,
       });
       await mcpServer.connect(transport);
-      await transport.handleRequest(request, response, request.body);
+      await transport.handleRequest(request, response, body);
       if (response.writableEnded) await finalize();
     } catch (error) {
       const requestId = context?.request.request_id ?? fallbackRequestId;

@@ -27,6 +27,10 @@ const TITLES: Record<PublicResolverAlias, string> = {
   public_sponsors: "Veröffentlichte Sponsoren anzeigen",
 };
 
+const USAGE_HINTS: Partial<Record<PublicResolverAlias, string>> = {
+  public_events: "Bei einer aktiven Verbindung zuerst cv_whoami_read ohne Eingabe aufrufen und dessen club_id verwenden.",
+};
+
 function rpcMessages(body: unknown): Array<Record<string, unknown>> {
   const messages = Array.isArray(body) ? body : [body];
   return messages.filter((message): message is Record<string, unknown> =>
@@ -84,7 +88,7 @@ export class PublicToolSubset implements McpRequestAccessPolicy {
       .map((alias) => ({
         resolver_alias: alias,
         title: TITLES[alias],
-        description: `${TITLES[alias]}. Es werden ausschließlich veröffentlichte, minimierte Felder geliefert.`,
+        description: `${TITLES[alias]}. Es werden ausschließlich veröffentlichte, minimierte Felder geliefert.${USAGE_HINTS[alias] ? ` ${USAGE_HINTS[alias]}` : ""}`,
         required_scopes: ["public.read"] as const,
         read_only: true as const,
       }));

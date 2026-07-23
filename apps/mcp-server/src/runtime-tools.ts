@@ -38,6 +38,7 @@ import { NewsWidgetCapabilityPolicy } from "./widgets/news/policy.ts";
 
 const uuid = z.string().uuid();
 const clubContextSchema = z.object({ club_id: uuid, department_id: uuid.optional() }).strict();
+const noInputSchema = z.object({}).strict();
 
 const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_whoami_read", required_scopes: ["club.read"] },
@@ -48,7 +49,7 @@ const PROTECTED_TOOLS = Object.freeze([
 const TOOL_COPY = Object.freeze({
   cv_whoami_read: {
     title: "Comvenio: Eigene Verbindung",
-    description: "Zeigt den gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes.",
+    description: "Ohne Eingabe aufrufen, wenn Domain oder club_id fehlen. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes.",
   },
   cv_permissions_explain_read: {
     title: "Comvenio: Eigene Rechte erklären",
@@ -280,10 +281,9 @@ export function createRuntimeServer(input: {
   if (input.context.provider_request.authenticated && input.context.capability_snapshot) {
     server.registerTool("cv_whoami_read", {
       ...TOOL_COPY.cv_whoami_read,
-      inputSchema: clubContextSchema,
+      inputSchema: noInputSchema,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    }, async (arguments_) => {
-      assertClub(arguments_, input.context.request);
+    }, async () => {
       const output = {
         club_id: input.context.request.club_id,
         department_id: input.context.request.department_id,
