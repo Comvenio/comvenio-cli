@@ -1,6 +1,6 @@
 # Aufgaben – CLI-Referenz
 
-Stand: 13. Juli 2026 · Quelle: `src/commands/task.ts`
+Stand: 23. Juli 2026 · Quelle: `src/commands/task.ts`
 
 Eine Aufgabe benötigt einen `task_context_id`. Der Context beschreibt, worauf sich die Aufgabe bezieht; die referenzierte Entität steht in `context_id` des Contexts.
 
@@ -141,6 +141,36 @@ comvenio task done <task-id> --json
 ```
 
 Der Befehl setzt `status=completed` und `completed_at` auf den aktuellen ISO-Zeitpunkt.
+
+## Eigene Aufgaben-Erinnerung
+
+Jeder angemeldete Nutzer kann für eine sichtbare Aufgabe genau seine eigene,
+frei gewählte Erinnerung setzen, anzeigen und löschen:
+
+```bash
+comvenio task reminder set <task-id> \
+  --remind-at 2026-07-25T18:00:00+02:00 \
+  --comment "Getränkebestellung prüfen" \
+  --json
+
+comvenio task reminder list <task-id> --json
+comvenio task reminder delete <task-id> --json
+```
+
+`--remind-at` muss ein gültiger zukünftiger RFC-3339-Zeitpunkt sein. Eine
+Club-, Mitglieds-, Benutzer- oder Empfänger-ID ist für diese Kommandos nicht
+erforderlich und wird nicht gesendet. Der Automation-Service liest die Aufgabe
+mit dem aktuellen Actor-Token, übernimmt den Vereinskontext aus der
+autorisierten Task-Service-Antwort und stellt die Erinnerung ausschließlich dem
+JWT-Subjekt zu. Ein erneutes `set` für dieselbe Aufgabe ersetzt die bestehende
+persönliche Erinnerung idempotent. Unmittelbar vor dem Versand prüft das
+Backend aktuelle Reminder-Generation, Aufgabenexistenz und aktive
+Mitgliedschaft erneut. Ersetzte, gelöschte oder nach einem Vereinsaustritt
+nicht mehr zulässige Reminder werden nicht zugestellt.
+
+Für den persönlichen Reminder genügt der OAuth-Scope `task.read`, weil der
+Nutzer keine gemeinsame Aufgabe ändert, sondern nur seine eigene Präferenz.
+`task.write` ist dafür ausdrücklich nicht erforderlich.
 
 ## Abgrenzung
 

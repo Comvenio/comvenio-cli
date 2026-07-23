@@ -16,11 +16,23 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
 2. Fordere die Erklärung der eigenen Rechte oder sichtbaren Aktionen an. ChatGPT muss OAuth Authorization Code mit PKCE S256 starten.
 3. Wähle den Reviewverein explizit. Private Tools dürfen vor der eindeutigen Vereinsbindung nicht erscheinen.
 4. Frage nach den öffentlichen Terminen „meines Vereins“. ChatGPT muss `cv_whoami_read` ohne Eingabe und danach `public_events` mit der gebundenen `club_id` aufrufen, ohne Domain, Slug oder Club-ID nachzufragen.
-5. Nutze das `member`-Konto. Verwaltungsaktionen müssen in Tool-Liste und Widgets vollständig verborgen bleiben.
-6. Entziehe im Backend testweise eine Berechtigung und wiederhole die Rechteabfrage. Der aktuelle Backend-RBAC-Recheck muss sicher ablehnen und darf keine fremden Details offenlegen.
-7. Widerrufe den Grant. Der nächste private Aufruf muss erneut eine Verbindung verlangen.
-8. Öffne Kalender- und News-Widget jeweils auf ChatGPT Web und Mobile. Fachvertrag und erlaubte Aktionen müssen identisch sein; Layout, Fokus und Touchziele müssen funktionieren.
-9. Führe jeden Fall sowie die fünf positiven und drei negativen Beispiele aus `tool-test-plan.json` aus und vergleiche die Antwort mit der benannten synthetischen Fixture.
+5. Frage „Welche offenen Aufgaben habe ich diese Woche?“. ChatGPT muss `cv_my_tasks_read` direkt mit Zeitgrenzen aufrufen; Verein, Domain, Club-ID und Mitglieds-ID dürfen nicht nachgefragt oder als Toolargument gesendet werden. Der Grant benötigt `task.read`.
+6. Nutze das `member`-Konto. Es dürfen nur die eigenen zugewiesenen Aufgaben im Zeitfenster erscheinen; Verwaltungsaktionen müssen in Tool-Liste und Widgets vollständig verborgen bleiben.
+7. Bitte um „Erinnere mich morgen um 18 Uhr an meine erste offene Aufgabe“.
+   ChatGPT muss `cv_my_task_reminder_write` mit `task.read` verwenden.
+   `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
+   Das Toolargument darf weder `club_id` noch `user_id`,
+   `member_id` oder eine Empfängerliste enthalten. Nur das verbundene
+   Reviewkonto darf die Benachrichtigung erhalten. Ohne `task.read` muss das
+   Tool vollständig verborgen bleiben.
+8. Lösche dieselbe Erinnerung über dieselbe Task-ID wieder. Die Toolargumente
+   dürfen keine Reminder-ID oder fremde Identität enthalten.
+9. Entziehe im Backend testweise eine Berechtigung und wiederhole die Rechteabfrage. Der aktuelle Backend-RBAC-Recheck muss sicher ablehnen und darf keine fremden Details offenlegen.
+   Ein bereits geplanter Reminder darf nach Verlust der aktiven
+   Clubmitgliedschaft nicht mehr zugestellt werden.
+10. Widerrufe den Grant. Der nächste private Aufruf muss erneut eine Verbindung verlangen.
+11. Öffne Kalender- und News-Widget jeweils auf ChatGPT Web und Mobile. Fachvertrag und erlaubte Aktionen müssen identisch sein; Layout, Fokus und Touchziele müssen funktionieren.
+12. Führe jeden Fall sowie die fünf positiven und drei negativen Beispiele aus `tool-test-plan.json` aus und vergleiche die Antwort mit der benannten synthetischen Fixture.
 
 ## Datenschutz- und Sicherheitsabbruch
 

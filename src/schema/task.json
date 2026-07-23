@@ -2,7 +2,8 @@
   "domain": "task",
   "generated": true,
   "source": [
-    "Backend/Microservice-Backend/task-service/app/models/task.py"
+    "Backend/Microservice-Backend/task-service/app/models/task.py",
+    "Backend/Microservice-Backend/automation-service/app/routes/notifications.py"
   ],
   "note": "status/priority/phase aus den task-service Enum-Klassen (task.py). context_type ist im task-service ein eigener TaskContextType-Enum (club/event/object/meeting/supply) — hier statisch, da kein zentraler Enum in task.py.",
   "enums": {
@@ -39,6 +40,11 @@
       "update",
       "assign",
       "done",
+      "delete"
+    ],
+    "reminder": [
+      "set",
+      "list",
       "delete"
     ],
     "context": [
@@ -91,6 +97,7 @@
     "task create braucht zwingend task_context_id (kein 'Default-Context'-Lookup) — via task context list/create.",
     "task assign erwartet member_id, NICHT user_id.",
     "task done = PUT /tasks/{id} status=completed + completed_at (CLI setzt completed_at selbst).",
+    "task reminder ist ausschließlich subject-gebunden und akzeptiert keine Empfänger-, Club- oder Abteilungs-ID.",
     "completed/cancelled koennen NICHT zurueck auf open gesetzt werden (Backend-Guard)."
   ]
 }

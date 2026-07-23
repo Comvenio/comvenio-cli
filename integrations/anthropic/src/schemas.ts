@@ -14,7 +14,7 @@ export const CLAUDE_DIRECTORY_MANIFEST_SCHEMA = z.object({
   schema_version: z.literal("1.0.0"),
   product_name: z.literal("Comvenio"),
   tagline: z.literal("Dein Verein. Dein KI-Agent. Direkt im Chat."),
-  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen."),
+  short_description: z.literal("Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten."),
   publisher_name: z.literal("Comvenio"),
   categories: z.tuple([z.literal("Productivity")]),
   website_url: httpsUrl.pipe(z.literal("https://www.comvenio.app")),

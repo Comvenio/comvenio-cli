@@ -34,7 +34,18 @@ describe("production MCP process bootstrap", () => {
       auth_base_url: "https://api.comvenio.app/auth",
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: null,
-      cimd_client_pins: expect.objectContaining({ contract_version: "1.0.0", pins: [] }),
+      release_scope: "personal_productivity_v1",
+      cimd_client_pins: expect.objectContaining({
+        contract_version: "1.0.0",
+        release_state: "BLOCKED",
+        pins: [
+          expect.objectContaining({
+            provider: "openai",
+            enabled: true,
+            allowed_scopes: ["club.read", "task.read"],
+          }),
+        ],
+      }),
       allowed_hosts: [
         "mcp.comvenio.app",
         "comvenio-cli-production.up.railway.app",
@@ -58,6 +69,12 @@ describe("production MCP process bootstrap", () => {
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp.example.test,mcp.example.test",
     })).toThrow("doppelte");
+    expect(() => readMcpProcessConfig({
+      MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
+      MCP_EDGE_SHARED_SECRET: "test-only-mcp-edge-secret-32-characters",
+      INTERNAL_API_KEY: "test-internal-key",
+      MCP_RELEASE_SCOPE: "all",
+    })).toThrow("MCP_RELEASE_SCOPE");
   });
 
   test("requires a strong edge secret in production", () => {
@@ -84,6 +101,7 @@ describe("production MCP process bootstrap", () => {
       internal_api_key: "test-internal-key",
       openai_apps_challenge_token: "openai-domain-proof-token",
       cimd_client_pins: { contract_version: "1.0.0", release_state: "BLOCKED", pins: [] },
+      release_scope: "personal_productivity_v1",
       allowed_hosts: ["127.0.0.1", "healthcheck.railway.app"],
       allowed_origins: [],
     });

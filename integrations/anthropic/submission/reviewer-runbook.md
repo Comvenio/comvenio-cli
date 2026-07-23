@@ -9,6 +9,16 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 3. Public Read ohne Anmeldung mit veröffentlichten Events und News prüfen.
 4. Eigene Rechte oder sichtbare Aktionen abfragen und OAuth-CIMD mit öffentlichem Client, `none` und PKCE S256 abschließen.
 5. Bei mehreren Vereinen den synthetischen Reviewverein ausdrücklich wählen.
+6. „Welche offenen Aufgaben habe ich diese Woche?“ abfragen. Claude muss
+   `cv_my_tasks_read` mit dem Zeitraum und `task.read` verwenden, ohne Domain,
+   Club-ID oder Mitglieds-ID zu erfragen.
+7. „Erinnere mich morgen um 18 Uhr an meine erste offene Aufgabe“ abfragen.
+   Claude muss `cv_my_task_reminder_write` mit `task.read` verwenden;
+   `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
+   Club, Benutzer und Empfänger dürfen nicht als Toolargument
+   gesendet werden; ausschließlich das verbundene Reviewkonto erhält die
+   Erinnerung. Ohne `task.read` bleibt das Tool verborgen. Das Löschen
+   verwendet dieselbe Task-ID und keine separate Reminder-ID.
 
 ## Konten
 
@@ -20,9 +30,15 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
 1. Nicht erlaubte Tools und Widget-Aktionen müssen beim `member` vollständig verborgen sein.
 2. Ein absichtlicher Backend-403 muss sicher normalisiert werden und darf keine Mutation auslösen.
 3. Ein Cross-Tenant-Aufruf mit fremder `club_id` muss vor dem Fachservice scheitern.
-4. Nicht veröffentlichte News, private Termine und Mitgliederdaten dürfen im v1-Umfang weder als Tool angeboten noch offengelegt werden.
-5. Nach Grant-Widerruf muss der nächste private Aufruf eine neue Anmeldung verlangen.
-6. Toolargumente, Tokens, Mitgliederdaten und Resultinhalte dürfen nicht in Telemetrie erscheinen.
+4. `cv_my_tasks_read` darf keine `club_id` oder `member_id` als Argument akzeptieren und nur Aufgaben des OAuth-gebundenen Mitglieds liefern.
+5. `cv_my_task_reminder_write` darf keine Empfänger-ID akzeptieren. Ein
+   Backend-403 oder eine fremde Task-ID muss sicher normalisiert werden und
+   darf keine fremden Details offenlegen. Ersetzte oder gelöschte Reminder und
+   Reminder nach Verlust der aktiven Mitgliedschaft dürfen nicht zugestellt
+   werden.
+6. Nicht veröffentlichte News, private Termine und Mitgliederdaten dürfen im v1-Umfang weder als Tool angeboten noch offengelegt werden.
+7. Nach Grant-Widerruf muss der nächste private Aufruf eine neue Anmeldung verlangen.
+8. Toolargumente, Tokens, Mitgliederdaten und Resultinhalte dürfen nicht in Telemetrie erscheinen.
 
 ## Tool-Sync und Oberflächen
 

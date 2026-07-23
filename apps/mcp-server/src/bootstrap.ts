@@ -13,7 +13,11 @@ import {
   createHttpReadinessCheck,
 } from "./http/upstreams.ts";
 import type { McpRuntimeOptions, ReadinessDependency } from "./http/types.ts";
-import { createRuntimeAccessPolicy, createRuntimeServer } from "./runtime-tools.ts";
+import {
+  createRuntimeAccessPolicy,
+  createRuntimeServer,
+  type ConnectorReleaseScope,
+} from "./runtime-tools.ts";
 
 export interface McpProcessEnvironment {
   [key: string]: string | undefined;
@@ -28,6 +32,7 @@ export interface McpProcessEnvironment {
   MCP_PROD_ALLOWED_HOSTS?: string;
   MCP_PROD_ALLOWED_ORIGINS?: string;
   MCP_PUBLIC_ORIGIN?: string;
+  MCP_RELEASE_SCOPE?: string;
   OPENAI_APPS_CHALLENGE_TOKEN?: string;
   PORT?: string;
   RAILWAY_PUBLIC_DOMAIN?: string;
@@ -43,6 +48,7 @@ export interface McpProcessConfig {
   auth_base_url: HttpsUrl;
   internal_api_key: string;
   openai_apps_challenge_token: string | null;
+  release_scope: ConnectorReleaseScope;
   cimd_client_pins: unknown;
   allowed_hosts: string[];
   allowed_origins: string[];
@@ -102,6 +108,16 @@ function openAiChallengeToken(value: string | undefined): string | null {
   return value;
 }
 
+function releaseScope(value: string | undefined): ConnectorReleaseScope {
+  if (value === undefined || value === "personal_productivity_v1") {
+    return "personal_productivity_v1";
+  }
+  if (value === "full_connector_v1") return "full_connector_v1";
+  throw new Error(
+    "MCP_RELEASE_SCOPE muss personal_productivity_v1 oder full_connector_v1 sein.",
+  );
+}
+
 function edgeSharedSecret(
   value: string | undefined,
   selectedEnvironment: OAuthEnvironment,
@@ -157,6 +173,7 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     auth_base_url: authBaseUrl,
     internal_api_key: internalApiKey,
     openai_apps_challenge_token: openAiChallengeToken(input.OPENAI_APPS_CHALLENGE_TOKEN),
+    release_scope: releaseScope(input.MCP_RELEASE_SCOPE),
     cimd_client_pins: parsePins(input.MCP_CIMD_CLIENT_PINS_JSON),
     allowed_hosts: allowedHosts,
     allowed_origins: csv(input[`${prefix}_ALLOWED_ORIGINS`]),
@@ -194,7 +211,9 @@ function runtimeServerFactory(config: McpProcessConfig): McpRuntimeOptions["serv
     const server = createRuntimeServer({
       environment: config.environment,
       api_base_url: config.api_base_url,
+      public_origin: config.public_origin,
       context,
+      release_scope: config.release_scope,
     });
     return server;
   };
@@ -225,7 +244,10 @@ export function createMcpDeploymentCandidate(config: McpProcessConfig): McpHttpS
     }),
     provider_resolver: new ExactProviderHintResolver(),
     capability_resolver: new HttpCapabilityContextResolver({ api_base_url: config.api_base_url }),
-    access_policy: createRuntimeAccessPolicy(config.environment),
+    access_policy: createRuntimeAccessPolicy(
+      config.environment,
+      config.release_scope,
+    ),
     server_factory: runtimeServerFactory(config),
     readiness_dependencies: runtimeReadiness({ config, registrations }),
     telemetry: new ConsoleTelemetrySink(),

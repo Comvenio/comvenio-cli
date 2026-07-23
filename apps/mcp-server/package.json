@@ -16,6 +16,7 @@
     "@comvenio/comvenio-client": "workspace:*",
     "@comvenio/connector-contracts": "workspace:*",
     "@comvenio/tool-catalog": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "1.7.4",
     "@modelcontextprotocol/sdk": "1.29.0",
     "bullmq": "5.80.9",
     "express": "^5.2.1",

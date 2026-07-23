@@ -21,7 +21,7 @@ export interface DistributionProfile {
   schema_version: "1.0.0";
   product_name: "Comvenio";
   tagline: "Dein Verein. Dein KI-Agent. Direkt im Chat.";
-  short_description: "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.";
+  short_description: "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.";
   publisher_name: "Comvenio";
   category: "Productivity";
   website_url: "https://www.comvenio.app";
@@ -71,7 +71,7 @@ export interface ToolTestCase {
   prompt: string;
   expected_response_fixture: string;
   required_surfaces: ["web", "mobile"];
-  verifies: ["schema", "security_schemes", "annotations", "rbac_recheck"];
+  verifies: ["schema", "security_schemes", "annotations", "rbac_recheck", "oauth_bound_club_discovery"?];
 }
 
 export interface OpenAiToolTestPlan {

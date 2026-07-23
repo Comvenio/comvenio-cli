@@ -1,6 +1,6 @@
 # Comvenio – Claude Connector Directory Submission-Checkliste
 
-Stand: 22. Juli 2026  
+Stand: 23. Juli 2026
 Status: **BLOCKED – noch nicht absenden**
 
 Diese Checkliste ergänzt das maschinenlesbare Connector-Profil und das Reviewer-Runbook. Sie
@@ -47,7 +47,7 @@ im Portal hinterlegt. Video und GIF sind ausgeschlossen.
 
 Aktueller Stand: Es gibt noch keine freigegebene Submission-Evidence. Die vorhandenen Dateien
 `event-mobile.png` und `news-desktop.png` sind Planungsmockups. Sie zeigen Schreib- beziehungsweise
-Entwurfsfunktionen, die nicht zum veröffentlichten `read_only_v1`-Umfang gehören, und werden im
+Entwurfsfunktionen, die nicht zum veröffentlichten `personal_productivity_v1`-Umfang gehören, und werden im
 Connector-Profil deshalb bewusst nicht referenziert. Drei bis fünf reale Runtime-Captures fehlen.
 
 Mitgliederverwaltung, Buchung und universelle Bestätigung sind noch nicht veröffentlicht und

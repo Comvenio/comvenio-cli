@@ -127,7 +127,7 @@ export interface ProviderGateResult {
 }
 
 export interface ReleaseEvidence {
-  release_scope: "read_only_v1";
+  release_scope: "personal_productivity_v1";
   published_tool_count: number;
   planned_action_count: number;
   planned_route_callsite_count: number;

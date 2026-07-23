@@ -3,10 +3,9 @@ import { buildPilotProtocol } from "./pilot.ts";
 import { buildPrivacyThreatModel } from "./privacy.ts";
 import { buildReleaseGateReport } from "./release-gate.ts";
 import { buildSupportRunbook } from "./support.ts";
-import { REQUIRED_TENANT_SCENARIOS, TenantIsolationSuite } from "./tenant-isolation.ts";
+import { TenantIsolationSuite } from "./tenant-isolation.ts";
 import type {
   ConnectorEvalReport,
-  ConnectorEvalToolResult,
   PilotProtocol,
   PrivacyThreatModel,
   ProviderGateResult,
@@ -15,12 +14,13 @@ import type {
   ReleaseSignature,
   SupportRunbook,
   TenantIsolationReport,
-  TenantScenarioResult,
 } from "./types.ts";
 
-export const RELEASE_GENERATED_AT = "2026-07-21T00:00:00.000Z" as const;
+export const RELEASE_GENERATED_AT = "2026-07-23T00:00:00.000Z" as const;
 
 export const EVALUATED_VIRTUAL_TOOL_NAMES = [
+  "cv_my_task_reminder_write",
+  "cv_my_tasks_read",
   "cv_permissions_explain_read",
   "cv_schema_read",
   "cv_whoami_read",
@@ -38,61 +38,35 @@ export const EVALUATED_VIRTUAL_TOOL_NAMES = [
   "public_training",
 ] as const;
 
-function evalResult(toolName: string): ConnectorEvalToolResult {
-  return {
-    tool_name: toolName,
-    tool_selection: true,
-    schema_validation: true,
-    grounded_response: true,
-    actionable_error: true,
-    safe_non_execution: true,
-    confirmation_contract: true,
-    provider_retry_idempotent: true,
-    synthetic_data_only: true,
-    evidence_ref: toolName.startsWith("public_")
-      ? "apps/mcp-server/tests/runtime-tools.integration.test.ts"
-      : "apps/mcp-server/tests/tenant-isolation.integration.test.ts",
-  };
-}
-
-export function buildAutomatedConnectorEvalReport(): ConnectorEvalReport {
+function buildPendingConnectorEvalReport(): ConnectorEvalReport {
   return new ConnectorEvalSuite().evaluate({
     candidate_tool_names: [...EVALUATED_VIRTUAL_TOOL_NAMES],
-    results: EVALUATED_VIRTUAL_TOOL_NAMES.map(evalResult),
+    results: [],
   });
 }
 
-function tenantResult(id: TenantScenarioResult["id"]): TenantScenarioResult {
-  return {
-    id,
-    passed: true,
-    synthetic_data_only: true,
-    evidence_ref: "apps/mcp-server/tests/tenant-isolation.integration.test.ts",
-  };
-}
-
-export function buildAutomatedTenantIsolationReport(): TenantIsolationReport {
-  return new TenantIsolationSuite().evaluate(REQUIRED_TENANT_SCENARIOS.map(tenantResult));
+function buildPendingTenantIsolationReport(): TenantIsolationReport {
+  return new TenantIsolationSuite().evaluate([]);
 }
 
 export function buildPendingReleaseEvidence(): ReleaseEvidence {
   return {
-    release_scope: "read_only_v1",
-    published_tool_count: 15,
+    release_scope: "personal_productivity_v1",
+    published_tool_count: 17,
     planned_action_count: 303,
     planned_route_callsite_count: 560,
-    published_runtime_catalog_verified: true,
-    route_trace_tests_passed: true,
-    schema_tests_passed: true,
-    permission_tests_passed: true,
+    published_runtime_catalog_verified: false,
+    route_trace_tests_passed: false,
+    schema_tests_passed: false,
+    permission_tests_passed: false,
     cimd_pins_verified: false,
     revocation_latency_seconds: null,
-    malware_quarantine_verified: true,
+    malware_quarantine_verified: false,
     confirmation_input_server_internal: true,
     published_widget_contract_count: 2,
     planned_widget_contract_count: 5,
-    widget_surfaces_verified: true,
-    accessibility_smokes_passed: true,
+    widget_surfaces_verified: false,
+    accessibility_smokes_passed: false,
     rate_limit_config_verified: true,
     development_health_ready: false,
     production_health_ready: false,
@@ -127,8 +101,8 @@ export interface ReleaseArtifactSet {
 }
 
 export function buildPendingReleaseArtifacts(): ReleaseArtifactSet {
-  const evalReport = buildAutomatedConnectorEvalReport();
-  const tenantIsolation = buildAutomatedTenantIsolationReport();
+  const evalReport = buildPendingConnectorEvalReport();
+  const tenantIsolation = buildPendingTenantIsolationReport();
   const privacy = buildPrivacyThreatModel();
   const pilot = buildPilotProtocol();
   return {

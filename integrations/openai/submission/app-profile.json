@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "product_name": "Comvenio",
   "tagline": "Dein Verein. Dein KI-Agent. Direkt im Chat.",
-  "short_description": "Öffentliche Vereinsinfos, Termine und News abrufen und eigene freigegebene Möglichkeiten sicher verstehen.",
+  "short_description": "Öffentliche Vereinsinfos, Termine und News abrufen sowie eigene Aufgaben und Erinnerungen sicher verwalten.",
   "publisher_name": "Comvenio",
   "category": "Productivity",
   "website_url": "https://www.comvenio.app",
@@ -15,7 +15,7 @@
   "starter_prompts": [
     "Welche Termine stehen diese Woche in meinem Verein an?",
     "Zeige mir die neuesten News meines Vereins.",
-    "Welche Comvenio-Aktionen darf ich in diesem Verein ausführen?"
+    "Welche Aufgaben habe ich diese Woche?"
   ],
   "provider": "openai",
   "submission_kind": "plugin_with_mcp_app",
@@ -25,7 +25,7 @@
     "ui://comvenio/event-calendar",
     "ui://comvenio/news"
   ],
-  "tool_catalog_version": "08fb376f4d8f63ebbe9e608cb5636016711ab7a95b07a416a31decc94b9d53e0",
+  "tool_catalog_version": "bff90bc850764627e9e4c21b5da7ef5a3b21575410593cefdd665564ee071216",
   "assets": {
     "icon": "./assets/icon.svg",
     "logo": "./assets/logo.png"

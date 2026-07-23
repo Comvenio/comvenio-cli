@@ -31,6 +31,15 @@ type TaskContextRead = {
   context_id?: string;
   [key: string]: unknown;
 };
+type TaskReminderRead = {
+  id?: string;
+  task_id?: string;
+  reminder_at?: string;
+  when_ts?: number;
+  comment?: string | null;
+  task_title?: string | null;
+  [key: string]: unknown;
+};
 
 type Opts = {
   json?: boolean;
@@ -45,6 +54,8 @@ type Opts = {
   status?: string;
   departmentId?: string;
   dueDate?: string;
+  remindAt?: string;
+  comment?: string;
   memberId?: string;
   responsible?: boolean;
   // context create
@@ -62,16 +73,37 @@ function printJsonResult(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
+export function normalizeFutureReminderAt(
+  value: string,
+  nowMs: number = Date.now(),
+): string {
+  if (
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u.test(
+      value,
+    )
+  ) {
+    throw new Error("--remind-at muss ein RFC-3339-Zeitpunkt mit Zeitzone sein.");
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("--remind-at ist kein gültiger Zeitpunkt.");
+  }
+  if (parsed.getTime() <= nowMs) {
+    throw new Error("--remind-at muss in der Zukunft liegen.");
+  }
+  return parsed.toISOString();
+}
+
 /**
  * `comvenio task <action> [arg1] [arg2]` dispatcher.
  *   task list [--mine] | task show <id> | task create | task assign <id> | task done <id>
- *   task context list | task context create
+ *   task reminder set|list|delete | task context list | task context create
  */
 export function registerTaskCommands(cli: CAC): void {
   cli
     .command(
       "task <action> [arg1] [arg2]",
-      "Aufgaben sowie Contexts, Zuweisungen, Notizen und Checklisten verwalten",
+      "Aufgaben sowie persönliche Erinnerungen, Contexts, Zuweisungen, Notizen und Checklisten verwalten",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--mine", "Nur mir zugewiesene Tasks (list)")
@@ -84,6 +116,8 @@ export function registerTaskCommands(cli: CAC): void {
     .option("--status <v>", "open|in_progress|completed|cancelled")
     .option("--department-id <v>", "Abteilungs-ID")
     .option("--due-date <v>", "Faelligkeit (ISO)")
+    .option("--remind-at <v>", "Persönliche Erinnerung als RFC-3339-Zeitpunkt")
+    .option("--comment <v>", "Optionaler Kommentar zur persönlichen Erinnerung")
     .option("--member-id <v>", "Member-ID (assign; NICHT user_id)")
     .option("--responsible", "assign: is_responsible=true")
     // context create
@@ -100,6 +134,94 @@ export function registerTaskCommands(cli: CAC): void {
       ) => {
         const state = loadState();
         const client = createClient(state);
+
+        // task reminder set|list|delete
+        if (action === "reminder") {
+          const sub = arg1;
+          if (sub === "set") {
+            if (!arg2) {
+              throw new Error("task reminder set <task-id> benötigt eine Task-ID.");
+            }
+            if (!opts.remindAt) {
+              throw new Error("task reminder set benötigt --remind-at <RFC-3339>.");
+            }
+            const normalizedReminderAt = normalizeFutureReminderAt(opts.remindAt);
+            const row = await client.post<TaskReminderRead>(
+              "automation",
+              "/custom_reminders/task",
+              prune({
+                task_id: arg2,
+                reminder_at: normalizedReminderAt,
+                comment: opts.comment,
+              }),
+            );
+            output(
+              row,
+              opts.json,
+              () =>
+                `Persönliche Erinnerung gesetzt: ${row.task_title ?? arg2} am ${
+                  row.reminder_at
+                    ? new Date(row.reminder_at).toLocaleString("de-DE")
+                    : new Date(normalizedReminderAt).toLocaleString("de-DE")
+                }`,
+            );
+            return;
+          }
+          if (sub === "list") {
+            if (!arg2) {
+              throw new Error("task reminder list <task-id> benötigt eine Task-ID.");
+            }
+            const rows = await client.get<TaskReminderRead[]>(
+              "automation",
+              `/custom_reminders/task/${arg2}`,
+            );
+            output(
+              rows,
+              opts.json,
+              () =>
+                rows.length
+                  ? renderTable(rows, [
+                      { header: "ID", width: 36, get: (r) => String(r.id ?? "") },
+                      {
+                        header: "Zeitpunkt",
+                        width: 22,
+                        get: (r) =>
+                          r.reminder_at
+                            ? new Date(r.reminder_at).toLocaleString("de-DE")
+                            : "–",
+                      },
+                      {
+                        header: "Kommentar",
+                        width: 36,
+                        get: (r) => String(r.comment ?? "–"),
+                      },
+                    ])
+                  : "Keine persönliche Erinnerung für diese Aufgabe.",
+            );
+            return;
+          }
+          if (sub === "delete") {
+            if (!arg2) {
+              throw new Error(
+                "task reminder delete <task-id> benötigt eine Task-ID.",
+              );
+            }
+            await client.del(
+              "automation",
+              `/custom_reminders/task/by-task/${arg2}`,
+            );
+            output(
+              { deleted: true, task_id: arg2 },
+              opts.json,
+              () => `Persönliche Erinnerung für Aufgabe gelöscht: ${arg2}`,
+            );
+            return;
+          }
+          throw new Error(
+            "task reminder unterstützt: set <task-id>, list <task-id>, delete <task-id>.",
+          );
+        }
+
         const clubId = requireClubId(state, opts.club);
 
         // task context <sub>
@@ -419,7 +541,7 @@ export function registerTaskCommands(cli: CAC): void {
           }
           default:
             throw new Error(
-              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, bulk, update, assign, done, delete, context, assignment, note, checklist`,
+              `Unbekannte Aktion "${action}". Verfuegbar: list, show, create, bulk, update, assign, done, delete, reminder, context, assignment, note, checklist`,
             );
         }
       },

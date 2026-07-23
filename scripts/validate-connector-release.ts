@@ -109,10 +109,16 @@ if (releaseGate.evidence.planned_action_count !== inventory.actions.entry_count
 }
 const runtimeToolNames = publishedRuntimeToolNames("production");
 const evalToolNames = evalReport.results.map((result) => result.tool_name).sort();
-assertSame(evalToolNames, runtimeToolNames, "ConnectorEvalSuite deckt nicht exakt die produktiv veröffentlichten Runtime-Tools ab.");
-if (releaseGate.evidence.published_tool_count !== runtimeToolNames.length
-  || !releaseGate.evidence.published_runtime_catalog_verified) {
-  throw new Error("Der veröffentlichte Runtime-Katalog ist nicht als verifiziert belegt.");
+if (releaseGate.evidence.published_tool_count !== runtimeToolNames.length) {
+  throw new Error("Die deklarierte Runtime-Toolanzahl weicht vom Katalog ab.");
+}
+if (releaseGate.evidence.published_runtime_catalog_verified) {
+  assertSame(evalToolNames, runtimeToolNames, "ConnectorEvalSuite deckt nicht exakt die produktiv veröffentlichten Runtime-Tools ab.");
+} else if (releaseGate.decision !== "BLOCKED"
+  || evalReport.status !== "blocked"
+  || evalReport.evaluated_candidate_tool_count !== runtimeToolNames.length
+  || evalReport.tested_tool_count !== 0) {
+  throw new Error("Nicht gemessene Runtime-Evidence muss explizit und blockierend dokumentiert sein.");
 }
 
 const fairUse = readJson(resolve(workspaceRoot, "apps/mcp-server/config/fair-use.v1.json"));
@@ -138,8 +144,8 @@ if (releaseGate.evidence.cimd_pins_verified !== cimdReady) throw new Error("CIMD
 
 const openAiPlan = readJson(resolve(workspaceRoot, "integrations/openai/submission/tool-test-plan.json")) as { cases: Array<{ tool_name: string }> };
 const anthropicPlan = readJson(resolve(workspaceRoot, "integrations/anthropic/submission/tool-test-plan.json")) as { cases: Array<{ tool_name: string }> };
-assertSame(openAiPlan.cases.map((item) => item.tool_name).sort(), evalToolNames, "OpenAI-Testplan driftet von der Eval-Suite.");
-assertSame(anthropicPlan.cases.map((item) => item.tool_name).sort(), evalToolNames, "Anthropic-Testplan driftet von der Eval-Suite.");
+assertSame(openAiPlan.cases.map((item) => item.tool_name).sort(), runtimeToolNames, "OpenAI-Testplan driftet vom Runtime-Katalog.");
+assertSame(anthropicPlan.cases.map((item) => item.tool_name).sort(), runtimeToolNames, "Anthropic-Testplan driftet vom Runtime-Katalog.");
 
 if (privacy.log_service.connected_to_mcp || privacy.log_service.end_user_access || support.user_log_access) {
   throw new Error("Der Master-Admin-Log-Service darf nicht über MCP oder Endnutzer-Support zugänglich sein.");

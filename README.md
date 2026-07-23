@@ -56,10 +56,16 @@ Port `8080`. `GET /health` dient als Railway-Healthcheck. Die von Railway
 bereitgestellte Domain und der offizielle Healthcheck-Host
 `healthcheck.railway.app` werden automatisch in die Host-Allowlist aufgenommen.
 
-Der Remote-MCP unter `apps/mcp-server` enthält den getesteten
+Der Remote-MCP unter `apps/mcp-server` enthält den
 Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der aktuelle
-`read_only_v1`-Kandidat veröffentlicht zwölf minimierte Public-Read-Tools und
-drei geschützte Self-Service-Tools. Event/Kalender und News sind die zwei
+`personal_productivity_v1`-Kandidat veröffentlicht zwölf minimierte
+Public-Read-Tools und fünf geschützte Self-Service-Tools. Neben Verbindung,
+Rechten und sichtbaren Aktionen liefert `cv_my_tasks_read` die persönlichen
+Aufgaben im gewünschten Zeitraum. `cv_my_task_reminder_write` setzt oder löscht
+eine frei gewählte Aufgaben-Erinnerung ausschließlich für den verbundenen
+Nutzer. Verein, Mitglied und Empfänger werden serverseitig aus OAuth,
+Backend-Actor und JWT-Subjekt abgeleitet; die Tools akzeptieren dafür keine
+Club-, Mitglieds-, Benutzer- oder Empfänger-ID. Event/Kalender und News sind die zwei
 beworbenen Widget-Ressourcen. Mitgliederverwaltung, Buchung und Bestätigung
 bleiben als getesteter Ausbauplan vorhanden, werden aber noch nicht im
 Runtime-Katalog angeboten. Der maschinenlesbare Stand steht in
@@ -71,6 +77,21 @@ gepinnten OpenAI-/Anthropic-CIMD-Registrierungen fehlen. Geschützte Tools werde
 erst nach OAuth-Introspection, kurzlebigem Actor-Token, expliziter Vereinsbindung
 und aktuellem Self-Capability-Read sichtbar; das Fachbackend prüft RBAC weiterhin
 autoritativ. Der Log-Service ist kein MCP-Upstream.
+
+Persönliche Aufgaben und das Setzen oder Löschen der eigenen
+Aufgaben-Erinnerung benötigen nur den minimalen OAuth-Scope `task.read`.
+`task.write` bleibt fachlichen Änderungen am gemeinsamen Aufgabenobjekt
+vorbehalten. Fehlt `task.read`
+bei einer bestehenden Verbindung, wird das betroffene Tool nicht angeboten;
+nach erneuter Autorisierung mit dem benötigten Scope wird es sichtbar. Ein
+Scope-Verlust während eines bereits begonnenen Aufrufs liefert zusätzlich eine
+standardisierte `insufficient_scope`-Challenge. Der kurzlebige
+Backend-Actor-Token wird an den `task-service` weitergereicht; dessen
+Mitgliedschafts- und RBAC-Prüfung bleibt verbindlich. Der Automation-Service
+übernimmt Verein und Abteilung aus der autorisierten Aufgabe und der
+Notify-Service adressiert nur den aktuellen JWT-`sub`. Vor dem Versand werden
+aktuelle Reminder-Generation, Aufgabe und aktive Mitgliedschaft erneut geprüft;
+ersetzte, gelöschte oder widerrufene Reminder werden fail-closed verworfen.
 
 Der kanonische Produktions-Origin liegt hinter dem bestehenden Cloudflare-Worker
 `comvenio-api-gateway`. Der gemeinsame Endpoint für ChatGPT und Claude lautet

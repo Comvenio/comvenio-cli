@@ -313,13 +313,20 @@ function runtimePrincipal(token: string): AuthenticatedConnectorPrincipal {
     client_id: "https://provider.example/client.json",
     provider: token.endsWith("anthropic") ? "anthropic" : "openai",
     club_id: token.startsWith("token-other") ? otherClubId : clubId,
-    scopes: ["club.read", "member.read.basic"],
+    scopes: token === "token-openai-no-club"
+      ? ["task.read", "task.write"]
+      : token === "token-openai-club-only"
+        ? ["club.read", "member.read.basic"]
+        : token === "token-openai-task-read-only"
+          ? ["club.read", "member.read.basic", "task.read"]
+          : ["club.read", "member.read.basic", "task.read", "task.write"],
     expires_at_epoch_seconds: Math.floor(Date.now() / 1_000) + 900,
     backend_actor_token: "backend-actor-token",
   };
 }
 
 function runtimeCapability(club: string, requestSubject = runtimeSubjectId): CapabilitySnapshot {
+  const now = new Date();
   return {
     subject_id: requestSubject,
     member_id: runtimeMemberId,
@@ -334,9 +341,9 @@ function runtimeCapability(club: string, requestSubject = runtimeSubjectId): Cap
       assignment_type: "direct",
     }],
     capability_version: "C".repeat(43),
-    generated_at: "2026-07-21T10:00:00.000Z",
-    observed_at: "2026-07-21T10:00:00.000Z",
-    expires_at: "2026-07-21T10:00:30.000Z",
+    generated_at: now.toISOString(),
+    observed_at: now.toISOString(),
+    expires_at: new Date(now.getTime() + 60_000).toISOString(),
   };
 }
 
@@ -480,13 +487,104 @@ describe("Remote MCP runtime", () => {
     }
   });
 
-  test("resolves the OAuth-bound club without requiring domain or club_id input", async () => {
+  test("resolves OAuth-bound self context and personal tasks without domain or club_id input", async () => {
     const eventId = "33333333-3333-4333-8333-333333333333";
+    const openTaskId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const scheduledTaskId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    const blockedTaskId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+    const reminderId = "12121212-1212-4212-8212-121212121212";
+    const reminderAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    let taskActorTokenSeen = false;
+    let reminderActorTokenSeen = false;
+    let reminderDeleteActorTokenSeen = false;
+    let reminderBody: Record<string, unknown> = {};
     const api = Bun.serve({
       hostname: "127.0.0.1",
       port: 0,
-      fetch(request) {
+      async fetch(request) {
         const url = new URL(request.url);
+        if (request.method === "GET" && url.pathname === `/task/tasks/my-tasks/assigned/${clubId}`) {
+          taskActorTokenSeen = request.headers.get("authorization") === "Bearer backend-actor-token";
+          if (!taskActorTokenSeen) {
+            return Response.json({ error: "missing_actor_token" }, { status: 401 });
+          }
+          return Response.json([
+            {
+              id: openTaskId,
+              club_id: clubId,
+              title: "Getränke bestellen",
+              status: "open",
+              due_date: "2026-08-05T17:00:00.000Z",
+              creator_id: "13131313-1313-4313-8313-131313131313",
+              assignments: [{
+                id: "14141414-1414-4414-8414-141414141414",
+                member_id: runtimeMemberId,
+                user_id: runtimeSubjectId,
+              }],
+            },
+            {
+              id: scheduledTaskId,
+              club_id: clubId,
+              title: "Einlass übernehmen",
+              status: "in_progress",
+              due_date: null,
+              scheduled_start: "2026-08-07T16:00:00.000Z",
+            },
+            {
+              id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+              club_id: clubId,
+              title: "Bereits erledigt",
+              status: "completed",
+              due_date: "2026-08-06T12:00:00.000Z",
+            },
+            {
+              id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+              club_id: clubId,
+              title: "Nächste Woche",
+              status: "open",
+              due_date: "2026-08-11T12:00:00.000Z",
+            },
+            {
+              id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+              club_id: clubId,
+              title: "Ohne Termin",
+              status: "open",
+              due_date: null,
+            },
+          ]);
+        }
+        if (request.method === "POST" && url.pathname === "/automation/custom_reminders/task") {
+          reminderActorTokenSeen = request.headers.get("authorization") === "Bearer backend-actor-token";
+          reminderBody = await request.json() as Record<string, unknown>;
+          if (!reminderActorTokenSeen) {
+            return Response.json({ error: "missing_actor_token" }, { status: 401 });
+          }
+          if (reminderBody.task_id === blockedTaskId) {
+            return Response.json({
+              detail: "INTERNE-UPSTREAM-DETAILS-DÜRFEN-NICHT-SICHTBAR-SEIN",
+            }, { status: 403 });
+          }
+          return Response.json({
+            id: reminderId,
+            task_id: reminderBody.task_id,
+            reminder_at: reminderBody.reminder_at,
+            comment: reminderBody.comment ?? null,
+            user_id: runtimeSubjectId,
+            club_id: clubId,
+            target_user_ids: [runtimeSubjectId],
+          });
+        }
+        if (
+          request.method === "DELETE"
+          && url.pathname
+            === `/automation/custom_reminders/task/by-task/${openTaskId}`
+        ) {
+          reminderDeleteActorTokenSeen =
+            request.headers.get("authorization") === "Bearer backend-actor-token";
+          return reminderDeleteActorTokenSeen
+            ? new Response(null, { status: 204 })
+            : Response.json({ error: "missing_actor_token" }, { status: 401 });
+        }
         if (request.method !== "GET" || url.pathname !== `/event/public/clubs/${clubId}/events`) {
           return Response.json({ error: "unexpected_request" }, { status: 404 });
         }
@@ -509,6 +607,7 @@ describe("Remote MCP runtime", () => {
       server_factory: (context) => createRuntimeServer({
         environment: "development",
         api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
         context,
       }),
     }));
@@ -532,6 +631,46 @@ describe("Remote MCP runtime", () => {
         additionalProperties: false,
       });
       expect(whoami.inputSchema.required ?? []).toEqual([]);
+      expect(whoami.securitySchemes).toEqual([{ type: "oauth2", scopes: ["club.read"] }]);
+      expect(whoami._meta.securitySchemes).toEqual(whoami.securitySchemes);
+      for (const selfToolName of ["cv_permissions_explain_read", "cv_schema_read"]) {
+        const selfTool = tools.find((tool: any) => tool.name === selfToolName);
+        expect(selfTool.inputSchema).toMatchObject({
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        });
+      }
+      const myTasks = tools.find((tool: any) => tool.name === "cv_my_tasks_read");
+      expect(myTasks.description).toContain("frage niemals nach club_id");
+      expect(myTasks.inputSchema.properties.club_id).toBeUndefined();
+      expect(myTasks.inputSchema.required).toEqual(expect.arrayContaining(["from", "to"]));
+      expect(myTasks.securitySchemes).toEqual([{ type: "oauth2", scopes: ["task.read"] }]);
+      expect(myTasks._meta.securitySchemes).toEqual(myTasks.securitySchemes);
+      expect(myTasks.outputSchema.properties.tasks.items.properties.assignments).toBeUndefined();
+      expect(myTasks.outputSchema.properties.tasks.items.properties.member_id).toBeUndefined();
+      expect(myTasks.outputSchema.properties.tasks.items.properties.user_id).toBeUndefined();
+      const taskReminder = tools.find((tool: any) =>
+        tool.name === "cv_my_task_reminder_write");
+      expect(taskReminder.description).toContain("ausschließlich dir");
+      expect(JSON.stringify(taskReminder.inputSchema)).not.toContain('"club_id"');
+      expect(JSON.stringify(taskReminder.inputSchema)).not.toContain('"user_id"');
+      expect(JSON.stringify(taskReminder.inputSchema)).not.toContain('"recipient"');
+      expect(taskReminder.securitySchemes).toEqual([{
+        type: "oauth2",
+        scopes: ["task.read"],
+      }]);
+      expect(taskReminder._meta.securitySchemes).toEqual(taskReminder.securitySchemes);
+      expect(JSON.stringify(taskReminder.outputSchema)).not.toContain('"user_id"');
+      expect(taskReminder.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      });
+      const publicEvents = tools.find((tool: any) => tool.name === "public_events");
+      expect(publicEvents.securitySchemes).toEqual([{ type: "noauth" }]);
+      expect(publicEvents._meta.securitySchemes).toEqual(publicEvents.securitySchemes);
       expect(tools.find((tool: any) => tool.name === "public_events").description)
         .toContain("cv_whoami_read");
 
@@ -584,9 +723,214 @@ describe("Remote MCP runtime", () => {
       expect(eventsResult.result.isError).not.toBe(true);
       expect(eventsResult.result.content[0].text).toContain("Saisoneröffnung");
 
-      const mismatch = await postMcp(baseUrl, {
+      const personalTasks = await postMcp(baseUrl, {
         jsonrpc: "2.0",
         id: 24,
+        method: "tools/call",
+        params: {
+          name: "cv_my_tasks_read",
+          arguments: {
+            from: "2026-08-03T00:00:00.000Z",
+            to: "2026-08-10T00:00:00.000Z",
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(personalTasks.status).toBe(200);
+      const personalTasksResult = await personalTasks.json() as any;
+      expect(personalTasksResult.result.isError).not.toBe(true);
+      expect(personalTasksResult.result.structuredContent).toMatchObject({
+        club_id: clubId,
+        returned: 2,
+        truncated: false,
+        undated_tasks_excluded: 1,
+      });
+      expect(personalTasksResult.result.structuredContent.tasks.map((task: any) => task.id))
+        .toEqual([openTaskId, scheduledTaskId]);
+      expect(JSON.stringify(personalTasksResult.result.structuredContent.tasks))
+        .not.toContain(runtimeMemberId);
+      expect(JSON.stringify(personalTasksResult.result.structuredContent.tasks))
+        .not.toContain(runtimeSubjectId);
+      expect(personalTasksResult.result.structuredContent.tasks[0].assignments).toBeUndefined();
+      expect(personalTasksResult.result.structuredContent.tasks[0].creator_id).toBeUndefined();
+      expect(taskActorTokenSeen).toBe(true);
+
+      const personalReminder = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 241,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "set",
+            task_id: openTaskId,
+            reminder_at: reminderAt,
+            comment: "Bitte rechtzeitig erinnern",
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(personalReminder.status).toBe(200);
+      const personalReminderResult = await personalReminder.json() as any;
+      expect(personalReminderResult.result.isError).not.toBe(true);
+      expect(personalReminderResult.result.structuredContent).toEqual({
+        operation: "set",
+        task_id: openTaskId,
+        reminder: {
+          id: reminderId,
+          task_id: openTaskId,
+          reminder_at: reminderAt,
+          comment: "Bitte rechtzeitig erinnern",
+        },
+      });
+      expect(reminderActorTokenSeen).toBe(true);
+      expect(reminderBody).toEqual({
+        task_id: openTaskId,
+        reminder_at: reminderAt,
+        comment: "Bitte rechtzeitig erinnern",
+      });
+      expect(reminderBody).not.toHaveProperty("user_id");
+      expect(reminderBody).not.toHaveProperty("target_user_ids");
+
+      const rejectedReminderContext = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 242,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "set",
+            task_id: openTaskId,
+            reminder_at: reminderAt,
+            user_id: runtimeSubjectId,
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(rejectedReminderContext.status).toBe(200);
+      expect((await rejectedReminderContext.json() as any).result.isError).toBe(true);
+
+      const reminderScope = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 243,
+        method: "tools/list",
+        params: {},
+      }, "token-openai-task-read-only");
+      expect(reminderScope.status).toBe(200);
+      const reminderScopeResult = await reminderScope.json() as any;
+      expect(
+        reminderScopeResult.result.tools.map(
+          (tool: { name: string }) => tool.name,
+        ),
+      ).toContain("cv_my_task_reminder_write");
+      expect(
+        reminderScopeResult.result.tools.find(
+          (tool: { name: string }) => tool.name === "cv_my_task_reminder_write",
+        ).securitySchemes,
+      ).toEqual([{ type: "oauth2", scopes: ["task.read"] }]);
+
+      const deniedReminder = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 244,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "set",
+            task_id: blockedTaskId,
+            reminder_at: reminderAt,
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(deniedReminder.status).toBe(200);
+      const deniedReminderResult = await deniedReminder.json() as any;
+      expect(deniedReminderResult.result.isError).toBe(true);
+      expect(deniedReminderResult.result.structuredContent.error).toBe("permission_denied");
+      expect(JSON.stringify(deniedReminderResult)).not.toContain("INTERNE-UPSTREAM-DETAILS");
+
+      const deletedReminder = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 245,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "delete",
+            task_id: openTaskId,
+          },
+        },
+      }, "token-openai-task-read-only");
+      expect(deletedReminder.status).toBe(200);
+      expect((await deletedReminder.json() as any).result.structuredContent).toEqual({
+        operation: "delete",
+        task_id: openTaskId,
+        reminder: null,
+      });
+      expect(reminderDeleteActorTokenSeen).toBe(true);
+
+      const rejectedTaskContext = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 25,
+        method: "tools/call",
+        params: {
+          name: "cv_my_tasks_read",
+          arguments: {
+            club_id: clubId,
+            from: "2026-08-03T00:00:00.000Z",
+            to: "2026-08-10T00:00:00.000Z",
+          },
+        },
+      }, "token-openai");
+      expect(rejectedTaskContext.status).toBe(200);
+      const rejectedTaskContextResult = await rejectedTaskContext.json() as any;
+      expect(rejectedTaskContextResult.result.isError).toBe(true);
+      expect(rejectedTaskContextResult.result.content[0].text).toContain("Input validation error");
+
+      const limitedToolsResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 26,
+        method: "tools/list",
+        params: {},
+      }, "token-openai-club-only");
+      expect(limitedToolsResponse.status).toBe(200);
+      const limitedTools = (await limitedToolsResponse.json() as any)
+        .result.tools.map((tool: { name: string }) => tool.name);
+      expect(limitedTools).not.toContain("cv_my_tasks_read");
+      expect(limitedTools).not.toContain("cv_my_task_reminder_write");
+
+      const limitedSchemaResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 261,
+        method: "tools/call",
+        params: {
+          name: "cv_schema_read",
+          arguments: {},
+        },
+      }, "token-openai-club-only");
+      expect(limitedSchemaResponse.status).toBe(200);
+      const limitedSchemaTools = (
+        await limitedSchemaResponse.json() as any
+      ).result.structuredContent.tools.map(
+        (tool: { name: string }) => tool.name,
+      );
+      expect(limitedSchemaTools).not.toContain("cv_my_tasks_read");
+      expect(limitedSchemaTools).not.toContain("cv_my_task_reminder_write");
+
+      const noClubToolsResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 262,
+        method: "tools/list",
+        params: {},
+      }, "token-openai-no-club");
+      expect(noClubToolsResponse.status).toBe(200);
+      const noClubTools = (await noClubToolsResponse.json() as any)
+        .result.tools.map((tool: { name: string }) => tool.name);
+      expect(noClubTools).not.toContain("cv_whoami_read");
+      expect(noClubTools).not.toContain("cv_permissions_explain_read");
+      expect(noClubTools).not.toContain("cv_schema_read");
+      expect(noClubTools).not.toContain("cv_my_tasks_read");
+      expect(noClubTools).not.toContain("cv_my_task_reminder_write");
+
+      const mismatch = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 27,
         method: "tools/call",
         params: {
           name: "public_events",
@@ -686,7 +1030,12 @@ describe("Remote MCP runtime", () => {
       client_kind: "unknown",
       authenticated: true,
     });
-    expect(authenticated.request.scopes).toEqual(["club.read", "member.read.basic"]);
+    expect(authenticated.request.scopes).toEqual([
+      "club.read",
+      "member.read.basic",
+      "task.read",
+      "task.write",
+    ]);
 
     await expect(factory.create({
       authorization: "Bearer token-openai",
@@ -727,7 +1076,7 @@ describe("Remote MCP runtime", () => {
   test("TC-06: telemetry excludes tool arguments, member data and response content", async () => {
     const lines: string[] = [];
     new ConsoleTelemetrySink((line) => lines.push(line)).record({
-      request_id: requestId,
+      request_id: context.request_id,
       provider: "openai",
       authenticated: true,
       route: "/mcp",
