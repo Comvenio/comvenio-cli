@@ -552,7 +552,14 @@ function actionOutputSchema(
 function outputUnion(schemas: z.ZodType[]): z.ZodType {
   if (schemas.length === 0) return domainOutputSchema;
   if (schemas.length === 1) return schemas[0]!;
-  return z.union(schemas as [z.ZodType, z.ZodType, ...z.ZodType[]]);
+  return z.object({}).passthrough().superRefine((value, context) => {
+    if (!schemas.some((schema) => schema.safeParse(value).success)) {
+      context.addIssue({
+        code: "custom",
+        message: "Die Tool-Antwort entspricht keinem freigegebenen Ergebnisvertrag.",
+      });
+    }
+  });
 }
 
 export function domainToolName(actionId: string): string {
@@ -1239,7 +1246,7 @@ export function registerFullDomainRuntime(input: {
           ...copy,
           inputSchema,
           outputSchema: riskClass === "critical_write"
-            ? z.union([
+            ? outputUnion([
               runtime.output_schema,
               CONFIRMATION_WIDGET_SCHEMA,
             ])
