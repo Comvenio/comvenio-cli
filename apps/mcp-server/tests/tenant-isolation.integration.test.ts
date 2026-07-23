@@ -1100,6 +1100,16 @@ describe("Remote MCP runtime", () => {
         },
       }, "token-critical-openai");
       const confirmResult = await confirmResponse.json() as any;
+      if (confirmResult.result?.isError === true) {
+        throw new Error(
+          `Kritische Bestätigung fehlgeschlagen: ${
+            JSON.stringify({
+              content: confirmResult.result.content,
+              structuredContent: confirmResult.result.structuredContent,
+            })
+          }`,
+        );
+      }
       expect(confirmResult.result.isError).not.toBe(true);
       expect(confirmResult.result.structuredContent).toMatchObject({
         action_id: "cai.member.05.remove",
