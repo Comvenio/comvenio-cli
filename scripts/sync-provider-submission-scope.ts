@@ -68,6 +68,8 @@ const responseMatrix = {
       ? "grounded_success_or_actionable_denial"
       : tool.risk_class === "reversible_write"
         ? "idempotent_success_or_actionable_denial"
+        : tool.risk_class === "agent_orchestration"
+          ? "governed_agent_turn_or_actionable_denial"
         : "confirmation_required_or_actionable_denial",
     oauth_bound_club_context:
       !tool.required_scopes.includes("public.read"),
@@ -79,6 +81,14 @@ const responseMatrix = {
       safe_text_summary_required: true,
       provider_specific_payload_forbidden: true,
       secret_or_token_echo_forbidden: true,
+      delegated_capability_confirmation:
+        tool.risk_class === "agent_orchestration",
+      provider_retry_contract:
+        tool.risk_class === "agent_orchestration"
+          ? "non_idempotent_conversation_domain_effects_guarded"
+          : tool.risk_class === "read"
+            ? "safe_repeat"
+            : "idempotent_by_key",
     },
   })),
 };

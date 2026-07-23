@@ -13,7 +13,7 @@ const finding = z.object({
 }).strict();
 
 export const CONNECTOR_EVAL_REPORT_SCHEMA = z.object({
-  schema_version: z.literal("1.0.0"),
+  schema_version: z.literal("1.1.0"),
   suite: z.literal("ConnectorEvalSuite"),
   status: z.enum(["pass", "blocked"]),
   evaluated_candidate_tool_count: z.number().int().nonnegative(),
@@ -26,7 +26,12 @@ export const CONNECTOR_EVAL_REPORT_SCHEMA = z.object({
     actionable_error: z.boolean(),
     safe_non_execution: z.boolean(),
     confirmation_contract: z.boolean(),
-    provider_retry_idempotent: z.boolean(),
+    provider_retry_safe: z.boolean(),
+    provider_retry_contract: z.enum([
+      "safe_repeat",
+      "idempotent_by_key",
+      "non_idempotent_conversation_domain_effects_guarded",
+    ]),
     synthetic_data_only: z.boolean(),
     evidence_ref: evidenceRef,
   }).strict()),

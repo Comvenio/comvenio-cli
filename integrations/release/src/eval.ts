@@ -11,9 +11,9 @@ export class ConnectorEvalSuite {
     if (JSON.stringify(candidates) !== JSON.stringify(tested)) blockers.push("TOOL_EVAL_PARITY");
     if (input.results.some((result) => !result.tool_selection || !result.schema_validation || !result.grounded_response
       || !result.actionable_error || !result.safe_non_execution || !result.confirmation_contract
-      || !result.provider_retry_idempotent || !result.synthetic_data_only)) blockers.push("TOOL_EVAL_FAILURE");
+      || !result.provider_retry_safe || !result.synthetic_data_only)) blockers.push("TOOL_EVAL_FAILURE");
     return CONNECTOR_EVAL_REPORT_SCHEMA.parse({
-      schema_version: "1.0.0",
+      schema_version: "1.1.0",
       suite: "ConnectorEvalSuite",
       status: blockers.length === 0 ? "pass" : "blocked",
       evaluated_candidate_tool_count: candidates.length,

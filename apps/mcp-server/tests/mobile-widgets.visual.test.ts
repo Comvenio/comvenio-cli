@@ -52,21 +52,77 @@ const catalogHash = "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417
 const releaseScope = "full_connector_v1" as const;
 const runtimeCatalog = publishedRuntimeCatalog("production", releaseScope);
 
+test("classifies the Club-Agent as governed orchestration instead of an idempotent write", () => {
+  expect(runtimeCatalog.tools.find((tool) =>
+    tool.name === "cv_club_agent_converse")).toMatchObject({
+    risk_class: "agent_orchestration",
+  });
+});
+
 function json(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+test("binds every provider response fixture to the runtime retry contract", () => {
+  const fixturePaths = [
+    "integrations/openai/fixtures/provider/openai/full-connector-v1.response.json",
+    "integrations/anthropic/fixtures/provider/anthropic/full-connector-v1.response.json",
+  ];
+
+  for (const fixturePath of fixturePaths) {
+    const matrix = json(resolve(workspaceRoot, fixturePath)) as {
+      cases: Array<{
+        tool_name: string;
+        risk_class: string;
+        expected_outcome: string;
+        response_contract: {
+          delegated_capability_confirmation: boolean;
+          provider_retry_contract: string;
+        };
+      }>;
+    };
+    expect(matrix.cases).toHaveLength(runtimeCatalog.tool_count);
+    const casesByToolName = new Map(matrix.cases.map((item) => [item.tool_name, item]));
+
+    for (const tool of runtimeCatalog.tools) {
+      const expectedRetryContract = tool.risk_class === "agent_orchestration"
+        ? "non_idempotent_conversation_domain_effects_guarded"
+        : tool.risk_class === "read"
+          ? "safe_repeat"
+          : "idempotent_by_key";
+      expect(casesByToolName.get(tool.name)).toMatchObject({
+        risk_class: tool.risk_class,
+        response_contract: {
+          delegated_capability_confirmation:
+            tool.risk_class === "agent_orchestration",
+          provider_retry_contract: expectedRetryContract,
+        },
+      });
+    }
+
+    expect(casesByToolName.get("cv_club_agent_converse")).toMatchObject({
+      expected_outcome: "governed_agent_turn_or_actionable_denial",
+    });
+  }
+});
+
 function testedConnectorEvalReport() {
-  const toolNames = publishedRuntimeToolNames("production", releaseScope);
-  const results: ConnectorEvalToolResult[] = toolNames.map((toolName) => ({
-    tool_name: toolName,
+  const tools = publishedRuntimeCatalog("production", releaseScope).tools;
+  const toolNames = tools.map((tool) => tool.name);
+  const results: ConnectorEvalToolResult[] = tools.map((tool) => ({
+    tool_name: tool.name,
     tool_selection: true,
     schema_validation: true,
     grounded_response: true,
     actionable_error: true,
     safe_non_execution: true,
     confirmation_contract: true,
-    provider_retry_idempotent: true,
+    provider_retry_safe: true,
+    provider_retry_contract: tool.risk_class === "agent_orchestration"
+      ? "non_idempotent_conversation_domain_effects_guarded"
+      : tool.risk_class === "read"
+        ? "safe_repeat"
+        : "idempotent_by_key",
     synthetic_data_only: true,
     evidence_ref: "apps/mcp-server/tests/mobile-widgets.visual.test.ts",
   }));

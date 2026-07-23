@@ -235,7 +235,11 @@ export interface PublishedRuntimeToolContract {
   title: string;
   description: string;
   required_scopes: OAuthScope[];
-  risk_class: "read" | "reversible_write" | "critical_write";
+  risk_class:
+    | "read"
+    | "reversible_write"
+    | "critical_write"
+    | "agent_orchestration";
 }
 
 function includesClubAgent(releaseScope: ConnectorReleaseScope): boolean {
@@ -347,7 +351,7 @@ export function publishedRuntimeCatalog(
           name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
           ...CLUB_AGENT_TOOL_COPY,
           required_scopes: ["club.read"] as OAuthScope[],
-          risk_class: "reversible_write" as const,
+          risk_class: "agent_orchestration" as const,
         }]
       : []),
     ...(releaseScope === "full_connector_v1"

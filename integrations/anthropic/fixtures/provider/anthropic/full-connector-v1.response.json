@@ -19,7 +19,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -36,7 +38,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -53,7 +57,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -71,7 +77,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -89,7 +97,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -106,7 +116,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -123,7 +135,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -140,7 +154,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -157,7 +173,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -175,7 +193,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -193,7 +213,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -211,7 +233,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -228,7 +252,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -246,7 +272,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -263,7 +291,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -280,7 +310,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -297,7 +329,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -314,7 +348,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -331,7 +367,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -348,7 +386,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -365,7 +405,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -382,7 +424,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -399,16 +443,18 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
       "tool_name": "cv_club_agent_converse",
-      "risk_class": "reversible_write",
+      "risk_class": "agent_orchestration",
       "required_scopes": [
         "club.read"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "governed_agent_turn_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
       "confirmation_contract": false,
@@ -416,7 +462,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": true,
+        "provider_retry_contract": "non_idempotent_conversation_domain_effects_guarded"
       }
     },
     {
@@ -433,7 +481,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -450,7 +500,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -467,7 +519,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -484,7 +538,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -502,7 +558,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -520,7 +578,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -537,7 +597,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -554,7 +616,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -571,7 +635,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -588,7 +654,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -605,7 +673,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -622,7 +692,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -639,7 +711,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -656,7 +730,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -673,7 +749,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -690,7 +768,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -707,7 +787,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -724,7 +806,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -741,7 +825,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -758,7 +844,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -775,7 +863,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -792,7 +882,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -809,7 +901,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -826,7 +920,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -843,7 +939,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -860,7 +958,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -877,7 +977,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -894,7 +996,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -911,7 +1015,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -928,7 +1034,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -945,7 +1053,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -962,7 +1072,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -979,7 +1091,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -996,7 +1110,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1015,7 +1131,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1032,7 +1150,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1049,7 +1169,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1066,7 +1188,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1083,7 +1207,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1100,7 +1226,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1117,7 +1245,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1135,7 +1265,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1153,7 +1285,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1171,7 +1305,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1189,7 +1325,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1207,7 +1345,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1225,7 +1365,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1243,7 +1385,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1261,7 +1405,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1279,7 +1425,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1297,7 +1445,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1315,7 +1465,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1333,7 +1485,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1351,7 +1505,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1369,7 +1525,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1387,7 +1545,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1406,7 +1566,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1423,7 +1585,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1441,7 +1605,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1459,7 +1625,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1477,7 +1645,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1495,7 +1665,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1513,7 +1685,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1530,7 +1704,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1547,7 +1723,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1564,7 +1742,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1582,7 +1762,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1599,7 +1781,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1616,7 +1800,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1633,7 +1819,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1650,7 +1838,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1667,7 +1857,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1684,7 +1876,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1701,7 +1895,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1718,7 +1914,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1735,7 +1933,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1752,7 +1952,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -1769,7 +1971,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1786,7 +1990,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1803,7 +2009,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1820,7 +2028,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1837,7 +2047,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1854,7 +2066,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1872,7 +2086,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1890,7 +2106,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1908,7 +2126,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1926,7 +2146,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1944,7 +2166,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1962,7 +2186,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1980,7 +2206,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -1997,7 +2225,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2015,7 +2245,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2033,7 +2265,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2052,7 +2286,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2069,7 +2305,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2086,7 +2324,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2103,7 +2343,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2120,7 +2362,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2137,7 +2381,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2154,7 +2400,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2171,7 +2419,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2188,7 +2438,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2205,7 +2457,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2222,7 +2476,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2239,7 +2495,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2256,7 +2514,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2273,7 +2533,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2290,7 +2552,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2307,7 +2571,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2324,7 +2590,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2341,7 +2609,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2358,7 +2628,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2375,7 +2647,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2392,7 +2666,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2409,7 +2685,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2426,7 +2704,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2443,7 +2723,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2460,7 +2742,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2477,7 +2761,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2494,7 +2780,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2511,7 +2799,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2528,7 +2818,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2545,7 +2837,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2562,7 +2856,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2579,7 +2875,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2597,7 +2895,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2614,7 +2914,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2631,7 +2933,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2649,7 +2953,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2667,7 +2973,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2684,7 +2992,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2701,7 +3011,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2718,7 +3030,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2735,7 +3049,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2752,7 +3068,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2769,7 +3087,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2789,7 +3109,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2806,7 +3128,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2823,7 +3147,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2840,7 +3166,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2857,7 +3185,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2874,7 +3204,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2891,7 +3223,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2909,7 +3243,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2927,7 +3263,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2945,7 +3283,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2963,7 +3303,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -2980,7 +3322,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -2997,7 +3341,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3014,7 +3360,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3031,7 +3379,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3048,7 +3398,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3065,7 +3417,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3083,7 +3437,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3100,7 +3456,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3117,7 +3475,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3135,7 +3495,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3152,7 +3514,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3170,7 +3534,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3188,7 +3554,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3206,7 +3574,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3223,7 +3593,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3240,7 +3612,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3257,7 +3631,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3274,7 +3650,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3291,7 +3669,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3308,7 +3688,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3325,7 +3707,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3342,7 +3726,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3359,7 +3745,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3376,7 +3764,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3393,7 +3783,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3410,7 +3802,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3427,7 +3821,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3444,7 +3840,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3461,7 +3859,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3478,7 +3878,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3495,7 +3897,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3512,7 +3916,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3529,7 +3935,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3546,7 +3954,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3563,7 +3973,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3580,7 +3992,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3597,7 +4011,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3614,7 +4030,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3631,7 +4049,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3648,7 +4068,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3665,7 +4087,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3682,7 +4106,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3700,7 +4126,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3717,7 +4145,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3734,7 +4164,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3751,7 +4183,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3768,7 +4202,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3785,7 +4221,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3802,7 +4240,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3819,7 +4259,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3837,7 +4279,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3855,7 +4299,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3872,7 +4318,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3889,7 +4337,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3906,7 +4356,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3923,7 +4375,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3940,7 +4394,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3958,7 +4414,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -3975,7 +4433,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -3992,7 +4452,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4009,7 +4471,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4026,7 +4490,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4043,7 +4509,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4061,7 +4529,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4079,7 +4549,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4096,7 +4568,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4113,7 +4587,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4130,7 +4606,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4147,7 +4625,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4164,7 +4644,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4182,7 +4664,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4201,7 +4685,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4219,7 +4705,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4236,7 +4724,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4253,7 +4743,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4270,7 +4762,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4287,7 +4781,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4304,7 +4800,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4321,7 +4819,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4338,7 +4838,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4355,7 +4857,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4372,7 +4876,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4389,7 +4895,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4406,7 +4914,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4423,7 +4933,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4440,7 +4952,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4458,7 +4972,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4476,7 +4992,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4494,7 +5012,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4512,7 +5032,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4529,7 +5051,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4546,7 +5070,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4563,7 +5089,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4580,7 +5108,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4597,7 +5127,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4614,7 +5146,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4631,7 +5165,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4648,7 +5184,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4665,7 +5203,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4682,7 +5222,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4699,7 +5241,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4716,7 +5260,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4733,7 +5279,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4750,7 +5298,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4767,7 +5317,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4784,7 +5336,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4801,7 +5355,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4818,7 +5374,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4835,7 +5393,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4852,7 +5412,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4869,7 +5431,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4886,7 +5450,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -4903,7 +5469,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4920,7 +5488,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4937,7 +5507,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4954,7 +5526,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4971,7 +5545,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -4988,7 +5564,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5005,7 +5583,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5022,7 +5602,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5039,7 +5621,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5056,7 +5640,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5073,7 +5659,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5091,7 +5679,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5108,7 +5698,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5125,7 +5717,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5142,7 +5736,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5159,7 +5755,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5176,7 +5774,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5193,7 +5793,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5211,7 +5813,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
       }
     },
     {
@@ -5229,7 +5833,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5247,7 +5853,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5265,7 +5873,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5284,7 +5894,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5302,7 +5914,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5320,7 +5934,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5337,7 +5953,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5354,7 +5972,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5371,7 +5991,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5388,7 +6010,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5405,7 +6029,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5422,7 +6048,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5439,7 +6067,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5456,7 +6086,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5473,7 +6105,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5490,7 +6124,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5507,7 +6143,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5524,7 +6162,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5541,7 +6181,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     },
     {
@@ -5558,7 +6200,9 @@
         "structured_content_required": true,
         "safe_text_summary_required": true,
         "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
       }
     }
   ],

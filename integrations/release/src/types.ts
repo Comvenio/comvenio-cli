@@ -23,13 +23,17 @@ export interface ConnectorEvalToolResult {
   actionable_error: boolean;
   safe_non_execution: boolean;
   confirmation_contract: boolean;
-  provider_retry_idempotent: boolean;
+  provider_retry_safe: boolean;
+  provider_retry_contract:
+    | "safe_repeat"
+    | "idempotent_by_key"
+    | "non_idempotent_conversation_domain_effects_guarded";
   synthetic_data_only: boolean;
   evidence_ref: string;
 }
 
 export interface ConnectorEvalReport {
-  schema_version: "1.0.0";
+  schema_version: "1.1.0";
   suite: "ConnectorEvalSuite";
   status: "pass" | "blocked";
   evaluated_candidate_tool_count: number;
