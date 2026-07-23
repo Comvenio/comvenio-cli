@@ -99,8 +99,14 @@ function filteredActions(input: PrivateNewsProjectorInput, context: RequestConte
     const actionNewsId = typeof action.input.news_id === "string"
       ? action.input.news_id
       : null;
+    const createsDraft = actionNewsId === null
+      && /(?:create|draft)/iu.test(action.action_id);
     if (actionNewsId && !visibleNewsIds.has(actionNewsId)) return [];
-    if (action.risk_class !== "read" && actionNewsId !== selectedNewsId) return [];
+    if (
+      action.risk_class !== "read"
+      && !createsDraft
+      && actionNewsId !== selectedNewsId
+    ) return [];
     if (/publish|veroeffentlich/iu.test(action.action_id) && (action.risk_class !== "critical_write" || !action.requires_confirmation)) return [];
     const decision = policy.evaluate({ context, capability_snapshot: snapshot, descriptor: action });
     return decision.allowed && decision.risk_class === action.risk_class && decision.requires_confirmation === action.requires_confirmation ? [action] : [];

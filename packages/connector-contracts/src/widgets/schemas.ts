@@ -445,7 +445,7 @@ export const NEWS_WIDGET_STATE_SCHEMA = z.object({
 });
 
 export const CONFIRMATION_DATA_SCHEMA = z.object({
-  preview: ACTION_PREVIEW_VIEW_SCHEMA.extend({}).transform((value) => value),
+  preview: ACTION_PREVIEW_VIEW_SCHEMA,
   confirm_label: safeText(100),
   cancel_label: z.literal("Abbrechen"),
   acknowledgement_required: z.boolean(),
