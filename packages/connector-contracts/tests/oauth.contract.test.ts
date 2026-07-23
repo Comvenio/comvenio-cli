@@ -492,20 +492,15 @@ describe("CIMD SSRF and release pinning", () => {
       pins: CimdClientPin[];
       notice: string;
     };
-    expect(releasePins).toMatchObject({
-      contract_version: "1.0.0",
-      release_state: "BLOCKED",
-      pins: [
-        expect.objectContaining({
-          provider: "openai",
-          enabled: true,
-          allowed_scopes: ["club.read", "task.read", "task.write"],
-        }),
-      ],
-    });
+    expect(releasePins.contract_version).toBe("1.0.0");
+    expect(releasePins.release_state).toBe("BLOCKED");
     expect(releasePins.pins).toHaveLength(1);
-    expect(releasePins.pins[0]!.client_id).toMatch(/^https:\/\/chatgpt\.com\/oauth\//u);
-    expect(releasePins.pins[0]!.metadata_sha256).toMatch(/^[a-f0-9]{64}$/u);
+    const releasePin = releasePins.pins[0]!;
+    expect(releasePin.provider).toBe("openai");
+    expect(releasePin.enabled).toBe(true);
+    expect(releasePin.allowed_scopes).toEqual(["club.read", "task.read", "task.write"]);
+    expect(releasePin.client_id).toMatch(/^https:\/\/chatgpt\.com\/oauth\//u);
+    expect(releasePin.metadata_sha256).toMatch(/^[a-f0-9]{64}$/u);
     expect(releasePins.notice).not.toContain("*");
   });
 });
