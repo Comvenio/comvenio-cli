@@ -4,13 +4,23 @@ import type { JsonValue } from "@comvenio/connector-contracts";
 import { AvailabilityContract } from "./availability.ts";
 import type { BookingConfirmationRequest, BookingConflictPort, K10ConfirmationPreview, K10MutationRequest } from "./types.ts";
 
-interface StoredPreview {
+export interface BookingConflictStoredPreview {
   preview: K10ConfirmationPreview;
   digest: string;
   availability_fingerprint: string;
   subject_id: string;
   club_id: string;
   used: boolean;
+}
+
+export interface BookingConflictPreviewStore {
+  get(previewId: string): BookingConflictStoredPreview | undefined;
+  set(previewId: string, preview: BookingConflictStoredPreview): unknown;
+  delete(previewId: string): unknown;
+}
+
+export function createBookingConflictPreviewStore(): BookingConflictPreviewStore {
+  return new Map<string, BookingConflictStoredPreview>();
 }
 
 function canonical(value: JsonValue): string {
@@ -43,12 +53,20 @@ export class BookingConflictPolicy implements BookingConflictPort {
   readonly #availability: AvailabilityContract;
   readonly #ttlMs: number;
   readonly #now: () => Date;
-  readonly #previews = new Map<string, StoredPreview>();
+  readonly #previews: BookingConflictPreviewStore;
 
-  constructor(availability: AvailabilityContract, options: { ttl_ms?: number; now?: () => Date } = {}) {
+  constructor(
+    availability: AvailabilityContract,
+    options: {
+      ttl_ms?: number;
+      now?: () => Date;
+      preview_store?: BookingConflictPreviewStore;
+    } = {},
+  ) {
     this.#availability = availability;
     this.#ttlMs = options.ttl_ms ?? 5 * 60_000;
     this.#now = options.now ?? (() => new Date());
+    this.#previews = options.preview_store ?? createBookingConflictPreviewStore();
   }
 
   async confirmOrPreview(request: BookingConfirmationRequest, mutation: () => Promise<JsonValue>): Promise<JsonValue> {

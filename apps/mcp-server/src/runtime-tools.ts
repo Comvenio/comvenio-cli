@@ -16,6 +16,11 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import type { StatelessTransportContext } from "./http/types.ts";
+import {
+  fullDomainProtectedToolDescriptors,
+  registerFullDomainRuntime,
+  type DomainToolSummary,
+} from "./domain-runtime.ts";
 import { PublicAccessPolicy } from "./public/policy.ts";
 import { PublicResponseRedactor } from "./public/redaction.ts";
 import { PUBLIC_INPUT_SCHEMAS } from "./public/schemas.ts";
@@ -141,6 +146,10 @@ export interface RuntimeToolCatalog {
   protected_tools: ProtectedToolDescriptor[];
 }
 
+export type ConnectorReleaseScope =
+  | "personal_productivity_v1"
+  | "full_connector_v1";
+
 function publicCandidates(environment: OAuthEnvironment): PublicToolCandidate[] {
   const policy = new PublicAccessPolicy();
   return policy.list()
@@ -154,26 +163,40 @@ function publicCandidates(environment: OAuthEnvironment): PublicToolCandidate[] 
     }));
 }
 
-export function createRuntimeToolCatalog(environment: OAuthEnvironment): RuntimeToolCatalog {
+export function createRuntimeToolCatalog(
+  environment: OAuthEnvironment,
+  releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+): RuntimeToolCatalog {
   return {
     public_tools: publicCandidates(environment),
-    protected_tools: PROTECTED_TOOLS.map((tool) => ({
-      tool_name: tool.tool_name,
-      required_scopes: [...tool.required_scopes],
-    })),
+    protected_tools: [
+      ...PROTECTED_TOOLS.map((tool) => ({
+        tool_name: tool.tool_name,
+        required_scopes: [...tool.required_scopes],
+      })),
+      ...(releaseScope === "full_connector_v1"
+        ? fullDomainProtectedToolDescriptors()
+        : []),
+    ],
   };
 }
 
-export function publishedRuntimeToolNames(environment: OAuthEnvironment): string[] {
-  const catalog = createRuntimeToolCatalog(environment);
+export function publishedRuntimeToolNames(
+  environment: OAuthEnvironment,
+  releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+): string[] {
+  const catalog = createRuntimeToolCatalog(environment, releaseScope);
   return [
     ...catalog.public_tools.map((tool) => tool.tool_name),
     ...catalog.protected_tools.map((tool) => tool.tool_name),
   ].sort();
 }
 
-export function createRuntimeAccessPolicy(environment: OAuthEnvironment): PublicToolSubset {
-  return new PublicToolSubset(createRuntimeToolCatalog(environment));
+export function createRuntimeAccessPolicy(
+  environment: OAuthEnvironment,
+  releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+): PublicToolSubset {
+  return new PublicToolSubset(createRuntimeToolCatalog(environment, releaseScope));
 }
 
 function anonymousContext(context: RequestContext): RequestContext {
@@ -453,13 +476,16 @@ export function createRuntimeServer(input: {
   api_base_url: string;
   public_origin: string;
   context: StatelessTransportContext;
+  release_scope?: ConnectorReleaseScope;
 }): McpServer {
   const server = new McpServer({ name: "comvenio-mcp-server", version: "1.0.0" });
   const advertisedSecuritySchemes = new Map<string, readonly ToolSecurityScheme[]>();
   registerEventCalendarWidgetResource(server, input.environment);
   registerNewsWidgetResource(server, input.environment);
-  const catalog = createRuntimeToolCatalog(input.environment);
+  const releaseScope = input.release_scope ?? "personal_productivity_v1";
+  const catalog = createRuntimeToolCatalog(input.environment, releaseScope);
   const publicDescriptors = new PublicToolSubset({ public_tools: catalog.public_tools }).list();
+  let domainTools: DomainToolSummary[] = [];
   for (const descriptor of publicDescriptors) {
     const alias = descriptor.resolver_alias;
     const securitySchemes = noAuthSecuritySchemes();
@@ -556,6 +582,7 @@ export function createRuntimeServer(input: {
             required_scopes: TOOL_SCOPES[name as keyof typeof TOOL_SCOPES],
             read_only: name !== "cv_my_task_reminder_write",
           })),
+        ...domainTools,
       ].sort((left, right) => left.name.localeCompare(right.name));
       return toMcpResult(createProviderNeutralResult(input.context.request, { tools }, [{
         type: "text",
@@ -574,6 +601,15 @@ export function createRuntimeServer(input: {
       const tasks = new TaskToolSet({
         client: apiClient,
       });
+      if (releaseScope === "full_connector_v1") {
+        domainTools = registerFullDomainRuntime({
+          server,
+          client: apiClient,
+          context: input.context.request,
+          capability_snapshot: input.context.capability_snapshot,
+          advertised_security_schemes: advertisedSecuritySchemes,
+        }).tools;
+      }
       if (input.context.request.scopes.includes("task.read")) {
         advertisedSecuritySchemes.set("cv_my_tasks_read", taskReadSecuritySchemes);
         registerAppTool(server, "cv_my_tasks_read", {
