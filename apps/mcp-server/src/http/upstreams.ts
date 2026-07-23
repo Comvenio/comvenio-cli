@@ -11,10 +11,12 @@ import {
   type ProviderId,
   type RequestContext,
 } from "@comvenio/connector-contracts";
+import { z } from "zod";
 
 import { runtimeError } from "./errors.ts";
 import type {
   ActorTokenPort,
+  AgentCapabilityProjection,
   CapabilityContextResolver,
   IntrospectionPort,
   ProviderRegistrationResolver,
@@ -22,6 +24,27 @@ import type {
 
 const UPSTREAM_TIMEOUT_MS = 1_500;
 const CAPABILITY_TTL_MS = 30_000;
+const agentCapabilityProjectionSchema = z.object({
+  key: z.string().trim().min(1),
+  capability_id: z.string().trim().min(1),
+  capability_version: z.number().int().positive(),
+  status: z.literal("implemented"),
+  source: z.literal("capability_gate"),
+  channels: z.array(z.string().trim().min(1)).min(1),
+  advertisable: z.literal(true),
+  agent_selectable: z.literal(true),
+  user_invocable: z.literal(true),
+  externally_exposed: z.literal(true),
+  release_id: z.string().trim().min(1).nullable(),
+  executor_id: z.string().trim().min(1),
+  executor_version: z.string().trim().min(1),
+  policy_version: z.string().trim().min(1),
+  input_schema_hash: z.string().trim().min(1),
+  output_schema_hash: z.string().trim().min(1),
+  evidence_bundle_id: z.string().trim().min(1),
+  evidence_bundle_hash: z.string().trim().min(1).nullable(),
+});
+const agentCapabilityResponseSchema = z.array(z.unknown());
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -329,6 +352,67 @@ export class HttpCapabilityContextResolver implements CapabilityContextResolver 
       });
     }
     return snapshot;
+  }
+}
+
+export class HttpAgentCapabilityResolver {
+  readonly #apiBaseUrl: HttpsUrl;
+  readonly #fetch: FetchLike;
+
+  constructor(input: { api_base_url: string; fetch?: FetchLike }) {
+    this.#apiBaseUrl = normalizeBaseUrl(
+      input.api_base_url,
+      "COMVENIO_API_BASE_URL",
+    );
+    if (new URL(this.#apiBaseUrl).origin !== this.#apiBaseUrl) {
+      throw new Error(
+        "COMVENIO_API_BASE_URL muss ein HTTPS-Origin ohne Pfad sein.",
+      );
+    }
+    this.#fetch = input.fetch ?? globalThis.fetch.bind(globalThis);
+  }
+
+  async resolve(input: {
+    context: RequestContext;
+    backend_actor_token: string;
+  }): Promise<AgentCapabilityProjection[]> {
+    if (!input.context.club_id || !input.context.subject_id) return [];
+    const parameters = new URLSearchParams({
+      hub: "club_agent_dm",
+      channel: "mcp",
+    });
+    try {
+      const response = await timedFetch(
+        this.#fetch,
+        `${this.#apiBaseUrl}/ai/club-agents/${encodeURIComponent(input.context.club_id)}/capabilities?${parameters.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${input.backend_actor_token}`,
+            "x-request-id": input.context.request_id,
+          },
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined);
+        return [];
+      }
+      const values = agentCapabilityResponseSchema.parse(
+        await jsonResponse(response),
+      );
+      const capabilities: AgentCapabilityProjection[] = [];
+      for (const value of values) {
+        const parsed = agentCapabilityProjectionSchema.safeParse(value);
+        if (!parsed.success || !parsed.data.channels.includes("mcp")) continue;
+        capabilities.push(parsed.data);
+      }
+      return capabilities;
+    } catch {
+      // The Club-Agent bridge is optional relative to direct data tools. Any
+      // unavailable, denied or malformed gate response hides only this bridge.
+      return [];
+    }
   }
 }
 

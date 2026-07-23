@@ -44,6 +44,14 @@ MCP_SHARED_STATE_ENCRYPTION_KEY=<separater base64url-kodierter 32-Byte-Schlüsse
 MCP_RELEASE_SCOPE=full_connector_v1
 ```
 
+Existiert im Production-Environment noch kein Redis-Service, wird dort zuerst
+über `+ New` → `Database` → `Redis` eine private Instanz angelegt. Anschließend
+wird `MCP_SHARED_STATE_REDIS_URL` im Service `comvenio-cli` über
+`Add Reference` auf `REDIS_URL` dieses Redis-Service gebunden. Die
+`${{Redis.REDIS_URL}}`-Syntax darf nicht als ungeprüfter Freitext übernommen
+werden: Der Servicename ist projektspezifisch, und Railway muss die Referenz in
+eine echte `redis://`- oder `rediss://`-URL auflösen.
+
 `RAILWAY_PUBLIC_DOMAIN` wird von Railway bereitgestellt und nur für Host-Allowlist sowie `/health` verwendet. Nach dem Deploy müssen direkte Railway-Aufrufe auf `/.well-known/*`, `/ready`, `/mcp` und `/widgets/*` ohne Edge-Secret mit 403 enden. `GET /health` bleibt erreichbar.
 
 `MCP_SHARED_STATE_REDIS_URL` und `MCP_SHARED_STATE_ENCRYPTION_KEY` sind in

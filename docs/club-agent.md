@@ -51,6 +51,15 @@ Vereinsfreigaben des `ai-service`; der CLI- oder MCP-Kanal umgeht diese
 Regeln nicht. Ist der Club-Agent für einen Verein noch nicht eingerichtet,
 antwortet der Dienst ohne interne Diagnose- oder Trace-Daten.
 
+Der MCP-Server registriert `cv_club_agent_converse` nur, wenn die
+actor-gebundene Runtime-Map unter
+`/ai/club-agents/{club_id}/capabilities?hub=club_agent_dm&channel=mcp`
+mindestens eine vollständig freigegebene Capability mit
+`advertisable`, `agent_selectable`, `user_invocable` und
+`externally_exposed` enthält. Eine fehlende, abgelehnte oder ungültige
+Gate-Antwort verbirgt ausschließlich den Club-Agent-Dialog; direkte
+Vereins-Tools bleiben nutzbar.
+
 ## Noch offene CLI-Administration
 
 `agent chat` deckt die dialogische Nutzung ab. Die administrativen

@@ -34,6 +34,7 @@ import {
   ExactProviderHintResolver,
   ConsoleTelemetrySink,
   HealthReadinessProbe,
+  HttpAgentCapabilityResolver,
   McpHttpServer,
   MemoryTelemetrySink,
   NullTelemetrySink,
@@ -41,6 +42,7 @@ import {
   railwayDeploymentConfig,
   runtimeError,
   validateRailwayDeploymentConfig,
+  type AgentCapabilityProjection,
   type AuthenticatedConnectorPrincipal,
   type McpRuntimeOptions,
 } from "../src/http/index.ts";
@@ -376,6 +378,27 @@ function runtimeCapability(club: string, requestSubject = runtimeSubjectId): Cap
   };
 }
 
+const releasedAgentCapability = {
+  key: "tasks.check_mine",
+  capability_id: "tasks.check_mine",
+  capability_version: 1,
+  status: "implemented",
+  source: "capability_gate",
+  channels: ["internal_agent", "web", "app", "mcp", "cli", "voice"],
+  advertisable: true,
+  agent_selectable: true,
+  user_invocable: true,
+  externally_exposed: true,
+  release_id: "release-test",
+  executor_id: "tasks.check_mine",
+  executor_version: "executor-test",
+  policy_version: "policy-test",
+  input_schema_hash: "input-test",
+  output_schema_hash: "output-test",
+  evidence_bundle_id: "evidence-test",
+  evidence_bundle_hash: "evidence-hash-test",
+} satisfies AgentCapabilityProjection;
+
 function runtimeOptions(overrides: Partial<McpRuntimeOptions> = {}): McpRuntimeOptions {
   return {
     environment: "development",
@@ -452,6 +475,53 @@ async function postMcp(baseUrl: string, body: unknown, token?: string): Promise<
   });
 }
 
+test("loads only externally released MCP capabilities from the canonical actor gate", async () => {
+  let requestedUrl = "";
+  let authorization = "";
+  const resolver = new HttpAgentCapabilityResolver({
+    api_base_url: "https://api.comvenio.app",
+    async fetch(input, init) {
+      requestedUrl = String(input);
+      authorization = new Headers(init?.headers).get("authorization") ?? "";
+      return Response.json([
+        {
+          ...releasedAgentCapability,
+          title: "Meine Aufgaben",
+          services: ["ai-service"],
+        },
+        {
+          ...releasedAgentCapability,
+          key: "internal.only",
+          capability_id: "internal.only",
+          externally_exposed: false,
+        },
+      ]);
+    },
+  });
+
+  const capabilities = await resolver.resolve({
+    context,
+    backend_actor_token: "backend-actor-token",
+  });
+
+  expect(requestedUrl).toBe(
+    `https://api.comvenio.app/ai/club-agents/${clubId}/capabilities?hub=club_agent_dm&channel=mcp`,
+  );
+  expect(authorization).toBe("Bearer backend-actor-token");
+  expect(capabilities).toEqual([releasedAgentCapability]);
+
+  const unavailable = new HttpAgentCapabilityResolver({
+    api_base_url: "https://api.comvenio.app",
+    async fetch() {
+      return Response.json({ error: "unavailable" }, { status: 503 });
+    },
+  });
+  expect(await unavailable.resolve({
+    context,
+    backend_actor_token: "backend-actor-token",
+  })).toEqual([]);
+});
+
 describe("Remote MCP runtime", () => {
   test("routes complex turns through the tenant-bound Club-Agent for OpenAI and Anthropic", async () => {
     const conversationId = "12121212-1212-4212-8212-121212121212";
@@ -497,6 +567,7 @@ describe("Remote MCP runtime", () => {
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
         context: requestContext,
+        club_agent_capabilities: [releasedAgentCapability],
         release_scope: "club_agent_bridge_v1",
       }),
     };
@@ -590,6 +661,50 @@ describe("Remote MCP runtime", () => {
     } finally {
       expect(await server.drain()).toBe(true);
       await api.stop(true);
+    }
+  });
+
+  test("hides the Club-Agent bridge from both providers when the canonical gate has no external release", async () => {
+    const bridgeRuntimeOptions: Partial<McpRuntimeOptions> = {
+      access_policy: createRuntimeAccessPolicy(
+        "development",
+        "club_agent_bridge_v1",
+      ),
+      server_factory: (requestContext) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
+        environment: "development",
+        api_base_url: "https://api.comvenio.app",
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        club_agent_capabilities: [],
+        release_scope: "club_agent_bridge_v1",
+      }),
+    };
+    const server = new McpHttpServer(runtimeOptions(bridgeRuntimeOptions));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const responses = await Promise.all([
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 95,
+          method: "tools/list",
+          params: {},
+        }, "token-openai"),
+        postMcp(baseUrl, {
+          jsonrpc: "2.0",
+          id: 96,
+          method: "tools/list",
+          params: {},
+        }, "token-anthropic"),
+      ]);
+      for (const response of responses) {
+        const tools = (await response.json() as any).result.tools;
+        expect(tools.some((item: { name: string }) =>
+          item.name === "cv_club_agent_converse")).toBe(false);
+      }
+    } finally {
+      expect(await server.drain()).toBe(true);
     }
   });
 
@@ -789,6 +904,7 @@ describe("Remote MCP runtime", () => {
         api_base_url: `http://127.0.0.1:${api.port}`,
         public_origin: "https://mcpdev.comvenio.app",
         context: requestContext,
+        club_agent_capabilities: [releasedAgentCapability],
         release_scope: "full_connector_v1",
       }),
     };

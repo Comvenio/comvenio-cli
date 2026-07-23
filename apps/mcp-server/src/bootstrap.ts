@@ -16,6 +16,7 @@ import { ExactProviderHintResolver } from "./http/context.ts";
 import { McpHttpServer } from "./http/server.ts";
 import { ConsoleTelemetrySink } from "./http/telemetry.ts";
 import {
+  HttpAgentCapabilityResolver,
   HttpActorTokenPort,
   HttpCapabilityContextResolver,
   HttpIntrospectionPort,
@@ -308,13 +309,26 @@ function runtimeReadiness(input: {
 function runtimeServerFactory(
   config: McpProcessConfig,
   stateStore: DomainStateStore,
+  agentCapabilities: HttpAgentCapabilityResolver,
 ): McpRuntimeOptions["server_factory"] {
-  return (context) => {
+  return async (context) => {
+    const exposesClubAgent = config.release_scope === "club_agent_bridge_v1"
+      || config.release_scope === "full_connector_v1";
+    const releasedAgentCapabilities = exposesClubAgent
+      && context.request.club_id
+      && context.backend_actor_token
+      && context.request.scopes.includes("club.read")
+      ? await agentCapabilities.resolve({
+        context: context.request,
+        backend_actor_token: context.backend_actor_token,
+      })
+      : [];
     const server = createRuntimeServer({
       environment: config.environment,
       api_base_url: config.api_base_url,
       public_origin: config.public_origin,
       context,
+      club_agent_capabilities: releasedAgentCapabilities,
       domain_state_store: stateStore,
       release_scope: config.release_scope,
     });
@@ -344,6 +358,9 @@ export function createMcpDeploymentCandidate(
     auth_base_url: config.auth_base_url,
     internal_api_key: config.internal_api_key,
   });
+  const agentCapabilities = new HttpAgentCapabilityResolver({
+    api_base_url: config.api_base_url,
+  });
   return new McpHttpServer({
     environment: config.environment,
     public_origin: config.public_origin,
@@ -363,7 +380,11 @@ export function createMcpDeploymentCandidate(
       config.environment,
       config.release_scope,
     ),
-    server_factory: runtimeServerFactory(config, domainStateStore),
+    server_factory: runtimeServerFactory(
+      config,
+      domainStateStore,
+      agentCapabilities,
+    ),
     readiness_dependencies: runtimeReadiness({
       config,
       registrations,

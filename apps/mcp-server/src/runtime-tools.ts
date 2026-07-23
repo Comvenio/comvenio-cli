@@ -18,7 +18,10 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
-import type { StatelessTransportContext } from "./http/types.ts";
+import type {
+  AgentCapabilityProjection,
+  StatelessTransportContext,
+} from "./http/types.ts";
 import {
   fullDomainProtectedToolDescriptors,
   fullDomainReviewToolSummaries,
@@ -238,6 +241,15 @@ export interface PublishedRuntimeToolContract {
 function includesClubAgent(releaseScope: ConnectorReleaseScope): boolean {
   return releaseScope === "club_agent_bridge_v1"
     || releaseScope === "full_connector_v1";
+}
+
+function clubAgentBridgeReleased(
+  capabilities: readonly AgentCapabilityProjection[],
+  environment: OAuthEnvironment,
+): boolean {
+  return capabilities.some((capability) =>
+    environment !== "production"
+    || Boolean(capability.release_id && capability.evidence_bundle_hash));
 }
 
 function publicCandidates(environment: OAuthEnvironment): PublicToolCandidate[] {
@@ -675,6 +687,7 @@ export function createRuntimeServer(input: {
   api_base_url: string;
   public_origin: string;
   context: StatelessTransportContext;
+  club_agent_capabilities?: readonly AgentCapabilityProjection[];
   domain_state_store: DomainStateStore;
   release_scope?: ConnectorReleaseScope;
 }): McpServer {
@@ -683,6 +696,11 @@ export function createRuntimeServer(input: {
   registerEventCalendarWidgetResource(server, input.environment);
   registerNewsWidgetResource(server, input.environment);
   const releaseScope = input.release_scope ?? "personal_productivity_v1";
+  const clubAgentReleased = includesClubAgent(releaseScope)
+    && clubAgentBridgeReleased(
+      input.club_agent_capabilities ?? [],
+      input.environment,
+    );
   if (releaseScope === "full_connector_v1") {
     registerMemberManagementWidgetResource(server, input.environment);
     registerBookingObjectWidgetResource(server, input.environment);
@@ -787,7 +805,7 @@ export function createRuntimeServer(input: {
             required_scopes: TOOL_SCOPES[name as keyof typeof TOOL_SCOPES],
             read_only: name !== "cv_my_task_reminder_write",
           })),
-        ...(includesClubAgent(releaseScope)
+        ...(clubAgentReleased
           ? [{
             name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
             ...CLUB_AGENT_TOOL_COPY,
@@ -837,7 +855,7 @@ export function createRuntimeServer(input: {
           ...domainRuntime.tools,
         ].sort((left, right) => left.name.localeCompare(right.name));
       }
-      if (includesClubAgent(releaseScope)) {
+      if (clubAgentReleased) {
         advertisedSecuritySchemes.set(
           CLUB_AGENT_PROTECTED_TOOL.tool_name,
           clubReadSecuritySchemes,

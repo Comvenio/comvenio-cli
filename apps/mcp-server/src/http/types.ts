@@ -27,6 +27,27 @@ export interface ProviderRequestContext {
   received_at: string;
 }
 
+export interface AgentCapabilityProjection {
+  key: string;
+  capability_id: string;
+  capability_version: number;
+  status: "implemented";
+  source: "capability_gate";
+  channels: string[];
+  advertisable: true;
+  agent_selectable: true;
+  user_invocable: true;
+  externally_exposed: true;
+  release_id: string | null;
+  executor_id: string;
+  executor_version: string;
+  policy_version: string;
+  input_schema_hash: string;
+  output_schema_hash: string;
+  evidence_bundle_id: string;
+  evidence_bundle_hash: string | null;
+}
+
 export interface AuthenticatedConnectorPrincipal {
   subject_id: UUID;
   oauth_grant_id: UUID;
