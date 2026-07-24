@@ -38,7 +38,7 @@ AUTH_SERVICE_BASE_URL=https://api.comvenio.app/auth
 MCP_PROD_ALLOWED_HOSTS=mcp.comvenio.app
 MCP_PROD_ALLOWED_ORIGINS=<exakte freigegebene Provider-Origins>
 INTERNAL_API_KEY=<identischer interner Key wie im auth-service>
-MCP_CIMD_CLIENT_PINS_JSON=<CIMD-Pin mit allowed_scopes ["club.read","task.read"]>
+MCP_CIMD_CLIENT_PINS_JSON=<vollständiger, geprüfter Pin aus integrations/release/cimd-client-allowlist.v1.json>
 MCP_SHARED_STATE_REDIS_URL=<private redis://- oder rediss://-URL der Railway-Redis-Instanz>
 MCP_SHARED_STATE_ENCRYPTION_KEY=<separater base64url-kodierter 32-Byte-Schlüssel>
 MCP_RELEASE_SCOPE=full_connector_v1
@@ -91,7 +91,7 @@ Die Service-Variable atomar auf den kanonischen Resource-Identifier setzen:
 ```text
 MCP_PUBLIC_ORIGIN=https://mcp.comvenio.app
 OAUTH_ISSUER=https://api.comvenio.app/auth
-OAUTH_CIMD_CLIENT_PINS_JSON=<derselbe CIMD-Pin mit allowed_scopes ["club.read","task.read"]>
+OAUTH_CIMD_CLIENT_PINS_JSON=<exakt derselbe vollständige Pin wie im Service comvenio-cli>
 ```
 
 Alle neu ausgestellten Connector-Access-Tokens müssen anschließend `aud=https://mcp.comvenio.app` tragen. Railway-Origin und Edge-Origin dürfen nicht parallel als gültige Audience akzeptiert werden.
@@ -106,16 +106,18 @@ Alle neu ausgestellten Connector-Access-Tokens müssen anschließend `aud=https:
    `MCP_PUBLIC_ORIGIN=https://mcp.comvenio.app` deployen.
 4. Erst nach erfolgreichem Deploy in ChatGPT den Connector-Endpoint auf `https://mcp.comvenio.app/mcp` ändern beziehungsweise neu scannen.
 5. Die vom Portal tatsächlich gelieferte CIMD-Client-ID und den Metadaten-Fingerprint beobachten. Den Pin nur ändern, wenn sich einer dieser Werte wirklich geändert hat.
-6. Im ChatGPT-Connector `club.read` und `task.read` als Standard-Scopes
-   hinterlegen. `task.read` deckt sowohl die eigenen sichtbaren Aufgaben als
-   auch die persönliche Aufgaben-Erinnerung ab; `task.write` bleibt
-   fachlichen Änderungen am gemeinsamen Aufgabenobjekt vorbehalten. Nach
-   einer Scope-Änderung die bestehende Verbindung trennen und erneut
-   autorisieren.
+6. Im ChatGPT-Connector ausschließlich `club.read` als Basis- und
+   Standard-Scope hinterlegen. Die `allowed_scopes` des CIMD-Pins sind nur die
+   serverseitige Obergrenze des bekannten Clients und erteilen keine Rechte.
+   `task.read`, `booking.write` und alle anderen Aktions-Scopes fordert
+   ChatGPT aus den `securitySchemes` des konkret aufgerufenen Tools per
+   OAuth-Step-up an. Nach einer Änderung des Pins oder der Portal-Scopes die
+   bestehende Verbindung trennen und erneut autorisieren.
 7. OAuth Authorization Code + PKCE, Token-Audience, Widerruf, Rechteverlust,
    anonyme Public-Reads, `cv_my_tasks_read` ohne Club-ID,
-   `cv_my_task_reminder_write` ohne Benutzer-/Empfänger-ID sowie beide
-   Widget-Ressourcen über den kanonischen Host prüfen.
+   `cv_my_task_reminder_write` ohne Benutzer-/Empfänger-ID sowie alle fünf
+   Widget-Ressourcen für Event/Kalender, Mitgliederverwaltung,
+   Buchungen, News und Bestätigung über den kanonischen Host prüfen.
 8. Claude verwendet später denselben Endpoint; ein eigener Anthropic-MCP-Server ist nicht vorgesehen.
 
 ## Fehler- und Recovery-Pfad

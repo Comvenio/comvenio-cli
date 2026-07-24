@@ -244,7 +244,7 @@ describe("MCP catalog tenant isolation", () => {
       .toThrow("Verein stimmt nicht");
   });
 
-  test("hides private tools until scope, club and capability are present", () => {
+  test("keeps RBAC-allowed private tools discoverable before scope step-up", () => {
     expect(catalog.listVisible({
       ...visibilityContext(),
       context: { ...context, club_id: null },
@@ -255,7 +255,7 @@ describe("MCP catalog tenant isolation", () => {
     expect(catalog.listVisible({
       ...visibilityContext(),
       context: { ...context, scopes: [] },
-    })).toEqual([]);
+    })).toHaveLength(1);
     expect(catalog.listVisible(visibilityContext())).toHaveLength(1);
   });
 
@@ -342,6 +342,8 @@ function runtimePrincipal(token: string): AuthenticatedConnectorPrincipal {
       ? ["task.read", "task.write"]
       : token === "token-openai-club-only"
         ? ["club.read", "member.read.basic"]
+        : token === "token-openai-booking-read-only"
+          ? ["booking.read", "club.read", "member.read.basic", "object.read"]
         : token === "token-openai-task-read-only"
           ? ["club.read", "member.read.basic", "task.read"]
           : ["club.read", "member.read.basic", "task.read", "task.write"],
@@ -773,6 +775,7 @@ describe("Remote MCP runtime", () => {
   test("full connector exposes the same RBAC-filtered domain tools to OpenAI and Anthropic", async () => {
     let actorTokenSeen = false;
     let deletedMembers = 0;
+    let createdBookings = 0;
     let memberManagementAllowed = true;
     const api = Bun.serve({
       hostname: "127.0.0.1",
@@ -906,6 +909,22 @@ describe("Remote MCP runtime", () => {
           && url.pathname === "/object/object-booking-rules/object/abababab-abab-4bab-8bab-abababababab"
         ) {
           return Response.json([]);
+        }
+        if (
+          request.method === "POST"
+          && url.pathname === "/object/object-reservations/"
+        ) {
+          createdBookings++;
+          const body = await request.json() as Record<string, unknown>;
+          return Response.json({
+            id: "bcbcbcbc-bcbc-4bcb-8bcb-bcbcbcbcbcbc",
+            club_id: clubId,
+            object_id: body.object_id,
+            start_time: body.start_time,
+            end_time: body.end_time,
+            status: body.status,
+            title: body.title,
+          });
         }
         if (
           request.method === "GET"
@@ -1172,6 +1191,124 @@ describe("Remote MCP runtime", () => {
           input: expect.not.objectContaining({ club_id: clubId }),
         }),
       ]));
+      const bookingAction = bookingWidgetResult.result.structuredContent.actions
+        .find((item: { tool_name: string }) =>
+          item.tool_name === domainToolName("cai.booking.03.create"));
+      expect(bookingAction).toMatchObject({
+        label: "Diesen Slot buchen",
+        risk_class: "critical_write",
+        requires_confirmation: true,
+        input: {
+          input: {
+            object_id: "abababab-abab-4bab-8bab-abababababab",
+            start_time: "2026-07-25T10:00:00+02:00",
+            end_time: "2026-07-25T12:00:00+02:00",
+            timezone: "Europe/Berlin",
+            status: "requested",
+          },
+        },
+      });
+      expect(JSON.stringify(bookingAction.input)).not.toContain("club_id");
+      expect(typeof bookingAction.input.idempotency_key).toBe("string");
+      expect(bookingAction.input.idempotency_key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/u,
+      );
+
+      const bookingReadOnlyWidget = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 10601,
+        method: "tools/call",
+        params: {
+          name: BOOKING_OBJECT_WIDGET_TOOL_NAME,
+          arguments: {
+            from: "2026-07-25T10:00:00+02:00",
+            to: "2026-07-25T12:00:00+02:00",
+            timezone: "Europe/Berlin",
+            object_id: "abababab-abab-4bab-8bab-abababababab",
+          },
+        },
+      }, "token-openai-booking-read-only");
+      const bookingReadOnlyModel = (
+        await bookingReadOnlyWidget.json() as any
+      ).result.structuredContent;
+      const bookingStepUpAction = bookingReadOnlyModel.actions.find(
+        (item: { tool_name: string }) =>
+          item.tool_name === domainToolName("cai.booking.03.create"),
+      );
+      expect(bookingStepUpAction).toBeDefined();
+      const bookingStepUpResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 10602,
+        method: "tools/call",
+        params: {
+          name: bookingStepUpAction.tool_name,
+          arguments: bookingStepUpAction.input,
+        },
+      }, "token-openai-booking-read-only");
+      const bookingStepUp = (
+        await bookingStepUpResponse.json() as any
+      ).result;
+      expect(bookingStepUp).toMatchObject({
+        isError: true,
+        structuredContent: {
+          error: "insufficient_scope",
+          required_scopes: ["booking.write"],
+        },
+      });
+      expect(bookingStepUp._meta["mcp/www_authenticate"][0]).toContain(
+        'scope="booking.write"',
+      );
+      expect(createdBookings).toBe(0);
+
+      const bookingPreviewResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 10603,
+        method: "tools/call",
+        params: {
+          name: bookingAction.tool_name,
+          arguments: bookingAction.input,
+        },
+      }, "token-full-openai");
+      const bookingPreview = (
+        await bookingPreviewResponse.json() as any
+      ).result;
+      expect(bookingPreview.isError).not.toBe(true);
+      expect(bookingPreview.structuredContent).toMatchObject({
+        widget: "confirmation",
+        actions: [{
+          tool_name: "action_confirm",
+          input: {
+            idempotency_key: bookingAction.input.idempotency_key,
+          },
+        }],
+      });
+      expect(createdBookings).toBe(0);
+      const bookingConfirmation =
+        bookingPreview._meta["comvenio/confirmation"];
+      const bookingConfirmResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 10604,
+        method: "tools/call",
+        params: {
+          name: "action_confirm",
+          arguments: {
+            ...bookingPreview.structuredContent.actions[0].input,
+            confirmation_token: bookingConfirmation.confirmation_token,
+          },
+        },
+      }, "token-full-openai");
+      const bookingConfirmed = (
+        await bookingConfirmResponse.json() as any
+      ).result;
+      expect(bookingConfirmed.isError).not.toBe(true);
+      expect(bookingConfirmed.structuredContent).toMatchObject({
+        action_id: "cai.booking.03.create",
+        result: {
+          object_id: "abababab-abab-4bab-8bab-abababababab",
+          status: "requested",
+        },
+      });
+      expect(createdBookings).toBe(1);
 
       const hiddenBookingWidget = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -1937,9 +2074,72 @@ describe("Remote MCP runtime", () => {
       }, "token-openai-club-only");
       expect(limitedToolsResponse.status).toBe(200);
       const limitedTools = (await limitedToolsResponse.json() as any)
-        .result.tools.map((tool: { name: string }) => tool.name);
-      expect(limitedTools).not.toContain("cv_my_tasks_read");
-      expect(limitedTools).not.toContain("cv_my_task_reminder_write");
+        .result.tools;
+      const limitedToolNames = limitedTools.map(
+        (tool: { name: string }) => tool.name,
+      );
+      expect(limitedToolNames).toContain("cv_my_tasks_read");
+      expect(limitedToolNames).toContain("cv_my_task_reminder_write");
+      expect(limitedTools.find(
+        (tool: { name: string }) => tool.name === "cv_my_tasks_read",
+      ).securitySchemes).toEqual([{ type: "oauth2", scopes: ["task.read"] }]);
+
+      taskActorTokenSeen = false;
+      reminderActorTokenSeen = false;
+      const taskStepUpResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 260,
+        method: "tools/call",
+        params: {
+          name: "cv_my_tasks_read",
+          arguments: {
+            from: "2026-08-03T00:00:00.000Z",
+            to: "2026-08-10T00:00:00.000Z",
+          },
+        },
+      }, "token-openai-club-only");
+      expect(taskStepUpResponse.status).toBe(200);
+      const taskStepUp = (await taskStepUpResponse.json() as any).result;
+      expect(taskStepUp).toMatchObject({
+        isError: true,
+        structuredContent: {
+          error: "insufficient_scope",
+          required_scopes: ["task.read"],
+        },
+      });
+      expect(taskStepUp._meta["mcp/www_authenticate"][0]).toContain(
+        'scope="task.read"',
+      );
+      expect(taskActorTokenSeen).toBe(false);
+
+      const reminderStepUpResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 2601,
+        method: "tools/call",
+        params: {
+          name: "cv_my_task_reminder_write",
+          arguments: {
+            operation: "set",
+            task_id: openTaskId,
+            reminder_at: reminderAt,
+          },
+        },
+      }, "token-openai-club-only");
+      expect(reminderStepUpResponse.status).toBe(200);
+      const reminderStepUp = (
+        await reminderStepUpResponse.json() as any
+      ).result;
+      expect(reminderStepUp).toMatchObject({
+        isError: true,
+        structuredContent: {
+          error: "insufficient_scope",
+          required_scopes: ["task.read"],
+        },
+      });
+      expect(reminderStepUp._meta["mcp/www_authenticate"][0]).toContain(
+        'scope="task.read"',
+      );
+      expect(reminderActorTokenSeen).toBe(false);
 
       const limitedSchemaResponse = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -1953,11 +2153,47 @@ describe("Remote MCP runtime", () => {
       expect(limitedSchemaResponse.status).toBe(200);
       const limitedSchemaTools = (
         await limitedSchemaResponse.json() as any
-      ).result.structuredContent.tools.map(
-        (tool: { name: string }) => tool.name,
-      );
-      expect(limitedSchemaTools).not.toContain("cv_my_tasks_read");
-      expect(limitedSchemaTools).not.toContain("cv_my_task_reminder_write");
+      ).result.structuredContent.tools;
+      expect(limitedSchemaTools.find(
+        (tool: { name: string }) => tool.name === "cv_my_tasks_read",
+      )).toMatchObject({
+        required_scopes: ["task.read"],
+        scope_granted: false,
+      });
+      expect(limitedSchemaTools.find(
+        (tool: { name: string }) => tool.name === "cv_my_task_reminder_write",
+      )).toMatchObject({
+        required_scopes: ["task.read"],
+        scope_granted: false,
+      });
+
+      const permissionsResponse = await postMcp(baseUrl, {
+        jsonrpc: "2.0",
+        id: 2611,
+        method: "tools/call",
+        params: {
+          name: "cv_permissions_explain_read",
+          arguments: {},
+        },
+      }, "token-openai-club-only");
+      expect(permissionsResponse.status).toBe(200);
+      const permissions = (
+        await permissionsResponse.json() as any
+      ).result.structuredContent;
+      expect(permissions.allowed_capabilities).toBeUndefined();
+      expect(permissions).toMatchObject({
+        backend_permissions: {
+          allowed: expect.any(Array),
+          denied: expect.any(Array),
+        },
+        granted_scopes: ["club.read", "member.read.basic"],
+      });
+      expect(permissions.available_actions.find(
+        (tool: { name: string }) => tool.name === "cv_my_tasks_read",
+      )).toMatchObject({
+        required_scopes: ["task.read"],
+        scope_granted: false,
+      });
 
       const noClubToolsResponse = await postMcp(baseUrl, {
         jsonrpc: "2.0",
@@ -2393,7 +2629,7 @@ describe("K8 event and plan tenant/RBAC isolation", () => {
     };
   }
 
-  test("TC-04: private calendar reads require event.read and view_events", () => {
+  test("TC-04: private calendar reads require RBAC and advertise event.read step-up", () => {
     const eventContext: RequestContext = { ...context, scopes: ["event.read"] };
     const allowed = createK8ToolSets({ client: adapterClient(async () => []) }).event;
     expect(allowed.listVisible({
@@ -2407,7 +2643,7 @@ describe("K8 event and plan tenant/RBAC isolation", () => {
     expect(allowed.listVisible({
       context: { ...eventContext, scopes: [] },
       capability_snapshot: { ...capabilitySnapshot, permissions: { view_events: true } },
-    }).map((definition) => definition.action_id)).not.toContain("cai.event.01.list");
+    }).map((definition) => definition.action_id)).toContain("cai.event.01.list");
   });
 
   test("TC-04: a backend RBAC denial is rechecked, recorded and normalized", async () => {
@@ -3280,6 +3516,8 @@ describe("K16 event calendar widget tenant and runtime isolation", () => {
 
       const asset = await fetch(`${baseUrl}${EVENT_CALENDAR_WIDGET_ASSET_PATH}`);
       expect(asset.status).toBe(200);
+      expect(asset.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+      expect(asset.headers.get("access-control-allow-origin")).toBe("*");
       expect(await asset.text()).toBe(EVENT_CALENDAR_WIDGET_CLIENT);
       expect(asset.headers.get("cache-control")).toContain("immutable");
       expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
@@ -3403,6 +3641,8 @@ describe("K17 member management widget tenant and runtime isolation", () => {
       expect(resource.result.contents[0].text).not.toContain(memberId);
       const asset = await fetch(`${baseUrl}${MEMBER_MANAGEMENT_WIDGET_ASSET_PATH}`);
       expect(asset.status).toBe(200);
+      expect(asset.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+      expect(asset.headers.get("access-control-allow-origin")).toBe("*");
       expect(await asset.text()).toBe(MEMBER_MANAGEMENT_WIDGET_CLIENT);
       expect(await fetch(`${baseUrl}/widgets/member-management/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
     } finally {
@@ -3422,8 +3662,18 @@ describe("K18 booking object widget tenant and runtime isolation", () => {
   const action = {
     action_id: "booking.create",
     label: "Reservierung vorbereiten",
-    tool_name: "cv_booking_create",
-    input: { object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    tool_name: "cv_booking_03_create",
+    input: {
+      input: {
+        object_id: objectId,
+        start_time: range.from,
+        end_time: range.to,
+        timezone: "Europe/Berlin",
+        status: "requested",
+        title: "Buchung: Tennisplatz 1",
+      },
+      idempotency_key: "92929292-9292-4292-8292-929292929293",
+    },
     visibility: "visible" as const,
     enabled: true,
     risk_class: "critical_write" as const,
@@ -3466,7 +3716,9 @@ describe("K18 booking object widget tenant and runtime isolation", () => {
     }))).toThrow();
     expect(new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([])).project(bookingInput()).actions).toEqual([]);
     expect(() => projector.project(bookingInput({ context: { ...bookingContext, scopes: ["object.read", "booking.read"] } }))).not.toThrow();
-    expect(projector.project(bookingInput({ context: { ...bookingContext, scopes: ["object.read", "booking.read"] } })).actions).toEqual([]);
+    expect(projector.project(bookingInput({
+      context: { ...bookingContext, scopes: ["object.read", "booking.read"] },
+    })).actions).toHaveLength(1);
   });
 
   test("TC-01/TC-06: booking MCP resource and immutable asset carry no tenant data", async () => {
@@ -3493,6 +3745,8 @@ describe("K18 booking object widget tenant and runtime isolation", () => {
       expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(BOOKING_OBJECT_WIDGET_RESOURCE_URI);
       const asset = await fetch(`${baseUrl}${BOOKING_OBJECT_WIDGET_ASSET_PATH}`);
       expect(asset.status).toBe(200);
+      expect(asset.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+      expect(asset.headers.get("access-control-allow-origin")).toBe("*");
       expect(await asset.text()).toBe(BOOKING_OBJECT_WIDGET_CLIENT);
       expect(asset.headers.get("cache-control")).toContain("immutable");
       expect(await fetch(`${baseUrl}/widgets/booking-object/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
@@ -3570,6 +3824,8 @@ describe("K19 news widget tenant and runtime isolation", () => {
       expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(NEWS_WIDGET_RESOURCE_URI);
       const asset = await fetch(`${baseUrl}${NEWS_WIDGET_ASSET_PATH}`);
       expect(asset.status).toBe(200);
+      expect(asset.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+      expect(asset.headers.get("access-control-allow-origin")).toBe("*");
       expect(await asset.text()).toBe(NEWS_WIDGET_CLIENT);
       expect(asset.headers.get("x-content-type-options")).toBe("nosniff");
       expect(await fetch(`${baseUrl}/widgets/news/assets/arbitrary.js`).then((response) => response.status)).toBe(404);
@@ -3697,6 +3953,8 @@ describe("K20 confirmation widget tenant, RBAC and runtime isolation", () => {
       expect(resource.result.contents[0]._meta.ui.resourceUri).toBe(CONFIRMATION_WIDGET_RESOURCE_URI);
       const asset = await fetch(`${baseUrl}${CONFIRMATION_WIDGET_ASSET_PATH}`);
       expect(asset.status).toBe(200);
+      expect(asset.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
+      expect(asset.headers.get("access-control-allow-origin")).toBe("*");
       expect(await asset.text()).toBe(CONFIRMATION_WIDGET_CLIENT);
       expect(asset.headers.get("cache-control")).toContain("immutable");
       expect(await fetch(`${baseUrl}/widgets/action-confirmation/assets/arbitrary.js`).then((response) => response.status)).toBe(404);

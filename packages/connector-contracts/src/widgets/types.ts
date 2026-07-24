@@ -174,11 +174,46 @@ export interface BookingObjectData extends Record<string, JsonValue> {
   slots: BookingSlot[];
 }
 
+export interface BookingObjectReadActionInput {
+  object_id: UUID;
+  from?: string;
+  to?: string;
+  timezone?: IanaTimeZone;
+  object_type?: string;
+}
+
+export interface BookingObjectReserveInput {
+  object_id: UUID;
+  start_time: string;
+  end_time: string;
+  timezone: IanaTimeZone;
+  status: "requested";
+  title?: string;
+}
+
+export interface BookingObjectReserveActionInput {
+  input: BookingObjectReserveInput;
+  idempotency_key: UUID;
+}
+
+export type BookingObjectActionInput =
+  | BookingObjectReadActionInput
+  | BookingObjectReserveActionInput;
+
+export type BookingObjectActionDescriptor =
+  Omit<ServerActionDescriptor, "input"> & {
+    input: BookingObjectActionInput;
+  };
+
 export interface ObjectSelector { objects: BookingObjectSummary[]; selected_object_id: UUID | null; }
 export interface BookingSlotGrid { slots: BookingSlot[]; timezone: IanaTimeZone; }
 export interface AvailabilityBadge { state: BookingSlot["state"]; label: string; checked_at: string; }
-export interface ReservationActionBar { actions: ServerActionDescriptor[]; }
-export type BookingObjectWidget = WidgetEnvelope<BookingObjectData, "booking_object"> & { club: ClubChip };
+export interface ReservationActionBar { actions: BookingObjectActionDescriptor[]; }
+export type BookingObjectWidget =
+  Omit<WidgetEnvelope<BookingObjectData, "booking_object">, "actions"> & {
+    club: ClubChip;
+    actions: BookingObjectActionDescriptor[];
+  };
 
 export type BookingObjectPhase =
   | "loading"

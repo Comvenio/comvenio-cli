@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import type { CimdClientPin } from "@comvenio/auth";
+import { OAUTH_SCOPE_VALUES } from "@comvenio/connector-contracts";
 
 import {
   createMcpDeploymentCandidate,
@@ -57,7 +59,7 @@ describe("production MCP process bootstrap", () => {
   });
 
   test("derives a strict production host allowlist and Railway port", () => {
-    expect(readMcpProcessConfig({
+    const config = readMcpProcessConfig({
       PORT: "8080",
       RAILWAY_PUBLIC_DOMAIN: "comvenio-cli-production.up.railway.app",
       MCP_PUBLIC_ORIGIN: "https://mcp.comvenio.app",
@@ -68,7 +70,18 @@ describe("production MCP process bootstrap", () => {
       INTERNAL_API_KEY: "test-internal-key",
       MCP_PROD_ALLOWED_HOSTS: "mcp-review.comvenio.app",
       MCP_PROD_ALLOWED_ORIGINS: "https://chatgpt.com,https://claude.ai",
-    })).toEqual({
+    });
+    const {
+      cimd_client_pins: rawClientPins,
+      ...processConfig
+    } = config;
+    const clientPins = rawClientPins as {
+      contract_version: "1.0.0";
+      release_state: string;
+      pins: CimdClientPin[];
+    };
+
+    expect(processConfig).toEqual({
       environment: "production",
       host: "0.0.0.0",
       port: 8080,
@@ -83,17 +96,6 @@ describe("production MCP process bootstrap", () => {
       release_scope: "full_connector_v1",
       shared_state_encryption_key: sharedStateEncryptionKey,
       shared_state_redis_url: "rediss://redis.example.test:6380/0",
-      cimd_client_pins: expect.objectContaining({
-        contract_version: "1.0.0",
-        release_state: "BLOCKED",
-        pins: [
-          expect.objectContaining({
-            provider: "openai",
-            enabled: true,
-            allowed_scopes: ["club.read", "task.read"],
-          }),
-        ],
-      }),
       allowed_hosts: [
         "mcp.comvenio.app",
         "comvenio-cli-production.up.railway.app",
@@ -102,6 +104,12 @@ describe("production MCP process bootstrap", () => {
       ],
       allowed_origins: ["https://chatgpt.com", "https://claude.ai"],
     });
+    expect(clientPins.contract_version).toBe("1.0.0");
+    expect(clientPins.release_state).toBe("BLOCKED");
+    expect(clientPins.pins).toHaveLength(1);
+    expect(clientPins.pins[0]?.provider).toBe("openai");
+    expect(clientPins.pins[0]?.enabled).toBe(true);
+    expect(clientPins.pins[0]?.allowed_scopes).toEqual([...OAUTH_SCOPE_VALUES]);
   });
 
   test("rejects invalid ports and duplicate allowlist entries", () => {

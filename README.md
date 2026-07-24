@@ -89,11 +89,12 @@ autoritativ. Der Log-Service ist kein MCP-Upstream.
 Persönliche Aufgaben und das Setzen oder Löschen der eigenen
 Aufgaben-Erinnerung benötigen nur den minimalen OAuth-Scope `task.read`.
 `task.write` bleibt fachlichen Änderungen am gemeinsamen Aufgabenobjekt
-vorbehalten. Fehlt `task.read`
-bei einer bestehenden Verbindung, wird das betroffene Tool nicht angeboten;
-nach erneuter Autorisierung mit dem benötigten Scope wird es sichtbar. Ein
-Scope-Verlust während eines bereits begonnenen Aufrufs liefert zusätzlich eine
-standardisierte `insufficient_scope`-Challenge. Der kurzlebige
+vorbehalten. Fehlt `task.read` bei einer bestehenden Verbindung, bleibt das
+RBAC-freigegebene Tool auffindbar und löst beim ersten Aufruf eine
+standardisierte `insufficient_scope`-Challenge für den OAuth-Step-up aus. Nach
+der Zustimmung setzt ChatGPT denselben Vorgang ohne manuelle Scope-Pflege fort.
+Ein Scope-Verlust während eines bereits begonnenen Aufrufs liefert dieselbe
+Challenge erneut. Der kurzlebige
 Backend-Actor-Token wird an den `task-service` weitergereicht; dessen
 Mitgliedschafts- und RBAC-Prüfung bleibt verbindlich. Der Automation-Service
 übernimmt Verein und Abteilung aus der autorisierten Aufgabe und der
@@ -126,6 +127,14 @@ MCP_SHARED_STATE_REDIS_URL=<Railway-Referenz auf Redis-Data.REDIS_URL>
 MCP_SHARED_STATE_ENCRYPTION_KEY=<separater, ungepaddeter 32-Byte-Base64URL-Schlüssel>
 MCP_RELEASE_SCOPE=full_connector_v1
 ```
+
+`MCP_CIMD_CLIENT_PINS_JSON.allowed_scopes` ist die maximale serverseitige
+Scope-Allowlist des gepinnten Clients, nicht die beim Login automatisch
+erteilte Auswahl. Für ChatGPT bleiben Basis- und Standard-Scope
+`club.read`; weitere Scopes werden aktionsbezogen aus den Tool-
+`securitySchemes` per OAuth-Step-up angefordert. Derselbe vollständige Pin
+muss im Railway-Service `auth-service` als `OAUTH_CIMD_CLIENT_PINS_JSON`
+gesetzt sein.
 
 Die letzten drei Variablen sind ein verpflichtendes Deployment-Gate des
 produktiven Shared-State- und Release-Scope-Vertrags. Sie werden unter

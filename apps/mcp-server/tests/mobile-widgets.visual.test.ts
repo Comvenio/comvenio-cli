@@ -358,6 +358,9 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
       expect(css).toContain("@media");
       expect(css).toContain("prefers-reduced-motion");
       expect(client).toMatch(/aria-|role/u);
+      expect(client).toContain('MCP_APPS_PROTOCOL_VERSION="2026-01-26"');
+      expect(client).toContain('"ui/notifications/initialized"');
+      expect(client).toContain("handleMcpAppsBridgeMessage");
     }
   });
 

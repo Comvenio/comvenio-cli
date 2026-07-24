@@ -1273,7 +1273,15 @@ describe("K12 homepage, schema, verify, data and news adapter contract", () => {
     expect(sets.data.listVisible(newsManager).map((definition) => definition.action_id)).not.toContain("cai.data.27.folder_right_add");
     const rightsManager = { context: k8Context(["files.read", "files.write"]), capability_snapshot: k8Capability({ set_rights_files: true }) };
     expect(sets.data.listVisible(rightsManager).map((definition) => definition.action_id)).toContain("cai.data.27.folder_right_add");
-    expect(sets.news.listVisible(rightsManager)).toHaveLength(0);
+    const visibleNews = sets.news.listVisible(rightsManager);
+    expect(visibleNews.map((definition) => definition.action_id)).toEqual([
+      "cai.news.01.list",
+      "cai.news.02.show",
+    ]);
+    expect(visibleNews.flatMap((definition) => Object.keys(definition.operations))).toEqual([
+      "public",
+      "public",
+    ]);
   });
 
   test("TC-06: schemas exclude logs, local paths, free HTML scripts and SSRF targets", () => {

@@ -6,6 +6,15 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
 
 - Universeller MCP-Endpunkt: `https://mcp.comvenio.app/mcp`
 - OAuth-Metadaten: `https://mcp.comvenio.app/.well-known/oauth-protected-resource`
+- ChatGPT-Basis-Scope: `club.read`
+- ChatGPT-Standard-Scope: `club.read`; alle fachlichen Scopes werden aus den
+  `securitySchemes` der tatsächlich aufgerufenen Tools per OAuth-Step-up
+  angefordert. `task.read` wird deshalb nicht dauerhaft manuell eingetragen.
+- Die Railway-Variablen `MCP_CIMD_CLIENT_PINS_JSON` im Service
+  `comvenio-cli` und `OAUTH_CIMD_CLIENT_PINS_JSON` im Service `auth-service`
+  enthalten dagegen dieselbe vollständige `allowed_scopes`-Obergrenze aus
+  `integrations/release/cimd-client-allowlist.v1.json`. Diese Allowlist
+  gewährt keine Scopes ohne Consent.
 - Zwei Konten im Reviewverein: `member` und `manager`
 - Beide Konten sind ohne MFA, SMS-, E-Mail- oder sonstige Nachprüfung nutzbar.
 - Zugangsdaten stehen ausschließlich im verschlüsselten Submission-Secret; dieses Repository enthält keine Zugangsdaten.
@@ -16,15 +25,21 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
 2. Fordere die Erklärung der eigenen Rechte oder sichtbaren Aktionen an. ChatGPT muss OAuth Authorization Code mit PKCE S256 starten.
 3. Wähle den Reviewverein explizit. Private Tools dürfen vor der eindeutigen Vereinsbindung nicht erscheinen.
 4. Frage nach den öffentlichen Terminen „meines Vereins“. ChatGPT muss `cv_whoami_read` ohne Eingabe und danach `public_events` mit der gebundenen `club_id` aufrufen, ohne Domain, Slug oder Club-ID nachzufragen.
-5. Frage „Welche offenen Aufgaben habe ich diese Woche?“. ChatGPT muss `cv_my_tasks_read` direkt mit Zeitgrenzen aufrufen; Verein, Domain, Club-ID und Mitglieds-ID dürfen nicht nachgefragt oder als Toolargument gesendet werden. Der Grant benötigt `task.read`.
+5. Frage „Welche offenen Aufgaben habe ich diese Woche?“. ChatGPT muss
+   `cv_my_tasks_read` direkt mit Zeitgrenzen aufrufen; Verein, Domain, Club-ID
+   und Mitglieds-ID dürfen nicht nachgefragt oder als Toolargument gesendet
+   werden. Fehlt `task.read`, muss der erste Aufruf automatisch eine
+   `insufficient_scope`-Challenge auslösen. Nach Zustimmung wiederholt ChatGPT
+   denselben Aufruf mit dem erweiterten Grant.
 6. Nutze das `member`-Konto. Es dürfen nur die eigenen zugewiesenen Aufgaben im Zeitfenster erscheinen; Verwaltungsaktionen müssen in Tool-Liste und Widgets vollständig verborgen bleiben.
 7. Bitte um „Erinnere mich morgen um 18 Uhr an meine erste offene Aufgabe“.
    ChatGPT muss `cv_my_task_reminder_write` mit `task.read` verwenden.
    `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
    Das Toolargument darf weder `club_id` noch `user_id`,
    `member_id` oder eine Empfängerliste enthalten. Nur das verbundene
-   Reviewkonto darf die Benachrichtigung erhalten. Ohne `task.read` muss das
-   Tool vollständig verborgen bleiben.
+   Reviewkonto darf die Benachrichtigung erhalten. Ohne `task.read` bleibt das
+   Tool auffindbar, darf aber vor erfolgreichem OAuth-Step-up keinen
+   Automation-Service-Aufruf ausführen.
 8. Lösche dieselbe Erinnerung über dieselbe Task-ID wieder. Die Toolargumente
    dürfen keine Reminder-ID oder fremde Identität enthalten.
 9. Entziehe im Backend testweise eine Berechtigung und wiederhole die Rechteabfrage. Der aktuelle Backend-RBAC-Recheck muss sicher ablehnen und darf keine fremden Details offenlegen.
@@ -35,6 +50,10 @@ Dieses Runbook prüft das öffentliche ChatGPT-Plugin mit enthaltener Comvenio M
     Bestätigungs-Widget jeweils auf ChatGPT Web und Mobile. Fachvertrag und
     erlaubte Aktionen müssen identisch sein; Layout, Fokus und Touchziele
     müssen funktionieren.
+    Wähle im Buchungskalender ein Objekt und einen freien Slot. Der Slot muss
+    „Slot buchen“ anbieten. Fehlt `booking.write`, muss ChatGPT ihn automatisch
+    per OAuth-Step-up nachfordern. Danach muss zuerst die Wirkungsvorschau
+    erscheinen; erst die explizite Bestätigung darf die Buchung erzeugen.
 12. Führe jeden Fall sowie die fünf positiven und drei negativen Beispiele aus `tool-test-plan.json` aus und vergleiche die Antwort mit der benannten synthetischen Fixture.
 13. Starte eine kritische Schreibaktion. ChatGPT muss zuerst die
     Wirkungsvorschau anzeigen. `action_confirm` darf nur Vorschau, Token und

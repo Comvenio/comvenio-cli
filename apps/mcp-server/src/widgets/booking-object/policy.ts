@@ -18,10 +18,11 @@ export class BookingWidgetCapabilityPolicy implements BookingWidgetActionPolicy 
       && context.club_id === snapshot.club_id
       && context.capability_version === snapshot.capability_version;
     const readAllowed = context.scopes.includes("object.read") && context.scopes.includes("booking.read");
-    const writeAllowed = context.scopes.includes("object.read") && context.scopes.includes("booking.write");
     return {
       allowed: bound
-        && (input.descriptor.risk_class === "read" ? readAllowed : writeAllowed)
+        && (input.descriptor.risk_class === "read"
+          ? readAllowed
+          : input.descriptor.risk_class === "critical_write")
         && this.#visibleToolNames.has(input.descriptor.tool_name),
       risk_class: input.descriptor.risk_class,
       requires_confirmation: input.descriptor.risk_class !== "read",
