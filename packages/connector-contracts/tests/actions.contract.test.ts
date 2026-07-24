@@ -105,11 +105,11 @@ describe("Comvenio connector inventory contract", () => {
   const inventory = loadReviewInventory();
   const generatedRoot = resolve(import.meta.dir, "../../tool-catalog/generated");
 
-  test("pins the complete 26/303/560 baseline and eight virtual tools", () => {
+  test("pins the complete 26/303/572 baseline and eight virtual tools", () => {
     expect(inventory.actions.entries).toHaveLength(303);
     expect(new Set(inventory.actions.entries.map((entry) => entry.domain)).size).toBe(26);
-    expect(inventory.routes.routes).toHaveLength(560);
-    expect(new Set(inventory.routes.routes.map((entry) => entry.source_locator)).size).toBe(560);
+    expect(inventory.routes.routes).toHaveLength(572);
+    expect(new Set(inventory.routes.routes.map((entry) => entry.source_locator)).size).toBe(572);
     expect(inventory.provider_contract.virtual_tools).toHaveLength(8);
     expect(inventory.actions.entries.filter((entry) => entry.domain === "schema"))
       .toEqual(expect.arrayContaining([expect.objectContaining({ coverage_status: "core-partial" })]));
@@ -130,7 +130,7 @@ describe("Comvenio connector inventory contract", () => {
       entry.state === "DISCOVERED" && entry.published === false && entry.blockers.length === 5)).toBe(true);
   });
 
-  test("covers all 303 CLI actions by an executable domain adapter or an exact platform replacement", () => {
+  test("covers all 303 legacy actions plus additive procurement by an executable adapter or exact replacement", () => {
     const directActionIds = [
       ...K7_ACTION_IDS,
       ...K8_ACTION_IDS,
@@ -172,15 +172,29 @@ describe("Comvenio connector inventory contract", () => {
       .map((entry) => entry.legacy_action_id)
       .sort();
     const summary = fullDomainCatalogSummary();
+    const directActionIdSet = new Set<string>(directActionIds);
+    const additiveActionIds = directActionIds
+      .filter((actionId) => !candidateActionIds.includes(actionId))
+      .sort();
 
-    expect(directActionIds).toHaveLength(301);
-    expect(new Set(directActionIds).size).toBe(301);
-    expect([...directActionIds].sort()).toEqual(candidateActionIds);
-    expect(Object.keys(definitions).sort()).toEqual(candidateActionIds);
-    expect(Object.keys(schemas).sort()).toEqual(candidateActionIds);
+    expect(directActionIds).toHaveLength(309);
+    expect(new Set(directActionIds).size).toBe(309);
+    expect(additiveActionIds).toEqual([
+      "cai.shopping.procurement.activate",
+      "cai.shopping.procurement.add",
+      "cai.shopping.procurement.list",
+      "cai.shopping.procurement.purchase",
+      "cai.shopping.procurement.template_create",
+      "cai.shopping.procurement.template_deactivate",
+      "cai.shopping.procurement.template_update",
+      "cai.shopping.procurement.templates",
+    ]);
+    expect(candidateActionIds.every((actionId) => directActionIdSet.has(actionId))).toBe(true);
+    expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
+    expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 301,
-      published_domain_actions: 299,
+      discovered_actions: 309,
+      published_domain_actions: 307,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -202,7 +216,9 @@ describe("Comvenio connector inventory contract", () => {
           .reduce((count, operation) => count + operation.backend_routes.length, 0);
       expect(routeCount).toBeGreaterThan(0);
       if (definition.publication_state === "blocked") {
-        expect(FULL_CONNECTOR_REPLACEMENTS).toHaveProperty(actionId);
+        expect(
+          Object.prototype.hasOwnProperty.call(FULL_CONNECTOR_REPLACEMENTS, actionId),
+        ).toBe(true);
       }
     }
 
@@ -212,7 +228,9 @@ describe("Comvenio connector inventory contract", () => {
       ...publishedDirectActionIds,
       ...Object.keys(FULL_CONNECTOR_REPLACEMENTS),
     ]);
-    expect([...coveredActionIds].sort()).toEqual(inventoryActionIds);
+    expect([...coveredActionIds].sort()).toEqual(
+      [...inventoryActionIds, ...additiveActionIds].sort(),
+    );
 
     const reviewScopes = new Map(fullDomainReviewToolSummaries().map((tool) => [
       tool.name,
@@ -983,16 +1001,16 @@ function k11Dependencies(client: ComvenioApiClient): K11ExecutionDependencies {
 }
 
 describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
-  test("TC-01/TC-02: exposes all six entities and exactly 6/5/11/15/2/10 actions", () => {
+  test("TC-01/TC-02: exposes all six entities and exactly 6/5/11/23/2/10 actions", () => {
     expect(K11_RECIPE_ACTION_IDS).toHaveLength(6);
     expect(K11_INGREDIENT_ACTION_IDS).toHaveLength(5);
     expect(K11_INGREDIENT_CATEGORY_ACTION_IDS).toHaveLength(11);
-    expect(K11_SHOPPING_ACTION_IDS).toHaveLength(15);
+    expect(K11_SHOPPING_ACTION_IDS).toHaveLength(23);
     expect(K11_TEMPLATE_ACTION_IDS).toHaveLength(2);
     expect(K11_MENU_ACTION_IDS).toHaveLength(10);
-    expect(K11_ACTION_IDS).toHaveLength(49);
-    expect(Object.keys(K11_ACTION_DEFINITIONS)).toHaveLength(49);
-    expect(Object.keys(K11_ACTION_SCHEMAS)).toHaveLength(49);
+    expect(K11_ACTION_IDS).toHaveLength(57);
+    expect(Object.keys(K11_ACTION_DEFINITIONS)).toHaveLength(57);
+    expect(Object.keys(K11_ACTION_SCHEMAS)).toHaveLength(57);
     const sets = createK11ToolSets(k11Dependencies(k7Client(async () => [])));
     expect({
       recipe: sets.recipe.listDefinitions().length,
@@ -1001,7 +1019,7 @@ describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
       shopping: sets.shopping.listDefinitions().length,
       template: sets.template.listDefinitions().length,
       menu: sets.menu.listDefinitions().length,
-    }).toEqual({ recipe: 6, ingredient: 5, ingredient_category: 11, shopping: 15, template: 2, menu: 10 });
+    }).toEqual({ recipe: 6, ingredient: 5, ingredient_category: 11, shopping: 23, template: 2, menu: 10 });
   });
 
   test("corrects the legacy from-template risk and confirms implicit ingredient creation", () => {
@@ -1100,14 +1118,21 @@ describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
     expect(backendCalls).toBe(0);
   });
 
-  test("permission-filtered discovery separates menu writers from shopping managers", () => {
+  test("permission-filtered discovery separates menu writers from shopping managers while Supply governs procurement", () => {
     const sets = createK11ToolSets(k11Dependencies(k7Client(async () => [])));
     const menuWriter = {
       context: k8Context(["supply.read", "supply.write", "files.export"]),
       capability_snapshot: k8Capability({ create_menus: true, manage_menus: true }),
     };
     expect(sets.menu.listVisible(menuWriter).map((definition) => definition.action_id)).toContain("cai.menu.01.create");
-    expect(sets.shopping.listVisible(menuWriter)).toHaveLength(0);
+    const menuWriterShoppingActions = sets.shopping.listVisible(menuWriter)
+      .map((definition) => definition.action_id);
+    expect(
+      menuWriterShoppingActions.filter((actionId) => !actionId.includes(".procurement.")),
+    ).toHaveLength(0);
+    expect(
+      menuWriterShoppingActions.filter((actionId) => actionId.includes(".procurement.")),
+    ).toHaveLength(8);
 
     const shoppingManager = {
       context: k8Context(["supply.read", "supply.write", "files.export"]),

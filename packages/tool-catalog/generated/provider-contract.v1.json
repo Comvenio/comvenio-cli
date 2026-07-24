@@ -8,7 +8,7 @@
   "operation_source_artifact": "comvenio-cli/packages/tool-catalog/generated/operations.v1.yaml",
   "backend_permission_audit_artifact": "comvenio-cli/packages/tool-catalog/generated/backend-route-permissions.v1.json",
   "current_cli_action_count": 303,
-  "current_cli_callsite_count": 560,
+  "current_cli_callsite_count": 572,
   "expected_virtual_tool_count": 8,
   "generated_domain_tool_count": "determined only from audited OperationDefinition groups",
   "max_tool_name_length": 64,
@@ -212,7 +212,7 @@
     ],
     "required_assertions": [
       "303 legacy workflow entries are covered by one or more audited OperationDefinition entries",
-      "all 560 current ComvenioClient call sites remain traceable as migration inventory",
+      "all 572 current ComvenioClient call sites remain traceable as migration inventory",
       "raw call sites are never compiled directly to runtime tools or action bindings",
       "all tool_name lengths <= 64",
       "no tool contains more than one risk_class",

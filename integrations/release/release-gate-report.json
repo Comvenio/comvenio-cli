@@ -9,7 +9,7 @@
     "published_tool_count": 330,
     "runtime_tool_catalog_sha256": "352a403cb4c1fdba81bf5b26514a7c8dae5f39927778167472dcd7cc57a4f278",
     "planned_action_count": 303,
-    "planned_route_callsite_count": 560,
+    "planned_route_callsite_count": 572,
     "published_runtime_catalog_verified": false,
     "route_trace_tests_passed": false,
     "schema_tests_passed": false,

@@ -73,6 +73,8 @@ describe("production MCP process bootstrap", () => {
       host: "0.0.0.0",
       port: 8080,
       public_origin: "https://mcp.comvenio.app",
+      cli_oauth_client_id: "https://api.comvenio.app/auth/oauth/clients/comvenio-cli",
+      cli_oauth_resource: "https://mcp.comvenio.app/cli",
       edge_shared_secret: "test-only-mcp-edge-secret-32-characters",
       api_base_url: "https://api.comvenio.app",
       auth_base_url: "https://api.comvenio.app/auth",
@@ -192,6 +194,8 @@ describe("production MCP process bootstrap", () => {
       host: "0.0.0.0",
       port: 8080,
       public_origin: "https://mcp.comvenio.app",
+      cli_oauth_client_id: "https://api.comvenio.app/auth/oauth/clients/comvenio-cli",
+      cli_oauth_resource: "https://mcp.comvenio.app/cli",
       edge_shared_secret: "test-only-mcp-edge-secret-32-characters",
       shared_state_encryption_key: sharedStateEncryptionKey,
       shared_state_redis_url: "redis://redis.example.test:6379/0",
@@ -231,6 +235,16 @@ describe("production MCP process bootstrap", () => {
     expect(metadata.status).toBe(200);
     expect(await metadata.json()).toEqual(expect.objectContaining({
       resource: "https://mcp.comvenio.app",
+      authorization_servers: ["https://api.comvenio.app/auth"],
+      resource_documentation: "https://www.comvenio.app/datenschutz",
+    }));
+    const cliMetadata = await fetch(
+      `${base}/.well-known/oauth-protected-resource/cli`,
+      { headers: edgeHeaders },
+    );
+    expect(cliMetadata.status).toBe(200);
+    expect(await cliMetadata.json()).toEqual(expect.objectContaining({
+      resource: "https://mcp.comvenio.app/cli",
       authorization_servers: ["https://api.comvenio.app/auth"],
       resource_documentation: "https://www.comvenio.app/datenschutz",
     }));

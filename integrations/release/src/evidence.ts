@@ -63,7 +63,7 @@ export function buildPendingReleaseEvidence(
     published_tool_count: catalog.tool_count,
     runtime_tool_catalog_sha256: catalog.tool_catalog_sha256,
     planned_action_count: 303,
-    planned_route_callsite_count: 560,
+    planned_route_callsite_count: 572,
     published_runtime_catalog_verified: false,
     route_trace_tests_passed: false,
     schema_tests_passed: false,

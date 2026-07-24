@@ -1,6 +1,7 @@
 import type { CAC } from "cac";
 import { loadState, STATE_FILE } from "../auth.ts";
 import { createClient, HttpError } from "../http.ts";
+import { CliConnectorClient } from "../mcp/client.ts";
 
 type MeResponse = {
   id?: string;
@@ -21,17 +22,25 @@ export function registerWhoamiCommand(cli: CAC): void {
     .command("whoami", "Aktuellen Login anzeigen (Name, Club, Umgebung)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (opts: { json?: boolean }) => {
-      const state = loadState();
-      const client = createClient(state);
+      const state = await loadState();
 
       let user: MeResponse | null = null;
-      try {
-        user = await client.service<MeResponse>("user", "/users/me");
-      } catch (error) {
-        // A cached state file is not proof that the token is still valid. Keep the
-        // offline fallback for transient outages, but never hide auth failures.
-        if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
-          throw error;
+      let connectorIdentity: Record<string, unknown> | null = null;
+      if (state.authMode === "oauth" && state.oauth?.resource) {
+        connectorIdentity = await new CliConnectorClient({
+          endpoint: state.oauth.resource,
+          access_token: state.token,
+        }).whoami();
+      } else {
+        const client = createClient(state);
+        try {
+          user = await client.service<MeResponse>("user", "/users/me");
+        } catch (error) {
+          // A cached state file is not proof that the token is still valid. Keep the
+          // offline fallback for transient outages, but never hide auth failures.
+          if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
+            throw error;
+          }
         }
       }
 
@@ -44,7 +53,16 @@ export function registerWhoamiCommand(cli: CAC): void {
         userId: user?.id ?? state.userId ?? null,
         email: user?.email ?? state.userEmail ?? null,
         name,
-        clubId: state.clubId ?? user?.main_club_id ?? null,
+        clubId: typeof connectorIdentity?.club_id === "string"
+          ? connectorIdentity.club_id
+          : state.clubId ?? user?.main_club_id ?? null,
+        authMode: state.authMode,
+        scopes: Array.isArray(connectorIdentity?.scopes)
+          ? connectorIdentity.scopes
+          : state.oauth?.scopes ?? null,
+        capabilityVersion: typeof connectorIdentity?.capability_version === "string"
+          ? connectorIdentity.capability_version
+          : null,
         environment: state.environment,
         gatewayBaseUrl: state.gatewayBaseUrl,
         stateFile: STATE_FILE,

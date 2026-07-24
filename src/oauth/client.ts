@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 
@@ -8,6 +8,7 @@ import type { OAuthCredentials } from "./credential-store.ts";
 
 export type OAuthRuntime = {
   gatewayBaseUrl: string;
+  connectorBaseUrl: string;
   issuer: string;
   clientId: string;
   resource: string;
@@ -22,26 +23,65 @@ type TokenResponse = {
   scope: string;
 };
 
-type ActorTokenResponse = {
-  access_token: string;
-  token_type: "Bearer";
-  expires_in: number;
-};
-
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1_000;
+const DEFAULT_SCOPES = ["club.read", "role.read.self"] as const satisfies readonly OAuthScope[];
 
-export function oauthRuntime(gatewayBaseUrl: string): OAuthRuntime {
-  const gateway = new URL(gatewayBaseUrl.replace(/\/+$/, ""));
-  if (gateway.protocol !== "https:" && gateway.hostname !== "localhost") {
-    throw new Error("OAuth benötigt ein HTTPS-Gateway oder eine explizite lokale Umgebung.");
+function canonicalHttpsOrigin(value: string, field: string): string {
+  const url = new URL(value.replace(/\/+$/, ""));
+  if (
+    url.protocol !== "https:"
+    || url.username
+    || url.password
+    || (url.pathname !== "/" && url.pathname !== "")
+    || url.search
+    || url.hash
+  ) {
+    throw new Error(`${field} muss ein öffentlicher HTTPS-Origin sein.`);
   }
-  const issuer = `${gateway.origin}/auth`;
+  return url.origin;
+}
+
+function defaultConnectorOrigin(gatewayOrigin: string): string {
+  const gateway = new URL(gatewayOrigin);
+  const hostname = gateway.hostname === "api.comvenio.app"
+    ? "mcp.comvenio.app"
+    : gateway.hostname === "apidev.comvenio.app"
+      ? "mcpdev.comvenio.app"
+      : null;
+  if (!hostname) {
+    throw new Error(
+      "Für ein eigenes API-Gateway muss --connector mit dem MCP-Origin angegeben werden.",
+    );
+  }
+  return `${gateway.protocol}//${hostname}`;
+}
+
+export function oauthRuntime(
+  gatewayBaseUrl: string,
+  connectorBaseUrl?: string,
+  scopes: readonly OAuthScope[] = DEFAULT_SCOPES,
+): OAuthRuntime {
+  const gatewayOrigin = canonicalHttpsOrigin(gatewayBaseUrl, "OAuth-Gateway");
+  const connectorOrigin = canonicalHttpsOrigin(
+    connectorBaseUrl ?? defaultConnectorOrigin(gatewayOrigin),
+    "OAuth-Connector",
+  );
+  if (
+    scopes.length === 0
+    || new Set(scopes).size !== scopes.length
+    || scopes.some((scope) =>
+      !(OAUTH_SCOPE_VALUES as readonly string[]).includes(scope))
+  ) {
+    throw new Error("Die angeforderten OAuth-Scopes sind ungültig.");
+  }
+  const issuer = `${gatewayOrigin}/auth`;
   return {
-    gatewayBaseUrl: gateway.origin,
+    gatewayBaseUrl: gatewayOrigin,
+    connectorBaseUrl: connectorOrigin,
     issuer,
     clientId: `${issuer}/oauth/clients/comvenio-cli`,
-    resource: `${gateway.origin}/cli`,
-    scopes: [...OAUTH_SCOPE_VALUES],
+    resource: `${connectorOrigin}/cli`,
+    scopes: [...scopes],
   };
 }
 
@@ -62,7 +102,11 @@ function openSystemBrowser(url: string): void {
   child.unref();
 }
 
-async function formPost<T>(url: string, body: URLSearchParams, headers: Record<string, string> = {}): Promise<T> {
+async function formPost(
+  url: string,
+  body: URLSearchParams,
+  headers: Record<string, string> = {},
+): Promise<Record<string, unknown>> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -77,7 +121,38 @@ async function formPost<T>(url: string, body: URLSearchParams, headers: Record<s
     const code = typeof payload.error === "string" ? payload.error : `HTTP ${response.status}`;
     throw new Error(`OAuth-Anfrage fehlgeschlagen: ${code}`);
   }
-  return payload as T;
+  return payload;
+}
+
+function tokenResponse(
+  payload: Record<string, unknown>,
+  expectedScopes: readonly OAuthScope[],
+): TokenResponse {
+  if (
+    typeof payload.access_token !== "string"
+    || !payload.access_token
+    || typeof payload.refresh_token !== "string"
+    || !payload.refresh_token
+    || payload.token_type !== "Bearer"
+    || typeof payload.expires_in !== "number"
+    || !Number.isInteger(payload.expires_in)
+    || payload.expires_in < 60
+    || payload.expires_in > 86_400
+    || typeof payload.scope !== "string"
+  ) {
+    throw new Error("Die OAuth-Tokenantwort ist ungültig.");
+  }
+  const actualScopes = payload.scope.split(" ").filter(Boolean);
+  if (
+    actualScopes.length !== expectedScopes.length
+    || new Set(actualScopes).size !== actualScopes.length
+    || actualScopes.some((scope) =>
+      !(OAUTH_SCOPE_VALUES as readonly string[]).includes(scope))
+    || [...actualScopes].sort().join(" ") !== [...expectedScopes].sort().join(" ")
+  ) {
+    throw new Error("Die OAuth-Tokenantwort enthält abweichende Scopes.");
+  }
+  return payload as unknown as TokenResponse;
 }
 
 async function waitForAuthorizationCode(
@@ -95,8 +170,7 @@ async function waitForAuthorizationCode(
     rejectCallback = reject;
   });
   const server = createServer((request, response) => {
-    const host = request.headers.host ?? "";
-    const url = new URL(request.url ?? "/", `http://${host}`);
+    const url = new URL(request.url ?? "/", "http://127.0.0.1");
     if (request.method !== "GET" || url.pathname !== "/oauth/callback") {
       response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
       response.end("Nicht gefunden.");
@@ -110,7 +184,12 @@ async function waitForAuthorizationCode(
     const state = url.searchParams.get("state");
     const error = url.searchParams.get("error");
     const code = url.searchParams.get("code");
-    if (state !== expectedState || error || !code) {
+    if (state !== expectedState) {
+      response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+      response.end("Der OAuth-State stimmt nicht überein.");
+      return;
+    }
+    if (error || !code) {
       settled = true;
       response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
       response.end("Die Comvenio-Verbindung konnte nicht bestätigt werden. Du kannst dieses Fenster schließen.");
@@ -155,7 +234,10 @@ async function waitForAuthorizationCode(
   return {
     redirectUri,
     result: callback.finally(() => clearTimeout(timeout)),
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+    close: () => {
+      if (!server.listening) return Promise.resolve();
+      return new Promise<void>((resolve) => server.close(() => resolve()));
+    },
   };
 }
 
@@ -182,7 +264,7 @@ export async function loginWithOAuth(
   openBrowser(authorizationUrl.toString());
   try {
     const code = await callback.result;
-    const token = await formPost<TokenResponse>(
+    const token = tokenResponse(await formPost(
       `${runtime.issuer}/oauth/token`,
       new URLSearchParams({
         grant_type: "authorization_code",
@@ -192,7 +274,7 @@ export async function loginWithOAuth(
         code_verifier: verifier,
         resource: runtime.resource,
       }),
-    );
+    ), runtime.scopes);
     return {
       accessToken: token.access_token,
       refreshToken: token.refresh_token,
@@ -207,7 +289,7 @@ export async function refreshOAuthCredentials(
   runtime: OAuthRuntime,
   credentials: OAuthCredentials,
 ): Promise<OAuthCredentials> {
-  const token = await formPost<TokenResponse>(
+  const token = tokenResponse(await formPost(
     `${runtime.issuer}/oauth/token`,
     new URLSearchParams({
       grant_type: "refresh_token",
@@ -215,7 +297,7 @@ export async function refreshOAuthCredentials(
       client_id: runtime.clientId,
       resource: runtime.resource,
     }),
-  );
+  ), runtime.scopes);
   return {
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
@@ -223,32 +305,11 @@ export async function refreshOAuthCredentials(
   };
 }
 
-export async function exchangeCliActorToken(
-  runtime: OAuthRuntime,
-  credentials: OAuthCredentials,
-): Promise<OAuthCredentials> {
-  const actor = await formPost<ActorTokenResponse>(
-    `${runtime.issuer}/oauth/actor-token`,
-    new URLSearchParams({
-      token: credentials.accessToken,
-      token_type_hint: "access_token",
-      resource: runtime.resource,
-      client_id: runtime.clientId,
-    }),
-    { "x-request-id": randomUUID() },
-  );
-  return {
-    ...credentials,
-    actorToken: actor.access_token,
-    actorExpiresAt: Date.now() + actor.expires_in * 1_000,
-  };
-}
-
 export async function revokeOAuthCredentials(
   runtime: OAuthRuntime,
   credentials: OAuthCredentials,
 ): Promise<void> {
-  await formPost<Record<string, never>>(
+  await formPost(
     `${runtime.issuer}/oauth/revoke`,
     new URLSearchParams({
       token: credentials.refreshToken,

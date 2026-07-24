@@ -395,7 +395,7 @@ export function registerShoppingCommands(cli: CAC): void {
     .option("--room-id <id>", "Raumfilter für procurement-list/-templates")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: ShoppingCommandOpts) => {
-      const state = loadState();
+      const state = await loadState();
       await handleShoppingOperation({
         action,
         id,

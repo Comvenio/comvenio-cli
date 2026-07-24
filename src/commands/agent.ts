@@ -60,7 +60,7 @@ export function registerAgentCommands(cli: CAC): void {
     )
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (message: string, opts: AgentChatOptions) => {
-      const state = loadState();
+      const state = await loadState();
       const clubId = requireClubId(state, opts.club);
       const client = createClient(state);
       const response = await client.post<ClubAgentChatResponse>(

@@ -82,7 +82,7 @@ export function registerHomepageCommands(cli: CAC): void {
     .option("--open", "preview: die Vorschau-URL im Standard-Browser oeffnen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, opts: Opts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
 

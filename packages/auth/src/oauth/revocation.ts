@@ -70,8 +70,17 @@ export function validateIntrospectionResult(value: unknown): IntrospectionResult
     const clientUrl = new URL(result.client_id);
     if (clientUrl.protocol !== "https:" || clientUrl.username || clientUrl.password) throw new Error();
     const audience = new URL(result.aud as string);
-    if (audience.protocol !== "https:" || audience.username || audience.password
-      || audience.origin !== result.aud || audience.pathname !== "/") throw new Error();
+    const canonicalAudience = audience.pathname === "/"
+      ? audience.origin
+      : audience.toString();
+    if (
+      audience.protocol !== "https:"
+      || audience.username
+      || audience.password
+      || audience.search
+      || audience.hash
+      || canonicalAudience !== result.aud
+    ) throw new Error();
   } catch {
     throw new OAuthContractError("invalid_grant", "Die Introspection-Antwort ist ungültig.");
   }

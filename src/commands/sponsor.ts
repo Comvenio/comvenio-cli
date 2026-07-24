@@ -210,7 +210,7 @@ export function registerSponsorCommands(cli: CAC): void {
     .option("--not-primary", "responsible-update: Hauptverantwortlich explizit entfernen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: SponsorCommandOpts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
 

@@ -302,7 +302,7 @@ export interface VirtualToolContract {
 export interface ProviderToolContract {
   contract_version: "1.0.0";
   current_cli_action_count: 303;
-  current_cli_callsite_count: 560;
+  current_cli_callsite_count: 572;
   expected_virtual_tool_count: 8;
   max_tool_name_length: 64;
   virtual_tools: VirtualToolContract[];
@@ -313,7 +313,7 @@ export interface InventoryManifest {
   generated_at_source_date: string;
   action_count: 303;
   domain_count: 26;
-  route_callsite_count: 560;
+  route_callsite_count: 572;
   virtual_tool_count: 8;
   source_sha256: {
     actions: string;
@@ -329,7 +329,7 @@ export interface BackendPermissionAuditDraft {
   backend_source_hash_sha256: string;
   source_audit_entry_count: number;
   entries: [];
-  unclassified_count: 560;
+  unclassified_count: 572;
   notice: string;
 }
 

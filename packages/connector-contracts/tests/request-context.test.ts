@@ -43,10 +43,16 @@ describe("RequestContext contract", () => {
 
   test("normalizes the CLI surface without an AI provider", () => {
     const normalized = normalizeRequestContext(cliContext);
+    const oauth = normalizeRequestContext({
+      ...cliContext,
+      oauth_grant_id: "44444444-4444-4444-8444-444444444444",
+    });
     expect(normalized.surface).toBe("cli");
     expect(normalized.provider).toBeNull();
     expect(normalized.club_id).toBe(cliContext.club_id);
     expect(normalized.scopes).toEqual(["club.read", "public.read"]);
+    expect(oauth.oauth_grant_id).toBe("44444444-4444-4444-8444-444444444444");
+    expect(oauth.provider).toBeNull();
   });
 
   test("accepts MCP contexts with a supported or not-yet-known provider", () => {

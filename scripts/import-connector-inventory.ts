@@ -115,14 +115,14 @@ assert(integer(actionsSource.value.domain_count, "actions.domain_count") === 26,
   "Action-Inventar muss exakt 26 Domains deklarieren.");
 assert(new Set(actions.map((entry, index) => string(entry.domain, `actions[${index}].domain`))).size === 26,
   "Action-Inventar muss exakt 26 tatsächliche Domains enthalten.");
-assert(integer(routesSource.value.entry_count, "routes.entry_count") === 560 && routes.length === 560,
-  "Route-Inventar muss exakt 560 Callsites enthalten.");
+assert(integer(routesSource.value.entry_count, "routes.entry_count") === 572 && routes.length === 572,
+  "Route-Inventar muss exakt 572 Callsites enthalten.");
 assert(integer(providerSource.value.expected_virtual_tool_count, "provider.expected_virtual_tool_count") === 8
   && virtualTools.length === 8, "Provider-Vertrag muss exakt acht virtuelle Tools enthalten.");
 assert(integer(providerSource.value.current_cli_action_count, "provider.current_cli_action_count") === 303,
   "Provider-Vertrag referenziert nicht die 303-Actions-Baseline.");
-assert(integer(providerSource.value.current_cli_callsite_count, "provider.current_cli_callsite_count") === 560,
-  "Provider-Vertrag referenziert nicht die 560-Callsite-Baseline.");
+assert(integer(providerSource.value.current_cli_callsite_count, "provider.current_cli_callsite_count") === 572,
+  "Provider-Vertrag referenziert nicht die 572-Callsite-Baseline.");
 uniqueStrings(actions.map((entry, index) => string(entry.id, `actions[${index}].id`)), "Action-IDs");
 uniqueStrings(routes.map((entry, index) => string(entry.id, `routes[${index}].id`)), "Route-IDs");
 uniqueStrings(routes.map((entry, index) => string(entry.source_locator, `routes[${index}].source_locator`)),
@@ -201,7 +201,7 @@ writeOrCheck(join(generatedRoot, "backend-route-permissions.v1.json"), {
   backend_source_hash_sha256: sha256(backendAuditRaw),
   source_audit_entry_count: backendRoutes.length,
   entries: [],
-  unclassified_count: 560,
+  unclassified_count: 572,
   notice: "Migrationsinventar, keine Runtime-Autorisierungsquelle. Erst exakte, getestete PermissionPolicy-Einträge reduzieren unclassified_count.",
 }, check);
 writeOrCheck(join(generatedRoot, "inventory-manifest.v1.json"), {
@@ -209,7 +209,7 @@ writeOrCheck(join(generatedRoot, "inventory-manifest.v1.json"), {
   generated_at_source_date: string(routesSource.value.verified_at, "routes.verified_at"),
   action_count: 303,
   domain_count: 26,
-  route_callsite_count: 560,
+  route_callsite_count: 572,
   virtual_tool_count: 8,
   source_sha256: {
     actions: sha256(actionsSource.raw),
@@ -220,5 +220,5 @@ writeOrCheck(join(generatedRoot, "inventory-manifest.v1.json"), {
 }, check);
 
 console.log(check
-  ? "Connector-Inventar ist aktuell (26 Domains, 303 Actions, 560 Callsites, 8 virtuelle Tools)."
-  : "Connector-Inventar generiert (26 Domains, 303 Actions, 560 Callsites, 8 virtuelle Tools).");
+  ? "Connector-Inventar ist aktuell (26 Domains, 303 Actions, 572 Callsites, 8 virtuelle Tools)."
+  : "Connector-Inventar generiert (26 Domains, 303 Actions, 572 Callsites, 8 virtuelle Tools).");

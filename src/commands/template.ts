@@ -73,7 +73,7 @@ export function registerTemplateCommands(cli: CAC): void {
     .option("--limit <n>", "Max. Treffer (1-500, Default 100)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (kind: string, id: string | undefined, opts: Opts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
 
       const q = new URLSearchParams();

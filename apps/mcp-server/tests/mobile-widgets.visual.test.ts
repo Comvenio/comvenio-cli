@@ -25,6 +25,7 @@ import {
   buildSupportRunbook,
   type ProviderGateResult,
   type ConnectorEvalToolResult,
+  type ReleaseArtifactSet,
   type ReleaseEvidence,
   type ResponseQualityResult,
   type ReleaseSignature,
@@ -188,7 +189,7 @@ function readyEvidence(): ReleaseEvidence {
     published_tool_count: runtimeCatalog.tool_count,
     runtime_tool_catalog_sha256: runtimeCatalog.tool_catalog_sha256,
     planned_action_count: 303,
-    planned_route_callsite_count: 560,
+    planned_route_callsite_count: 572,
     published_runtime_catalog_verified: true,
     route_trace_tests_passed: true,
     schema_tests_passed: true,
@@ -251,7 +252,7 @@ function release(input: { pilot?: ReturnType<typeof passedPilot>; findings?: Sec
 describe("K23 Connector quality, privacy, pilot and release gates", () => {
   test("TC-01/TC-02: all seven versioned entities are built, statically stored and schema-valid", () => {
     const pending = buildPendingReleaseArtifacts(releaseScope);
-    const stored = {
+    const stored: ReleaseArtifactSet = {
       eval: CONNECTOR_EVAL_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "connector-eval-suite.json"))),
       response_quality: RESPONSE_QUALITY_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "response-quality-suite.json"))),
       tenant_isolation: TENANT_ISOLATION_REPORT_SCHEMA.parse(json(resolve(releaseRoot, "tenant-isolation-suite.json"))),
@@ -275,7 +276,7 @@ describe("K23 Connector quality, privacy, pilot and release gates", () => {
     const inventory = loadReviewInventory();
     const report = testedConnectorEvalReport();
     expect(inventory.actions.entries).toHaveLength(303);
-    expect(inventory.routes.routes).toHaveLength(560);
+    expect(inventory.routes.routes).toHaveLength(572);
     expect(inventory.migration.discovered_candidates.length + inventory.migration.oauth_lifecycle_replacements.length).toBe(303);
     expect(inventory.migration.discovered_candidates.every((candidate) => candidate.published === false && candidate.blockers.length > 0)).toBe(true);
     expect(report).toMatchObject({

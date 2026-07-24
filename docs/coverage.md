@@ -1,10 +1,10 @@
 # CLI-Coverage
 
-Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-23.
+Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-24.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
-> Workflow-Registry für die 27 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
+> Workflow-Registry für die 28 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
 
 ## Statusmodell
 
@@ -16,9 +16,10 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 | Top-Level-Command | Status | Vorhandene Actions | Wichtige belegte Lücke |
 |---|---|---|---|
-| `login` | `covered` | login --token | Keine bekannte Kernlücke. |
+| `login` | `covered` | login<br>login --device-token | Keine bekannte Kernlücke. |
 | `logout` | `covered` | logout | Keine bekannte Kernlücke. |
 | `whoami` | `covered` | whoami | Keine bekannte Kernlücke. |
+| `action` | `covered` | list<br>call<br>confirm | Keine bekannte Kernlücke. |
 | `club` | `covered` | info<br>update<br>settings<br>settings-update<br>design<br>department-list<br>department-show<br>department-add<br>department-update<br>department-delete | Keine bekannte Kernlücke. |
 | `member` | `covered` | list<br>show<br>add<br>update<br>remove<br>import<br>family-list<br>family-show<br>family-add<br>family-update<br>family-delete<br>status-list<br>status-show<br>status-add<br>status-update<br>status-delete<br>period-list<br>period-show<br>period-add<br>period-update<br>period-delete | Keine bekannte Kernlücke. |
 | `team` | `covered` | list<br>show<br>create<br>update<br>delete<br>member list|add|update|remove<br>resource list|add|update|remove | Keine bekannte Kernlücke. |
@@ -54,7 +55,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## Nicht erschlossene Themengebiete
 
-> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "26 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
+> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "28 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
 
 - `gap`: Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.
 - `partial-gap`: Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.
@@ -121,12 +122,13 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## login
 
 - Status: `covered`
-- Actions: `login --token`
+- Actions: `login`, `login --device-token`
 - Wichtige Lücken:
   - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:
-  - Kein Passwort-Login und kein Token-Decoding; das opake cvn_-Token wird vor dem Speichern serverseitig geprüft.
-- Geprüfte Quellen: `src/index.ts`, `src/auth.ts`
+  - Kein Passwort wird im CLI erfasst; die Anmeldung erfolgt auf der Comvenio-OAuth-Seite.
+  - Das opake cvn_-Token bleibt nur als expliziter Fallback und wird nicht dekodiert.
+- Geprüfte Quellen: `src/index.ts`, `src/auth.ts`, `src/oauth/client.ts`, `src/oauth/credential-store.ts`
 - Weiterführende Doku: `docs/auth-club.md`
 
 ## logout
@@ -136,8 +138,8 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 - Wichtige Lücken:
   - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:
-  - Logout entfernt den lokalen CLI-State; das Device-Token wird dadurch nicht serverseitig widerrufen.
-- Geprüfte Quellen: `src/index.ts`, `src/auth.ts`
+  - OAuth-Grants werden widerrufen; ein explizit verwendetes Device-Token wird dadurch nicht serverseitig widerrufen.
+- Geprüfte Quellen: `src/index.ts`, `src/auth.ts`, `src/oauth/client.ts`, `src/oauth/credential-store.ts`
 - Weiterführende Doku: `docs/auth-club.md`
 
 ## whoami
@@ -149,6 +151,18 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 - Bewusste Ausschlüsse:
   - Bei vorübergehenden Ausfällen dürfen gecachte Identitätsfelder erscheinen; Authentifizierungs- und Autorisierungsfehler werden nie verborgen.
 - Geprüfte Quellen: `src/commands/whoami.ts`
+- Weiterführende Doku: `docs/auth-club.md`
+
+## action
+
+- Status: `covered`
+- Actions: `list`, `call`, `confirm`
+- Wichtige Lücken:
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
+- Bewusste Ausschlüsse:
+  - Verein, Subject, Scopes und Bestätigungsnachweise können nicht als freie Fachparameter überschrieben werden.
+  - Menschenfreundliche Legacy-Aliase bleiben während der Migration dem expliziten Device-Token-Kompatibilitätsmodus vorbehalten.
+- Geprüfte Quellen: `src/commands/action.ts`, `src/mcp/client.ts`, `apps/mcp-server/src/domain-runtime.ts`
 - Weiterführende Doku: `docs/auth-club.md`
 
 ## club
@@ -417,6 +431,6 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
   - Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions.
 - Bewusste Ausschlüsse:
   - Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.
-  - Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem Device-Token geprüft.
+  - Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft.
 - Geprüfte Quellen: `src/commands/agent.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
 - Weiterführende Doku: `docs/club-agent.md`

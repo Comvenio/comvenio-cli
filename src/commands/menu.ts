@@ -104,7 +104,7 @@ export function registerMenuCommands(cli: CAC): void {
     .option("--frontend-base <url>", "export: Frontend-Basis ueberschreiben (z. B. http://localhost:5173)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
 

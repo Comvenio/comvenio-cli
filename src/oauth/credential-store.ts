@@ -7,8 +7,6 @@ export type OAuthCredentials = {
   accessToken: string;
   refreshToken: string;
   accessExpiresAt: number;
-  actorToken?: string;
-  actorExpiresAt?: number;
 };
 
 function validateCredentials(value: unknown): OAuthCredentials {
@@ -18,10 +16,23 @@ function validateCredentials(value: unknown): OAuthCredentials {
     || typeof (value as OAuthCredentials).accessToken !== "string"
     || typeof (value as OAuthCredentials).refreshToken !== "string"
     || typeof (value as OAuthCredentials).accessExpiresAt !== "number"
+    || !Number.isFinite((value as OAuthCredentials).accessExpiresAt)
+    || !Number.isInteger((value as OAuthCredentials).accessExpiresAt)
+    || (value as OAuthCredentials).accessExpiresAt <= 0
+    || (value as OAuthCredentials).accessToken.length < 16
+    || (value as OAuthCredentials).accessToken.length > 8_192
+    || (value as OAuthCredentials).refreshToken.length < 16
+    || (value as OAuthCredentials).refreshToken.length > 8_192
+    || /[\s\r\n]/u.test((value as OAuthCredentials).accessToken)
+    || /[\s\r\n]/u.test((value as OAuthCredentials).refreshToken)
   ) {
     throw new Error("Der geschützte OAuth-Credential-Eintrag ist ungültig.");
   }
-  return value as OAuthCredentials;
+  return {
+    accessToken: (value as OAuthCredentials).accessToken,
+    refreshToken: (value as OAuthCredentials).refreshToken,
+    accessExpiresAt: (value as OAuthCredentials).accessExpiresAt,
+  };
 }
 
 function windowsProtect(plainText: string): string {
@@ -43,6 +54,7 @@ function windowsProtect(plainText: string): string {
 function windowsUnprotect(cipherText: string): string {
   const script = [
     "$ErrorActionPreference='Stop'",
+    "Add-Type -AssemblyName System.Security",
     "$cipher=[Console]::In.ReadToEnd().Trim()",
     "$bytes=[Convert]::FromBase64String($cipher)",
     "$plain=[Security.Cryptography.ProtectedData]::Unprotect($bytes,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser)",
@@ -107,8 +119,8 @@ function macosCredentialCommand(command: "read" | "write" | "delete", value?: st
   if (command === "write") {
     execFileSync(
       "security",
-      ["add-generic-password", "-U", "-s", SERVICE, "-a", ACCOUNT, "-w", value ?? ""],
-      { encoding: "utf8" },
+      ["add-generic-password", "-U", "-s", SERVICE, "-a", ACCOUNT, "-w"],
+      { input: value ?? "", encoding: "utf8" },
     );
     return "";
   }

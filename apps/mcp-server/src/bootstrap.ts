@@ -56,6 +56,8 @@ export interface McpProcessConfig {
   host: "0.0.0.0";
   port: number;
   public_origin: HttpsUrl;
+  cli_oauth_client_id: HttpsUrl;
+  cli_oauth_resource: HttpsUrl;
   edge_shared_secret: string | null;
   api_base_url: HttpsUrl;
   auth_base_url: HttpsUrl;
@@ -227,6 +229,16 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     false,
   );
   const authBaseUrl = httpsUrl(input.AUTH_SERVICE_BASE_URL ?? `${apiBaseUrl}/auth`, "AUTH_SERVICE_BASE_URL", true);
+  const cliOauthClientId = httpsUrl(
+    `${authBaseUrl}/oauth/clients/comvenio-cli`,
+    "CLI OAuth client_id",
+    true,
+  );
+  const cliOauthResource = httpsUrl(
+    `${publicOrigin}/cli`,
+    "CLI OAuth resource",
+    true,
+  );
   const internalApiKey = input.INTERNAL_API_KEY?.trim() ?? "";
   if (!internalApiKey || /[\r\n]/u.test(internalApiKey)) {
     throw new Error("INTERNAL_API_KEY ist für den MCP-Gateway erforderlich.");
@@ -260,6 +272,8 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     host: "0.0.0.0",
     port: port(input.PORT),
     public_origin: publicOrigin,
+    cli_oauth_client_id: cliOauthClientId,
+    cli_oauth_resource: cliOauthResource,
     edge_shared_secret: configuredEdgeSecret,
     api_base_url: apiBaseUrl,
     auth_base_url: authBaseUrl,
@@ -349,7 +363,10 @@ export function createMcpDeploymentCandidate(
       "Production benötigt einen expliziten gemeinsamen MCP-Zustandsspeicher.",
     );
   }
-  const registrations = new PinnedProviderRegistrationResolver(config.cimd_client_pins);
+  const registrations = new PinnedProviderRegistrationResolver(
+    config.cimd_client_pins,
+    config.cli_oauth_client_id,
+  );
   const introspection = new HttpIntrospectionPort({
     auth_base_url: config.auth_base_url,
     internal_api_key: config.internal_api_key,
@@ -374,6 +391,13 @@ export function createMcpDeploymentCandidate(
       actor_tokens: actorTokens,
       audience: config.public_origin,
     }),
+    cli_authenticator: new IntrospectionBearerAuthenticator({
+      introspection,
+      registrations,
+      actor_tokens: actorTokens,
+      audience: config.cli_oauth_resource,
+    }),
+    cli_resource: config.cli_oauth_resource,
     provider_resolver: new ExactProviderHintResolver(),
     capability_resolver: new HttpCapabilityContextResolver({ api_base_url: config.api_base_url }),
     access_policy: createRuntimeAccessPolicy(

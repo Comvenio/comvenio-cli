@@ -1,8 +1,10 @@
 # comvenio-cli
 
-Das offizielle Comvenio Club-CLI. Ein Club-Admin (oder dessen KI-Agent)
-authentifiziert sich per opakem Device-Token (`cvn_...`) und verwaltet damit
-seinen Verein direkt über die Comvenio-Service-APIs.
+Das offizielle Comvenio Club-CLI. Nutzer authentifizieren sich standardmäßig
+über den Comvenio-OAuth-Flow im Systembrowser. Das CLI erhält dafür einen
+eigenen Public Client und die vom MCP getrennte Ressource
+`https://mcp.comvenio.app/cli`. Device-Tokens (`cvn_...`) bleiben als
+expliziter Fallback für Entwicklung und Automation erhalten.
 
 Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
 `task`, `template`, `recipe`, `ingredient`, `ingredient-category`, `shopping`,
@@ -58,9 +60,9 @@ bereitgestellte Domain und der offizielle Healthcheck-Host
 
 Der Remote-MCP unter `apps/mcp-server` enthält den
 Streamable-HTTP-Kern und einen ausführbaren Produktions-Bootstrap. Der
-Produktionskandidat `full_connector_v1` veröffentlicht 322 aus dem
+Produktionskandidat `full_connector_v1` veröffentlicht 330 aus dem
 ausführbaren Runtime-Katalog abgeleitete Tools: zwölf minimierte Public-Reads,
-fünf geschützte Self-Service-Tools, den Club-Agent-Dialog, 299 freigegebene
+fünf geschützte Self-Service-Tools, den Club-Agent-Dialog, 307 freigegebene
 K7–K13-Fachaktionen, den zentralen Bestätigungsaufruf und zwei explizite
 Widget-Projektionen. Neben Verbindung, Rechten und sichtbaren Aktionen liefert
 `cv_my_tasks_read` die persönlichen
@@ -191,8 +193,8 @@ npx skills add Comvenio/comvenio-skills --list
 
 Der vollständige Katalog und weitere Installationsmöglichkeiten stehen im
 Repository [Comvenio/comvenio-skills](https://github.com/Comvenio/comvenio-skills).
-Die Skills verwenden ausschließlich dieses CLI. Das persönliche Zugriffstoken
-gehört nur in den lokalen `comvenio login`-Befehl und niemals in den Chat.
+Die Skills verwenden ausschließlich dieses CLI. Zugangsdaten gehören niemals
+in den Chat; `comvenio login` öffnet den sicheren Comvenio-OAuth-Flow.
 
 Community-/Channel-Moderation, ClubAgent-Administration und wesentliche
 Finanzabläufe sind derzeit keine CLI-Workflows. Rollen und Berechtigungen sind
@@ -202,10 +204,17 @@ angebunden.
 ## Verwendung
 
 ```bash
-# Einloggen — Token unter Mein Bereich → CLI-Zugriff erzeugen
-comvenio login --token cvn_a1b2c3...            # PROD (Default)
-comvenio login --token cvn_... --env dev        # DEV-Gateway (apidev.comvenio.app)
-comvenio login --token cvn_... --club <club-id> # Club-ID explizit setzen
+# Einloggen — öffnet den Browser und verwendet OAuth 2.1 mit PKCE
+comvenio login                                  # PROD (Default)
+comvenio login --env dev                        # DEV-Gateway (apidev.comvenio.app)
+comvenio login --scopes club.read,event.read    # nur benötigte Scopes anfordern
+
+# OAuth: freigegebene kanonische Actions anzeigen und ausführen
+comvenio action list --json
+comvenio action call cai.event.01.list --input '{"range":{"from":"2026-07-24","to":"2026-08-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}' --json
+
+# Nur für Entwicklung/Automation: expliziter Device-Token-Fallback
+comvenio login --device-token cvn_... --env local
 
 # Aktuellen Login prüfen
 comvenio whoami
@@ -217,9 +226,16 @@ comvenio club info --json
 comvenio club settings --json
 comvenio club department-list --tree --json
 
-# Abmelden (State-File löschen)
+# Abmelden (Grant widerrufen und lokalen Zustand entfernen)
 comvenio logout
 ```
+
+OAuth-Aktionen laufen ausschließlich über den typisierten `/cli`-Connector.
+Verein, Benutzer, effektive Rechte und Backend-Actor werden serverseitig
+gebunden; der Actor-Token erreicht das CLI nie. Die bisherigen
+menschenfreundlichen Domänenbefehle bleiben für den Device-Token-
+Kompatibilitätsmodus erhalten. Ihre vollständige OAuth-Parität wird durch die
+kanonischen `action`-IDs bereitgestellt.
 
 ### `--env`-Mapping
 

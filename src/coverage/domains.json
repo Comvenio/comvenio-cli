@@ -1,27 +1,31 @@
 {
   "registry_version": "1.0.0",
   "cli_version": "0.1.0",
-  "verified_at": "2026-07-23",
+  "verified_at": "2026-07-24",
   "coverage_model": {
     "covered": "Der vorgesehene Club-Admin-Workflow ist über das CLI verfügbar. Das bedeutet nicht, dass jede technische Backend-Route eine eigene Action braucht.",
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
     "intentional-exclusion": "Der Top-Level-Command ist ausschließlich als bewusstes Nicht-Ziel dokumentiert."
   },
-  "scope_note": "Workflow-Registry für die 27 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
+  "scope_note": "Workflow-Registry für die 28 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
   "domains": [
     {
       "id": "login",
       "status": "covered",
       "actions": [
-        "login --token"
+        "login",
+        "login --device-token"
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Kein Passwort-Login und kein Token-Decoding; das opake cvn_-Token wird vor dem Speichern serverseitig geprüft."
+        "Kein Passwort wird im CLI erfasst; die Anmeldung erfolgt auf der Comvenio-OAuth-Seite.",
+        "Das opake cvn_-Token bleibt nur als expliziter Fallback und wird nicht dekodiert."
       ],
       "source": [
         "src/index.ts",
-        "src/auth.ts"
+        "src/auth.ts",
+        "src/oauth/client.ts",
+        "src/oauth/credential-store.ts"
       ],
       "docs": [
         "docs/auth-club.md"
@@ -35,11 +39,13 @@
       ],
       "gaps": [],
       "intentional_exclusions": [
-        "Logout entfernt den lokalen CLI-State; das Device-Token wird dadurch nicht serverseitig widerrufen."
+        "OAuth-Grants werden widerrufen; ein explizit verwendetes Device-Token wird dadurch nicht serverseitig widerrufen."
       ],
       "source": [
         "src/index.ts",
-        "src/auth.ts"
+        "src/auth.ts",
+        "src/oauth/client.ts",
+        "src/oauth/credential-store.ts"
       ],
       "docs": [
         "docs/auth-club.md"
@@ -57,6 +63,28 @@
       ],
       "source": [
         "src/commands/whoami.ts"
+      ],
+      "docs": [
+        "docs/auth-club.md"
+      ]
+    },
+    {
+      "id": "action",
+      "status": "covered",
+      "actions": [
+        "list",
+        "call",
+        "confirm"
+      ],
+      "gaps": [],
+      "intentional_exclusions": [
+        "Verein, Subject, Scopes und Bestätigungsnachweise können nicht als freie Fachparameter überschrieben werden.",
+        "Menschenfreundliche Legacy-Aliase bleiben während der Migration dem expliziten Device-Token-Kompatibilitätsmodus vorbehalten."
+      ],
+      "source": [
+        "src/commands/action.ts",
+        "src/mcp/client.ts",
+        "apps/mcp-server/src/domain-runtime.ts"
       ],
       "docs": [
         "docs/auth-club.md"
@@ -766,7 +794,7 @@
       ],
       "intentional_exclusions": [
         "Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.",
-        "Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem Device-Token geprüft."
+        "Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft."
       ],
       "source": [
         "src/commands/agent.ts",

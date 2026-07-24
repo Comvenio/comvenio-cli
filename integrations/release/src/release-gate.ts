@@ -35,7 +35,7 @@ function evidenceBlockers(evidence: ReleaseEvidence): string[] {
     "production",
     evidence.release_scope,
   );
-  if (evidence.planned_action_count !== 303 || evidence.planned_route_callsite_count !== 560
+  if (evidence.planned_action_count !== 303 || evidence.planned_route_callsite_count !== 572
     || evidence.planned_widget_contract_count !== 5) blockers.push("PLANNED_SCOPE_DRIFT");
   if (evidence.published_tool_count !== runtimeCatalog.tool_count
     || evidence.runtime_tool_catalog_sha256 !== runtimeCatalog.tool_catalog_sha256

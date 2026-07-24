@@ -57,7 +57,7 @@ veröffentlichten Widgets muss im Carousel genau nachvollziehbar vertreten sein.
 - Jedes produktiv veröffentlichte Tool im MCP Inspector und als Claude Custom Connector testen.
 - Pro Tool Happy Path und Permission-Denial dokumentieren.
 - Alle fünf Widgets mit demselben Build auf Claude Web, Desktop und Mobile prüfen.
-- Den vollständigen Runtime-Katalog mit 322 Tools gegen
+- Den vollständigen Runtime-Katalog mit 330 Tools gegen
   `tool-test-plan.json` und die Response-Matrix prüfen.
 - Vollständig befüllte synthetische `member`- und `manager`-Konten ohne MFA als verschlüsselte
   Submission-Secrets bereitstellen.

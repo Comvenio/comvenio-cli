@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -9,7 +9,6 @@ import {
   type OAuthCredentials,
 } from "./oauth/credential-store.ts";
 import {
-  exchangeCliActorToken,
   oauthRuntime,
   refreshOAuthCredentials,
   type OAuthRuntime,
@@ -99,7 +98,14 @@ function parseStoredState(): StoredComvenioCliState {
 }
 
 function runtimeForState(state: StoredComvenioCliState): OAuthRuntime {
-  const runtime = oauthRuntime(state.gatewayBaseUrl);
+  const connectorOrigin = state.oauth?.resource
+    ? new URL(state.oauth.resource).origin
+    : undefined;
+  const runtime = oauthRuntime(
+    state.gatewayBaseUrl,
+    connectorOrigin,
+    state.oauth?.scopes as OAuthRuntime["scopes"],
+  );
   if (
     state.oauth?.clientId !== runtime.clientId
     || state.oauth?.resource !== runtime.resource
@@ -128,19 +134,11 @@ async function resolveOAuthCredentials(
     if (credentials.accessExpiresAt <= Date.now() + EXPIRY_SKEW_MS) {
       credentials = await refreshOAuthCredentials(runtime, credentials);
     }
-    if (
-      !credentials.actorToken
-      || !credentials.actorExpiresAt
-      || credentials.actorExpiresAt <= Date.now() + EXPIRY_SKEW_MS
-    ) {
-      credentials = await exchangeCliActorToken(runtime, credentials);
-    }
     saveOAuthCredentials(credentials);
     return credentials;
   } catch (firstError) {
     try {
       credentials = await refreshOAuthCredentials(runtime, credentials);
-      credentials = await exchangeCliActorToken(runtime, credentials);
       saveOAuthCredentials(credentials);
       return credentials;
     } catch {
@@ -157,27 +155,23 @@ export async function loadState(): Promise<ComvenioCliState> {
     return { ...state, token: state.token as string };
   }
   const credentials = await resolveOAuthCredentials(state);
-  return { ...state, token: credentials.actorToken as string };
+  return { ...state, token: credentials.accessToken };
 }
 
 export function readStoredState(): StoredComvenioCliState {
   return parseStoredState();
 }
 
-export function writeState(partial: Partial<StoredComvenioCliState>): void {
-  let current: Record<string, unknown> = {};
-  if (existsSync(STATE_FILE)) {
-    try {
-      current = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    } catch {
-      current = {};
-    }
-  }
+export function writeState(state: StoredComvenioCliState): void {
   const clean: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(partial)) {
+  for (const [key, value] of Object.entries(state)) {
     if (value !== undefined) clean[key] = value;
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ ...current, ...clean }, null, 2), "utf8");
+  writeFileSync(STATE_FILE, JSON.stringify(clean, null, 2), {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  if (process.platform !== "win32") chmodSync(STATE_FILE, 0o600);
 }
 
 export function writeOAuthState(
@@ -192,7 +186,11 @@ export function writeOAuthState(
   if (/access[_T]oken|refresh[_T]oken|actor[_T]oken|cvn_/u.test(encoded)) {
     throw new AuthError("OAuth-Secrets dürfen nicht im CLI-State gespeichert werden.");
   }
-  writeFileSync(STATE_FILE, encoded, "utf8");
+  writeFileSync(STATE_FILE, encoded, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  if (process.platform !== "win32") chmodSync(STATE_FILE, 0o600);
 }
 
 export function clearState(): void {
@@ -200,6 +198,13 @@ export function clearState(): void {
 }
 
 export function clearAllAuthState(): void {
-  clearOAuthCredentials();
-  clearState();
+  let credentialError: unknown;
+  try {
+    clearOAuthCredentials();
+  } catch (error) {
+    credentialError = error;
+  } finally {
+    clearState();
+  }
+  if (credentialError) throw credentialError;
 }

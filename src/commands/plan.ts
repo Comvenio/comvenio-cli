@@ -343,7 +343,7 @@ export function registerPlanCommands(cli: CAC): void {
         arg2: string | undefined,
         opts: Opts,
       ) => {
-        const state = loadState();
+        const state = await loadState();
         const client = createClient(state);
 
         // ── plan export <event-id> — Geländeplan als Bild/PDF (V7, D-24/D-26) ──
