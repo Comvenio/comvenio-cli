@@ -206,6 +206,7 @@ function readyEvidence(): ReleaseEvidence {
     rate_limit_config_verified: true,
     development_health_ready: true,
     production_health_ready: true,
+    connector_legal_documents_reviewed: true,
     pricing_included_without_surcharge: true,
     germany_first: true,
   };

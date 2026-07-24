@@ -29,8 +29,8 @@ export interface ClaudeDirectoryManifest {
   categories: ["Productivity"];
   website_url: "https://www.comvenio.app";
   documentation_url: "https://www.comvenio.app/hilfe";
-  privacy_url: "https://www.comvenio.app/datenschutz";
-  terms_url: "https://www.comvenio.app/agb";
+  privacy_url: "https://www.comvenio.app/connector/datenschutz";
+  terms_url: "https://www.comvenio.app/connector/nutzungsbedingungen";
   imprint_url: "https://www.comvenio.app/impressum";
   support_email: "support@comvenio.de";
   locale: "de-DE";
@@ -138,6 +138,7 @@ export interface ClaudeSubmissionEvidence {
   oauth_cimd_verified: boolean;
   public_documentation_verified: boolean;
   privacy_policy_verified: boolean;
+  connector_legal_documents_reviewed: boolean;
   support_verified: boolean;
   first_party_api_verified: boolean;
   unsupported_use_cases_absent: boolean;

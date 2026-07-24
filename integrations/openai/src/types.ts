@@ -28,8 +28,8 @@ export interface DistributionProfile {
   publisher_name: "Comvenio";
   category: "Productivity";
   website_url: "https://www.comvenio.app";
-  privacy_url: "https://www.comvenio.app/datenschutz";
-  terms_url: "https://www.comvenio.app/agb";
+  privacy_url: "https://www.comvenio.app/connector/datenschutz";
+  terms_url: "https://www.comvenio.app/connector/nutzungsbedingungen";
   imprint_url: "https://www.comvenio.app/impressum";
   support_email: "support@comvenio.de";
   locale: "de-DE";
@@ -113,6 +113,7 @@ export interface OpenAiSubmissionEvidence {
   oauth_pkce_verified: boolean;
   widget_csp_verified: boolean;
   legal_links_verified: boolean;
+  connector_legal_documents_reviewed: boolean;
   tool_results: Array<{ tool_name: string; prompt: string; expected_response_fixture: string; passed_web: boolean; passed_mobile: boolean }>;
   reviewer_accounts: Array<{ role: "member" | "manager"; login_ready: boolean; mfa_required: boolean; secret_reference: string }>;
   widget_evidence: Array<{ resource_uri: OpenAiWidgetResourceUri; surfaces: SubmissionSurface[]; screenshot_path: string; synthetic_data_only: boolean }>;

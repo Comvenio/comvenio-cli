@@ -22,8 +22,8 @@ Anthropic-Portal hinterlegt.
 - MCP-URL: `https://mcp.comvenio.app/mcp`
 - Website: `https://www.comvenio.app`
 - Dokumentation: `https://www.comvenio.app/hilfe`
-- Datenschutz: `https://www.comvenio.app/datenschutz`
-- Nutzungsbedingungen: `https://www.comvenio.app/agb`
+- Datenschutz: `https://www.comvenio.app/connector/datenschutz`
+- Nutzungsbedingungen: `https://www.comvenio.app/connector/nutzungsbedingungen`
 - Support: `support@comvenio.de`
 
 Die vollständige Kurzbeschreibung und alle technischen Felder stehen in

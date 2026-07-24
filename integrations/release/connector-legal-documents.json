@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "entity": "ConnectorLegalDocuments",
+  "locale": "de-DE",
+  "applies_to": [
+    "openai_chatgpt",
+    "anthropic_claude",
+    "approved_channel_adapters"
+  ],
+  "privacy_policy": {
+    "public_url": "https://www.comvenio.app/connector/datenschutz",
+    "source_path": "Frontend/comvenio-homepage/Modern/src/components/connector/ConnectorDatenschutz.jsx",
+    "version_date": "2026-07-24"
+  },
+  "terms_of_use": {
+    "public_url": "https://www.comvenio.app/connector/nutzungsbedingungen",
+    "source_path": "Frontend/comvenio-homepage/Modern/src/components/connector/ConnectorNutzungsbedingungen.jsx",
+    "version_date": "2026-07-24"
+  },
+  "required_reviews": {
+    "publisher_identity_consistent": false,
+    "public_urls_verified": false,
+    "privacy_threat_model_consistent": false,
+    "product_owner_signed": false,
+    "privacy_reviewer_signed": false
+  },
+  "known_blockers": [
+    "Das bestehende Impressum muss vor Veröffentlichung mit der tatsächlichen Anbieteridentität und dem geschäftsmäßigen Comvenio-Angebot abgeglichen werden.",
+    "Die Rechtstexte sind fachlich vollständig entworfen, aber noch nicht juristisch freigegeben.",
+    "Die öffentlichen HTTPS-Routen müssen nach dem Homepage-Deployment von außen geprüft werden."
+  ],
+  "release_gate": "CONNECTOR_LEGAL_DOCUMENTS_REVIEWED",
+  "status": "REVIEW_REQUIRED"
+}

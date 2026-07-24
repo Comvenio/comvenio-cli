@@ -196,6 +196,7 @@ export const RELEASE_GATE_REPORT_SCHEMA = z.object({
     rate_limit_config_verified: z.boolean(),
     development_health_ready: z.boolean(),
     production_health_ready: z.boolean(),
+    connector_legal_documents_reviewed: z.boolean(),
     pricing_included_without_surcharge: z.boolean(),
     germany_first: z.boolean(),
   }).strict(),

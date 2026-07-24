@@ -94,6 +94,7 @@ function evidence(manifest: ClaudeDirectoryManifest, plan: ClaudeToolSyncPlan): 
     oauth_cimd_verified: true,
     public_documentation_verified: true,
     privacy_policy_verified: true,
+    connector_legal_documents_reviewed: true,
     support_verified: true,
     first_party_api_verified: true,
     unsupported_use_cases_absent: true,
@@ -177,9 +178,11 @@ describe("Anthropic Connector Directory provider package", () => {
     const inputEvidence = evidence(manifest, plan);
     const syncReport = new ClaudeToolSyncSuite().compare({ tool_sync_version: catalogHash, expected: expectedTools, observed: structuredClone(expectedTools) });
     const chatGptRelease = { provider: "openai", state: "ready" } as const;
+    inputEvidence.connector_legal_documents_reviewed = false;
     inputEvidence.review_findings = [{ id: "claude-review-1", severity: "medium", status: "open" }];
     const report = runAnthropicSubmissionPreflight({ artifact_root: artifactRoot, manifest, tools: expectedTools, tool_sync_plan: plan, evidence: { ...inputEvidence, tool_sync_report: syncReport } });
     expect(report).toMatchObject({ provider: "anthropic", state: "blocked" });
+    expect(report.checks).toContainEqual(expect.objectContaining({ code: "CONNECTOR_LEGAL_DOCUMENTS_REVIEWED", status: "block" }));
     expect(report.checks).toContainEqual(expect.objectContaining({ code: "REVIEW_FINDINGS", status: "block" }));
     expect(chatGptRelease).toEqual({ provider: "openai", state: "ready" });
     expect(JSON.stringify({ manifest, tools: expectedTools })).not.toMatch(/access[_-]?token|refresh[_-]?token|password|MITGLIED-GEHEIM/iu);
