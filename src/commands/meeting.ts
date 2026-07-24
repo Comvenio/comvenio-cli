@@ -370,7 +370,7 @@ export function registerMeetingCommands(cli: CAC): void {
     .option("--type <type>", "Reserviert für kompatible Inhaltsfilter")
     .option("--json", "Maschinenlesbare JSON-Ausgabe")
     .action(async (action: string, id: string | undefined, opts: MeetingCommandOpts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
       const result = await handleMeetingOperation({ action, id, opts, client, clubId });

@@ -4,6 +4,6 @@
   "backend_source_hash_sha256": "e2d68d99baf6e774c07481c554928d07fc3752a491cf1aaa446fc21f31d8bbde",
   "source_audit_entry_count": 1937,
   "entries": [],
-  "unclassified_count": 560,
+  "unclassified_count": 572,
   "notice": "Migrationsinventar, keine Runtime-Autorisierungsquelle. Erst exakte, getestete PermissionPolicy-Einträge reduzieren unclassified_count."
 }

@@ -1,27 +1,66 @@
 # Authentifizierung und Club-Kontext
 
-Stand: 13. Juli 2026 · Quellen: `src/index.ts`, `src/auth.ts`, `src/commands/whoami.ts`, `src/commands/club.ts`
+Stand: 23. Juli 2026 · Quellen: `src/index.ts`, `src/auth.ts`, `src/oauth/`, `src/commands/whoami.ts`, `src/commands/club.ts`
 
 ## Login
 
 ```bash
-comvenio login --token cvn_xxxxxxxx --json
-comvenio login --token cvn_xxxxxxxx --club <club-id> --json
+comvenio login
+comvenio login --env dev --json
+comvenio login --scopes club.read,event.read --json
 ```
 
-Das Token ist opak, muss mit `cvn_` beginnen und wird vor dem Speichern gegen die aktuelle Benutzeridentität geprüft. Das CLI dekodiert es nicht. Erfolgreicher Login speichert Token, Gateway, Umgebung, Benutzer und Club-Kontext in `~/.comvenio-cli-state.json`.
+`login` öffnet den Systembrowser und verwendet OAuth 2.1 Authorization Code
+mit PKCE. Der native Public Client
+`{issuer}/oauth/clients/comvenio-cli` akzeptiert ausschließlich einen
+ephemeren Callback unter `http://127.0.0.1:{port}/oauth/callback`. Seine
+Ressource `{MCP_PUBLIC_ORIGIN}/cli` ist strikt von der Provider-Ressource am
+MCP-Origin getrennt.
+
+Access- und Refresh-Tokens werden nicht im CLI-State gespeichert. Der
+kurzlebige Backend-Actor wird ausschließlich intern im MCP-Gateway erzeugt und
+nie an das CLI ausgegeben. Unter Windows schützt DPAPI den Credential-Eintrag für den
+aktuellen Benutzer; unter macOS wird der Keychain und unter Linux der Secret
+Service verwendet. `~/.comvenio-cli-state.json` enthält nur nicht geheime
+Metadaten wie Gateway, Umgebung, Verein, Client-ID und Scopes. Vor der
+Speicherung prüft `cv_whoami_read` über den `/cli`-Connector den autoritativ im
+OAuth-Grant gebundenen Verein.
 
 Optionen:
 
 | Flag | Bedeutung |
 |---|---|
-| `--token <token>` | Pflicht; opakes Device-Token |
+| `--device-token <token>` | nur Entwicklung/Automation; opakes `cvn_`-Token |
+| `--token <token>` | veralteter Alias für `--device-token` |
 | `--env prod|dev|local` | Betriebsziel, Standard `prod` |
 | `--gateway <url>` | Gateway-Basis explizit überschreiben |
-| `--club <id>` | Club-Kontext explizit setzen statt `main_club_id` |
+| `--connector <url>` | zugehörigen MCP-Origin für ein eigenes Gateway setzen |
+| `--scopes <csv>` | minimale benötigte OAuth-Scopes anfordern |
+| `--club <id>` | nur im Device-Token-Modus: Club-Kontext überschreiben |
 | `--json` | maschinenlesbare Ausgabe |
 
-Das State-File enthält ein Geheimnis. Niemals committen, protokollieren oder in Nutzerantworten ausgeben.
+Für lokale Entwicklung ohne öffentliches HTTPS-Gateway ist OAuth bewusst
+gesperrt. Dort ist `--device-token` erforderlich. Dieser Legacy-Fallback
+speichert das opake Token weiterhin im State; das State-File darf daher
+grundsätzlich nie committed, protokolliert oder in Nutzerantworten ausgegeben
+werden.
+
+## OAuth-Aktionen
+
+```bash
+comvenio action list --json
+comvenio action call cai.event.01.list \
+  --input '{"range":{"from":"2026-07-24","to":"2026-08-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}' \
+  --json
+```
+
+`action list` liefert nur Actions, die für Grant, Verein, Scopes und aktuelle
+RBAC-Capabilities tatsächlich sichtbar sind. Die Action-ID und ihr
+Eingabeschema stammen aus dem serverseitigen Capability-Vertrag. Schreibende
+Actions erhalten einen Idempotenzschlüssel; kritische Änderungen erfordern
+zusätzlich `action confirm` mit der kurzlebigen serverseitigen Vorschau.
+`club_id`, Benutzeridentität und Scopes können nicht aus der CLI-Eingabe
+überschrieben werden.
 
 ## Identität prüfen
 
@@ -37,7 +76,11 @@ Die JSON-Ausgabe enthält `userId`, `email`, `name`, `clubId`, `environment`, `g
 comvenio logout --json
 ```
 
-`logout` entfernt nur das lokale State-File. Der Befehl widerruft das Device-Token nicht serverseitig.
+Bei OAuth widerruft `logout` den Refresh-Grant serverseitig und entfernt
+anschließend Credential-Eintrag und State. Schlägt der Remote-Widerruf
+vorübergehend fehl, wird dies als Warnung ausgegeben; die lokale Anmeldung wird
+trotzdem entfernt. Ein explizites Device-Token wird nicht serverseitig
+widerrufen.
 
 ## Club-Informationen
 

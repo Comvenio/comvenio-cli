@@ -131,23 +131,14 @@ const taskReminderResultSchema = z.object({
   reminder_at: dateTime,
   comment: z.string().nullable(),
 }).strict();
-const taskReminderOutputSchema = z.discriminatedUnion("operation", [
-  z.object({
-    operation: z.literal("list"),
-    task_id: uuid,
-    reminders: z.array(taskReminderResultSchema).max(1),
-  }).strict(),
-  z.object({
-    operation: z.literal("set"),
-    task_id: uuid,
-    reminder: taskReminderResultSchema,
-  }).strict(),
-  z.object({
-    operation: z.literal("delete"),
-    task_id: uuid,
-    reminder: z.null(),
-  }).strict(),
-]);
+// The Apps SDK output-schema adapter currently requires one object root.
+// Operation-specific field combinations remain deterministic in the handler.
+const taskReminderOutputSchema = z.object({
+  operation: z.enum(["list", "set", "delete"]),
+  task_id: uuid,
+  reminders: z.array(taskReminderResultSchema).max(1).optional(),
+  reminder: taskReminderResultSchema.nullable().optional(),
+}).strict();
 const clubAgentConversationSchema = z.object({
   message: z.string().trim().min(1).max(4000)
     .describe("Komplexe Frage, Planung oder mehrstufige Aufgabe für den Club-Agenten."),

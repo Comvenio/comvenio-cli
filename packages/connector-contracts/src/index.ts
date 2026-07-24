@@ -204,9 +204,6 @@ export function normalizeRequestContext(context: RequestContext): RequestContext
   if (context.surface === "cli" && context.provider !== null) {
     throw invalidContext(requestId, "Ein CLI-Kontext darf keinen KI-Provider setzen.");
   }
-  if (context.surface === "cli" && context.oauth_grant_id !== null) {
-    throw invalidContext(requestId, "Ein CLI-Kontext darf keinen OAuth-Grant setzen.");
-  }
   if (context.surface === "mcp" && context.oauth_grant_id !== null && context.provider === null) {
     throw invalidContext(requestId, "Ein authentifizierter MCP-Kontext benötigt den geprüften KI-Provider.");
   }

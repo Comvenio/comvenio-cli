@@ -25,6 +25,7 @@ import {
   parseAuthorizationRequest,
   parseIntrospectionRequest,
   parseTokenRequest,
+  validateIntrospectionResult,
   validateAuthorizationCodeRecord,
   validateConnectorGrant,
   verifyPkceS256,
@@ -95,6 +96,11 @@ describe("OAuth metadata and scopes", () => {
       scopes_supported: [...OAUTH_SCOPE_VALUES],
       resource_documentation: "https://www.comvenio.app/datenschutz",
     });
+    expect(createProtectedResourceMetadata(
+      "production",
+      "https://www.comvenio.app/datenschutz",
+      "https://mcp.comvenio.app/cli",
+    ).resource).toBe("https://mcp.comvenio.app/cli");
     expect(Object.values(production).flat().filter((value) =>
       typeof value === "string" && value.startsWith("http"))
       .every((value) => value.startsWith("https://"))).toBe(true);
@@ -217,6 +223,27 @@ describe("authorization, PKCE and token wire", () => {
     });
     expect(createBearerChallenge("production", "event.read"))
       .toBe('Bearer resource_metadata="https://mcp.comvenio.app/.well-known/oauth-protected-resource", scope="event.read"');
+  });
+
+  test("accepts a canonical path-bound CLI audience and rejects ambiguous variants", () => {
+    const active = {
+      active: true,
+      sub: subjectId,
+      grant_id: grantId,
+      client_id: "https://api.comvenio.app/auth/oauth/clients/comvenio-cli",
+      club_id: clubA,
+      scope: "club.read role.read.self",
+      aud: "https://mcp.comvenio.app/cli",
+      iat: 1_721_814_400,
+      exp: 1_721_815_300,
+      jti: "66666666-6666-4666-8666-666666666666",
+    } as const;
+
+    expect(validateIntrospectionResult(active)).toEqual(active);
+    expect(() => validateIntrospectionResult({
+      ...active,
+      aud: "https://mcp.comvenio.app/cli?tenant=other",
+    })).toThrow("Introspection-Antwort");
   });
 });
 

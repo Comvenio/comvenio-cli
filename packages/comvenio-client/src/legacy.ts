@@ -31,9 +31,16 @@ export class HttpError extends Error {
 export type LegacyClientState = {
   token: string;
   gatewayBaseUrl: string;
+  authMode?: "device_token" | "oauth";
 };
 
 export function createClient(state: LegacyClientState): ComvenioClient {
+  if (state.authMode === "oauth") {
+    throw new Error(
+      "OAuth-Aktionen müssen über den typisierten Connector ausgeführt werden. "
+      + "Verwende „comvenio action …“; der Backend-Aktor-Token wird nicht an das CLI ausgegeben.",
+    );
+  }
   const gatewayBase = state.gatewayBaseUrl.replace(/\/+$/, "");
   const headers = {
     Authorization: `Bearer ${state.token}`,

@@ -398,5 +398,7 @@ comvenio menu show $MENU --json
 | Public-Karte (QR) | GET | `/menu/club/{club_id}/menus/{id}/public` | **public** |
 | Allergene/Farbstoffe | GET | `/allergens/` · `/colorants/` | **public** |
 
-> Gateway strippt das erste Pfadsegment (`supply`) und leitet den Rest an supply-service. Auth via
-> `Authorization: Bearer cvn_…` (das CLI sendet nur das Token; RBAC ist serverseitig).
+> Das Gateway strippt das erste Pfadsegment (`supply`) und leitet den Rest an
+> supply-service. Das CLI sendet den kurzlebigen OAuth-Actor; nur beim
+> expliziten Entwicklungsfallback wird ein `cvn_…`-Token verwendet. RBAC bleibt
+> serverseitig.

@@ -185,7 +185,7 @@ export function registerIngredientCategoryCommands(cli: CAC): void {
     .option("--hard", "Kategorie beim delete endgültig statt soft löschen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: IngredientCategoryCommandOpts) => {
-      const state = loadState();
+      const state = await loadState();
       await handleIngredientCategoryOperation({
         action,
         id,

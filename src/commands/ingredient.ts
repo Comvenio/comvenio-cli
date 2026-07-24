@@ -129,7 +129,7 @@ export function registerIngredientCommands(cli: CAC): void {
     .option("--limit <n>", "Max. Treffer 1-1000 (list)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: IngredientCommandOpts) => {
-      const state = loadState();
+      const state = await loadState();
       await handleIngredientOperation({
         action,
         id,

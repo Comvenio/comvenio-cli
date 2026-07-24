@@ -58,8 +58,8 @@ const validStatuses = new Set<CoverageStatus>([
   "intentional-exclusion",
 ]);
 
-if (registry.domains.length !== 27) {
-  throw new Error(`Coverage-Registry muss 27 Top-Level-Commands enthalten, gefunden: ${registry.domains.length}.`);
+if (registry.domains.length !== 28) {
+  throw new Error(`Coverage-Registry muss 28 Top-Level-Commands enthalten, gefunden: ${registry.domains.length}.`);
 }
 
 const ids = new Set<string>();
@@ -137,7 +137,7 @@ const uncoveredDetails = uncovered.map((area) => {
 const uncoveredSection = uncovered.length
   ? `## Nicht erschlossene Themengebiete\n\n` +
     `> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: ` +
-    `Ohne sie liest sich "26 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". ` +
+    `Ohne sie liest sich "28 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". ` +
     `Ein \`gap\` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.\n\n` +
     `- \`gap\`: ${registry.uncovered_model.gap}\n` +
     `- \`partial-gap\`: ${registry.uncovered_model["partial-gap"]}\n` +

@@ -33,9 +33,11 @@ import { mountMemberManagementWidgetAssets } from "../widgets/member-management/
 import { mountNewsWidgetAssets } from "../widgets/news/assets.ts";
 
 const MCP_ROUTE = "/mcp" as const;
+const CLI_ROUTE = "/cli" as const;
 const HEALTH_ROUTE = "/health" as const;
 const READY_ROUTE = "/ready" as const;
 const PROTECTED_RESOURCE_ROUTE = "/.well-known/oauth-protected-resource" as const;
+const CLI_PROTECTED_RESOURCE_ROUTE = "/.well-known/oauth-protected-resource/cli" as const;
 const OPENAI_APPS_CHALLENGE_ROUTE = "/.well-known/openai-apps-challenge" as const;
 const RESOURCE_DOCUMENTATION = "https://www.comvenio.app/datenschutz" as const;
 const MCP_EDGE_HEADER = "x-comvenio-edge-secret" as const;
@@ -80,6 +82,9 @@ function validateRuntimeOptions(options: McpRuntimeOptions): void {
       throw new Error(`Die erforderliche Readiness-Abhängigkeit ${dependencyName} fehlt.`);
     }
   }
+  if (options.cli_resource !== `${options.public_origin}/cli`) {
+    throw new Error("Die native CLI-Ressource muss an den MCP-Origin gebunden sein.");
+  }
 }
 
 function methodForTelemetry(value: string): SafeTelemetryRecord["method"] {
@@ -110,6 +115,7 @@ export class McpHttpServer {
   readonly app: Express;
   readonly #options: McpRuntimeOptions;
   readonly #contextFactory: StatelessTransportContextFactory;
+  readonly #cliContextFactory: StatelessTransportContextFactory;
   readonly #probe: HealthReadinessProbe;
   readonly #allowedOrigins: ReadonlySet<string>;
   #httpServer: NodeHttpServer | null = null;
@@ -122,6 +128,11 @@ export class McpHttpServer {
     this.#options = options;
     this.#allowedOrigins = new Set(options.allowed_origins);
     this.#contextFactory = new StatelessTransportContextFactory(options);
+    this.#cliContextFactory = new StatelessTransportContextFactory({
+      ...options,
+      authenticator: options.cli_authenticator,
+      surface: "cli",
+    });
     this.#probe = new HealthReadinessProbe(options.readiness_dependencies);
     this.app = createMcpExpressApp({
       host: "0.0.0.0",
@@ -196,7 +207,7 @@ export class McpHttpServer {
   }
 
   #mountRoutes(): void {
-    this.app.use(MCP_ROUTE, (request: Request, response: Response, next: NextFunction) => {
+    this.app.use([MCP_ROUTE, CLI_ROUTE], (request: Request, response: Response, next: NextFunction) => {
       const origin = request.get("origin");
       if (origin && !this.#allowedOrigins.has(origin)) {
         const requestId = this.#newRequestId();
@@ -253,6 +264,29 @@ export class McpHttpServer {
       });
     });
 
+    this.app.get(CLI_PROTECTED_RESOURCE_ROUTE, (request, response) => {
+      const requestId = this.#newRequestId();
+      const startedAt = Date.now();
+      response.setHeader("cache-control", "public, max-age=300");
+      response.setHeader("x-request-id", requestId);
+      response.status(200).json(createProtectedResourceMetadata(
+        this.#options.environment,
+        RESOURCE_DOCUMENTATION,
+        this.#options.cli_resource,
+      ));
+      void this.#record({
+        request_id: requestId,
+        provider: null,
+        authenticated: false,
+        route: CLI_PROTECTED_RESOURCE_ROUTE,
+        method: methodForTelemetry(request.method),
+        status_code: 200,
+        duration_ms: Date.now() - startedAt,
+        outcome: "success",
+        recorded_at: this.#now().toISOString(),
+      });
+    });
+
     this.app.get(OPENAI_APPS_CHALLENGE_ROUTE, (request, response) => {
       const requestId = this.#newRequestId();
       const startedAt = Date.now();
@@ -297,10 +331,27 @@ export class McpHttpServer {
     });
 
     this.app.post(MCP_ROUTE, (request, response) => {
-      void this.#handleMcp(request, response);
+      void this.#handleMcp(
+        request,
+        response,
+        MCP_ROUTE,
+        this.#contextFactory,
+        this.#options.public_origin,
+      );
     });
-    this.app.get(MCP_ROUTE, (request, response) => this.#methodNotAllowed(request, response));
-    this.app.delete(MCP_ROUTE, (request, response) => this.#methodNotAllowed(request, response));
+    this.app.get(MCP_ROUTE, (request, response) => this.#methodNotAllowed(MCP_ROUTE, request, response));
+    this.app.delete(MCP_ROUTE, (request, response) => this.#methodNotAllowed(MCP_ROUTE, request, response));
+    this.app.post(CLI_ROUTE, (request, response) => {
+      void this.#handleMcp(
+        request,
+        response,
+        CLI_ROUTE,
+        this.#cliContextFactory,
+        this.#options.cli_resource,
+      );
+    });
+    this.app.get(CLI_ROUTE, (request, response) => this.#methodNotAllowed(CLI_ROUTE, request, response));
+    this.app.delete(CLI_ROUTE, (request, response) => this.#methodNotAllowed(CLI_ROUTE, request, response));
 
     this.app.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
       if (response.headersSent) return;
@@ -317,7 +368,13 @@ export class McpHttpServer {
     });
   }
 
-  async #handleMcp(request: Request, response: Response): Promise<void> {
+  async #handleMcp(
+    request: Request,
+    response: Response,
+    route: typeof MCP_ROUTE | typeof CLI_ROUTE,
+    contextFactory: StatelessTransportContextFactory,
+    resource: McpRuntimeOptions["public_origin"],
+  ): Promise<void> {
     const fallbackRequestId = this.#newRequestId();
     const startedAt = Date.now();
     let context: StatelessTransportContext | null = null;
@@ -343,7 +400,7 @@ export class McpHttpServer {
         request_id: context?.request.request_id ?? fallbackRequestId,
         provider: context?.provider_request.provider ?? null,
         authenticated: context?.provider_request.authenticated ?? false,
-        route: MCP_ROUTE,
+        route,
         method: "POST",
         status_code: response.statusCode,
         duration_ms: Date.now() - startedAt,
@@ -365,7 +422,7 @@ export class McpHttpServer {
         });
       }
       const body = normalizeOptionalToolArguments(request.body);
-      context = await this.#contextFactory.create({
+      context = await contextFactory.create({
         authorization: request.get("authorization"),
         host: request.get("host"),
         origin: request.get("origin"),
@@ -380,7 +437,7 @@ export class McpHttpServer {
           environment: this.#options.environment,
           request_id: context.request.request_id,
           required_scopes: accessDecision.required_scopes,
-          public_origin: this.#options.public_origin,
+          public_origin: resource,
         });
         throw runtimeError({
           code: "AUTH_REQUIRED",
@@ -406,7 +463,7 @@ export class McpHttpServer {
         response.setHeader(
           "WWW-Authenticate",
           authChallenge?.www_authenticate
-            ?? createBearerChallenge(this.#options.environment, "public.read", this.#options.public_origin),
+            ?? createBearerChallenge(this.#options.environment, "public.read", resource),
         );
       }
       response.setHeader("x-request-id", requestId);
@@ -419,7 +476,11 @@ export class McpHttpServer {
     }
   }
 
-  #methodNotAllowed(request: Request, response: Response): void {
+  #methodNotAllowed(
+    route: typeof MCP_ROUTE | typeof CLI_ROUTE,
+    request: Request,
+    response: Response,
+  ): void {
     const requestId = this.#newRequestId();
     const startedAt = Date.now();
     response.setHeader("allow", "POST");
@@ -437,7 +498,7 @@ export class McpHttpServer {
       request_id: requestId,
       provider: null,
       authenticated: false,
-      route: MCP_ROUTE,
+      route,
       method: methodForTelemetry(request.method),
       status_code: 405,
       duration_ms: Date.now() - startedAt,

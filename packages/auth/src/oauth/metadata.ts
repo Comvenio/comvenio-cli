@@ -63,13 +63,15 @@ export function createAuthorizationServerMetadata(
 export function createProtectedResourceMetadata(
   environment: OAuthEnvironment,
   resourceDocumentation: string,
-  publicOrigin?: HttpsUrl,
+  resource?: HttpsUrl,
 ): OAuthProtectedResourceMetadata {
   assertHttps(resourceDocumentation, "resource_documentation");
-  const endpoints = oauthEndpoints(environment, publicOrigin);
+  const resolvedResource = resource ?? oauthEndpoints(environment).resource;
+  assertHttps(resolvedResource, "resource");
+  const authorizationServer = oauthEndpoints(environment).authorization_server;
   return {
-    resource: endpoints.resource,
-    authorization_servers: [endpoints.authorization_server],
+    resource: resolvedResource,
+    authorization_servers: [authorizationServer],
     scopes_supported: [...OAUTH_SCOPE_VALUES],
     resource_documentation: resourceDocumentation,
   };

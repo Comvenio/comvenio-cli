@@ -3,7 +3,6 @@ import {
   PositiveReadIntrospectionCache,
   type CapabilitySnapshot,
   type HttpsUrl,
-  type OAuthClientRegistration,
 } from "@comvenio/auth";
 import {
   OAUTH_SCOPE_VALUES,
@@ -20,6 +19,7 @@ import type {
   CapabilityContextResolver,
   IntrospectionPort,
   ProviderRegistrationResolver,
+  RuntimeOAuthClientRegistration,
 } from "./types.ts";
 
 const UPSTREAM_TIMEOUT_MS = 1_500;
@@ -187,9 +187,9 @@ export class HttpActorTokenPort implements ActorTokenPort {
 }
 
 export class PinnedProviderRegistrationResolver implements ProviderRegistrationResolver {
-  readonly #registrations = new Map<HttpsUrl, OAuthClientRegistration>();
+  readonly #registrations = new Map<HttpsUrl, RuntimeOAuthClientRegistration>();
 
-  constructor(document: unknown) {
+  constructor(document: unknown, nativeCliClientId?: HttpsUrl) {
     const value = document as Partial<CimdPinDocument>;
     if (value?.contract_version !== "1.0.0" || !Array.isArray(value.pins)) {
       throw new Error("Die CIMD-Pin-Allowlist ist ungültig.");
@@ -217,9 +217,28 @@ export class PinnedProviderRegistrationResolver implements ProviderRegistrationR
         enabled: pin.enabled,
       });
     }
+    if (nativeCliClientId) {
+      const clientId = normalizeBaseUrl(
+        nativeCliClientId,
+        "Native CLI client_id",
+      );
+      if (clientId !== nativeCliClientId || this.#registrations.has(clientId)) {
+        throw new Error("Die native CLI-Registrierung ist ungÃ¼ltig.");
+      }
+      this.#registrations.set(clientId, {
+        client_id: clientId,
+        provider: null,
+        redirect_uris: [],
+        allowed_scopes: [...OAUTH_SCOPE_VALUES].sort(),
+        token_endpoint_auth_method: "none",
+        pkce_method: "S256",
+        metadata_sha256: "native-cli",
+        enabled: true,
+      });
+    }
   }
 
-  async resolve(clientId: HttpsUrl): Promise<OAuthClientRegistration | null> {
+  async resolve(clientId: HttpsUrl): Promise<RuntimeOAuthClientRegistration | null> {
     const registration = this.#registrations.get(clientId);
     return registration ? structuredClone(registration) : null;
   }
@@ -227,7 +246,8 @@ export class PinnedProviderRegistrationResolver implements ProviderRegistrationR
   isReleaseReady(): boolean {
     const enabled = new Set([...this.#registrations.values()]
       .filter((registration) => registration.enabled)
-      .map((registration) => registration.provider));
+      .map((registration) => registration.provider)
+      .filter((provider): provider is ProviderId => provider !== null));
     return enabled.size === 2 && enabled.has("openai") && enabled.has("anthropic");
   }
 }

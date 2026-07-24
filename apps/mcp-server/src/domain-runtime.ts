@@ -1249,6 +1249,7 @@ export function registerFullDomainRuntime(input: {
             ...(riskClass === "critical_write"
               ? confirmationToolMetadata(input.environment)._meta
               : {}),
+            "comvenio/actionId": definition.action_id,
             securitySchemes: structuredClone(securitySchemes),
           },
         }, async (arguments_) => {

@@ -578,7 +578,7 @@ Ein `403` bedeutet fehlendes Recht. Ein `404` kann bei nicht sichtbaren Daten ab
 | `/internal/...` | Service-zu-Service-Vertrag mit internem API-Key. |
 | Systemweite Copy-Defaults mutieren | Plattformadministration, nicht Vereinsverwaltung. |
 | Rein öffentliche Share-, Public-Hub- und Token-Formular-Routen | Sie verwalten den Club nicht. Admin-Funktionen haben eigene Commands. |
-| Kalender-Abos | Der aktuelle Router verarbeitet Standard-JWT direkt und ist noch nicht zuverlässig mit opaken `cvn_`-Tokens kompatibel. Nicht per direktem API-Aufruf umgehen. |
+| Kalender-Abos | Der aktuelle Router verarbeitet Standard-JWT direkt; der CLI-OAuth-Actor-Vertrag ist für diesen Pfad noch nicht belegt. Nicht per direktem API-Aufruf umgehen. |
 | Legacy-Map-Upsert | Durch die aktuelle `comvenio plan`-Domäne ersetzt. |
 
 ## Sicherheitsregeln für Agenten

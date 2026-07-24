@@ -111,7 +111,7 @@ export function registerObjectCommands(cli: CAC): void {
         arg2: string | undefined,
         opts: Opts,
       ) => {
-        const state = loadState();
+        const state = await loadState();
         const client = createClient(state);
         const clubId = requireClubId(state, opts.club);
 

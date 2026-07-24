@@ -251,7 +251,7 @@ export function registerNewsCommands(cli: CAC): void {
     .option("--out <path>", "preview: Zielpfad der HTML-Datei (Default ./news-preview.html)")
     .option("--json", "Maschinenlesbares JSON")
     .action(async (action: string, id: string | undefined, opts: NewsOpts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
 

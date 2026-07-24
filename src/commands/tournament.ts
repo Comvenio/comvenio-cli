@@ -236,7 +236,7 @@ export function registerTournamentCommands(cli: CAC): void {
     .option("--show", "deadline: aktuelle Konfiguration + ueberfaellige Spiele anzeigen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
 
       switch (action) {

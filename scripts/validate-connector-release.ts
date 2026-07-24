@@ -139,7 +139,7 @@ const inventory = loadReviewInventory();
 if (releaseGate.evidence.planned_action_count !== inventory.actions.entry_count
   || releaseGate.evidence.planned_action_count !== inventory.manifest.action_count
   || releaseGate.evidence.planned_route_callsite_count !== inventory.routes.entry_count) {
-  throw new Error("ReleaseGateReport weicht vom generierten 303/560-Inventar ab.");
+  throw new Error("ReleaseGateReport weicht vom generierten 303/572-Inventar ab.");
 }
 const runtimeCatalog = publishedRuntimeCatalog(
   "production",

@@ -52,7 +52,7 @@ export interface AuthenticatedConnectorPrincipal {
   subject_id: UUID;
   oauth_grant_id: UUID;
   client_id: `https://${string}`;
-  provider: ProviderId;
+  provider: ProviderId | null;
   club_id: UUID | null;
   scopes: OAuthScope[];
   expires_at_epoch_seconds: number;
@@ -78,8 +78,12 @@ export interface IntrospectionPort {
 }
 
 export interface ProviderRegistrationResolver {
-  resolve(clientId: ActiveIntrospection["client_id"]): Promise<OAuthClientRegistration | null>;
+  resolve(clientId: ActiveIntrospection["client_id"]): Promise<RuntimeOAuthClientRegistration | null>;
 }
+
+export type RuntimeOAuthClientRegistration = Omit<OAuthClientRegistration, "provider"> & {
+  provider: ProviderId | null;
+};
 
 export interface ActorTokenPort {
   exchange(input: {
@@ -139,7 +143,14 @@ export interface SafeTelemetryRecord {
   request_id: UUID;
   provider: ProviderId | null;
   authenticated: boolean;
-  route: "/mcp" | "/health" | "/ready" | "/.well-known/oauth-protected-resource" | "/.well-known/openai-apps-challenge";
+  route:
+    | "/mcp"
+    | "/cli"
+    | "/health"
+    | "/ready"
+    | "/.well-known/oauth-protected-resource"
+    | "/.well-known/oauth-protected-resource/cli"
+    | "/.well-known/openai-apps-challenge";
   method: "POST" | "GET" | "DELETE";
   status_code: number;
   duration_ms: number;
@@ -159,6 +170,8 @@ export interface McpRuntimeOptions {
   allowed_hosts: string[];
   allowed_origins: string[];
   authenticator: BearerAuthenticator;
+  cli_authenticator: BearerAuthenticator;
+  cli_resource: HttpsUrl;
   provider_resolver: ProviderResolver;
   capability_resolver: CapabilityContextResolver;
   access_policy: McpRequestAccessPolicy;

@@ -12,8 +12,10 @@ comvenio <command> ... --json
 ```
 
 - Nutze für Agenten-Aufrufe immer `--json`. Erfolgreiche JSON-Antworten landen auf stdout, Fehler auf stderr.
-- Das Device-Token ist opak und beginnt mit `cvn_`. Es wird niemals dekodiert.
-- Club-Kontext kommt aus dem Login-State. `--club <id>` überschreibt ihn bei Commands, die das Flag anbieten.
+- Standard ist OAuth 2.1 mit PKCE und sicherem Betriebssystem-Credential-Speicher.
+- Das opake `cvn_`-Device-Token ist nur ein expliziter Entwicklungs-/Automationsfallback und wird niemals dekodiert.
+- Im OAuth-Modus kommen Club, Benutzer und effektive Rechte ausschließlich aus
+  Grant und Backend-RBAC. `--club` ist dort nicht zulässig.
 - Rechte werden serverseitig geprüft. `401` bedeutet in der Regel ungültiges/abgelaufenes Token, `403` fehlendes Recht, `404` unbekannte Ressource.
 - Gibt es keine CLI-Action, ist ein direkter API-Aufruf kein Ersatz. Die Lücke muss im CLI geschlossen werden.
 - Mutationen werden nicht automatisch wiederholt. Nur lesende GET-Aufrufe haben einen begrenzten Retry bei vorübergehenden Fehlern.
@@ -22,9 +24,10 @@ comvenio <command> ... --json
 
 | Command | Vorhandener CLI-Scope | Detailreferenz |
 |---|---|---|
-| `login` | Device-Token prüfen und lokalen State speichern | [`auth-club.md`](auth-club.md) |
-| `logout` | lokalen State entfernen | [`auth-club.md`](auth-club.md) |
+| `login` | OAuth-Grant herstellen; optional Device-Token-Fallback | [`auth-club.md`](auth-club.md) |
+| `logout` | OAuth-Grant widerrufen und lokale Anmeldung entfernen | [`auth-club.md`](auth-club.md) |
 | `whoami` | aktuelle Identität und Club-Kontext anzeigen | [`auth-club.md`](auth-club.md) |
+| `action` | freigegebene kanonische Connector-Actions auflisten, ausführen und bestätigen | [`auth-club.md`](auth-club.md) |
 | `club` | Profil, Settings, Abteilungen und `design` | [`auth-club.md`](auth-club.md), [`homepage.md`](homepage.md) |
 | `member` | Mitglieder, Familien, Status, Mitgliedschaftszeiten und Import | [`mitglieder-teams.md`](mitglieder-teams.md) |
 | `team` | Team-CRUD, Mitglieder und Ressourcen-Prioritäten | [`mitglieder-teams.md`](mitglieder-teams.md) |
@@ -52,13 +55,21 @@ comvenio <command> ... --json
 ## Authentifizierung
 
 ```bash
-comvenio login --token cvn_xxxxxxxx --json
+comvenio login --json
 comvenio whoami --json
-comvenio club info --json
+comvenio action list --json
 comvenio logout --json
 ```
 
-Der State liegt unter `~/.comvenio-cli-state.json`. Er enthält das Token; nicht ausgeben, einchecken oder weitergeben.
+Der State liegt unter `~/.comvenio-cli-state.json`. OAuth-Secrets liegen
+ausschließlich im geschützten Betriebssystemspeicher. Weil der explizite
+Device-Token-Fallback weiterhin möglich ist, darf das State-File dennoch nie
+ausgegeben, eingecheckt oder weitergegeben werden.
+
+Die vollständige OAuth-Ausführungsfläche ist `comvenio action`. Bestehende
+menschenfreundliche Domänenbefehle verwenden während der Migration weiterhin
+den expliziten Device-Token-Kompatibilitätsmodus; sie dürfen keinen
+Connector-Token direkt an einen Domain-Service senden.
 
 ## Schema und Coverage
 

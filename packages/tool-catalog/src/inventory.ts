@@ -35,11 +35,11 @@ export function assertGeneratedInventory(snapshot: ReviewInventorySnapshot): voi
   assertCatalog(actions.domain_count === 26
     && new Set(actions.entries.map((entry) => entry.domain)).size === 26,
   "Actions-Snapshot muss exakt 26 Domains enthalten.");
-  assertCatalog(routes.entry_count === 560 && routes.routes.length === 560,
-    "Routes-Snapshot muss exakt 560 Callsites enthalten.");
+  assertCatalog(routes.entry_count === 572 && routes.routes.length === 572,
+    "Routes-Snapshot muss exakt 572 Callsites enthalten.");
   assertCatalog(routes.semantics.inventory_only === true,
     "Route-Inventar darf keine Runtime-Autorität sein.");
-  assertCatalog(new Set(routes.routes.map((entry) => entry.source_locator)).size === 560,
+  assertCatalog(new Set(routes.routes.map((entry) => entry.source_locator)).size === 572,
     "Route-Source-Locators müssen eindeutig sein.");
   assertCatalog(provider.expected_virtual_tool_count === 8 && provider.virtual_tools.length === 8,
     "Provider-Vertrag muss exakt acht virtuelle Tools enthalten.");
@@ -59,7 +59,7 @@ export function assertGeneratedInventory(snapshot: ReviewInventorySnapshot): voi
     !/(?:generic.?api.?request|run_cli_command|shell|api_request)/iu.test(tool.tool_name)),
   "Generische Provider-Tools sind verboten.");
   assertCatalog(manifest.action_count === 303 && manifest.domain_count === 26
-    && manifest.route_callsite_count === 560 && manifest.virtual_tool_count === 8,
+    && manifest.route_callsite_count === 572 && manifest.virtual_tool_count === 8,
   "Inventar-Manifest weicht von den normativen Zählwerten ab.");
 
   const actionIds = new Set(actions.entries.map((entry) => entry.id));
@@ -76,7 +76,7 @@ export function assertGeneratedInventory(snapshot: ReviewInventorySnapshot): voi
     "Legacy-Action darf nicht zugleich Kandidat und OAuth-Ersatz sein.");
   assertCatalog(snapshot.backend_permission_audit_draft.classification_status === "migration_required"
     && snapshot.backend_permission_audit_draft.entries.length === 0
-    && snapshot.backend_permission_audit_draft.unclassified_count === 560,
+    && snapshot.backend_permission_audit_draft.unclassified_count === 572,
   "Unauditierte Routen dürfen nicht als Backend-Permission-Audit erscheinen.");
 
   const schemaEntries = actions.entries.filter((entry) => entry.domain === "schema");

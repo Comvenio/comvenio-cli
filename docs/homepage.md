@@ -27,7 +27,7 @@ Pflichtregeln:
 ## 2. Authentifizierung und Kontext
 
 ```bash
-comvenio login --token cvn_xxxxxxxx
+comvenio login
 comvenio whoami --json
 comvenio club info --json
 ```

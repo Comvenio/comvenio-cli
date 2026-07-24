@@ -130,7 +130,7 @@ export function registerDataCommands(cli: CAC): void {
     .option("--area-ids <ids>", "Kommagetrennte Event-Area-IDs fuer Area-Media/Sharing")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: DataOpts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
 

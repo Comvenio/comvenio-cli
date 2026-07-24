@@ -751,7 +751,7 @@ export function registerVerifyCommands(cli: CAC): void {
     .option("--audit", "Kontrast-/Sichtbarkeits-Audit (WCAG-Ratios + opacity-0-Texte) mit ausgeben")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, arg: string | undefined, opts: VerifyOpts) => {
-      const state = loadState();
+      const state = await loadState();
       const client = createClient(state);
       const fb = frontendBase(state.environment, opts.frontendBase);
 

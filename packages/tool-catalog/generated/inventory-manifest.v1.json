@@ -3,12 +3,12 @@
   "generated_at_source_date": "2026-07-20",
   "action_count": 303,
   "domain_count": 26,
-  "route_callsite_count": 560,
+  "route_callsite_count": 572,
   "virtual_tool_count": 8,
   "source_sha256": {
     "actions": "1794879d639f33afcac7977d05342eafca3a37e47b9b2e7c8a159b86401e777d",
-    "routes": "816c38d355f3625412e36591b815ce8dde8564cf8adad9f7164f8fa1774eb033",
-    "provider_tools": "5ea594f1cc0a059dabf58d4b99906823d9b02318220e95af8943e5f7417ba5a7",
+    "routes": "9091c3891b87cc3e9774bb385de62d29ea28a4680e0c23b7862bf98c490f93e5",
+    "provider_tools": "79d3ffd5314eb26a33cf40e75239bacf19028831294fd91acfd322d3c81661db",
     "backend_rbac_audit": "e2d68d99baf6e774c07481c554928d07fc3752a491cf1aaa446fc21f31d8bbde"
   }
 }

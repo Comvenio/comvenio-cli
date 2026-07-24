@@ -121,6 +121,7 @@ export class ExactProviderHintResolver implements ProviderResolver {
 
 export class StatelessTransportContextFactory {
   readonly #environment: McpRuntimeOptions["environment"];
+  readonly #surface: "mcp" | "cli";
   readonly #authenticator: BearerAuthenticator;
   readonly #providerResolver: ProviderResolver;
   readonly #capabilityResolver: CapabilityContextResolver;
@@ -129,8 +130,9 @@ export class StatelessTransportContextFactory {
 
   constructor(input: Pick<McpRuntimeOptions,
     "environment" | "authenticator" | "provider_resolver" | "capability_resolver" | "now" | "request_id"
-  >) {
+  > & { surface?: "mcp" | "cli" }) {
     this.#environment = input.environment;
+    this.#surface = input.surface ?? "mcp";
     this.#authenticator = input.authenticator;
     this.#providerResolver = input.provider_resolver;
     this.#capabilityResolver = input.capability_resolver;
@@ -193,7 +195,7 @@ export class StatelessTransportContextFactory {
     }
     let request = normalizeRequestContext({
       request_id: requestId,
-      surface: "mcp",
+      surface: this.#surface,
       provider,
       subject_id: principal?.subject_id ?? null,
       oauth_grant_id: principal?.oauth_grant_id ?? null,

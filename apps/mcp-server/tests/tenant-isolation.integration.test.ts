@@ -411,6 +411,12 @@ function runtimeOptions(overrides: Partial<McpRuntimeOptions> = {}): McpRuntimeO
         return runtimePrincipal(input.raw_token);
       },
     },
+    cli_authenticator: {
+      async authenticate(input) {
+        return { ...runtimePrincipal(input.raw_token), provider: null };
+      },
+    },
+    cli_resource: "https://mcpdev.comvenio.app/cli",
     provider_resolver: new ExactProviderHintResolver(),
     capability_resolver: {
       async resolve(input) {
@@ -474,6 +480,62 @@ async function postMcp(baseUrl: string, body: unknown, token?: string): Promise<
     body: JSON.stringify(body),
   });
 }
+
+async function postCli(baseUrl: string, body: unknown, token?: string): Promise<Response> {
+  return fetch(`${baseUrl}/cli`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+      "MCP-Protocol-Version": "2025-06-18",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+test("isolates the native CLI MCP route from provider identity", async () => {
+  const server = new McpHttpServer(runtimeOptions());
+  const address = await server.listen(0, "127.0.0.1");
+  try {
+    const response = await postCli(
+      `http://127.0.0.1:${address.port}`,
+      {
+        jsonrpc: "2.0",
+        id: "cli-context",
+        method: "tools/call",
+        params: {
+          name: "cv_runtime_context_read",
+          arguments: { club_id: clubId },
+        },
+      },
+      "openai-token",
+    );
+    const responseBody = await response.clone().text();
+    expect(
+      { status: response.status, body: responseBody },
+    ).toEqual({
+      status: 200,
+      body: expect.any(String),
+    });
+    const payload = (await response.json()) as {
+      result: {
+        content: Array<{ text: string }>;
+      };
+    };
+    const encoded = payload.result.content[0]?.text;
+    expect(encoded).toBeDefined();
+    if (encoded === undefined) {
+      throw new Error("Expected the runtime context tool to return text content.");
+    }
+    expect(JSON.parse(encoded)).toEqual(expect.objectContaining({
+      club_id: clubId,
+      provider: null,
+    }));
+  } finally {
+    await server.drain(2_000);
+  }
+});
 
 test("loads only externally released MCP capabilities from the canonical actor gate", async () => {
   let requestedUrl = "";
@@ -1571,7 +1633,7 @@ describe("Remote MCP runtime", () => {
         scopes: ["task.read"],
       }]);
       expect(taskReminder._meta.securitySchemes).toEqual(taskReminder.securitySchemes);
-      expect(JSON.stringify(taskReminder.outputSchema)).not.toContain('"user_id"');
+      expect(JSON.stringify(taskReminder.outputSchema ?? {})).not.toContain('"user_id"');
       expect(taskReminder.annotations).toMatchObject({
         readOnlyHint: false,
         destructiveHint: false,
@@ -2570,7 +2632,14 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
       capability_snapshot: { ...capabilitySnapshot, permissions: { create_menus: true, manage_menus: true } },
     };
     expect(sets.menu.listVisible(menuRole).map((definition) => definition.action_id)).toContain("cai.menu.01.create");
-    expect(sets.shopping.listVisible(menuRole)).toHaveLength(0);
+    const visibleShoppingActions = sets.shopping.listVisible(menuRole)
+      .map((definition) => definition.action_id);
+    expect(
+      visibleShoppingActions.filter((actionId) => !actionId.includes(".procurement.")),
+    ).toHaveLength(0);
+    expect(
+      visibleShoppingActions.filter((actionId) => actionId.includes(".procurement.")),
+    ).not.toHaveLength(0);
     const creatorOnly = {
       context: { ...context, scopes: ["supply.read", "supply.write"] as RequestContext["scopes"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: { create_menus: true } },
