@@ -300,6 +300,24 @@ describe("tool visibility and own explanation", () => {
     });
   });
 
+  test("keeps an RBAC-allowed protected tool discoverable before OAuth step-up", () => {
+    const decision = new ToolVisibilityPolicy(() => fixedNow).evaluate({
+      tool: {
+        ...readTool,
+        required_scopes: ["member.read.details"],
+      },
+      context: context(),
+      snapshot: snapshot(),
+      provider_tool_updates: "dynamic",
+      catalog_contains_tool: true,
+    });
+    expect(decision).toEqual({
+      visible: true,
+      authorized: false,
+      reason: "SCOPE_REQUIRED",
+    });
+  });
+
   test("permissions_explain contains only safe own capability provenance", () => {
     const result = new PermissionsExplainTool(() => fixedNow).execute({
       club_id: clubId,

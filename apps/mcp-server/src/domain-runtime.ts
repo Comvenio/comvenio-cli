@@ -25,6 +25,7 @@ import {
   confirmationMatchHash,
   type DomainStateStore,
 } from "./domain-state-store.ts";
+import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
   ConfirmationWidgetCapabilityPolicy,
@@ -890,8 +891,19 @@ function toMcpResult(
   };
 }
 
-function executionError(context: RequestContext, error: unknown): CallToolResult {
+function executionError(
+  context: RequestContext,
+  publicOrigin: string,
+  error: unknown,
+): CallToolResult {
   if (isConnectorError(error)) {
+    if (error.code === "SCOPE_REQUIRED" && error.required_scope) {
+      return insufficientScopeToolResult({
+        public_origin: publicOrigin,
+        required_scopes: [error.required_scope],
+        context,
+      });
+    }
     return {
       content: [{
         type: "text",
@@ -1018,6 +1030,7 @@ export function registerFullDomainRuntime(input: {
   context: RequestContext;
   capability_snapshot: CapabilitySnapshot;
   environment: OAuthEnvironment;
+  public_origin: string;
   state_store: DomainStateStore;
   advertised_security_schemes: Map<string, readonly ToolSecurityScheme[]>;
 }): DomainRuntimeRegistration {
@@ -1322,7 +1335,7 @@ export function registerFullDomainRuntime(input: {
             }
             return toMcpResult(input.context, result);
           } catch (error) {
-            return executionError(input.context, error);
+            return executionError(input.context, input.public_origin, error);
           }
         });
         registered.add(definition.action_id);
@@ -1428,7 +1441,7 @@ export function registerFullDomainRuntime(input: {
         }
         return toMcpResult(input.context, result);
       } catch (error) {
-        return executionError(input.context, error);
+        return executionError(input.context, input.public_origin, error);
       }
     });
   }

@@ -115,7 +115,16 @@ function filteredActions(
       || Object.prototype.hasOwnProperty.call(action.input, "club_id")) {
       return [];
     }
-    const actionObjectId = typeof action.input.object_id === "string" ? action.input.object_id : null;
+    const nestedInput = action.input.input !== null
+      && typeof action.input.input === "object"
+      && !Array.isArray(action.input.input)
+      ? action.input.input
+      : null;
+    const actionObjectId = typeof action.input.object_id === "string"
+      ? action.input.object_id
+      : nestedInput && typeof nestedInput.object_id === "string"
+        ? nestedInput.object_id
+        : null;
     if (actionObjectId && !visibleObjectIds.has(actionObjectId)) return [];
     if (action.risk_class !== "read" && actionObjectId !== selectedObjectId) return [];
     if (action.risk_class !== "read" && (action.risk_class !== "critical_write" || !action.requires_confirmation || !actionObjectId)) return [];

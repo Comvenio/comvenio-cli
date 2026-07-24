@@ -22,6 +22,7 @@ import type {
   AgentCapabilityProjection,
   StatelessTransportContext,
 } from "./http/types.ts";
+import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
 import {
   fullDomainProtectedToolDescriptors,
   fullDomainReviewToolSummaries,
@@ -182,7 +183,7 @@ const TOOL_COPY = Object.freeze({
   },
   cv_permissions_explain_read: {
     title: "Comvenio: Eigene Rechte erklären",
-    description: "Ohne Eingabe aufrufen. Erklärt ausschließlich deine effektiven Rechte im über OAuth gewählten Verein.",
+    description: "Ohne Eingabe aufrufen. Trennt deine effektiven Backend-Rechte ausdrücklich von den in dieser Verbindung tatsächlich verfügbaren MCP-Aktionen und bereits gewährten OAuth-Scopes. Nur Einträge unter available_actions sind hier aufrufbar.",
   },
   cv_schema_read: {
     title: "Comvenio: Verfügbare Aktionen erklären",
@@ -190,7 +191,7 @@ const TOOL_COPY = Object.freeze({
   },
   cv_my_tasks_read: {
     title: "Comvenio: Eigene Aufgaben anzeigen",
-    description: "Zeigt deine persönlichen, dir zugewiesenen Aufgaben im gewünschten Zeitraum. Verein und Mitglied werden sicher aus deiner OAuth-Verbindung abgeleitet; frage niemals nach club_id, Vereinsdomain oder Mitglieds-ID.",
+    description: "Zeigt deine persönlichen, dir zugewiesenen Aufgaben im gewünschten Zeitraum. Verein und Mitglied werden sicher aus deiner OAuth-Verbindung abgeleitet; frage niemals nach club_id, Vereinsdomain oder Mitglieds-ID. Fehlt task.read, löst der Aufruf automatisch den OAuth-Step-up aus.",
   },
   cv_my_task_reminder_write: {
     title: "Comvenio: Eigene Aufgaben-Erinnerung verwalten",
@@ -656,27 +657,6 @@ function protectedToolError(
   };
 }
 
-function insufficientScopeResult(
-  publicOrigin: string,
-  scope: OAuthScope,
-): CallToolResult {
-  const challenge = `Bearer resource_metadata="${publicOrigin}/.well-known/oauth-protected-resource", error="insufficient_scope", error_description="Für persönliche Aufgaben wird der OAuth-Scope ${scope} benötigt.", scope="${scope}"`;
-  return {
-    content: [{
-      type: "text",
-      text: `Deine Comvenio-Verbindung benötigt zusätzlich den OAuth-Scope ${scope}. Bitte autorisiere die Verbindung erneut.`,
-    }],
-    structuredContent: {
-      error: "insufficient_scope",
-      required_scope: scope,
-    },
-    _meta: {
-      "mcp/www_authenticate": [challenge],
-    },
-    isError: true,
-  };
-}
-
 export function createRuntimeServer(input: {
   environment: OAuthEnvironment;
   api_base_url: string;
@@ -733,6 +713,53 @@ export function createRuntimeServer(input: {
     && input.context.capability_snapshot
     && input.context.request.scopes.includes("club.read")
   ) {
+    const clubId = input.context.request.club_id;
+    const backendActorToken = input.context.backend_actor_token;
+    const grantedScopes = new Set(input.context.request.scopes);
+    let personalTaskToolsAvailable = false;
+    let clubAgentToolAvailable = false;
+    const scopesGranted = (scopes: readonly OAuthScope[]): boolean =>
+      scopes.every((scope) => grantedScopes.has(scope));
+    const availableActionSummaries = () => [
+      ...publicDescriptors.map((tool) => ({
+        name: tool.resolver_alias,
+        title: tool.title,
+        description: tool.description,
+        required_scopes: ["public.read"] as OAuthScope[],
+        scope_granted: true,
+        read_only: true,
+      })),
+      ...Object.entries(TOOL_COPY)
+        .filter(([name]) =>
+          !["cv_my_tasks_read", "cv_my_task_reminder_write"].includes(name)
+          || personalTaskToolsAvailable)
+        .map(([name, copy]) => {
+          const requiredScopes = TOOL_SCOPES[
+            name as keyof typeof TOOL_SCOPES
+          ];
+          return {
+            name,
+            ...copy,
+            required_scopes: [...requiredScopes],
+            scope_granted: scopesGranted(requiredScopes),
+            read_only: name !== "cv_my_task_reminder_write",
+          };
+        }),
+      ...(clubAgentToolAvailable
+        ? [{
+            name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
+            ...CLUB_AGENT_TOOL_COPY,
+            required_scopes: ["club.read"] as OAuthScope[],
+            scope_granted: true,
+            read_only: false,
+          }]
+        : []),
+      ...domainTools.map((tool) => ({
+        ...tool,
+        required_scopes: [...tool.required_scopes],
+        scope_granted: scopesGranted(tool.required_scopes),
+      })),
+    ].sort((left, right) => left.name.localeCompare(right.name));
     const clubReadSecuritySchemes = oauthSecuritySchemes(["club.read"]);
     advertisedSecuritySchemes.set("cv_whoami_read", clubReadSecuritySchemes);
     registerAppTool(server, "cv_whoami_read", {
@@ -761,9 +788,8 @@ export function createRuntimeServer(input: {
       _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     }, async () => {
-      const clubId = input.context.request.club_id;
       if (!clubId) throw new Error("Der OAuth-Grant enthält keinen gebundenen Verein.");
-      return toMcpResult(new PermissionsExplainTool().execute(
+      const explanation = new PermissionsExplainTool().execute(
         {
           club_id: clubId,
           ...(input.context.request.department_id
@@ -772,6 +798,26 @@ export function createRuntimeServer(input: {
         },
         input.context.request,
         input.context.capability_snapshot!,
+      );
+      const output = {
+        club_id: explanation.structuredContent.club_id,
+        department_ids: explanation.structuredContent.department_ids,
+        capability_version: explanation.structuredContent.capability_version,
+        generated_at: explanation.structuredContent.generated_at,
+        backend_permissions: {
+          allowed: explanation.structuredContent.allowed_capabilities,
+          denied: explanation.structuredContent.denied_capabilities,
+        },
+        available_actions: availableActionSummaries(),
+        granted_scopes: [...grantedScopes].sort(),
+      } satisfies Record<string, JsonValue>;
+      return toMcpResult(createProviderNeutralResult(
+        input.context.request,
+        output,
+        [{
+          type: "text",
+          text: "Backend-Rechte und tatsächlich verfügbare MCP-Aktionen sind getrennt ausgewiesen. Nur available_actions können in dieser Verbindung aufgerufen werden; scope_granted=false bedeutet, dass der Aufruf zuerst einen OAuth-Step-up auslöst.",
+        }],
       ));
     });
 
@@ -782,42 +828,16 @@ export function createRuntimeServer(input: {
       _meta: withSecurityMetadata(undefined, clubReadSecuritySchemes),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     }, async () => {
-      const tools = [
-        ...publicDescriptors.map((tool) => ({
-          name: tool.resolver_alias,
-          title: tool.title,
-          description: tool.description,
-          required_scopes: ["public.read"] as OAuthScope[],
-          read_only: true,
-        })),
-        ...Object.entries(TOOL_COPY)
-          .filter(([name]) =>
-            TOOL_SCOPES[name as keyof typeof TOOL_SCOPES].every((scope) =>
-              input.context.request.scopes.includes(scope)))
-          .map(([name, copy]) => ({
-            name,
-            ...copy,
-            required_scopes: TOOL_SCOPES[name as keyof typeof TOOL_SCOPES],
-            read_only: name !== "cv_my_task_reminder_write",
-          })),
-        ...(clubAgentReleased
-          ? [{
-            name: CLUB_AGENT_PROTECTED_TOOL.tool_name,
-            ...CLUB_AGENT_TOOL_COPY,
-            required_scopes: ["club.read"] as OAuthScope[],
-            read_only: false,
-          }]
-          : []),
-        ...domainTools,
-      ].sort((left, right) => left.name.localeCompare(right.name));
-      return toMcpResult(createProviderNeutralResult(input.context.request, { tools }, [{
+      const tools = availableActionSummaries();
+      return toMcpResult(createProviderNeutralResult(input.context.request, {
+        tools,
+        granted_scopes: [...grantedScopes].sort(),
+      }, [{
         type: "text",
         text: `${tools.length} Aktionen sind in diesem Verbindungskontext verfügbar.`,
       }]));
     });
 
-    const clubId = input.context.request.club_id;
-    const backendActorToken = input.context.backend_actor_token;
     if (clubId && backendActorToken) {
       const taskReadSecuritySchemes = oauthSecuritySchemes(["task.read"]);
       const apiClient = createComvenioApiClient({
@@ -827,22 +847,32 @@ export function createRuntimeServer(input: {
       const tasks = new TaskToolSet({
         client: apiClient,
       });
+      personalTaskToolsAvailable = tasks.listVisible({
+        context: input.context.request,
+        capability_snapshot: input.context.capability_snapshot,
+        provider_tool_updates: "dynamic",
+      }).some((definition) => definition.action_id === "cai.task.01.list");
       if (releaseScope === "full_connector_v1") {
-        const widgetRuntime = registerFullWidgetRuntime({
-          server,
-          client: apiClient,
-          context: input.context.request,
-          capability_snapshot: input.context.capability_snapshot,
-          environment: input.environment,
-          advertised_security_schemes: advertisedSecuritySchemes,
-        });
         const domainRuntime = registerFullDomainRuntime({
           server,
           client: apiClient,
           context: input.context.request,
           capability_snapshot: input.context.capability_snapshot,
           environment: input.environment,
+          public_origin: input.public_origin,
           state_store: input.domain_state_store,
+          advertised_security_schemes: advertisedSecuritySchemes,
+        });
+        const widgetRuntime = registerFullWidgetRuntime({
+          server,
+          client: apiClient,
+          context: input.context.request,
+          capability_snapshot: input.context.capability_snapshot,
+          environment: input.environment,
+          public_origin: input.public_origin,
+          available_domain_tool_names: new Set(
+            domainRuntime.tools.map((tool) => tool.name),
+          ),
           advertised_security_schemes: advertisedSecuritySchemes,
         });
         domainTools = [
@@ -851,6 +881,7 @@ export function createRuntimeServer(input: {
         ].sort((left, right) => left.name.localeCompare(right.name));
       }
       if (clubAgentReleased) {
+        clubAgentToolAvailable = true;
         advertisedSecuritySchemes.set(
           CLUB_AGENT_PROTECTED_TOOL.tool_name,
           clubReadSecuritySchemes,
@@ -929,7 +960,7 @@ export function createRuntimeServer(input: {
           }
         });
       }
-      if (input.context.request.scopes.includes("task.read")) {
+      if (personalTaskToolsAvailable) {
         advertisedSecuritySchemes.set("cv_my_tasks_read", taskReadSecuritySchemes);
         registerAppTool(server, "cv_my_tasks_read", {
           ...TOOL_COPY.cv_my_tasks_read,
@@ -944,6 +975,13 @@ export function createRuntimeServer(input: {
           },
         }, async (arguments_) => {
           const parsed = myTasksSchema.parse(arguments_);
+          if (!input.context.request.scopes.includes("task.read")) {
+            return insufficientScopeToolResult({
+              public_origin: input.public_origin,
+              required_scopes: ["task.read"],
+              context: input.context.request,
+            });
+          }
           try {
             const result = await tasks.execute({
               action_id: "cai.task.01.list",
@@ -974,17 +1012,18 @@ export function createRuntimeServer(input: {
             ));
           } catch (error) {
             if (isConnectorError(error) && error.code === "SCOPE_REQUIRED") {
-              return insufficientScopeResult(
-                input.public_origin,
-                error.required_scope ?? "task.read",
-              );
+              return insufficientScopeToolResult({
+                public_origin: input.public_origin,
+                required_scopes: [error.required_scope ?? "task.read"],
+                context: input.context.request,
+              });
             }
             throw error;
           }
         });
       }
 
-      if (input.context.request.scopes.includes("task.read")) {
+      if (personalTaskToolsAvailable) {
         const taskReminderSecuritySchemes = oauthSecuritySchemes(["task.read"]);
         advertisedSecuritySchemes.set(
           "cv_my_task_reminder_write",
@@ -1004,7 +1043,11 @@ export function createRuntimeServer(input: {
         }, async (arguments_) => {
           const parsed = taskReminderSchema.parse(arguments_);
           if (!input.context.request.scopes.includes("task.read")) {
-            return insufficientScopeResult(input.public_origin, "task.read");
+            return insufficientScopeToolResult({
+              public_origin: input.public_origin,
+              required_scopes: ["task.read"],
+              context: input.context.request,
+            });
           }
 
           try {
@@ -1097,6 +1140,13 @@ export function createRuntimeServer(input: {
               }],
             ));
           } catch (error) {
+            if (isConnectorError(error) && error.code === "SCOPE_REQUIRED") {
+              return insufficientScopeToolResult({
+                public_origin: input.public_origin,
+                required_scopes: [error.required_scope ?? "task.read"],
+                context: input.context.request,
+              });
+            }
             if (isConnectorError(error) && error.code === "PERMISSION_DENIED") {
               return protectedToolError(
                 input.context.request,

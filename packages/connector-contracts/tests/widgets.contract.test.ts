@@ -179,6 +179,26 @@ const sourceEvent = {
   status: "published" as const,
 };
 
+test("all five widget clients complete the MCP Apps initialization handshake", () => {
+  for (const client of [
+    EVENT_CALENDAR_WIDGET_CLIENT,
+    MEMBER_MANAGEMENT_WIDGET_CLIENT,
+    BOOKING_OBJECT_WIDGET_CLIENT,
+    NEWS_WIDGET_CLIENT,
+    CONFIRMATION_WIDGET_CLIENT,
+  ]) {
+    expect(client).toContain('protocolVersion:MCP_APPS_PROTOCOL_VERSION');
+    expect(client).toContain('MCP_APPS_PROTOCOL_VERSION="2026-01-26"');
+    expect(client).toContain('"ui/notifications/initialized"');
+    expect(client).toContain('"ui/notifications/tool-result"');
+    expect(client).toContain('method:"tools/call"');
+    expect(client).toContain("handleMcpAppsBridgeMessage");
+    expect(client).not.toContain("window.openai");
+    expect(client).not.toContain("toolResponseMetadata");
+    expect(() => new Function(client)).not.toThrow();
+  }
+});
+
 function privateWidget(toolNames: Iterable<string> = [writeAction.tool_name]): EventCalendarWidget {
   return new EventCalendarWidgetProjector(new EventWidgetCapabilityPolicy(toolNames)).private({
     club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" },
@@ -308,7 +328,7 @@ describe("K16 event calendar widget contracts", () => {
     expect(() => eventCalendarState({ phase: "auth_required", model, message: "Bitte anmelden." })).toThrow();
   });
 
-  test("uses the provider-neutral MCP Apps bridge and a constrained same-origin resource", () => {
+  test("uses the provider-neutral MCP Apps bridge and a constrained public resource", () => {
     expect(EVENT_CALENDAR_WIDGET_RESOURCE_URI).toBe("ui://comvenio/event-calendar");
     expect(EVENT_CALENDAR_WIDGET_ASSET_PATH).toMatch(/^\/widgets\/event-calendar\/assets\/event-calendar\.[a-f0-9]{64}\.js$/u);
     expect(EVENT_CALENDAR_WIDGET_CLIENT).toContain("ui/notifications/tool-result");
@@ -543,8 +563,18 @@ describe("K18 booking object widget contracts", () => {
   const reserveAction: ServerActionDescriptor = {
     action_id: "booking.create",
     label: "Reservierung vorbereiten",
-    tool_name: "cv_booking_create",
-    input: { object_id: objectId, start_time: range.from, end_time: range.to, timezone: "Europe/Berlin" },
+    tool_name: "cv_booking_03_create",
+    input: {
+      input: {
+        object_id: objectId,
+        start_time: range.from,
+        end_time: range.to,
+        timezone: "Europe/Berlin",
+        status: "requested",
+        title: "Buchung: Tennisplatz 1",
+      },
+      idempotency_key: "91919191-9191-4191-8191-919191919192",
+    },
     visibility: "visible",
     enabled: true,
     risk_class: "critical_write",
@@ -610,6 +640,18 @@ describe("K18 booking object widget contracts", () => {
     expect(bookingWidget([]).actions).toEqual([]);
     expect(bookingWidget().actions.map((action) => action.tool_name)).toEqual([selectAction.tool_name, reserveAction.tool_name]);
     expect(bookingWidget().actions[1]).toMatchObject({ risk_class: "critical_write", requires_confirmation: true });
+    expect(BOOKING_OBJECT_WIDGET_CLIENT).toContain("Slot buchen");
+    const crossTenant = structuredClone(bookingWidget()) as unknown as {
+      actions: Array<{ input: Record<string, unknown> }>;
+    };
+    crossTenant.actions[1]!.input = {
+      ...crossTenant.actions[1]!.input as Record<string, unknown>,
+      input: {
+        ...(crossTenant.actions[1]!.input as { input: Record<string, unknown> }).input,
+        club_id: "44444444-4444-4444-8444-444444444444",
+      },
+    };
+    expect(BOOKING_OBJECT_WIDGET_SCHEMA.safeParse(crossTenant).success).toBe(false);
     const unsafe = { ...reserveAction, risk_class: "reversible_write" as const, requires_confirmation: false };
     const projected = new BookingObjectWidgetProjector(new BookingWidgetCapabilityPolicy([unsafe.tool_name])).project({
       club: { club_id: clubId, name: "TSV Musterstadt", timezone: "Europe/Berlin" }, context: bookingContext,
@@ -914,7 +956,8 @@ describe("K20 universal preview and confirmation widget contracts", () => {
     expect(CONFIRMATION_WIDGET_SCHEMA.safeParse({ ...model, actions: [confirmAction({ normalized_input: { publish: false } })] }).success).toBe(false);
     expect(CONFIRMATION_WIDGET_CLIENT).toContain('Object.keys(input).sort().join(",")==="idempotency_key,preview_id"');
     expect(CONFIRMATION_WIDGET_CLIENT).toContain('value["comvenio/confirmation"]');
-    expect(CONFIRMATION_WIDGET_CLIENT).toContain("toolResponseMetadata");
+    expect(CONFIRMATION_WIDGET_CLIENT).toContain('for(const key of ["_meta","mcp_tool_result","call_tool_result","result"])');
+    expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("toolResponseMetadata");
     expect(CONFIRMATION_WIDGET_CLIENT).toContain("confirmation_token:credential.confirmation_token");
     expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("normalized_input");
     expect(CONFIRMATION_WIDGET_CLIENT).not.toContain("fetch(");

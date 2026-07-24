@@ -288,6 +288,67 @@ export const BOOKING_OBJECT_DATA_SCHEMA = z.object({
   }
 });
 
+function bookingActionBinding(input: unknown): {
+  object_id: string | null;
+  contains_club_id: boolean;
+} {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return { object_id: null, contains_club_id: false };
+  }
+  const outer = input as Record<string, unknown>;
+  const nested = outer.input !== null
+    && typeof outer.input === "object"
+    && !Array.isArray(outer.input)
+    ? outer.input as Record<string, unknown>
+    : null;
+  const objectId = typeof outer.object_id === "string"
+    ? outer.object_id
+    : typeof nested?.object_id === "string"
+      ? nested.object_id
+      : null;
+  return {
+    object_id: objectId,
+    contains_club_id: Object.prototype.hasOwnProperty.call(outer, "club_id")
+      || (nested !== null && Object.prototype.hasOwnProperty.call(nested, "club_id")),
+  };
+}
+
+const BOOKING_OBJECT_ACTION_INPUT_SCHEMA = z.union([
+  z.object({
+    object_id: uuid,
+    from: instant.optional(),
+    to: instant.optional(),
+    timezone: ianaTimezone.optional(),
+    object_type: z.string().trim().min(1).max(100).optional(),
+  }).strict(),
+  z.object({
+    input: z.object({
+      object_id: uuid,
+      start_time: instant,
+      end_time: instant,
+      timezone: ianaTimezone,
+      status: z.literal("requested"),
+      title: safeText(300).optional(),
+    }).strict().refine((value) =>
+      Date.parse(value.end_time) > Date.parse(value.start_time), {
+      message: "Das Buchungsende muss nach dem Start liegen.",
+      path: ["end_time"],
+    }),
+    idempotency_key: uuid,
+  }).strict(),
+]);
+
+const BOOKING_OBJECT_ACTION_DESCRIPTOR_SCHEMA =
+  SERVER_ACTION_DESCRIPTOR_SCHEMA.safeExtend({
+    input: BOOKING_OBJECT_ACTION_INPUT_SCHEMA,
+  }).refine(
+    (action) => action.visibility === "visible",
+    {
+      message: "Verborgene Aktionen dürfen den Widget-Client nicht erreichen.",
+      path: ["visibility"],
+    },
+  );
+
 export const BOOKING_OBJECT_WIDGET_SCHEMA = z.object({
   widget: z.literal("booking_object"),
   contract_version: z.literal("1.0.0"),
@@ -296,17 +357,20 @@ export const BOOKING_OBJECT_WIDGET_SCHEMA = z.object({
   capability_version: z.string().trim().min(1).max(200).nullable(),
   generated_at: instant,
   data: BOOKING_OBJECT_DATA_SCHEMA,
-  actions: z.array(VISIBLE_SERVER_ACTION_DESCRIPTOR_SCHEMA).max(50),
+  actions: z.array(BOOKING_OBJECT_ACTION_DESCRIPTOR_SCHEMA).max(50),
   empty_state: z.object({ title: safeText(120), description: safeText(500) }).strict().nullable(),
 }).strict().superRefine((widget, context) => {
   if ((widget.data.objects.length === 0) !== (widget.empty_state !== null)) {
     context.addIssue({ code: "custom", message: "Der Leerzustand muss exakt zur leeren Objektliste passen." });
   }
   const visibleObjectIds = new Set(widget.data.objects.map((object) => object.object_id));
-  if (widget.actions.some((action) => action.input === null || typeof action.input !== "object" || Array.isArray(action.input)
-    || Object.prototype.hasOwnProperty.call(action.input, "club_id")
-    || (typeof action.input.object_id === "string" && !visibleObjectIds.has(action.input.object_id))
-    || (action.risk_class !== "read" && action.input.object_id !== widget.data.selected_object_id))) {
+  if (widget.actions.some((action) => {
+    const binding = bookingActionBinding(action.input);
+    return binding.object_id === null
+      || binding.contains_club_id
+      || !visibleObjectIds.has(binding.object_id)
+      || (action.risk_class !== "read" && binding.object_id !== widget.data.selected_object_id);
+  })) {
     context.addIssue({ code: "custom", message: "Jede Buchungsaktion muss an ein sichtbares beziehungsweise ausgewähltes Objekt gebunden sein." });
   }
   if (widget.actions.some((action) => action.risk_class !== "read"

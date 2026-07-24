@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type {
   CapabilitySnapshot,
   OAuthEnvironment,
@@ -21,7 +23,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
-import type { DomainToolSummary } from "./domain-runtime.ts";
+import {
+  domainToolName,
+  type DomainToolSummary,
+} from "./domain-runtime.ts";
+import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
   AvailabilityContract,
@@ -159,6 +165,13 @@ const objectListSchema = z.union([
     }).passthrough()).max(100),
   }).passthrough(),
 ]);
+const bookableSlotsSchema = z.object({
+  slots: z.array(z.object({
+    from: dateTime,
+    to: dateTime,
+    status: z.enum(["AVAILABLE", "BUSY", "NOT_BOOKABLE"]),
+  }).passthrough()).max(200),
+}).passthrough();
 
 const MEMBER_WIDGET_SUMMARY: DomainToolSummary = {
   name: MEMBER_MANAGEMENT_WIDGET_TOOL_NAME,
@@ -186,8 +199,8 @@ const NEWS_WIDGET_SUMMARY: DomainToolSummary = {
 };
 const BOOKING_WIDGET_SUMMARY: DomainToolSummary = {
   name: BOOKING_OBJECT_WIDGET_TOOL_NAME,
-  title: "Comvenio: Objekte und Verfügbarkeit öffnen",
-  description: "Zeigt freigegebene Buchungsobjekte und prüft nach expliziter Objektauswahl deren Verfügbarkeit im angegebenen Zeitraum. Der Verein wird aus OAuth abgeleitet; frage niemals nach club_id.",
+  title: "Comvenio: Buchungskalender öffnen",
+  description: "Öffnet den Buchungskalender mit freigegebenen Objekten sowie freien und belegten Slots. Nach der Objektauswahl kann ein freier Slot direkt als bestätigungspflichtige Buchung vorbereitet werden. Der Verein wird aus OAuth abgeleitet; frage niemals nach club_id.",
   required_scopes: ["booking.read", "object.read"],
   read_only: true,
   risk_class: "read",
@@ -243,9 +256,17 @@ function widgetResult(
 
 function widgetError(
   context: RequestContext,
+  publicOrigin: string,
   error: unknown,
 ): CallToolResult {
   const connectorError = isConnectorError(error) ? error : null;
+  if (connectorError?.code === "SCOPE_REQUIRED" && connectorError.required_scope) {
+    return insufficientScopeToolResult({
+      public_origin: publicOrigin,
+      required_scopes: [connectorError.required_scope],
+      context,
+    });
+  }
   const hidden = connectorError?.code === "PERMISSION_DENIED"
     || connectorError?.code === "NOT_FOUND"
     || connectorError?.code === "TENANT_MISMATCH";
@@ -322,6 +343,45 @@ function actionDescriptor(input: {
   };
 }
 
+function bookingSlotActionId(input: {
+  object_id: string;
+  from: string;
+  to: string;
+}): string {
+  const slotHash = createHash("sha256")
+    .update(`${input.object_id}\n${input.from}\n${input.to}`)
+    .digest("hex")
+    .slice(0, 24);
+  return `booking.slot.reserve.${slotHash}`;
+}
+
+function bookingSlotIdempotencyKey(input: {
+  subject_id: string;
+  club_id: string;
+  capability_version: string;
+  object_id: string;
+  from: string;
+  to: string;
+}): string {
+  const hex = createHash("sha256")
+    .update([
+      input.subject_id,
+      input.club_id,
+      input.capability_version,
+      input.object_id,
+      input.from,
+      input.to,
+    ].join("\n"))
+    .digest("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `4${hex.slice(13, 16)}`,
+    `8${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join("-");
+}
+
 export function fullWidgetReviewToolSummaries(): DomainToolSummary[] {
   return [
     structuredClone(BOOKING_WIDGET_SUMMARY),
@@ -347,10 +407,21 @@ export function registerFullWidgetRuntime(input: {
   context: RequestContext;
   capability_snapshot: CapabilitySnapshot;
   environment: OAuthEnvironment;
+  public_origin: string;
+  available_domain_tool_names: ReadonlySet<string>;
   advertised_security_schemes: Map<string, readonly ToolSecurityScheme[]>;
 }): { tools: DomainToolSummary[] } {
   const visibleTools: DomainToolSummary[] = [];
   const clubId = oauthClubId(input.context);
+  const subjectId = input.context.subject_id;
+  if (!subjectId) {
+    throw createConnectorError({
+      code: "AUTH_REQUIRED",
+      message: "Der geschützte Widget-Kontext enthält keinen Nutzer.",
+      request_id: input.context.request_id,
+      retryable: false,
+    });
+  }
 
   const k8 = createK8ToolSets({ client: input.client });
   const visibleEventActions = new Set(k8.event.listVisible({
@@ -424,7 +495,7 @@ export function registerFullWidgetRuntime(input: {
           eventCalendarToolMetadata(input.environment)._meta,
         );
       } catch (error) {
-        return widgetError(input.context, error);
+        return widgetError(input.context, input.public_origin, error);
       }
     });
     visibleTools.push(structuredClone(EVENT_WIDGET_SUMMARY));
@@ -529,7 +600,7 @@ export function registerFullWidgetRuntime(input: {
           newsToolMetadata(input.environment)._meta,
         );
       } catch (error) {
-        return widgetError(input.context, error);
+        return widgetError(input.context, input.public_origin, error);
       }
     });
     visibleTools.push(structuredClone(NEWS_WIDGET_SUMMARY));
@@ -652,7 +723,7 @@ export function registerFullWidgetRuntime(input: {
           memberManagementToolMetadata(input.environment)._meta,
         );
       } catch (error) {
-        return widgetError(input.context, error);
+        return widgetError(input.context, input.public_origin, error);
       }
     });
     visibleTools.push(structuredClone(MEMBER_WIDGET_SUMMARY));
@@ -664,10 +735,7 @@ export function registerFullWidgetRuntime(input: {
     capability_snapshot: input.capability_snapshot,
     provider_tool_updates: "dynamic",
   }).map((definition) => definition.action_id));
-  if (
-    visibleObjectActions.has("cai.object.01.list")
-    && input.context.scopes.includes("booking.read")
-  ) {
+  if (visibleObjectActions.has("cai.object.01.list")) {
     const schemes = oauthSecuritySchemes(["booking.read", "object.read"]);
     input.advertised_security_schemes.set(
       BOOKING_OBJECT_WIDGET_TOOL_NAME,
@@ -725,7 +793,7 @@ export function registerFullWidgetRuntime(input: {
               timezone: parsed.timezone,
             }, input.context)
           : null;
-        const actions = objects.flatMap((object) => {
+        const objectActions = objects.flatMap((object) => {
           const visibleObjectId = objectId(object);
           return visibleObjectId
             ? [actionDescriptor({
@@ -743,10 +811,61 @@ export function registerFullWidgetRuntime(input: {
                 },
               })]
             : [];
-        });
+        }).slice(0, 30);
+        const selectedObject = objects.find((object) =>
+          objectId(object) === selectedObjectId);
+        const parsedAvailability = bookableSlotsSchema.safeParse(availability);
+        const slotActions = selectedObjectId
+          && selectedObject
+          && input.available_domain_tool_names.has(
+            domainToolName("cai.booking.03.create"),
+          )
+          ? (
+              parsedAvailability.success
+                ? parsedAvailability.data.slots
+                : []
+            )
+              .filter((slot) => slot.status === "AVAILABLE")
+              .slice(0, 20)
+              .map((slot) => ({
+                action_id: bookingSlotActionId({
+                  object_id: selectedObjectId,
+                  from: slot.from,
+                  to: slot.to,
+                }),
+                label: "Diesen Slot buchen",
+                tool_name: domainToolName("cai.booking.03.create"),
+                input: {
+                  input: {
+                    object_id: selectedObjectId,
+                    start_time: slot.from,
+                    end_time: slot.to,
+                    timezone: parsed.timezone,
+                    status: "requested",
+                    title: `Buchung: ${String(selectedObject.name)}`,
+                  },
+                  idempotency_key: bookingSlotIdempotencyKey({
+                    subject_id: subjectId,
+                    club_id: clubId,
+                    capability_version:
+                      input.capability_snapshot.capability_version,
+                    object_id: selectedObjectId,
+                    from: slot.from,
+                    to: slot.to,
+                  }),
+                },
+                visibility: "visible" as const,
+                enabled: true,
+                risk_class: "critical_write" as const,
+                requires_confirmation: true,
+                disabled_reason: null,
+              }))
+          : [];
+        const actions = [...objectActions, ...slotActions];
         const model = new BookingObjectWidgetProjector(
           new BookingWidgetCapabilityPolicy([
             BOOKING_OBJECT_WIDGET_TOOL_NAME,
+            domainToolName("cai.booking.03.create"),
           ]),
         ).project({
           club: {
@@ -771,7 +890,7 @@ export function registerFullWidgetRuntime(input: {
           bookingObjectToolMetadata(input.environment)._meta,
         );
       } catch (error) {
-        return widgetError(input.context, error);
+        return widgetError(input.context, input.public_origin, error);
       }
     });
     visibleTools.push(structuredClone(BOOKING_WIDGET_SUMMARY));

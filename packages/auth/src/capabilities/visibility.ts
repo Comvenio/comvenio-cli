@@ -20,10 +20,11 @@ export class ToolVisibilityPolicy {
     if (!input.catalog_contains_tool) return denied("NOT_IN_CATALOG");
     const context = normalizeRequestContext(input.context);
     const grantedScopes = new Set(context.scopes);
-    if (!input.tool.required_scopes.every((scope) => grantedScopes.has(scope))) {
-      return denied("SCOPE_REQUIRED");
-    }
     if (input.tool.is_public) {
+      if (!input.tool.required_scopes.every((scope) =>
+        grantedScopes.has(scope))) {
+        return denied("SCOPE_REQUIRED");
+      }
       return { visible: true, authorized: true, reason: "VISIBLE" };
     }
     if (context.subject_id === null || context.club_id === null || input.snapshot === null) {
@@ -54,6 +55,14 @@ export class ToolVisibilityPolicy {
       && input.tool.permission_policy.all_of.length === 0
       && input.tool.permission_policy.any_of.length === 0;
     if ((!hasAll || !hasAny) && !selfOnly) return denied("PERMISSION_REQUIRED");
+    if (!input.tool.required_scopes.every((scope) =>
+      grantedScopes.has(scope))) {
+      return {
+        visible: input.provider_tool_updates === "dynamic",
+        authorized: false,
+        reason: "SCOPE_REQUIRED",
+      };
+    }
     if (input.provider_tool_updates !== "dynamic") {
       return { visible: false, authorized: true, reason: "PROVIDER_STATIC_TOOLSET" };
     }

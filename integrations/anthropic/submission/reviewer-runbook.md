@@ -17,8 +17,11 @@ Dieses Runbook prüft ausschließlich synthetische Daten im vorbereiteten Review
    `task.write` darf für diese persönliche Präferenz nicht erforderlich sein.
    Club, Benutzer und Empfänger dürfen nicht als Toolargument
    gesendet werden; ausschließlich das verbundene Reviewkonto erhält die
-   Erinnerung. Ohne `task.read` bleibt das Tool verborgen. Das Löschen
-   verwendet dieselbe Task-ID und keine separate Reminder-ID.
+   Erinnerung. Ohne `task.read` bleibt das durch RBAC erlaubte Tool
+   auffindbar, darf aber noch keine Daten lesen oder Mutation auslösen. Der
+   erste Aufruf muss eine standardisierte `insufficient_scope`-Challenge für
+   den OAuth-Step-up liefern. Das Löschen verwendet dieselbe Task-ID und keine
+   separate Reminder-ID.
 
 ## Konten
 

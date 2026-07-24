@@ -200,8 +200,8 @@
     },
     {
       "tool_name": "cv_booking_object_widget_read",
-      "happy_path_prompt": "Führe „Comvenio: Objekte und Verfügbarkeit öffnen“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
-      "permission_denied_prompt": "Prüfe „Comvenio: Objekte und Verfügbarkeit öffnen“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "happy_path_prompt": "Führe „Comvenio: Buchungskalender öffnen“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Buchungskalender öffnen“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

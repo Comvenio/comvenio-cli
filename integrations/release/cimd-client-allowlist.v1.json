@@ -7,11 +7,41 @@
       "provider": "openai",
       "metadata_sha256": "7d8b74f3544d90c33f4e6df0b46cc23c4ef928d7398bfede623c70555790aa36",
       "allowed_scopes": [
+        "public.read",
         "club.read",
-        "task.read"
+        "club.write",
+        "member.read.basic",
+        "member.read.details",
+        "member.write",
+        "team.read",
+        "team.write",
+        "role.read.self",
+        "role.write",
+        "event.read",
+        "event.write",
+        "booking.read",
+        "object.read",
+        "content.write",
+        "content.read",
+        "booking.write",
+        "object.write",
+        "task.read",
+        "task.write",
+        "supply.read",
+        "supply.write",
+        "meeting.read",
+        "meeting.write",
+        "sponsor.read",
+        "sponsor.write",
+        "admin.write",
+        "files.read",
+        "files.write",
+        "files.export",
+        "files.import",
+        "connector.grants"
       ],
       "enabled": true
     }
   ],
-  "notice": "Der aktuell verbundene OpenAI-CIMD-Client wurde am 23.07.2026 mit club.read und task.read gepinnt. task.read autorisiert ausschließlich sichtbare Aufgaben und die persönliche Aufgaben-Erinnerung; task.write bleibt fachlichen Änderungen am gemeinsamen Aufgabenobjekt vorbehalten. Empfänger werden nicht aus Toolargumenten übernommen, sondern aus dem OAuth-Subjekt abgeleitet. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
+  "notice": "Der aktuell verbundene OpenAI-CIMD-Client ist für die bekannten Scopes des vollständigen Connector-Katalogs gepinnt. Diese Liste ist ausschließlich die serverseitige Obergrenze des Clients und erteilt keinen Scope. ChatGPT fordert als Basis und Standard nur club.read an; weitere Aktions-Scopes werden einzeln über die securitySchemes des aufgerufenen Tools und ausdrücklichen OAuth-Step-up erteilt. Backend-RBAC, Vereinsbindung und erneute Fachservice-Prüfung bleiben für jeden Aufruf verbindlich. Der Anthropic-Pin steht noch aus; bis zur vollständigen Provider-Prüfung bleibt der Gesamt-Release blockiert. Wildcards sind verboten."
 }
