@@ -80,6 +80,7 @@ export function buildPendingReleaseEvidence(
     rate_limit_config_verified: true,
     development_health_ready: false,
     production_health_ready: false,
+    connector_legal_documents_reviewed: false,
     pricing_included_without_surcharge: true,
     germany_first: true,
   };

@@ -43,6 +43,7 @@ export function runOpenAiSubmissionPreflight(input: {
     check("OAUTH_PKCE", input.evidence.oauth_pkce_verified, "OAuth, S256, Audience, Widerruf und Reauth müssen geprüft sein."),
     check("WIDGET_CSP", input.evidence.widget_csp_verified, "Alle veröffentlichten Widget-Ressourcen benötigen exakte CSP-Metadaten."),
     check("LEGAL_LINKS", input.evidence.legal_links_verified, "Datenschutz-, AGB-, Impressums-, Website- und Supportlinks müssen erreichbar sein."),
+    check("CONNECTOR_LEGAL_DOCUMENTS_REVIEWED", input.evidence.connector_legal_documents_reviewed, "Die connector-spezifische Datenschutzrichtlinie und die Nutzungsbedingungen müssen von Product Owner und Privacy Reviewer freigegeben sein."),
     check("REAL_ASSETS", artifactPaths.every((path) => safeArtifact(input.artifact_root, path)), "Alle referenzierten Manifest-, Asset-, Screenshot- und Runbook-Dateien müssen real vorhanden sein."),
     check("PUBLISHED_TOOLS", input.tools.length > 0, "Eine Einreichung ohne veröffentlichte Tools ist nicht zulässig."),
     check("TOOL_PLAN_PARITY", JSON.stringify(expectedTools) === JSON.stringify(plannedTools) && JSON.stringify(expectedTools) === JSON.stringify(resultTools), "Jedes veröffentlichte Tool benötigt genau einen Testfall und ein Ergebnis."),

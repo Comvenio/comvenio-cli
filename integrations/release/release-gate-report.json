@@ -26,6 +26,7 @@
     "rate_limit_config_verified": true,
     "development_health_ready": false,
     "production_health_ready": false,
+    "connector_legal_documents_reviewed": false,
     "pricing_included_without_surcharge": true,
     "germany_first": true
   },
@@ -433,6 +434,7 @@
     "DATA_SAFETY",
     "WIDGET_SURFACES_ACCESSIBILITY",
     "HEALTH_READINESS",
+    "CONNECTOR_LEGAL_DOCUMENTS_REVIEWED",
     "CONNECTOR_EVAL",
     "RESPONSE_QUALITY",
     "TENANT_ISOLATION",

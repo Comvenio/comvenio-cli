@@ -107,6 +107,7 @@ function evidence(manifest: ChatGptAppManifest, plan: OpenAiToolTestPlan): OpenA
     oauth_pkce_verified: true,
     widget_csp_verified: true,
     legal_links_verified: true,
+    connector_legal_documents_reviewed: true,
     tool_results: plan.cases.map((item) => ({
       tool_name: item.tool_name,
       prompt: item.prompt,
@@ -187,11 +188,12 @@ describe("OpenAI Marketplace provider package", () => {
     const plan = buildOpenAiToolTestPlan(catalog);
     const blockedEvidence = evidence(manifest, plan);
     blockedEvidence.project_data_residency = "eu";
+    blockedEvidence.connector_legal_documents_reviewed = false;
     blockedEvidence.global_residency_acceptance = { product_owner_signed: false, privacy_reviewer_signed: false };
     blockedEvidence.reviewer_accounts[0]!.mfa_required = true;
     const report = runOpenAiSubmissionPreflight({ artifact_root: artifactRoot, manifest, tools: descriptors, tool_test_plan: plan, evidence: blockedEvidence });
     expect(report.state).toBe("blocked");
-    expect(() => assertOpenAiSubmissionReady(report)).toThrow(/GLOBAL_PROJECT.*REVIEWER_ACCOUNTS.*PRIVACY_ACCEPTANCE/u);
+    expect(() => assertOpenAiSubmissionReady(report)).toThrow(/GLOBAL_PROJECT.*CONNECTOR_LEGAL_DOCUMENTS_REVIEWED.*REVIEWER_ACCOUNTS.*PRIVACY_ACCEPTANCE/u);
   });
 
   test("TC-05: binds all five released widgets and requires Web plus Mobile evidence", () => {

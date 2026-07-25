@@ -82,7 +82,7 @@ if (writeMode) {
   process.exit(0);
 }
 
-for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "support-runbook.md", "cimd-client-allowlist.v1.json", "rts-task-commits.json"]) {
+for (const fileName of [...Object.values(fileNames), "rate-limit-config.json", "support-runbook.md", "cimd-client-allowlist.v1.json", "rts-task-commits.json", "connector-legal-documents.json"]) {
   if (!existsSync(resolve(releaseRoot, fileName))) throw new Error(`Releaseartefakt fehlt: integrations/release/${fileName}`);
 }
 
@@ -93,6 +93,51 @@ const privacy = PRIVACY_THREAT_MODEL_SCHEMA.parse(readJson(resolve(releaseRoot, 
 const pilot = PILOT_PROTOCOL_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.pilot)));
 const releaseGate = RELEASE_GATE_REPORT_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.release_gate)));
 const support = SUPPORT_RUNBOOK_SCHEMA.parse(readJson(resolve(releaseRoot, fileNames.support)));
+const legalDocumentsSchema = z.object({
+  schema_version: z.literal("1.0.0"),
+  entity: z.literal("ConnectorLegalDocuments"),
+  locale: z.literal("de-DE"),
+  applies_to: z.tuple([
+    z.literal("openai_chatgpt"),
+    z.literal("anthropic_claude"),
+    z.literal("approved_channel_adapters"),
+  ]),
+  privacy_policy: z.object({
+    public_url: z.literal("https://www.comvenio.app/connector/datenschutz"),
+    source_path: z.literal("Frontend/comvenio-homepage/Modern/src/components/connector/ConnectorDatenschutz.jsx"),
+    version_date: z.string().date(),
+  }).strict(),
+  terms_of_use: z.object({
+    public_url: z.literal("https://www.comvenio.app/connector/nutzungsbedingungen"),
+    source_path: z.literal("Frontend/comvenio-homepage/Modern/src/components/connector/ConnectorNutzungsbedingungen.jsx"),
+    version_date: z.string().date(),
+  }).strict(),
+  required_reviews: z.object({
+    publisher_identity_consistent: z.boolean(),
+    public_urls_verified: z.boolean(),
+    privacy_threat_model_consistent: z.boolean(),
+    product_owner_signed: z.boolean(),
+    privacy_reviewer_signed: z.boolean(),
+  }).strict(),
+  known_blockers: z.array(z.string().trim().min(1)),
+  release_gate: z.literal("CONNECTOR_LEGAL_DOCUMENTS_REVIEWED"),
+  status: z.enum(["REVIEW_REQUIRED", "APPROVED"]),
+}).strict().superRefine((documents, context) => {
+  const reviewsComplete = Object.values(documents.required_reviews).every(Boolean);
+  if (documents.status === "APPROVED" && (!reviewsComplete || documents.known_blockers.length > 0)) {
+    context.addIssue({
+      code: "custom",
+      message: "APPROVED erfordert vollständige Reviews und eine leere Blockerliste.",
+    });
+  }
+  if (documents.status === "REVIEW_REQUIRED" && documents.known_blockers.length === 0) {
+    context.addIssue({
+      code: "custom",
+      message: "REVIEW_REQUIRED benötigt mindestens einen konkreten Blocker.",
+    });
+  }
+});
+const legalDocuments = legalDocumentsSchema.parse(readJson(resolve(releaseRoot, "connector-legal-documents.json")));
 
 const traceabilitySchema = z.object({
   schema_version: z.literal("1.0.0"),
@@ -192,6 +237,22 @@ const pinnedProviders = new Set(cimd.pins.filter((pin) => pin.enabled).map((pin)
 const cimdReady = cimd.release_state === "READY" && pinnedProviders.has("openai") && pinnedProviders.has("anthropic");
 if (releaseGate.evidence.cimd_pins_verified !== cimdReady) throw new Error("CIMD-Gate und Pin-Artefakt widersprechen sich.");
 
+const legalDocumentsReviewed = legalDocuments.status === "APPROVED"
+  && Object.values(legalDocuments.required_reviews).every(Boolean)
+  && legalDocuments.known_blockers.length === 0;
+if (releaseGate.evidence.connector_legal_documents_reviewed !== legalDocumentsReviewed) {
+  throw new Error("ReleaseGateReport und ConnectorLegalDocuments widersprechen sich.");
+}
+
+const openAiProfile = readJson(resolve(workspaceRoot, "integrations/openai/submission/app-profile.json")) as { privacy_url: string; terms_url: string };
+const anthropicProfile = readJson(resolve(workspaceRoot, "integrations/anthropic/submission/connector-profile.json")) as { privacy_url: string; terms_url: string };
+for (const profile of [openAiProfile, anthropicProfile]) {
+  if (profile.privacy_url !== legalDocuments.privacy_policy.public_url
+    || profile.terms_url !== legalDocuments.terms_of_use.public_url) {
+    throw new Error("Providerprofil und ConnectorLegalDocuments verwenden unterschiedliche Rechtstext-URLs.");
+  }
+}
+
 const openAiPlan = readJson(resolve(workspaceRoot, "integrations/openai/submission/tool-test-plan.json")) as { cases: Array<{ tool_name: string }> };
 const anthropicPlan = readJson(resolve(workspaceRoot, "integrations/anthropic/submission/tool-test-plan.json")) as { cases: Array<{ tool_name: string }> };
 assertSame(openAiPlan.cases.map((item) => item.tool_name).sort(), runtimeToolNames, "OpenAI-Testplan driftet vom Runtime-Katalog.");
@@ -212,6 +273,7 @@ const serialized = JSON.stringify({
   pilot,
   releaseGate,
   support,
+  legalDocuments,
 });
 if (/access[_-]?token|refresh[_-]?token|password|MITGLIED-GEHEIM/iu.test(serialized)) {
   throw new Error("Releaseartefakte enthalten ein mögliches Geheimnis.");

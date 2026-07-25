@@ -221,6 +221,7 @@ export interface ReleaseEvidence {
   rate_limit_config_verified: boolean;
   development_health_ready: boolean;
   production_health_ready: boolean;
+  connector_legal_documents_reviewed: boolean;
   pricing_included_without_surcharge: boolean;
   germany_first: boolean;
 }

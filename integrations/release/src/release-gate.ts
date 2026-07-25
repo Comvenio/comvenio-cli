@@ -54,6 +54,7 @@ function evidenceBlockers(evidence: ReleaseEvidence): string[] {
   }
   if (!evidence.rate_limit_config_verified) blockers.push("RATE_LIMIT_CONFIG");
   if (!evidence.production_health_ready) blockers.push("HEALTH_READINESS");
+  if (!evidence.connector_legal_documents_reviewed) blockers.push("CONNECTOR_LEGAL_DOCUMENTS_REVIEWED");
   if (!evidence.pricing_included_without_surcharge) blockers.push("PRICING_INCLUDED");
   if (!evidence.germany_first) blockers.push("GERMANY_FIRST");
   return blockers;
