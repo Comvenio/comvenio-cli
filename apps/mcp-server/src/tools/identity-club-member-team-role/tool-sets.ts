@@ -253,6 +253,12 @@ export class TeamToolSet extends K7ToolSet {
   constructor(dependencies: K7ExecutionDependencies) { super("team", dependencies); }
 }
 
+// Saisonale Mannschaften (K9): mirrors the CLI namespace `comvenio teams`
+// (seasons, roster, competitions, iCal subscriptions, sync operations).
+export class TeamsSeasonToolSet extends K7ToolSet {
+  constructor(dependencies: K7ExecutionDependencies) { super("teams", dependencies); }
+}
+
 export class RoleToolSet extends K7ToolSet {
   constructor(dependencies: K7ExecutionDependencies) { super("role", dependencies); }
 }
@@ -262,6 +268,7 @@ export interface K7ToolSets {
   club: ClubToolSet;
   member: MemberToolSet;
   team: TeamToolSet;
+  teams: TeamsSeasonToolSet;
   role: RoleToolSet;
 }
 
@@ -271,6 +278,7 @@ export function createK7ToolSets(dependencies: K7ExecutionDependencies): K7ToolS
     club: new ClubToolSet(dependencies),
     member: new MemberToolSet(dependencies),
     team: new TeamToolSet(dependencies),
+    teams: new TeamsSeasonToolSet(dependencies),
     role: new RoleToolSet(dependencies),
   };
 }

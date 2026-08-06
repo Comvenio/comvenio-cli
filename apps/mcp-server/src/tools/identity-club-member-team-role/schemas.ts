@@ -368,6 +368,178 @@ const resourceResult = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("remove"), deleted: z.literal(true), id: uuid }).strict(),
 ]);
 
+// ── Saisonale Mannschaften (K9) — `comvenio teams` mirror ──────────────
+// Output shapes mirror the member-/event-service Read schemas 1:1 with the
+// CLI --json payloads (Lastenheft 09 §1.3: identical return schemas).
+const isoDateTime = z.string().min(1).max(64);
+const seasonStatus = z.enum(["ENTWURF", "AKTIV", "ABGESCHLOSSEN"]);
+const seasonVisibility = z.enum(["PUBLIC", "MEMBERS"]);
+const seasonRole = z.enum(["PLAYER", "CAPTAIN", "COACH", "ASSISTANT_COACH", "MANAGER"]);
+const seasonMemberStatus = z.enum(["ACTIVE", "INACTIVE", "LEFT"]);
+const competitionType = z.enum(["LEAGUE", "CUP", "FRIENDLY", "TOURNAMENT", "OTHER"]);
+
+const seasonalTeamFields = {
+  department_id: uuid,
+  name: shortText,
+  sport_type: sportType,
+  category_id: uuid.nullable().optional(),
+  age_group: z.string().trim().max(80).nullable().optional(),
+  gender: teamGender.optional(),
+  description: optionalText,
+  home_location: z.string().trim().max(500).nullable().optional(),
+} as const;
+const seasonalTeamCreate = z.object(seasonalTeamFields).strict();
+const seasonalTeamPatch = seasonalTeamCreate.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  "Mindestens ein Teamfeld ist erforderlich.",
+);
+const seasonalTeamOutput = z.object({
+  id: uuid,
+  club_id: uuid,
+  department_id: uuid,
+  name: z.string(),
+  sport_type: z.string(),
+  category_id: uuid.nullable().optional(),
+  category_name_snapshot: z.string().nullable().optional(),
+  age_group: z.string().nullable().optional(),
+  gender: z.string().optional(),
+  description: z.string().nullable().optional(),
+  home_location: z.string().nullable().optional(),
+  archived_at: isoDateTime.nullable().optional(),
+  is_active: z.boolean().optional(),
+}).strip();
+
+const seasonPatchFields = {
+  name: shortText.optional(),
+  starts_on: date.nullable().optional(),
+  ends_on: date.nullable().optional(),
+  default_visibility: seasonVisibility.optional(),
+} as const;
+const seasonCreate = z.object({ ...seasonPatchFields, name: shortText }).strict();
+const seasonOutput = z.object({
+  id: uuid,
+  team_id: uuid,
+  club_id: uuid,
+  name: z.string(),
+  starts_on: date.nullable().optional(),
+  ends_on: date.nullable().optional(),
+  status: seasonStatus,
+  default_visibility: seasonVisibility,
+  is_active: z.boolean().optional(),
+}).strip();
+
+const rosterEntryFields = {
+  role: seasonRole.optional(),
+  status: seasonMemberStatus.optional(),
+  jersey_number: z.number().int().min(0).max(999).nullable().optional(),
+  position: z.string().trim().max(160).nullable().optional(),
+  is_primary_team: z.boolean().optional(),
+} as const;
+const rosterEntryOutput = z.object({
+  id: uuid,
+  team_season_id: uuid,
+  member_id: uuid,
+  role: z.string(),
+  status: z.string(),
+  jersey_number: z.number().int().nullable().optional(),
+  position: z.string().nullable().optional(),
+  joined_at: isoDateTime.nullable().optional(),
+  left_at: isoDateTime.nullable().optional(),
+  is_primary_team: z.boolean(),
+  carried_over_from_season_id: uuid.nullable().optional(),
+}).strip();
+const rosterPreviewEntryOutput = z.object({
+  member_id: uuid,
+  role: z.string(),
+  status: z.string(),
+  jersey_number: z.number().int().nullable().optional(),
+  position: z.string().nullable().optional(),
+  already_in_target: z.boolean(),
+}).strip();
+
+const competitionFields = {
+  name: shortText,
+  type: competitionType.optional(),
+  association: z.string().trim().max(255).nullable().optional(),
+  external_label: z.string().trim().max(255).nullable().optional(),
+  is_primary: z.boolean().optional(),
+  visibility: seasonVisibility.optional(),
+} as const;
+const competitionCreate = z.object(competitionFields).strict();
+const competitionPatch = competitionCreate.partial().refine(
+  (value) => Object.keys(value).length > 0,
+  "Mindestens ein Wettbewerbsfeld ist erforderlich.",
+);
+const competitionOutput = z.object({
+  id: uuid,
+  team_season_id: uuid,
+  name: z.string(),
+  type: z.string(),
+  association: z.string().nullable().optional(),
+  external_label: z.string().nullable().optional(),
+  is_primary: z.boolean(),
+  visibility: z.string(),
+  is_active: z.boolean().optional(),
+}).strip();
+
+const syncRunOutput = z.object({
+  id: uuid,
+  subscription_id: uuid,
+  trigger: z.string(),
+  status: z.string(),
+  created: z.number().int(),
+  updated: z.number().int(),
+  cancelled: z.number().int(),
+  unchanged: z.number().int(),
+  failed: z.number().int(),
+  clarifications: z.number().int(),
+  started_at: isoDateTime.nullable().optional(),
+  finished_at: isoDateTime.nullable().optional(),
+  error: z.string().nullable().optional(),
+}).strip();
+// AK-N-02: the backend only ever returns the masked source URL.
+const icalSubscriptionOutput = z.object({
+  id: uuid,
+  team_season_id: uuid,
+  masked_url: z.string(),
+  status: z.string(),
+  last_success_at: isoDateTime.nullable().optional(),
+  last_error: z.string().nullable().optional(),
+  last_error_at: isoDateTime.nullable().optional(),
+  next_sync_at: isoDateTime.nullable().optional(),
+  latest_run: syncRunOutput.nullable().optional(),
+}).strip();
+const activationPreviewOutput = z.object({
+  token: z.string(),
+  expires_at: isoDateTime,
+  entries: z.array(z.object({
+    external_id: z.string(),
+    starts_at: isoDateTime.nullable().optional(),
+    ends_at: isoDateTime.nullable().optional(),
+    title: z.string().nullable().optional(),
+    mapping: z.string().nullable().optional(),
+  }).strip()),
+  warnings: z.array(z.string()),
+}).strip();
+const clarificationOutput = z.object({
+  id: uuid,
+  team_season_id: uuid,
+  type: z.string(),
+  status: z.string(),
+  title: z.string(),
+  reason: z.string(),
+}).strip();
+const clarificationResolution = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("UNKNOWN_COMPETITION"), action: z.enum(["CREATE_COMPETITION", "DISMISS"]) }).strict(),
+  z.object({ type: z.literal("AMBIGUOUS_HOME_ROLE"), action: z.enum(["CONFIRM_HOME", "CONFIRM_AWAY"]), trigger_resource_reconcile: z.boolean() }).strict(),
+  z.object({ type: z.literal("POSSIBLE_DUPLICATE"), action: z.enum(["KEEP_EXISTING", "KEEP_INCOMING", "DISMISS"]) }).strict(),
+  z.object({ type: z.literal("RESOURCE_CONFLICT"), action: z.enum(["KEEP_CURRENT", "REASSIGN", "DISMISS"]) }).strict(),
+]);
+const clarificationResolveOutput = z.object({
+  clarification: clarificationOutput,
+  resource_reconcile_triggered: z.boolean().optional(),
+}).strip();
+
 const roleOutput = z.object({
   id: uuid,
   club_id: uuid,
@@ -451,6 +623,91 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.team.05.delete": contract(entityContext("team_id"), deleted),
   "cai.team.06.member_list_add_update_remove": contract(teamMemberOperation, teamMemberResult),
   "cai.team.07.resource_list_add_update_remove": contract(resourceOperation, resourceResult),
+
+  "cai.teams.01.list": contract(
+    z.object({ club_id: uuid, department_id: uuid.optional(), include_descendants: z.boolean().optional() }).strict(),
+    z.array(seasonalTeamOutput),
+  ),
+  "cai.teams.02.show": contract(entityContext("team_id"), seasonalTeamOutput),
+  "cai.teams.03.create": contract(z.object({ club_id: uuid, team: seasonalTeamCreate }).strict(), seasonalTeamOutput),
+  "cai.teams.04.update": contract(z.object({ club_id: uuid, team_id: uuid, changes: seasonalTeamPatch }).strict(), seasonalTeamOutput),
+  "cai.teams.05.archive": contract(entityContext("team_id"), seasonalTeamOutput),
+  "cai.teams.06.season_list": contract(entityContext("team_id"), z.array(seasonOutput)),
+  "cai.teams.07.season_create": contract(z.object({ club_id: uuid, team_id: uuid, season: seasonCreate }).strict(), seasonOutput),
+  "cai.teams.08.season_correct": contract(
+    z.object({
+      club_id: uuid,
+      team_season_id: uuid,
+      reason: z.string().trim().min(5).max(500),
+      patch: z.object(seasonPatchFields).strict().refine((value) => Object.keys(value).length > 0, "Mindestens ein Korrekturfeld ist erforderlich."),
+    }).strict(),
+    seasonOutput,
+  ),
+  "cai.teams.09.season_activate": contract(entityContext("team_season_id"), seasonOutput),
+  "cai.teams.10.season_complete": contract(entityContext("team_season_id"), seasonOutput),
+  "cai.teams.11.roster_list": contract(entityContext("team_season_id"), z.array(rosterEntryOutput)),
+  "cai.teams.12.roster_add": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, member_id: uuid, ...rosterEntryFields }).strict(),
+    rosterEntryOutput,
+  ),
+  "cai.teams.13.roster_update": contract(
+    z.object({
+      club_id: uuid,
+      roster_id: uuid,
+      changes: z.object(rosterEntryFields).strict().refine((value) => Object.keys(value).length > 0, "Mindestens ein Kaderfeld ist erforderlich."),
+    }).strict(),
+    rosterEntryOutput,
+  ),
+  "cai.teams.14.roster_remove": contract(entityContext("roster_id"), z.object({ removed: z.literal(true), roster_id: uuid }).strict()),
+  "cai.teams.15.roster_carry_over_preview": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, source_season_id: uuid }).strict(),
+    z.array(rosterPreviewEntryOutput),
+  ),
+  "cai.teams.16.roster_carry_over": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, source_season_id: uuid, member_ids: z.array(uuid).min(1) }).strict(),
+    z.array(rosterEntryOutput),
+  ),
+  "cai.teams.17.competition_list": contract(entityContext("team_season_id"), z.array(competitionOutput)),
+  "cai.teams.18.competition_create": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, competition: competitionCreate }).strict(),
+    competitionOutput,
+  ),
+  "cai.teams.19.competition_update": contract(
+    z.object({ club_id: uuid, competition_id: uuid, changes: competitionPatch }).strict(),
+    competitionOutput,
+  ),
+  "cai.teams.20.competition_delete": contract(entityContext("competition_id"), z.object({ deleted: z.literal(true), competition_id: uuid }).strict()),
+  "cai.teams.21.ical_list": contract(entityContext("team_season_id"), z.array(icalSubscriptionOutput)),
+  "cai.teams.22.ical_create": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, url: z.string().url().max(2_048) }).strict(),
+    icalSubscriptionOutput,
+  ),
+  "cai.teams.23.ical_preview": contract(entityContext("subscription_id"), activationPreviewOutput),
+  "cai.teams.24.ical_activate": contract(
+    z.object({
+      club_id: uuid,
+      subscription_id: uuid,
+      preview_token: z.string().min(1).max(500),
+      mappings: z.record(z.string(), z.string()).optional(),
+    }).strict(),
+    icalSubscriptionOutput,
+  ),
+  "cai.teams.25.ical_deactivate": contract(entityContext("subscription_id"), icalSubscriptionOutput),
+  "cai.teams.26.sync_now": contract(entityContext("subscription_id"), syncRunOutput),
+  "cai.teams.27.sync_runs": contract(
+    z.object({
+      club_id: uuid,
+      subscription_id: uuid,
+      limit: z.number().int().min(1).max(100).default(20),
+      offset: z.number().int().min(0).default(0),
+    }).strict(),
+    z.array(syncRunOutput),
+  ),
+  "cai.teams.28.clarification_list": contract(entityContext("team_season_id"), z.array(clarificationOutput)),
+  "cai.teams.29.clarification_resolve": contract(
+    z.object({ club_id: uuid, clarification_id: uuid, resolution: clarificationResolution }).strict(),
+    clarificationResolveOutput,
+  ),
 
   "cai.role.01.list": contract(clubContext, z.array(roleOutput)),
   "cai.role.02.show": contract(entityContext("role_id"), roleOutput),

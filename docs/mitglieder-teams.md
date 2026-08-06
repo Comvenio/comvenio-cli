@@ -196,6 +196,60 @@ Felder: `object_id`, `priority` (Standard 1), `booking_duration_minutes` (Standa
 comvenio team resource add $teamId --object-id $halleId --priority 1 --booking-duration-minutes 120 --notes "Dienstagstraining"
 ```
 
+## Saisonale Mannschaften (`comvenio teams`)
+
+Der Namespace `comvenio teams` ist die saisonale Mannschaftsverwaltung (Saisons mit Lebenszyklus
+`ENTWURF → AKTIV → ABGESCHLOSSEN`, Saison-Kader, Wettbewerbe, iCal-Abonnements und
+Spielplan-Synchronisation). Er ergänzt `comvenio team` (dauerhafte Stammdaten) und ersetzt es nicht.
+
+Verhaltensvertrag:
+
+- Jede Lese- und Schreibaktion unterstützt `--json`.
+- Exitcodes: `0` Erfolg, `2` Validierung/unbekanntes Ziel, `3` fehlende Berechtigung,
+  `4` Konflikt, `5` Transport-/Servicefehler.
+- Wichtige Mutationen (create, archive, Lifecycle, Aktivierung, Deaktivierung, Sofortlauf,
+  Klärungsauflösung, Kader-/Wettbewerbs-Writes) zeigen zuerst eine vollständige
+  Parameterzusammenfassung und senden **ohne `--yes` keinen Write**.
+- Saisonbezogene Writes verlangen immer die konkrete Ziel-ID (`<season-id>`,
+  `<roster-id>`, `<subscription-id>`, …) — nie einen Aggregat-Scope.
+- iCal-Quell-URLs erscheinen in Ausgaben und Zusammenfassungen nur maskiert.
+
+| Zweck | CLI | Backend |
+|---|---|---|
+| Mannschaften listen | `comvenio teams list [--department-id <id> [--include-descendants]]` | `GET /member/teams/by-club/{club_id}` bzw. `GET /member/teams/by-department/{id}` |
+| Mannschaft anzeigen | `comvenio teams show <team-id>` | `GET /member/teams/{team_id}` |
+| Mannschaft anlegen | `comvenio teams create --name … --department-id … --sport-type … --yes` | `POST /member/teams/` |
+| Mannschaft ändern | `comvenio teams update <team-id> … --yes` | `PATCH /member/teams/{team_id}` |
+| Mannschaft archivieren | `comvenio teams archive <team-id> --yes` | `PATCH /member/teams/{team_id}` (`archived_at`) |
+| Saisons listen | `comvenio teams season list <team-id>` | `GET /member/teams/{team_id}/seasons` |
+| Saison anzeigen | `comvenio teams season show <season-id> --team <team-id>` | Saisonliste des Teams (kein Einzel-Read-Endpunkt) |
+| Saison anlegen | `comvenio teams season create <team-id> --name … --yes` | `POST /member/teams/{team_id}/seasons` |
+| Saison korrigieren | `comvenio teams season update <season-id> --reason … … --yes` | `POST /member/team-seasons/{id}/historical-corrections` |
+| Saison aktivieren/abschließen | `comvenio teams season activate\|complete <season-id> --yes` | `POST /member/team-seasons/{id}/transitions/{t}` |
+| Kader anzeigen | `comvenio teams roster show <season-id>` | `GET /member/team-seasons/{id}/members` |
+| Kadermitglied aufnehmen | `comvenio teams roster add <season-id> --member-id … --yes` | `POST /member/team-seasons/{id}/members` |
+| Kadereintrag ändern | `comvenio teams roster update <roster-id> … --yes` | `PATCH /member/team-season-members/{roster_id}` |
+| Kadermitglied austragen | `comvenio teams roster remove <roster-id> --yes` | `DELETE /member/team-season-members/{roster_id}` |
+| Kader-Übernahme (Vorschau) | `comvenio teams roster carry-over <season-id> --source <id> --preview` | `POST /member/team-seasons/{id}/roster-preview` |
+| Kader selektiv übernehmen | `comvenio teams roster carry-over <season-id> --source <id> [--members a,b] --yes` | `POST /member/team-seasons/{id}/roster-carry-over` |
+| Wettbewerbe listen | `comvenio teams competition list <season-id>` | `GET /member/team-seasons/{id}/competitions` |
+| Wettbewerb anlegen | `comvenio teams competition create <season-id> --name … --yes` | `POST /member/team-seasons/{id}/competitions` |
+| Wettbewerb ändern/entfernen | `comvenio teams competition update\|delete <competition-id> --yes` | `PATCH`/`DELETE /member/team-season-competitions/{id}` |
+| iCal-Quellen listen | `comvenio teams ical list <season-id>` | `GET /event/team-seasons/{id}/calendar-subscriptions` |
+| iCal-Quelle speichern | `comvenio teams ical create <season-id> --url … --yes` | `POST /event/team-seasons/{id}/calendar-subscriptions` |
+| iCal-Vorschau | `comvenio teams ical preview <subscription-id>` | `POST /event/calendar-subscriptions/{id}/preview` |
+| iCal aktivieren | `comvenio teams ical activate <subscription-id> --preview-token … --yes` | `POST /event/calendar-subscriptions/{id}/activate` |
+| iCal deaktivieren | `comvenio teams ical deactivate <subscription-id> --yes` | `POST /event/calendar-subscriptions/{id}/deactivate` |
+| Sofort synchronisieren | `comvenio teams sync now <subscription-id> --yes` | `POST /event/calendar-subscriptions/{id}/sync` |
+| Sync-Verlauf | `comvenio teams sync runs <subscription-id> [--limit --offset]` | `GET /event/calendar-subscriptions/{id}/runs` |
+| Klärungsfälle listen | `comvenio teams sync clarifications <season-id>` | `GET /event/team-seasons/{id}/sync-clarifications` |
+| Klärungsfall auflösen | `comvenio teams sync resolve <clarification-id> --file resolution.json --yes` | `POST /event/sync-clarifications/{id}/resolve` |
+
+Die Aktivierung folgt immer der Kette `ical create` → `ical preview` (liefert `preview_token`) →
+`ical activate --preview-token`. Ein geändertes Abonnement verwirft den Token; die Vorschau ist dann
+neu abzurufen. `sync resolve` erwartet eine Auflösung mit `type` und `action`, zum Beispiel
+`{"type": "AMBIGUOUS_HOME_ROLE", "action": "CONFIRM_HOME", "trigger_resource_reconcile": true}`.
+
 ## Bewusste Abgrenzung
 
 Nicht Teil dieses Admin-CLI-Scopes sind externe Provider-Synchronisationen (`fussball.de`, `NuLiga`) und die interne Route `/internal/teams/{team_id}/booking-info`. Provider-Importe haben externe Abhängigkeiten; interne Routen verwenden Service-Authentifizierung statt Club-Admin-JWT.

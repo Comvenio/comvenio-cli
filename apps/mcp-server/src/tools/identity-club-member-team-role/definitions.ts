@@ -20,6 +20,7 @@ const sourcePath: Record<K7Domain, string> = {
   club: "src/commands/club.ts",
   member: "src/commands/member.ts",
   team: "src/commands/team.ts",
+  teams: "src/commands/teams.ts",
   role: "src/commands/role.ts",
 };
 
@@ -262,6 +263,153 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     ],
   }),
 
+  // ── Saisonale Mannschaften (K9) — CLI namespace `comvenio teams` ──
+  // route_id null: these call sites are new; ids are assigned by the next
+  // gen:connector-inventory run against the verified route catalog.
+  // Season-scoped writes (roster/ical/sync/competition/lifecycle) authorize
+  // server-side as "Saisonmanager ODER manage_teams" (member-service
+  // authorize_team_season_management) — the tool layer therefore does not
+  // hard-require a club permission (§18: Toolfilter sind nur zusätzliche UX).
+  "cai.teams.01.list": definition({
+    action_id: "cai.teams.01.list", domain: "teams", source_action: "list", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [
+      route(null, "GET", "member", "/teams/by-club/{club_id}"),
+      route(null, "GET", "member", "/teams/by-department/{department_id}"),
+    ],
+  }),
+  "cai.teams.02.show": definition({
+    action_id: "cai.teams.02.show", domain: "teams", source_action: "show", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "member", "/teams/{team_id}")],
+  }),
+  "cai.teams.03.create": definition({
+    action_id: "cai.teams.03.create", domain: "teams", source_action: "create", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/teams/")],
+  }),
+  "cai.teams.04.update": definition({
+    action_id: "cai.teams.04.update", domain: "teams", source_action: "update", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "PATCH", "member", "/teams/{team_id}")],
+  }),
+  "cai.teams.05.archive": definition({
+    action_id: "cai.teams.05.archive", domain: "teams", source_action: "archive", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "PATCH", "member", "/teams/{team_id}")],
+  }),
+  "cai.teams.06.season_list": definition({
+    action_id: "cai.teams.06.season_list", domain: "teams", source_action: "season list", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "member", "/teams/{team_id}/seasons")],
+  }),
+  "cai.teams.07.season_create": definition({
+    action_id: "cai.teams.07.season_create", domain: "teams", source_action: "season create", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/teams/{team_id}/seasons")],
+  }),
+  "cai.teams.08.season_correct": definition({
+    action_id: "cai.teams.08.season_correct", domain: "teams", source_action: "season update", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/historical-corrections")],
+  }),
+  "cai.teams.09.season_activate": definition({
+    action_id: "cai.teams.09.season_activate", domain: "teams", source_action: "season activate", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/transitions/activate")],
+  }),
+  "cai.teams.10.season_complete": definition({
+    action_id: "cai.teams.10.season_complete", domain: "teams", source_action: "season complete", scopes: ADMIN_WRITE,
+    permission: policy(["manage_teams"]), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/transitions/complete")],
+  }),
+  "cai.teams.11.roster_list": definition({
+    action_id: "cai.teams.11.roster_list", domain: "teams", source_action: "roster show", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "member", "/team-seasons/{team_season_id}/members")],
+  }),
+  "cai.teams.12.roster_add": definition({
+    action_id: "cai.teams.12.roster_add", domain: "teams", source_action: "roster add", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/members")],
+  }),
+  "cai.teams.13.roster_update": definition({
+    action_id: "cai.teams.13.roster_update", domain: "teams", source_action: "roster update", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "PATCH", "member", "/team-season-members/{roster_id}")],
+  }),
+  "cai.teams.14.roster_remove": definition({
+    action_id: "cai.teams.14.roster_remove", domain: "teams", source_action: "roster remove", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "DELETE", "member", "/team-season-members/{roster_id}")],
+  }),
+  "cai.teams.15.roster_carry_over_preview": definition({
+    action_id: "cai.teams.15.roster_carry_over_preview", domain: "teams", source_action: "roster carry-over --preview", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/roster-preview", "read")],
+  }),
+  "cai.teams.16.roster_carry_over": definition({
+    action_id: "cai.teams.16.roster_carry_over", domain: "teams", source_action: "roster carry-over", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/roster-carry-over")],
+  }),
+  "cai.teams.17.competition_list": definition({
+    action_id: "cai.teams.17.competition_list", domain: "teams", source_action: "competition list", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "member", "/team-seasons/{team_season_id}/competitions")],
+  }),
+  "cai.teams.18.competition_create": definition({
+    action_id: "cai.teams.18.competition_create", domain: "teams", source_action: "competition create", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "member", "/team-seasons/{team_season_id}/competitions")],
+  }),
+  "cai.teams.19.competition_update": definition({
+    action_id: "cai.teams.19.competition_update", domain: "teams", source_action: "competition update", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "PATCH", "member", "/team-season-competitions/{competition_id}")],
+  }),
+  "cai.teams.20.competition_delete": definition({
+    action_id: "cai.teams.20.competition_delete", domain: "teams", source_action: "competition delete", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "DELETE", "member", "/team-season-competitions/{competition_id}")],
+  }),
+  "cai.teams.21.ical_list": definition({
+    action_id: "cai.teams.21.ical_list", domain: "teams", source_action: "ical list", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "event", "/team-seasons/{team_season_id}/calendar-subscriptions")],
+  }),
+  "cai.teams.22.ical_create": definition({
+    action_id: "cai.teams.22.ical_create", domain: "teams", source_action: "ical create", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/team-seasons/{team_season_id}/calendar-subscriptions")],
+  }),
+  "cai.teams.23.ical_preview": definition({
+    action_id: "cai.teams.23.ical_preview", domain: "teams", source_action: "ical preview", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "reversible_write",
+    routes: [route(null, "POST", "event", "/calendar-subscriptions/{subscription_id}/preview")],
+  }),
+  "cai.teams.24.ical_activate": definition({
+    action_id: "cai.teams.24.ical_activate", domain: "teams", source_action: "ical activate", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/calendar-subscriptions/{subscription_id}/activate")],
+  }),
+  "cai.teams.25.ical_deactivate": definition({
+    action_id: "cai.teams.25.ical_deactivate", domain: "teams", source_action: "ical deactivate", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/calendar-subscriptions/{subscription_id}/deactivate")],
+  }),
+  "cai.teams.26.sync_now": definition({
+    action_id: "cai.teams.26.sync_now", domain: "teams", source_action: "sync now", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/calendar-subscriptions/{subscription_id}/sync")],
+  }),
+  "cai.teams.27.sync_runs": definition({
+    action_id: "cai.teams.27.sync_runs", domain: "teams", source_action: "sync runs", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "event", "/calendar-subscriptions/{subscription_id}/runs")],
+  }),
+  "cai.teams.28.clarification_list": definition({
+    action_id: "cai.teams.28.clarification_list", domain: "teams", source_action: "sync clarifications", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "event", "/team-seasons/{team_season_id}/sync-clarifications")],
+  }),
+  "cai.teams.29.clarification_resolve": definition({
+    action_id: "cai.teams.29.clarification_resolve", domain: "teams", source_action: "sync resolve", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/sync-clarifications/{clarification_id}/resolve")],
+  }),
+
   "cai.role.01.list": definition({
     action_id: "cai.role.01.list", domain: "role", source_action: "list", scopes: CLUB_READ,
     routes: [route("route.398", "GET", "role", "/roles/by-club/{club_id}")],
@@ -356,7 +504,7 @@ export function validateK7Definitions(): void {
   const keys = Object.keys(K7_ACTION_DEFINITIONS);
   if (keys.length !== K7_ACTION_IDS.length
     || K7_ACTION_IDS.some((id) => !Object.hasOwn(K7_ACTION_DEFINITIONS, id))) {
-    throw new Error("Die K7-Aktionsdefinitionen bilden das 54-Aktionen-Inventar nicht vollständig ab.");
+    throw new Error("Die K7-Aktionsdefinitionen bilden das Aktions-Inventar nicht vollständig ab.");
   }
   for (const definition of Object.values(K7_ACTION_DEFINITIONS)) {
     if (definition.publication_state === "blocked" && !definition.blocker) {

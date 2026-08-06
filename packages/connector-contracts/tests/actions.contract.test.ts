@@ -177,8 +177,8 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(309);
-    expect(new Set(directActionIds).size).toBe(309);
+    expect(directActionIds).toHaveLength(338);
+    expect(new Set(directActionIds).size).toBe(338);
     expect(additiveActionIds).toEqual([
       "cai.shopping.procurement.activate",
       "cai.shopping.procurement.add",
@@ -188,13 +188,43 @@ describe("Comvenio connector inventory contract", () => {
       "cai.shopping.procurement.template_deactivate",
       "cai.shopping.procurement.template_update",
       "cai.shopping.procurement.templates",
+      // Saisonale Mannschaften (K9): additive CLI namespace `comvenio teams`.
+      "cai.teams.01.list",
+      "cai.teams.02.show",
+      "cai.teams.03.create",
+      "cai.teams.04.update",
+      "cai.teams.05.archive",
+      "cai.teams.06.season_list",
+      "cai.teams.07.season_create",
+      "cai.teams.08.season_correct",
+      "cai.teams.09.season_activate",
+      "cai.teams.10.season_complete",
+      "cai.teams.11.roster_list",
+      "cai.teams.12.roster_add",
+      "cai.teams.13.roster_update",
+      "cai.teams.14.roster_remove",
+      "cai.teams.15.roster_carry_over_preview",
+      "cai.teams.16.roster_carry_over",
+      "cai.teams.17.competition_list",
+      "cai.teams.18.competition_create",
+      "cai.teams.19.competition_update",
+      "cai.teams.20.competition_delete",
+      "cai.teams.21.ical_list",
+      "cai.teams.22.ical_create",
+      "cai.teams.23.ical_preview",
+      "cai.teams.24.ical_activate",
+      "cai.teams.25.ical_deactivate",
+      "cai.teams.26.sync_now",
+      "cai.teams.27.sync_runs",
+      "cai.teams.28.clarification_list",
+      "cai.teams.29.clarification_resolve",
     ]);
     expect(candidateActionIds.every((actionId) => directActionIdSet.has(actionId))).toBe(true);
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 309,
-      published_domain_actions: 307,
+      discovered_actions: 338,
+      published_domain_actions: 336,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -361,10 +391,10 @@ function k7Dependencies(client: ComvenioApiClient): K7ExecutionDependencies {
 }
 
 describe("K7 identity, club, member, team and role contract", () => {
-  test("TC-01/TC-02: maps all five entities and exactly 54 inventoried actions", () => {
-    expect(K7_ACTION_IDS).toHaveLength(54);
-    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(54);
-    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(54);
+  test("TC-01/TC-02: maps all six domains and exactly 83 inventoried actions", () => {
+    expect(K7_ACTION_IDS).toHaveLength(83);
+    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(83);
+    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(83);
 
     const sets = createK7ToolSets(k7Dependencies(k7Client(async () => null)));
     expect({
@@ -372,8 +402,9 @@ describe("K7 identity, club, member, team and role contract", () => {
       club: sets.club.listDefinitions().length,
       member: sets.member.listDefinitions().length,
       team: sets.team.listDefinitions().length,
+      teams: sets.teams.listDefinitions().length,
       role: sets.role.listDefinitions().length,
-    }).toEqual({ identity: 1, club: 10, member: 21, team: 7, role: 15 });
+    }).toEqual({ identity: 1, club: 10, member: 21, team: 7, teams: 29, role: 15 });
     expect(K7_ACTION_IDS.some((id) => /login|logout|log_service|master.?admin/iu.test(id))).toBe(false);
   });
 

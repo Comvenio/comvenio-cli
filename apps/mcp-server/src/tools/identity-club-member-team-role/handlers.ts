@@ -321,6 +321,162 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
     return { operation: "remove", deleted: true, id: priorityId } as JsonValue;
   },
 
+  // ── Saisonale Mannschaften (K9) — mirrors `comvenio teams` 1:1 ──
+  async "cai.teams.01.list"(input, context, client) {
+    const data = record(input);
+    if (typeof data.department_id === "string") {
+      const suffix = data.include_descendants === true ? "?include_descendants=true" : "";
+      return request(client, context, "GET", "member", `/teams/by-department/${data.department_id}${suffix}`);
+    }
+    return request(client, context, "GET", "member", `/teams/by-club/${string(input, "club_id")}`);
+  },
+  async "cai.teams.02.show"(input, context, client) {
+    return request(client, context, "GET", "member", `/teams/${string(input, "team_id")}`);
+  },
+  async "cai.teams.03.create"(input, context, client) {
+    return request(client, context, "POST", "member", "/teams/", {
+      body: { club_id: string(input, "club_id"), ...nested(input, "team") },
+    });
+  },
+  async "cai.teams.04.update"(input, context, client) {
+    return request(client, context, "PATCH", "member", `/teams/${string(input, "team_id")}`, {
+      body: nested(input, "changes"),
+    });
+  },
+  async "cai.teams.05.archive"(input, context, client) {
+    // Archive is the sanctioned end state — hard delete stays CLI-/tool-free
+    // for teams with history (backend 409 TEAM_HAS_HISTORY_USE_ARCHIVE).
+    return request(client, context, "PATCH", "member", `/teams/${string(input, "team_id")}`, {
+      body: { archived_at: new Date().toISOString() },
+    });
+  },
+  async "cai.teams.06.season_list"(input, context, client) {
+    return request(client, context, "GET", "member", `/teams/${string(input, "team_id")}/seasons`);
+  },
+  async "cai.teams.07.season_create"(input, context, client) {
+    return request(client, context, "POST", "member", `/teams/${string(input, "team_id")}/seasons`, {
+      body: nested(input, "season"),
+    });
+  },
+  async "cai.teams.08.season_correct"(input, context, client) {
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/historical-corrections`, {
+        body: { reason: string(input, "reason"), patch: nested(input, "patch") },
+      });
+  },
+  async "cai.teams.09.season_activate"(input, context, client) {
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/transitions/activate`);
+  },
+  async "cai.teams.10.season_complete"(input, context, client) {
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/transitions/complete`);
+  },
+  async "cai.teams.11.roster_list"(input, context, client) {
+    return request(client, context, "GET", "member",
+      `/team-seasons/${string(input, "team_season_id")}/members`);
+  },
+  async "cai.teams.12.roster_add"(input, context, client) {
+    const data = record(input);
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/members`, {
+        body: without(data, ["club_id", "team_season_id"]),
+      });
+  },
+  async "cai.teams.13.roster_update"(input, context, client) {
+    return request(client, context, "PATCH", "member",
+      `/team-season-members/${string(input, "roster_id")}`, {
+        body: nested(input, "changes"),
+      });
+  },
+  async "cai.teams.14.roster_remove"(input, context, client) {
+    const rosterId = string(input, "roster_id");
+    await request(client, context, "DELETE", "member", `/team-season-members/${rosterId}`);
+    return { removed: true, roster_id: rosterId };
+  },
+  async "cai.teams.15.roster_carry_over_preview"(input, context, client) {
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/roster-preview`, {
+        body: { source_season_id: string(input, "source_season_id") },
+      });
+  },
+  async "cai.teams.16.roster_carry_over"(input, context, client) {
+    const data = record(input);
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/roster-carry-over`, {
+        body: { source_season_id: string(input, "source_season_id"), member_ids: data.member_ids ?? [] },
+      });
+  },
+  async "cai.teams.17.competition_list"(input, context, client) {
+    return request(client, context, "GET", "member",
+      `/team-seasons/${string(input, "team_season_id")}/competitions`);
+  },
+  async "cai.teams.18.competition_create"(input, context, client) {
+    return request(client, context, "POST", "member",
+      `/team-seasons/${string(input, "team_season_id")}/competitions`, {
+        body: nested(input, "competition"),
+      });
+  },
+  async "cai.teams.19.competition_update"(input, context, client) {
+    return request(client, context, "PATCH", "member",
+      `/team-season-competitions/${string(input, "competition_id")}`, {
+        body: nested(input, "changes"),
+      });
+  },
+  async "cai.teams.20.competition_delete"(input, context, client) {
+    const competitionId = string(input, "competition_id");
+    await request(client, context, "DELETE", "member", `/team-season-competitions/${competitionId}`);
+    return { deleted: true, competition_id: competitionId };
+  },
+  async "cai.teams.21.ical_list"(input, context, client) {
+    return request(client, context, "GET", "event",
+      `/team-seasons/${string(input, "team_season_id")}/calendar-subscriptions`);
+  },
+  async "cai.teams.22.ical_create"(input, context, client) {
+    // AK-N-02: the raw URL only travels in the request body; the response
+    // schema exposes masked_url exclusively.
+    return request(client, context, "POST", "event",
+      `/team-seasons/${string(input, "team_season_id")}/calendar-subscriptions`, {
+        body: { url: string(input, "url") },
+      });
+  },
+  async "cai.teams.23.ical_preview"(input, context, client) {
+    return request(client, context, "POST", "event",
+      `/calendar-subscriptions/${string(input, "subscription_id")}/preview`);
+  },
+  async "cai.teams.24.ical_activate"(input, context, client) {
+    const data = record(input);
+    return request(client, context, "POST", "event",
+      `/calendar-subscriptions/${string(input, "subscription_id")}/activate`, {
+        body: { preview_token: string(input, "preview_token"), mappings: data.mappings ?? {} },
+      });
+  },
+  async "cai.teams.25.ical_deactivate"(input, context, client) {
+    return request(client, context, "POST", "event",
+      `/calendar-subscriptions/${string(input, "subscription_id")}/deactivate`);
+  },
+  async "cai.teams.26.sync_now"(input, context, client) {
+    return request(client, context, "POST", "event",
+      `/calendar-subscriptions/${string(input, "subscription_id")}/sync`);
+  },
+  async "cai.teams.27.sync_runs"(input, context, client) {
+    const data = record(input);
+    return request(client, context, "GET", "event",
+      `/calendar-subscriptions/${string(input, "subscription_id")}/runs`, {
+        query: { limit: String(data.limit), offset: String(data.offset) },
+      });
+  },
+  async "cai.teams.28.clarification_list"(input, context, client) {
+    return request(client, context, "GET", "event",
+      `/team-seasons/${string(input, "team_season_id")}/sync-clarifications`);
+  },
+  async "cai.teams.29.clarification_resolve"(input, context, client) {
+    return request(client, context, "POST", "event",
+      `/sync-clarifications/${string(input, "clarification_id")}/resolve`, {
+        body: nested(input, "resolution"),
+      });
+  },
+
   async "cai.role.01.list"(input, context, client) {
     return request(client, context, "GET", "role", `/roles/by-club/${string(input, "club_id")}`);
   },

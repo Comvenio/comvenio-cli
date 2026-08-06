@@ -52,6 +52,39 @@ export const K7_ACTION_IDS = [
   "cai.team.05.delete",
   "cai.team.06.member_list_add_update_remove",
   "cai.team.07.resource_list_add_update_remove",
+  // Saisonale Mannschaften (K9): CLI namespace `comvenio teams` mirrored 1:1.
+  // Confirmation contract per Lastenheft 09 §6/DC-5: every important mutation
+  // (create, archive, lifecycle, activation, deactivation, sync-now, resolve,
+  // roster/competition writes) runs through the K7 confirmation coordinator.
+  "cai.teams.01.list",
+  "cai.teams.02.show",
+  "cai.teams.03.create",
+  "cai.teams.04.update",
+  "cai.teams.05.archive",
+  "cai.teams.06.season_list",
+  "cai.teams.07.season_create",
+  "cai.teams.08.season_correct",
+  "cai.teams.09.season_activate",
+  "cai.teams.10.season_complete",
+  "cai.teams.11.roster_list",
+  "cai.teams.12.roster_add",
+  "cai.teams.13.roster_update",
+  "cai.teams.14.roster_remove",
+  "cai.teams.15.roster_carry_over_preview",
+  "cai.teams.16.roster_carry_over",
+  "cai.teams.17.competition_list",
+  "cai.teams.18.competition_create",
+  "cai.teams.19.competition_update",
+  "cai.teams.20.competition_delete",
+  "cai.teams.21.ical_list",
+  "cai.teams.22.ical_create",
+  "cai.teams.23.ical_preview",
+  "cai.teams.24.ical_activate",
+  "cai.teams.25.ical_deactivate",
+  "cai.teams.26.sync_now",
+  "cai.teams.27.sync_runs",
+  "cai.teams.28.clarification_list",
+  "cai.teams.29.clarification_resolve",
   "cai.role.01.list",
   "cai.role.02.show",
   "cai.role.03.create",
@@ -70,14 +103,14 @@ export const K7_ACTION_IDS = [
 ] as const;
 
 export type K7ActionId = (typeof K7_ACTION_IDS)[number];
-export type K7Domain = "whoami" | "club" | "member" | "team" | "role";
+export type K7Domain = "whoami" | "club" | "member" | "team" | "teams" | "role";
 export type K7ExecutionGate = "inline" | "write_safety" | "job" | "blocked";
 export type K7PublicationState = "implemented" | "blocked";
 
 export interface K7BackendRoute {
   route_id: `route.${number}` | null;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  service: "user" | "club" | "member" | "role";
+  service: "user" | "club" | "member" | "role" | "event";
   normalized_path_template: string;
   purpose: "read" | "mutation" | "preflight";
 }
