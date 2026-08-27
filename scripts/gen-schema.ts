@@ -370,15 +370,35 @@ function genHomepage(): unknown {
     }
   }
 
-  const existingWidgetEntries = Object.entries(existing.widgets ?? {})
-    .filter(([kind]) => kinds.includes(kind));
-  const missingWidgetEntries = kinds
-    .filter((kind) => !Object.prototype.hasOwnProperty.call(existing.widgets ?? {}, kind))
-    .map((kind) => [kind, widgets[kind]]);
-  const mergedWidgets = Object.fromEntries([
-    ...existingWidgetEntries,
-    ...missingWidgetEntries,
-  ]);
+  // Die Felder kommen aus dem Prompt, sobald er welche nennt; alles andere am
+  // Eintrag (status, handgepflegte Notizen) bleibt stehen.
+  //
+  // Vorher gewannen bestehende Eintraege VOLLSTAENDIG, und damit schrieb der
+  // Generator die config eines Widgets genau einmal — beim ersten Auftreten,
+  // danach nie wieder. Genau daran konnte die Drift wachsen, ohne dass ein
+  // Lauf sie je eingeholt haette: Am 2026-08-27 nannte das Schema fuer `ticker`
+  // background_color und text_color, obwohl beide seit Langem weder im Prompt
+  // noch im Widget standen. Ein Generator, der eine Quelle liest und ihr
+  // Ergebnis dann verwirft, ist keiner.
+  const mergedWidgets = Object.fromEntries(kinds.map((kind) => {
+    const bestehend = (existing.widgets?.[kind] ?? {}) as Record<string, any>;
+    const ausPrompt = widgets[kind].config;
+
+    // Je Feld gewinnt der Prompt (Name, Werte), aber handgepflegte Zusaetze am
+    // gleichnamigen Feld bleiben. Noetig, weil der Prompt-Parser `widgetId
+    // Pflicht` als required erkennt, `club_name (Pflicht)` in Klammern aber
+    // nicht — ohne diesen Erhalt verlieren solche Felder ihr required.
+    // Ein Feld, das aus dem Prompt verschwunden ist, faellt weg. Genau das
+    // ist der Zweck.
+    const vorhanden = new Map<string, any>(
+      ((bestehend.config ?? []) as Array<{ name: string }>).map((f) => [f.name, f]),
+    );
+    const config = ausPrompt.length > 0
+      ? ausPrompt.map((f) => ({ ...(vorhanden.get(f.name) ?? {}), ...f }))
+      : (bestehend.config ?? []);
+
+    return [kind, { ...bestehend, config }];
+  }));
 
   // Nach dem Merge, nicht davor: Bestehende Widget-Eintraege werden oben
   // bewusst uebernommen statt neu gebaut. Wer den Hinweis vorher setzt,

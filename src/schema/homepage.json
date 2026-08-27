@@ -355,6 +355,73 @@
         "map_url"
       ]
     },
+    "legal_notice": {
+      "status": "legacy_optional",
+      "note": "Optionaler Legacy-Inhaltsblock. Rechtsfooter und Impressum werden immer durch die Plattform-Shell erzeugt und duerfen nicht aus Homepage-JSON konfiguriert werden.",
+      "config": [
+        {
+          "name": "club_name",
+          "required": true
+        },
+        {
+          "name": "legal_form"
+        },
+        {
+          "name": "address",
+          "required": true
+        },
+        {
+          "name": "postal_code"
+        },
+        {
+          "name": "city"
+        },
+        {
+          "name": "country"
+        },
+        {
+          "name": "email",
+          "required": true
+        },
+        {
+          "name": "phone"
+        },
+        {
+          "name": "register_court"
+        },
+        {
+          "name": "register_number"
+        },
+        {
+          "name": "vat_id"
+        },
+        {
+          "name": "responsible_name",
+          "note": "Nur nach ausdruecklicher Freigabe als oeffentliche Personendaten setzen."
+        },
+        {
+          "name": "responsibility_text"
+        },
+        {
+          "name": "club_privacy_url"
+        },
+        {
+          "name": "club_terms_url"
+        },
+        {
+          "name": "show_comvenio_links",
+          "default": true,
+          "required": true
+        },
+        {
+          "name": "layout",
+          "values": [
+            "columns",
+            "stacked"
+          ]
+        }
+      ]
+    },
     "faq": {
       "config": []
     },
@@ -435,15 +502,6 @@
           "name": "show_cover_images"
         },
         {
-          "name": "show_category_badges"
-        },
-        {
-          "name": "show_author"
-        },
-        {
-          "name": "show_reading_time"
-        },
-        {
           "name": "department_id"
         },
         {
@@ -466,6 +524,9 @@
           "name": "pinned_only"
         },
         {
+          "name": "detail_label"
+        },
+        {
           "name": "card_style",
           "values": [
             "minimal",
@@ -481,12 +542,6 @@
             "cascade",
             "none"
           ]
-        },
-        {
-          "name": "detail_label"
-        },
-        {
-          "name": "show_title"
         }
       ],
       "config_not_read_by_widget": [
@@ -1829,77 +1884,6 @@
         },
         {
           "name": "label"
-        }
-      ]
-    },
-    "legal_notice": {
-      "status": "legacy_optional",
-      "note": "Optionaler Legacy-Inhaltsblock. Rechtsfooter und Impressum werden immer durch die Plattform-Shell erzeugt und duerfen nicht aus Homepage-JSON konfiguriert werden.",
-      "config": [
-        {
-          "name": "club_name",
-          "required": true
-        },
-        {
-          "name": "legal_form"
-        },
-        {
-          "name": "address",
-          "required": true
-        },
-        {
-          "name": "postal_code"
-        },
-        {
-          "name": "city"
-        },
-        {
-          "name": "country"
-        },
-        {
-          "name": "email",
-          "required": true
-        },
-        {
-          "name": "phone"
-        },
-        {
-          "name": "register_court"
-        },
-        {
-          "name": "register_number"
-        },
-        {
-          "name": "vat_id"
-        },
-        {
-          "name": "responsible_name",
-          "note": "Nur nach ausdruecklicher Freigabe als oeffentliche Personendaten setzen."
-        },
-        {
-          "name": "responsibility_text"
-        },
-        {
-          "name": "club_privacy_url"
-        },
-        {
-          "name": "club_terms_url"
-        },
-        {
-          "name": "show_comvenio_links",
-          "default": true,
-          "required": true
-        },
-        {
-          "name": "show_title",
-          "default": true
-        },
-        {
-          "name": "layout",
-          "values": [
-            "columns",
-            "stacked"
-          ]
         }
       ]
     }
