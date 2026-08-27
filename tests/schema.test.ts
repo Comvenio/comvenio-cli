@@ -132,3 +132,50 @@ describe("cross-domain schema coverage", () => {
     expect(domains.sponsor.gaps).toEqual([]);
   });
 });
+
+describe("homepage config sync", () => {
+  const homepage = schema("homepage");
+
+  // Die Widget-KINDS haben seit jeher eine Sync-Pruefung (vocabulary_sync).
+  // Die FELDER hatten keine — und dort sass die Drift. Gefunden am 2026-08-27
+  // an `ticker`, dessen dokumentierte Felder background_color/text_color das
+  // Widget nirgends liest.
+  test("the check actually ran", () => {
+    // Ohne diese Zusicherung waere die Suite gruen, wenn die Pruefung gar
+    // nichts ansieht — die teuerste Art von gruen.
+    expect(homepage.config_sync.widgets_checked).toBeGreaterThan(50);
+    expect(homepage.config_sync.fields_checked).toBeGreaterThan(200);
+  });
+
+  test("the counters match the per-widget hints", () => {
+    const mitHinweis = Object.values(homepage.widgets as Record<string, any>)
+      .filter((w) => Array.isArray(w.config_not_read_by_widget));
+    const felder = mitHinweis.reduce(
+      (n: number, w: any) => n + w.config_not_read_by_widget.length,
+      0,
+    );
+
+    expect(homepage.config_sync.widgets_with_unread_fields).toBe(mitHinweis.length);
+    expect(homepage.config_sync.unread_fields).toBe(felder);
+  });
+
+  test("an empty hint is dropped rather than written", () => {
+    for (const [kind, widget] of Object.entries(homepage.widgets as Record<string, any>)) {
+      if (widget.config_not_read_by_widget !== undefined) {
+        expect(widget.config_not_read_by_widget.length, kind).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  test("every flagged field is one the schema itself documents", () => {
+    // Gegenprobe: Ein Hinweis auf ein Feld, das gar nicht im config steht,
+    // waere ein Parserfehler — der Leser suchte dann nach einem Phantom.
+    for (const [kind, widget] of Object.entries(homepage.widgets as Record<string, any>)) {
+      const flagged: string[] = widget.config_not_read_by_widget ?? [];
+      const documented = (widget.config ?? []).map((f: any) => f.name);
+      for (const name of flagged) {
+        expect(documented, `${kind}.${name}`).toContain(name);
+      }
+    }
+  });
+});

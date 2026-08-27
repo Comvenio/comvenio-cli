@@ -18,7 +18,7 @@
     "extra_in_backend": [],
     "extra_in_prompt": []
   },
-  "note": "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag (Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema).",
+  "note": "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag (Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema). Der Prompt ist gegenueber dem Widget-Code stellenweise veraltet; wo das auffaellt, steht es je Widget unter config_not_read_by_widget und gezaehlt unter config_sync.",
   "structure": {
     "tab": {
       "fields": [
@@ -260,6 +260,9 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "markdown"
       ]
     },
     "custom_html": {
@@ -347,6 +350,9 @@
             "inline"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "map_url"
       ]
     },
     "faq": {
@@ -365,6 +371,9 @@
             "4"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "columns"
       ]
     },
     "countdown": {
@@ -393,6 +402,11 @@
             "subtle"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "event_id",
+        "display_format",
+        "bg_type"
       ]
     },
     "club_history": {
@@ -474,6 +488,9 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id"
       ]
     },
     "news_highlight": {
@@ -487,6 +504,10 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id",
+        "show_title"
       ]
     },
     "ticker": {
@@ -512,6 +533,10 @@
         {
           "name": "text_color"
         }
+      ],
+      "config_not_read_by_widget": [
+        "background_color",
+        "text_color"
       ]
     },
     "events_list": {
@@ -537,6 +562,9 @@
             "calendar-strip"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id"
       ]
     },
     "event_highlight": {
@@ -567,6 +595,9 @@
         {
           "name": "cta_label"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "event_hub_embed": {
@@ -656,6 +687,10 @@
             "timeline"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id",
+        "limit"
       ]
     },
     "special_event_promo": {
@@ -713,6 +748,23 @@
         {
           "name": "program"
         }
+      ],
+      "config_not_read_by_widget": [
+        "event_name",
+        "event_date",
+        "description",
+        "location",
+        "image_url",
+        "show_countdown",
+        "show_news",
+        "show_gallery",
+        "show_program",
+        "show_description",
+        "cta_text",
+        "cta_url",
+        "badge_text",
+        "layout",
+        "program"
       ]
     },
     "feature_grid": {
@@ -788,6 +840,9 @@
             "org"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "columns"
       ]
     },
     "birthdays": {
@@ -806,6 +861,10 @@
             "age_only"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id",
+        "display_mode"
       ]
     },
     "birthday_highlight": {
@@ -843,6 +902,9 @@
             "none"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "animation_style"
       ]
     },
     "honors_showcase": {
@@ -889,6 +951,9 @@
             "fill"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "fit"
       ]
     },
     "image_gallery": {
@@ -912,6 +977,9 @@
         {
           "name": "aspect_ratio"
         }
+      ],
+      "config_not_read_by_widget": [
+        "aspect_ratio"
       ]
     },
     "background_video": {
@@ -950,6 +1018,10 @@
         {
           "name": "limit"
         }
+      ],
+      "config_not_read_by_widget": [
+        "folder_id",
+        "file_ids"
       ]
     },
     "booking_highlight": {
@@ -970,6 +1042,11 @@
         {
           "name": "columns"
         }
+      ],
+      "config_not_read_by_widget": [
+        "menu_id",
+        "view_mode",
+        "columns"
       ]
     },
     "instagram": {
@@ -980,6 +1057,9 @@
         {
           "name": "limit"
         }
+      ],
+      "config_not_read_by_widget": [
+        "limit"
       ]
     },
     "facebook": {
@@ -1017,6 +1097,9 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "bfv_widget": {
@@ -1051,6 +1134,11 @@
             "dots"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "thickness",
+        "color",
+        "margin"
       ]
     },
     "spacer": {
@@ -1121,6 +1209,10 @@
             "circles"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "colors",
+        "pattern_type"
       ]
     },
     "decorative_element": {
@@ -1205,6 +1297,9 @@
         {
           "name": "pause_on_hover"
         }
+      ],
+      "config_not_read_by_widget": [
+        "pause_on_hover"
       ]
     },
     "image_text_split": {
@@ -1244,6 +1339,12 @@
         {
           "name": "badge_text"
         }
+      ],
+      "config_not_read_by_widget": [
+        "headline",
+        "cta_label",
+        "image_effect",
+        "badge_text"
       ]
     },
     "forum_highlight": {
@@ -1275,6 +1376,12 @@
         {
           "name": "show_reply_count"
         }
+      ],
+      "config_not_read_by_widget": [
+        "posts",
+        "sort_by",
+        "show_reactions",
+        "show_reply_count"
       ]
     },
     "tournament_highlight": {
@@ -1859,5 +1966,12 @@
       "Keine Footer-Rechtslinks in custom_html oder custom_css duplizieren.",
       "Die Plattform-Shell darf durch Homepage-Konfiguration weder ausgeblendet noch umgeleitet werden."
     ]
+  },
+  "config_sync": {
+    "widgets_checked": 68,
+    "fields_checked": 317,
+    "widgets_with_unread_fields": 25,
+    "unread_fields": 57,
+    "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget."
   }
 }
