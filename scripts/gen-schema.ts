@@ -99,6 +99,8 @@ const HOMEPAGE_SECTION_SCHEMA =
   "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py";
 const HOMEPAGE_WIDGET_KINDS =
   "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py";
+const HOMEPAGE_WIDGET_DIR =
+  "Frontend/web-page/src/components/ClubHome/widgets";
 
 /** Authoritative widget kinds: keys of WIDGET_REGISTRY (one per line). */
 function parseWidgetKinds(registrySrc: string): string[] {
@@ -139,6 +141,55 @@ function parsePythonLiteral(source: string, name: string): string[] {
   const match = new RegExp(`${name}\\s*=\\s*Literal\\s*\\[([\\s\\S]*?)\\]`).exec(source);
   if (!match) throw new Error(`Python-Literal ${name} nicht gefunden.`);
   return [...match[1].matchAll(/["']([a-z][a-z0-9_-]*)["']/g)].map((entry) => entry[1]);
+}
+
+/**
+ * Map each widget kind to the source file that actually implements it, by
+ * following the registry's own imports. Used to answer one question per config
+ * field: does the widget read this at all?
+ */
+function parseWidgetSources(registrySrc: string): Record<string, string> {
+  const componentToFile: Record<string, string> = {};
+  const importRe =
+    /import\s+(?:\{\s*([^}]+?)\s*\}|([A-Za-z][A-Za-z0-9_]*))\s+from\s+"\.\/([^"]+)"/g;
+  for (const m of registrySrc.matchAll(importRe)) {
+    const names = m[1]
+      ? m[1].split(",").map((s) => s.trim().split(/\s+as\s+/).pop()!.trim())
+      : [m[2]!];
+    for (const name of names) componentToFile[name] = m[3];
+  }
+
+  const out: Record<string, string> = {};
+  const start = registrySrc.indexOf("export const WIDGET_REGISTRY");
+  const body = start === -1 ? "" : registrySrc.slice(start);
+  for (const m of body.matchAll(/^\s+([a-z][a-z0-9_]*)\s*:\s*([A-Za-z][A-Za-z0-9_]*)\s*,/gm)) {
+    const file = componentToFile[m[2]];
+    if (file) out[m[1]] = file;
+  }
+  return out;
+}
+
+/**
+ * Which documented config fields does the widget source never mention?
+ *
+ * A HINT, not a verdict — and deliberately so. The check errs towards silence:
+ * a bare word match counts, so a field named like a common identifier (`style`,
+ * `title`) passes even when the widget means something else by it. What it DOES
+ * catch is the expensive case: a field the implementation has no idea about, so
+ * configuring it does nothing and nobody is told.
+ *
+ * Discovered 2026-08-27 on `ticker`, where the prompt documents
+ * `background_color`/`text_color` and the widget reads neither. The measurement
+ * that followed found 27 of 69 widgets carrying at least one such field, and
+ * `divider` matching in not a single one.
+ */
+function configFieldsNotInSource(
+  fields: Array<{ name: string }>,
+  source: string,
+): string[] {
+  return fields
+    .map((f) => f.name)
+    .filter((name) => !new RegExp(`\\b${name}\\b`).test(source));
 }
 
 /**
@@ -273,6 +324,28 @@ function genHomepage(): unknown {
   const backendKinds = parsePythonStringSet(backendKindsSrc, "VALID_WIDGET_KINDS");
   const sectionEnums = parseSectionEnums(sectionSrc);
 
+  // Hold the documented config against the implementation. The kinds have had a
+  // sync check since day one (vocabulary_sync below); the FIELDS never did, and
+  // that is where the drift sat unseen.
+  const widgetSources = parseWidgetSources(registrySrc);
+  const nichtImCode: Record<string, string[]> = {};
+  let felderGeprueft = 0;
+  let widgetsGeprueft = 0;
+  for (const [kind, file] of Object.entries(widgetSources)) {
+    const fields = promptConfigs[kind];
+    if (!fields || fields.length === 0) continue;
+    let src: string;
+    try {
+      src = readSource(`${HOMEPAGE_WIDGET_DIR}/${file}.tsx`);
+    } catch {
+      continue; // Kein lesbarer Quelltext -> keine Aussage, kein Hinweis.
+    }
+    widgetsGeprueft += 1;
+    felderGeprueft += fields.length;
+    const fehlend = configFieldsNotInSource(fields, src);
+    if (fehlend.length > 0) nichtImCode[kind] = fehlend;
+  }
+
   // Fall back to the documented value sets if comment-parsing yields nothing.
   const layout =
     sectionEnums.layout.length > 0
@@ -307,6 +380,19 @@ function genHomepage(): unknown {
     ...missingWidgetEntries,
   ]);
 
+  // Nach dem Merge, nicht davor: Bestehende Widget-Eintraege werden oben
+  // bewusst uebernommen statt neu gebaut. Wer den Hinweis vorher setzt,
+  // schreibt ihn nur fuer neue Kinds — und genau die alten sind die
+  // interessanten, weil ihre Drift schon da ist.
+  for (const [kind, eintrag] of Object.entries(mergedWidgets)) {
+    const fehlend = nichtImCode[kind];
+    if (fehlend && fehlend.length > 0) {
+      (eintrag as Record<string, unknown>).config_not_read_by_widget = fehlend;
+    } else {
+      delete (eintrag as Record<string, unknown>).config_not_read_by_widget;
+    }
+  }
+
   const navigationGroupContract = {
     type: "string|null",
     max_length: 100,
@@ -333,10 +419,24 @@ function genHomepage(): unknown {
       extra_in_backend: backendKinds.filter((kind) => !kinds.includes(kind)),
       extra_in_prompt: promptKinds.filter((kind) => !kinds.includes(kind)),
     },
+    config_sync: {
+      widgets_checked: widgetsGeprueft,
+      fields_checked: felderGeprueft,
+      widgets_with_unread_fields: Object.keys(nichtImCode).length,
+      unread_fields: Object.values(nichtImCode).reduce((n, f) => n + f.length, 0),
+      note:
+        "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. " +
+        "Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel " +
+        "an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein " +
+        "Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch " +
+        "anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget.",
+    },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +
       "stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag " +
-      "(Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema).",
+      "(Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema). " +
+      "Der Prompt ist gegenueber dem Widget-Code stellenweise veraltet; wo das auffaellt, steht " +
+      "es je Widget unter config_not_read_by_widget und gezaehlt unter config_sync.",
     structure: {
       ...(existing.structure ?? {}),
       tab: {

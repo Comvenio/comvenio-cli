@@ -34,6 +34,22 @@ export type LiveHomepageClub = {
   [key: string]: unknown;
 };
 
+/**
+ * Re-point an absolute preview URL at a different renderer.
+ *
+ * The club-service returns the preview URL absolute, always pointing at the
+ * hosted frontend. Anyone passing --frontend-base wants a DIFFERENT renderer —
+ * in practice a local dev server carrying code that is not merged yet. Path and
+ * query stay, the origin comes from the base.
+ *
+ * Built on `new URL` rather than string work on purpose: URL syntax has an
+ * unbounded edge-case space, and the language already knows it.
+ */
+export function applyFrontendBase(previewUrl: string, base: string): string {
+  const ziel = new URL(previewUrl);
+  return new URL(`${ziel.pathname}${ziel.search}`, base).toString();
+}
+
 /** Resolve the managed public homepage address exclusively from Club.subdomain. */
 export function resolveLiveHomepageUrl(
   environment: string,

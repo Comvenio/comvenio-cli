@@ -9,6 +9,7 @@ import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 import {
   actionableConsoleErrors,
+  applyFrontendBase,
   artifactSegment,
   classifyVerificationExit,
   failedSameOriginRequests,
@@ -810,10 +811,29 @@ export function registerVerifyCommands(cli: CAC): void {
               body,
             );
             if (!res.preview_url) throw new Error("Keine preview_url vom club-service erhalten.");
-            await verifyHomepageMatrix(res.preview_url, tabs, "homepage-preview", opts);
+            // Die preview_url zeigt immer auf den gehosteten Renderer. Ohne diese
+            // Zeile lief --frontend-base ins Leere: Der Lauf rendert dann die
+            // DEPLOYTE App, waehrend man glaubt, den lokalen Stand zu pruefen —
+            // und schliesst aus dem Ergebnis, der eigene Code funktioniere nicht.
+            const previewUrl = opts.frontendBase
+              ? applyFrontendBase(res.preview_url, fb)
+              : res.preview_url;
+            await verifyHomepageMatrix(previewUrl, tabs, "homepage-preview", opts);
             break;
           }
           // Live homepage: the managed public host comes exclusively from Club.subdomain.
+          // A flag that does nothing for the chosen action is rejected, not
+          // swallowed — the club's address is the whole point of this path, and
+          // a local renderer has no subdomain routing to answer it with.
+          if (opts.frontendBase) {
+            throw new Error(
+              "--frontend-base wirkt bei `verify homepage` ohne --file nicht: Dieser Weg rendert " +
+                "die veroeffentlichte Vereinsadresse (<subdomain>.comvenio.app), und ein lokaler " +
+                "Renderer kennt diese Zuordnung nicht.\n" +
+                "Fuer lokalen Code den Entwurfsweg nehmen:\n" +
+                "  comvenio verify homepage --file home.json --frontend-base http://localhost:5173",
+            );
+          }
           const club = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}`);
           const liveUrl = resolveLiveHomepageUrl(state.environment, club);
           const tabs = await client.get<HomepageTab[]>(
