@@ -193,6 +193,52 @@ function configFieldsNotInSource(
 }
 
 /**
+ * Which documented value sets does the widget contradict?
+ *
+ * `config_not_read_by_widget` compares field NAMES. It says nothing about the
+ * values, and that is where the second half of the drift sat: `team`
+ * documented `layout: card|compact|org` while the widget knows
+ * `grid|carousel|spotlight`, and `stats` had all three values wrong. Setting
+ * one of them silently yields the default — no error anywhere.
+ *
+ * The value set is read two ways, both syntactic:
+ *   `feld?: "a" | "b";`             inline union in the config interface
+ *   `type X = "a" | "b"; feld?: X;` via a type alias
+ * Anything not found either way yields NO finding. A checker that fires on
+ * every uncertainty gets ignored, and then it protects nothing.
+ */
+function documentedValuesNotInSource(
+  fields: Array<{ name: string; values?: string[] }>,
+  source: string,
+): Array<{ field: string; unknown: string[] }> {
+  const union = (expr: string): string[] | null => {
+    const parts = [...expr.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    return parts.length >= 2 ? parts : null;   // a lone string is not a set
+  };
+
+  const out: Array<{ field: string; unknown: string[] }> = [];
+  for (const field of fields) {
+    if (!Array.isArray(field.values) || field.values.length === 0) continue;
+
+    let known: string[] | null = null;
+    const inline = new RegExp(`\\b${field.name}\\??:\\s*("[^;\\n]+")\\s*;`).exec(source);
+    if (inline) known = union(inline[1]);
+    if (!known) {
+      const viaAlias = new RegExp(`\\b${field.name}\\??:\\s*([A-Z][A-Za-z0-9_]*)\\s*;`).exec(source);
+      if (viaAlias) {
+        const alias = new RegExp(`type\\s+${viaAlias[1]}\\s*=\\s*([^;]+);`).exec(source);
+        if (alias) known = union(alias[1]);
+      }
+    }
+    if (!known) continue;
+
+    const unknown = field.values.filter((v) => !known!.includes(v));
+    if (unknown.length > 0) out.push({ field: field.name, unknown });
+  }
+  return out;
+}
+
+/**
  * Parse `Config:`/`(...)` field hints out of the homepage system prompt.
  * The prompt lists widgets as bullet lines, where the description (and the
  * `Config:` segment) may wrap onto following indented continuation lines:
@@ -329,6 +375,7 @@ function genHomepage(): unknown {
   // that is where the drift sat unseen.
   const widgetSources = parseWidgetSources(registrySrc);
   const nichtImCode: Record<string, string[]> = {};
+  const werteNichtImCode: Record<string, Array<{ field: string; unknown: string[] }>> = {};
   let felderGeprueft = 0;
   let widgetsGeprueft = 0;
   for (const [kind, file] of Object.entries(widgetSources)) {
@@ -344,6 +391,13 @@ function genHomepage(): unknown {
     felderGeprueft += fields.length;
     const fehlend = configFieldsNotInSource(fields, src);
     if (fehlend.length > 0) nichtImCode[kind] = fehlend;
+
+    // Zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem
+    // erfunden sein. `stats` dokumentierte layout: card|bold|minimal, das
+    // Widget kennt grid|horizontal|bento — kein einziger Wert traf, und wer
+    // einen davon setzt, bekommt wortlos den Default.
+    const falscheWerte = documentedValuesNotInSource(fields, src);
+    if (falscheWerte.length > 0) werteNichtImCode[kind] = falscheWerte;
   }
 
   // Fall back to the documented value sets if comment-parsing yields nothing.
@@ -411,6 +465,13 @@ function genHomepage(): unknown {
     } else {
       delete (eintrag as Record<string, unknown>).config_not_read_by_widget;
     }
+
+    const werte = werteNichtImCode[kind];
+    if (werte && werte.length > 0) {
+      (eintrag as Record<string, unknown>).config_values_not_in_widget = werte;
+    } else {
+      delete (eintrag as Record<string, unknown>).config_values_not_in_widget;
+    }
   }
 
   const navigationGroupContract = {
@@ -444,12 +505,19 @@ function genHomepage(): unknown {
       fields_checked: felderGeprueft,
       widgets_with_unread_fields: Object.keys(nichtImCode).length,
       unread_fields: Object.values(nichtImCode).reduce((n, f) => n + f.length, 0),
+      widgets_with_wrong_values: Object.keys(werteNichtImCode).length,
+      wrong_values: Object.values(werteNichtImCode)
+        .reduce((n, fs) => n + fs.reduce((m, f) => m + f.unknown.length, 0), 0),
       note:
         "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. " +
         "Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel " +
         "an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein " +
         "Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch " +
-        "anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget.",
+        "anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. " +
+        "config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die " +
+        "Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, " +
+        "das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer " +
+        "Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund.",
     },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +

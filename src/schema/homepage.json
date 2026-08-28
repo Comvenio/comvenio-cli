@@ -266,7 +266,17 @@
       ]
     },
     "custom_html": {
-      "config": []
+      "config": [
+        {
+          "name": "html"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
+        }
+      ]
     },
     "stats": {
       "config": [
@@ -284,6 +294,16 @@
         {
           "name": "layout",
           "values": [
+            "card",
+            "bold",
+            "minimal"
+          ]
+        }
+      ],
+      "config_values_not_in_widget": [
+        {
+          "field": "layout",
+          "unknown": [
             "card",
             "bold",
             "minimal"
@@ -353,6 +373,14 @@
       ],
       "config_not_read_by_widget": [
         "map_url"
+      ],
+      "config_values_not_in_widget": [
+        {
+          "field": "layout",
+          "unknown": [
+            "inline"
+          ]
+        }
       ]
     },
     "legal_notice": {
@@ -423,7 +451,23 @@
       ]
     },
     "faq": {
-      "config": []
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "heading"
+        },
+        {
+          "name": "subheading"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
     },
     "sponsors": {
       "config": [
@@ -571,7 +615,12 @@
           "name": "text"
         },
         {
-          "name": "speed"
+          "name": "speed",
+          "values": [
+            "slow",
+            "normal",
+            "fast"
+          ]
         },
         {
           "name": "style",
@@ -592,6 +641,17 @@
       "config_not_read_by_widget": [
         "background_color",
         "text_color"
+      ],
+      "config_values_not_in_widget": [
+        {
+          "field": "style",
+          "unknown": [
+            "modern",
+            "classic",
+            "minimal",
+            "bold"
+          ]
+        }
       ]
     },
     "events_list": {
@@ -1080,7 +1140,20 @@
       ]
     },
     "booking_highlight": {
-      "config": []
+      "config": [
+        {
+          "name": "object_ids"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
     },
     "menu_display": {
       "config": [
@@ -1328,6 +1401,15 @@
         },
         {
           "name": "card_style"
+        }
+      ],
+      "config_values_not_in_widget": [
+        {
+          "field": "layout",
+          "unknown": [
+            "stack",
+            "marquee"
+          ]
         }
       ]
     },
@@ -1956,6 +2038,8 @@
     "fields_checked": 317,
     "widgets_with_unread_fields": 25,
     "unread_fields": 57,
-    "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget."
+    "widgets_with_wrong_values": 4,
+    "wrong_values": 10,
+    "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund."
   }
 }
