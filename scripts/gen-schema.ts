@@ -36,18 +36,49 @@ const CHECK_MODE = process.argv.includes("--check");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * Umleitungen je Quell-Repositorium.
+ *
+ * Der Generator liest die ARBEITSBAEUME unter dem Workspace, nicht deren
+ * main-Stand. Steht ein Baum auf einem fremden Zweig, schreibt ein Lauf
+ * dessen Code ins Schema — und das Ergebnis sieht plausibel aus, weshalb es
+ * niemand bemerkt.
+ *
+ * Am 2026-08-28 waere das beinahe passiert: Nach dem Merge dreier PRs meldete
+ * der Lauf unveraendert 57 tote Felder, weil der ai-service auf
+ * docs/data-model-wegweiser-main stand und web-page auf
+ * docs/ui-spezifikationen — zehn abweichende ClubHome-Dateien, darunter
+ * TickerWidget mit 116 Zeilen Unterschied. Es sah aus wie ein gescheiterter
+ * Merge.
+ *
+ * Fuer den ai-service gab es schon einen Schalter, fuer web-page nicht.
+ * Beide stehen jetzt in einer Tabelle: Ein weiteres Repositorium kostet eine
+ * Zeile, und der Test unten haelt sie gegen die Pfade, die der Generator
+ * tatsaechlich liest — ein Schalter auf ein Praefix, das niemand nutzt, waere
+ * sonst ein Versprechen ohne Wirkung.
+ */
+export const QUELL_UMLEITUNGEN: ReadonlyArray<{ prefix: string; env: string }> = [
+  { prefix: "Backend/Microservice-Backend/ai-service/", env: "COMVENIO_AI_SERVICE_ROOT" },
+  { prefix: "Frontend/web-page/", env: "COMVENIO_WEBPAGE_ROOT" },
+];
+
 /** Resolve a workspace-relative path and read it, or throw a clear error. */
 function readSource(relPath: string): string {
-  const aiPrefix = "Backend/Microservice-Backend/ai-service/";
-  const abs = process.env.COMVENIO_AI_SERVICE_ROOT && relPath.startsWith(aiPrefix)
-    ? join(resolve(process.env.COMVENIO_AI_SERVICE_ROOT), relPath.slice(aiPrefix.length))
-    : join(WORKSPACE, relPath);
+  let abs = join(WORKSPACE, relPath);
+  for (const { prefix, env } of QUELL_UMLEITUNGEN) {
+    const wurzel = process.env[env];
+    if (wurzel && relPath.startsWith(prefix)) {
+      abs = join(resolve(wurzel), relPath.slice(prefix.length));
+      break;
+    }
+  }
   if (!existsSync(abs)) {
     throw new Error(
       `Quelle nicht gefunden: ${relPath}\n` +
         `  erwartet unter: ${abs}\n` +
         `  Workspace-Root: ${WORKSPACE}\n` +
-        `  Setze COMVENIO_WORKSPACE bzw. COMVENIO_AI_SERVICE_ROOT fuer isolierte Worktrees.`,
+        `  Fuer isolierte Worktrees: COMVENIO_WORKSPACE, oder je Repositorium ` +
+        QUELL_UMLEITUNGEN.map((u) => u.env).join(" / ") + ".",
     );
   }
   return readFileSync(abs, "utf8");
