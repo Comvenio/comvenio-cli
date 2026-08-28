@@ -207,10 +207,46 @@ function configFieldsNotInSource(
  * Anything not found either way yields NO finding. A checker that fires on
  * every uncertainty gets ignored, and then it protects nothing.
  */
+/**
+ * Die Config-Typen liegen oft nicht im Widget, sondern in einer importierten
+ * Datei: `import type { NewsWidgetConfig } from "../configs/newsConfigs"`.
+ * Ohne diesen Schritt sah die Wertepruefung 15 Wertemengen nicht — und 13
+ * davon waren laengst sauber deklariert, nur eben eine Datei weiter.
+ *
+ * Aufgeloest wird TYPGENAU, nicht per Textsuche in der Zieldatei: Gesucht
+ * wird der Rumpf genau der Interfaces, die das Widget importiert. Eine Datei
+ * wie websiteConfigs.tsx traegt ein Dutzend `layout`-Felder; wer dort nur nach
+ * dem Feldnamen sucht, findet irgendeines und meldet danach Unsinn.
+ *
+ * Nur relative Importe innerhalb des Widget-Baums werden verfolgt, eine Ebene
+ * tief. Kein Modulaufloeser, keine Rekursion — der Randfallraum bleibt klein.
+ */
+function importedConfigBodies(source: string, widgetDir: string): string[] {
+  const bodies: string[] = [];
+  for (const imp of source.matchAll(/import\s+type\s*\{([^}]+)\}\s*from\s*"(\.[^"]+)"/g)) {
+    const typen = imp[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+    if (typen.length === 0) continue;
+    let ziel: string;
+    try {
+      const rel = imp[2].replace(/^\.\//, "").replace(/^\.\.\//, "../");
+      ziel = readSource(`${widgetDir}/${rel}.tsx`);
+    } catch {
+      try { ziel = readSource(`${widgetDir}/${imp[2].replace(/^\.\//, "").replace(/^\.\.\//, "../")}.ts`); }
+      catch { continue; }
+    }
+    for (const typ of typen) {
+      const m = new RegExp(`(?:export\\s+)?interface\\s+${typ}\\s*(?:extends[^{]+)?\\{([\\s\\S]*?)\\n\\}`).exec(ziel);
+      if (m) bodies.push(m[1]);
+    }
+  }
+  return bodies;
+}
+
 function documentedValuesNotInSource(
   fields: Array<{ name: string; values?: string[] }>,
   source: string,
   zaehler?: { gelesen: number; nichtLesbar: number },
+  importierte: string[] = [],
 ): Array<{ field: string; unknown: string[] }> {
   const union = (expr: string): string[] | null => {
     const parts = [...expr.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
@@ -229,6 +265,14 @@ function documentedValuesNotInSource(
       if (viaAlias) {
         const alias = new RegExp(`type\\s+${viaAlias[1]}\\s*=\\s*([^;]+);`).exec(source);
         if (alias) known = union(alias[1]);
+      }
+    }
+    // Dritter Weg: die importierten Config-Interfaces. Erst hier, damit eine
+    // Deklaration IM Widget immer gewinnt — sie ist die naehere Wahrheit.
+    if (!known) {
+      for (const body of importierte) {
+        const m = new RegExp(`^\\s+${field.name}\\??:\\s*("[^;\\n]+");`, "m").exec(body);
+        if (m) { known = union(m[1]); if (known) break; }
       }
     }
     if (!known) {
@@ -485,6 +529,7 @@ function genHomepage(): unknown {
           ((eintrag as Record<string, unknown>).config ?? []) as Array<{ name: string; values?: string[] }>,
           quelle,
           werteZaehler,
+          importedConfigBodies(quelle, HOMEPAGE_WIDGET_DIR),
         );
         if (gefunden.length > 0) werteNichtImCode[kind] = gefunden;
       }
