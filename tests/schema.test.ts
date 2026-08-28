@@ -193,6 +193,24 @@ describe("homepage value sets", () => {
     // einzige Wertemenge ansieht.
     expect(typeof homepage.config_sync.widgets_with_wrong_values).toBe("number");
     expect(typeof homepage.config_sync.wrong_values).toBe("number");
+    expect(homepage.config_sync.value_sets_checked).toBeGreaterThan(20);
+  });
+
+  test("it says how much it could NOT see", () => {
+    // Eine Null bei wrong_values liest sich wie eine Entwarnung fuer alle
+    // Wertemengen. Sie gilt aber nur fuer die, die lesbar waren — also muss
+    // die andere Zahl danebenstehen. Am 2026-08-28 waren 15 von 76 nicht
+    // lesbar; alle wurden von Hand geprueft und waren korrekt.
+    expect(typeof homepage.config_sync.value_sets_unreadable).toBe("number");
+
+    const mitWerten = Object.values(homepage.widgets as Record<string, any>)
+      .flatMap((w) => (w.config ?? []) as any[])
+      .filter((f) => Array.isArray(f.values)).length;
+
+    // Jede dokumentierte Wertemenge ist entweder geprueft oder als unlesbar
+    // gezaehlt — eine dritte Kategorie gaebe es nur als stille Luecke.
+    expect(homepage.config_sync.value_sets_checked + homepage.config_sync.value_sets_unreadable)
+      .toBe(mitWerten);
   });
 
   test("the counters match the per-widget findings", () => {

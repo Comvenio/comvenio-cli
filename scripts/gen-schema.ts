@@ -210,6 +210,7 @@ function configFieldsNotInSource(
 function documentedValuesNotInSource(
   fields: Array<{ name: string; values?: string[] }>,
   source: string,
+  zaehler?: { gelesen: number; nichtLesbar: number },
 ): Array<{ field: string; unknown: string[] }> {
   const union = (expr: string): string[] | null => {
     const parts = [...expr.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
@@ -230,7 +231,13 @@ function documentedValuesNotInSource(
         if (alias) known = union(alias[1]);
       }
     }
-    if (!known) continue;
+    if (!known) {
+      // Ehrlich zaehlen statt still uebergehen: Ein Pruefer muss sagen, was er
+      // NICHT angesehen hat, sonst liest sich seine Null wie eine Entwarnung.
+      if (zaehler) zaehler.nichtLesbar += 1;
+      continue;
+    }
+    if (zaehler) zaehler.gelesen += 1;
 
     const unknown = field.values.filter((v) => !known!.includes(v));
     if (unknown.length > 0) out.push({ field: field.name, unknown });
@@ -376,6 +383,7 @@ function genHomepage(): unknown {
   const widgetSources = parseWidgetSources(registrySrc);
   const nichtImCode: Record<string, string[]> = {};
   const werteNichtImCode: Record<string, Array<{ field: string; unknown: string[] }>> = {};
+  const werteZaehler = { gelesen: 0, nichtLesbar: 0 };
   let felderGeprueft = 0;
   let widgetsGeprueft = 0;
   for (const [kind, file] of Object.entries(widgetSources)) {
@@ -396,8 +404,6 @@ function genHomepage(): unknown {
     // erfunden sein. `stats` dokumentierte layout: card|bold|minimal, das
     // Widget kennt grid|horizontal|bento — kein einziger Wert traf, und wer
     // einen davon setzt, bekommt wortlos den Default.
-    const falscheWerte = documentedValuesNotInSource(fields, src);
-    if (falscheWerte.length > 0) werteNichtImCode[kind] = falscheWerte;
   }
 
   // Fall back to the documented value sets if comment-parsing yields nothing.
@@ -466,6 +472,24 @@ function genHomepage(): unknown {
       delete (eintrag as Record<string, unknown>).config_not_read_by_widget;
     }
 
+    // Die Wertepruefung sitzt NACH dem Merge, nicht davor: Geprueft gehoert,
+    // was das Schema behauptet — und das sind die gemergten Felder, nicht die
+    // aus dem Prompt. Handgepflegte Wertemengen kommen nur so vor die Linse;
+    // vorher fielen sie durch, weder geprueft noch als unlesbar gezaehlt.
+    const datei = widgetSources[kind];
+    if (datei) {
+      let quelle: string | null = null;
+      try { quelle = readSource(`${HOMEPAGE_WIDGET_DIR}/${datei}.tsx`); } catch { quelle = null; }
+      if (quelle) {
+        const gefunden = documentedValuesNotInSource(
+          ((eintrag as Record<string, unknown>).config ?? []) as Array<{ name: string; values?: string[] }>,
+          quelle,
+          werteZaehler,
+        );
+        if (gefunden.length > 0) werteNichtImCode[kind] = gefunden;
+      }
+    }
+
     const werte = werteNichtImCode[kind];
     if (werte && werte.length > 0) {
       (eintrag as Record<string, unknown>).config_values_not_in_widget = werte;
@@ -508,6 +532,8 @@ function genHomepage(): unknown {
       widgets_with_wrong_values: Object.keys(werteNichtImCode).length,
       wrong_values: Object.values(werteNichtImCode)
         .reduce((n, fs) => n + fs.reduce((m, f) => m + f.unknown.length, 0), 0),
+      value_sets_checked: werteZaehler.gelesen,
+      value_sets_unreadable: werteZaehler.nichtLesbar,
       note:
         "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. " +
         "Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel " +
@@ -517,7 +543,12 @@ function genHomepage(): unknown {
         "config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die " +
         "Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, " +
         "das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer " +
-        "Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund.",
+        "Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — " +
+        "value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine " +
+        "Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft " +
+        "und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, " +
+        "weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig " +
+        "und ein abgeleiteter Bezeichner).",
     },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +
