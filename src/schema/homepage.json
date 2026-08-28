@@ -8,7 +8,7 @@
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
   "widget_count": 71,
-  "widget_config_documented": 68,
+  "widget_config_documented": 71,
   "vocabulary_sync": {
     "registry_count": 71,
     "backend_count": 71,
@@ -205,13 +205,35 @@
           "name": "subtitle"
         },
         {
+          "name": "layout",
+          "values": [
+            "centered",
+            "split",
+            "fullscreen",
+            "asymmetric"
+          ]
+        },
+        {
           "name": "bg_type",
           "values": [
             "gradient",
             "primary",
             "image",
-            "subtle"
+            "subtle",
+            "custom"
           ]
+        },
+        {
+          "name": "bg_color"
+        },
+        {
+          "name": "bg_url"
+        },
+        {
+          "name": "gradient_colors"
+        },
+        {
+          "name": "overlay_opacity"
         },
         {
           "name": "text_color",
@@ -246,6 +268,49 @@
         },
         {
           "name": "cta_secondary_url"
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "badge_icon"
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "scale",
+            "typewriter",
+            "none"
+          ]
+        },
+        {
+          "name": "show_particles"
+        },
+        {
+          "name": "show_gradient_orbs"
+        },
+        {
+          "name": "show_grid_pattern"
+        },
+        {
+          "name": "show_grain"
+        },
+        {
+          "name": "show_scroll_indicator"
+        },
+        {
+          "name": "show_member_count"
+        },
+        {
+          "name": "show_event_count"
+        },
+        {
+          "name": "show_founded_year"
+        },
+        {
+          "name": "stats_items"
         }
       ]
     },
@@ -255,14 +320,29 @@
           "name": "text"
         },
         {
-          "name": "markdown"
+          "name": "content"
+        },
+        {
+          "name": "layout"
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "drop_cap"
+        },
+        {
+          "name": "callout_title"
+        },
+        {
+          "name": "callout_icon"
+        },
+        {
+          "name": "author"
+        },
+        {
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "markdown"
       ]
     },
     "custom_html": {
@@ -294,20 +374,36 @@
         {
           "name": "layout",
           "values": [
-            "card",
-            "bold",
-            "minimal"
+            "grid",
+            "horizontal",
+            "bento"
           ]
-        }
-      ],
-      "config_values_not_in_widget": [
+        },
         {
-          "field": "layout",
-          "unknown": [
-            "card",
-            "bold",
-            "minimal"
+          "name": "card_style",
+          "values": [
+            "glassmorphism",
+            "gradient",
+            "solid"
           ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "count-up",
+            "flip",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "show_icon_bg"
+        },
+        {
+          "name": "show_trend"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -361,24 +457,24 @@
           "name": "address"
         },
         {
-          "name": "map_url"
+          "name": "website"
+        },
+        {
+          "name": "opening_hours"
+        },
+        {
+          "name": "social_links"
+        },
+        {
+          "name": "map_embed_url"
         },
         {
           "name": "layout",
           "values": [
             "card",
-            "inline"
-          ]
-        }
-      ],
-      "config_not_read_by_widget": [
-        "map_url"
-      ],
-      "config_values_not_in_widget": [
-        {
-          "field": "layout",
-          "unknown": [
-            "inline"
+            "split",
+            "minimal",
+            "map-focus"
           ]
         }
       ]
@@ -447,6 +543,9 @@
             "columns",
             "stacked"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -475,16 +574,20 @@
           "name": "items"
         },
         {
-          "name": "columns",
-          "values": [
-            "2",
-            "3",
-            "4"
-          ]
+          "name": "sponsors"
+        },
+        {
+          "name": "advertiser_ids"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "columns"
       ]
     },
     "countdown": {
@@ -493,31 +596,17 @@
           "name": "target_date"
         },
         {
-          "name": "event_id"
+          "name": "event_name"
         },
         {
           "name": "label"
         },
         {
-          "name": "display_format",
-          "values": [
-            "full",
-            "compact"
-          ]
+          "name": "layout"
         },
         {
-          "name": "bg_type",
-          "values": [
-            "gradient",
-            "primary",
-            "subtle"
-          ]
+          "name": "show_event_date"
         }
-      ],
-      "config_not_read_by_widget": [
-        "event_id",
-        "display_format",
-        "bg_type"
       ]
     },
     "club_history": {
@@ -529,8 +618,16 @@
           "name": "layout",
           "values": [
             "vertical",
-            "alternating"
+            "alternating",
+            "horizontal",
+            "storytelling"
           ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -546,7 +643,16 @@
           "name": "show_cover_images"
         },
         {
-          "name": "department_id"
+          "name": "show_author"
+        },
+        {
+          "name": "show_category_badges"
+        },
+        {
+          "name": "show_reading_time"
+        },
+        {
+          "name": "show_title"
         },
         {
           "name": "display_mode",
@@ -587,9 +693,6 @@
             "none"
           ]
         }
-      ],
-      "config_not_read_by_widget": [
-        "department_id"
       ]
     },
     "news_highlight": {
@@ -598,21 +701,25 @@
           "name": "news_id"
         },
         {
-          "name": "department_id"
-        },
-        {
-          "name": "show_title"
+          "name": "layout",
+          "values": [
+            "cinematic",
+            "card",
+            "minimal",
+            "magazine"
+          ]
         }
-      ],
-      "config_not_read_by_widget": [
-        "department_id",
-        "show_title"
       ]
     },
     "ticker": {
       "config": [
         {
-          "name": "text"
+          "name": "style",
+          "values": [
+            "plain",
+            "pill",
+            "card"
+          ]
         },
         {
           "name": "speed",
@@ -623,34 +730,14 @@
           ]
         },
         {
-          "name": "style",
+          "name": "direction",
           "values": [
-            "modern",
-            "classic",
-            "minimal",
-            "bold"
+            "left",
+            "right"
           ]
         },
         {
-          "name": "background_color"
-        },
-        {
-          "name": "text_color"
-        }
-      ],
-      "config_not_read_by_widget": [
-        "background_color",
-        "text_color"
-      ],
-      "config_values_not_in_widget": [
-        {
-          "field": "style",
-          "unknown": [
-            "modern",
-            "classic",
-            "minimal",
-            "bold"
-          ]
+          "name": "pause_on_hover"
         }
       ]
     },
@@ -660,13 +747,19 @@
           "name": "limit"
         },
         {
+          "name": "count"
+        },
+        {
           "name": "days_ahead"
         },
         {
-          "name": "department_id"
+          "name": "show_title"
         },
         {
-          "name": "show_title"
+          "name": "show_past"
+        },
+        {
+          "name": "label"
         },
         {
           "name": "layout",
@@ -677,18 +770,12 @@
             "calendar-strip"
           ]
         }
-      ],
-      "config_not_read_by_widget": [
-        "department_id"
       ]
     },
     "event_highlight": {
       "config": [
         {
           "name": "event_id"
-        },
-        {
-          "name": "show_title"
         },
         {
           "name": "layout",
@@ -709,10 +796,16 @@
         },
         {
           "name": "cta_label"
+        },
+        {
+          "name": "show_live_countdown"
+        },
+        {
+          "name": "show_event_type_badge"
+        },
+        {
+          "name": "animation_style"
         }
-      ],
-      "config_not_read_by_widget": [
-        "show_title"
       ]
     },
     "event_hub_embed": {
@@ -725,6 +818,9 @@
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -790,10 +886,10 @@
     "training_schedule": {
       "config": [
         {
-          "name": "department_id"
+          "name": "entries"
         },
         {
-          "name": "limit"
+          "name": "show_title"
         },
         {
           "name": "layout",
@@ -802,84 +898,13 @@
             "timeline"
           ]
         }
-      ],
-      "config_not_read_by_widget": [
-        "department_id",
-        "limit"
       ]
     },
     "special_event_promo": {
       "config": [
         {
           "name": "event_id"
-        },
-        {
-          "name": "event_name"
-        },
-        {
-          "name": "event_date"
-        },
-        {
-          "name": "description"
-        },
-        {
-          "name": "location"
-        },
-        {
-          "name": "image_url"
-        },
-        {
-          "name": "show_countdown"
-        },
-        {
-          "name": "show_news"
-        },
-        {
-          "name": "show_gallery"
-        },
-        {
-          "name": "show_program"
-        },
-        {
-          "name": "show_description"
-        },
-        {
-          "name": "cta_text"
-        },
-        {
-          "name": "cta_url"
-        },
-        {
-          "name": "badge_text"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "hero",
-            "poster",
-            "cinematic"
-          ]
-        },
-        {
-          "name": "program"
         }
-      ],
-      "config_not_read_by_widget": [
-        "event_name",
-        "event_date",
-        "description",
-        "location",
-        "image_url",
-        "show_countdown",
-        "show_news",
-        "show_gallery",
-        "show_program",
-        "show_description",
-        "cta_text",
-        "cta_url",
-        "badge_text",
-        "layout",
-        "program"
       ]
     },
     "feature_grid": {
@@ -923,10 +948,32 @@
         {
           "name": "layout",
           "values": [
-            "card",
-            "compact",
-            "org"
+            "grid",
+            "carousel",
+            "spotlight"
           ]
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "glassmorphism",
+            "solid",
+            "gradient"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "cascade",
+            "none"
+          ]
+        },
+        {
+          "name": "glassmorphism"
+        },
+        {
+          "name": "featured_member_id"
         },
         {
           "name": "show_role"
@@ -935,29 +982,33 @@
           "name": "show_email"
         },
         {
+          "name": "show_department_badge"
+        },
+        {
+          "name": "show_member_count"
+        },
+        {
           "name": "limit"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
     "org_chart": {
       "config": [
         {
-          "name": "department_id"
+          "name": "root_department_id"
         },
         {
-          "name": "columns"
+          "name": "depth"
         },
         {
-          "name": "layout",
-          "values": [
-            "card",
-            "compact",
-            "org"
-          ]
+          "name": "show_members"
+        },
+        {
+          "name": "show_title"
         }
-      ],
-      "config_not_read_by_widget": [
-        "columns"
       ]
     },
     "birthdays": {
@@ -966,20 +1017,11 @@
           "name": "days_ahead"
         },
         {
-          "name": "department_id"
+          "name": "show_title"
         },
         {
-          "name": "display_mode",
-          "values": [
-            "full",
-            "age_with_date",
-            "age_only"
-          ]
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "department_id",
-        "display_mode"
       ]
     },
     "birthday_highlight": {
@@ -1004,22 +1046,7 @@
         },
         {
           "name": "max_display"
-        },
-        {
-          "name": "celebration_text"
-        },
-        {
-          "name": "animation_style",
-          "values": [
-            "confetti",
-            "sparkle",
-            "balloons",
-            "none"
-          ]
         }
-      ],
-      "config_not_read_by_widget": [
-        "animation_style"
       ]
     },
     "honors_showcase": {
@@ -1046,12 +1073,25 @@
           "name": "featured_honor_index"
         },
         {
+          "name": "max_honors"
+        },
+        {
           "name": "animation_style"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
     "image": {
       "config": [
+        {
+          "name": "mode",
+          "values": [
+            "image",
+            "file"
+          ]
+        },
         {
           "name": "url"
         },
@@ -1059,16 +1099,52 @@
           "name": "alt"
         },
         {
-          "name": "fit",
+          "name": "caption_title"
+        },
+        {
+          "name": "caption_description"
+        },
+        {
+          "name": "hover_effect",
           "values": [
-            "cover",
-            "contain",
-            "fill"
+            "zoom",
+            "parallax",
+            "reveal",
+            "none"
           ]
+        },
+        {
+          "name": "aspect_ratio"
+        },
+        {
+          "name": "enable_lightbox"
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "minimal",
+            "elevated",
+            "featured"
+          ]
+        },
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "file_url"
+        },
+        {
+          "name": "file_name"
+        },
+        {
+          "name": "file_type"
+        },
+        {
+          "name": "file_size"
+        },
+        {
+          "name": "file_description"
         }
-      ],
-      "config_not_read_by_widget": [
-        "fit"
       ]
     },
     "image_gallery": {
@@ -1087,29 +1163,48 @@
     "video": {
       "config": [
         {
-          "name": "url"
-        },
-        {
-          "name": "aspect_ratio"
-        }
-      ],
-      "config_not_read_by_widget": [
-        "aspect_ratio"
-      ]
-    },
-    "background_video": {
-      "config": [
-        {
           "name": "video_url"
         },
         {
-          "name": "video_file_id"
+          "name": "url"
         },
         {
           "name": "poster_url"
         },
         {
+          "name": "title"
+        },
+        {
+          "name": "autoplay"
+        },
+        {
+          "name": "muted"
+        },
+        {
+          "name": "theater_mode"
+        }
+      ]
+    },
+    "background_video": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "cover",
+            "spotlight"
+          ]
+        },
+        {
+          "name": "video_file_id"
+        },
+        {
+          "name": "video_url"
+        },
+        {
           "name": "poster_file_id"
+        },
+        {
+          "name": "poster_url"
         },
         {
           "name": "overlay"
@@ -1118,25 +1213,66 @@
           "name": "loop"
         },
         {
+          "name": "object_fit"
+        },
+        {
+          "name": "min_height"
+        },
+        {
           "name": "headline"
+        },
+        {
+          "name": "overlay_text"
+        },
+        {
+          "name": "background"
+        },
+        {
+          "name": "accent_color"
+        },
+        {
+          "name": "text_color"
+        },
+        {
+          "name": "logo_file_id"
+        },
+        {
+          "name": "logo_url"
+        },
+        {
+          "name": "logo_right_file_id"
+        },
+        {
+          "name": "logo_right_url"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "eyebrow"
+        },
+        {
+          "name": "date_badge"
+        },
+        {
+          "name": "claim"
+        },
+        {
+          "name": "news_ticker"
         }
       ]
     },
     "files": {
       "config": [
         {
-          "name": "folder_id"
-        },
-        {
-          "name": "file_ids"
-        },
-        {
           "name": "limit"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "folder_id",
-        "file_ids"
       ]
     },
     "booking_highlight": {
@@ -1158,23 +1294,35 @@
     "menu_display": {
       "config": [
         {
-          "name": "menu_id"
+          "name": "event_id"
         },
         {
-          "name": "view_mode",
-          "values": [
-            "grid",
-            "list"
-          ]
+          "name": "event_name"
         },
         {
-          "name": "columns"
+          "name": "event_date"
+        },
+        {
+          "name": "category_filter"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_price"
+        },
+        {
+          "name": "show_description"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "menu_id",
-        "view_mode",
-        "columns"
       ]
     },
     "instagram": {
@@ -1183,11 +1331,11 @@
           "name": "username"
         },
         {
-          "name": "limit"
+          "name": "url"
+        },
+        {
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "limit"
       ]
     },
     "facebook": {
@@ -1197,6 +1345,9 @@
         },
         {
           "name": "url"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1223,11 +1374,8 @@
           "name": "height"
         },
         {
-          "name": "show_title"
+          "name": "design_preset"
         }
-      ],
-      "config_not_read_by_widget": [
-        "show_title"
       ]
     },
     "bfv_widget": {
@@ -1237,36 +1385,52 @@
         },
         {
           "name": "height"
+        },
+        {
+          "name": "includeSrc"
+        },
+        {
+          "name": "scriptHtml"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
     "divider": {
       "config": [
         {
-          "name": "thickness"
-        },
-        {
-          "name": "color"
-        },
-        {
-          "name": "margin"
-        },
-        {
-          "name": "style",
+          "name": "theme",
           "values": [
-            "solid",
-            "dashed",
-            "gradient",
             "wave",
+            "mountain",
+            "curve",
+            "tilt",
+            "triangle",
+            "clouds",
+            "torn-paper",
+            "gradient-blend",
+            "ornamental",
+            "dots-fade",
             "zigzag",
-            "dots"
+            "brush-stroke"
           ]
+        },
+        {
+          "name": "top_color"
+        },
+        {
+          "name": "bottom_color"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "flip"
+        },
+        {
+          "name": "opacity"
         }
-      ],
-      "config_not_read_by_widget": [
-        "thickness",
-        "color",
-        "margin"
       ]
     },
     "spacer": {
@@ -1275,13 +1439,24 @@
           "name": "height"
         },
         {
-          "name": "style",
+          "name": "theme",
           "values": [
-            "dots",
-            "gradient",
-            "wave",
-            "zigzag"
+            "blank",
+            "gradient-glow",
+            "particles",
+            "noise-texture",
+            "mesh-gradient",
+            "line-pattern"
           ]
+        },
+        {
+          "name": "top_color"
+        },
+        {
+          "name": "bottom_color"
+        },
+        {
+          "name": "opacity"
         }
       ]
     },
@@ -1292,6 +1467,18 @@
         },
         {
           "name": "text"
+        },
+        {
+          "name": "subtitle"
+        },
+        {
+          "name": "text_size",
+          "values": [
+            "sm",
+            "md",
+            "lg",
+            "xl"
+          ]
         },
         {
           "name": "height"
@@ -1307,13 +1494,28 @@
         },
         {
           "name": "overlay_color"
+        },
+        {
+          "name": "overlay_opacity"
+        },
+        {
+          "name": "show_gradient_overlay"
+        },
+        {
+          "name": "cta_text"
+        },
+        {
+          "name": "cta_url"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
     "gradient_section": {
       "config": [
         {
-          "name": "style",
+          "name": "gradient_type",
           "values": [
             "mesh",
             "aurora",
@@ -1323,24 +1525,32 @@
           ]
         },
         {
-          "name": "colors"
+          "name": "primary_color"
+        },
+        {
+          "name": "accent_color"
+        },
+        {
+          "name": "pattern_overlay",
+          "values": [
+            "dots",
+            "lines",
+            "grain",
+            "none"
+          ]
         },
         {
           "name": "height"
         },
         {
-          "name": "pattern_type",
-          "values": [
-            "dots",
-            "grid",
-            "diagonal",
-            "circles"
-          ]
+          "name": "heading"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "show_text"
         }
-      ],
-      "config_not_read_by_widget": [
-        "colors",
-        "pattern_type"
       ]
     },
     "decorative_element": {
@@ -1373,6 +1583,38 @@
         },
         {
           "name": "quote_author"
+        },
+        {
+          "name": "color_scheme",
+          "values": [
+            "club",
+            "monochrome",
+            "pastel",
+            "neon"
+          ]
+        },
+        {
+          "name": "density",
+          "values": [
+            "sparse",
+            "medium",
+            "dense"
+          ]
+        },
+        {
+          "name": "animation",
+          "values": [
+            "float",
+            "rotate",
+            "pulse",
+            "none"
+          ]
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1386,12 +1628,32 @@
           "values": [
             "carousel",
             "grid",
-            "stack",
-            "marquee"
+            "stacked"
           ]
         },
         {
           "name": "autoplay"
+        },
+        {
+          "name": "interval"
+        },
+        {
+          "name": "transition",
+          "values": [
+            "fade",
+            "slide"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "glassmorphism"
         },
         {
           "name": "show_rating"
@@ -1401,22 +1663,25 @@
         },
         {
           "name": "card_style"
-        }
-      ],
-      "config_values_not_in_widget": [
+        },
         {
-          "field": "layout",
-          "unknown": [
-            "stack",
-            "marquee"
-          ]
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
     "logo_marquee": {
       "config": [
         {
-          "name": "items"
+          "name": "logos"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "show_title"
         },
         {
           "name": "speed"
@@ -1427,16 +1692,7 @@
             "left",
             "right"
           ]
-        },
-        {
-          "name": "grayscale"
-        },
-        {
-          "name": "pause_on_hover"
         }
-      ],
-      "config_not_read_by_widget": [
-        "pause_on_hover"
       ]
     },
     "image_text_split": {
@@ -1445,13 +1701,13 @@
           "name": "image_url"
         },
         {
-          "name": "headline"
+          "name": "heading"
         },
         {
-          "name": "text"
+          "name": "description"
         },
         {
-          "name": "cta_label"
+          "name": "cta_text"
         },
         {
           "name": "cta_url"
@@ -1463,31 +1719,13 @@
             "image-right",
             "image-top"
           ]
-        },
-        {
-          "name": "image_effect",
-          "values": [
-            "parallax",
-            "zoom",
-            "reveal",
-            "none"
-          ]
-        },
-        {
-          "name": "badge_text"
         }
-      ],
-      "config_not_read_by_widget": [
-        "headline",
-        "cta_label",
-        "image_effect",
-        "badge_text"
       ]
     },
     "forum_highlight": {
       "config": [
         {
-          "name": "posts"
+          "name": "max_posts"
         },
         {
           "name": "layout",
@@ -1499,26 +1737,8 @@
           ]
         },
         {
-          "name": "sort_by",
-          "values": [
-            "reactions",
-            "replies",
-            "views",
-            "recent"
-          ]
-        },
-        {
-          "name": "show_reactions"
-        },
-        {
-          "name": "show_reply_count"
+          "name": "animation_style"
         }
-      ],
-      "config_not_read_by_widget": [
-        "posts",
-        "sort_by",
-        "show_reactions",
-        "show_reply_count"
       ]
     },
     "tournament_highlight": {
@@ -1537,10 +1757,25 @@
           "name": "tournament_id"
         },
         {
+          "name": "own_team_name"
+        },
+        {
           "name": "show_live_indicator"
         },
         {
+          "name": "show_standings"
+        },
+        {
+          "name": "max_matches"
+        },
+        {
+          "name": "matches"
+        },
+        {
           "name": "standings"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1553,17 +1788,9 @@
             "bfv",
             "btv",
             "dfb",
+            "nuliga",
             "custom"
           ]
-        },
-        {
-          "name": "team_id"
-        },
-        {
-          "name": "league_id"
-        },
-        {
-          "name": "embed_url"
         },
         {
           "name": "layout",
@@ -1575,6 +1802,33 @@
           ]
         },
         {
+          "name": "team_id"
+        },
+        {
+          "name": "league_id"
+        },
+        {
+          "name": "league_name"
+        },
+        {
+          "name": "own_team_name"
+        },
+        {
+          "name": "widget_type"
+        },
+        {
+          "name": "embed_url"
+        },
+        {
+          "name": "embed_height"
+        },
+        {
+          "name": "show_team_logo"
+        },
+        {
+          "name": "show_league_name"
+        },
+        {
           "name": "show_standings"
         },
         {
@@ -1582,6 +1836,61 @@
         },
         {
           "name": "show_next_match"
+        },
+        {
+          "name": "max_entries"
+        },
+        {
+          "name": "refresh_interval"
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "static_standings"
+        },
+        {
+          "name": "static_results"
+        },
+        {
+          "name": "fupa_widget_id"
+        },
+        {
+          "name": "fupa_include_src"
+        },
+        {
+          "name": "fupa_href_url"
+        },
+        {
+          "name": "fupa_href_label"
+        },
+        {
+          "name": "bfv_include_src"
+        },
+        {
+          "name": "bfv_script_html"
+        },
+        {
+          "name": "nuliga_type",
+          "values": [
+            "table",
+            "schedule",
+            "club-schedule"
+          ]
+        },
+        {
+          "name": "nuliga_league_url"
+        },
+        {
+          "name": "nuliga_club_name"
+        },
+        {
+          "name": "nuliga_css_url"
         }
       ]
     },
@@ -1599,6 +1908,12 @@
         },
         {
           "name": "show_departments"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1619,6 +1934,12 @@
         },
         {
           "name": "icons"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1626,6 +1947,9 @@
       "config": [
         {
           "name": "department_id"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1636,6 +1960,12 @@
         },
         {
           "name": "days_ahead"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1656,6 +1986,12 @@
         },
         {
           "name": "decisions"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1671,6 +2007,12 @@
             "cards",
             "minimal"
           ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1687,6 +2029,12 @@
         },
         {
           "name": "expires_at"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1716,6 +2064,12 @@
         },
         {
           "name": "link_url"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1736,6 +2090,12 @@
         },
         {
           "name": "tasks"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1749,6 +2109,12 @@
         },
         {
           "name": "entries"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1775,6 +2141,12 @@
         },
         {
           "name": "quote"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1795,6 +2167,12 @@
             "default",
             "glass"
           ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1809,6 +2187,12 @@
             "list",
             "masonry"
           ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1846,6 +2230,12 @@
         },
         {
           "name": "forecast"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset"
         }
       ]
     },
@@ -1859,6 +2249,12 @@
         },
         {
           "name": "own_team_id"
+        },
+        {
+          "name": "matches"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1876,6 +2272,9 @@
         },
         {
           "name": "show_message_field"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1893,6 +2292,9 @@
             "crossfade",
             "kenburns"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1915,6 +2317,9 @@
         },
         {
           "name": "show_meetings"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1933,7 +2338,13 @@
           "name": "count"
         },
         {
+          "name": "messages"
+        },
+        {
           "name": "link_label"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1948,6 +2359,12 @@
         },
         {
           "name": "max_honors"
+        },
+        {
+          "name": "honors"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -2034,14 +2451,14 @@
     ]
   },
   "config_sync": {
-    "widgets_checked": 68,
-    "fields_checked": 317,
-    "widgets_with_unread_fields": 25,
-    "unread_fields": 57,
-    "widgets_with_wrong_values": 4,
-    "wrong_values": 10,
-    "value_sets_checked": 50,
-    "value_sets_unreadable": 17,
+    "widgets_checked": 71,
+    "fields_checked": 496,
+    "widgets_with_unread_fields": 0,
+    "unread_fields": 0,
+    "widgets_with_wrong_values": 0,
+    "wrong_values": 0,
+    "value_sets_checked": 72,
+    "value_sets_unreadable": 4,
     "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig und ein abgeleiteter Bezeichner)."
   }
 }
