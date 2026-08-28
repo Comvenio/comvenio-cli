@@ -193,6 +193,103 @@ function configFieldsNotInSource(
 }
 
 /**
+ * Which documented value sets does the widget contradict?
+ *
+ * `config_not_read_by_widget` compares field NAMES. It says nothing about the
+ * values, and that is where the second half of the drift sat: `team`
+ * documented `layout: card|compact|org` while the widget knows
+ * `grid|carousel|spotlight`, and `stats` had all three values wrong. Setting
+ * one of them silently yields the default — no error anywhere.
+ *
+ * The value set is read two ways, both syntactic:
+ *   `feld?: "a" | "b";`             inline union in the config interface
+ *   `type X = "a" | "b"; feld?: X;` via a type alias
+ * Anything not found either way yields NO finding. A checker that fires on
+ * every uncertainty gets ignored, and then it protects nothing.
+ */
+/**
+ * Die Config-Typen liegen oft nicht im Widget, sondern in einer importierten
+ * Datei: `import type { NewsWidgetConfig } from "../configs/newsConfigs"`.
+ * Ohne diesen Schritt sah die Wertepruefung 15 Wertemengen nicht — und 13
+ * davon waren laengst sauber deklariert, nur eben eine Datei weiter.
+ *
+ * Aufgeloest wird TYPGENAU, nicht per Textsuche in der Zieldatei: Gesucht
+ * wird der Rumpf genau der Interfaces, die das Widget importiert. Eine Datei
+ * wie websiteConfigs.tsx traegt ein Dutzend `layout`-Felder; wer dort nur nach
+ * dem Feldnamen sucht, findet irgendeines und meldet danach Unsinn.
+ *
+ * Nur relative Importe innerhalb des Widget-Baums werden verfolgt, eine Ebene
+ * tief. Kein Modulaufloeser, keine Rekursion — der Randfallraum bleibt klein.
+ */
+function importedConfigBodies(source: string, widgetDir: string): string[] {
+  const bodies: string[] = [];
+  for (const imp of source.matchAll(/import\s+type\s*\{([^}]+)\}\s*from\s*"(\.[^"]+)"/g)) {
+    const typen = imp[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+    if (typen.length === 0) continue;
+    let ziel: string;
+    try {
+      const rel = imp[2].replace(/^\.\//, "").replace(/^\.\.\//, "../");
+      ziel = readSource(`${widgetDir}/${rel}.tsx`);
+    } catch {
+      try { ziel = readSource(`${widgetDir}/${imp[2].replace(/^\.\//, "").replace(/^\.\.\//, "../")}.ts`); }
+      catch { continue; }
+    }
+    for (const typ of typen) {
+      const m = new RegExp(`(?:export\\s+)?interface\\s+${typ}\\s*(?:extends[^{]+)?\\{([\\s\\S]*?)\\n\\}`).exec(ziel);
+      if (m) bodies.push(m[1]);
+    }
+  }
+  return bodies;
+}
+
+function documentedValuesNotInSource(
+  fields: Array<{ name: string; values?: string[] }>,
+  source: string,
+  zaehler?: { gelesen: number; nichtLesbar: number },
+  importierte: string[] = [],
+): Array<{ field: string; unknown: string[] }> {
+  const union = (expr: string): string[] | null => {
+    const parts = [...expr.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    return parts.length >= 2 ? parts : null;   // a lone string is not a set
+  };
+
+  const out: Array<{ field: string; unknown: string[] }> = [];
+  for (const field of fields) {
+    if (!Array.isArray(field.values) || field.values.length === 0) continue;
+
+    let known: string[] | null = null;
+    const inline = new RegExp(`\\b${field.name}\\??:\\s*("[^;\\n]+")\\s*;`).exec(source);
+    if (inline) known = union(inline[1]);
+    if (!known) {
+      const viaAlias = new RegExp(`\\b${field.name}\\??:\\s*([A-Z][A-Za-z0-9_]*)\\s*;`).exec(source);
+      if (viaAlias) {
+        const alias = new RegExp(`type\\s+${viaAlias[1]}\\s*=\\s*([^;]+);`).exec(source);
+        if (alias) known = union(alias[1]);
+      }
+    }
+    // Dritter Weg: die importierten Config-Interfaces. Erst hier, damit eine
+    // Deklaration IM Widget immer gewinnt — sie ist die naehere Wahrheit.
+    if (!known) {
+      for (const body of importierte) {
+        const m = new RegExp(`^\\s+${field.name}\\??:\\s*("[^;\\n]+");`, "m").exec(body);
+        if (m) { known = union(m[1]); if (known) break; }
+      }
+    }
+    if (!known) {
+      // Ehrlich zaehlen statt still uebergehen: Ein Pruefer muss sagen, was er
+      // NICHT angesehen hat, sonst liest sich seine Null wie eine Entwarnung.
+      if (zaehler) zaehler.nichtLesbar += 1;
+      continue;
+    }
+    if (zaehler) zaehler.gelesen += 1;
+
+    const unknown = field.values.filter((v) => !known!.includes(v));
+    if (unknown.length > 0) out.push({ field: field.name, unknown });
+  }
+  return out;
+}
+
+/**
  * Parse `Config:`/`(...)` field hints out of the homepage system prompt.
  * The prompt lists widgets as bullet lines, where the description (and the
  * `Config:` segment) may wrap onto following indented continuation lines:
@@ -329,6 +426,8 @@ function genHomepage(): unknown {
   // that is where the drift sat unseen.
   const widgetSources = parseWidgetSources(registrySrc);
   const nichtImCode: Record<string, string[]> = {};
+  const werteNichtImCode: Record<string, Array<{ field: string; unknown: string[] }>> = {};
+  const werteZaehler = { gelesen: 0, nichtLesbar: 0 };
   let felderGeprueft = 0;
   let widgetsGeprueft = 0;
   for (const [kind, file] of Object.entries(widgetSources)) {
@@ -344,6 +443,11 @@ function genHomepage(): unknown {
     felderGeprueft += fields.length;
     const fehlend = configFieldsNotInSource(fields, src);
     if (fehlend.length > 0) nichtImCode[kind] = fehlend;
+
+    // Zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem
+    // erfunden sein. `stats` dokumentierte layout: card|bold|minimal, das
+    // Widget kennt grid|horizontal|bento — kein einziger Wert traf, und wer
+    // einen davon setzt, bekommt wortlos den Default.
   }
 
   // Fall back to the documented value sets if comment-parsing yields nothing.
@@ -370,15 +474,35 @@ function genHomepage(): unknown {
     }
   }
 
-  const existingWidgetEntries = Object.entries(existing.widgets ?? {})
-    .filter(([kind]) => kinds.includes(kind));
-  const missingWidgetEntries = kinds
-    .filter((kind) => !Object.prototype.hasOwnProperty.call(existing.widgets ?? {}, kind))
-    .map((kind) => [kind, widgets[kind]]);
-  const mergedWidgets = Object.fromEntries([
-    ...existingWidgetEntries,
-    ...missingWidgetEntries,
-  ]);
+  // Die Felder kommen aus dem Prompt, sobald er welche nennt; alles andere am
+  // Eintrag (status, handgepflegte Notizen) bleibt stehen.
+  //
+  // Vorher gewannen bestehende Eintraege VOLLSTAENDIG, und damit schrieb der
+  // Generator die config eines Widgets genau einmal — beim ersten Auftreten,
+  // danach nie wieder. Genau daran konnte die Drift wachsen, ohne dass ein
+  // Lauf sie je eingeholt haette: Am 2026-08-27 nannte das Schema fuer `ticker`
+  // background_color und text_color, obwohl beide seit Langem weder im Prompt
+  // noch im Widget standen. Ein Generator, der eine Quelle liest und ihr
+  // Ergebnis dann verwirft, ist keiner.
+  const mergedWidgets = Object.fromEntries(kinds.map((kind) => {
+    const bestehend = (existing.widgets?.[kind] ?? {}) as Record<string, any>;
+    const ausPrompt = widgets[kind].config;
+
+    // Je Feld gewinnt der Prompt (Name, Werte), aber handgepflegte Zusaetze am
+    // gleichnamigen Feld bleiben. Noetig, weil der Prompt-Parser `widgetId
+    // Pflicht` als required erkennt, `club_name (Pflicht)` in Klammern aber
+    // nicht — ohne diesen Erhalt verlieren solche Felder ihr required.
+    // Ein Feld, das aus dem Prompt verschwunden ist, faellt weg. Genau das
+    // ist der Zweck.
+    const vorhanden = new Map<string, any>(
+      ((bestehend.config ?? []) as Array<{ name: string }>).map((f) => [f.name, f]),
+    );
+    const config = ausPrompt.length > 0
+      ? ausPrompt.map((f) => ({ ...(vorhanden.get(f.name) ?? {}), ...f }))
+      : (bestehend.config ?? []);
+
+    return [kind, { ...bestehend, config }];
+  }));
 
   // Nach dem Merge, nicht davor: Bestehende Widget-Eintraege werden oben
   // bewusst uebernommen statt neu gebaut. Wer den Hinweis vorher setzt,
@@ -390,6 +514,32 @@ function genHomepage(): unknown {
       (eintrag as Record<string, unknown>).config_not_read_by_widget = fehlend;
     } else {
       delete (eintrag as Record<string, unknown>).config_not_read_by_widget;
+    }
+
+    // Die Wertepruefung sitzt NACH dem Merge, nicht davor: Geprueft gehoert,
+    // was das Schema behauptet — und das sind die gemergten Felder, nicht die
+    // aus dem Prompt. Handgepflegte Wertemengen kommen nur so vor die Linse;
+    // vorher fielen sie durch, weder geprueft noch als unlesbar gezaehlt.
+    const datei = widgetSources[kind];
+    if (datei) {
+      let quelle: string | null = null;
+      try { quelle = readSource(`${HOMEPAGE_WIDGET_DIR}/${datei}.tsx`); } catch { quelle = null; }
+      if (quelle) {
+        const gefunden = documentedValuesNotInSource(
+          ((eintrag as Record<string, unknown>).config ?? []) as Array<{ name: string; values?: string[] }>,
+          quelle,
+          werteZaehler,
+          importedConfigBodies(quelle, HOMEPAGE_WIDGET_DIR),
+        );
+        if (gefunden.length > 0) werteNichtImCode[kind] = gefunden;
+      }
+    }
+
+    const werte = werteNichtImCode[kind];
+    if (werte && werte.length > 0) {
+      (eintrag as Record<string, unknown>).config_values_not_in_widget = werte;
+    } else {
+      delete (eintrag as Record<string, unknown>).config_values_not_in_widget;
     }
   }
 
@@ -424,12 +574,26 @@ function genHomepage(): unknown {
       fields_checked: felderGeprueft,
       widgets_with_unread_fields: Object.keys(nichtImCode).length,
       unread_fields: Object.values(nichtImCode).reduce((n, f) => n + f.length, 0),
+      widgets_with_wrong_values: Object.keys(werteNichtImCode).length,
+      wrong_values: Object.values(werteNichtImCode)
+        .reduce((n, fs) => n + fs.reduce((m, f) => m + f.unknown.length, 0), 0),
+      value_sets_checked: werteZaehler.gelesen,
+      value_sets_unreadable: werteZaehler.nichtLesbar,
       note:
         "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. " +
         "Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel " +
         "an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein " +
         "Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch " +
-        "anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget.",
+        "anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. " +
+        "config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die " +
+        "Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, " +
+        "das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer " +
+        "Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — " +
+        "value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine " +
+        "Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft " +
+        "und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, " +
+        "weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig " +
+        "und ein abgeleiteter Bezeichner).",
     },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +

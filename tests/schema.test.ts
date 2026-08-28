@@ -179,3 +179,75 @@ describe("homepage config sync", () => {
     }
   });
 });
+
+describe("homepage value sets", () => {
+  const homepage = schema("homepage");
+
+  // Die zweite Haelfte der Drift: Der Feldname stimmt, die Wertemenge nicht.
+  // `stats` dokumentierte layout: card|bold|minimal, das Widget kennt
+  // grid|horizontal|bento — kein einziger Wert traf, und wer einen setzt,
+  // bekommt wortlos den Default. config_not_read_by_widget sieht das nicht:
+  // Es vergleicht Namen.
+  test("the value check actually ran", () => {
+    // Ohne diese Zusicherung waere die Suite gruen, wenn die Pruefung keine
+    // einzige Wertemenge ansieht.
+    expect(typeof homepage.config_sync.widgets_with_wrong_values).toBe("number");
+    expect(typeof homepage.config_sync.wrong_values).toBe("number");
+    expect(homepage.config_sync.value_sets_checked).toBeGreaterThan(20);
+  });
+
+  test("it says how much it could NOT see", () => {
+    // Eine Null bei wrong_values liest sich wie eine Entwarnung fuer alle
+    // Wertemengen. Sie gilt aber nur fuer die, die lesbar waren — also muss
+    // die andere Zahl danebenstehen. Am 2026-08-28 waren 15 von 76 nicht
+    // lesbar; alle wurden von Hand geprueft und waren korrekt.
+    expect(typeof homepage.config_sync.value_sets_unreadable).toBe("number");
+
+    const mitWerten = Object.values(homepage.widgets as Record<string, any>)
+      .flatMap((w) => (w.config ?? []) as any[])
+      .filter((f) => Array.isArray(f.values)).length;
+
+    // Jede dokumentierte Wertemenge ist entweder geprueft oder als unlesbar
+    // gezaehlt — eine dritte Kategorie gaebe es nur als stille Luecke.
+    expect(homepage.config_sync.value_sets_checked + homepage.config_sync.value_sets_unreadable)
+      .toBe(mitWerten);
+  });
+
+  test("the counters match the per-widget findings", () => {
+    const mitBefund = Object.values(homepage.widgets as Record<string, any>)
+      .filter((w) => Array.isArray(w.config_values_not_in_widget));
+    const werte = mitBefund.reduce(
+      (n: number, w: any) =>
+        n + w.config_values_not_in_widget.reduce((m: number, f: any) => m + f.unknown.length, 0),
+      0,
+    );
+
+    expect(homepage.config_sync.widgets_with_wrong_values).toBe(mitBefund.length);
+    expect(homepage.config_sync.wrong_values).toBe(werte);
+  });
+
+  test("an empty finding is dropped rather than written", () => {
+    for (const [kind, widget] of Object.entries(homepage.widgets as Record<string, any>)) {
+      if (widget.config_values_not_in_widget === undefined) continue;
+      expect(widget.config_values_not_in_widget.length, kind).toBeGreaterThan(0);
+      for (const f of widget.config_values_not_in_widget) {
+        expect(f.unknown.length, `${kind}.${f.field}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  test("every flagged value belongs to a field the schema documents with values", () => {
+    // Gegenprobe: Ein Befund an einem Feld ohne dokumentierte Werte waere ein
+    // Parserfehler — der Leser suchte dann nach einem Phantom.
+    for (const [kind, widget] of Object.entries(homepage.widgets as Record<string, any>)) {
+      for (const f of widget.config_values_not_in_widget ?? []) {
+        const feld = (widget.config ?? []).find((c: any) => c.name === f.field);
+        expect(feld, `${kind}.${f.field}`).toBeTruthy();
+        expect(Array.isArray(feld.values), `${kind}.${f.field}`).toBe(true);
+        for (const wert of f.unknown) {
+          expect(feld.values, `${kind}.${f.field}`).toContain(wert);
+        }
+      }
+    }
+  });
+});
