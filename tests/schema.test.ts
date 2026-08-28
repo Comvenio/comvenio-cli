@@ -251,3 +251,55 @@ describe("homepage value sets", () => {
     }
   });
 });
+
+describe("source redirection per repository", () => {
+  // Der Generator liest die Arbeitsbaeume, nicht deren main-Stand. Steht ein
+  // Baum auf einem fremden Zweig, landet dessen Code im Schema — sichtbar
+  // wird das nie, weil das Ergebnis plausibel aussieht. Die Schalter je
+  // Repositorium sind der Ausweg; dieser Test haelt sie ehrlich.
+  const generator = readFileSync(
+    join(import.meta.dir, "..", "scripts", "gen-schema.ts"),
+    "utf8",
+  );
+
+  const umleitungen = [...generator.matchAll(
+    /\{\s*prefix:\s*"([^"]+)",\s*env:\s*"([^"]+)"\s*\}/g,
+  )].map((m) => ({ prefix: m[1], env: m[2] }));
+
+  test("the table is read at all", () => {
+    // Ohne diese Zusicherung waere der Rest gruen, wenn das Regex nichts trifft.
+    expect(umleitungen.length).toBeGreaterThanOrEqual(2);
+    expect(umleitungen.map((u) => u.env)).toContain("COMVENIO_AI_SERVICE_ROOT");
+    expect(umleitungen.map((u) => u.env)).toContain("COMVENIO_WEBPAGE_ROOT");
+  });
+
+  test("every switch points at a prefix the generator actually reads", () => {
+    // Ein Schalter auf ein Praefix, das keine Quelle nutzt, ist ein
+    // Versprechen ohne Wirkung: Wer ihn setzt, glaubt umgeleitet zu haben.
+    const quellen = [...generator.matchAll(/"((?:Frontend|Backend)\/[^"]+)"/g)]
+      .map((m) => m[1]);
+
+    for (const { prefix, env } of umleitungen) {
+      const genutzt = quellen.some((q) => q.startsWith(prefix));
+      expect(genutzt, `${env} zeigt auf ${prefix}, das keine Quelle nutzt`).toBe(true);
+    }
+  });
+
+  test("every repository the generator reads from can be redirected", () => {
+    // Die Gegenrichtung: Aus welchen Repositorien liest der Generator, ohne
+    // dass es einen Schalter gibt? Jedes davon vergiftet einen Lauf, sobald
+    // sein Arbeitsbaum auf einem fremden Zweig steht.
+    const repos = new Set(
+      [...generator.matchAll(/"(Backend\/Microservice-Backend\/[a-z-]+|Frontend\/[a-z-]+)\//g)]
+        .map((m) => m[1] + "/"),
+    );
+    const ohneSchalter = [...repos].filter(
+      (r) => !umleitungen.some((u) => u.prefix === r),
+    );
+
+    // Bewusst kein leeres Array erwartet: Die uebrigen Services liefern Enums,
+    // die selten driften. Der Test haelt die Zahl fest, damit ein neues
+    // Repositorium auffaellt und jemand entscheidet, statt es zu uebersehen.
+    expect(ohneSchalter.length).toBeLessThanOrEqual(8);
+  });
+});
