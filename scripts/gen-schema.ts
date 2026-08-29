@@ -287,7 +287,10 @@ const JS_METHODEN = new Set([
   "filter", "map", "forEach", "find", "findIndex", "some", "every", "reduce",
   "slice", "splice", "join", "concat", "includes", "indexOf", "lastIndexOf",
   "sort", "reverse", "push", "pop", "shift", "unshift", "flat", "flatMap",
-  "length", "keys", "values", "entries", "toString", "valueOf", "hasOwnProperty",
+  "length", "keys", "values", "toString", "valueOf", "hasOwnProperty",
+  // "entries" steht bewusst NICHT hier: ActivityFeedConfig.entries ist ein
+  // echtes Config-Feld (ActivityFeedWidget.tsx:50) und wuerde sonst als
+  // Methodenname aussortiert, sobald es einmal aus dem Schema faellt.
   "trim", "split", "replace", "match", "startsWith", "endsWith", "toLowerCase",
   "toUpperCase", "padStart", "padEnd", "repeat", "charAt", "substring", "at",
 ]);
@@ -312,12 +315,38 @@ const ALIASE_UND_ABSICHT: Record<string, Record<string, string>> = {
     btn_url: "Alias von primary_button_url",
   },
   events_list: {
-    classes: "Absicht: freies CSS waere ein Einfallstor, bleibt ueber MCP gesperrt",
-  },
-  tournament_highlight: {
-    filter: "kein Config-Feld: `raw` ist dort ein Array, `.filter()` sein Aufruf",
+    classes: "Fehlalarm: `cfg` ist dort das Ergebnis von getStatusConfig(event), keine Widget-Config (EventsListWidget.tsx:139/243)",
   },
 };
+
+/**
+ * Was der homepage-Abgleich gefunden hat, gesammelt fuer die Konsolenausgabe
+ * am Ende des Laufs. `genHomepage()` fuellt das, `meldeHomepageBefunde()`
+ * druckt es.
+ */
+const HOMEPAGE_BEFUNDE: {
+  undokumentiert: Record<string, string[]>;
+  veraltet: Record<string, string[]>;
+} = { undokumentiert: {}, veraltet: {} };
+
+function meldeHomepageBefunde(): void {
+  const u = Object.entries(HOMEPAGE_BEFUNDE.undokumentiert);
+  const v = Object.entries(HOMEPAGE_BEFUNDE.veraltet);
+  if (u.length === 0 && v.length === 0) return;
+  console.log("");
+  if (u.length > 0) {
+    const anzahl = u.reduce((n, [, felder]) => n + felder.length, 0);
+    console.log(
+      `HINWEIS: ${anzahl} Config-Feld(er) in ${u.length} Widget(s) werden gelesen, stehen aber nicht im Schema.`,
+    );
+    console.log("  Ein Agent findet sie nicht in `comvenio schema homepage` — gesperrt sind sie nicht.");
+    for (const [kind, felder] of u) console.log(`  ${kind.padEnd(24)} ${felder.join(", ")}`);
+  }
+  if (v.length > 0) {
+    console.log(`HINWEIS: ${v.length} Widget(s) tragen Ausnahmen ohne Grund (ALIASE_UND_ABSICHT):`);
+    for (const [kind, eintraege] of v) console.log(`  ${kind.padEnd(24)} ${eintraege.join(", ")}`);
+  }
+}
 
 function codeFieldsNotDocumented(
   kind: string,
@@ -327,10 +356,22 @@ function codeFieldsNotDocumented(
   const dokumentiert = new Set(fields.map((f) => f.name));
   const ausnahmen = ALIASE_UND_ABSICHT[kind] ?? {};
   const gelesen = new Set<string>();
-  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\.\s*([a-z][a-z0-9_]*)\b/g)) {
+  // Direkter Zugriff, auch mit Optional Chaining: `cfg.x`, `widget.config?.x`.
+  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\??\.\s*([a-z][a-z0-9_]*)\b/g)) {
     gelesen.add(m[1]);
   }
-  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\[\s*"([a-z][a-z0-9_]*)"\s*\]/g)) {
+  // Klammerzugriff, beide Anfuehrungsarten.
+  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\[\s*["']([a-z][a-z0-9_]*)["']\s*\]/g)) {
+    gelesen.add(m[1]);
+  }
+  // Zugriff durch ein Type-Assert hindurch:
+  //   ((widget.config as Record<string, unknown>).design_preset as string)
+  // Ohne diesen Zweig meldete die Pruefung am 2026-08-29 "0 undokumentierte
+  // Felder", waehrend 16 gelesene Felder gesperrt waren — eine falsche
+  // Entwarnung, gefunden erst in der Fremdvalidierung. Der Typ selbst wird
+  // nicht geparst (`[^)]*`): Er kann `Record<string, unknown>` heissen, und an
+  // seiner Form haengt nichts.
+  for (const m of source.matchAll(/\bconfig\s+as\s+[^)]*\)\s*\??\.\s*([a-z][a-z0-9_]*)\b/g)) {
     gelesen.add(m[1]);
   }
   return [...gelesen]
@@ -344,6 +385,14 @@ function codeFieldsNotDocumented(
  * Ausnahmen, die ihren Grund verloren haben: Das Widget liest den Namen nicht
  * mehr, oder er steht inzwischen im Schema. Beides macht den Eintrag falsch —
  * im zweiten Fall verdeckt er sogar, dass die Sache erledigt ist.
+ *
+ * **Was sie NICHT kann, ausdruecklich:** Sie prueft eine Zugriffsform, keine
+ * Herkunft. Ein lokales `cfg` — etwa das Ergebnis von `getStatusConfig(event)`
+ * in EventsListWidget — sieht fuer sie aus wie eine Widget-Config, und der
+ * Eintrag gilt als lebendig. Genau deshalb steht der `classes`-Eintrag unten
+ * als *Fehlalarm* deklariert und nicht als Absicht: Die Unterscheidung
+ * verlangt einen Typaufloeser, den es hier nicht gibt. Sie zu bauen hiesse,
+ * TypeScript nachzubauen — der Randfallraum waere unbegrenzt.
  */
 function veralteteAusnahmen(
   kind: string,
@@ -354,7 +403,9 @@ function veralteteAusnahmen(
   const tot: string[] = [];
   for (const name of Object.keys(ALIASE_UND_ABSICHT[kind] ?? {})) {
     if (dokumentiert.has(name)) tot.push(`${name} (steht inzwischen im Schema)`);
-    else if (!new RegExp(`\\b(?:cfg|raw|config)\\s*[.\\[]\\s*"?${name}\\b`).test(source)) {
+    // Dieselben Zugriffsformen wie in codeFieldsNotDocumented — sonst gilt ein
+    // Eintrag als tot, dessen Feld nur ueber ein Type-Assert gelesen wird.
+    else if (!new RegExp(`(?:\\b(?:cfg|raw|config)\\s*\\??[.\\[]\\s*["']?|config\\s+as\\s+[^)]*\\)\\s*\\??\\.\\s*)${name}\\b`).test(source)) {
       tot.push(`${name} (wird nicht mehr gelesen)`);
     }
   }
@@ -695,11 +746,13 @@ function genHomepage(): unknown {
         if (ungesehen.length > 0) {
           (eintrag as Record<string, unknown>).code_fields_not_in_schema = ungesehen;
           codeNichtImSchema[kind] = ungesehen;
+          HOMEPAGE_BEFUNDE.undokumentiert[kind] = ungesehen;
         } else {
           delete (eintrag as Record<string, unknown>).code_fields_not_in_schema;
         }
         const tot = veralteteAusnahmen(kind, quelle, felder);
         if (tot.length > 0) veralteteListe[kind] = tot;
+        if (tot.length > 0) HOMEPAGE_BEFUNDE.veraltet[kind] = tot;
       }
     }
   }
@@ -1320,6 +1373,15 @@ function main(): number {
       console.log(`schrieb ${slash(relative(CLI_ROOT, outPath))}`);
     }
   }
+
+  // Die Befunde des homepage-Abgleichs kommen auf die Konsole, nicht nur ins
+  // JSON. Eine Pruefung, deren Ergebnis in einer Datei liegt, die niemand
+  // oeffnet, meldet nichts — der Fremdpruefer hat am 2026-08-29 zu Recht
+  // angemerkt, dass es fuer `stale_exemptions` keinen einzigen Verbraucher gab.
+  // Bewusst als HINWEIS, nicht als Exit-Code: Seit die Feldliste nicht mehr
+  // blockt (schemas.ts), ist ein undokumentiertes Feld eine Luecke in der
+  // Auskunft, kein Fehler im Bau.
+  meldeHomepageBefunde();
 
   if (CHECK_MODE && drift) {
     console.error(
