@@ -311,6 +311,22 @@
         },
         {
           "name": "stats_items"
+        },
+        {
+          "name": "show_cta"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -341,7 +357,17 @@
           "name": "author"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -354,7 +380,26 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "frame_style",
+          "values": [
+            "none",
+            "bordered",
+            "elevated",
+            "accent"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -404,6 +449,19 @@
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -442,6 +500,19 @@
             "floating",
             "minimal"
           ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -475,6 +546,22 @@
             "split",
             "minimal",
             "map-focus"
+          ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
           ]
         }
       ]
@@ -586,7 +673,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -627,7 +724,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -691,6 +798,19 @@
             "stagger",
             "cascade",
             "none"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
           ]
         }
       ]
@@ -759,9 +879,6 @@
           "name": "show_past"
         },
         {
-          "name": "label"
-        },
-        {
           "name": "layout",
           "values": [
             "cards",
@@ -805,6 +922,19 @@
         },
         {
           "name": "animation_style"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -820,7 +950,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -896,6 +1036,19 @@
           "values": [
             "table",
             "timeline"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
           ]
         }
       ]
@@ -992,6 +1145,19 @@
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1008,6 +1174,19 @@
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1020,7 +1199,25 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "layout",
+          "values": [
+            "list",
+            "carousel",
+            "calendar"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1157,6 +1354,15 @@
         },
         {
           "name": "interval"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "grid",
+            "masonry",
+            "carousel",
+            "filmstrip"
+          ]
         }
       ]
     },
@@ -1271,7 +1477,25 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "layout",
+          "values": [
+            "list",
+            "grid",
+            "compact"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1288,6 +1512,19 @@
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1321,7 +1558,17 @@
           "name": "layout"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1334,7 +1581,20 @@
           "name": "url"
         },
         {
-          "name": "design_preset"
+          "name": "embed_url"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1347,7 +1607,20 @@
           "name": "url"
         },
         {
-          "name": "design_preset"
+          "name": "data_tabs"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1374,7 +1647,17 @@
           "name": "height"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1393,7 +1676,17 @@
           "name": "scriptHtml"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1508,7 +1801,17 @@
           "name": "cta_url"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1614,7 +1917,17 @@
           "name": "height"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1668,7 +1981,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1891,6 +2214,19 @@
         },
         {
           "name": "nuliga_css_url"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1913,7 +2249,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1939,7 +2285,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1949,7 +2305,17 @@
           "name": "department_id"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1965,7 +2331,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -1991,7 +2367,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2012,7 +2398,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2034,7 +2430,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2069,7 +2475,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2095,7 +2511,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2114,7 +2540,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2146,7 +2582,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2172,7 +2618,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2192,7 +2648,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2235,7 +2701,17 @@
           "name": "show_title"
         },
         {
-          "name": "design_preset"
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -2452,13 +2928,16 @@
   },
   "config_sync": {
     "widgets_checked": 71,
-    "fields_checked": 496,
+    "fields_checked": 514,
     "widgets_with_unread_fields": 0,
     "unread_fields": 0,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 72,
-    "value_sets_unreadable": 4,
+    "value_sets_unreadable": 48,
+    "widgets_with_undocumented_fields": 0,
+    "undocumented_fields": 0,
+    "stale_exemptions": [],
     "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig und ein abgeleiteter Bezeichner)."
   }
 }
