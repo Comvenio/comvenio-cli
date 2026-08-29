@@ -916,7 +916,14 @@ function genHomepage(): unknown {
         "Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft " +
         "und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, " +
         "weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig " +
-        "und ein abgeleiteter Bezeichner).",
+        "und ein abgeleiteter Bezeichner). " +
+        "ACHTUNG, ab 2026-08-29: Diese Pruefung VERSTUMMT mit dem Umbau. Sie liest die " +
+        "Wertemenge aus dem Config-Typ IM WIDGET — und ein Widget, das seinen Typ aus " +
+        "widget-felder.json ableitet (WidgetConfig<...>), hat dort keinen mehr. Jede " +
+        "Umstellung senkt value_sets_checked und hebt value_sets_unreadable, ohne dass " +
+        "etwas schlechter geworden waere; im Gegenteil, dort erzwingt jetzt der Typpruefer " +
+        "die Werte. Wenn value_sets_checked gegen null geht, ist diese Pruefung erledigt " +
+        "und gehoert entfernt statt repariert.",
     },
     note:
       "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget " +
