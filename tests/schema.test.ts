@@ -303,3 +303,48 @@ describe("source redirection per repository", () => {
     expect(ohneSchalter.length).toBeLessThanOrEqual(8);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Die Feldliste kommt aus der Deklaration, nicht mehr aus dem Prompt
+//
+// Anlass 2026-08-29: Zwei Fremdvalidierungen verwarfen die alte Bauform — eine
+// sicherheitsrelevante Freigabeliste, die aus LLM-Prosa entsteht und per Regex
+// gegen TypeScript gehalten wird, hat einen unbegrenzten Randfallraum. Jede
+// geschlossene Luecke wurde mit einer neuen bezahlt (222 gesperrte Felder,
+// dann 19 weitere, die eine Pruefung mit drei bestandenen Gegenproben nicht
+// sah).
+//
+// Der Generator liest jetzt `widget-felder.json` neben der Widget-Registry.
+// Diese Tests halten fest, WOHER die Felder kamen — ohne das faellt ein Lauf
+// lautlos auf den Prompt zurueck, und niemand sieht es.
+
+describe("Herkunft der Config-Felder", () => {
+  const homepage = schema("homepage");
+
+  test("das erzeugte Schema nennt seine Quelle", () => {
+    // Ohne diese Angabe ist nicht erkennbar, ob die Deklaration ueberhaupt
+    // gelesen wurde — der Rueckfall auf den Prompt sieht im Ergebnis identisch
+    // aus. Genau das war der Fehler der alten Bauform: Sie meldete Erfolg fuer
+    // etwas, das sie nicht geprueft hatte.
+    expect(homepage.config_sync.field_source).toBeDefined();
+  });
+
+  test("die committete Fassung stammt aus der Deklaration", () => {
+    // Wer mit einem Baum ohne widget-felder.json erzeugt, bekommt den
+    // Rueckfall — und darf ihn nicht committen. Dieser Fall faengt das.
+    expect(homepage.config_sync.field_source).toBe("widget-felder.json");
+  });
+
+  test("alle Felder haben es unveraendert durch den Umbau geschafft", () => {
+    // Die Umstellung war verlustfrei: 514 Felder, davon 120 mit Wertemenge.
+    // Sinkt eine der Zahlen, hat die Deklaration etwas verloren, was der
+    // Prompt noch trug.
+    const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
+      .reduce((n, w) => n + (w.config?.length ?? 0), 0);
+    expect(felder).toBe(514);
+    const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
+      .flatMap((w) => w.config ?? [])
+      .filter((f) => Array.isArray(f.values)).length;
+    expect(mitWerten).toBe(120);
+  });
+});
