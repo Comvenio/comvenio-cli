@@ -43,6 +43,11 @@ const newsWrite = (name: string, method: ComvenioHttpMethod, path: string, criti
 export const K12_ACTION_DEFINITIONS: Readonly<Record<K12ActionId, K12ActionDefinition>> = Object.freeze({
   "cai.homepage.01.preview": action("cai.homepage.01.preview", "homepage", "preview", [operation({ name: "preview", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("POST", "club", "/home-config/{club_id}/preview", "read")] })]),
   "cai.homepage.02.apply": action("cai.homepage.02.apply", "homepage", "apply", [operation({ name: "apply", profile: "homepage_manage", scopes: ["club.write"], risk: "critical_write", routes: [route("POST", "club", "/home-config/{club_id}/bulk")], external: "comvenio_public" })]),
+  // Rendert eine gespeicherte Vorschau zu Bildern. Ein entferntes Modell kann
+  // die Vorschau-Route nicht oeffnen — ohne Bild baut es blind. risk: "read",
+  // weil nichts geschrieben wird; das Recht ist dasselbe wie beim Anlegen,
+  // denn der Aufruf startet einen Browser (fremde Rechenzeit).
+  "cai.homepage.04.screenshot": action("cai.homepage.04.screenshot", "homepage", "screenshot", [operation({ name: "screenshot", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("POST", "club", "/home-config/{club_id}/preview/{preview_id}/screenshot", "read")] })]),
   "cai.homepage.03.show": action("cai.homepage.03.show", "homepage", "show", [read("private", "authenticated", ["club.read"], "club", "/home-config/{club_id}/tabs"), read("public", "authenticated", ["public.read"], "club", "/public/clubs/{club_id}/home")]),
 
   "cai.schema.01.list_domains": action("cai.schema.01.list_domains", "schema", "list domains", [read("list", "authenticated", ["club.read"], "connector", "/schema")], "core-partial"),
