@@ -34,6 +34,41 @@ const safeString = z.string().max(10_000).refine((value) => !/(?:[A-Za-z]:\\|fil
 
 const widgetKinds = K12_HOMEPAGE_REGISTRY.widget_kinds as [string, ...string[]];
 const widgetFields = Object.fromEntries(Object.values(K12_HOMEPAGE_REGISTRY.widgets).flatMap((entry) => entry.config.map((field) => [field.name, z.json().optional()]))) as z.ZodRawShape;
+/**
+ * Die Widget-Config bleibt eine GESCHLOSSENE Menge.
+ *
+ * Am 2026-08-29 stand hier kurzzeitig ein `catchall`: Die Feldliste entsteht
+ * aus `homepage_system.py` — einem LLM-Prompt — ueber einen Textparser, und
+ * was dort fehlt, ist nicht "verboten", sondern "nicht aufgeschrieben". 19
+ * gelesene Felder waren so gesperrt. Der Gedanke war, nur noch zu melden.
+ *
+ * **Der Vertragstest TC-06 steht dagegen**
+ * (`packages/connector-contracts/tests/actions.contract.test.ts:1291`): Er
+ * verlangt, dass `config: { arbitrary_payload: "secret" }` abgelehnt wird.
+ *
+ * *Genau und nicht mehr* — die Praezisierung stammt aus der zweiten
+ * Fremdpruefung, die eine erste Fassung dieses Kommentars als zu weit
+ * zurueckwies. Der Test prueft EINEN Aufruf. Er verlangt NICHT, dass jeder
+ * unbekannte Schluessel abgelehnt wird, nicht eine geschlossene Menge je
+ * Widget-Art, und nicht, dass die Ablehnung gerade aus der Geschlossenheit
+ * folgt. Die Pfad-, Skript- und SSRF-Zusicherungen daneben sind eigene,
+ * unabhaengige Erwartungen im selben `test()`-Block.
+ *
+ * Die geschlossene Menge ist damit eine **Entscheidung** (Tom, 2026-08-29),
+ * nicht ein Zwang aus dem Test: Ein MCP-Agent soll keine beliebigen Schluessel
+ * in eine Struktur schreiben koennen, die gespeichert und gerendert wird. Wer
+ * sie halten will, braucht dafuer einen eigenen Vertragstest — den gibt es
+ * bisher nicht.
+ *
+ * **Die richtige Antwort auf die 19 Felder ist deshalb, sie einzutragen** —
+ * nicht, die Sperre zu oeffnen. `gen-schema` meldet sie seit dem 2026-08-29
+ * beim Erzeugen (`code_fields_not_in_schema`), damit die Liste nicht wieder
+ * hinter dem Code zurueckbleibt.
+ *
+ * Offen und bewusst nicht hier entschieden: Sobald der MCP Screenshots
+ * zurueckgeben kann, verlagert sich die Kontrolle auf den Blick aufs Ergebnis
+ * — dann ist diese Sperre neu abzuwaegen. Bis dahin ist sie der einzige Boden.
+ */
 const widgetFieldsByKind = new Map(Object.entries(K12_HOMEPAGE_REGISTRY.widgets).map(([kind, entry]) => [kind, new Set(entry.config.map((field) => field.name))]));
 const widgetConfig = z.object(widgetFields).strict();
 const homepageWidget = z.object({ kind: z.enum(widgetKinds), title: z.string().max(200).nullable().optional(), config: widgetConfig.default({}), slot_index: z.number().int().min(0).max(100).default(0) }).strict().superRefine((value, ctx) => {
