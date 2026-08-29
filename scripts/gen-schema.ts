@@ -451,28 +451,67 @@ function quellPfad(relPath: string): string {
  * Das Verzeichnis wird durchsucht, nicht aufgezaehlt: Eine handgepflegte
  * Liste prueft die Sorgfalt des Eintragenden (Befund vom 2026-08-22).
  */
-let clubHomeFremdQuelleCache: string | null = null;
-function clubHomeFremdQuelle(): string {
+let clubHomeFremdQuelleCache: string[] | null = null;
+function clubHomeFremdDateien(): string[] {
   if (clubHomeFremdQuelleCache !== null) return clubHomeFremdQuelleCache;
   const wurzel = quellPfad(HOMEPAGE_CLUBHOME_DIR);
   const widgetsAbs = quellPfad(HOMEPAGE_WIDGET_DIR);
   const teile: string[] = [];
   const gehe = (dir: string): void => {
     let eintraege: ReturnType<typeof readdirSync>;
-    try { eintraege = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    try {
+      eintraege = readdirSync(dir, { withFileTypes: true });
+    } catch (fehler) {
+      // Nicht schlucken: Ein uebersprungenes Verzeichnis macht die
+      // Zusatzquelle luecken haft, und der Check liefe mit einem Ergebnis
+      // weiter, das niemand als unvollstaendig erkennt.
+      throw new Error(`Zusatzquelle unlesbar: ${dir} (${(fehler as Error).message})`);
+    }
     for (const e of eintraege) {
       const voll = join(dir, e.name);
       if (e.isDirectory()) {
         if (voll === widgetsAbs) continue;
         gehe(voll);
       } else if (e.name.endsWith(".ts") || e.name.endsWith(".tsx")) {
-        try { teile.push(readFileSync(voll, "utf8")); } catch { /* unlesbar: uebergehen */ }
+        try {
+          teile.push(readFileSync(voll, "utf8"));
+        } catch (fehler) {
+          throw new Error(`Zusatzquelle unlesbar: ${voll} (${(fehler as Error).message})`);
+        }
       }
     }
   };
   gehe(wurzel);
-  clubHomeFremdQuelleCache = teile.join("\n");
+  clubHomeFremdQuelleCache = teile;
   return clubHomeFremdQuelleCache;
+}
+
+/**
+ * Fremder Quelltext, der AUF DIESE Widget-Art gehen kann.
+ *
+ * **Warum nicht einfach alles.** Die erste Fassung hing den gesamten fremden
+ * Text an JEDE Widget-Art. Das erzeugt eine Kollision ueber Artgrenzen:
+ * `templateContent.ts` liest `headline` fuer *hero* und `text` fuer
+ * *description* — und genau diese beiden Namen sind zugleich Aliase des
+ * *cta*-Widgets. Die fremden Fundstellen hielten die CTA-Ausnahmen damit
+ * "lebendig", auch wenn das CTA-Widget sie nicht mehr laese (Fremdprüfung
+ * 2026-08-29, F3a).
+ *
+ * **Die Zuordnung in ihrer billigsten Form:** Eine Datei zaehlt fuer eine Art
+ * nur, wenn sie deren Namen als Zeichenketten-Literal nennt — so wie
+ * `widget.kind === "hero"`. Kein Parser, keine Ableitung, ein String.
+ *
+ * Gemessen an `templateContent.ts`: `"hero"`, `"description"`, `"contact"` je
+ * ein Treffer; `"cta"` null — obwohl `cta_primary_label` in der Datei steht.
+ * Die Anfuehrungszeichen machen den Unterschied.
+ *
+ * Der Preis ist benannt: Eine Datei, die viele Arten nennt, ist wieder grob.
+ * Das ist weniger, als eine Typaufloesung leisten wuerde, und mehr als der
+ * globale Text.
+ */
+function clubHomeFremdQuelleFuer(kind: string): string {
+  const marke = JSON.stringify(kind); // "hero" — mit Anfuehrungszeichen
+  return clubHomeFremdDateien().filter((t) => t.includes(marke)).join("\n");
 }
 
 function veralteteAusnahmen(
@@ -483,9 +522,11 @@ function veralteteAusnahmen(
   const dokumentiert = new Set(fields.map((f) => f.name));
   const tot: string[] = [];
   // Ein Feld kann auch ausserhalb seiner Widget-Datei gelesen werden — siehe
-  // clubHomeFremdQuelle(). Nur DIESE Richtung darf den Zusatz sehen: Er kann
-  // hier bloss verhindern, dass etwas faelschlich als tot gilt.
-  const quellen = `${source}\n${clubHomeFremdQuelle()}`;
+  // clubHomeFremdQuelleFuer(). Nur DIESE Richtung darf den Zusatz sehen: Er
+  // kann hier bloss verhindern, dass etwas faelschlich als tot gilt. Und nur
+  // Dateien, die DIESE Art nennen — sonst halten fremde Fundstellen die
+  // Aliase einer anderen Art am Leben.
+  const quellen = `${source}\n${clubHomeFremdQuelleFuer(kind)}`;
   for (const name of Object.keys(ALIASE_UND_ABSICHT[kind] ?? {})) {
     if (dokumentiert.has(name)) tot.push(`${name} (steht inzwischen im Schema)`);
     // Dieselben Zugriffsformen wie in codeFieldsNotDocumented — sonst gilt ein
