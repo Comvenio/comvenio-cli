@@ -252,6 +252,115 @@ function configFieldsNotInSource(
  * Nur relative Importe innerhalb des Widget-Baums werden verfolgt, eine Ebene
  * tief. Kein Modulaufloeser, keine Rekursion — der Randfallraum bleibt klein.
  */
+/**
+ * Die GEGENRICHTUNG: Welches Feld liest das Widget, das im Schema fehlt?
+ *
+ * `config_not_read_by_widget` fragt "steht etwas im Schema, das tot ist?".
+ * Diese Pruefung fragt das Umgekehrte — und die Folge ist haerter: Der
+ * MCP-Server baut seine Zod-Validierung aus genau dieser Feldliste
+ * (`.strict()` plus `superRefine` je Kind, schemas.ts:38-44). Was hier fehlt,
+ * kann ein Agent NICHT setzen. Er bekommt "Das Feld ist fuer <kind> nicht
+ * freigegeben" fuer etwas, das die Flaeche auswertet.
+ *
+ * Gefunden am 2026-08-28 bei einer Gegenprobe am echten Zod-Schema: `hero`
+ * liest `design_preset` (HeroWidget.tsx:886) und `show_cta` (:1102), `cta`
+ * liest `design_preset` (CtaWidget.tsx:685) — alle drei ueber MCP gesperrt.
+ *
+ * **Zwei Quellen von Rauschen, beide bewusst behandelt statt weggeregext:**
+ *
+ * 1. *Methodenaufrufe.* `raw.filter((m) => ...)` in TournamentHighlightWidget
+ *    ist ein Array-Aufruf, kein Config-Feld — die Variable heisst dort zufaellig
+ *    `raw`. Eine endliche Liste bekannter Methoden ist hier ehrlicher als der
+ *    Versuch, Zugriff von Aufruf per Muster zu trennen.
+ * 2. *Aliase.* Die Widgets nehmen Zweitnamen fuer KI-erzeugte Configs an
+ *    (`cfg.subtitle || raw.subheadline`). Der kanonische Name steht im Schema,
+ *    der Alias soll NICHT hinein — sonst dokumentiert das Schema zwei Wege fuer
+ *    dieselbe Sache. Sie stehen deshalb einzeln in ALIASE_UND_ABSICHT.
+ *
+ * Diese Liste wird selbst geprueft (siehe `veralteteAusnahmen`): Ein Eintrag,
+ * den das Widget nicht mehr liest oder der laengst im Schema steht, wird
+ * gemeldet. Ohne das verrottet sie — 14 von 25 Eintraegen zeigten beim
+ * Mockup-Abgleich ins Leere, und niemand hatte sie je gegen ihre Quelle
+ * gehalten.
+ */
+const JS_METHODEN = new Set([
+  "filter", "map", "forEach", "find", "findIndex", "some", "every", "reduce",
+  "slice", "splice", "join", "concat", "includes", "indexOf", "lastIndexOf",
+  "sort", "reverse", "push", "pop", "shift", "unshift", "flat", "flatMap",
+  "length", "keys", "values", "entries", "toString", "valueOf", "hasOwnProperty",
+  "trim", "split", "replace", "match", "startsWith", "endsWith", "toLowerCase",
+  "toUpperCase", "padStart", "padEnd", "repeat", "charAt", "substring", "at",
+]);
+
+/**
+ * Feldnamen, die ein Widget liest und die bewusst NICHT ins Schema gehoeren.
+ * Je Eintrag der Grund — ohne ihn ist eine Ausnahmeliste nur eine Sammlung
+ * von Dingen, die jemand mal nicht sehen wollte.
+ */
+const ALIASE_UND_ABSICHT: Record<string, Record<string, string>> = {
+  hero: {
+    subheadline: "Alias von subtitle",
+    cta_label: "Alias von cta_primary_label",
+    cta_url: "Alias von cta_primary_url",
+    secondary_cta_label: "Alias von cta_secondary_label",
+    secondary_cta_url: "Alias von cta_secondary_url",
+  },
+  cta: {
+    headline: "Alias von heading",
+    text: "Alias von subheading",
+    btn_label: "Alias von primary_button_text",
+    btn_url: "Alias von primary_button_url",
+  },
+  events_list: {
+    classes: "Absicht: freies CSS waere ein Einfallstor, bleibt ueber MCP gesperrt",
+  },
+  tournament_highlight: {
+    filter: "kein Config-Feld: `raw` ist dort ein Array, `.filter()` sein Aufruf",
+  },
+};
+
+function codeFieldsNotDocumented(
+  kind: string,
+  source: string,
+  fields: Array<{ name: string }>,
+): string[] {
+  const dokumentiert = new Set(fields.map((f) => f.name));
+  const ausnahmen = ALIASE_UND_ABSICHT[kind] ?? {};
+  const gelesen = new Set<string>();
+  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\.\s*([a-z][a-z0-9_]*)\b/g)) {
+    gelesen.add(m[1]);
+  }
+  for (const m of source.matchAll(/\b(?:cfg|raw|config)\s*\[\s*"([a-z][a-z0-9_]*)"\s*\]/g)) {
+    gelesen.add(m[1]);
+  }
+  return [...gelesen]
+    .filter((name) => !dokumentiert.has(name))
+    .filter((name) => !JS_METHODEN.has(name))
+    .filter((name) => !(name in ausnahmen))
+    .sort();
+}
+
+/**
+ * Ausnahmen, die ihren Grund verloren haben: Das Widget liest den Namen nicht
+ * mehr, oder er steht inzwischen im Schema. Beides macht den Eintrag falsch —
+ * im zweiten Fall verdeckt er sogar, dass die Sache erledigt ist.
+ */
+function veralteteAusnahmen(
+  kind: string,
+  source: string,
+  fields: Array<{ name: string }>,
+): string[] {
+  const dokumentiert = new Set(fields.map((f) => f.name));
+  const tot: string[] = [];
+  for (const name of Object.keys(ALIASE_UND_ABSICHT[kind] ?? {})) {
+    if (dokumentiert.has(name)) tot.push(`${name} (steht inzwischen im Schema)`);
+    else if (!new RegExp(`\\b(?:cfg|raw|config)\\s*[.\\[]\\s*"?${name}\\b`).test(source)) {
+      tot.push(`${name} (wird nicht mehr gelesen)`);
+    }
+  }
+  return tot;
+}
+
 function importedConfigBodies(source: string, widgetDir: string): string[] {
   const bodies: string[] = [];
   for (const imp of source.matchAll(/import\s+type\s*\{([^}]+)\}\s*from\s*"(\.[^"]+)"/g)) {
@@ -459,6 +568,8 @@ function genHomepage(): unknown {
   const nichtImCode: Record<string, string[]> = {};
   const werteNichtImCode: Record<string, Array<{ field: string; unknown: string[] }>> = {};
   const werteZaehler = { gelesen: 0, nichtLesbar: 0 };
+  const codeNichtImSchema: Record<string, string[]> = {};
+  const veralteteListe: Record<string, string[]> = {};
   let felderGeprueft = 0;
   let widgetsGeprueft = 0;
   for (const [kind, file] of Object.entries(widgetSources)) {
@@ -572,6 +683,25 @@ function genHomepage(): unknown {
     } else {
       delete (eintrag as Record<string, unknown>).config_values_not_in_widget;
     }
+
+    // Die Gegenrichtung, ebenfalls nach dem Merge: Was liest das Widget, das
+    // im Schema fehlt? Der MCP sperrt es dann — siehe codeFieldsNotDocumented.
+    if (datei) {
+      let quelle: string | null = null;
+      try { quelle = readSource(`${HOMEPAGE_WIDGET_DIR}/${datei}.tsx`); } catch { quelle = null; }
+      if (quelle) {
+        const felder = ((eintrag as Record<string, unknown>).config ?? []) as Array<{ name: string }>;
+        const ungesehen = codeFieldsNotDocumented(kind, quelle, felder);
+        if (ungesehen.length > 0) {
+          (eintrag as Record<string, unknown>).code_fields_not_in_schema = ungesehen;
+          codeNichtImSchema[kind] = ungesehen;
+        } else {
+          delete (eintrag as Record<string, unknown>).code_fields_not_in_schema;
+        }
+        const tot = veralteteAusnahmen(kind, quelle, felder);
+        if (tot.length > 0) veralteteListe[kind] = tot;
+      }
+    }
   }
 
   const navigationGroupContract = {
@@ -610,6 +740,9 @@ function genHomepage(): unknown {
         .reduce((n, fs) => n + fs.reduce((m, f) => m + f.unknown.length, 0), 0),
       value_sets_checked: werteZaehler.gelesen,
       value_sets_unreadable: werteZaehler.nichtLesbar,
+      widgets_with_undocumented_fields: Object.keys(codeNichtImSchema).length,
+      undocumented_fields: Object.values(codeNichtImSchema).reduce((n, f) => n + f.length, 0),
+      stale_exemptions: Object.entries(veralteteListe).map(([kind, eintraege]) => `${kind}: ${eintraege.join(", ")}`),
       note:
         "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. " +
         "Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel " +
