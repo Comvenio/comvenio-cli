@@ -86,8 +86,28 @@ export interface TextContent {
   text: string;
 }
 
+/**
+ * Ein Bild in der Tool-Antwort.
+ *
+ * Bis zum 2026-08-29 konnte eine Antwort nur Text tragen, und das war eine
+ * echte Grenze, keine Auslassung: Ein Modell, das eine Homepage baut, kann
+ * ihre Vorschau nicht oeffnen — die URL hilft dem Menschen, nicht ihm. Ohne
+ * Bild baut es blind.
+ *
+ * Feldnamen nach MCP (`type`/`data`/`mimeType`), nicht nach unserer
+ * Schreibweise: Der Block geht unveraendert an den Client.
+ */
+export interface ImageContent {
+  type: "image";
+  /** Base64, ohne data:-Praefix. */
+  data: string;
+  mimeType: string;
+}
+
+export type ResultContent = TextContent | ImageContent;
+
 export interface ProviderNeutralResult<T extends JsonValue> {
-  content: TextContent[];
+  content: ResultContent[];
   structuredContent: T;
   _meta: {
     request_id: UUID;
@@ -228,7 +248,7 @@ export function normalizeRequestContext(context: RequestContext): RequestContext
 export function createProviderNeutralResult<T extends JsonValue>(
   context: RequestContext,
   structuredContent: T,
-  content: TextContent[] = [],
+  content: ResultContent[] = [],
 ): ProviderNeutralResult<T> {
   const normalized = normalizeRequestContext(context);
   return {

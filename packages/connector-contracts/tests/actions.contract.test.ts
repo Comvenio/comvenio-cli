@@ -130,7 +130,7 @@ describe("Comvenio connector inventory contract", () => {
       entry.state === "DISCOVERED" && entry.published === false && entry.blockers.length === 5)).toBe(true);
   });
 
-  test("covers all 303 legacy actions plus additive procurement by an executable adapter or exact replacement", () => {
+  test("covers all 303 legacy actions plus additive procurement and screenshot by an executable adapter or exact replacement", () => {
     const directActionIds = [
       ...K7_ACTION_IDS,
       ...K8_ACTION_IDS,
@@ -177,9 +177,12 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(309);
-    expect(new Set(directActionIds).size).toBe(309);
+    expect(directActionIds).toHaveLength(310);
+    expect(new Set(directActionIds).size).toBe(310);
     expect(additiveActionIds).toEqual([
+      // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
+      // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
+      "cai.homepage.04.screenshot",
       "cai.shopping.procurement.activate",
       "cai.shopping.procurement.add",
       "cai.shopping.procurement.list",
@@ -193,8 +196,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 309,
-      published_domain_actions: 307,
+      discovered_actions: 310,
+      published_domain_actions: 308,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -1181,17 +1184,20 @@ function k12Dependencies(client: ComvenioApiClient): K12ExecutionDependencies {
 }
 
 describe("K12 homepage, schema, verify, data and news adapter contract", () => {
-  test("TC-01/TC-02: exposes five toolsets and exactly 3/2/6/35/9 actions", () => {
-    expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(3);
+  test("TC-01/TC-02: exposes five toolsets and exactly 4/2/6/35/9 actions", () => {
+    // homepage: preview, apply, show — plus screenshot (2026-08-29). Die Zahl
+    // ist ein Riegel gegen unbemerkte Aktionen, kein Deckel: Wer eine
+    // hinzufuegt, zieht sie hier bewusst mit.
+    expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(4);
     expect(K12_SCHEMA_ACTION_IDS).toHaveLength(2);
     expect(K12_VERIFY_ACTION_IDS).toHaveLength(6);
     expect(K12_DATA_ACTION_IDS).toHaveLength(35);
     expect(K12_NEWS_ACTION_IDS).toHaveLength(9);
-    expect(K12_ACTION_IDS).toHaveLength(55);
-    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(55);
-    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(55);
+    expect(K12_ACTION_IDS).toHaveLength(56);
+    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(56);
+    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(56);
     const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
-    expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 3, schema: 2, verify: 6, data: 35, news: 9 });
+    expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 4, schema: 2, verify: 6, data: 35, news: 9 });
     expect(sets.schema.coverage_status).toBe("core-partial");
     expect(sets.schema.listDefinitions().every((definition) => definition.coverage_status === "core-partial")).toBe(true);
   });

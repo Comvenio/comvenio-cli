@@ -11,6 +11,7 @@ import {
   CONFIRMATION_WIDGET_SCHEMA,
   createConnectorError,
   createProviderNeutralResult,
+  type ImageContent,
   isConnectorError,
   type JsonValue,
   type OAuthScope,
@@ -867,27 +868,83 @@ function annotations(operations: DomainOperation[]): {
   };
 }
 
+/**
+ * Zieht Bilder aus dem Ergebnis in eigene Content-Bloecke.
+ *
+ * Notwendig, weil `toMcpResult` das ganze Ergebnis als JSON-Text schickt und
+ * bei 80.000 Zeichen kuerzt: Ein base64-Bild reisst diese Grenze allein und
+ * faellt dann heraus — die Antwort saehe erfolgreich aus und traege nichts.
+ * Deshalb wandern die Bilder aus dem JSON in `content` und hinterlassen im
+ * strukturierten Teil nur ihre Kenndaten.
+ *
+ * **Bewusst eng**: Erkannt wird genau die vereinbarte Form — eine Liste
+ * `screenshots` mit `data_base64` und `mime_type`. Eine allgemeine Suche nach
+ * "sieht aus wie ein Bild" haette einen unbegrenzten Randfallraum, und der
+ * einzige Erzeuger ist der Screenshot-Endpunkt des club-service.
+ */
+export function bilderHerausloesen(
+  output: Record<string, JsonValue>,
+): { rest: Record<string, JsonValue>; bilder: ImageContent[] } {
+  const roh = output.result;
+  if (roh === null || typeof roh !== "object" || Array.isArray(roh)) {
+    return { rest: output, bilder: [] };
+  }
+  const liste = (roh as Record<string, JsonValue>).screenshots;
+  if (!Array.isArray(liste) || liste.length === 0) return { rest: output, bilder: [] };
+
+  const bilder: ImageContent[] = [];
+  const ohneDaten: JsonValue[] = [];
+  for (const eintrag of liste) {
+    if (eintrag === null || typeof eintrag !== "object" || Array.isArray(eintrag)) {
+      ohneDaten.push(eintrag);
+      continue;
+    }
+    const feld = eintrag as Record<string, JsonValue>;
+    const daten = feld.data_base64;
+    const typ = feld.mime_type;
+    if (typeof daten !== "string" || typeof typ !== "string") {
+      ohneDaten.push(eintrag);
+      continue;
+    }
+    bilder.push({ type: "image", data: daten, mimeType: typ });
+    // Die Kenndaten bleiben: Ein Modell soll sagen koennen, welches Bild es
+    // gerade beschreibt, ohne die Reihenfolge raten zu muessen.
+    const { data_base64: _weg, ...kenndaten } = feld;
+    ohneDaten.push({ ...kenndaten, data_in_content: true });
+  }
+  if (bilder.length === 0) return { rest: output, bilder: [] };
+
+  return {
+    rest: { ...output, result: { ...(roh as Record<string, JsonValue>), screenshots: ohneDaten } },
+    bilder,
+  };
+}
+
 function toMcpResult(
   context: RequestContext,
   output: Record<string, JsonValue>,
 ): CallToolResult {
-  const encoded = JSON.stringify(output);
+  const { rest, bilder } = bilderHerausloesen(output);
+  const encoded = JSON.stringify(rest);
   return {
     ...createProviderNeutralResult(
       context,
-      output,
-      [{
-        type: "text",
-        text: encoded.length <= 80_000
-          ? encoded
-          : JSON.stringify({
-              action_id: output.action_id,
-              status: output.status ?? "completed",
-              truncated: true,
-            }),
-      }],
+      rest,
+      [
+        {
+          type: "text",
+          text: encoded.length <= 80_000
+            ? encoded
+            : JSON.stringify({
+                action_id: rest.action_id,
+                status: rest.status ?? "completed",
+                truncated: true,
+              }),
+        },
+        ...bilder,
+      ],
     ),
-    structuredContent: output,
+    structuredContent: rest,
   };
 }
 
