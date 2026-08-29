@@ -42,13 +42,23 @@ const widgetFields = Object.fromEntries(Object.values(K12_HOMEPAGE_REGISTRY.widg
  * was dort fehlt, ist nicht "verboten", sondern "nicht aufgeschrieben". 19
  * gelesene Felder waren so gesperrt. Der Gedanke war, nur noch zu melden.
  *
- * **Der Vertragstest TC-06 hat das widerlegt**
- * (`packages/connector-contracts/tests/actions.contract.test.ts`): Er verlangt
- * ausdruecklich, dass `config: { arbitrary_payload: "secret" }` abgelehnt wird
- * — im selben Fall wie lokale Pfade, Skript-Injection und SSRF-Ziele. Die
- * geschlossene Menge ist also eine Sicherheitszusicherung, keine Nachlaessig-
- * keit. Ein MCP-Agent soll keine beliebigen Schluessel in eine Struktur
- * schreiben koennen, die gespeichert und gerendert wird.
+ * **Der Vertragstest TC-06 steht dagegen**
+ * (`packages/connector-contracts/tests/actions.contract.test.ts:1291`): Er
+ * verlangt, dass `config: { arbitrary_payload: "secret" }` abgelehnt wird.
+ *
+ * *Genau und nicht mehr* — die Praezisierung stammt aus der zweiten
+ * Fremdpruefung, die eine erste Fassung dieses Kommentars als zu weit
+ * zurueckwies. Der Test prueft EINEN Aufruf. Er verlangt NICHT, dass jeder
+ * unbekannte Schluessel abgelehnt wird, nicht eine geschlossene Menge je
+ * Widget-Art, und nicht, dass die Ablehnung gerade aus der Geschlossenheit
+ * folgt. Die Pfad-, Skript- und SSRF-Zusicherungen daneben sind eigene,
+ * unabhaengige Erwartungen im selben `test()`-Block.
+ *
+ * Die geschlossene Menge ist damit eine **Entscheidung** (Tom, 2026-08-29),
+ * nicht ein Zwang aus dem Test: Ein MCP-Agent soll keine beliebigen Schluessel
+ * in eine Struktur schreiben koennen, die gespeichert und gerendert wird. Wer
+ * sie halten will, braucht dafuer einen eigenen Vertragstest — den gibt es
+ * bisher nicht.
  *
  * **Die richtige Antwort auf die 19 Felder ist deshalb, sie einzutragen** —
  * nicht, die Sperre zu oeffnen. `gen-schema` meldet sie seit dem 2026-08-29

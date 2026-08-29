@@ -316,6 +316,7 @@ const ALIASE_UND_ABSICHT: Record<string, Record<string, string>> = {
   },
   events_list: {
     classes: "Fehlalarm: `cfg` ist dort das Ergebnis von getStatusConfig(event), keine Widget-Config (EventsListWidget.tsx:139/243)",
+    label: "Fehlalarm, gleiche Quelle: getStatusConfig liefert {classes, label} (EventsListWidget.tsx:249). Die echte Config ab :1360 liest kein label — es stand bis 2026-08-29 wirkungslos im Prompt.",
   },
 };
 
@@ -329,23 +330,33 @@ const HOMEPAGE_BEFUNDE: {
   veraltet: Record<string, string[]>;
 } = { undokumentiert: {}, veraltet: {} };
 
-function meldeHomepageBefunde(): void {
+function meldeHomepageBefunde(): { undokumentiert: number; veraltet: number } {
   const u = Object.entries(HOMEPAGE_BEFUNDE.undokumentiert);
   const v = Object.entries(HOMEPAGE_BEFUNDE.veraltet);
-  if (u.length === 0 && v.length === 0) return;
+  const zahlen = {
+    undokumentiert: u.reduce((n, [, felder]) => n + felder.length, 0),
+    veraltet: v.length,
+  };
+  if (u.length === 0 && v.length === 0) return zahlen;
   console.log("");
   if (u.length > 0) {
     const anzahl = u.reduce((n, [, felder]) => n + felder.length, 0);
     console.log(
-      `HINWEIS: ${anzahl} Config-Feld(er) in ${u.length} Widget(s) werden gelesen, stehen aber nicht im Schema.`,
+      `BEFUND: ${anzahl} Config-Feld(er) in ${u.length} Widget(s) werden gelesen, stehen aber nicht im Schema.`,
     );
-    console.log("  Ein Agent findet sie nicht in `comvenio schema homepage` — gesperrt sind sie nicht.");
+    // Die erste Fassung dieser Zeile sagte "gesperrt sind sie nicht". Das war
+    // falsch: Sie entstand, als die Config kurzzeitig ein `catchall` trug, und
+    // wurde nach dessen Ruecknahme nicht nachgezogen. Der MCP LEHNT diese
+    // Felder ab (schemas.ts: .strict plus superRefine je Widget-Art) — es ist
+    // eine gesperrte Faehigkeit, kein Schoenheitsfehler.
+    console.log("  Der MCP lehnt sie ab — die Faehigkeit ist gesperrt, bis sie im Prompt steht.");
     for (const [kind, felder] of u) console.log(`  ${kind.padEnd(24)} ${felder.join(", ")}`);
   }
   if (v.length > 0) {
     console.log(`HINWEIS: ${v.length} Widget(s) tragen Ausnahmen ohne Grund (ALIASE_UND_ABSICHT):`);
     for (const [kind, eintraege] of v) console.log(`  ${kind.padEnd(24)} ${eintraege.join(", ")}`);
   }
+  return zahlen;
 }
 
 function codeFieldsNotDocumented(
@@ -1376,12 +1387,25 @@ function main(): number {
 
   // Die Befunde des homepage-Abgleichs kommen auf die Konsole, nicht nur ins
   // JSON. Eine Pruefung, deren Ergebnis in einer Datei liegt, die niemand
-  // oeffnet, meldet nichts — der Fremdpruefer hat am 2026-08-29 zu Recht
-  // angemerkt, dass es fuer `stale_exemptions` keinen einzigen Verbraucher gab.
-  // Bewusst als HINWEIS, nicht als Exit-Code: Seit die Feldliste nicht mehr
-  // blockt (schemas.ts), ist ein undokumentiertes Feld eine Luecke in der
-  // Auskunft, kein Fehler im Bau.
-  meldeHomepageBefunde();
+  // oeffnet, meldet nichts — fuer `stale_exemptions` gab es im ganzen
+  // Repositorium keinen Verbraucher.
+  const befunde = meldeHomepageBefunde();
+
+  // Ein gelesenes, nicht freigegebenes Feld ist im CHECK-Modus ein Fehler,
+  // kein Hinweis: Der MCP lehnt es ab, also ist die Faehigkeit gesperrt.
+  // Ohne diesen Ausstieg liesse sich eine erzeugte Datei mitsamt
+  // `code_fields_not_in_schema` committen, und der naechste Lauf waere gruen,
+  // waehrend das Feld weiterhin nicht gesetzt werden kann.
+  //
+  // Veraltete AUSNAHMEN bleiben ein Hinweis — sie sperren nichts, sie sind
+  // nur unaufgeraeumt.
+  if (CHECK_MODE && befunde.undokumentiert > 0) {
+    console.error(
+      "\nGelesene Config-Felder fehlen im Schema. Der MCP sperrt sie damit.\n" +
+        "Fix: die Felder in homepage_system.py eintragen, dann `bun run gen:schema`.",
+    );
+    return 1;
+  }
 
   if (CHECK_MODE && drift) {
     console.error(
