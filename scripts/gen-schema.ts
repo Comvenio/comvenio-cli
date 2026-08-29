@@ -124,6 +124,9 @@ function parsePyEnum(source: string, className: string): string[] {
 // ─── Domain: homepage ────────────────────────────────────────────────────────
 
 const HOMEPAGE_REGISTRY = "Frontend/web-page/src/components/ClubHome/widgets/index.ts";
+// Die Quelle der Config-Felder. Liegt neben der Registry, damit sie beim
+// Bauen eines Widgets im Blick ist — Erklaerung in WIDGET-FELDER.md daneben.
+const HOMEPAGE_FELDER = "Frontend/web-page/src/components/ClubHome/widgets/widget-felder.json";
 const HOMEPAGE_PROMPT =
   "Backend/Microservice-Backend/ai-service/app/prompts/homepage_system.py";
 const HOMEPAGE_SECTION_SCHEMA =
@@ -501,6 +504,64 @@ function documentedValuesNotInSource(
  * Returns kind -> array of { name, values? } config fields.
  * Not all 68 kinds are documented here (Phase-4 widgets lack a prompt entry).
  */
+/**
+ * Die Feldliste, wie sie neben der Widget-Registry deklariert ist.
+ *
+ * `null`, wenn die Datei fehlt oder unbrauchbar ist — dann greift der
+ * Prompt-Rueckfall. Ausdruecklich KEIN Abbruch: Ein Baum ohne die Deklaration
+ * (ein aelterer Checkout, ein Worktree vor dem Merge) soll ein Schema erzeugen
+ * koennen, statt den ganzen Lauf zu verlieren.
+ *
+ * Geprueft wird die Form, nicht der Inhalt: Ein `widgets`-Objekt, dessen Werte
+ * Listen von `{name}` sind. Wer hier tiefer prueft, baut einen zweiten
+ * Validator neben Zod — die Feldnamen selbst haelt `gen:schema:check` gegen
+ * den Code.
+ */
+function leseFelderDeklaration(): Record<
+  string,
+  Array<{ name: string; values?: string[] }>
+> | null {
+  let roh: string;
+  try {
+    roh = readSource(HOMEPAGE_FELDER);
+  } catch {
+    return null;
+  }
+  try {
+    const daten = JSON.parse(roh) as {
+      widgets?: Record<string, Array<{ name?: unknown; values?: unknown }>>;
+    };
+    const widgets = daten.widgets;
+    // `throw` statt `return null`: Ein struktureller Fehler ist JSON-gueltig
+    // und faellt sonst STILL auf den Prompt zurueck. Die Mutationsprobe vom
+    // 2026-08-29 hat genau das gefunden — `{"widgets": "kaputt"}` erzeugte ein
+    // Schema ohne ein Wort. Der Fang unten macht daraus eine Warnung.
+    if (!widgets || typeof widgets !== "object" || Array.isArray(widgets)) {
+      throw new Error("kein widgets-Objekt");
+    }
+    const raus: Record<string, Array<{ name: string; values?: string[] }>> = {};
+    for (const [kind, felder] of Object.entries(widgets)) {
+      if (!Array.isArray(felder)) throw new Error(`${kind} traegt keine Feldliste`);
+      raus[kind] = felder.map((f) => {
+        if (!f || typeof f.name !== "string") throw new Error(`Feld ohne name bei ${kind}`);
+        const werte = Array.isArray(f.values) && f.values.every((v) => typeof v === "string")
+          ? (f.values as string[])
+          : undefined;
+        return werte ? { name: f.name, values: werte } : { name: f.name };
+      });
+    }
+    return raus;
+  } catch (fehler) {
+    // Eine kaputte Deklaration ist ein Befund, kein stiller Rueckfall: Sonst
+    // faellt der Lauf lautlos auf den Prompt zurueck, und niemand sieht es.
+    console.error(
+      `WARNUNG: ${HOMEPAGE_FELDER} ist nicht lesbar (${(fehler as Error).message}). `
+      + "Der Lauf faellt auf den Prompt zurueck.",
+    );
+    return null;
+  }
+}
+
 function parsePromptConfigs(promptSrc: string): Record<
   string,
   Array<{ name: string; values?: string[] }>
@@ -618,7 +679,40 @@ function genHomepage(): unknown {
   const backendKindsSrc = readSource(HOMEPAGE_WIDGET_KINDS);
 
   const kinds = parseWidgetKinds(registrySrc);
-  const promptConfigs = parsePromptConfigs(promptSrc);
+  // Die Feldliste kommt aus der Deklaration neben der Widget-Registry, nicht
+  // mehr aus dem Prompt. Warum, steht in WIDGET-FELDER.md daneben — kurz: Eine
+  // sicherheitsrelevante Freigabeliste, die aus LLM-Prosa entsteht und per
+  // Regex gegen TypeScript gehalten wird, hat einen unbegrenzten Randfallraum;
+  // zwei Fremdvalidierungen haben die Bauform am 2026-08-29 verworfen.
+  //
+  // Der Prompt bleibt als RUECKFALL: Solange nicht jeder Baum die Deklaration
+  // trägt (ein älterer Checkout, ein Worktree vor dem Merge), soll der
+  // Generator arbeiten statt abzubrechen. Welcher Weg gegriffen hat, steht im
+  // erzeugten Schema unter `config_sync.field_source` — sonst wäre nicht
+  // erkennbar, ob die Deklaration überhaupt gelesen wurde.
+  const deklariert = leseFelderDeklaration();
+  const promptConfigs = deklariert ?? parsePromptConfigs(promptSrc);
+  const feldQuelle = deklariert ? "widget-felder.json" : "homepage_system.py (Rueckfall)";
+
+  // Der Umfang wird gegen die Registry gehalten, nicht gegen sich selbst: Ein
+  // Kind ohne Eintrag waere ueber MCP VOLLSTAENDIG gesperrt — jedes Feld
+  // abgelehnt, ohne dass jemand es merkt. Die Registry ist die Wahrheit
+  // darueber, welche Widget-Arten es gibt.
+  //
+  // Als Hinweis, nicht als Abbruch: Ein frisch angelegtes Widget hat seine
+  // Felder noch nicht deklariert, und der Lauf soll trotzdem ein Schema
+  // erzeugen. Das Blocken uebernimmt `gen:schema:check` ueber
+  // `code_fields_not_in_schema`, sobald das Widget tatsaechlich etwas liest.
+  const ohneDeklaration = deklariert
+    ? kinds.filter((kind) => !(kind in deklariert))
+    : [];
+  if (ohneDeklaration.length > 0) {
+    console.log(
+      `HINWEIS: ${ohneDeklaration.length} Widget-Art(en) fehlen in widget-felder.json: `
+      + ohneDeklaration.join(", "),
+    );
+    console.log("  Ueber MCP ist dort JEDES Config-Feld gesperrt.");
+  }
   const promptKinds = parsePromptWidgetKinds(promptSrc);
   const backendKinds = parsePythonStringSet(backendKindsSrc, "VALID_WIDGET_KINDS");
   const sectionEnums = parseSectionEnums(sectionSrc);
@@ -804,6 +898,7 @@ function genHomepage(): unknown {
         .reduce((n, fs) => n + fs.reduce((m, f) => m + f.unknown.length, 0), 0),
       value_sets_checked: werteZaehler.gelesen,
       value_sets_unreadable: werteZaehler.nichtLesbar,
+      field_source: feldQuelle,
       widgets_with_undocumented_fields: Object.keys(codeNichtImSchema).length,
       undocumented_fields: Object.values(codeNichtImSchema).reduce((n, f) => n + f.length, 0),
       stale_exemptions: Object.entries(veralteteListe).map(([kind, eintraege]) => `${kind}: ${eintraege.join(", ")}`),

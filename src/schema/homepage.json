@@ -2935,6 +2935,7 @@
     "wrong_values": 0,
     "value_sets_checked": 72,
     "value_sets_unreadable": 48,
+    "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,
     "stale_exemptions": [],
