@@ -591,15 +591,37 @@ function leseFelderDeklaration(): Record<
     if (!widgets || typeof widgets !== "object" || Array.isArray(widgets)) {
       throw new Error("kein widgets-Objekt");
     }
-    const raus: Record<string, Array<{ name: string; values?: string[] }>> = {};
+    const raus: Record<string, Array<{ name: string; values?: Array<string | number> }>> = {};
     for (const [kind, felder] of Object.entries(widgets)) {
       if (!Array.isArray(felder)) throw new Error(`${kind} traegt keine Feldliste`);
       raus[kind] = felder.map((f) => {
         if (!f || typeof f.name !== "string") throw new Error(`Feld ohne name bei ${kind}`);
-        const werte = Array.isArray(f.values) && f.values.every((v) => typeof v === "string")
-          ? (f.values as string[])
-          : undefined;
-        return werte ? { name: f.name, values: werte } : { name: f.name };
+        if (!Array.isArray(f.values)) return { name: f.name };
+        // **Zahlen sind erlaubt, und das ist bezahlt.** Vier Felder sind
+        // numerisch — `stats.columns`, `team.columns`, `feature_grid.columns`
+        // und `event_calendar.week_start`. Sie standen als Zeichenketten in
+        // der Deklaration, weil sie aus dem Prompt-Text geparst wurden; der
+        // Editor schreibt `Number(...)`, das Interface fuehrt `2 | 3 | 4`,
+        // und der Code vergleicht mit Zahlen. Der MCP lehnte damit `3` ab und
+        // liess `"3"` durch, das kein Widget versteht: Die Spalteneinstellung
+        // wirkte gar nicht (gemessen 2026-08-30).
+        //
+        // **Und ein unbrauchbarer Wert wird gemeldet, nicht verschluckt.** Die
+        // vorige Fassung verwarf die ganze Wertemenge still, sobald ein Wert
+        // kein String war — das Feld behielt den Namen und verlor seine
+        // erlaubten Werte. Wer die vier Felder repariert haette, haette ihre
+        // Validierung dabei verloren, ohne dass jemand es sieht.
+        const unbrauchbar = f.values.filter(
+          (v: unknown) => typeof v !== "string" && typeof v !== "number",
+        );
+        if (unbrauchbar.length > 0) {
+          throw new Error(
+            `${kind}.${f.name}: Wertemenge enthaelt weder Zeichenkette noch Zahl `
+            + `(${JSON.stringify(unbrauchbar)})`,
+          );
+        }
+        if (f.values.length === 0) return { name: f.name };
+        return { name: f.name, values: f.values as Array<string | number> };
       });
     }
     return raus;
