@@ -19,7 +19,7 @@
  * and comments so they survive source reformatting.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -135,21 +135,6 @@ const HOMEPAGE_WIDGET_KINDS =
   "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py";
 const HOMEPAGE_WIDGET_DIR =
   "Frontend/web-page/src/components/ClubHome/widgets";
-/**
- * Ein Widget-Feld kann auch AUSSERHALB seiner Widget-Datei gelesen werden.
- *
- * Gemessen am 2026-08-29: vier Dateien unter ClubHome/ tun das —
- * templates/templateContent.ts (die Startseiten-Vorlage liest hero, description
- * und contact ueber einen eigenen Leser), PageBuilder.tsx, configs/
- * websiteConfigs.tsx und PublicWebsiteSettings.tsx.
- *
- * Ohne sie gilt ein Feld, das NUR dort gelesen wird, als tot — und wer es
- * daraufhin aus dem Schema nimmt, sperrt es im MCP. Heute waere das folgenlos
- * geblieben (alle zwoelf Felder werden auch im Widget selbst gelesen), aber
- * das ist Zufall, nicht Bauform.
- */
-const HOMEPAGE_CLUBHOME_DIR =
-  "Frontend/web-page/src/components/ClubHome";
 
 /** Authoritative widget kinds: keys of WIDGET_REGISTRY (one per line). */
 function parseWidgetKinds(registrySrc: string): string[] {
@@ -423,14 +408,6 @@ function codeFieldsNotDocumented(
  * verlangt einen Typaufloeser, den es hier nicht gibt. Sie zu bauen hiesse,
  * TypeScript nachzubauen — der Randfallraum waere unbegrenzt.
  */
-/** Absoluter Pfad einer workspace-relativen Angabe, mit denselben Umleitungen wie readSource. */
-function quellPfad(relPath: string): string {
-  for (const { prefix, env } of QUELL_UMLEITUNGEN) {
-    const wurzel = process.env[env];
-    if (wurzel && relPath.startsWith(prefix)) return join(resolve(wurzel), relPath.slice(prefix.length));
-  }
-  return join(WORKSPACE, relPath);
-}
 
 /**
  * Quelltext aller Dateien unter ClubHome/, die NICHT im Widget-Verzeichnis
@@ -451,69 +428,6 @@ function quellPfad(relPath: string): string {
  * Das Verzeichnis wird durchsucht, nicht aufgezaehlt: Eine handgepflegte
  * Liste prueft die Sorgfalt des Eintragenden (Befund vom 2026-08-22).
  */
-let clubHomeFremdQuelleCache: string[] | null = null;
-function clubHomeFremdDateien(): string[] {
-  if (clubHomeFremdQuelleCache !== null) return clubHomeFremdQuelleCache;
-  const wurzel = quellPfad(HOMEPAGE_CLUBHOME_DIR);
-  const widgetsAbs = quellPfad(HOMEPAGE_WIDGET_DIR);
-  const teile: string[] = [];
-  const gehe = (dir: string): void => {
-    let eintraege: ReturnType<typeof readdirSync>;
-    try {
-      eintraege = readdirSync(dir, { withFileTypes: true });
-    } catch (fehler) {
-      // Nicht schlucken: Ein uebersprungenes Verzeichnis macht die
-      // Zusatzquelle luecken haft, und der Check liefe mit einem Ergebnis
-      // weiter, das niemand als unvollstaendig erkennt.
-      throw new Error(`Zusatzquelle unlesbar: ${dir} (${(fehler as Error).message})`);
-    }
-    for (const e of eintraege) {
-      const voll = join(dir, e.name);
-      if (e.isDirectory()) {
-        if (voll === widgetsAbs) continue;
-        gehe(voll);
-      } else if (e.name.endsWith(".ts") || e.name.endsWith(".tsx")) {
-        try {
-          teile.push(readFileSync(voll, "utf8"));
-        } catch (fehler) {
-          throw new Error(`Zusatzquelle unlesbar: ${voll} (${(fehler as Error).message})`);
-        }
-      }
-    }
-  };
-  gehe(wurzel);
-  clubHomeFremdQuelleCache = teile;
-  return clubHomeFremdQuelleCache;
-}
-
-/**
- * Fremder Quelltext, der AUF DIESE Widget-Art gehen kann.
- *
- * **Warum nicht einfach alles.** Die erste Fassung hing den gesamten fremden
- * Text an JEDE Widget-Art. Das erzeugt eine Kollision ueber Artgrenzen:
- * `templateContent.ts` liest `headline` fuer *hero* und `text` fuer
- * *description* — und genau diese beiden Namen sind zugleich Aliase des
- * *cta*-Widgets. Die fremden Fundstellen hielten die CTA-Ausnahmen damit
- * "lebendig", auch wenn das CTA-Widget sie nicht mehr laese (Fremdprüfung
- * 2026-08-29, F3a).
- *
- * **Die Zuordnung in ihrer billigsten Form:** Eine Datei zaehlt fuer eine Art
- * nur, wenn sie deren Namen als Zeichenketten-Literal nennt — so wie
- * `widget.kind === "hero"`. Kein Parser, keine Ableitung, ein String.
- *
- * Gemessen an `templateContent.ts`: `"hero"`, `"description"`, `"contact"` je
- * ein Treffer; `"cta"` null — obwohl `cta_primary_label` in der Datei steht.
- * Die Anfuehrungszeichen machen den Unterschied.
- *
- * Der Preis ist benannt: Eine Datei, die viele Arten nennt, ist wieder grob.
- * Das ist weniger, als eine Typaufloesung leisten wuerde, und mehr als der
- * globale Text.
- */
-function clubHomeFremdQuelleFuer(kind: string): string {
-  const marke = JSON.stringify(kind); // "hero" — mit Anfuehrungszeichen
-  return clubHomeFremdDateien().filter((t) => t.includes(marke)).join("\n");
-}
-
 function veralteteAusnahmen(
   kind: string,
   source: string,
@@ -521,12 +435,36 @@ function veralteteAusnahmen(
 ): string[] {
   const dokumentiert = new Set(fields.map((f) => f.name));
   const tot: string[] = [];
-  // Ein Feld kann auch ausserhalb seiner Widget-Datei gelesen werden — siehe
-  // clubHomeFremdQuelleFuer(). Nur DIESE Richtung darf den Zusatz sehen: Er
-  // kann hier bloss verhindern, dass etwas faelschlich als tot gilt. Und nur
-  // Dateien, die DIESE Art nennen — sonst halten fremde Fundstellen die
-  // Aliase einer anderen Art am Leben.
-  const quellen = `${source}\n${clubHomeFremdQuelleFuer(kind)}`;
+  // **Hier stand einmal eine Zusatzquelle, und sie ist gefallen.**
+  //
+  // Der Gedanke war richtig: Ein Feld kann auch AUSSERHALB seiner
+  // Widget-Datei gelesen werden — `templates/templateContent.ts` liest
+  // `headline` fuer *hero* ueber einen eigenen Leser. Ohne das gaelte so ein
+  // Feld als tot, und wer es daraufhin aus dem Schema naehme, sperrte es im
+  // MCP.
+  //
+  // Die erste Fassung hing den fremden Text an JEDE Art (Kollision ueber
+  // Artgrenzen), die zweite ordnete ihn ueber das String-Literal der Art zu.
+  // Zwei Fremdpruefungen am 2026-08-29/30 haben beide verworfen — die zweite
+  // mit Belegen in BEIDEN Richtungen:
+  //
+  //   falsch positiv  `configs/eventsConfigs.tsx` nennt "hero" nur als
+  //                   LAYOUTWERT und liest daneben `cta_label` — eine
+  //                   Hero-Ausnahme. Sie galt damit als lebendig, auch wenn
+  //                   das Hero-Widget sie nicht mehr laese.
+  //   falsch negativ  `configs/websiteConfigs.tsx` liest echte Hero-Felder,
+  //                   verbindet sie aber ueber einen UNQUOTIERTEN
+  //                   Registry-Schluessel — die Datei wird nicht zugeordnet.
+  //
+  // „Datei nennt Art" heisst nicht „Datei liest Felder dieser Art". Die
+  // Zuordnung aus Text abzuleiten ist die falsche Bauform; sie braeuchte
+  // eine ausdrueckliche Zuordnung (kind -> Dateien) oder typisierte externe
+  // Leser. Beides ist eine eigene Entscheidung, kein Nebenbei.
+  //
+  // Bis dahin gilt wieder allein die Widget-Datei. Der Nutzen der
+  // Zusatzquelle war nie belegt — beide Pruefrunden fanden kein Feld, das
+  // heute AUSSCHLIESSLICH ausserhalb gelesen wird. Ihr Schaden schon.
+  const quellen = source;
   for (const name of Object.keys(ALIASE_UND_ABSICHT[kind] ?? {})) {
     if (dokumentiert.has(name)) tot.push(`${name} (steht inzwischen im Schema)`);
     // Dieselben Zugriffsformen wie in codeFieldsNotDocumented — sonst gilt ein
