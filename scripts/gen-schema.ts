@@ -602,9 +602,15 @@ function leseFelderDeklaration(): Record<
         // und `event_calendar.week_start`. Sie standen als Zeichenketten in
         // der Deklaration, weil sie aus dem Prompt-Text geparst wurden; der
         // Editor schreibt `Number(...)`, das Interface fuehrt `2 | 3 | 4`,
-        // und der Code vergleicht mit Zahlen. Der MCP lehnte damit `3` ab und
-        // liess `"3"` durch, das kein Widget versteht: Die Spalteneinstellung
-        // wirkte gar nicht (gemessen 2026-08-30).
+        // und der Code vergleicht mit Zahlen.
+        //
+        // **Betroffen war der LLM-Weg, nicht der Editor.** Hier stand „die
+        // Spalteneinstellung wirkte gar nicht" — das ist zu weit und wurde
+        // widerlegt (Fremdpruefung 2026-08-30, R3-3): Wer die Einstellung im
+        // Web-Editor vornahm, bekam schon immer eine Zahl, und die Widgets
+        // verstanden sie. Belegt ist der andere Weg: Ein LLM, das der
+        // Schema-Vorgabe `["2","3","4"]` folgte, erzeugte Zeichenketten —
+        // und die versteht kein Widget.
         //
         // **Und ein unbrauchbarer Wert wird gemeldet, nicht verschluckt.** Die
         // vorige Fassung verwarf die ganze Wertemenge still, sobald ein Wert
