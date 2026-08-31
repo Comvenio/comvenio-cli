@@ -167,11 +167,30 @@ const AUDIT_FARBEN = auditFarbenQuelle.slice(
   auditFarbenQuelle.indexOf("/* AUDIT-FARBEN */") + "/* AUDIT-FARBEN */".length,
 );
 
+// **Die Farbrechnung geht in einem EIGENEN Aufruf an die Seite.**
+//
+// Der Skripttext ist ein Kommandozeilen-Argument, und `playwright-cli` ist
+// ein `.cmd`-Shim: Jeder Aufruf laeuft durch `cmd.exe`. Gemessen auf dem
+// Produktionsweg (`Bun.spawn`) liegt die Grenze bei rund 7950 Zeichen —
+// darueber endet der Aufruf mit "Die Befehlszeile ist zu lang", und der
+// Verify-Lauf bricht mit Exit 2 ab.
+//
+// Der Homepage-Audit lag am 2026-08-31 bei 8406 Zeichen und war damit
+// gebrochen; vor dem Umbau waren es 7920, also 30 Zeichen unter der Grenze.
+// Die Farben in einem eigenen Aufruf zu setzen nimmt beiden Skripttexten
+// rund 660 Zeichen ab — und die naechste Regel sprengt sie dann nicht sofort.
+//
+// `window.__auditFarben` ueberlebt keine Navigation; der Aufruf gehoert
+// deshalb hinter jedes `goto`, nicht einmal an den Anfang.
+const AUDIT_FARBEN_SETZEN = `() => { window.__auditFarben = (() => {${AUDIT_FARBEN}
+  return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle };
+})(); return "ok"; }`;
+
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
 // text node, computes contrast vs. effective background and counts texts
 // stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
 const AUDIT_JS = `() => {
-  ${AUDIT_FARBEN}
+  const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle } = window.__auditFarben;
   const ratio = contrastRatio;
   const effBg = (el) => {
     let e = el;
@@ -255,7 +274,7 @@ const HOMEPAGE_AUDIT_JS = `() => {
   let checkedTexts = 0;
   const seen = new Set();
   const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
-  ${AUDIT_FARBEN}
+  const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle } = window.__auditFarben;
   const isExcluded = (element) => {
     if (element.closest(excludedSelector)) return true;
     let current = element;
@@ -281,16 +300,13 @@ const HOMEPAGE_AUDIT_JS = `() => {
     return { r: 255, g: 255, b: 255, a: 1 };
   };
   const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
-  const sichtbarerText = (wurzel) => {
-    const gehen = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
-    const gesammelt = [];
-    while (gehen.nextNode()) {
-      const knoten = gehen.currentNode;
-      const eltern = knoten.parentElement;
-      if (!eltern || isExcluded(eltern) || !hasBox(eltern)) continue;
-      gesammelt.push(knoten.textContent || '');
+  const sichtbarerText = (w) => {
+    const g = document.createTreeWalker(w, NodeFilter.SHOW_TEXT), s = [];
+    while (g.nextNode()) {
+      const n = g.currentNode, e = n.parentElement;
+      if (e && !isExcluded(e) && hasBox(e)) s.push(n.textContent || '');
     }
-    return gesammelt.join('').replace(/\s+/g, ' ').trim();
+    return s.join('').replace(/\s+/g, ' ').trim();
   };
   const rootText = sichtbarerText(root);
   const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
@@ -528,6 +544,9 @@ async function renderBundle(
   let audit: AuditResult | undefined;
   if (opts.audit) {
     // Windows argv mangles multi-line args — pass as a single line.
+    const farbenGesetzt = await pw(["eval", AUDIT_FARBEN_SETZEN.replace(/\s+/g, " ")]);
+    const farbFehler = pwFailure(farbenGesetzt, "Farbrechnung setzen");
+    if (farbFehler) throw new Error(farbFehler);
     const a = await pw(["eval", AUDIT_JS.replace(/\s+/g, " ")]);
     const m = a.stdout.match(/"\{.*\}"/s);
     if (m) {
@@ -658,6 +677,9 @@ async function verifyHomepageMatrix(
         }
 
         if (opts.audit) {
+          const farbenGesetzt = await pw(["eval", AUDIT_FARBEN_SETZEN.replace(/\s+/g, " ")]);
+          const farbFehler = pwFailure(farbenGesetzt, "Farbrechnung setzen");
+          if (farbFehler) throw new Error(farbFehler);
           const auditResult = await pw(["eval", HOMEPAGE_AUDIT_JS.replace(/\s+/g, " ")]);
           const auditFailure = pwFailure(auditResult, "DOM-Audit");
           if (auditFailure) throw new Error(auditFailure);

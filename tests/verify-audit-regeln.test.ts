@@ -210,3 +210,65 @@ describe("§4.1 — die zusammengesetzten Skripttexte", () => {
     },
   );
 });
+
+describe("§4.1 — die Laenge der Skripttexte", () => {
+  /**
+   * **Der Riegel, der am 2026-08-31 gefehlt hat.**
+   *
+   * Der Skripttext geht als KOMMANDOZEILEN-ARGUMENT an `playwright-cli
+   * eval`, und das Werkzeug ist ein `.cmd`-Shim: Jeder Aufruf laeuft durch
+   * `cmd.exe`. Gemessen auf dem Produktionsweg (`Bun.spawn`, binaere Suche)
+   * liegt die Grenze bei **rund 7950 Zeichen** — darueber endet der Aufruf
+   * mit "Die Befehlszeile ist zu lang", und der Verify-Lauf bricht mit
+   * Exit 2 ab.
+   *
+   * **Der Text war gebrochen und niemand merkte es:** 8406 Zeichen nach dem
+   * Umbau auf den Text-Loader; vor dem Umbau 7920, also 30 Zeichen unter der
+   * Grenze. Keine Messung sprach darueber, und die Suite lief gruen, weil
+   * kein Test den Browser bemueht.
+   *
+   * Die Reparatur war nicht Kuerzen, sondern Teilen: Die Farbrechnung geht
+   * in einem eigenen Aufruf an die Seite (`AUDIT_FARBEN_SETZEN`), und beide
+   * Audits holen sie aus `window.__auditFarben`.
+   *
+   * **Die Schwelle kommt aus der Messung, nicht aus dem Ist-Stand.**
+   * Gemessene Untergrenze 7926, minus 400 Zeichen Sicherheitsabstand fuer
+   * das, was neben dem Skript in der Kommandozeile steht: Programmpfad,
+   * Sitzungsflag, `eval`. Der Pfad ist rechnerabhaengig — hier
+   * `playwright-cli`, anderswo womoeglich ein langer `node_modules`-Pfad.
+   *
+   * **Der Ist-Stand liegt bei 7424, also 76 Zeichen unter der Schwelle.**
+   * Das ist wenig, und es ist die ehrliche Lage: Die naechste Regel bringt
+   * den Text darueber. Dann wird NICHT die Schwelle erhoeht, sondern
+   * geteilt — der naechste Schnitt ist gemessen und liegt bereit:
+   * `isExcluded` (241), `effectiveBackground` (473) und `sichtbarerText`
+   * (289) stehen nur im Homepage-Audit und ergeben zusammen 1003 Zeichen.
+   * Sie haengen an drei freien Referenzen (`excludedSelector`, `hasBox`,
+   * `toRGB`), die mitwandern muessen — deshalb ein eigener Schnitt und
+   * nicht einer fuer nebenbei.
+   */
+  const GRENZE = 7500;
+
+  test.each(["AUDIT_JS", "HOMEPAGE_AUDIT_JS", "AUDIT_FARBEN_SETZEN"])(
+    "%s bleibt unter der Kommandozeilengrenze",
+    (name) => {
+      const quelle = readFileSync(join(HIER, "../src/commands/verify.ts"), "utf8");
+      const marke = `const ${name} = \``;
+      const anfang = quelle.indexOf(marke);
+      expect(anfang, `${name} steht nicht mehr in verify.ts`).toBeGreaterThan(-1);
+      const ende = quelle.indexOf("`;", anfang);
+      const text = quelle
+        .slice(anfang + marke.length, ende)
+        .replace("${AUDIT_FARBEN}", farbtext())
+        .replace(/\s+/g, " ");
+
+      expect(text, "ein Platzhalter wurde nicht aufgeloest").not.toContain("${");
+      expect(
+        text.length,
+        `${name} ist ${text.length} Zeichen lang. Ueber ~7950 bricht der Aufruf ` +
+          `unter Windows mit "Die Befehlszeile ist zu lang" ab. Nicht kuerzen, ` +
+          `sondern teilen: einen weiteren eval-Aufruf davorsetzen.`,
+      ).toBeLessThan(GRENZE);
+    },
+  );
+});
