@@ -11,6 +11,11 @@ import {
   actionableConsoleErrors,
   applyFrontendBase,
   artifactSegment,
+  auditContrastRatio,
+  auditIstGrosseSchrift,
+  auditKontrastSchwelle,
+  auditLuminance,
+  auditToRGB,
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
@@ -232,24 +237,11 @@ const HOMEPAGE_AUDIT_JS = `() => {
   let checkedTexts = 0;
   const seen = new Set();
   const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
-  const toRGB = (value) => {
-    if (!value || !value.startsWith('rgb')) return null;
-    const values = value.slice(value.indexOf('(') + 1, value.indexOf(')')).split(',').map(Number);
-    if (values.length < 3 || values.some((item) => Number.isNaN(item))) return null;
-    return { r: values[0], g: values[1], b: values[2], a: values[3] ?? 1 };
-  };
-  const luminance = (color) => {
-    const channel = (value) => {
-      const normalized = value / 255;
-      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
-    };
-    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
-  };
-  const contrastRatio = (foreground, background) => {
-    const a = luminance(foreground);
-    const b = luminance(background);
-    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-  };
+  const toRGB = ${auditToRGB.toString()};
+  const auditLuminance = ${auditLuminance.toString()};
+  const contrastRatio = ${auditContrastRatio.toString()};
+  const istGrosseSchrift = ${auditIstGrosseSchrift.toString()};
+  const kontrastSchwelle = ${auditKontrastSchwelle.toString()};
   const isExcluded = (element) => {
     if (element.closest(excludedSelector)) return true;
     let current = element;
@@ -321,9 +313,9 @@ const HOMEPAGE_AUDIT_JS = `() => {
     const ratio = contrastRatio(foreground, background);
     const size = Number.parseFloat(style.fontSize);
     const weight = Number.parseInt(style.fontWeight, 10) || 400;
-    const large = size >= 24 || (size >= 18.66 && weight >= 700);
+    const large = istGrosseSchrift(size, weight);
     checkedTexts += 1;
-    if (ratio < (large ? 3 : 4.5)) {
+    if (ratio < kontrastSchwelle(large)) {
       failures.push({
         kind: 'contrast',
         message: 'Der Textkontrast unterschreitet WCAG AA.',
