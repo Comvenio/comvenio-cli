@@ -34,7 +34,6 @@ import {
   auditContrastRatio,
   auditIstGrosseSchrift,
   auditKontrastSchwelle,
-  auditLuminance,
   auditToRGB,
 } from "../src/verify/homepage.ts";
 
@@ -71,8 +70,14 @@ describe("§4.1 — Farbentscheidung des DOM-Audits", () => {
   });
 
   test("rechnet die Leuchtdichte nach WCAG", () => {
-    expect(auditLuminance(WEISS)).toBeCloseTo(1, 5);
-    expect(auditLuminance(SCHWARZ)).toBeCloseTo(0, 5);
+    // Die Leuchtdichte steht seit dem 2026-08-31 LOKAL in
+    // `auditContrastRatio` und ist von aussen nicht mehr erreichbar — sie
+    // duerfte es nicht sein, sonst bricht der eingesetzte Skripttext nach
+    // Minifizierung. Geprueft wird sie ueber ihre Wirkung: Weiss gegen
+    // Weiss ist 1, Schwarz gegen Weiss ist 21.
+    expect(auditContrastRatio(WEISS, WEISS)).toBeCloseTo(1, 4);
+    expect(auditContrastRatio(SCHWARZ, SCHWARZ)).toBeCloseTo(1, 4);
+    expect(auditContrastRatio(SCHWARZ, WEISS)).toBeCloseTo(21, 4);
   });
 
   test("rechnet das Kontrastverhaeltnis und ist richtungsunabhaengig", () => {
@@ -122,7 +127,7 @@ describe("§4.1 — der eingebettete Skripttext", () => {
    * Deshalb steht es hier als Fall.
    */
   test("die Funktionen ueberleben die Komprimierung des Skripttexts", () => {
-    for (const fn of [auditToRGB, auditLuminance, auditContrastRatio, auditIstGrosseSchrift, auditKontrastSchwelle]) {
+    for (const fn of [auditToRGB, auditContrastRatio, auditIstGrosseSchrift, auditKontrastSchwelle]) {
       const komprimiert = fn.toString().replace(/\s+/g, " ");
       expect(komprimiert, `${fn.name} traegt einen Zeilenkommentar`).not.toContain("//");
       // Der komprimierte Text muss noch eine gueltige Funktion sein.
@@ -130,14 +135,14 @@ describe("§4.1 — der eingebettete Skripttext", () => {
     }
   });
 
-  test("die komprimierte Fassung rechnet dasselbe", () => {
+  test("die komprimierte Fassung rechnet dasselbe — ohne Hilfe von aussen", () => {
     const wieder = new Function(`return ${auditContrastRatio.toString().replace(/\s+/g, " ")}`)() as (
       a: typeof SCHWARZ,
       b: typeof WEISS,
     ) => number;
-    // `auditContrastRatio` ruft `auditLuminance` — im Browser wird die
-    // ebenfalls eingesetzt. Hier steht sie global zur Verfuegung.
-    (globalThis as Record<string, unknown>).auditLuminance = auditLuminance;
+    // KEINE Vorbereitung, kein Eintrag in `globalThis`: Die Funktion muss
+    // allein laufen. Die erste Fassung setzte hier `auditLuminance` global —
+    // und verdeckte damit genau den Fehler, der die EXE brach.
     expect(wieder(SCHWARZ, WEISS)).toBeCloseTo(21, 4);
   });
 });
@@ -162,7 +167,7 @@ describe("§4.1 — der zusammengesetzte Skripttext", () => {
     const ende = quelle.indexOf("`;", anfang);
     let text = quelle.slice(anfang + marke.length, ende);
 
-    for (const fn of [auditToRGB, auditLuminance, auditContrastRatio, auditIstGrosseSchrift, auditKontrastSchwelle]) {
+    for (const fn of [auditToRGB, auditContrastRatio, auditIstGrosseSchrift, auditKontrastSchwelle]) {
       text = text.replace("${" + fn.name + ".toString()}", fn.toString());
     }
 
@@ -173,5 +178,71 @@ describe("§4.1 — der zusammengesetzte Skripttext", () => {
     const komprimiert = text.replace(/\s+/g, " ");
     expect(komprimiert.length).toBeGreaterThan(3000);
     expect(() => new Function(`return ${komprimiert}`)()).not.toThrow();
+  });
+});
+
+describe("§4.1 — die eingesetzten Funktionen ueberleben die Minifizierung", () => {
+  /**
+   * **Der Fall, der am 2026-08-31 gefehlt hat.**
+   *
+   * Der Skripttext entsteht aus `fn.toString()`. Referenziert eine dieser
+   * Funktionen etwas ausserhalb ihrer selbst, steht im eingesetzten Text der
+   * NAME dieser Sache — und im Browser gibt es sie nicht. Unminifiziert faellt
+   * das nicht auf, solange der Skripttext daneben zufaellig eine Bindung
+   * gleichen Namens setzt.
+   *
+   * **Die ausgelieferte EXE wird minifiziert** (`bun build --compile`), und
+   * dann heisst die Funktion `n`:
+   *
+   *     const contrastRatio = function s(t, c) { let e = n(t) ... }
+   *     ReferenceError: n is not defined
+   *
+   * Der Test war gruen, die EXE gebrochen. Gefunden von einer Fremdpruefung.
+   *
+   * Dieser Fall baut jede eingesetzte Funktion minifiziert und ruft sie ohne
+   * jede Vorbereitung auf. Er faellt, sobald eine von ihnen wieder etwas von
+   * aussen braucht.
+   */
+  test("jede laeuft nach echter Minifizierung allein", async () => {
+    const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    // Ein eigener Ordner je Lauf: Ein fester Name in tmpdir waere eine
+    // geteilte Ressource ohne Besitzer.
+    const bau = mkdtempSync(join(tmpdir(), "audit-minify-"));
+    try {
+      const quelle = join(bau, "quelle.ts");
+      const ziel = join(bau, "gebaut.js");
+      writeFileSync(
+        quelle,
+        [
+          readFileSync(new URL("../src/verify/homepage.ts", import.meta.url), "utf8"),
+          "const proben = [auditToRGB, auditContrastRatio, auditIstGrosseSchrift, auditKontrastSchwelle];",
+          "const texte = proben.map((f) => f.toString().replace(/\\s+/g, ' '));",
+          "console.log(JSON.stringify(texte));",
+        ].join("\n"),
+      );
+
+      const bauLauf = Bun.spawnSync(["bun", "build", quelle, "--minify", "--outfile", ziel]);
+      expect(bauLauf.exitCode, `bun build: ${bauLauf.stderr.toString()}`).toBe(0);
+
+      const lauf = Bun.spawnSync(["bun", ziel]);
+      expect(lauf.exitCode, `Lauf: ${lauf.stderr.toString()}`).toBe(0);
+      const texte = JSON.parse(lauf.stdout.toString().trim()) as string[];
+      expect(texte).toHaveLength(4);
+
+      // Der Kern: Jede Funktion wird aus ihrem MINIFIZIERTEN Quelltext neu
+      // gebaut und aufgerufen — ohne dass irgendetwas anderes bereitsteht.
+      const [toRGB, contrast, gross, schwelle] = texte.map(
+        (t) => new Function(`return ${t}`)() as (...args: unknown[]) => unknown,
+      );
+      expect(toRGB!("rgb(1, 2, 3)")).toEqual({ r: 1, g: 2, b: 3, a: 1 });
+      expect(contrast!({ r: 0, g: 0, b: 0, a: 1 }, { r: 255, g: 255, b: 255, a: 1 })).toBeCloseTo(21, 4);
+      expect(gross!(24, 400)).toBe(true);
+      expect(schwelle!(true)).toBe(3);
+    } finally {
+      rmSync(bau, { recursive: true, force: true });
+    }
   });
 });
