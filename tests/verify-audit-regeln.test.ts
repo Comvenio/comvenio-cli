@@ -86,6 +86,23 @@ describe("§4.1 — Farbentscheidung des DOM-Audits", () => {
     expect(auditContrastRatio(WEISS, WEISS)).toBeCloseTo(1, 4);
   });
 
+  test("faengt vertauschte Luminanzkoeffizienten", () => {
+    // **Alle bisherigen Proben waren achromatisch** — Weiss, Schwarz, Grau.
+    // Bei denen sind R, G und B gleich, also merkt keine von ihnen, wenn die
+    // WCAG-Koeffizienten (0.2126 / 0.7152 / 0.0722) vertauscht werden.
+    // Gemessen: weiss/schwarz und grau/weiss liefern mit vertauschten
+    // Koeffizienten exakt dasselbe Verhaeltnis.
+    //
+    // Rot und Blau trennen sie: Rot gegen Weiss ist 5.06, mit vertauschten
+    // Koeffizienten 9.71 — und umgekehrt. Gefunden von einer Fremdpruefung.
+    const ROT = { r: 220, g: 20, b: 20, a: 1 };
+    const BLAU = { r: 20, g: 20, b: 220, a: 1 };
+    expect(auditContrastRatio(ROT, WEISS)).toBeCloseTo(5.06, 1);
+    expect(auditContrastRatio(BLAU, WEISS)).toBeCloseTo(9.71, 1);
+    // Und die Ordnung: Rot ist heller als Blau, also naeher an Weiss.
+    expect(auditContrastRatio(ROT, WEISS)).toBeLessThan(auditContrastRatio(BLAU, WEISS));
+  });
+
   test("kennt die Schwellen 4.5 und 3", () => {
     // §4.1: "normale Schrift 4.5:1, grosse Schrift/UI 3:1"
     expect(auditKontrastSchwelle(false)).toBe(4.5);

@@ -237,6 +237,13 @@ const SCROLL_SETTLE_JS = `async () => {
 // komprimiert ihn und uebersetzt ihn. Am 2026-08-31 hat er genau diesen
 // Fehler gefangen, zwei Minuten nachdem er gebaut war.
 //
+// **`empty_main` zaehlt nur SICHTBAREN Text.** Bis zum 2026-08-31 nahm die
+// Regel `root.textContent` ungefiltert — ein `<main>`, dessen einziger
+// langer Text `[hidden]` oder `aria-hidden` trug, bestand damit die
+// Pruefung. Das Lastenheft verlangt in §4.1 ausdruecklich die sichtbare
+// Textlaenge. Gefunden von einer Fremdpruefung; die Filterung nutzt
+// dasselbe `isExcluded` wie die uebrigen Regeln.
+//
 // **`effectiveBackground` durchsucht die Kette einschliesslich `<html>`.**
 // Bis zum 2026-08-31 endete sie davor und nahm danach Weiss an; ein
 // Verlauf auf `<html>` wurde nie gesehen, und weisser Text darauf ergab
@@ -279,7 +286,18 @@ const HOMEPAGE_AUDIT_JS = `() => {
     return { r: 255, g: 255, b: 255, a: 1 };
   };
   const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
-  const rootText = (root.textContent || '').replace(/\s+/g, ' ').trim();
+  const sichtbarerText = (wurzel) => {
+    const gehen = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
+    let gesammelt = '';
+    while (gehen.nextNode()) {
+      const knoten = gehen.currentNode;
+      const eltern = knoten.parentElement;
+      if (!eltern || isExcluded(eltern)) continue;
+      gesammelt += ' ' + (knoten.textContent || '');
+    }
+    return gesammelt.replace(/\s+/g, ' ').trim();
+  };
+  const rootText = sichtbarerText(root);
   const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
   if (rootText.length < 20 && !visibleMedia) {
     failures.push({ kind: 'empty_main', message: 'Die sichtbare Hauptregion enthaelt keinen ausreichenden Inhalt.', details: { text_length: rootText.length } });
