@@ -237,19 +237,38 @@ export function auditToRGB(value: string | null | undefined): AuditFarbe | null 
   return { r: values[0]!, g: values[1]!, b: values[2]!, a: values[3] ?? 1 };
 }
 
-/** Relative Leuchtdichte nach WCAG 2.1. */
-export function auditLuminance(color: AuditFarbe): number {
-  const channel = (value: number): number => {
-    const normalized = value / 255;
-    return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
-}
-
-/** Kontrastverhaeltnis zweier Farben — 1 bis 21. */
+/**
+ * Kontrastverhaeltnis zweier Farben — 1 bis 21, nach WCAG 2.1.
+ *
+ * **Die Leuchtdichte steht LOKAL, und das ist keine Formatierungsfrage.**
+ * Diese Funktion wird per `toString()` in den Audit-Skripttext eingesetzt.
+ * Rief sie eine Funktion des Moduls, stuende im eingesetzten Text deren
+ * Name — und im Browser gibt es ihn nicht.
+ *
+ * Bis zum 2026-08-31 war es genau so: `auditContrastRatio` rief ein
+ * exportiertes `auditLuminance`. Unminifiziert ging es gut, weil der
+ * Skripttext daneben `const auditLuminance = ...` setzte und der Name
+ * zufaellig passte. **Der Build der ausgelieferten EXE minifiziert**
+ * (`bun build --compile`), und dann heisst die Funktion `n`:
+ *
+ *     const contrastRatio = function s(t, c) { let e = n(t) ... }
+ *     ReferenceError: n is not defined
+ *
+ * Der Test war gruen, die EXE gebrochen. Gefunden von einer Fremdpruefung,
+ * reproduziert mit `bun build --minify`. Der Riegel steht in
+ * `tests/verify-audit-regeln.test.ts`: Jede eingesetzte Funktion wird dort
+ * MINIFIZIERT ausgewertet.
+ */
 export function auditContrastRatio(foreground: AuditFarbe, background: AuditFarbe): number {
-  const a = auditLuminance(foreground);
-  const b = auditLuminance(background);
+  const leuchtdichte = (color: AuditFarbe): number => {
+    const channel = (value: number): number => {
+      const normalized = value / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  };
+  const a = leuchtdichte(foreground);
+  const b = leuchtdichte(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 

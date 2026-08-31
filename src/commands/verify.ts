@@ -14,7 +14,6 @@ import {
   auditContrastRatio,
   auditIstGrosseSchrift,
   auditKontrastSchwelle,
-  auditLuminance,
   auditToRGB,
   classifyVerificationExit,
   failedSameOriginRequests,
@@ -231,6 +230,20 @@ const SCROLL_SETTLE_JS = `async () => {
   return JSON.stringify({ height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) });
 }`;
 
+// **In diesem Template-Literal steht kein `//`-Kommentar.** Der Text wird
+// mit `.replace(/\s+/g, " ")` komprimiert; ein Zeilenkommentar verschluckt
+// dabei den Rest der Zeile. Der Riegel dagegen steht in
+// `tests/verify-audit-regeln.test.ts` — er setzt den Text zusammen,
+// komprimiert ihn und uebersetzt ihn. Am 2026-08-31 hat er genau diesen
+// Fehler gefangen, zwei Minuten nachdem er gebaut war.
+//
+// **`effectiveBackground` durchsucht die Kette einschliesslich `<html>`.**
+// Bis zum 2026-08-31 endete sie davor und nahm danach Weiss an; ein
+// Verlauf auf `<html>` wurde nie gesehen, und weisser Text darauf ergab
+// Weiss-gegen-Weiss — einen falschen `contrast`-Fail statt
+// `unverifiable_background`. Genau der Fall, den §4.1 des Lastenhefts
+// ausschliessen soll. Gefunden von einer Fremdpruefung; nicht als
+// Unit-Test pruefbar, weil die Traversierung ein echtes Layout braucht.
 const HOMEPAGE_AUDIT_JS = `() => {
   const failures = [];
   const unverifiable = [];
@@ -238,7 +251,6 @@ const HOMEPAGE_AUDIT_JS = `() => {
   const seen = new Set();
   const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
   const toRGB = ${auditToRGB.toString()};
-  const auditLuminance = ${auditLuminance.toString()};
   const contrastRatio = ${auditContrastRatio.toString()};
   const istGrosseSchrift = ${auditIstGrosseSchrift.toString()};
   const kontrastSchwelle = ${auditKontrastSchwelle.toString()};
@@ -257,7 +269,7 @@ const HOMEPAGE_AUDIT_JS = `() => {
   };
   const effectiveBackground = (element) => {
     let current = element;
-    while (current && current !== document.documentElement) {
+    while (current) {
       const style = getComputedStyle(current);
       if (style.backgroundImage && style.backgroundImage !== 'none') return null;
       const color = toRGB(style.backgroundColor);
