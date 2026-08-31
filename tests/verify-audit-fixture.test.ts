@@ -22,9 +22,15 @@
  * `data:`-URL — `file:` ist im Werkzeug gesperrt (gemessen: „Access to
  * 'file:' URL is blocked. Allowed protocols: http:, https:, about:, data:").
  *
- * **Wenn `playwright-cli` fehlt, meldet die Datei das und prüft nichts.** Ein
- * übersprungener Test, der so aussieht wie ein bestandener, wäre schlimmer
- * als keiner.
+ * **Wenn `playwright-cli` fehlt, wird sichtbar UEBERSPRUNGEN** (`skipIf`),
+ * nicht still bestanden. Das Werkzeug ist bewusst eine Systemabhaengigkeit
+ * und kein npm-Paket (`verify.ts:40`: "NOT embedded") — die Anwendung ruft
+ * es ueber den PATH auf, und ein Test soll dieselbe Annahme pruefen.
+ *
+ * **Offen und ausdruecklich benannt:** In CI laeuft diese Datei damit nicht.
+ * Wer sie dort will, braucht einen Schritt, der `@playwright/cli` und einen
+ * Browser installiert; das ist eine Betreiberentscheidung ueber Laufzeit und
+ * Kosten, keine des Tests. Bis dahin ist die Abdeckung lokal.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -34,10 +40,30 @@ import { fileURLToPath } from "node:url";
 const HIER = dirname(fileURLToPath(import.meta.url));
 const SITZUNG = "k11-fixture";
 
-/** Ist das Werkzeug da? Ohne es prüft diese Datei nichts. */
+/**
+ * **Fehlt das Werkzeug, wird UEBERSPRUNGEN — nicht bestanden.**
+ *
+ * Die erste Fassung stieg mit `if (!da) return` aus. Damit meldete der Lauf
+ * sechs gruene Faelle, obwohl kein Browser lief: ein uebersprungener Test,
+ * der aussieht wie ein bestandener. `skipIf` sagt es in der Ausgabe.
+ */
+const WERKZEUG_DA = werkzeugDa();
+const fall = test.skipIf(!WERKZEUG_DA);
+
+/**
+ * Ist das Werkzeug da? Ohne es prüft diese Datei nichts.
+ *
+ * **`Bun.spawnSync` WIRFT, wenn die Datei fehlt** — es liefert dann keinen
+ * Exit-Code ungleich null, sondern eine Ausnahme. Ohne `try` liefe die
+ * vorgesehene Meldung nie, und der Testlauf bräche mit einem Fehler ab, der
+ * nach einem kaputten Test aussieht statt nach einem fehlenden Werkzeug.
+ */
 function werkzeugDa(): boolean {
-  const p = Bun.spawnSync(["playwright-cli", "--version"]);
-  return p.exitCode === 0;
+  try {
+    return Bun.spawnSync(["playwright-cli", "--version"]).exitCode === 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -46,27 +72,37 @@ function werkzeugDa(): boolean {
  * Kein Nachbau: Beide Bausteine werden aus denselben Dateien gelesen, die
  * die Produktion verwendet, und mit derselben Marke verbunden.
  */
-type Skript = "AUDIT_JS" | "HOMEPAGE_AUDIT_JS" | "AUDIT_FARBEN_SETZEN";
+import {
+  AUDIT_HELFER_SETZEN,
+  AUDIT_JS,
+  HOMEPAGE_AUDIT_JS,
+} from "../src/commands/verify.ts";
 
-function auditText(name: Skript): string {
-  const MARKE = "/* AUDIT-FARBEN */";
-  const farben = readFileSync(join(HIER, "../src/verify/audit-farben.js"), "utf8");
-  const farbtext = farben.slice(farben.indexOf(MARKE) + MARKE.length);
-
-  const quelle = readFileSync(join(HIER, "../src/commands/verify.ts"), "utf8");
-  const marke = `const ${name} = \``;
-  const anfang = quelle.indexOf(marke);
-  const ende = quelle.indexOf("`;", anfang);
-  const text = quelle.slice(anfang + marke.length, ende).replace("${AUDIT_FARBEN}", farbtext);
-  expect(text, "ein Platzhalter wurde nicht aufgeloest").not.toContain("${");
-  return text.replace(/\s+/g, " ");
-}
+/**
+ * **Die Texte werden IMPORTIERT, nicht nachgebaut.**
+ *
+ * Die erste Fassung dieser Datei schnitt sie per `indexOf` aus dem Quelltext
+ * von `verify.ts`. Das ergab einen ANDEREN Text als den gesendeten: Das
+ * aeussere Template-Literal wertet Escapes aus, und `HOMEPAGE_AUDIT_JS` trug
+ * sechs (`\\s`, `\\/`). Gemessen: 7424 Zeichen gueltiges JavaScript gegen
+ * 7418 Zeichen ungueltiges. Die Fixture prueft also einen Text, den die
+ * Anwendung nie sendet — und war gruen, waehrend der Produktivlauf mit
+ * "Passed function is not well-serializable!" scheiterte.
+ *
+ * Gefunden von der dritten Fremdvalidierung, belegt am echten Browser.
+ */
+const komp = (t: string) => t.replace(/\s+/g, " ");
+const SKRIPT = {
+  AUDIT_JS: komp(AUDIT_JS),
+  HOMEPAGE_AUDIT_JS: komp(HOMEPAGE_AUDIT_JS),
+} as const;
 
 /** Eine HTML-Fixture in den Browser laden und den Audit darauf fahren. */
-function audit(html: string, welcher: Exclude<Skript, "AUDIT_FARBEN_SETZEN"> = "HOMEPAGE_AUDIT_JS") {
+function audit(html: string, welcher: keyof typeof SKRIPT = "HOMEPAGE_AUDIT_JS") {
   const url = "data:text/html;base64," + Buffer.from(html, "utf8").toString("base64");
   const geladen = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "goto", url]);
   expect(geladen.exitCode, `goto: ${geladen.stderr.toString()}`).toBe(0);
+
 
   // **Der Farbtext geht in einem EIGENEN Aufruf.** Zusammen mit dem Audit
   // waere der Skripttext 8406 Zeichen lang, und unter Windows laeuft jeder
@@ -74,17 +110,17 @@ function audit(html: string, welcher: Exclude<Skript, "AUDIT_FARBEN_SETZEN"> = "
   // mit "Die Befehlszeile ist zu lang". `verify.ts` macht es genauso — dass
   // dieser Test denselben Weg geht, ist der Punkt.
   //
-  // Und er gehoert HINTER das `goto`: `window.__auditFarben` haengt am
+  // Und er gehoert HINTER das `goto`: `window.__auditHelfer` haengt am
   // Dokument und ueberlebt keine Navigation.
   const farben = Bun.spawnSync([
     "playwright-cli",
     `-s=${SITZUNG}`,
     "eval",
-    auditText("AUDIT_FARBEN_SETZEN"),
+    komp(AUDIT_HELFER_SETZEN),
   ]);
   expect(farben.exitCode, `Farben setzen: ${farben.stderr.toString()}`).toBe(0);
 
-  const lauf = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "eval", auditText(welcher)]);
+  const lauf = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "eval", SKRIPT[welcher]]);
   expect(lauf.exitCode, `eval: ${lauf.stderr.toString()}`).toBe(0);
 
   // Das Werkzeug rahmt das Ergebnis in Markdown; die Nutzlast ist der
@@ -103,10 +139,8 @@ function audit(html: string, welcher: Exclude<Skript, "AUDIT_FARBEN_SETZEN"> = "
 const arten = (liste: { kind: string }[]) => liste.map((f) => f.kind);
 
 describe("§4.1 im echten Browser", () => {
-  let da = false;
   beforeAll(() => {
-    da = werkzeugDa();
-    if (!da) {
+    if (!WERKZEUG_DA) {
       // Laut und sichtbar: Diese Datei prueft gerade nichts.
       console.error(
         "\n  playwright-cli fehlt — die DOM-Regeln aus §4.1 werden NICHT geprueft.\n" +
@@ -123,11 +157,10 @@ describe("§4.1 im echten Browser", () => {
   afterAll(() => {
     // Der Browser laeuft sonst weiter — eine Sitzung je Testlauf, und keine
     // raeumt sich selbst auf.
-    if (da) Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "close"]);
+    if (WERKZEUG_DA) Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "close"]);
   });
 
-  test("ein Verlauf auf <html> ist unverifiable, niemals contrast", () => {
-    if (!da) return;
+  fall("ein Verlauf auf <html> ist unverifiable, niemals contrast", () => {
     // **Der Fehler, den Runde 1 fand.** `effectiveBackground` endete vor
     // `document.documentElement` und nahm danach Weiss an — weisser Text auf
     // einem Verlauf ergab damit Weiss-gegen-Weiss und einen contrast-Fail.
@@ -148,8 +181,7 @@ describe("§4.1 im echten Browser", () => {
     expect(ergebnis.checked_texts).toBe(0);
   });
 
-  test("nur versteckter Text laesst main leer", () => {
-    if (!da) return;
+  fall("nur versteckter Text laesst main leer", () => {
     // **Der Fehler, den Runde 2 fand.** `empty_main` nahm `textContent`
     // ungefiltert — ein `<main>`, dessen einziger langer Text `[hidden]`
     // trug, bestand die Pruefung.
@@ -163,8 +195,7 @@ describe("§4.1 im echten Browser", () => {
     expect(arten(ergebnis.failures)).toContain("empty_main");
   });
 
-  test("sichtbarer Text laesst main NICHT leer", () => {
-    if (!da) return;
+  fall("sichtbarer Text laesst main NICHT leer", () => {
     // Die Gegenprobe. Ohne sie wuerde ein `empty_main`, das immer meldet,
     // den Fall darueber ebenfalls bestehen.
     const ergebnis = audit(`<!doctype html>
@@ -178,8 +209,7 @@ describe("§4.1 im echten Browser", () => {
     expect(ergebnis.checked_texts).toBeGreaterThan(0);
   });
 
-  test("ein zu schwacher Kontrast wird gemeldet", () => {
-    if (!da) return;
+  fall("ein zu schwacher Kontrast wird gemeldet", () => {
     // Belegt, dass die Regel ueberhaupt anschlaegt — sonst waere „kein
     // contrast-Fail" im ersten Fall keine Aussage.
     const ergebnis = audit(`<!doctype html>
@@ -192,8 +222,7 @@ describe("§4.1 im echten Browser", () => {
     expect(arten(ergebnis.failures)).toContain("contrast");
   });
 
-  test("horizontaler Ueberlauf wird gemeldet", () => {
-    if (!da) return;
+  fall("horizontaler Ueberlauf wird gemeldet", () => {
     const ergebnis = audit(`<!doctype html>
       <html><body style="background: #ffffff; margin: 0">
         <main>
@@ -205,8 +234,7 @@ describe("§4.1 im echten Browser", () => {
     expect(arten(ergebnis.failures)).toContain("horizontal_overflow");
   });
 
-  test("der generische Audit sieht denselben Verlauf auf <html>", () => {
-    if (!da) return;
+  fall("der generische Audit sieht denselben Verlauf auf <html>", () => {
     // `verify.ts` fuehrt ZWEI Audits. Der generische trug bis zum
     // 2026-08-31 eigene Kopien samt derselben Luecke, und zwei Pruefrunden
     // uebersahen ihn. Dieser Fall haelt beide zusammen.
@@ -222,5 +250,68 @@ describe("§4.1 im echten Browser", () => {
 
     expect(ergebnis.gradient_skipped).toBeGreaterThan(0);
     expect(ergebnis.fail_count).toBe(0);
+  });
+
+  fall("visibility-hidden Text laesst main leer", () => {
+    // **Befund der dritten Fremdvalidierung.** `isExcluded` kannte nur
+    // `display:none`. `visibility:hidden` nimmt einem Element ebenso jede
+    // Sichtbarkeit, waehrend seine Geometrie positiv bleibt — `hasBox` liess
+    // den Text durch, und `empty_main` sah ein gefuelltes `<main>`.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff">
+        <main>
+          <span style="visibility: hidden">Dieser unsichtbare Text ist deutlich laenger als zwanzig Zeichen.</span>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.failures)).toContain("empty_main");
+  });
+
+  fall("opacity-0 Text laesst main leer", () => {
+    // Die dritte Form derselben Unsichtbarkeit. Sie steht hier, weil eine
+    // Reparatur, die nur den gemeldeten Fall trifft, die Klasse verfehlt.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff">
+        <main>
+          <span style="opacity: 0">Dieser unsichtbare Text ist deutlich laenger als zwanzig Zeichen.</span>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.failures)).toContain("empty_main");
+  });
+
+  fall("eine Seite kann die Audit-Helfer nicht kapern", () => {
+    // **Befund der dritten Fremdvalidierung.** Der geteilte `eval`-Aufruf
+    // legt die Helfer auf `window`. `verify url` nimmt beliebige Adressen
+    // entgegen — eine Seite kann die Eigenschaft also besetzen und
+    // einfrieren. Ohne Formpruefung rechnete der Audit danach mit fremden
+    // Funktionen und meldete still falsche Ergebnisse.
+    //
+    // Erwartet wird kein Ergebnis, sondern ein FEHLER: Ein Audit, der seine
+    // Helfer nicht hat, darf nicht "keine Befunde" melden.
+    const html = `<!doctype html><html><body style="background:#fff">
+      <script>
+        Object.defineProperty(window, "__auditHelfer", {
+          value: Object.freeze({}), writable: false, configurable: false
+        });
+      </script>
+      <main><p style="color:#111">Ein sichtbarer Text, lang genug fuer die Pruefung.</p></main>
+    </body></html>`;
+    const url = "data:text/html;base64," + Buffer.from(html, "utf8").toString("base64");
+
+    const geladen = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "goto", url]);
+    expect(geladen.exitCode).toBe(0);
+    Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "eval", komp(AUDIT_HELFER_SETZEN)]);
+
+    const lauf = Bun.spawnSync([
+      "playwright-cli", `-s=${SITZUNG}`, "eval", SKRIPT.HOMEPAGE_AUDIT_JS,
+    ]);
+    const aus = lauf.stdout.toString() + lauf.stderr.toString();
+
+    expect(
+      aus,
+      "Der Audit lieferte ein Ergebnis, obwohl die Seite seine Helfer besetzt hat.",
+    ).not.toContain("checked_texts");
+    expect(aus).toContain("__auditHelfer");
   });
 });
