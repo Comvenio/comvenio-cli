@@ -193,3 +193,77 @@ export function selectHomepageViewports(
   if (mobileOnly) return HOMEPAGE_VIEWPORTS.filter((viewport) => viewport.width <= 768);
   return HOMEPAGE_VIEWPORTS;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ *  *
+ * Diese drei Funktionen liefen bis zum 2026-08-31 ausschliesslich als TEXT im
+ * Browser: `HOMEPAGE_AUDIT_JS` in `commands/verify.ts` ist ein Template-Literal,
+ * das als Kommandozeilen-Argument an das Playwright-CLI geht. Damit waren sie
+ * nicht testbar — und genau das war die einzige offene Zeile der Definition of
+ * Done (AK-B-02 / TC-11-05).
+ *
+ * Sie stehen jetzt hier als normale Funktionen und werden dort per
+ * `.toString()` in den Skripttext eingesetzt. **Eine Quelle:** Was der Test
+ * prueft, ist derselbe Code, den der Browser ausfuehrt.
+ *
+ * Zwei Bedingungen, beide gemessen (2026-08-31):
+ *   - Der Skripttext wird mit `.replace(/\s+/g, " ")` komprimiert. Ein
+ *     `//`-Kommentar wuerde dabei den Rest der Zeile verschlucken — Bun
+ *     entfernt Kommentare aber beim Transpilieren, also kommt keiner an.
+ *   - `toString()` liefert transpiliertes JavaScript ohne Typannotationen.
+ *
+ * Deshalb duerfen diese Funktionen **nichts referenzieren, was ausserhalb von
+ * ihnen steht** — kein Import, keine Konstante des Moduls. Im Browser gibt es
+ * das nicht.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export type AuditFarbe = { r: number; g: number; b: number; a: number };
+
+/**
+ * Eine CSS-Farbe in Kanäle zerlegen — oder `null`, wenn es keine ist.
+ *
+ * `null` ist die wichtigste Antwort dieser Funktion: Ein Bild, ein Verlauf
+ * oder eine nicht parsebare Angabe fuehrt im Audit zu
+ * `unverifiable_background` statt zu einem Kontrast-Urteil. Genau das
+ * verlangt §4.1 — "nie als Pass oder Fail zaehlen".
+ */
+export function auditToRGB(value: string | null | undefined): AuditFarbe | null {
+  if (!value || !value.startsWith("rgb")) return null;
+  const values = value
+    .slice(value.indexOf("(") + 1, value.indexOf(")"))
+    .split(",")
+    .map(Number);
+  if (values.length < 3 || values.some((item) => Number.isNaN(item))) return null;
+  return { r: values[0]!, g: values[1]!, b: values[2]!, a: values[3] ?? 1 };
+}
+
+/** Relative Leuchtdichte nach WCAG 2.1. */
+export function auditLuminance(color: AuditFarbe): number {
+  const channel = (value: number): number => {
+    const normalized = value / 255;
+    return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+}
+
+/** Kontrastverhaeltnis zweier Farben — 1 bis 21. */
+export function auditContrastRatio(foreground: AuditFarbe, background: AuditFarbe): number {
+  const a = auditLuminance(foreground);
+  const b = auditLuminance(background);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/**
+ * Ist der Text "gross" im Sinne von WCAG? Dann genuegt 3:1 statt 4.5:1.
+ *
+ * Die Schwellen stehen in §4.1: "normale Schrift 4.5:1, grosse Schrift/UI
+ * 3:1". Gross ist ab 24px, oder ab 18.66px bei Fettschrift.
+ */
+export function auditIstGrosseSchrift(fontSize: number, fontWeight: number): boolean {
+  return fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
+}
+
+/** Die geforderte Mindestschwelle fuer ein Kontrastverhaeltnis. */
+export function auditKontrastSchwelle(gross: boolean): number {
+  return gross ? 3 : 4.5;
+}
