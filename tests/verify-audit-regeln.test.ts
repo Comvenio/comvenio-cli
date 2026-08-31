@@ -175,12 +175,20 @@ describe("§4.1 — der zusammengesetzte Skripttext", () => {
    * prueft ihn. Er faellt, sobald jemand eine der eingesetzten Funktionen
    * so aendert, dass der Text nicht mehr uebersetzt.
    */
-  test("ist nach Einsetzen und Komprimieren gueltiges JavaScript", () => {
+  // **Beide** Audits, nicht nur einer. `verify.ts` fuehrt zwei Skripttexte:
+  // `AUDIT_JS` (der generische Kontrast-Audit) und `HOMEPAGE_AUDIT_JS` (die
+  // Matrix je Tab und Viewport). Beide setzen dieselben Funktionen ein — und
+  // beide hatten bis zum 2026-08-31 eigene Kopien der Farbrechnung, samt
+  // derselben `<html>`-Luecke. Ein Test, der nur einen prueft, laesst den
+  // anderen driften; genau das haben zwei Pruefrunden uebersehen.
+  test.each(["AUDIT_JS", "HOMEPAGE_AUDIT_JS"])(
+    "%s ist nach Einsetzen und Komprimieren gueltiges JavaScript",
+    (name) => {
     const hier = dirname(fileURLToPath(import.meta.url));
     const quelle = readFileSync(join(hier, "../src/commands/verify.ts"), "utf8");
-    const marke = "const HOMEPAGE_AUDIT_JS = `";
+    const marke = `const ${name} = \``;
     const anfang = quelle.indexOf(marke);
-    expect(anfang, "HOMEPAGE_AUDIT_JS steht nicht mehr in verify.ts").toBeGreaterThan(-1);
+    expect(anfang, `${name} steht nicht mehr in verify.ts`).toBeGreaterThan(-1);
     const ende = quelle.indexOf("`;", anfang);
     let text = quelle.slice(anfang + marke.length, ende);
 
@@ -193,9 +201,10 @@ describe("§4.1 — der zusammengesetzte Skripttext", () => {
     expect(text, "ein Platzhalter wurde nicht aufgeloest").not.toContain("${");
 
     const komprimiert = text.replace(/\s+/g, " ");
-    expect(komprimiert.length).toBeGreaterThan(3000);
+    expect(komprimiert.length).toBeGreaterThan(1000);
     expect(() => new Function(`return ${komprimiert}`)()).not.toThrow();
-  });
+  },
+  );
 });
 
 describe("§4.1 — die eingesetzten Funktionen ueberleben die Minifizierung", () => {

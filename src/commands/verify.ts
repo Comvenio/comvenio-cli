@@ -164,20 +164,13 @@ type HomepageVerifyReport = {
 // text node, computes contrast vs. effective background and counts texts
 // stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
 const AUDIT_JS = `() => {
-  const toRGB = (str) => {
-    if (!str || str.indexOf('rgb') !== 0) return null;
-    const inner = str.slice(str.indexOf('(') + 1, str.indexOf(')'));
-    const p = inner.split(',').map(parseFloat);
-    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
-  };
-  const lum = (c) => {
-    const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
-  };
-  const ratio = (a, b) => { const l1 = Math.max(lum(a), lum(b)), l2 = Math.min(lum(a), lum(b)); return (l1 + 0.05) / (l2 + 0.05); };
+  const toRGB = ${auditToRGB.toString()};
+  const ratio = ${auditContrastRatio.toString()};
+  const istGrosseSchrift = ${auditIstGrosseSchrift.toString()};
+  const kontrastSchwelle = ${auditKontrastSchwelle.toString()};
   const effBg = (el) => {
     let e = el;
-    while (e && e !== document.documentElement) {
+    while (e) {
       const st = getComputedStyle(e);
       if (st.backgroundImage && st.backgroundImage !== 'none') return null;
       const bg = toRGB(st.backgroundColor);
@@ -201,9 +194,9 @@ const AUDIT_JS = `() => {
     const bg = effBg(el);
     if (!bg) { gradientSkipped++; continue; }
     const rt = ratio(fg, bg); checked++;
-    const size = parseFloat(st.fontSize); const bold = parseInt(st.fontWeight) >= 700;
-    const isLarge = size >= 24 || (size >= 18.66 && bold);
-    if (rt < (isLarge ? 3 : 4.5)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });
+    const size = parseFloat(st.fontSize);
+    const isLarge = istGrosseSchrift(size, parseInt(st.fontWeight) || 400);
+    if (rt < kontrastSchwelle(isLarge)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });
   }
   fails.sort((a, b) => a.ratio - b.ratio);
   return JSON.stringify({ checked: checked, fail_count: fails.length, invisible_texts: invisible, gradient_skipped: gradientSkipped, worst: fails.slice(0, 15) });
@@ -288,14 +281,14 @@ const HOMEPAGE_AUDIT_JS = `() => {
   const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
   const sichtbarerText = (wurzel) => {
     const gehen = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
-    let gesammelt = '';
+    const gesammelt = [];
     while (gehen.nextNode()) {
       const knoten = gehen.currentNode;
       const eltern = knoten.parentElement;
-      if (!eltern || isExcluded(eltern)) continue;
-      gesammelt += ' ' + (knoten.textContent || '');
+      if (!eltern || isExcluded(eltern) || !hasBox(eltern)) continue;
+      gesammelt.push(knoten.textContent || '');
     }
-    return gesammelt.replace(/\s+/g, ' ').trim();
+    return gesammelt.join('').replace(/\s+/g, ' ').trim();
   };
   const rootText = sichtbarerText(root);
   const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
