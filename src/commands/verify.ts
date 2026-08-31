@@ -2,6 +2,10 @@ import type { CAC } from "cac";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+// Der Browser bekommt genau diese Bytes. Byte-Paritaet statt
+// `Function.toString()`: Gegen einen TEXT kann die Minifizierung nichts
+// ausrichten, gegen serialisierten Code schon (siehe Kopf der Datei).
+import auditFarbenQuelle from "../verify/audit-farben.js" with { type: "text" };
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
@@ -11,10 +15,6 @@ import {
   actionableConsoleErrors,
   applyFrontendBase,
   artifactSegment,
-  auditContrastRatio,
-  auditIstGrosseSchrift,
-  auditKontrastSchwelle,
-  auditToRGB,
   classifyVerificationExit,
   failedSameOriginRequests,
   normalizeHomepageTabs,
@@ -160,14 +160,19 @@ type HomepageVerifyReport = {
   report_file: string;
 };
 
+// Die Farbrechnung kommt aus `verify/audit-farben.js` und wird ab der
+// Marke uebernommen. Alles davor sind Kommentare der Datei und gehoert
+// nicht in den Browser.
+const AUDIT_FARBEN = auditFarbenQuelle.slice(
+  auditFarbenQuelle.indexOf("/* AUDIT-FARBEN */") + "/* AUDIT-FARBEN */".length,
+);
+
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
 // text node, computes contrast vs. effective background and counts texts
 // stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
 const AUDIT_JS = `() => {
-  const toRGB = ${auditToRGB.toString()};
-  const ratio = ${auditContrastRatio.toString()};
-  const istGrosseSchrift = ${auditIstGrosseSchrift.toString()};
-  const kontrastSchwelle = ${auditKontrastSchwelle.toString()};
+  ${AUDIT_FARBEN}
+  const ratio = contrastRatio;
   const effBg = (el) => {
     let e = el;
     while (e) {
@@ -250,10 +255,7 @@ const HOMEPAGE_AUDIT_JS = `() => {
   let checkedTexts = 0;
   const seen = new Set();
   const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
-  const toRGB = ${auditToRGB.toString()};
-  const contrastRatio = ${auditContrastRatio.toString()};
-  const istGrosseSchrift = ${auditIstGrosseSchrift.toString()};
-  const kontrastSchwelle = ${auditKontrastSchwelle.toString()};
+  ${AUDIT_FARBEN}
   const isExcluded = (element) => {
     if (element.closest(excludedSelector)) return true;
     let current = element;
