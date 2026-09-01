@@ -76,6 +76,7 @@ import {
   AUDIT_HELFER_SETZEN,
   AUDIT_JS,
   HOMEPAGE_AUDIT_JS,
+  pw,
 } from "../src/commands/verify.ts";
 
 /**
@@ -148,10 +149,27 @@ describe("§4.1 im echten Browser", () => {
       );
       return;
     }
+    // **Zuerst schliessen, dann oeffnen.**
+    //
+    // `open` auf eine BEREITS offene Sitzung scheitert mit Exit 1 und leerem
+    // stderr — und offen bleibt sie, wenn ein vorheriger Lauf abgebrochen
+    // wurde, bevor sein `afterAll` lief. Am 2026-09-01 lagen zwei Sitzungen
+    // aus früheren Läufen herum, und die ganze Datei fiel mit „open: " ohne
+    // weitere Angabe.
+    //
+    // Ein Test, der von einem Vorzustand abhängt, ist fragil; das `close`
+    // davor kostet nichts und macht ihn wiederholbar. Sein Exit-Code wird
+    // bewusst NICHT geprüft: Beim ersten Lauf gibt es nichts zu schliessen,
+    // und das ist kein Fehler.
+    Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "close"]);
+
     // `goto` verlangt ein offenes Fenster; ohne `open` endet es mit 1 und
     // leerem stderr. Gemessen beim ersten Lauf dieser Datei.
     const auf = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "open"]);
-    expect(auf.exitCode, `open: ${auf.stderr.toString()}`).toBe(0);
+    expect(
+      auf.exitCode,
+      `open: ${auf.stderr.toString()}${auf.stderr.length === 0 ? "(kein stderr — laeuft die Sitzung noch? `playwright-cli list` zeigt es)" : ""}`,
+    ).toBe(0);
   });
 
   afterAll(() => {
@@ -314,4 +332,148 @@ describe("§4.1 im echten Browser", () => {
     ).not.toContain("checked_texts");
     expect(aus).toContain("__auditHelfer");
   });
+
+  fall("halbdurchsichtiger Text wird als Kontrastfehler gemeldet", () => {
+    // **Der schwerste Befund der vierten Prüfrunde, am echten Browser.**
+    // `rgba(0,0,0,0.1)` auf Weiss wurde als deckendes Schwarz gerechnet —
+    // 21:1 statt nahezu 1:1. Der Audit liess unlesbaren Text bestehen.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff">
+        <main>
+          <p style="color: rgba(0,0,0,0.1); font-size: 16px">Dieser Text ist auf Weiss praktisch unlesbar.</p>
+        </main>
+      </body></html>`);
+
+    expect(
+      arten(ergebnis.failures),
+      "Text mit Alpha 0.1 auf Weiss muss als Kontrastfehler gelten.",
+    ).toContain("contrast");
+  });
+
+  fall("Element-Opazitaet senkt den Kontrast am echten Element", () => {
+    // Dieselbe Klasse, andere Ursache: voll deckendes Schwarz, aber das
+    // Element steht auf `opacity: 0.15`. Die kumulierte Opazitaet floss
+    // bisher nur in die Unsichtbarkeits-Schwelle, nicht in die Farbrechnung.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff">
+        <main>
+          <div style="opacity: 0.15">
+            <p style="color: #000000; font-size: 16px">Voll deckendes Schwarz, aber das Element ist fast durchsichtig.</p>
+          </div>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.failures)).toContain("contrast");
+  });
+
+  fall("deckender Text bleibt fehlerfrei", () => {
+    // Die Gegenprobe. Ohne sie wuerden die zwei Faelle darueber auch dann
+    // bestehen, wenn der Audit JEDEN Text als Kontrastfehler meldete.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff">
+        <main>
+          <p style="color: #111111; font-size: 16px">Dieser Text ist auf Weiss gut lesbar und ausreichend lang.</p>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.failures)).not.toContain("contrast");
+    expect(ergebnis.checked_texts).toBeGreaterThan(0);
+  });
+
+  fall("eine Seite kann die Helfer nicht durch gefaelschte ersetzen", () => {
+    // **Der Provenienz-Angriff, den die vierte Prüfrunde vorgeführt hat.**
+    //
+    // Eine Formprüfung sieht neun Funktionen und ist zufrieden. Eine Seite
+    // kann deshalb einen Accessor vorgeben: Der Setter schluckt den echten
+    // Helfersatz, der Getter liefert neun gleichnamige, aber gefälschte —
+    // `contrastRatio: () => 21` unterdrückt jeden Kontrastfehler.
+    //
+    // Was das fängt, ist der Identitätsvergleich im Setzer: gelesen muss
+    // dasselbe Objekt sein wie geschrieben. Erwartet wird deshalb ein
+    // FEHLER des Setzers, kein Auditergebnis.
+    const html = `<!doctype html><html><body style="background:#fff">
+      <script>
+        var falsch = {
+          toRGB: function () { return { r: 0, g: 0, b: 0, a: 1 }; },
+          contrastRatio: function () { return 21; },
+          istGrosseSchrift: function () { return false; },
+          kontrastSchwelle: function () { return 4.5; },
+          ueberlagern: function (v) { return v; },
+          hasBox: function () { return true; },
+          isExcluded: function () { return false; },
+          sichtbarerText: function () { return "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; },
+          effectiveBackground: function () { return { r: 255, g: 255, b: 255, a: 1 }; },
+          excludedSelector: "[hidden]"
+        };
+        Object.defineProperty(window, "__auditHelfer", {
+          get: function () { return falsch; },
+          set: function () {},
+          configurable: false
+        });
+      </script>
+      <main><p style="color:#fefefe">Unlesbarer Text, den ein gefaelschter Audit bestehen liesse.</p></main>
+    </body></html>`;
+    const url = "data:text/html;base64," + Buffer.from(html, "utf8").toString("base64");
+
+    const geladen = Bun.spawnSync(["playwright-cli", `-s=${SITZUNG}`, "goto", url]);
+    expect(geladen.exitCode).toBe(0);
+
+    const setzer = Bun.spawnSync([
+      "playwright-cli", `-s=${SITZUNG}`, "eval", komp(AUDIT_HELFER_SETZEN),
+    ]);
+    const aus = setzer.stdout.toString() + setzer.stderr.toString();
+
+    expect(
+      aus,
+      "Der Setzer hat die Uebernahme nicht bemerkt — eine Seite kann die " +
+        "Helfer damit vollstaendig ersetzen, ohne dass ein Fehler entsteht.",
+    ).toContain("besetzt");
+    expect(aus).not.toContain('"ok"');
+  });
+
+  fall("ein nicht zurueckkehrender Getter haengt den Lauf nicht auf", async () => {
+    // **Der Bestandsbefund der vierten Prüfrunde.** `pw` wartete ohne Frist
+    // auf `proc.exited`. Eine Seite mit `get() { for (;;) {} }` liess das
+    // `eval` nie zurückkehren — und damit auch nicht das `finally`, das die
+    // Browsersitzung schliesst. `verify url` nimmt beliebige Adressen.
+    //
+    // **Dieser Fall fährt `pw` selbst**, nicht `playwright-cli` daneben:
+    // Die Frist sitzt in `pw`, und ein Test, der sie umgeht, prüft sie nicht.
+    // Die erste Fassung dieses Falls tat genau das und hätte den Riegel nie
+    // gefangen — sie mass nur den eigenen `spawnSync`-Timeout.
+    const html = `<!doctype html><html><body style="background:#fff">
+      <script>
+        Object.defineProperty(window, "__auditHelfer", {
+          get: function () { for (;;) {} },
+          configurable: false
+        });
+      </script>
+      <main><p style="color:#111">Ein Text, den der Audit nie erreicht.</p></main>
+    </body></html>`;
+    const url = "data:text/html;base64," + Buffer.from(html, "utf8").toString("base64");
+
+    const vorher = process.env.COMVENIO_PW_FRIST_MS;
+    process.env.COMVENIO_PW_FRIST_MS = "4000";
+    try {
+      await pw(["close"]);
+      expect((await pw(["open"])).code, "eigene Sitzung fuer diesen Fall").toBe(0);
+      expect((await pw(["goto", url])).code).toBe(0);
+
+      const beginn = Date.now();
+      const r = await pw(["eval", SKRIPT.HOMEPAGE_AUDIT_JS]);
+      const dauer = Date.now() - beginn;
+
+      expect(
+        dauer,
+        `Der Aufruf lief ${Math.round(dauer / 1000)} s trotz 4-s-Frist. Ohne ` +
+          `Frist haengt er unbegrenzt — das war der Zustand vor dem 2026-09-01.`,
+      ).toBeLessThan(20_000);
+      expect(r.code, "ein haengender Aufruf darf nicht als Erfolg gelten").not.toBe(0);
+      expect(r.stderr).toContain("abgebrochen nach");
+    } finally {
+      if (vorher === undefined) delete process.env.COMVENIO_PW_FRIST_MS;
+      else process.env.COMVENIO_PW_FRIST_MS = vorher;
+      await pw(["close"]);
+    }
+  }, 60_000);
 });

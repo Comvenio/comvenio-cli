@@ -57,17 +57,81 @@ function frontendBase(env: string, override?: string): string {
 
 type PwResult = { code: number; stdout: string; stderr: string };
 
+/**
+ * Wie lange ein einzelner `playwright-cli`-Aufruf laufen darf.
+ *
+ * **Ohne Frist haengt der ganze Verify-Lauf unbegrenzt.** Die vierte
+ * Pruefrunde hat den Fall benannt: Eine untersuchte Seite kann
+ * `window.__auditHelfer` als Getter definieren, der nie zurueckkehrt
+ * (`get() { for (;;) {} }`). Das `eval` kehrt dann nicht zurueck, `proc.exited`
+ * loest nie auf, und auch das `finally`, das die Browsersitzung schliesst,
+ * wird nie erreicht. `verify url` nimmt beliebige Adressen entgegen.
+ *
+ * **Ueber `COMVENIO_PW_FRIST_MS` einstellbar — damit ein Test sie pruefen
+ * kann.** Eine Frist, die niemand herabsetzen kann, ist nicht belegbar: Der
+ * Testfall muesste zwei Minuten warten. Die Mutationsprobe vom 2026-09-01
+ * meldete GRUEN, als die Frist entfernt wurde — sie war unbelegt.
+ *
+ * 120 s liegen deutlich ueber dem, was ein Audit braucht (gemessen: die
+ * Chromium-Fixture faehrt neun Faelle inklusive Browserstart in rund 20 s)
+ * und deutlich unter dem, was ein Mensch als "haengt" empfindet.
+ */
+const pwFrist = () => Number(process.env.COMVENIO_PW_FRIST_MS) || 120_000;
+
 // Run one playwright-cli subcommand in the shared verify session.
-async function pw(args: string[]): Promise<PwResult> {
+export async function pw(args: string[]): Promise<PwResult> {
   const proc = Bun.spawn(["playwright-cli", PW_SESSION, ...args], {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const code = await proc.exited;
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  return { code, stdout, stderr };
+  const frist = pwFrist();
+
+  // **Das Ergebnis wird gegen die Frist gerennt, nicht nur der Prozess
+  // gekillt.**
+  //
+  // Die erste Fassung setzte einen Wecker, rief `proc.kill()` und wartete
+  // danach weiter auf `proc.exited` und die Streams. Gemessen am 2026-09-01:
+  // Der Aufruf kehrte trotzdem nicht zurueck — `playwright-cli` ist unter
+  // Windows ein `.cmd`-Shim, `kill` trifft die Huelle und nicht den
+  // Node-Prozess darunter, und die Pipes bleiben offen.
+  //
+  // `Promise.race` loest das an der richtigen Stelle: Der Aufrufer wartet
+  // nicht laenger als die Frist, unabhaengig davon, ob der Prozess sich
+  // beenden laesst. Der `kill`-Versuch bleibt — er raeumt auf, wo er kann.
+  const ergebnis = (async (): Promise<PwResult> => {
+    const code = await proc.exited;
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    return { code, stdout, stderr };
+  })();
+
+  let wecker: ReturnType<typeof setTimeout> | undefined;
+  const abbruch = new Promise<PwResult>((loese) => {
+    wecker = setTimeout(() => {
+      try {
+        proc.kill();
+      } catch {
+        // Der Prozess laesst sich nicht beenden — der Aufrufer kehrt
+        // trotzdem zurueck, und das ist der Zweck dieser Frist.
+      }
+      loese({
+        code: 1,
+        stdout: "",
+        stderr:
+          `[abgebrochen nach ${frist / 1000} s: "${args[0]}" kehrte nicht ` +
+          `zurueck. Die untersuchte Seite kann das ausloesen — etwa mit einem ` +
+          `Getter, der nicht zurueckkehrt.]`,
+      });
+    }, frist);
+  });
+
+  try {
+    return await Promise.race([ergebnis, abbruch]);
+  } finally {
+    if (wecker !== undefined) clearTimeout(wecker);
+  }
 }
+
 
 // Pre-flight: is playwright-cli on PATH? (External dependency, no embed.)
 async function hasPlaywrightCli(): Promise<boolean> {
@@ -206,12 +270,33 @@ export const HOMEPAGE_AUDIT_JS = homepageAuditQuelle.slice(
 // Die Farben in einem eigenen Aufruf zu setzen nimmt beiden Skripttexten
 // rund 660 Zeichen ab — und die naechste Regel sprengt sie dann nicht sofort.
 //
+// **Der Setzer prueft, ob er wirklich geschrieben hat.** Eine untersuchte
+// Seite kann die Eigenschaft mit einem Accessor besetzen, dessen Setter den
+// echten Helfersatz verwirft und dessen Getter neun gleichnamige, aber
+// gefaelschte Funktionen liefert (`contrastRatio: () => 21` unterdrueckt
+// jeden Kontrastfehler). Eine Formpruefung faellt darauf herein — sie sieht
+// neun Funktionen. Der Identitaetsvergleich nicht: Gelesen muss dasselbe
+// Objekt sein wie geschrieben.
+//
+// **Was das NICHT loest, ausdruecklich:** Eine Seite, die die Eigenschaft
+// ZWISCHEN Setzer und Audit austauscht, bleibt unentdeckt — es sind zwei
+// getrennte Prozessaufrufe. Und im Main World kontrolliert die Seite ohnehin
+// `getComputedStyle` und die DOM-Prototypen; gegen eine absichtlich
+// feindliche Seite ist der Audit dort grundsaetzlich nicht abzusichern. Die
+// Pruefung faengt Kollisionen und unvollstaendige Manipulation, nicht
+// Provenienz. Belegt in der vierten Pruefrunde (2026-09-01).
+//
 // `window.__auditHelfer` ueberlebt keine Navigation; der Aufruf gehoert
 // deshalb hinter jedes `goto`, nicht einmal an den Anfang.
-export const AUDIT_HELFER_SETZEN = `() => { window.__auditHelfer = (() => {${AUDIT_FARBEN}${AUDIT_DOM}
-  return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle,
+export const AUDIT_HELFER_SETZEN = `() => { const helfer = (() => {${AUDIT_FARBEN}${AUDIT_DOM}
+  return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle, ueberlagern,
     excludedSelector, hasBox, isExcluded, sichtbarerText, effectiveBackground };
-})(); return "ok"; }`;
+})();
+  window.__auditHelfer = helfer;
+  if (window.__auditHelfer !== helfer) {
+    throw new Error('Die Seite hat __auditHelfer besetzt: gelesen wird ein anderes Objekt als geschrieben.');
+  }
+  return "ok"; }`;
 
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
 // text node, computes contrast vs. effective background and counts texts
@@ -223,23 +308,20 @@ export const AUDIT_JS = `() => {
      Seite. Kein Zeilenkommentar hier — der Text wird zu EINER Zeile
      komprimiert, ein // frisst alles dahinter. */
   const h = window.__auditHelfer;
-  const NAMEN = ['toRGB', 'contrastRatio', 'istGrosseSchrift', 'kontrastSchwelle'];
+  const NAMEN = ['toRGB', 'contrastRatio', 'istGrosseSchrift', 'kontrastSchwelle',
+    'ueberlagern', 'effectiveBackground'];
   if (!h || typeof h !== 'object' || NAMEN.some((n) => typeof h[n] !== 'function')) {
     throw new Error('__auditHelfer fehlt oder wurde von der Seite ueberschrieben');
   }
-  const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle } = h;
+  const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle, ueberlagern,
+    effectiveBackground } = h;
   const ratio = contrastRatio;
-  const effBg = (el) => {
-    let e = el;
-    while (e) {
-      const st = getComputedStyle(e);
-      if (st.backgroundImage && st.backgroundImage !== 'none') return null;
-      const bg = toRGB(st.backgroundColor);
-      if (bg && bg.a > 0.5) return bg;
-      e = e.parentElement;
-    }
-    return { r: 255, g: 255, b: 255, a: 1 };
-  };
+  /* Die eigene effBg-Kopie ist am 2026-09-01 entfallen. Sie akzeptierte
+     Alpha ueber 0.5 als Vollfarbe, waehrend der Homepage-Helfer erst ab 0.95
+     akzeptierte — dieselbe Seite bekam je nach Verify-Pfad gegenteilige
+     Kontrastbefunde. Beide nehmen jetzt denselben Helfer, der teiltransparente
+     Schichten komponiert statt sie an einer Schwelle zu verwerfen. */
+  const effBg = effectiveBackground;
   const fails = []; let invisible = 0; let checked = 0; let gradientSkipped = 0;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();
@@ -254,7 +336,7 @@ export const AUDIT_JS = `() => {
     const fg = toRGB(st.color); if (!fg) continue;
     const bg = effBg(el);
     if (!bg) { gradientSkipped++; continue; }
-    const rt = ratio(fg, bg); checked++;
+    const rt = ratio(ueberlagern(fg, bg, op), bg); checked++;
     const size = parseFloat(st.fontSize);
     const isLarge = istGrosseSchrift(size, parseInt(st.fontWeight) || 400);
     if (rt < kontrastSchwelle(isLarge)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });

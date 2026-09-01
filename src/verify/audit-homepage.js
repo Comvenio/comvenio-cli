@@ -51,13 +51,15 @@
   let checkedTexts = 0;
   const seen = new Set();
     const h = window.__auditHelfer;
-  const NAMEN = ['toRGB', 'contrastRatio', 'istGrosseSchrift', 'kontrastSchwelle',
+  const NAMEN = ['toRGB', 'contrastRatio', 'istGrosseSchrift', 'kontrastSchwelle', 'ueberlagern',
     'hasBox', 'isExcluded', 'sichtbarerText', 'effectiveBackground'];
-  if (!h || typeof h !== 'object' || NAMEN.some((n) => typeof h[n] !== 'function')) {
+  if (!h || typeof h !== 'object' || NAMEN.some((n) => typeof h[n] !== 'function')
+      || typeof h.excludedSelector !== 'string') {
     throw new Error('__auditHelfer fehlt oder wurde von der Seite ueberschrieben');
   }
   const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle,
-    excludedSelector, hasBox, isExcluded, sichtbarerText, effectiveBackground } = h;
+    ueberlagern, excludedSelector, hasBox, isExcluded, sichtbarerText,
+    effectiveBackground } = h;
         const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
     const rootText = sichtbarerText(root);
   const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
@@ -102,7 +104,7 @@
       });
       continue;
     }
-    const ratio = contrastRatio(foreground, background);
+    const ratio = contrastRatio(ueberlagern(foreground, background, opacity), background);
     const size = Number.parseFloat(style.fontSize);
     const weight = Number.parseInt(style.fontWeight, 10) || 400;
     const large = istGrosseSchrift(size, weight);

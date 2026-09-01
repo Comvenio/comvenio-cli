@@ -39,13 +39,23 @@ const sichtbarerText = (w) => {
     return s.join('').replace(/\s+/g, ' ').trim();
   };
 const effectiveBackground = (element) => {
+    const schichten = [];
     let current = element;
     while (current) {
       const style = getComputedStyle(current);
       if (style.backgroundImage && style.backgroundImage !== 'none') return null;
       const color = toRGB(style.backgroundColor);
-      if (color && color.a >= 0.95) return color;
+      if (color && color.a > 0.001) {
+        if (color.a >= 0.999) {
+          let unten = color;
+          for (let i = schichten.length - 1; i >= 0; i--) unten = ueberlagern(schichten[i], unten);
+          return unten;
+        }
+        schichten.push(color);
+      }
       current = current.parentElement;
     }
-    return { r: 255, g: 255, b: 255, a: 1 };
+    let unten = { r: 255, g: 255, b: 255, a: 1 };
+    for (let i = schichten.length - 1; i >= 0; i--) unten = ueberlagern(schichten[i], unten);
+    return unten;
   };

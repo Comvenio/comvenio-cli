@@ -65,12 +65,13 @@ function farbtext(): string {
  */
 function ausDemText() {
   const komprimiert = farbtext().replace(/\s+/g, " ");
-  const bauen = new Function(`${komprimiert} return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle };`);
+  const bauen = new Function(`${komprimiert} return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle, ueberlagern };`);
   return bauen() as {
     toRGB: (v: string | null | undefined) => { r: number; g: number; b: number; a: number } | null;
     contrastRatio: (a: Farbe, b: Farbe) => number;
     istGrosseSchrift: (size: number, weight: number) => boolean;
     kontrastSchwelle: (gross: boolean) => number;
+    ueberlagern: (vorn: Farbe, hinten: Farbe, opazitaet?: number) => Farbe;
   };
 }
 
@@ -437,5 +438,173 @@ describe("§4.1 — die Verdrahtung des Helfer-Aufrufs", () => {
         ).not.toContain(befehl);
       }
     }
+  });
+});
+
+describe("§4.1 — Alpha und Opazitaet im Kontrast", () => {
+  /**
+   * **Der schwerste Befund der vierten Prüfrunde, und er lag im Bestand.**
+   *
+   * `toRGB` bewahrt den Alphakanal, `contrastRatio` rechnete aber nur mit R,
+   * G und B. `rgba(0,0,0,0.1)` auf Weiss ergab damit **21:1** statt nahezu
+   * 1:1 — der Audit liess unlesbaren Text bestehen. Dasselbe galt für
+   * schwarzen Text mit `opacity: 0.2`.
+   *
+   * Vier Prüfrunden übersahen das, weil alle Kontrastproben mit deckenden
+   * Farben rechneten. Die Klasse dahinter: Eine Probe, die eine Eigenschaft
+   * nie benutzt, sagt nichts über sie.
+   */
+  const helfer = ausDemText();
+
+  test("rgba mit niedrigem Alpha ist kein Volltonkontrast", () => {
+    const fastUnsichtbar = { r: 0, g: 0, b: 0, a: 0.1 };
+    const roh = helfer.contrastRatio(fastUnsichtbar, WEISS);
+    const komponiert = helfer.contrastRatio(
+      helfer.ueberlagern(fastUnsichtbar, WEISS),
+      WEISS,
+    );
+
+    // Ohne Komposition rechnet contrastRatio deckendes Schwarz: 21:1.
+    expect(roh).toBeCloseTo(21, 0);
+    // Mit Komposition liegt der Wert unter der Schwelle für normale Schrift.
+    expect(komponiert).toBeLessThan(helfer.kontrastSchwelle(false));
+  });
+
+  test("Element-Opazitaet senkt den Kontrast", () => {
+    // Schwarzer, voll deckender Text — aber das Element steht auf 0.2.
+    const wert = helfer.contrastRatio(
+      helfer.ueberlagern(SCHWARZ, WEISS, 0.2),
+      WEISS,
+    );
+    expect(helfer.contrastRatio(SCHWARZ, WEISS)).toBeCloseTo(21, 0);
+    expect(wert).toBeLessThan(helfer.kontrastSchwelle(false));
+  });
+
+  test("deckende Farben bleiben unveraendert", () => {
+    // Die Gegenprobe: Ohne Alpha darf sich nichts aendern, sonst waere die
+    // Reparatur eine Verschlechterung für den Normalfall.
+    expect(helfer.ueberlagern(SCHWARZ, WEISS)).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+    expect(helfer.contrastRatio(helfer.ueberlagern(SCHWARZ, WEISS), WEISS)).toBeCloseTo(21, 4);
+  });
+
+  test("halbdurchsichtiges Schwarz liegt zwischen den Extremen", () => {
+    const halb = helfer.ueberlagern({ r: 0, g: 0, b: 0, a: 0.5 }, WEISS);
+    // 50 Prozent Schwarz auf Weiss ergibt mittleres Grau.
+    expect(halb.r).toBeCloseTo(127.5, 1);
+    const wert = helfer.contrastRatio(halb, WEISS);
+    expect(wert).toBeGreaterThan(1);
+    expect(wert).toBeLessThan(21);
+  });
+
+  test("beide Audits nehmen dieselbe Hintergrundrechnung", () => {
+    // **Die Divergenz, die der Prüfer fand:** Der generische Audit
+    // akzeptierte Alpha > 0.5 als Vollfarbe, der Homepage-Helfer erst
+    // >= 0.95. Dieselbe Seite bekam je nach Verify-Pfad gegenteilige
+    // Kontrastbefunde. Der generische hat keine eigene Fassung mehr.
+    const quelle = readFileSync(join(HIER, "../src/commands/verify.ts"), "utf8");
+    expect(
+      quelle,
+      "Der generische Audit traegt wieder eine eigene Hintergrundrechnung.",
+    ).toContain("const effBg = effectiveBackground;");
+    expect(quelle).not.toContain("bg.a > 0.5");
+  });
+});
+
+describe("§4.1 — Helfer: gepruefte, benutzte und gelieferte Namen", () => {
+  /**
+   * **Der Fehler, den dieser Riegel faengt, ist am 2026-09-01 passiert.**
+   *
+   * `ueberlagern` kam neu dazu. Die Formpruefung wurde erweitert, die
+   * Destrukturierung nicht — und der Homepage-Audit starb im Browser mit
+   * `ReferenceError: ueberlagern is not defined`. Sechs Fixture-Faelle
+   * fielen; die Unit-Tests blieben gruen, weil sie die Funktionen direkt aus
+   * dem Farbtext bauen und den Helfer-Transport gar nicht benutzen.
+   *
+   * Umgekehrt war es beim generischen Audit: Er destrukturierte
+   * `effectiveBackground`, prueft es aber nicht — eine Seite haette genau
+   * diese Funktion faelschen koennen, ohne die Formpruefung zu stoeren.
+   *
+   * Drei Listen muessen deckungsgleich sein: was der Setzer LIEFERT, was ein
+   * Audit PRUEFT, und was er BENUTZT.
+   */
+  const quelle = () => readFileSync(join(HIER, "../src/commands/verify.ts"), "utf8");
+
+  /** Die Namen aus dem `return { … }` des Setzers. */
+  function geliefert(): string[] {
+    const q = quelle();
+    const ab = q.indexOf("return { toRGB");
+    expect(ab, "der Setzer liefert kein Objekt mehr").toBeGreaterThan(-1);
+    const bis = q.indexOf("}", ab);
+    return q
+      .slice(ab + "return {".length, bis)
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+  }
+
+  /** Aus einem Audit-Rumpf: die geprueften und die destrukturierten Namen. */
+  function ausRumpf(text: string) {
+    const i = text.indexOf("const NAMEN = [");
+    expect(i, "keine Formpruefung im Rumpf").toBeGreaterThan(-1);
+    const geprueft = text
+      .slice(text.indexOf("[", i) + 1, text.indexOf("]", i))
+      .split(",")
+      .map((n) => n.trim().replace(/['"]/g, ""))
+      .filter(Boolean);
+
+    // Nicht jeder Helfer ist eine Funktion: `excludedSelector` ist ein
+    // String und wird deshalb einzeln geprueft, nicht ueber die NAMEN-Liste.
+    // Der Riegel muss beide Schreibweisen sehen, sonst meldet er einen
+    // Fehler, wo die Pruefung nur anders aussieht.
+    for (const m of text.matchAll(/typeof h\.(\w+) !==/g)) {
+      if (m[1] && !geprueft.includes(m[1])) geprueft.push(m[1]);
+    }
+
+    const d = text.indexOf("const {", i);
+    expect(d, "keine Destrukturierung nach der Formpruefung").toBeGreaterThan(-1);
+    const benutzt = text
+      .slice(d + "const {".length, text.indexOf("} = h;", d))
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+
+    return { geprueft, benutzt };
+  }
+
+  const rumpfVon = (datei: string, marke: string) => {
+    const t = readFileSync(join(HIER, "../src/verify/", datei), "utf8");
+    return t.slice(t.indexOf(marke) + marke.length);
+  };
+
+  test.each([
+    ["generischer Audit", () => {
+      const q = quelle();
+      const m = "export const AUDIT_JS = `";
+      return q.slice(q.indexOf(m) + m.length, q.indexOf("`;", q.indexOf(m)));
+    }],
+    ["Homepage-Audit", () => rumpfVon("audit-homepage.js", "/* AUDIT-HOMEPAGE */")],
+  ])("%s: jeder benutzte Helfer wird geprueft und geliefert", (_name, hol) => {
+    const { geprueft, benutzt } = ausRumpf(hol());
+    const liefert = geliefert();
+
+    // Wer einen Helfer BENUTZT, muss ihn PRUEFEN — sonst kann eine Seite
+    // genau diesen faelschen, ohne aufzufallen.
+    expect(
+      benutzt.filter((n) => !geprueft.includes(n)),
+      "Diese Helfer werden destrukturiert, aber nicht auf ihre Form geprueft.",
+    ).toEqual([]);
+
+    // Und wer einen PRUEFT, muss ihn auch bekommen — sonst wirft der Audit
+    // im Browser, waehrend die Unit-Tests gruen bleiben.
+    expect(
+      geprueft.filter((n) => !liefert.includes(n)),
+      "Diese Helfer werden geprueft, aber der Setzer liefert sie nicht.",
+    ).toEqual([]);
+
+    expect(
+      benutzt.filter((n) => !liefert.includes(n)),
+      "Diese Helfer werden benutzt, aber der Setzer liefert sie nicht — " +
+        "genau das ergab am 2026-09-01 ein ReferenceError im Browser.",
+    ).toEqual([]);
   });
 });
