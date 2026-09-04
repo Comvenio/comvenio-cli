@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 // `Function.toString()`: Gegen einen TEXT kann die Minifizierung nichts
 // ausrichten, gegen serialisierten Code schon (siehe Kopf der Datei).
 import auditFarbenQuelle from "../verify/audit-farben.js" with { type: "text" };
+import homepageAuditQuelle from "../verify/audit-homepage.js" with { type: "text" };
+import auditDomQuelle from "../verify/audit-dom.js" with { type: "text" };
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
@@ -55,17 +57,81 @@ function frontendBase(env: string, override?: string): string {
 
 type PwResult = { code: number; stdout: string; stderr: string };
 
+/**
+ * Wie lange ein einzelner `playwright-cli`-Aufruf laufen darf.
+ *
+ * **Ohne Frist haengt der ganze Verify-Lauf unbegrenzt.** Die vierte
+ * Pruefrunde hat den Fall benannt: Eine untersuchte Seite kann
+ * `window.__auditHelfer` als Getter definieren, der nie zurueckkehrt
+ * (`get() { for (;;) {} }`). Das `eval` kehrt dann nicht zurueck, `proc.exited`
+ * loest nie auf, und auch das `finally`, das die Browsersitzung schliesst,
+ * wird nie erreicht. `verify url` nimmt beliebige Adressen entgegen.
+ *
+ * **Ueber `COMVENIO_PW_FRIST_MS` einstellbar — damit ein Test sie pruefen
+ * kann.** Eine Frist, die niemand herabsetzen kann, ist nicht belegbar: Der
+ * Testfall muesste zwei Minuten warten. Die Mutationsprobe vom 2026-09-01
+ * meldete GRUEN, als die Frist entfernt wurde — sie war unbelegt.
+ *
+ * 120 s liegen deutlich ueber dem, was ein Audit braucht (gemessen: die
+ * Chromium-Fixture faehrt neun Faelle inklusive Browserstart in rund 20 s)
+ * und deutlich unter dem, was ein Mensch als "haengt" empfindet.
+ */
+const pwFrist = () => Number(process.env.COMVENIO_PW_FRIST_MS) || 120_000;
+
 // Run one playwright-cli subcommand in the shared verify session.
-async function pw(args: string[]): Promise<PwResult> {
+export async function pw(args: string[]): Promise<PwResult> {
   const proc = Bun.spawn(["playwright-cli", PW_SESSION, ...args], {
     stdout: "pipe",
     stderr: "pipe",
   });
-  const code = await proc.exited;
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  return { code, stdout, stderr };
+  const frist = pwFrist();
+
+  // **Das Ergebnis wird gegen die Frist gerennt, nicht nur der Prozess
+  // gekillt.**
+  //
+  // Die erste Fassung setzte einen Wecker, rief `proc.kill()` und wartete
+  // danach weiter auf `proc.exited` und die Streams. Gemessen am 2026-09-01:
+  // Der Aufruf kehrte trotzdem nicht zurueck — `playwright-cli` ist unter
+  // Windows ein `.cmd`-Shim, `kill` trifft die Huelle und nicht den
+  // Node-Prozess darunter, und die Pipes bleiben offen.
+  //
+  // `Promise.race` loest das an der richtigen Stelle: Der Aufrufer wartet
+  // nicht laenger als die Frist, unabhaengig davon, ob der Prozess sich
+  // beenden laesst. Der `kill`-Versuch bleibt — er raeumt auf, wo er kann.
+  const ergebnis = (async (): Promise<PwResult> => {
+    const code = await proc.exited;
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    return { code, stdout, stderr };
+  })();
+
+  let wecker: ReturnType<typeof setTimeout> | undefined;
+  const abbruch = new Promise<PwResult>((loese) => {
+    wecker = setTimeout(() => {
+      try {
+        proc.kill();
+      } catch {
+        // Der Prozess laesst sich nicht beenden — der Aufrufer kehrt
+        // trotzdem zurueck, und das ist der Zweck dieser Frist.
+      }
+      loese({
+        code: 1,
+        stdout: "",
+        stderr:
+          `[abgebrochen nach ${frist / 1000} s: "${args[0]}" kehrte nicht ` +
+          `zurueck. Die untersuchte Seite kann das ausloesen — etwa mit einem ` +
+          `Getter, der nicht zurueckkehrt.]`,
+      });
+    }, frist);
+  });
+
+  try {
+    return await Promise.race([ergebnis, abbruch]);
+  } finally {
+    if (wecker !== undefined) clearTimeout(wecker);
+  }
 }
+
 
 // Pre-flight: is playwright-cli on PATH? (External dependency, no embed.)
 async function hasPlaywrightCli(): Promise<boolean> {
@@ -163,27 +229,99 @@ type HomepageVerifyReport = {
 // Die Farbrechnung kommt aus `verify/audit-farben.js` und wird ab der
 // Marke uebernommen. Alles davor sind Kommentare der Datei und gehoert
 // nicht in den Browser.
-const AUDIT_FARBEN = auditFarbenQuelle.slice(
+// Exportiert, damit Tests GENAU diesen Wert pruefen statt ihn aus dem
+// Quelltext zu rekonstruieren. Am 2026-08-31 lagen beide Wege 6 Zeichen
+// auseinander, und nur der rekonstruierte war gueltiges JavaScript.
+export const AUDIT_FARBEN = auditFarbenQuelle.slice(
   auditFarbenQuelle.indexOf("/* AUDIT-FARBEN */") + "/* AUDIT-FARBEN */".length,
 );
+
+// **Der Homepage-Audit kommt aus einer DATEI, nicht aus einem Literal.**
+//
+// Ein Template-Literal wertet Escape-Sequenzen aus. Der Rumpf traegt Regexe
+// mit Backslash; bis zum 2026-08-31 wurde daraus im gesendeten Text
+// `/s+/g` statt `/\s+/g` und `//+$/` statt `/\/+$/` — letzteres ein
+// Zeilenkommentar, der den Rest der Zeile frass. Der Text war damit KEIN
+// gueltiges JavaScript, `playwright-cli` meldete
+// "Passed function is not well-serializable!" und dabei Exit 0.
+//
+// Ein Dateiinhalt durchlaeuft diese Auswertung nicht. `verify-audit-regeln`
+// haelt fest, dass in keinem Skripttext-Literal ein Backslash steht.
+const DOM_MARKE = "/* AUDIT-DOM */";
+export const AUDIT_DOM = auditDomQuelle.slice(
+  auditDomQuelle.indexOf(DOM_MARKE) + DOM_MARKE.length,
+);
+
+const HOMEPAGE_MARKE = "/* AUDIT-HOMEPAGE */";
+export const HOMEPAGE_AUDIT_JS = homepageAuditQuelle.slice(
+  homepageAuditQuelle.indexOf(HOMEPAGE_MARKE) + HOMEPAGE_MARKE.length,
+);
+
+// **Die Farbrechnung geht in einem EIGENEN Aufruf an die Seite.**
+//
+// Der Skripttext ist ein Kommandozeilen-Argument, und `playwright-cli` ist
+// ein `.cmd`-Shim: Jeder Aufruf laeuft durch `cmd.exe`. Gemessen auf dem
+// Produktionsweg (`Bun.spawn`) liegt die Grenze bei rund 7950 Zeichen —
+// darueber endet der Aufruf mit "Die Befehlszeile ist zu lang", und der
+// Verify-Lauf bricht mit Exit 2 ab.
+//
+// Der Homepage-Audit lag am 2026-08-31 bei 8406 Zeichen und war damit
+// gebrochen; vor dem Umbau waren es 7920, also 30 Zeichen unter der Grenze.
+// Die Farben in einem eigenen Aufruf zu setzen nimmt beiden Skripttexten
+// rund 660 Zeichen ab — und die naechste Regel sprengt sie dann nicht sofort.
+//
+// **Der Setzer prueft, ob er wirklich geschrieben hat.** Eine untersuchte
+// Seite kann die Eigenschaft mit einem Accessor besetzen, dessen Setter den
+// echten Helfersatz verwirft und dessen Getter neun gleichnamige, aber
+// gefaelschte Funktionen liefert (`contrastRatio: () => 21` unterdrueckt
+// jeden Kontrastfehler). Eine Formpruefung faellt darauf herein — sie sieht
+// neun Funktionen. Der Identitaetsvergleich nicht: Gelesen muss dasselbe
+// Objekt sein wie geschrieben.
+//
+// **Was das NICHT loest, ausdruecklich:** Eine Seite, die die Eigenschaft
+// ZWISCHEN Setzer und Audit austauscht, bleibt unentdeckt — es sind zwei
+// getrennte Prozessaufrufe. Und im Main World kontrolliert die Seite ohnehin
+// `getComputedStyle` und die DOM-Prototypen; gegen eine absichtlich
+// feindliche Seite ist der Audit dort grundsaetzlich nicht abzusichern. Die
+// Pruefung faengt Kollisionen und unvollstaendige Manipulation, nicht
+// Provenienz. Belegt in der vierten Pruefrunde (2026-09-01).
+//
+// `window.__auditHelfer` ueberlebt keine Navigation; der Aufruf gehoert
+// deshalb hinter jedes `goto`, nicht einmal an den Anfang.
+export const AUDIT_HELFER_SETZEN = `() => { const helfer = (() => {${AUDIT_FARBEN}${AUDIT_DOM}
+  return { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle, ueberlagern,
+    excludedSelector, hasBox, isExcluded, sichtbarerText, effectiveBackground };
+})();
+  window.__auditHelfer = helfer;
+  if (window.__auditHelfer !== helfer) {
+    throw new Error('Die Seite hat __auditHelfer besetzt: gelesen wird ein anderes Objekt als geschrieben.');
+  }
+  return "ok"; }`;
 
 // WCAG contrast + visibility audit (Lastenheft 08 G6 / AK-06): walks every
 // text node, computes contrast vs. effective background and counts texts
 // stuck at opacity<0.15 (broken reveal animations). Runs inside the page.
-const AUDIT_JS = `() => {
-  ${AUDIT_FARBEN}
+export const AUDIT_JS = `() => {
+  /* Die Helfer werden geprueft, nicht angenommen: Die untersuchte Seite kann
+     window.__auditHelfer definieren, einfrieren oder ueberschreiben. Ein Wurf
+     landet als Infrastrukturfehler im Aufrufer, nicht als Befund ueber die
+     Seite. Kein Zeilenkommentar hier — der Text wird zu EINER Zeile
+     komprimiert, ein // frisst alles dahinter. */
+  const h = window.__auditHelfer;
+  const NAMEN = ['toRGB', 'contrastRatio', 'istGrosseSchrift', 'kontrastSchwelle',
+    'ueberlagern', 'effectiveBackground'];
+  if (!h || typeof h !== 'object' || NAMEN.some((n) => typeof h[n] !== 'function')) {
+    throw new Error('__auditHelfer fehlt oder wurde von der Seite ueberschrieben');
+  }
+  const { toRGB, contrastRatio, istGrosseSchrift, kontrastSchwelle, ueberlagern,
+    effectiveBackground } = h;
   const ratio = contrastRatio;
-  const effBg = (el) => {
-    let e = el;
-    while (e) {
-      const st = getComputedStyle(e);
-      if (st.backgroundImage && st.backgroundImage !== 'none') return null;
-      const bg = toRGB(st.backgroundColor);
-      if (bg && bg.a > 0.5) return bg;
-      e = e.parentElement;
-    }
-    return { r: 255, g: 255, b: 255, a: 1 };
-  };
+  /* Die eigene effBg-Kopie ist am 2026-09-01 entfallen. Sie akzeptierte
+     Alpha ueber 0.5 als Vollfarbe, waehrend der Homepage-Helfer erst ab 0.95
+     akzeptierte — dieselbe Seite bekam je nach Verify-Pfad gegenteilige
+     Kontrastbefunde. Beide nehmen jetzt denselben Helfer, der teiltransparente
+     Schichten komponiert statt sie an einer Schwelle zu verwerfen. */
+  const effBg = effectiveBackground;
   const fails = []; let invisible = 0; let checked = 0; let gradientSkipped = 0;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();
@@ -198,7 +336,7 @@ const AUDIT_JS = `() => {
     const fg = toRGB(st.color); if (!fg) continue;
     const bg = effBg(el);
     if (!bg) { gradientSkipped++; continue; }
-    const rt = ratio(fg, bg); checked++;
+    const rt = ratio(ueberlagern(fg, bg, op), bg); checked++;
     const size = parseFloat(st.fontSize);
     const isLarge = istGrosseSchrift(size, parseInt(st.fontWeight) || 400);
     if (rt < kontrastSchwelle(isLarge)) fails.push({ text: txt.slice(0, 40), ratio: Math.round(rt * 10) / 10, fg: st.color, bg: 'rgb(' + bg.r + ',' + bg.g + ',' + bg.b + ')', size: Math.round(size) });
@@ -207,7 +345,7 @@ const AUDIT_JS = `() => {
   return JSON.stringify({ checked: checked, fail_count: fails.length, invisible_texts: invisible, gradient_skipped: gradientSkipped, worst: fails.slice(0, 15) });
 }`;
 
-const SCROLL_SETTLE_JS = `async () => {
+export const SCROLL_SETTLE_JS = `async () => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const step = Math.max(320, Math.floor(window.innerHeight * 0.75));
   let lastHeight = 0;
@@ -249,205 +387,7 @@ const SCROLL_SETTLE_JS = `async () => {
 // `unverifiable_background`. Genau der Fall, den §4.1 des Lastenhefts
 // ausschliessen soll. Gefunden von einer Fremdpruefung; nicht als
 // Unit-Test pruefbar, weil die Traversierung ein echtes Layout braucht.
-const HOMEPAGE_AUDIT_JS = `() => {
-  const failures = [];
-  const unverifiable = [];
-  let checkedTexts = 0;
-  const seen = new Set();
-  const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
-  ${AUDIT_FARBEN}
-  const isExcluded = (element) => {
-    if (element.closest(excludedSelector)) return true;
-    let current = element;
-    while (current) {
-      if (getComputedStyle(current).display === 'none') return true;
-      current = current.parentElement;
-    }
-    return false;
-  };
-  const hasBox = (element) => {
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-  };
-  const effectiveBackground = (element) => {
-    let current = element;
-    while (current) {
-      const style = getComputedStyle(current);
-      if (style.backgroundImage && style.backgroundImage !== 'none') return null;
-      const color = toRGB(style.backgroundColor);
-      if (color && color.a >= 0.95) return color;
-      current = current.parentElement;
-    }
-    return { r: 255, g: 255, b: 255, a: 1 };
-  };
-  const root = document.querySelector('main') || document.querySelector('.pub-site-root') || document.body;
-  const sichtbarerText = (wurzel) => {
-    const gehen = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
-    const gesammelt = [];
-    while (gehen.nextNode()) {
-      const knoten = gehen.currentNode;
-      const eltern = knoten.parentElement;
-      if (!eltern || isExcluded(eltern) || !hasBox(eltern)) continue;
-      gesammelt.push(knoten.textContent || '');
-    }
-    return gesammelt.join('').replace(/\s+/g, ' ').trim();
-  };
-  const rootText = sichtbarerText(root);
-  const visibleMedia = [...root.querySelectorAll('img,video,canvas')].some((element) => !isExcluded(element) && hasBox(element));
-  if (rootText.length < 20 && !visibleMedia) {
-    failures.push({ kind: 'empty_main', message: 'Die sichtbare Hauptregion enthaelt keinen ausreichenden Inhalt.', details: { text_length: rootText.length } });
-  }
-  const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-  if (overflow > 1) {
-    failures.push({ kind: 'horizontal_overflow', message: 'Die Seite laeuft horizontal aus dem Viewport.', details: { overflow_px: overflow } });
-  }
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
-    if (text.length < 2) continue;
-    const element = node.parentElement;
-    if (!element || seen.has(element) || isExcluded(element) || !hasBox(element)) continue;
-    seen.add(element);
-    const style = getComputedStyle(element);
-    let opacity = 1;
-    let current = element;
-    while (current) {
-      opacity *= Number.parseFloat(getComputedStyle(current).opacity || '1');
-      current = current.parentElement;
-    }
-    if (style.visibility === 'hidden' || opacity <= 0.01) {
-      failures.push({
-        kind: 'invisible_text',
-        message: 'Semantischer Text ist nach Scroll-Settling unsichtbar.',
-        details: { text: text.slice(0, 80), visibility: style.visibility, opacity: Math.round(opacity * 1000) / 1000 },
-      });
-      continue;
-    }
-    const foreground = toRGB(style.color);
-    if (!foreground) continue;
-    const background = effectiveBackground(element);
-    if (!background) {
-      unverifiable.push({
-        kind: 'unverifiable_background',
-        message: 'Text liegt auf einem Bild-, Video- oder Gradient-Hintergrund.',
-        details: { text: text.slice(0, 80) },
-      });
-      continue;
-    }
-    const ratio = contrastRatio(foreground, background);
-    const size = Number.parseFloat(style.fontSize);
-    const weight = Number.parseInt(style.fontWeight, 10) || 400;
-    const large = istGrosseSchrift(size, weight);
-    checkedTexts += 1;
-    if (ratio < kontrastSchwelle(large)) {
-      failures.push({
-        kind: 'contrast',
-        message: 'Der Textkontrast unterschreitet WCAG AA.',
-        details: { text: text.slice(0, 80), ratio: Math.round(ratio * 100) / 100, font_size: size, font_weight: weight },
-      });
-    }
-  }
-  const legalFooter = document.querySelector('[data-public-legal-footer]');
-  const legalFooterStyle = legalFooter ? getComputedStyle(legalFooter) : null;
-  const legalFooterVisible = !!legalFooter && hasBox(legalFooter) &&
-    legalFooterStyle?.display !== 'none' && legalFooterStyle?.visibility !== 'hidden' &&
-    Number.parseFloat(legalFooterStyle?.opacity || '1') > 0.01;
-  if (!legalFooterVisible) {
-    failures.push({
-      kind: 'missing_legal_footer',
-      message: 'Der unveraenderbare Rechtsfooter fehlt.',
-    });
-  } else {
-    const requiredLinks = {
-      imprint: null,
-      privacy: 'https://www.comvenio.app/datenschutz',
-      terms: 'https://www.comvenio.app/agb',
-      powered_by: 'https://www.comvenio.app',
-    };
-    for (const [key, expected] of Object.entries(requiredLinks)) {
-      const link = legalFooter.querySelector('[data-public-legal-link="' + key + '"]');
-      const linkStyle = link ? getComputedStyle(link) : null;
-      const linkVisible = !!link && hasBox(link) &&
-        linkStyle?.display !== 'none' && linkStyle?.visibility !== 'hidden' &&
-        linkStyle?.pointerEvents !== 'none' &&
-        Number.parseFloat(linkStyle?.opacity || '1') > 0.01;
-      if (!linkVisible) {
-        failures.push({
-          kind: 'invalid_legal_footer_link',
-          message: 'Pflichtlink im Rechtsfooter fehlt oder ist nicht bedienbar.',
-          details: { link: key },
-        });
-        continue;
-      }
-      const href = new URL(link.getAttribute('href') || '', location.href);
-      const normalized = href.origin + href.pathname.replace(/\/+$/, '');
-      const valid = key === 'imprint'
-        ? href.pathname.replace(/\/+$/, '') === '/impressum' || href.searchParams.get('page') === 'impressum'
-        : normalized === expected;
-      if (!valid) {
-        failures.push({
-          kind: 'invalid_legal_footer_link',
-          message: 'Pflichtlink im Rechtsfooter zeigt auf ein falsches Ziel.',
-          details: { link: key, href: href.toString(), expected },
-        });
-      }
-      link.scrollIntoView({ block: 'center', inline: 'nearest' });
-      const rect = link.getBoundingClientRect();
-      const topElement = document.elementFromPoint(
-        Math.min(window.innerWidth - 1, Math.max(0, rect.left + rect.width / 2)),
-        Math.min(window.innerHeight - 1, Math.max(0, rect.top + rect.height / 2)),
-      );
-      if (!topElement || (topElement !== link && !link.contains(topElement))) {
-        failures.push({
-          kind: 'invalid_legal_footer_link',
-          message: 'Pflichtlink im Rechtsfooter wird von einem anderen Element verdeckt.',
-          details: {
-            link: key,
-            occluded_by: topElement ? topElement.tagName.toLowerCase() : null,
-          },
-        });
-      }
-    }
-  }
 
-  const imprintRequested =
-    location.pathname.replace(/\/+$/, '') === '/impressum' ||
-    new URLSearchParams(location.search).get('page') === 'impressum';
-  if (imprintRequested) {
-    const imprint = document.querySelector('[data-public-imprint-page]');
-    if (!imprint) {
-      failures.push({
-        kind: 'imprint_unavailable',
-        message: 'Die separate oeffentliche Impressum-Seite ist nicht verfuegbar.',
-      });
-    } else {
-      const imprintStatus = imprint.getAttribute('data-public-imprint-status');
-      if (imprintStatus !== 'ready') {
-        failures.push({
-          kind: 'imprint_unavailable',
-          message: 'Die Vereinsdaten des Impressums konnten nicht geladen werden.',
-          details: { status: imprintStatus },
-        });
-      }
-      if (imprint.getAttribute('data-public-imprint-contact') !== 'present') {
-        failures.push({
-          kind: 'invalid_imprint_content',
-          message: 'Im Impressum fehlen die oeffentlichen Kontaktdaten des Vereins.',
-        });
-      }
-      const imprintText = (imprint.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!imprintText.includes('Impressum') || !imprintText.includes('Verantwortlich für die Inhalte')) {
-        failures.push({
-          kind: 'invalid_imprint_content',
-          message: 'Das Impressum enthaelt nicht den Pflichtinhalt zur Vereinsverantwortung.',
-          details: { text_length: imprintText.length },
-        });
-      }
-    }
-  }
-  return JSON.stringify({ checked_texts: checkedTexts, failures, unverifiable });
-}`;
 
 function parseEvalJson<T>(stdout: string): T | undefined {
   const lines = stdout.split("\n").map((line) => line.trim()).filter(Boolean).reverse();
@@ -526,19 +466,45 @@ async function renderBundle(
     snapshotTaken = s.code === 0;
   }
   let audit: AuditResult | undefined;
-  if (opts.audit) {
-    // Windows argv mangles multi-line args — pass as a single line.
-    const a = await pw(["eval", AUDIT_JS.replace(/\s+/g, " ")]);
-    const m = a.stdout.match(/"\{.*\}"/s);
-    if (m) {
+  try {
+    if (opts.audit) {
+      // Windows argv mangles multi-line args — pass as a single line.
+      const farbenGesetzt = await pw(["eval", AUDIT_HELFER_SETZEN.replace(/\s+/g, " ")]);
+      const farbFehler = pwFailure(farbenGesetzt, "Farbrechnung setzen");
+      if (farbFehler) throw new Error(farbFehler);
+
+      const a = await pw(["eval", AUDIT_JS.replace(/\s+/g, " ")]);
+
+      // **Der Exit-Code wird geprueft, bevor nach JSON gesucht wird.**
+      // Bis zum 2026-08-31 stand hier nur die Suche: Ein gescheiterter Audit
+      // liess `audit` undefiniert, und der Datensatz ging trotzdem als
+      // normales Ergebnis zurueck — "kein Befund" und "Audit kaputt" sahen
+      // gleich aus. Die Homepage-Matrix machte es ueber `pwFailure` schon
+      // richtig; nur dieser Pfad nicht.
+      const auditFehler = pwFailure(a, "Audit ausfuehren");
+      if (auditFehler) throw new Error(auditFehler);
+
+      const m = a.stdout.match(/"\{.*\}"/s);
+      if (!m) {
+        throw new Error(
+          "Audit lieferte kein JSON-Ergebnis. Ausgabe: " +
+            a.stdout.replace(/\s+/g, " ").slice(0, 300),
+        );
+      }
       try {
         audit = JSON.parse(JSON.parse(m[0])) as AuditResult;
       } catch (e) {
-        audit = undefined;
+        throw new Error(
+          "Audit-Ergebnis ist kein gueltiges JSON: " + (e as Error).message,
+        );
       }
     }
+  } finally {
+    // **`close` gehoert in `finally`.** Ein Fehler beim Setzer oder beim
+    // Audit liesse die geteilte Browsersitzung sonst offen — der naechste
+    // Lauf trifft dann auf ein Fenster, das ihm nicht gehoert.
+    await pw(["close"]);
   }
-  await pw(["close"]);
 
   return {
     url,
@@ -658,6 +624,9 @@ async function verifyHomepageMatrix(
         }
 
         if (opts.audit) {
+          const farbenGesetzt = await pw(["eval", AUDIT_HELFER_SETZEN.replace(/\s+/g, " ")]);
+          const farbFehler = pwFailure(farbenGesetzt, "Farbrechnung setzen");
+          if (farbFehler) throw new Error(farbFehler);
           const auditResult = await pw(["eval", HOMEPAGE_AUDIT_JS.replace(/\s+/g, " ")]);
           const auditFailure = pwFailure(auditResult, "DOM-Audit");
           if (auditFailure) throw new Error(auditFailure);
