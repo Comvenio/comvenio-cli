@@ -107,9 +107,11 @@
     "design_snapshot_version": 1,
     "optional_top_level_fields": [
       "design_snapshot_version",
-      "design_settings"
+      "design_settings",
+      "ttl_hours"
     ],
-    "cli": "comvenio homepage preview --file home.json --design-file design_settings.json",
+    "ttl_hours": "optional integer 1-24; omitted means 30 minutes",
+    "cli": "comvenio homepage preview --file home.json --design-file design_settings.json --ttl-hours 24",
     "legacy_without_design_snapshot": "readable_until_ttl_with_live_design_warning"
   },
   "templates": [

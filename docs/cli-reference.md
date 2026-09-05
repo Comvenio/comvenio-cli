@@ -100,7 +100,7 @@ Mehrteilige Strukturen werden über `--file <payload.json>` übergeben. Die jewe
 
 ```bash
 comvenio news preview --file news.json --json
-comvenio homepage preview --file homepage.json --json
+comvenio homepage preview --file homepage.json --ttl-hours 24 --json
 comvenio tournament preview <id> --json
 comvenio verify event <event-id> --json
 ```

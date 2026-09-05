@@ -34,10 +34,28 @@ type Opts = {
   club?: string;
   file?: string;
   designFile?: string;
+  ttlHours?: string;
   clear?: boolean;
   public?: boolean;
   open?: boolean;
 };
+
+export function parsePreviewTtlHours(value?: string): number | undefined {
+  if (value === undefined) return undefined;
+  const hours = Number(value);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 24) {
+    throw new Error("--ttl-hours muss eine ganze Zahl zwischen 1 und 24 sein.");
+  }
+  return hours;
+}
+
+export function addPreviewTtl(
+  body: Record<string, unknown>,
+  value?: string,
+): void {
+  const ttlHours = parsePreviewTtlHours(value);
+  if (ttlHours !== undefined) body.ttl_hours = ttlHours;
+}
 
 /**
  * Open a URL in the platform default browser (best-effort). Windows uses
@@ -77,6 +95,7 @@ export function registerHomepageCommands(cli: CAC): void {
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "home.json: vom Agenten komponierte Struktur (preview/apply)")
     .option("--design-file <path>", "preview: design_settings-JSON als versionierter No-Write-Snapshot")
+    .option("--ttl-hours <hours>", "preview: Gueltigkeit in vollen Stunden (1-24; Standard: 30 Minuten)")
     .option("--clear", "apply: bestehende Homepage ersetzen (clear_existing)")
     .option("--public", "show: nur oeffentliche Struktur lesen")
     .option("--open", "preview: die Vorschau-URL im Standard-Browser oeffnen")
@@ -135,6 +154,7 @@ export function registerHomepageCommands(cli: CAC): void {
             body.design_snapshot_version = 1;
             body.design_settings = designSettings;
           }
+          addPreviewTtl(body, opts.ttlHours);
           const res = await client.post<HomePreviewResponse>(
             "club",
             `/home-config/${clubId}/preview`,

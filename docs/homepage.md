@@ -249,6 +249,7 @@ presignte URL abläuft.
 comvenio homepage preview \
   --file home.json \
   --design-file design-settings.json \
+  --ttl-hours 24 \
   --open \
   --json
 
@@ -258,6 +259,10 @@ comvenio verify homepage \
   --audit \
   --json
 ```
+
+Die Preview gilt standardmäßig 30 Minuten. Mit `--ttl-hours <1-24>` übermittelt
+das CLI eine längere, serverseitig begrenzte Laufzeit; für eine ganztägige
+Abnahme wird `--ttl-hours 24` verwendet.
 
 Ohne `--file` prüft der Verifier die verwaltete Live-Adresse des Vereins. Sie
 wird ausschließlich aus `Club.subdomain` gebildet: in PROD als
