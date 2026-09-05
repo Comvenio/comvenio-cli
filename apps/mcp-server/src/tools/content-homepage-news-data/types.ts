@@ -4,7 +4,7 @@ import type { JsonValue, OAuthScope, RequestContext } from "@comvenio/connector-
 import type { ActionRisk, PermissionPolicy } from "@comvenio/tool-catalog";
 import type { z } from "zod";
 
-export const K12_HOMEPAGE_ACTION_IDS = ["cai.homepage.01.preview", "cai.homepage.02.apply", "cai.homepage.03.show"] as const;
+export const K12_HOMEPAGE_ACTION_IDS = ["cai.homepage.01.preview", "cai.homepage.02.apply", "cai.homepage.03.show", "cai.homepage.04.screenshot"] as const;
 export const K12_SCHEMA_ACTION_IDS = ["cai.schema.01.list_domains", "cai.schema.02.show_domain_schema"] as const;
 export const K12_VERIFY_ACTION_IDS = ["cai.verify.01.url", "cai.verify.02.event", "cai.verify.03.menu", "cai.verify.04.homepage", "cai.verify.05.news", "cai.verify.06.certificate"] as const;
 export const K12_DATA_ACTION_IDS = [

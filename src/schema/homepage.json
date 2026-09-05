@@ -8,7 +8,7 @@
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
   "widget_count": 71,
-  "widget_config_documented": 68,
+  "widget_config_documented": 71,
   "vocabulary_sync": {
     "registry_count": 71,
     "backend_count": 71,
@@ -18,7 +18,7 @@
     "extra_in_backend": [],
     "extra_in_prompt": []
   },
-  "note": "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag (Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema).",
+  "note": "widget_kinds = autoritative WIDGET_REGISTRY-Keys (index.ts). config-Felder je Widget stammen aus dem homepage_system.py-Prompt — nicht jeder kind hat dort einen Eintrag (Phase-4-Widgets fehlen); diese erscheinen mit config: [] (ehrlich, kein erfundenes Schema). Der Prompt ist gegenueber dem Widget-Code stellenweise veraltet; wo das auffaellt, steht es je Widget unter config_not_read_by_widget und gezaehlt unter config_sync.",
   "structure": {
     "tab": {
       "fields": [
@@ -207,13 +207,35 @@
           "name": "subtitle"
         },
         {
+          "name": "layout",
+          "values": [
+            "centered",
+            "split",
+            "fullscreen",
+            "asymmetric"
+          ]
+        },
+        {
           "name": "bg_type",
           "values": [
             "gradient",
             "primary",
             "image",
-            "subtle"
+            "subtle",
+            "custom"
           ]
+        },
+        {
+          "name": "bg_color"
+        },
+        {
+          "name": "bg_url"
+        },
+        {
+          "name": "gradient_colors"
+        },
+        {
+          "name": "overlay_opacity"
         },
         {
           "name": "text_color",
@@ -248,6 +270,65 @@
         },
         {
           "name": "cta_secondary_url"
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "badge_icon"
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "scale",
+            "typewriter",
+            "none"
+          ]
+        },
+        {
+          "name": "show_particles"
+        },
+        {
+          "name": "show_gradient_orbs"
+        },
+        {
+          "name": "show_grid_pattern"
+        },
+        {
+          "name": "show_grain"
+        },
+        {
+          "name": "show_scroll_indicator"
+        },
+        {
+          "name": "show_member_count"
+        },
+        {
+          "name": "show_event_count"
+        },
+        {
+          "name": "show_founded_year"
+        },
+        {
+          "name": "stats_items"
+        },
+        {
+          "name": "show_cta"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -257,15 +338,72 @@
           "name": "text"
         },
         {
-          "name": "markdown"
+          "name": "content"
+        },
+        {
+          "name": "layout"
         },
         {
           "name": "show_title"
+        },
+        {
+          "name": "drop_cap"
+        },
+        {
+          "name": "callout_title"
+        },
+        {
+          "name": "callout_icon"
+        },
+        {
+          "name": "author"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
     "custom_html": {
-      "config": []
+      "config": [
+        {
+          "name": "html"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "frame_style",
+          "values": [
+            "none",
+            "bordered",
+            "elevated",
+            "accent"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
     },
     "stats": {
       "config": [
@@ -275,17 +413,56 @@
         {
           "name": "columns",
           "values": [
-            "2",
-            "3",
-            "4"
+            2,
+            3,
+            4
           ]
         },
         {
           "name": "layout",
           "values": [
-            "card",
-            "bold",
-            "minimal"
+            "grid",
+            "horizontal",
+            "bento"
+          ]
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "glassmorphism",
+            "gradient",
+            "solid"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "count-up",
+            "flip",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "show_icon_bg"
+        },
+        {
+          "name": "show_trend"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
           ]
         }
       ]
@@ -325,6 +502,19 @@
             "floating",
             "minimal"
           ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
         }
       ]
     },
@@ -340,1390 +530,41 @@
           "name": "address"
         },
         {
-          "name": "map_url"
+          "name": "website"
+        },
+        {
+          "name": "opening_hours"
+        },
+        {
+          "name": "social_links"
+        },
+        {
+          "name": "map_embed_url"
         },
         {
           "name": "layout",
           "values": [
             "card",
-            "inline"
-          ]
-        }
-      ]
-    },
-    "faq": {
-      "config": []
-    },
-    "sponsors": {
-      "config": [
-        {
-          "name": "items"
-        },
-        {
-          "name": "columns",
-          "values": [
-            "2",
-            "3",
-            "4"
-          ]
-        }
-      ]
-    },
-    "countdown": {
-      "config": [
-        {
-          "name": "target_date"
-        },
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "label"
-        },
-        {
-          "name": "display_format",
-          "values": [
-            "full",
-            "compact"
-          ]
-        },
-        {
-          "name": "bg_type",
-          "values": [
-            "gradient",
-            "primary",
-            "subtle"
-          ]
-        }
-      ]
-    },
-    "club_history": {
-      "config": [
-        {
-          "name": "entries"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "vertical",
-            "alternating"
-          ]
-        }
-      ]
-    },
-    "news": {
-      "config": [
-        {
-          "name": "limit"
-        },
-        {
-          "name": "show_images"
-        },
-        {
-          "name": "show_cover_images"
-        },
-        {
-          "name": "show_category_badges"
-        },
-        {
-          "name": "show_author"
-        },
-        {
-          "name": "show_reading_time"
-        },
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "display_mode",
-          "values": [
-            "titles_only",
-            "full"
-          ]
-        },
-        {
-          "name": "layout",
-          "values": [
-            "editorial",
-            "grid",
-            "compact",
-            "magazine"
-          ]
-        },
-        {
-          "name": "pinned_only"
-        },
-        {
-          "name": "card_style",
-          "values": [
+            "split",
             "minimal",
-            "elevated",
-            "glassmorphism",
-            "bordered"
+            "map-focus"
           ]
-        },
-        {
-          "name": "animation_style",
-          "values": [
-            "stagger",
-            "cascade",
-            "none"
-          ]
-        },
-        {
-          "name": "detail_label"
-        },
-        {
-          "name": "show_title"
-        }
-      ]
-    },
-    "news_highlight": {
-      "config": [
-        {
-          "name": "news_id"
-        },
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "show_title"
-        }
-      ]
-    },
-    "ticker": {
-      "config": [
-        {
-          "name": "text"
-        },
-        {
-          "name": "speed"
-        },
-        {
-          "name": "style",
-          "values": [
-            "modern",
-            "classic",
-            "minimal",
-            "bold"
-          ]
-        },
-        {
-          "name": "background_color"
-        },
-        {
-          "name": "text_color"
-        }
-      ]
-    },
-    "events_list": {
-      "config": [
-        {
-          "name": "limit"
-        },
-        {
-          "name": "days_ahead"
-        },
-        {
-          "name": "department_id"
         },
         {
           "name": "show_title"
         },
         {
-          "name": "layout",
-          "values": [
-            "cards",
-            "timeline",
-            "compact",
-            "calendar-strip"
-          ]
-        }
-      ]
-    },
-    "event_highlight": {
-      "config": [
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "show_title"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "hero",
-            "card",
-            "banner",
-            "countdown-focus"
-          ]
-        },
-        {
-          "name": "countdown_style",
-          "values": [
-            "blocks",
-            "inline",
-            "ring"
-          ]
-        },
-        {
-          "name": "cta_label"
-        }
-      ]
-    },
-    "event_hub_embed": {
-      "config": [
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "height"
-        },
-        {
-          "name": "show_title"
-        }
-      ]
-    },
-    "event_calendar": {
-      "config": [
-        {
-          "name": "show_title"
-        },
-        {
-          "name": "days_ahead"
-        },
-        {
-          "name": "week_start",
-          "values": [
-            "0",
-            "1"
-          ]
-        }
-      ]
-    },
-    "event_program": {
-      "config": [
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "title"
-        },
-        {
-          "name": "style",
-          "values": [
-            "timeline",
-            "cards"
-          ]
-        },
-        {
-          "name": "show_area"
-        },
-        {
-          "name": "show_responsible"
-        }
-      ]
-    },
-    "event_rsvp": {
-      "config": [
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "headline"
-        },
-        {
-          "name": "subline"
-        },
-        {
-          "name": "accepted_label"
-        },
-        {
-          "name": "waitlist_label"
-        }
-      ]
-    },
-    "training_schedule": {
-      "config": [
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "limit"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "table",
-            "timeline"
-          ]
-        }
-      ]
-    },
-    "special_event_promo": {
-      "config": [
-        {
-          "name": "event_id"
-        },
-        {
-          "name": "event_name"
-        },
-        {
-          "name": "event_date"
-        },
-        {
-          "name": "description"
-        },
-        {
-          "name": "location"
-        },
-        {
-          "name": "image_url"
-        },
-        {
-          "name": "show_countdown"
-        },
-        {
-          "name": "show_news"
-        },
-        {
-          "name": "show_gallery"
-        },
-        {
-          "name": "show_program"
-        },
-        {
-          "name": "show_description"
-        },
-        {
-          "name": "cta_text"
-        },
-        {
-          "name": "cta_url"
-        },
-        {
-          "name": "badge_text"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "hero",
-            "poster",
-            "cinematic"
-          ]
-        },
-        {
-          "name": "program"
-        }
-      ]
-    },
-    "feature_grid": {
-      "config": [
-        {
-          "name": "columns",
-          "values": [
-            "2",
-            "3",
-            "4"
-          ]
-        },
-        {
-          "name": "style",
-          "values": [
-            "gold",
-            "default"
-          ]
-        },
-        {
-          "name": "items"
-        },
-        {
-          "name": "title"
-        }
-      ]
-    },
-    "team": {
-      "config": [
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "columns",
-          "values": [
-            "2",
-            "3",
-            "4"
-          ]
-        },
-        {
-          "name": "layout",
-          "values": [
-            "card",
-            "compact",
-            "org"
-          ]
-        },
-        {
-          "name": "show_role"
-        },
-        {
-          "name": "show_email"
-        },
-        {
-          "name": "limit"
-        }
-      ]
-    },
-    "org_chart": {
-      "config": [
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "columns"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "card",
-            "compact",
-            "org"
-          ]
-        }
-      ]
-    },
-    "birthdays": {
-      "config": [
-        {
-          "name": "days_ahead"
-        },
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "display_mode",
-          "values": [
-            "full",
-            "age_with_date",
-            "age_only"
-          ]
-        }
-      ]
-    },
-    "birthday_highlight": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "celebration",
-            "card",
-            "banner",
-            "confetti"
-          ]
-        },
-        {
-          "name": "show_age"
-        },
-        {
-          "name": "show_milestone_badge"
-        },
-        {
-          "name": "days_ahead"
-        },
-        {
-          "name": "max_display"
-        },
-        {
-          "name": "celebration_text"
-        },
-        {
-          "name": "animation_style",
-          "values": [
-            "confetti",
-            "sparkle",
-            "balloons",
-            "none"
-          ]
-        }
-      ]
-    },
-    "honors_showcase": {
-      "config": [
-        {
-          "name": "honors"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "timeline",
-            "grid",
-            "spotlight",
-            "banner"
-          ]
-        },
-        {
-          "name": "show_member_name"
-        },
-        {
-          "name": "show_date"
-        },
-        {
-          "name": "featured_honor_index"
-        },
-        {
-          "name": "animation_style"
-        }
-      ]
-    },
-    "image": {
-      "config": [
-        {
-          "name": "url"
-        },
-        {
-          "name": "alt"
-        },
-        {
-          "name": "fit",
-          "values": [
-            "cover",
-            "contain",
-            "fill"
-          ]
-        }
-      ]
-    },
-    "image_gallery": {
-      "config": [
-        {
-          "name": "urls"
-        },
-        {
-          "name": "auto_play"
-        },
-        {
-          "name": "interval"
-        }
-      ]
-    },
-    "video": {
-      "config": [
-        {
-          "name": "url"
-        },
-        {
-          "name": "aspect_ratio"
-        }
-      ]
-    },
-    "background_video": {
-      "config": [
-        {
-          "name": "video_url"
-        },
-        {
-          "name": "video_file_id"
-        },
-        {
-          "name": "poster_url"
-        },
-        {
-          "name": "poster_file_id"
-        },
-        {
-          "name": "overlay"
-        },
-        {
-          "name": "loop"
-        },
-        {
-          "name": "headline"
-        }
-      ]
-    },
-    "files": {
-      "config": [
-        {
-          "name": "folder_id"
-        },
-        {
-          "name": "file_ids"
-        },
-        {
-          "name": "limit"
-        }
-      ]
-    },
-    "booking_highlight": {
-      "config": []
-    },
-    "menu_display": {
-      "config": [
-        {
-          "name": "menu_id"
-        },
-        {
-          "name": "view_mode",
-          "values": [
-            "grid",
-            "list"
-          ]
-        },
-        {
-          "name": "columns"
-        }
-      ]
-    },
-    "instagram": {
-      "config": [
-        {
-          "name": "username"
-        },
-        {
-          "name": "limit"
-        }
-      ]
-    },
-    "facebook": {
-      "config": [
-        {
-          "name": "page_id"
-        },
-        {
-          "name": "url"
-        }
-      ]
-    },
-    "fupa_widget": {
-      "config": [
-        {
-          "name": "widgetId",
-          "required": true
-        },
-        {
-          "name": "title"
-        },
-        {
-          "name": "includeSrc",
-          "default": "https://widget-api.fupa.net/vendor/widget.js?v1"
-        },
-        {
-          "name": "hrefUrl"
-        },
-        {
-          "name": "hrefLabel"
-        },
-        {
-          "name": "height"
-        },
-        {
-          "name": "show_title"
-        }
-      ]
-    },
-    "bfv_widget": {
-      "config": [
-        {
-          "name": "widget_url"
-        },
-        {
-          "name": "height"
-        }
-      ]
-    },
-    "divider": {
-      "config": [
-        {
-          "name": "thickness"
-        },
-        {
-          "name": "color"
-        },
-        {
-          "name": "margin"
-        },
-        {
-          "name": "style",
-          "values": [
-            "solid",
-            "dashed",
-            "gradient",
-            "wave",
-            "zigzag",
-            "dots"
-          ]
-        }
-      ]
-    },
-    "spacer": {
-      "config": [
-        {
-          "name": "height"
-        },
-        {
-          "name": "style",
-          "values": [
-            "dots",
-            "gradient",
-            "wave",
-            "zigzag"
-          ]
-        }
-      ]
-    },
-    "parallax_section": {
-      "config": [
-        {
-          "name": "image_url"
-        },
-        {
-          "name": "text"
-        },
-        {
-          "name": "height"
-        },
-        {
-          "name": "effect",
-          "values": [
-            "parallax",
-            "fixed",
-            "zoom",
-            "blur"
-          ]
-        },
-        {
-          "name": "overlay_color"
-        }
-      ]
-    },
-    "gradient_section": {
-      "config": [
-        {
-          "name": "style",
-          "values": [
-            "mesh",
-            "aurora",
-            "waves",
-            "spotlight",
-            "radial"
-          ]
-        },
-        {
-          "name": "colors"
-        },
-        {
-          "name": "height"
-        },
-        {
-          "name": "pattern_type",
-          "values": [
-            "dots",
-            "grid",
-            "diagonal",
-            "circles"
-          ]
-        }
-      ]
-    },
-    "decorative_element": {
-      "config": [
-        {
-          "name": "element_type",
-          "values": [
-            "shapes",
-            "blobs",
-            "confetti",
-            "particles",
-            "badges",
-            "quote"
-          ]
-        },
-        {
-          "name": "badge_text"
-        },
-        {
-          "name": "badge_style",
-          "values": [
-            "seal",
-            "ribbon",
-            "shield",
-            "circle"
-          ]
-        },
-        {
-          "name": "quote_text"
-        },
-        {
-          "name": "quote_author"
-        }
-      ]
-    },
-    "testimonials": {
-      "config": [
-        {
-          "name": "items"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "carousel",
-            "grid",
-            "stack",
-            "marquee"
-          ]
-        },
-        {
-          "name": "autoplay"
-        },
-        {
-          "name": "show_rating"
-        },
-        {
-          "name": "show_avatar"
-        },
-        {
-          "name": "card_style"
-        }
-      ]
-    },
-    "logo_marquee": {
-      "config": [
-        {
-          "name": "items"
-        },
-        {
-          "name": "speed"
-        },
-        {
-          "name": "direction",
-          "values": [
-            "left",
-            "right"
-          ]
-        },
-        {
-          "name": "grayscale"
-        },
-        {
-          "name": "pause_on_hover"
-        }
-      ]
-    },
-    "image_text_split": {
-      "config": [
-        {
-          "name": "image_url"
-        },
-        {
-          "name": "headline"
-        },
-        {
-          "name": "text"
-        },
-        {
-          "name": "cta_label"
-        },
-        {
-          "name": "cta_url"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "image-left",
-            "image-right",
-            "image-top"
-          ]
-        },
-        {
-          "name": "image_effect",
-          "values": [
-            "parallax",
-            "zoom",
-            "reveal",
-            "none"
-          ]
-        },
-        {
-          "name": "badge_text"
-        }
-      ]
-    },
-    "forum_highlight": {
-      "config": [
-        {
-          "name": "posts"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "cards",
-            "compact",
-            "featured",
-            "trending"
-          ]
-        },
-        {
-          "name": "sort_by",
-          "values": [
-            "reactions",
-            "replies",
-            "views",
-            "recent"
-          ]
-        },
-        {
-          "name": "show_reactions"
-        },
-        {
-          "name": "show_reply_count"
-        }
-      ]
-    },
-    "tournament_highlight": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "scoreboard",
-            "table",
-            "cards",
-            "ticker",
-            "bracket"
-          ]
-        },
-        {
-          "name": "tournament_id"
-        },
-        {
-          "name": "show_live_indicator"
-        },
-        {
-          "name": "standings"
-        }
-      ]
-    },
-    "sport_api": {
-      "config": [
-        {
-          "name": "provider",
-          "values": [
-            "fupa",
-            "bfv",
-            "btv",
-            "dfb",
-            "custom"
-          ]
-        },
-        {
-          "name": "team_id"
-        },
-        {
-          "name": "league_id"
-        },
-        {
-          "name": "embed_url"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "table",
-            "card",
-            "embed",
-            "compact"
-          ]
-        },
-        {
-          "name": "show_standings"
-        },
-        {
-          "name": "show_last_results"
-        },
-        {
-          "name": "show_next_match"
-        }
-      ]
-    },
-    "member_counter": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "hero",
-            "compact"
-          ]
-        },
-        {
-          "name": "show_trend"
-        },
-        {
-          "name": "show_departments"
-        }
-      ]
-    },
-    "department_showcase": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "grid",
-            "list"
-          ]
-        },
-        {
-          "name": "show_member_count"
-        },
-        {
-          "name": "show_contact"
-        },
-        {
-          "name": "icons"
-        }
-      ]
-    },
-    "next_training": {
-      "config": [
-        {
-          "name": "department_id"
-        }
-      ]
-    },
-    "booking_calendar": {
-      "config": [
-        {
-          "name": "object_id"
-        },
-        {
-          "name": "days_ahead"
-        }
-      ]
-    },
-    "meeting_decisions": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "list",
-            "compact"
-          ]
-        },
-        {
-          "name": "count"
-        },
-        {
-          "name": "show_votes"
-        },
-        {
-          "name": "decisions"
-        }
-      ]
-    },
-    "quick_links": {
-      "config": [
-        {
-          "name": "links"
-        },
-        {
-          "name": "style",
-          "values": [
-            "buttons",
-            "cards",
-            "minimal"
-          ]
-        }
-      ]
-    },
-    "poll": {
-      "config": [
-        {
-          "name": "question"
-        },
-        {
-          "name": "options"
-        },
-        {
-          "name": "show_results_before_vote"
-        },
-        {
-          "name": "expires_at"
-        }
-      ]
-    },
-    "recipe_highlight": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "card",
-            "compact"
-          ]
-        },
-        {
-          "name": "recipe_name"
-        },
-        {
-          "name": "image_url"
-        },
-        {
-          "name": "ingredients"
-        },
-        {
-          "name": "prep_time"
-        },
-        {
-          "name": "servings"
-        },
-        {
-          "name": "link_url"
-        }
-      ]
-    },
-    "task_overview": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "list",
-            "kanban"
-          ]
-        },
-        {
-          "name": "count"
-        },
-        {
-          "name": "show_completed"
-        },
-        {
-          "name": "tasks"
-        }
-      ]
-    },
-    "activity_feed": {
-      "config": [
-        {
-          "name": "count"
-        },
-        {
-          "name": "types"
-        },
-        {
-          "name": "entries"
-        }
-      ]
-    },
-    "member_spotlight": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "hero",
-            "card"
-          ]
-        },
-        {
-          "name": "member_name"
-        },
-        {
-          "name": "avatar_url"
-        },
-        {
-          "name": "department"
-        },
-        {
-          "name": "member_since"
-        },
-        {
-          "name": "quote"
-        }
-      ]
-    },
-    "newsletter_signup": {
-      "config": [
-        {
-          "name": "heading"
-        },
-        {
-          "name": "description"
-        },
-        {
-          "name": "show_name_field"
-        },
-        {
-          "name": "style",
+          "name": "design_preset",
           "values": [
             "default",
-            "glass"
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
           ]
-        }
-      ]
-    },
-    "social_feed": {
-      "config": [
-        {
-          "name": "posts"
-        },
-        {
-          "name": "layout",
-          "values": [
-            "list",
-            "masonry"
-          ]
-        }
-      ]
-    },
-    "weather": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "full",
-            "compact"
-          ]
-        },
-        {
-          "name": "location"
-        },
-        {
-          "name": "condition",
-          "values": [
-            "sunny",
-            "cloudy",
-            "rainy",
-            "snowy",
-            "thunderstorm",
-            "partly_cloudy"
-          ]
-        },
-        {
-          "name": "temperature"
-        },
-        {
-          "name": "humidity"
-        },
-        {
-          "name": "wind_speed"
-        },
-        {
-          "name": "forecast"
-        }
-      ]
-    },
-    "live_match_ticker": {
-      "config": [
-        {
-          "name": "tournament_id"
-        },
-        {
-          "name": "featured_match_id"
-        },
-        {
-          "name": "own_team_id"
-        }
-      ]
-    },
-    "membership_form": {
-      "config": [
-        {
-          "name": "layout",
-          "values": [
-            "full",
-            "compact"
-          ]
-        },
-        {
-          "name": "departments"
-        },
-        {
-          "name": "show_message_field"
-        }
-      ]
-    },
-    "gallery_slideshow": {
-      "config": [
-        {
-          "name": "images"
-        },
-        {
-          "name": "interval"
-        },
-        {
-          "name": "effect",
-          "values": [
-            "crossfade",
-            "kenburns"
-          ]
-        }
-      ]
-    },
-    "department_calendar": {
-      "config": [
-        {
-          "name": "events"
-        },
-        {
-          "name": "department_id"
-        },
-        {
-          "name": "show_events"
-        },
-        {
-          "name": "show_training"
-        },
-        {
-          "name": "show_bookings"
-        },
-        {
-          "name": "show_meetings"
-        }
-      ]
-    },
-    "chat_preview": {
-      "config": [
-        {
-          "name": "channel_id"
-        },
-        {
-          "name": "board_id"
-        },
-        {
-          "name": "channel_name"
-        },
-        {
-          "name": "count"
-        },
-        {
-          "name": "link_label"
-        }
-      ]
-    },
-    "honor_wall": {
-      "config": [
-        {
-          "name": "style",
-          "values": [
-            "classic",
-            "modern"
-          ]
-        },
-        {
-          "name": "max_honors"
-        }
-      ]
-    },
-    "ad_banner": {
-      "config": [
-        {
-          "name": "placement"
-        },
-        {
-          "name": "style",
-          "values": [
-            "minimal",
-            "card",
-            "banner"
-          ]
-        },
-        {
-          "name": "label"
         }
       ]
     },
@@ -1786,15 +627,2240 @@
           "required": true
         },
         {
-          "name": "show_title",
-          "default": true
-        },
-        {
           "name": "layout",
           "values": [
             "columns",
             "stacked"
           ]
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "faq": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "heading"
+        },
+        {
+          "name": "subheading"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "sponsors": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "sponsors"
+        },
+        {
+          "name": "advertiser_ids"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "countdown": {
+      "config": [
+        {
+          "name": "target_date"
+        },
+        {
+          "name": "event_name"
+        },
+        {
+          "name": "label"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_event_date"
+        }
+      ]
+    },
+    "club_history": {
+      "config": [
+        {
+          "name": "entries"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "vertical",
+            "alternating",
+            "horizontal",
+            "storytelling"
+          ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "news": {
+      "config": [
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_images"
+        },
+        {
+          "name": "show_cover_images"
+        },
+        {
+          "name": "show_author"
+        },
+        {
+          "name": "show_category_badges"
+        },
+        {
+          "name": "show_reading_time"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "display_mode",
+          "values": [
+            "titles_only",
+            "full"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "editorial",
+            "grid",
+            "compact",
+            "magazine"
+          ]
+        },
+        {
+          "name": "pinned_only"
+        },
+        {
+          "name": "detail_label"
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "minimal",
+            "elevated",
+            "glassmorphism",
+            "bordered"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "cascade",
+            "none"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "news_highlight": {
+      "config": [
+        {
+          "name": "news_id"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "cinematic",
+            "card",
+            "minimal",
+            "magazine"
+          ]
+        }
+      ]
+    },
+    "ticker": {
+      "config": [
+        {
+          "name": "style",
+          "values": [
+            "plain",
+            "pill",
+            "card"
+          ]
+        },
+        {
+          "name": "speed",
+          "values": [
+            "slow",
+            "normal",
+            "fast"
+          ]
+        },
+        {
+          "name": "direction",
+          "values": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "pause_on_hover"
+        }
+      ]
+    },
+    "events_list": {
+      "config": [
+        {
+          "name": "limit"
+        },
+        {
+          "name": "count"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "show_past"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "cards",
+            "timeline",
+            "compact",
+            "calendar-strip"
+          ]
+        }
+      ]
+    },
+    "event_highlight": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "hero",
+            "card",
+            "banner",
+            "countdown-focus"
+          ]
+        },
+        {
+          "name": "countdown_style",
+          "values": [
+            "blocks",
+            "inline",
+            "ring"
+          ]
+        },
+        {
+          "name": "cta_label"
+        },
+        {
+          "name": "show_live_countdown"
+        },
+        {
+          "name": "show_event_type_badge"
+        },
+        {
+          "name": "animation_style"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "event_hub_embed": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "event_calendar": {
+      "config": [
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "week_start",
+          "values": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    "event_program": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "style",
+          "values": [
+            "timeline",
+            "cards"
+          ]
+        },
+        {
+          "name": "show_area"
+        },
+        {
+          "name": "show_responsible"
+        }
+      ]
+    },
+    "event_rsvp": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "headline"
+        },
+        {
+          "name": "subline"
+        },
+        {
+          "name": "accepted_label"
+        },
+        {
+          "name": "waitlist_label"
+        }
+      ]
+    },
+    "training_schedule": {
+      "config": [
+        {
+          "name": "entries"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "table",
+            "timeline"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "special_event_promo": {
+      "config": [
+        {
+          "name": "event_id"
+        }
+      ]
+    },
+    "feature_grid": {
+      "config": [
+        {
+          "name": "columns",
+          "values": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "name": "style",
+          "values": [
+            "gold",
+            "default"
+          ]
+        },
+        {
+          "name": "items"
+        },
+        {
+          "name": "title"
+        }
+      ]
+    },
+    "team": {
+      "config": [
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "columns",
+          "values": [
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "grid",
+            "carousel",
+            "spotlight"
+          ]
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "glassmorphism",
+            "solid",
+            "gradient"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "cascade",
+            "none"
+          ]
+        },
+        {
+          "name": "glassmorphism"
+        },
+        {
+          "name": "featured_member_id"
+        },
+        {
+          "name": "show_role"
+        },
+        {
+          "name": "show_email"
+        },
+        {
+          "name": "show_department_badge"
+        },
+        {
+          "name": "show_member_count"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "org_chart": {
+      "config": [
+        {
+          "name": "root_department_id"
+        },
+        {
+          "name": "depth"
+        },
+        {
+          "name": "show_members"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "birthdays": {
+      "config": [
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "list",
+            "carousel",
+            "calendar"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "birthday_highlight": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "celebration",
+            "card",
+            "banner",
+            "confetti"
+          ]
+        },
+        {
+          "name": "show_age"
+        },
+        {
+          "name": "show_milestone_badge"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "max_display"
+        }
+      ]
+    },
+    "honors_showcase": {
+      "config": [
+        {
+          "name": "honors"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "timeline",
+            "grid",
+            "spotlight",
+            "banner"
+          ]
+        },
+        {
+          "name": "show_member_name"
+        },
+        {
+          "name": "show_date"
+        },
+        {
+          "name": "featured_honor_index"
+        },
+        {
+          "name": "max_honors"
+        },
+        {
+          "name": "animation_style"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "image": {
+      "config": [
+        {
+          "name": "mode",
+          "values": [
+            "image",
+            "file"
+          ]
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "alt"
+        },
+        {
+          "name": "caption_title"
+        },
+        {
+          "name": "caption_description"
+        },
+        {
+          "name": "hover_effect",
+          "values": [
+            "zoom",
+            "parallax",
+            "reveal",
+            "none"
+          ]
+        },
+        {
+          "name": "aspect_ratio"
+        },
+        {
+          "name": "enable_lightbox"
+        },
+        {
+          "name": "card_style",
+          "values": [
+            "minimal",
+            "elevated",
+            "featured"
+          ]
+        },
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "file_url"
+        },
+        {
+          "name": "file_name"
+        },
+        {
+          "name": "file_type"
+        },
+        {
+          "name": "file_size"
+        },
+        {
+          "name": "file_description"
+        }
+      ]
+    },
+    "image_gallery": {
+      "config": [
+        {
+          "name": "urls"
+        },
+        {
+          "name": "auto_play"
+        },
+        {
+          "name": "interval"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "grid",
+            "masonry",
+            "carousel",
+            "filmstrip"
+          ]
+        }
+      ]
+    },
+    "video": {
+      "config": [
+        {
+          "name": "video_url"
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "poster_url"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "autoplay"
+        },
+        {
+          "name": "muted"
+        },
+        {
+          "name": "theater_mode"
+        }
+      ]
+    },
+    "background_video": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "cover",
+            "spotlight"
+          ]
+        },
+        {
+          "name": "video_file_id"
+        },
+        {
+          "name": "video_url"
+        },
+        {
+          "name": "poster_file_id"
+        },
+        {
+          "name": "poster_url"
+        },
+        {
+          "name": "overlay"
+        },
+        {
+          "name": "loop"
+        },
+        {
+          "name": "object_fit"
+        },
+        {
+          "name": "min_height"
+        },
+        {
+          "name": "headline"
+        },
+        {
+          "name": "overlay_text"
+        },
+        {
+          "name": "background"
+        },
+        {
+          "name": "accent_color"
+        },
+        {
+          "name": "text_color"
+        },
+        {
+          "name": "logo_file_id"
+        },
+        {
+          "name": "logo_url"
+        },
+        {
+          "name": "logo_right_file_id"
+        },
+        {
+          "name": "logo_right_url"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "eyebrow"
+        },
+        {
+          "name": "date_badge"
+        },
+        {
+          "name": "claim"
+        },
+        {
+          "name": "news_ticker"
+        }
+      ]
+    },
+    "files": {
+      "config": [
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "list",
+            "grid",
+            "compact"
+          ]
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "booking_highlight": {
+      "config": [
+        {
+          "name": "object_ids"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "menu_display": {
+      "config": [
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "event_name"
+        },
+        {
+          "name": "event_date"
+        },
+        {
+          "name": "category_filter"
+        },
+        {
+          "name": "limit"
+        },
+        {
+          "name": "show_price"
+        },
+        {
+          "name": "show_description"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "layout"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "instagram": {
+      "config": [
+        {
+          "name": "username"
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "embed_url"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "facebook": {
+      "config": [
+        {
+          "name": "page_id"
+        },
+        {
+          "name": "url"
+        },
+        {
+          "name": "data_tabs"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "fupa_widget": {
+      "config": [
+        {
+          "name": "widgetId",
+          "required": true
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "includeSrc",
+          "default": "https://widget-api.fupa.net/vendor/widget.js?v1"
+        },
+        {
+          "name": "hrefUrl"
+        },
+        {
+          "name": "hrefLabel"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "bfv_widget": {
+      "config": [
+        {
+          "name": "widget_url"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "includeSrc"
+        },
+        {
+          "name": "scriptHtml"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "divider": {
+      "config": [
+        {
+          "name": "theme",
+          "values": [
+            "wave",
+            "mountain",
+            "curve",
+            "tilt",
+            "triangle",
+            "clouds",
+            "torn-paper",
+            "gradient-blend",
+            "ornamental",
+            "dots-fade",
+            "zigzag",
+            "brush-stroke"
+          ]
+        },
+        {
+          "name": "top_color"
+        },
+        {
+          "name": "bottom_color"
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "flip"
+        },
+        {
+          "name": "opacity"
+        }
+      ]
+    },
+    "spacer": {
+      "config": [
+        {
+          "name": "height"
+        },
+        {
+          "name": "theme",
+          "values": [
+            "blank",
+            "gradient-glow",
+            "particles",
+            "noise-texture",
+            "mesh-gradient",
+            "line-pattern"
+          ]
+        },
+        {
+          "name": "top_color"
+        },
+        {
+          "name": "bottom_color"
+        },
+        {
+          "name": "opacity"
+        }
+      ]
+    },
+    "parallax_section": {
+      "config": [
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "text"
+        },
+        {
+          "name": "subtitle"
+        },
+        {
+          "name": "text_size",
+          "values": [
+            "sm",
+            "md",
+            "lg",
+            "xl"
+          ]
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "effect",
+          "values": [
+            "parallax",
+            "fixed",
+            "zoom",
+            "blur"
+          ]
+        },
+        {
+          "name": "overlay_color"
+        },
+        {
+          "name": "overlay_opacity"
+        },
+        {
+          "name": "show_gradient_overlay"
+        },
+        {
+          "name": "cta_text"
+        },
+        {
+          "name": "cta_url"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "gradient_section": {
+      "config": [
+        {
+          "name": "gradient_type",
+          "values": [
+            "mesh",
+            "aurora",
+            "waves",
+            "spotlight",
+            "radial"
+          ]
+        },
+        {
+          "name": "primary_color"
+        },
+        {
+          "name": "accent_color"
+        },
+        {
+          "name": "pattern_overlay",
+          "values": [
+            "dots",
+            "lines",
+            "grain",
+            "none"
+          ]
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "heading"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "show_text"
+        }
+      ]
+    },
+    "decorative_element": {
+      "config": [
+        {
+          "name": "element_type",
+          "values": [
+            "shapes",
+            "blobs",
+            "confetti",
+            "particles",
+            "badges",
+            "quote"
+          ]
+        },
+        {
+          "name": "badge_text"
+        },
+        {
+          "name": "badge_style",
+          "values": [
+            "seal",
+            "ribbon",
+            "shield",
+            "circle"
+          ]
+        },
+        {
+          "name": "quote_text"
+        },
+        {
+          "name": "quote_author"
+        },
+        {
+          "name": "color_scheme",
+          "values": [
+            "club",
+            "monochrome",
+            "pastel",
+            "neon"
+          ]
+        },
+        {
+          "name": "density",
+          "values": [
+            "sparse",
+            "medium",
+            "dense"
+          ]
+        },
+        {
+          "name": "animation",
+          "values": [
+            "float",
+            "rotate",
+            "pulse",
+            "none"
+          ]
+        },
+        {
+          "name": "height"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "testimonials": {
+      "config": [
+        {
+          "name": "items"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "carousel",
+            "grid",
+            "stacked"
+          ]
+        },
+        {
+          "name": "autoplay"
+        },
+        {
+          "name": "interval"
+        },
+        {
+          "name": "transition",
+          "values": [
+            "fade",
+            "slide"
+          ]
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "glassmorphism"
+        },
+        {
+          "name": "show_rating"
+        },
+        {
+          "name": "show_avatar"
+        },
+        {
+          "name": "card_style"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "logo_marquee": {
+      "config": [
+        {
+          "name": "logos"
+        },
+        {
+          "name": "title"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "speed"
+        },
+        {
+          "name": "direction",
+          "values": [
+            "left",
+            "right"
+          ]
+        }
+      ]
+    },
+    "image_text_split": {
+      "config": [
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "heading"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "cta_text"
+        },
+        {
+          "name": "cta_url"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "image-left",
+            "image-right",
+            "image-top"
+          ]
+        }
+      ]
+    },
+    "forum_highlight": {
+      "config": [
+        {
+          "name": "max_posts"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "cards",
+            "compact",
+            "featured",
+            "trending"
+          ]
+        },
+        {
+          "name": "animation_style"
+        }
+      ]
+    },
+    "tournament_highlight": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "scoreboard",
+            "table",
+            "cards",
+            "ticker",
+            "bracket"
+          ]
+        },
+        {
+          "name": "tournament_id"
+        },
+        {
+          "name": "own_team_name"
+        },
+        {
+          "name": "show_live_indicator"
+        },
+        {
+          "name": "show_standings"
+        },
+        {
+          "name": "max_matches"
+        },
+        {
+          "name": "matches"
+        },
+        {
+          "name": "standings"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "sport_api": {
+      "config": [
+        {
+          "name": "provider",
+          "values": [
+            "fupa",
+            "bfv",
+            "btv",
+            "dfb",
+            "nuliga",
+            "custom"
+          ]
+        },
+        {
+          "name": "layout",
+          "values": [
+            "table",
+            "card",
+            "embed",
+            "compact"
+          ]
+        },
+        {
+          "name": "team_id"
+        },
+        {
+          "name": "league_id"
+        },
+        {
+          "name": "league_name"
+        },
+        {
+          "name": "own_team_name"
+        },
+        {
+          "name": "widget_type"
+        },
+        {
+          "name": "embed_url"
+        },
+        {
+          "name": "embed_height"
+        },
+        {
+          "name": "show_team_logo"
+        },
+        {
+          "name": "show_league_name"
+        },
+        {
+          "name": "show_standings"
+        },
+        {
+          "name": "show_last_results"
+        },
+        {
+          "name": "show_next_match"
+        },
+        {
+          "name": "max_entries"
+        },
+        {
+          "name": "refresh_interval"
+        },
+        {
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "none"
+          ]
+        },
+        {
+          "name": "static_standings"
+        },
+        {
+          "name": "static_results"
+        },
+        {
+          "name": "fupa_widget_id"
+        },
+        {
+          "name": "fupa_include_src"
+        },
+        {
+          "name": "fupa_href_url"
+        },
+        {
+          "name": "fupa_href_label"
+        },
+        {
+          "name": "bfv_include_src"
+        },
+        {
+          "name": "bfv_script_html"
+        },
+        {
+          "name": "nuliga_type",
+          "values": [
+            "table",
+            "schedule",
+            "club-schedule"
+          ]
+        },
+        {
+          "name": "nuliga_league_url"
+        },
+        {
+          "name": "nuliga_club_name"
+        },
+        {
+          "name": "nuliga_css_url"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "member_counter": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "hero",
+            "compact"
+          ]
+        },
+        {
+          "name": "show_trend"
+        },
+        {
+          "name": "show_departments"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "department_showcase": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "grid",
+            "list"
+          ]
+        },
+        {
+          "name": "show_member_count"
+        },
+        {
+          "name": "show_contact"
+        },
+        {
+          "name": "icons"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "next_training": {
+      "config": [
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "booking_calendar": {
+      "config": [
+        {
+          "name": "object_id"
+        },
+        {
+          "name": "days_ahead"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "meeting_decisions": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "list",
+            "compact"
+          ]
+        },
+        {
+          "name": "count"
+        },
+        {
+          "name": "show_votes"
+        },
+        {
+          "name": "decisions"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "quick_links": {
+      "config": [
+        {
+          "name": "links"
+        },
+        {
+          "name": "style",
+          "values": [
+            "buttons",
+            "cards",
+            "minimal"
+          ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "poll": {
+      "config": [
+        {
+          "name": "question"
+        },
+        {
+          "name": "options"
+        },
+        {
+          "name": "show_results_before_vote"
+        },
+        {
+          "name": "expires_at"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "recipe_highlight": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "card",
+            "compact"
+          ]
+        },
+        {
+          "name": "recipe_name"
+        },
+        {
+          "name": "image_url"
+        },
+        {
+          "name": "ingredients"
+        },
+        {
+          "name": "prep_time"
+        },
+        {
+          "name": "servings"
+        },
+        {
+          "name": "link_url"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "task_overview": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "list",
+            "kanban"
+          ]
+        },
+        {
+          "name": "count"
+        },
+        {
+          "name": "show_completed"
+        },
+        {
+          "name": "tasks"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "activity_feed": {
+      "config": [
+        {
+          "name": "count"
+        },
+        {
+          "name": "types"
+        },
+        {
+          "name": "entries"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "member_spotlight": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "hero",
+            "card"
+          ]
+        },
+        {
+          "name": "member_name"
+        },
+        {
+          "name": "avatar_url"
+        },
+        {
+          "name": "department"
+        },
+        {
+          "name": "member_since"
+        },
+        {
+          "name": "quote"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "newsletter_signup": {
+      "config": [
+        {
+          "name": "heading"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "show_name_field"
+        },
+        {
+          "name": "style",
+          "values": [
+            "default",
+            "glass"
+          ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "social_feed": {
+      "config": [
+        {
+          "name": "posts"
+        },
+        {
+          "name": "layout",
+          "values": [
+            "list",
+            "masonry"
+          ]
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "weather": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "full",
+            "compact"
+          ]
+        },
+        {
+          "name": "location"
+        },
+        {
+          "name": "condition",
+          "values": [
+            "sunny",
+            "cloudy",
+            "rainy",
+            "snowy",
+            "thunderstorm",
+            "partly_cloudy"
+          ]
+        },
+        {
+          "name": "temperature"
+        },
+        {
+          "name": "humidity"
+        },
+        {
+          "name": "wind_speed"
+        },
+        {
+          "name": "forecast"
+        },
+        {
+          "name": "show_title"
+        },
+        {
+          "name": "design_preset",
+          "values": [
+            "default",
+            "glass",
+            "dark",
+            "gradient",
+            "soft",
+            "elevated",
+            "outlined",
+            "neon"
+          ]
+        }
+      ]
+    },
+    "live_match_ticker": {
+      "config": [
+        {
+          "name": "tournament_id"
+        },
+        {
+          "name": "featured_match_id"
+        },
+        {
+          "name": "own_team_id"
+        },
+        {
+          "name": "matches"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "membership_form": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "full",
+            "compact"
+          ]
+        },
+        {
+          "name": "departments"
+        },
+        {
+          "name": "show_message_field"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "gallery_slideshow": {
+      "config": [
+        {
+          "name": "images"
+        },
+        {
+          "name": "interval"
+        },
+        {
+          "name": "effect",
+          "values": [
+            "crossfade",
+            "kenburns"
+          ]
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "department_calendar": {
+      "config": [
+        {
+          "name": "events"
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "show_events"
+        },
+        {
+          "name": "show_training"
+        },
+        {
+          "name": "show_bookings"
+        },
+        {
+          "name": "show_meetings"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "chat_preview": {
+      "config": [
+        {
+          "name": "channel_id"
+        },
+        {
+          "name": "board_id"
+        },
+        {
+          "name": "channel_name"
+        },
+        {
+          "name": "count"
+        },
+        {
+          "name": "messages"
+        },
+        {
+          "name": "link_label"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "honor_wall": {
+      "config": [
+        {
+          "name": "style",
+          "values": [
+            "classic",
+            "modern"
+          ]
+        },
+        {
+          "name": "max_honors"
+        },
+        {
+          "name": "honors"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
+    "ad_banner": {
+      "config": [
+        {
+          "name": "placement"
+        },
+        {
+          "name": "style",
+          "values": [
+            "minimal",
+            "card",
+            "banner"
+          ]
+        },
+        {
+          "name": "label"
         }
       ]
     }
@@ -1861,5 +2927,20 @@
       "Keine Footer-Rechtslinks in custom_html oder custom_css duplizieren.",
       "Die Plattform-Shell darf durch Homepage-Konfiguration weder ausgeblendet noch umgeleitet werden."
     ]
+  },
+  "config_sync": {
+    "widgets_checked": 71,
+    "fields_checked": 514,
+    "widgets_with_unread_fields": 0,
+    "unread_fields": 0,
+    "widgets_with_wrong_values": 0,
+    "wrong_values": 0,
+    "value_sets_checked": 69,
+    "value_sets_unreadable": 51,
+    "field_source": "widget-felder.json",
+    "widgets_with_undocumented_fields": 0,
+    "undocumented_fields": 0,
+    "stale_exemptions": [],
+    "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig und ein abgeleiteter Bezeichner). ACHTUNG, ab 2026-08-29: Diese Pruefung VERSTUMMT mit dem Umbau. Sie liest die Wertemenge aus dem Config-Typ IM WIDGET — und ein Widget, das seinen Typ aus widget-felder.json ableitet (WidgetConfig<...>), hat dort keinen mehr. Jede Umstellung senkt value_sets_checked und hebt value_sets_unreadable, ohne dass etwas schlechter geworden waere; im Gegenteil, dort erzwingt jetzt der Typpruefer die Werte. Wenn value_sets_checked gegen null geht, ist diese Pruefung erledigt und gehoert entfernt statt repariert."
   }
 }

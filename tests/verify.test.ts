@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   actionableConsoleErrors,
+  applyFrontendBase,
   artifactSegment,
   classifyVerificationExit,
   failedSameOriginRequests,
@@ -11,6 +12,45 @@ import {
   withImprintRoute,
   withTabQuery,
 } from "../src/verify/homepage.ts";
+
+describe("preview URL against a different renderer", () => {
+  // Befund 2026-08-27: --frontend-base wurde beim Entwurfsweg still geschluckt.
+  // Der Lauf rendert dann die DEPLOYTE App, waehrend man glaubt, den lokalen
+  // Stand zu pruefen — und schliesst aus dem leeren Ergebnis, der eigene Code
+  // sei kaputt. Genau das ist passiert.
+  const vorschau =
+    "https://web.comvenio.app/home-preview/8d61babd-47ab-406e-b823-0dc04cf03f6b/63a79858-174e-4e5f-824f-190caca5f829";
+
+  test("keeps path and swaps the origin", () => {
+    expect(applyFrontendBase(vorschau, "http://localhost:5173")).toBe(
+      "http://localhost:5173/home-preview/8d61babd-47ab-406e-b823-0dc04cf03f6b/63a79858-174e-4e5f-824f-190caca5f829",
+    );
+  });
+
+  test("carries the query along", () => {
+    expect(applyFrontendBase(`${vorschau}?tab=start`, "http://localhost:5173")).toBe(
+      "http://localhost:5173/home-preview/8d61babd-47ab-406e-b823-0dc04cf03f6b/63a79858-174e-4e5f-824f-190caca5f829?tab=start",
+    );
+  });
+
+  test("a trailing slash on the base does not double up", () => {
+    expect(applyFrontendBase(vorschau, "http://localhost:5173/")).toBe(
+      "http://localhost:5173/home-preview/8d61babd-47ab-406e-b823-0dc04cf03f6b/63a79858-174e-4e5f-824f-190caca5f829",
+    );
+  });
+
+  test("the hosted default leaves the URL as it was", () => {
+    // Gegenprobe: Ohne Override darf sich nichts aendern — sonst waere die
+    // Reparatur eine Verhaltensaenderung fuer jeden bestehenden Aufruf.
+    expect(applyFrontendBase(vorschau, "https://web.comvenio.app")).toBe(vorschau);
+  });
+
+  test("a base with a port and a path prefix is honoured", () => {
+    expect(applyFrontendBase(vorschau, "http://127.0.0.1:4173")).toBe(
+      "http://127.0.0.1:4173/home-preview/8d61babd-47ab-406e-b823-0dc04cf03f6b/63a79858-174e-4e5f-824f-190caca5f829",
+    );
+  });
+});
 
 describe("homepage verifier contract", () => {
   test("uses Club.subdomain for the managed live homepage address", () => {

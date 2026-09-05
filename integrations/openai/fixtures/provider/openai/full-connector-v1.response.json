@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "352a403cb4c1fdba81bf5b26514a7c8dae5f39927778167472dcd7cc57a4f278",
+  "runtime_tool_catalog_sha256": "53bb3256efd9565fa2ee2f7af1765be53010d99481dad645c5cf8da3b808670a",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -1757,6 +1757,25 @@
       "expected_outcome": "grounded_success_or_actionable_denial",
       "oauth_bound_club_context": false,
       "backend_rbac_recheck_required": false,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_homepage_04_screenshot",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.write"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
       "confirmation_contract": false,
       "response_contract": {
         "structured_content_required": true,

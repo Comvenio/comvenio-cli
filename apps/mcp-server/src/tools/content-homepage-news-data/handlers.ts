@@ -37,6 +37,7 @@ add("cai.homepage.02.apply", "apply", async (input, context, client) => {
   const result = record(assertClub(await request(client, context, "POST", "club", `/home-config/${string(input, "club_id")}/bulk`, { body: { tabs: input.tabs!, clear_existing: input.clear_existing! } }), input, context));
   return { applied: true, cleared: input.clear_existing === true, tabs: Array.isArray(result.tabs) ? result.tabs.length : 0, sections: typeof result.sections_created === "number" ? result.sections_created : 0, widgets: typeof result.widgets_created === "number" ? result.widgets_created : 0 };
 });
+add("cai.homepage.04.screenshot", "screenshot", async (input, context, client) => request(client, context, "POST", "club", `/home-config/${string(input, "club_id")}/preview/${string(input, "preview_id")}/screenshot`, { body: { viewports: input.viewports!, tab_slug: input.tab_slug ?? null, settle_ms: input.settle_ms! } }));
 simple("cai.homepage.03.show", "private", "GET", "club", (input) => `/home-config/${string(input, "club_id")}/tabs`);
 add("cai.homepage.03.show", "public", async (input, context, client) => new PublicResponseRedactor().redact({ alias: "public_club_home", response: await request(client, context, "GET", "club", `/public/clubs/${string(input, "club_id")}/home`), request_id: context.request_id, expected_club_id: string(input, "club_id") }));
 

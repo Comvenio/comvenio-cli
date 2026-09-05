@@ -20,6 +20,19 @@ type HomePreviewResponse = {
   preview_url?: string;
   expires_at?: string;
 };
+type HomeScreenshotResponse = {
+  preview_id?: string;
+  preview_url?: string;
+  expires_at?: string;
+  screenshots?: Array<{
+    viewport?: string;
+    width?: number;
+    height?: number;
+    mime_type?: string;
+    data_base64?: string;
+    bytes?: number;
+  }>;
+};
 type ClubHomeTabRead = {
   id?: string;
   label?: string;
@@ -38,6 +51,11 @@ type Opts = {
   clear?: boolean;
   public?: boolean;
   open?: boolean;
+  preview?: string;
+  viewport?: string;
+  tab?: string;
+  settleMs?: string;
+  out?: string;
 };
 
 export function parsePreviewTtlHours(value?: string): number | undefined {
@@ -99,6 +117,11 @@ export function registerHomepageCommands(cli: CAC): void {
     .option("--clear", "apply: bestehende Homepage ersetzen (clear_existing)")
     .option("--public", "show: nur oeffentliche Struktur lesen")
     .option("--open", "preview: die Vorschau-URL im Standard-Browser oeffnen")
+    .option("--preview <id>", "screenshot: die preview-id aus `homepage preview`")
+    .option("--viewport <liste>", "screenshot: desktop, mobile oder beide (Vorgabe: desktop,mobile)")
+    .option("--tab <slug>", "screenshot: ein bestimmter Reiter statt der Startseite")
+    .option("--settle-ms <n>", "screenshot: Wartezeit nach dem Laden (Vorgabe 1500)")
+    .option("--out <dir>", "screenshot: Bilder als Dateien ablegen statt base64 auszugeben")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, opts: Opts) => {
       const state = await loadState();
@@ -182,6 +205,65 @@ export function registerHomepageCommands(cli: CAC): void {
           break;
         }
 
+        case "screenshot": {
+          // Rendert eine BEREITS angelegte Vorschau serverseitig zu Bildern.
+          // Nicht zu verwechseln mit `comvenio verify homepage`: Das rendert
+          // lokal ueber playwright-cli und legt Dateien ab — gedacht fuer einen
+          // Agenten auf DIESEM Rechner. Hier rendert der club-service, und die
+          // Bilder gehen denselben Weg wie jede andere Antwort. Nur so sieht
+          // ein entferntes Modell (ChatGPT ueber MCP) sein Ergebnis.
+          if (!opts.preview) {
+            throw new Error("homepage screenshot benoetigt --preview <preview-id> (aus `homepage preview`).");
+          }
+          const viewports = (opts.viewport ?? "desktop,mobile")
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean);
+          const res = await client.post<HomeScreenshotResponse>(
+            "club",
+            `/home-config/${clubId}/preview/${opts.preview}/screenshot`,
+            {
+              viewports,
+              tab_slug: opts.tab ?? null,
+              settle_ms: opts.settleMs ? Number(opts.settleMs) : 1500,
+            },
+          );
+          const bilder = res.screenshots ?? [];
+          // Ohne --out bleibt base64 in der Ausgabe: Ein Agent liest es direkt.
+          // Mit --out landen Dateien auf der Platte, und die Ausgabe nennt die
+          // Pfade statt der Daten — sonst stuende dasselbe Bild zweimal da.
+          const geschrieben: string[] = [];
+          if (opts.out) {
+            const { mkdirSync, writeFileSync } = await import("node:fs");
+            const { join } = await import("node:path");
+            mkdirSync(opts.out, { recursive: true });
+            for (const bild of bilder) {
+              if (!bild.data_base64) continue;
+              const endung = (bild.mime_type ?? "image/jpeg").split("/")[1] ?? "jpeg";
+              const ziel = join(opts.out, `${opts.preview}-${bild.viewport ?? "abzug"}.${endung}`);
+              writeFileSync(ziel, Buffer.from(bild.data_base64, "base64"));
+              geschrieben.push(ziel);
+            }
+          }
+          output(
+            opts.out
+              ? { ...res, screenshots: bilder.map(({ data_base64: _weg, ...rest }) => rest), files: geschrieben }
+              : res,
+            opts.json,
+            () => {
+              if (bilder.length === 0) return "Keine Abzuege erhalten.";
+              const zeilen = bilder.map((b) =>
+                `  ${(b.viewport ?? "?").padEnd(8)} ${b.width ?? "?"}x${b.height ?? "?"}  ${b.bytes ?? 0} Bytes`,
+              );
+              const dateien = geschrieben.length > 0
+                ? `\nGeschrieben:\n${geschrieben.map((f) => `  ${f}`).join("\n")}`
+                : "\n(ohne --out stehen die Bilder als base64 in der JSON-Ausgabe)";
+              return `${bilder.length} Abzug(e) von ${res.preview_url ?? "?"}:\n${zeilen.join("\n")}${dateien}`;
+            },
+          );
+          break;
+        }
+
         case "apply": {
           // Declarative (D-12): agent composes tabs/sections/widgets, CLI posts to bulk.
           if (!opts.file) {
@@ -233,7 +315,7 @@ export function registerHomepageCommands(cli: CAC): void {
         }
 
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, apply, show (generate/design entfernt — Agent komponiert deklarativ)`);
+          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, screenshot, apply, show (generate/design entfernt — Agent komponiert deklarativ)`);
       }
     });
 }

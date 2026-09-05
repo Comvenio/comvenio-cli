@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "352a403cb4c1fdba81bf5b26514a7c8dae5f39927778167472dcd7cc57a4f278",
+  "catalog_source_hash_sha256": "53bb3256efd9565fa2ee2f7af1765be53010d99481dad645c5cf8da3b808670a",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1356,6 +1356,21 @@
     {
       "tool_name": "cv_homepage_03_show",
       "prompt": "Prüfe „Comvenio: Homepage – show“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_homepage_04_screenshot",
+      "prompt": "Prüfe „Comvenio: Homepage – screenshot“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",
