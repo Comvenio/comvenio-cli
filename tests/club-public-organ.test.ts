@@ -12,3 +12,9 @@ test("public organ rejects absent and path-like selectors", () => {
   expect(() => publicOrganPath(club, "../settings")).toThrow();
   expect(() => publicOrganPath("../../clubs", group)).toThrow();
 });
+
+test("public organ preview stays explicitly scoped and rejects query injection", () => {
+  expect(publicOrganPath(club, group, true, group)).toEndWith(`&preview_id=${group}`);
+  expect(() => publicOrganPath(club, group, true, "x&other=y")).toThrow();
+  expect(() => publicOrganPath(club, group, true, "")).toThrow();
+});

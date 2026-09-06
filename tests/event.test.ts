@@ -84,6 +84,14 @@ describe("event templates", () => {
 });
 
 describe("event series", () => {
+  test("open-ended occurrences explicitly transmit null rather than the default duration", () => {
+    const opts = { startTime: "2026-09-11T19:30:00+02:00", openEnd: true, weekdays: "FR", until: "2027-06-25T23:59:59+02:00" };
+    const template = { id: "template", title: "Vereinsabend", is_template: true };
+    const body = buildSeriesCreateBody(opts, "club", template);
+    expect(body.duration_minutes).toBeNull();
+    expect(body.rrule).toBe("FREQ=WEEKLY;BYDAY=FR;UNTIL=20270625T215959Z");
+    expect(() => buildSeriesCreateBody({ ...opts, durationMinutes: "120" }, "club", template)).toThrow("nicht gleichzeitig");
+  });
   test("builds a readable weekly recurrence rule", () => {
     expect(buildSeriesRrule({
       frequency: "weekly",

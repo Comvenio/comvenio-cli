@@ -38,6 +38,12 @@ comvenio event series materialize <series-id> \
 
 Der Ablauf ist immer: **Vorlage erstellen → Serie definieren → konkretes Zeitfenster materialisieren**. `materialize` ist idempotent und überspringt vorhandene Termine.
 
+Für „Ende offen“ bei `event series create` das Flag `--open-end` statt
+`--duration-minutes` verwenden. Das übermittelt ausdrücklich `duration_minutes=null`;
+die erzeugten Termine haben `end_time=null`. Der Zeitraum der Serie wird davon
+unabhängig mit `--until <iso>` begrenzt. Ohne beide Dauer-Flags bleibt die bisherige
+Standarddauer bestehen. Erfordert den Seriendienst mit Unterstützung für offene Enden.
+
 ## Begriffe und Regeln
 
 | Begriff | Bedeutung |

@@ -354,15 +354,15 @@ describe("Herkunft der Config-Felder", () => {
 
   test("alle Felder haben es unveraendert durch den Umbau geschafft", () => {
     // Synchronized main renderer plus managed media and inline dates:
-    // 548 declared fields / 137 value sets. Keep losses explicit.
+    // 550 declared fields / 139 value sets. Keep losses explicit.
     // Sinkt eine der Zahlen, hat die Deklaration etwas verloren, was der
     // Prompt noch trug.
     const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
-    expect(felder).toBe(548);
+    expect(felder).toBe(550);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;
-    expect(mitWerten).toBe(137);
+    expect(mitWerten).toBe(139);
   });
 });

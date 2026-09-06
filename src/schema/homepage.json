@@ -932,6 +932,14 @@
     "events_list": {
       "config": [
         {
+          "name": "time_scope",
+          "values": [
+            "upcoming",
+            "past",
+            "all"
+          ]
+        },
+        {
           "name": "limit"
         },
         {
@@ -1408,6 +1416,13 @@
     },
     "image": {
       "config": [
+        {
+          "name": "source",
+          "values": [
+            "configured",
+            "club_logo"
+          ]
+        },
         {
           "name": "file_id"
         },
@@ -3175,13 +3190,13 @@
   },
   "config_sync": {
     "widgets_checked": 71,
-    "fields_checked": 548,
+    "fields_checked": 550,
     "widgets_with_unread_fields": 12,
     "unread_fields": 22,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 33,
-    "value_sets_unreadable": 104,
+    "value_sets_unreadable": 106,
     "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,

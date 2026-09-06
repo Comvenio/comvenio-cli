@@ -85,6 +85,7 @@ export type EventCommandOpts = EventOperationOpts & {
   byMonth?: string;
   byMonthDay?: string;
   durationMinutes?: string;
+  openEnd?: boolean;
   timezone?: string;
   until?: string;
   count?: string;
@@ -294,9 +295,12 @@ export function buildSeriesCreateBody(
     ? Math.max(1, Math.round((new Date(template.end_time).getTime() - new Date(template.start_time).getTime()) / 60000))
     : 120;
   const duration = positiveInteger(o.durationMinutes, "--duration-minutes") ?? templateDuration;
+  if (o.openEnd && o.durationMinutes !== undefined) {
+    throw new Error("--open-end und --duration-minutes können nicht gleichzeitig verwendet werden.");
+  }
   const defaultFrequency = seriesType === "YEARLY_TEMPLATE" ? "yearly" : "weekly";
 
-  return prune({
+  const body = prune({
     club_id: clubId,
     title,
     description: o.description ?? template.description,
@@ -314,6 +318,7 @@ export function buildSeriesCreateBody(
     series_type: seriesType,
     materialization_mode: rawMode.toUpperCase(),
   });
+  return o.openEnd ? { ...body, duration_minutes: null } : body;
 }
 
 /**
@@ -361,6 +366,7 @@ export function registerEventCommands(cli: CAC): void {
     .option("--by-month-day <n>", "Tag im Monat 1-31")
     .option("--rrule <v>", "Erweiterte RRULE; ersetzt die vereinfachten Serien-Flags")
     .option("--duration-minutes <n>", "Termindauer in Minuten (Default aus Vorlage oder 120)")
+    .option("--open-end", "series create: Ende offen, keine Endzeit pro Termin setzen")
     .option("--timezone <v>", "Zeitzone (Default Europe/Berlin)")
     .option("--until <iso>", "Letzte Wiederholung als ISO-Datum")
     .option("--count <n>", "Maximale Anzahl Wiederholungen")

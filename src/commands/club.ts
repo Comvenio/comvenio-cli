@@ -43,14 +43,16 @@ export type Opts = {
   dryRun?: boolean;
   tree?: boolean;
   avatars?: boolean;
+  previewId?: string;
 };
 
-export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false): string {
+export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false, previewId?: string): string {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuid.test(clubId) || !groupId || !uuid.test(groupId)) {
     throw new Error("club public-organ <group-id> benötigt gültige Vereins- und Organ-UUIDs.");
   }
-  return `/public/clubs/${clubId}/organs/${groupId}?include_avatars=${avatars}`;
+  if (previewId !== undefined && !uuid.test(previewId)) throw new Error("Ungültige Vorschau-UUID.");
+  return `/public/clubs/${clubId}/organs/${groupId}?include_avatars=${avatars}${previewId ? `&preview_id=${previewId}` : ""}`;
 }
 
 // Hub templates the backend renders (ClubThemeProvider .club-hub--{name}).
@@ -214,6 +216,7 @@ export function registerClubCommands(cli: CAC): void {
     .option("--dry-run", "design: nur anzeigen was geschrieben wuerde (kein Write)")
     .option("--tree", "department-list: hierarchischen Abteilungsbaum laden")
     .option("--avatars", "public-organ: öffentliche Comvenio-Avatare mitladen")
+    .option("--preview-id <id>", "public-organ: Organ innerhalb einer gültigen Homepage-Vorschau lesen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = await loadState();
@@ -226,7 +229,7 @@ export function registerClubCommands(cli: CAC): void {
         case "public-legal": {
           const clubId = opts.club ?? state.clubId;
           if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
-          const path = action === "public-organ" ? publicOrganPath(clubId, id, opts.avatars)
+          const path = action === "public-organ" ? publicOrganPath(clubId, id, opts.avatars, opts.previewId)
             : action === "public-legal" ? `/public/clubs/${encodeURIComponent(clubId)}/legal`
             : `/${action === "group-list" ? "groups" : "positions"}/by_club/${encodeURIComponent(clubId)}`;
           const data = await client.get<unknown>("club", path);

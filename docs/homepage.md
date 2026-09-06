@@ -365,9 +365,28 @@ oder die deklarative Datei korrigiert.
 Das `team`-Widget kann mit `group_id` an ein Vereinsorgan gebunden werden.
 `show_avatar` steuert die öffentlichen Comvenio-Avatare einschließlich der
 Platzhalter. Namen und Positionstexte stammen aus den aktuellen Vereinsdaten;
-Default-Positionen werden serverseitig ausgeschlossen. Die Auswahl eines Organs
-ist noch keine öffentliche Freigabe: Diese muss im Club Hub separat erfolgen.
-Ohne Freigabe werden keine privaten Mitglieder als Ersatz angezeigt.
+Default-Positionen werden serverseitig ausgeschlossen. Ein gespeichertes Organ-Widget
+auf einer öffentlichen, aktiven Seite gibt genau dieses Organ frei — auch als
+`data-widget-slot` in `custom_html`. Ein separater Freigabeschalter ist nicht nötig.
+Private Seiten, versteckte Sections und gelöschte Widgets geben nichts frei.
+Nach Entfernen aller öffentlichen Widgets endet der Zugriff. Vorschauen sind
+separat an ihren gültigen, zeitlich begrenzten Link gebunden (`preview_id`);
+sie schalten den Live-Endpunkt nicht frei. Der Avatar-Schalter begrenzt auch die
+öffentliche Datenprojektion. Bereits geladene Daten/Avatar-URLs können bis zum
+nächsten Abruf beziehungsweise URL-Ablauf sichtbar bleiben.
+
+Die Organansicht ist positionsbezogen: Auch unbesetzte, nicht-default Positionen
+erscheinen mit Positionsbeschreibung, leerem Avatarplatz und „Nicht besetzt“.
+Eine nicht verfügbare Datenquelle wird nicht als unbesetzte Position interpretiert.
+
+Für das `image`-Widget bindet `source=club_logo` das aktuelle Vereinslogo;
+es hat Vorrang vor einer hinterlegten Datei oder URL. Änderungen am Vereinslogo
+werden beim nächsten Abruf übernommen. Der Editor bietet dieselbe Quellenauswahl.
+
+`events_list.time_scope` unterscheidet `past` (abgeschlossene Veranstaltungen,
+zuletzt beendet zuerst), `upcoming` (nächste Veranstaltungen) und `all`.
+Rückblick und Ausschau können als zwei Widgets gestaltet werden. Der öffentliche
+Rückblick wird bereits vor dem serverseitigen Limit nach Abschlussdatum sortiert.
 
 `event_highlight` kann über `series_id` die nächste veröffentlichte Veranstaltung
 einer bestimmten Serie anzeigen. Die Datumsformate `weekday-time` und `time`
