@@ -360,6 +360,27 @@ oder die deklarative Datei korrigiert.
 
 ## 9. Qualitätscheckliste
 
+### Verwaltete Organe, Serientermine und Lauftext
+
+Das `team`-Widget kann mit `group_id` an ein Vereinsorgan gebunden werden.
+`show_avatar` steuert die öffentlichen Comvenio-Avatare einschließlich der
+Platzhalter. Namen und Positionstexte stammen aus den aktuellen Vereinsdaten;
+Default-Positionen werden serverseitig ausgeschlossen. Die Auswahl eines Organs
+ist noch keine öffentliche Freigabe: Diese muss im Club Hub separat erfolgen.
+Ohne Freigabe werden keine privaten Mitglieder als Ersatz angezeigt.
+
+`event_highlight` kann über `series_id` die nächste veröffentlichte Veranstaltung
+einer bestimmten Serie anzeigen. Die Datumsformate `weekday-time` und `time`
+eignen sich für Vereinsabende. Angezeigt werden echte materialisierte Termine,
+keine aus einem Text angenommene Wiederholung.
+
+Beim Lauftext steuert `speed_px_per_second` die Geschwindigkeit (10–150).
+Die Einstellung ist im Widget-Editor verfügbar; die Geschwindigkeit bleibt
+auch bei unterschiedlich langen Inhalten konstant. Beispielsweise entspricht
+55 einer mittleren Geschwindigkeit.
+
+### Abnahme
+
 Vor Übergabe prüfen:
 
 - Homepage ist kein One-Pager, wenn der Nutzer mehrere Seiten verlangt.

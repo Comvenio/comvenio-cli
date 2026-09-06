@@ -93,6 +93,28 @@ Die menschenlesbare Ansicht zeigt Name, Kurzname, Adresse, E-Mail, Telefon, Webs
 
 ## Club-Profil und Settings
 
+### Öffentliche Vereinsorgane und Impressum prüfen
+
+```bash
+comvenio club group-list --json
+comvenio club position-list --json
+comvenio club public-organ <group-id> --json
+comvenio club public-organ <group-id> --avatars --json
+comvenio club public-legal --json
+```
+
+`public-organ` liefert nur ausdrücklich freigegebene Organe aktiver Vereine.
+Positionen mit `is_default=true` werden ausgeschlossen; Mitglieder ohne andere
+aktuelle Position erscheinen nicht. Die Antwort enthält Namen und Beschreibungen
+der Positionen, aber keine privaten Kontaktdaten. Öffentliche Comvenio-Avatare
+werden ausschließlich mit `--avatars` angefordert. Fehlende Avatare sind erlaubt.
+Die Freigabe wird separat im Club Hub verwaltet; diese Lesebefehle verändern sie nicht.
+
+`public-legal` prüft die öffentlichen Vereinsangaben einschließlich des aufgelösten
+Vereinsverantwortlichen. Fehlende Angaben dürfen nicht durch erfundene Daten ersetzt werden.
+
+### Profil ändern
+
 ```bash
 comvenio club update --file club-update.json --json
 comvenio club settings --json

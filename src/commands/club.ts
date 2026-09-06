@@ -42,7 +42,16 @@ export type Opts = {
   clearHeader?: boolean;
   dryRun?: boolean;
   tree?: boolean;
+  avatars?: boolean;
 };
+
+export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false): string {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuid.test(clubId) || !groupId || !uuid.test(groupId)) {
+    throw new Error("club public-organ <group-id> benötigt gültige Vereins- und Organ-UUIDs.");
+  }
+  return `/public/clubs/${clubId}/organs/${groupId}?include_avatars=${avatars}`;
+}
 
 // Hub templates the backend renders (ClubThemeProvider .club-hub--{name}).
 // Mirrors the valid_themes list in club-service routes/club_settings.py.
@@ -184,7 +193,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -204,12 +213,26 @@ export function registerClubCommands(cli: CAC): void {
     .option("--clear-header", "design: konfigurierten Public-Header entfernen und Template-Header wiederherstellen")
     .option("--dry-run", "design: nur anzeigen was geschrieben wuerde (kein Write)")
     .option("--tree", "department-list: hierarchischen Abteilungsbaum laden")
+    .option("--avatars", "public-organ: öffentliche Comvenio-Avatare mitladen")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = await loadState();
       const client = createClient(state);
 
       switch (action) {
+        case "group-list":
+        case "position-list":
+        case "public-organ":
+        case "public-legal": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const path = action === "public-organ" ? publicOrganPath(clubId, id, opts.avatars)
+            : action === "public-legal" ? `/public/clubs/${encodeURIComponent(clubId)}/legal`
+            : `/${action === "group-list" ? "groups" : "positions"}/by_club/${encodeURIComponent(clubId)}`;
+          const data = await client.get<unknown>("club", path);
+          output(data, opts.json, () => JSON.stringify(data, null, 2));
+          break;
+        }
         case "list": {
           const query = opts.search
             ? `?search=${encodeURIComponent(opts.search)}`
@@ -421,7 +444,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: info, update, settings, settings-update, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });

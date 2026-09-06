@@ -18,7 +18,8 @@ describe("homepage schema", () => {
   test("supports inline event dates without a second event record", () => {
     const fields = homepage.widgets.event_highlight.config;
     expect(fields.find((field: { name: string }) => field.name === "layout").values).toContain("date");
-    expect(fields).toContainEqual({ name: "date_format", values: ["full", "days", "month-year"] });
+    expect(fields).toContainEqual({ name: "date_format", values: ["full", "days", "month-year", "weekday-time", "time"] });
+    expect(fields).toContainEqual({ name: "series_id" });
     expect(fields).toContainEqual({ name: "date_timezone" });
     expect(homepage.widgets.event_highlight.config_not_read_by_widget ?? []).not.toContain("date_format");
   });
@@ -353,12 +354,12 @@ describe("Herkunft der Config-Felder", () => {
 
   test("alle Felder haben es unveraendert durch den Umbau geschafft", () => {
     // Synchronized main renderer plus managed media and inline dates:
-    // 544 declared fields / 137 value sets. Keep losses explicit.
+    // 548 declared fields / 137 value sets. Keep losses explicit.
     // Sinkt eine der Zahlen, hat die Deklaration etwas verloren, was der
     // Prompt noch trug.
     const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
-    expect(felder).toBe(544);
+    expect(felder).toBe(548);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;

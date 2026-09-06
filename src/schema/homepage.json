@@ -878,6 +878,9 @@
     "ticker": {
       "config": [
         {
+          "name": "speed_px_per_second"
+        },
+        {
           "name": "show_events"
         },
         {
@@ -960,6 +963,9 @@
     "event_highlight": {
       "config": [
         {
+          "name": "series_id"
+        },
+        {
           "name": "event_id"
         },
         {
@@ -977,7 +983,9 @@
           "values": [
             "full",
             "days",
-            "month-year"
+            "month-year",
+            "weekday-time",
+            "time"
           ]
         },
         {
@@ -1051,6 +1059,10 @@
             "neon"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "event_id",
+        "show_title"
       ]
     },
     "event_calendar": {
@@ -1185,6 +1197,12 @@
     },
     "team": {
       "config": [
+        {
+          "name": "group_id"
+        },
+        {
+          "name": "show_avatar"
+        },
         {
           "name": "department_id"
         },
@@ -3157,9 +3175,9 @@
   },
   "config_sync": {
     "widgets_checked": 71,
-    "fields_checked": 544,
-    "widgets_with_unread_fields": 11,
-    "unread_fields": 20,
+    "fields_checked": 548,
+    "widgets_with_unread_fields": 12,
+    "unread_fields": 22,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 33,
