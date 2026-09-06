@@ -1391,6 +1391,9 @@
     "image": {
       "config": [
         {
+          "name": "file_id"
+        },
+        {
           "name": "mode",
           "values": [
             "image",
@@ -3154,7 +3157,7 @@
   },
   "config_sync": {
     "widgets_checked": 71,
-    "fields_checked": 543,
+    "fields_checked": 544,
     "widgets_with_unread_fields": 11,
     "unread_fields": 20,
     "widgets_with_wrong_values": 0,
