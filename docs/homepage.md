@@ -165,6 +165,53 @@ Die vollständigen FuPa-Felder stehen ausschließlich im Schema. Aktuell ist
 
 ## 6. Design komponieren
 
+### Verwaltbare Galerie, Downloads und Lauftext
+
+Diese Ergänzungen benötigen die dazugehörigen ausgelieferten Web- und Service-Versionen.
+Das CLI-Schema wird vollständig aus der passenden Web-Deklaration erzeugt.
+Hinweise zu nicht gelesenen Feldern bleiben als Diagnose sichtbar; daraus folgt
+keine Zusicherung, dass jedes bestehende Widget jedes deklarierte Feld verwendet.
+
+- `image_gallery.source`: `files` (bewusst ausgewählte `file_ids` in Reihenfolge),
+  `club` (öffentliche Vereinsbilder), `event` (`event_id`), `recent_events`
+  (letzte drei abgeschlossene öffentliche Events), `folder` (`folder_id`, direkte
+  Ordnerinhalte) oder `urls` (externe `urls`). `limit`: 1–50, Standard 24.
+- Nur öffentliche, fertige, aktive Bilder desselben Vereins; Event-Quellen lassen
+  Titelbilder/Flyer/Logos aus. Ordnerquelle braucht die öffentliche Galerieprojektion;
+  niemals als Ersatz einen privaten Ordnerabruf verwenden. Keine automatische
+  Änderung der Dateirechte. Moments sind noch keine freigegebene öffentliche Quelle.
+- `files.source=files` mit `file_ids` bietet gezielte Downloads, z. B. genau das
+  Antrags-PDF. Eine leere Auswahl zeigt keine beliebigen anderen Vereinsdateien.
+- `ticker`: `show_events`, `show_news`, `show_birthdays`, `news_limit`, `events_limit`.
+  Für zwei neueste News `news_limit=2`; zusätzliche Quellen standardmäßig aus.
+  Geburtstage nur nach geklärter Veröffentlichung, nur Vorname und Tag/Monat.
+- In eingebetteten `custom_html`-Widgets lassen sich diese Inhalte auch über
+  „Bildergalerie/Downloads/News/Lauftext verwalten“ bedienen; kein HTML-Editieren nötig.
+- Dateiquellen werden regelmäßig neu gelesen; Berechtigungsänderungen können durch
+  bereits ausgegebene zeitlich begrenzte Download-URLs verzögert sichtbar werden.
+- Das bisherige `membership_form` ist kein digitaler Aufnahmeprozess. Es darf keinen
+  erfolgreichen Antrag bestätigen, bevor ein echter Antragsendpunkt angebunden ist.
+
+### Event-Datum im eigenen Layout
+
+Ab der Web-/CLI-Version mit `event_highlight.layout=date` lassen sich
+Event-Termine als Inline-Text einbetten. Vorher das installierte Schema und
+den Renderer-Stand prüfen; ältere Renderer kennen diese Variante nicht.
+
+```html
+<span data-widget-slot="event_highlight"
+      data-widget-config='{"event_id":"<event-id>","layout":"date","date_format":"full","date_timezone":"Europe/Berlin"}'></span>
+```
+
+Die Event-ID ist bei dieser Darstellung Pflicht. `date_format` ist `full`
+(vollständiger Zeitraum), `days` (Tageszahlen) oder `month-year` (Monat/Jahr).
+Bei Monats-/Jahreswechsel wird ein vollständiger Zeitraum angezeigt.
+Farbe und Schrift kommen aus dem umgebenden Layout. Es entsteht keine Karte
+und keine zweite Kopie des Termins. Die Event-Daten werden beim Laden über
+die bestehende öffentliche Quelle gelesen; Sofortaktualisierung bereits
+offener anonymer Seiten wird damit nicht zugesichert. Bei nicht verfügbarem
+Event wird kein fest eingetragener Ersatztermin ausgegeben.
+
 ```bash
 comvenio club design --file design-settings.json --dry-run --json
 ```

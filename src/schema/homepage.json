@@ -341,7 +341,12 @@
           "name": "content"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "prose",
+            "quote",
+            "callout"
+          ]
         },
         {
           "name": "show_title"
@@ -353,7 +358,13 @@
           "name": "callout_title"
         },
         {
-          "name": "callout_icon"
+          "name": "callout_icon",
+          "values": [
+            "info",
+            "tip",
+            "warning",
+            "star"
+          ]
         },
         {
           "name": "author"
@@ -650,7 +661,13 @@
           "name": "subheading"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "accordion",
+            "grid",
+            "two-column",
+            "search"
+          ]
         },
         {
           "name": "show_title"
@@ -669,7 +686,13 @@
           "name": "advertiser_ids"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "grid",
+            "marquee",
+            "carousel",
+            "tiered"
+          ]
         },
         {
           "name": "show_title"
@@ -701,7 +724,14 @@
           "name": "label"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "blocks",
+            "inline",
+            "ring",
+            "flip",
+            "minimal"
+          ]
         },
         {
           "name": "show_event_date"
@@ -814,6 +844,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "department_id"
         }
       ]
     },
@@ -830,11 +863,35 @@
             "minimal",
             "magazine"
           ]
+        },
+        {
+          "name": "department_id"
+        },
+        {
+          "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "ticker": {
       "config": [
+        {
+          "name": "show_events"
+        },
+        {
+          "name": "show_news"
+        },
+        {
+          "name": "show_birthdays"
+        },
+        {
+          "name": "news_limit"
+        },
+        {
+          "name": "events_limit"
+        },
         {
           "name": "style",
           "values": [
@@ -860,7 +917,13 @@
         },
         {
           "name": "pause_on_hover"
+        },
+        {
+          "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "events_list": {
@@ -888,6 +951,9 @@
             "compact",
             "calendar-strip"
           ]
+        },
+        {
+          "name": "department_id"
         }
       ]
     },
@@ -902,8 +968,20 @@
             "hero",
             "card",
             "banner",
-            "countdown-focus"
+            "countdown-focus",
+            "date"
           ]
+        },
+        {
+          "name": "date_format",
+          "values": [
+            "full",
+            "days",
+            "month-year"
+          ]
+        },
+        {
+          "name": "date_timezone"
         },
         {
           "name": "countdown_style",
@@ -923,7 +1001,13 @@
           "name": "show_event_type_badge"
         },
         {
-          "name": "animation_style"
+          "name": "animation_style",
+          "values": [
+            "fade",
+            "slide",
+            "pulse",
+            "none"
+          ]
         },
         {
           "name": "design_preset",
@@ -937,6 +1021,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -980,7 +1067,13 @@
             0,
             1
           ]
+        },
+        {
+          "name": "department_id"
         }
+      ],
+      "config_not_read_by_widget": [
+        "days_ahead"
       ]
     },
     "event_program": {
@@ -1004,6 +1097,9 @@
         {
           "name": "show_responsible"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_responsible"
       ]
     },
     "event_rsvp": {
@@ -1275,11 +1371,21 @@
           "name": "max_honors"
         },
         {
-          "name": "animation_style"
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "reveal",
+            "none"
+          ]
         },
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_member_name",
+        "show_date",
+        "animation_style"
       ]
     },
     "image": {
@@ -1313,7 +1419,14 @@
           ]
         },
         {
-          "name": "aspect_ratio"
+          "name": "aspect_ratio",
+          "values": [
+            "auto",
+            "16:9",
+            "4:3",
+            "1:1",
+            "21:9"
+          ]
         },
         {
           "name": "enable_lightbox"
@@ -1343,11 +1456,40 @@
         },
         {
           "name": "file_description"
+        },
+        {
+          "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "image_gallery": {
       "config": [
+        {
+          "name": "source",
+          "values": [
+            "club",
+            "files",
+            "event",
+            "recent_events",
+            "folder",
+            "urls"
+          ]
+        },
+        {
+          "name": "file_ids"
+        },
+        {
+          "name": "event_id"
+        },
+        {
+          "name": "folder_id"
+        },
+        {
+          "name": "limit"
+        },
         {
           "name": "urls"
         },
@@ -1365,7 +1507,13 @@
             "carousel",
             "filmstrip"
           ]
+        },
+        {
+          "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_title"
       ]
     },
     "video": {
@@ -1390,6 +1538,9 @@
         },
         {
           "name": "theater_mode"
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1421,7 +1572,11 @@
           "name": "loop"
         },
         {
-          "name": "object_fit"
+          "name": "object_fit",
+          "values": [
+            "cover",
+            "contain"
+          ]
         },
         {
           "name": "min_height"
@@ -1473,6 +1628,16 @@
     "files": {
       "config": [
         {
+          "name": "source",
+          "values": [
+            "club",
+            "files"
+          ]
+        },
+        {
+          "name": "file_ids"
+        },
+        {
           "name": "limit"
         },
         {
@@ -1510,7 +1675,11 @@
           "name": "limit"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "cards",
+            "list"
+          ]
         },
         {
           "name": "show_title"
@@ -1557,7 +1726,12 @@
           "name": "show_title"
         },
         {
-          "name": "layout"
+          "name": "layout",
+          "values": [
+            "elegant",
+            "compact",
+            "card"
+          ]
         },
         {
           "name": "design_preset",
@@ -1597,6 +1771,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1623,6 +1800,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1660,6 +1840,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1689,6 +1872,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -1977,7 +2163,13 @@
           "name": "show_avatar"
         },
         {
-          "name": "card_style"
+          "name": "card_style",
+          "values": [
+            "minimal",
+            "glassmorphism",
+            "bordered",
+            "elevated"
+          ]
         },
         {
           "name": "show_title"
@@ -2009,7 +2201,12 @@
           "name": "show_title"
         },
         {
-          "name": "speed"
+          "name": "speed",
+          "values": [
+            "slow",
+            "normal",
+            "fast"
+          ]
         },
         {
           "name": "direction",
@@ -2062,7 +2259,12 @@
           ]
         },
         {
-          "name": "animation_style"
+          "name": "animation_style",
+          "values": [
+            "stagger",
+            "slide",
+            "none"
+          ]
         }
       ]
     },
@@ -2102,6 +2304,9 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_live_indicator"
       ]
     },
     "sport_api": {
@@ -2230,6 +2435,16 @@
             "neon"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "team_id",
+        "league_id",
+        "widget_type",
+        "show_team_logo",
+        "show_league_name",
+        "show_standings",
+        "show_last_results",
+        "show_next_match"
       ]
     },
     "member_counter": {
@@ -2299,6 +2514,9 @@
             "neon"
           ]
         }
+      ],
+      "config_not_read_by_widget": [
+        "show_contact"
       ]
     },
     "next_training": {
@@ -2318,6 +2536,9 @@
             "outlined",
             "neon"
           ]
+        },
+        {
+          "name": "show_title"
         }
       ]
     },
@@ -2799,6 +3020,9 @@
         {
           "name": "show_title"
         }
+      ],
+      "config_not_read_by_widget": [
+        "department_id"
       ]
     },
     "chat_preview": {
@@ -2930,13 +3154,13 @@
   },
   "config_sync": {
     "widgets_checked": 71,
-    "fields_checked": 514,
-    "widgets_with_unread_fields": 0,
-    "unread_fields": 0,
+    "fields_checked": 543,
+    "widgets_with_unread_fields": 11,
+    "unread_fields": 20,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
-    "value_sets_checked": 69,
-    "value_sets_unreadable": 51,
+    "value_sets_checked": 33,
+    "value_sets_unreadable": 104,
     "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,

@@ -7,6 +7,21 @@ const schema = (name: string) =>
 
 describe("homepage schema", () => {
   const homepage = schema("homepage");
+  test("supports managed galleries, selected downloads and mixed tickers", () => {
+    expect(homepage.widgets.image_gallery.config).toContainEqual({ name: "source", values: ["club", "files", "event", "recent_events", "folder", "urls"] });
+    expect(homepage.widgets.files.config).toContainEqual({ name: "file_ids" });
+    for (const name of ["show_events", "show_news", "show_birthdays", "news_limit", "events_limit"]) {
+      expect(homepage.widgets.ticker.config).toContainEqual({ name });
+    }
+  });
+
+  test("supports inline event dates without a second event record", () => {
+    const fields = homepage.widgets.event_highlight.config;
+    expect(fields.find((field: { name: string }) => field.name === "layout").values).toContain("date");
+    expect(fields).toContainEqual({ name: "date_format", values: ["full", "days", "month-year"] });
+    expect(fields).toContainEqual({ name: "date_timezone" });
+    expect(homepage.widgets.event_highlight.config_not_read_by_widget ?? []).not.toContain("date_format");
+  });
 
   test("mirrors all homepage vocabularies", () => {
     expect(homepage.widget_count).toBe(71);
@@ -337,15 +352,16 @@ describe("Herkunft der Config-Felder", () => {
   });
 
   test("alle Felder haben es unveraendert durch den Umbau geschafft", () => {
-    // Die Umstellung war verlustfrei: 514 Felder, davon 120 mit Wertemenge.
+    // Synchronized main renderer plus managed media and inline dates:
+    // 543 declared fields / 137 value sets. Keep losses explicit.
     // Sinkt eine der Zahlen, hat die Deklaration etwas verloren, was der
     // Prompt noch trug.
     const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
-    expect(felder).toBe(514);
+    expect(felder).toBe(543);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;
-    expect(mitWerten).toBe(120);
+    expect(mitWerten).toBe(137);
   });
 });
