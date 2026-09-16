@@ -25,7 +25,6 @@ export const K8_EVENT_ACTION_IDS = [
   "cai.event.18.sponsor_and_sponsor_program_workflows",
   "cai.event.19.invitation_and_club_invitation_workflows",
   "cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate",
-  "cai.event.21.budget_show_set_delete",
   "cai.event.22.design_theme_and_asset_workflows",
   "cai.event.23.copy_set_reset",
   "cai.event.24.dj_settings_and_request_workflows",

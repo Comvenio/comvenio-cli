@@ -130,7 +130,14 @@ describe("Comvenio connector inventory contract", () => {
       entry.state === "DISCOVERED" && entry.published === false && entry.blockers.length === 5)).toBe(true);
   });
 
-  test("covers all 303 legacy actions plus additive procurement and screenshot by an executable adapter or exact replacement", () => {
+  // Zurueckgebaut am 2026-09-16 (Bug 13d5e2ab, Entscheidung Tom): Die Routen
+  // /events/budget-link des event-service sind entfernt, weil sie keinen Leser
+  // hatten und ihre POST-Route ihr CRUD ohne await rief — die Tabelle wurde ueber
+  // den Dienst nie befuellt. Das Inventar bleibt die datierte Momentaufnahme des
+  // Standes von damals; diese Liste nennt, was seither entfallen ist.
+  const RETIRED_LEGACY_ACTION_IDS = new Set(["cai.event.21.budget_show_set_delete"]);
+
+  test("covers all 303 legacy actions minus the retired ones plus additive procurement and screenshot by an executable adapter or exact replacement", () => {
     const directActionIds = [
       ...K7_ACTION_IDS,
       ...K8_ACTION_IDS,
@@ -177,8 +184,8 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(339);
-    expect(new Set(directActionIds).size).toBe(339);
+    expect(directActionIds).toHaveLength(338);
+    expect(new Set(directActionIds).size).toBe(338);
     expect(additiveActionIds).toEqual([
       // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
       // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
@@ -222,12 +229,18 @@ describe("Comvenio connector inventory contract", () => {
       "cai.teams.28.clarification_list",
       "cai.teams.29.clarification_resolve",
     ]);
-    expect(candidateActionIds.every((actionId) => directActionIdSet.has(actionId))).toBe(true);
+    expect(candidateActionIds
+      .filter((actionId) => !RETIRED_LEGACY_ACTION_IDS.has(actionId))
+      .every((actionId) => directActionIdSet.has(actionId))).toBe(true);
+    // Eine zurueckgebaute Aktion darf nicht wieder auftauchen, ohne dass diese
+    // Liste dazu Stellung nimmt.
+    expect([...RETIRED_LEGACY_ACTION_IDS].some((actionId) => directActionIdSet.has(actionId))).toBe(false);
+    expect([...RETIRED_LEGACY_ACTION_IDS].every((actionId) => candidateActionIds.includes(actionId))).toBe(true);
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 339,
-      published_domain_actions: 337,
+      discovered_actions: 338,
+      published_domain_actions: 336,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
