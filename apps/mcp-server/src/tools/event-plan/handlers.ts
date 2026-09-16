@@ -229,11 +229,6 @@ simple(registration, "adjust", "PATCH", by("/event-attendee-registrations/", "re
 simple(registration, "delete", "DELETE", by("/event-attendee-registrations/", "registration_id"), { deleted_id: "registration_id" });
 simple(registration, "aggregate", "GET", by("/club-event-invitations/", "invitation_id", "/aggregate"));
 
-const budget = "cai.event.21.budget_show_set_delete" as const;
-simple(budget, "show", "GET", by("/events/budget-link/", "event_id"));
-simple(budget, "set", "POST", fixed("/events/budget-link/"), { body: (i) => ({ event_id: i.event_id!, club_id: i.club_id!, budget_id: i.budget_id! }) });
-simple(budget, "delete", "DELETE", by("/events/budget-link/", "event_id"), { deleted_id: "event_id" });
-
 const design = "cai.event.22.design_theme_and_asset_workflows" as const;
 simple(design, "theme_show", "GET", by("/events/", "event_id", "/design/theme"));
 simple(design, "theme_set", "PUT", by("/events/", "event_id", "/design/theme"), { body: nested("theme", (i) => ({ event_id: i.event_id!, club_id: i.club_id! })) });

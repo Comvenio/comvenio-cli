@@ -416,15 +416,6 @@ async function handleRegistration({ sub, id, opts, client }: HandlerArgs): Promi
   return true;
 }
 
-async function handleBudget({ sub, id, opts, client, clubId }: HandlerArgs): Promise<boolean> {
-  const eventId = requireId(id, `event budget ${sub ?? ""}`, "event-id");
-  if (sub === "show") emit(await client.get("event", `/events/budget-link/${eventId}`), opts.json, "Budget-Link");
-  else if (sub === "set") emit(await client.post("event", "/events/budget-link/", { ...bodyFile(opts, "event budget set"), event_id: eventId, club_id: clubId }), opts.json, "Budget verknüpft");
-  else if (sub === "delete") await removed(client, `/events/budget-link/${eventId}`, eventId, opts, "Budget-Link");
-  else throw new Error(`Unbekannte event-budget-Aktion "${sub}". Verfügbar: show, set, delete`);
-  return true;
-}
-
 async function handleDesign({ sub, id, opts, client, clubId }: HandlerArgs): Promise<boolean> {
   const eventId = requireId(id, `event design ${sub ?? ""}`, "event-id");
   if (sub === "theme-show") emit(await client.get("event", `/events/${eventId}/design/theme`), opts.json, "Event-Theme");
@@ -534,7 +525,6 @@ export async function handleEventOperation(args: HandlerArgs): Promise<boolean> 
     case "invitation": return handleInvitation(args);
     case "club-invitation": return handleClubInvitation(args);
     case "registration": return handleRegistration(args);
-    case "budget": return handleBudget(args);
     case "design": return handleDesign(args);
     case "copy": return handleCopy(args);
     case "dj": return handleDj(args);

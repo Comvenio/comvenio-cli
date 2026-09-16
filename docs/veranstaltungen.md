@@ -438,7 +438,6 @@ comvenio event registration adjust <registration-id> --file adjustment.json --js
 |---|---|
 | Event-Sponsoren | `event sponsor list|add|delete|tier-list|tier-add|tier-update|tier-delete|tier-sync` |
 | Sponsor und Programmpunkt | `event sponsor-program list|by-program|add|delete` |
-| Budget-Link | `event budget show|set|delete` |
 | Event-Theme und Assets | `event design theme-show|theme-set|theme-delete|asset-list|asset-upload|asset-delete` |
 | Public-Hub-Texte | `event copy set|reset` |
 | DJ | `event dj settings|requests|settings-set|request-status|reset` |
