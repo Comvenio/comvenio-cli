@@ -59,6 +59,8 @@ const CHECK_MODE = process.argv.includes("--check");
  */
 export const QUELL_UMLEITUNGEN: ReadonlyArray<{ prefix: string; env: string }> = [
   { prefix: "Backend/Microservice-Backend/ai-service/", env: "COMVENIO_AI_SERVICE_ROOT" },
+  // widget_kinds.py — a new widget kind lands in club-service and web-page together.
+  { prefix: "Backend/Microservice-Backend/club-service/", env: "COMVENIO_CLUB_SERVICE_ROOT" },
   { prefix: "Frontend/web-page/", env: "COMVENIO_WEBPAGE_ROOT" },
 ];
 

@@ -109,7 +109,7 @@ comvenio club info                    # Vereinsdaten
 
 | Domäne   | Beispiele                                                      |
 |----------|---------------------------------------------------------------|
-| club     | Profil/Settings/Abteilungen: `info\|update\|settings\|settings-update\|department-*` · `club design` |
+| club     | Profil/Settings/Abteilungen: `info\|update\|settings\|settings-update\|department-*` · `club design` · Vereinslogo: `logo\|logo-upload --file` |
 | member   | Mitglieder/Familien/Status/Zeiträume/Import: `list\|show\|add\|update\|remove\|family-*\|status-*\|period-*\|import` |
 | team     | `comvenio team list\|show\|create\|update\|delete` · `team member list\|add\|update\|remove` · `team resource list\|add\|update\|remove` |
 | teams    | Saisonale Mannschaften: `comvenio teams list\|show\|create\|update\|archive` · `teams season list\|show\|create\|update\|activate\|complete` · `teams roster show\|add\|update\|remove\|carry-over` · `teams competition list\|create\|update\|delete` · `teams ical list\|create\|preview\|activate\|deactivate` · `teams sync now\|runs\|clarifications\|resolve`. Wichtige Mutationen verlangen `--yes` (vorher nur Parameterzusammenfassung, kein Write); Exitcodes 0/2/3/4/5. Referenz: `docs/mitglieder-teams.md`. |
@@ -141,6 +141,12 @@ comvenio club info                    # Vereinsdaten
 > **Vereins-Homepages ausführlich:** `docs/homepage.md` — verbindlicher
 > CLI-only-Workflow, Struktur/Design/Preview/Verifier, Plattform-Rechtsseiten,
 > Freigabe-Gate und vollständige Qualitätscheckliste. **Vor jeder Homepage-Arbeit lesen.**
+> **Referenzqualität:** Abschnitt 10 „Qualitätsrezept“ (Bauform `custom_html` + echte
+> Widget-Slots, vollständige Design-Datei mit `"landing": false`, Logo per
+> `club logo-upload`, `card_style: "none"` für freigestellte Wappen, Mobilregeln,
+> Bildvergleich an 390/768/1024/1440 px) und Abschnitt 11 „Fehlerbild → Ursache →
+> Abhilfe“. Ohne diese Abschnitte entstehen Seiten, die in der Vorschau stimmen und
+> live nicht.
 
 > **Veranstaltungen ausführlich:** `docs/veranstaltungen.md` — eigenständige
 > Referenz für alle Event-Hub-Befehle, JSON-Payloads, Serien-Workflow,
@@ -322,7 +328,9 @@ comvenio schema design --json > design-schema.json  # FlexDesignConfig-Vokabular
 #   "homepage_template": "flex", "custom_template_config": { "look_recipe_id": "sport-editorial", <Overrides> } }
 comvenio club design --public-template flex --primary "#1c2fb8" --accent "#3d9bff" --font sporty  # Flags
 comvenio club design --file design_settings.json --dry-run   # oder: volles Objekt, erst Trockenlauf
-comvenio club design --file design_settings.json             # schreibt design_settings (Deep-Merge)
+comvenio club design --file design_settings.json             # schreibt design_settings (Deep-Merge!)
+# Deep-Merge: Live-Schluessel, die die Datei nicht nennt, BLEIBEN. Das CLI listet sie auf stderr
+# und warnt vor einem ueberlebenden landing:true (live keine Kopfzeile). "landing": false setzen.
 # danach: homepage preview --file home.json  -> rendert das flex-Template MIT dieser Config
 ```
 > Brand-Farben kommen aus `--primary/--accent/--secondary`; Recipe/Layout/Hero/Medienfokus aus

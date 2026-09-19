@@ -3,6 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
+import { uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -44,7 +45,66 @@ export type Opts = {
   tree?: boolean;
   avatars?: boolean;
   previewId?: string;
+  // contact-requests action
+  status?: string;
 };
+
+const CONTACT_REQUEST_STATUSES = ["open", "done", "all"] as const;
+
+/** Path of the club's contact requests (homepage-generator 16); validates the filter. */
+export function contactRequestsPath(clubId: string, options: { status?: string; requestId?: string } = {}): string {
+  const base = `/clubs/${encodeURIComponent(clubId)}/contact-requests`;
+  if (options.requestId) return `${base}/${encodeURIComponent(options.requestId)}`;
+  const status = options.status ?? "open";
+  if (!(CONTACT_REQUEST_STATUSES as readonly string[]).includes(status)) {
+    throw new Error("--status erwartet open, done oder all.");
+  }
+  return `${base}?status=${status}`;
+}
+
+/**
+ * Keys that are set in the live design_settings and survive a --file payload.
+ * `club design` deep-merges like the club-service (`_deep_merge_dicts`): where
+ * both sides hold an object it recurses, anything else in the file — a value,
+ * an array or null — replaces the live subtree. What the file does not mention
+ * survives unchanged, at any depth, and the homepage preview does NOT show it
+ * (it renders only the file). Found 2026-09-19: a leftover
+ * `custom_template_config.landing: true` hid the whole public header and
+ * navigation live, while the preview looked right.
+ */
+export function survivingLiveDesignKeys(
+  live: Record<string, unknown> | undefined,
+  patch: Record<string, unknown>,
+): string[] {
+  if (!live) return [];
+  const surviving: string[] = [];
+  const walk = (liveNode: Record<string, unknown>, patchNode: Record<string, unknown>, prefix: string) => {
+    for (const key of Object.keys(liveNode)) {
+      const liveValue = liveNode[key];
+      if (liveValue === null || liveValue === undefined) continue;
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (!(key in patchNode)) {
+        surviving.push(path);
+        continue;
+      }
+      const patchValue = patchNode[key];
+      if (isPlainObject(liveValue) && isPlainObject(patchValue)) walk(liveValue, patchValue, path);
+    }
+  };
+  walk(live, patch, "");
+  return surviving.sort();
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+export function landingSurvives(live: Record<string, unknown> | undefined, patch: Record<string, unknown>): boolean {
+  const liveCtc = live?.custom_template_config;
+  return isPlainObject(liveCtc)
+    && liveCtc.landing === true
+    && survivingLiveDesignKeys(live, patch).includes("custom_template_config.landing");
+}
 
 export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false, previewId?: string): string {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -195,7 +255,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten; group-list, position-list, public-organ, public-legal lesen")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -205,7 +265,7 @@ export function registerClubCommands(cli: CAC): void {
     .option("--font <pair>", `design: Font-Pair (${VALID_FONT_PAIRS.join("|")})`)
     .option("--spacing <mode>", `design: Spacing (${VALID_SPACING.join("|")})`)
     .option("--public-template <id>", `design: oeffentliches Website-Template (${VALID_PUBLIC_TEMPLATES.join("|")})`)
-    .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags)")
+    .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags); logo-upload: Bilddatei des Vereinslogos (PNG/JPG/SVG)")
     .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
     .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
     .option("--header-layout <mode>", `design: Public-Header-Aufbau (${VALID_PUBLIC_HEADER_LAYOUTS.join("|")})`)
@@ -217,6 +277,7 @@ export function registerClubCommands(cli: CAC): void {
     .option("--tree", "department-list: hierarchischen Abteilungsbaum laden")
     .option("--avatars", "public-organ: öffentliche Comvenio-Avatare mitladen")
     .option("--preview-id <id>", "public-organ: Organ innerhalb einer gültigen Homepage-Vorschau lesen")
+    .option("--status <status>", "contact-requests: open (Standard) | done | all")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = await loadState();
@@ -236,6 +297,75 @@ export function registerClubCommands(cli: CAC): void {
           output(data, opts.json, () => JSON.stringify(data, null, 2));
           break;
         }
+        case "logo": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const meta = await client.get<Record<string, unknown>>(
+            "content",
+            `/logos/club/${encodeURIComponent(clubId)}/meta`,
+          );
+          output(meta, opts.json, () =>
+            `Aktuelles Vereinslogo: ${String(meta.filename ?? "?")} (${String(meta.content_type ?? "?")}) — file_id ${String(meta.id ?? "?")}`,
+          );
+          break;
+        }
+
+        case "contact-requests": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const requests = await client.get<Array<Record<string, unknown>>>(
+            "club",
+            contactRequestsPath(clubId, { status: opts.status }),
+          );
+          output(requests, opts.json, () =>
+            requests.length
+              ? requests
+                  .map((r) =>
+                    `${String(r.created_at ?? "").slice(0, 16)}  ${String(r.status)}  ${String(r.name)} <${String(r.email)}>  ${String(r.id)}\n` +
+                    `  ${String(r.message ?? "").replace(/\s+/g, " ").slice(0, 160)}`,
+                  )
+                  .join("\n")
+              : "Keine Kontaktanfragen.",
+          );
+          break;
+        }
+
+        case "contact-request-done":
+        case "contact-request-reopen": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!id) throw new Error(`club ${action} <request-id> benoetigt eine ID.`);
+          const updated = await client.patch<Record<string, unknown>>(
+            "club",
+            contactRequestsPath(clubId, { requestId: id }),
+            { status: action === "contact-request-done" ? "done" : "open" },
+          );
+          output(updated, opts.json, () => `Kontaktanfrage ${id}: ${String(updated.status)}`);
+          break;
+        }
+
+        case "contact-request-delete": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!id) throw new Error("club contact-request-delete <request-id> benoetigt eine ID.");
+          await client.del("club", contactRequestsPath(clubId, { requestId: id }));
+          output({ ok: true, id }, opts.json, () => `Kontaktanfrage ${id} geloescht (endgueltig nach 30 Tagen).`);
+          break;
+        }
+
+        case "logo-upload": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file) throw new Error("club logo-upload benoetigt --file <bild>.");
+          // Replaces the logo everywhere the platform shows it (header, share cards,
+          // widgets with source=club_logo): the newest READY logo wins.
+          const uploaded = await uploadClubLogo({ client, clubId, path: opts.file });
+          output(uploaded, opts.json, () =>
+            `Vereinslogo ersetzt: ${uploaded.filename} (${uploaded.size_bytes ?? "?"} Bytes) — file_id ${uploaded.file_id}`,
+          );
+          break;
+        }
+
         case "list": {
           const query = opts.search
             ? `?search=${encodeURIComponent(opts.search)}`
@@ -414,8 +544,27 @@ export function registerClubCommands(cli: CAC): void {
             );
           }
 
+          // With --file the author means "this is the design"; show what the
+          // deep-merge keeps from the live state instead of letting it surprise.
+          let surviving: string[] = [];
+          if (opts.file) {
+            const current = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+            const liveDesign = current.design_settings as Record<string, unknown> | undefined;
+            surviving = survivingLiveDesignKeys(liveDesign, design);
+            if (landingSurvives(liveDesign, design)) {
+              console.error(
+                'WARNUNG: live ist custom_template_config.landing=true gesetzt und die Datei nennt "landing" nicht. ' +
+                  "Es bleibt aktiv: die oeffentliche Seite zeigt dann KEINE Kopfzeile und keine Navigation, " +
+                  'die Vorschau zeigt sie trotzdem. Fuer eine normale Website "landing": false in die Datei schreiben.',
+              );
+            }
+            if (surviving.length) {
+              console.error(`Hinweis: Diese Live-Schluessel bleiben erhalten (nicht in der Datei): ${surviving.join(", ")}`);
+            }
+          }
+
           if (opts.dryRun) {
-            output({ dry_run: true, design_settings: design }, opts.json, () =>
+            output({ dry_run: true, design_settings: design, surviving_live_keys: surviving }, opts.json, () =>
               `Dry-Run — wuerde design_settings setzen:\n${JSON.stringify(design, null, 2)}`,
             );
             break;
@@ -447,7 +596,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });
