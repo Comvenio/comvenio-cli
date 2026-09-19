@@ -275,7 +275,10 @@ describe("Comvenio connector inventory contract", () => {
       ...Object.keys(FULL_CONNECTOR_REPLACEMENTS),
     ]);
     expect([...coveredActionIds].sort()).toEqual(
-      [...inventoryActionIds, ...additiveActionIds].sort(),
+      [
+        ...inventoryActionIds.filter((actionId) => !RETIRED_LEGACY_ACTION_IDS.has(actionId)),
+        ...additiveActionIds,
+      ].sort(),
     );
 
     const reviewScopes = new Map(fullDomainReviewToolSummaries().map((tool) => [
@@ -658,16 +661,16 @@ function k8Dependencies(client: ComvenioApiClient): K8ExecutionDependencies {
 }
 
 describe("K8 event and plan adapter contract", () => {
-  test("TC-01/TC-02: exposes EventToolSet, PlanToolSet, preview policy and exactly 28/13 action contracts", () => {
-    expect(K8_EVENT_ACTION_IDS).toHaveLength(28);
+  test("TC-01/TC-02: exposes EventToolSet, PlanToolSet, preview policy and exactly 27/13 action contracts", () => {
+    expect(K8_EVENT_ACTION_IDS).toHaveLength(27);
     expect(K8_PLAN_ACTION_IDS).toHaveLength(13);
-    expect(K8_ACTION_IDS).toHaveLength(41);
-    expect(Object.keys(K8_ACTION_DEFINITIONS)).toHaveLength(41);
-    expect(Object.keys(K8_ACTION_SCHEMAS)).toHaveLength(41);
+    expect(K8_ACTION_IDS).toHaveLength(40);
+    expect(Object.keys(K8_ACTION_DEFINITIONS)).toHaveLength(40);
+    expect(Object.keys(K8_ACTION_SCHEMAS)).toHaveLength(40);
     expect(new EventConfirmationPolicy()).toBeInstanceOf(EventConfirmationPolicy);
 
     const sets = createK8ToolSets(k8Dependencies(k7Client(async () => null)));
-    expect(sets.event.listDefinitions()).toHaveLength(28);
+    expect(sets.event.listDefinitions()).toHaveLength(27);
     expect(sets.plan.listDefinitions()).toHaveLength(13);
     for (const definition of Object.values(K8_ACTION_DEFINITIONS)) {
       expect(Object.keys(definition.operations).length).toBeGreaterThan(0);
