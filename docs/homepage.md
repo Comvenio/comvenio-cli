@@ -191,6 +191,11 @@ keine Zusicherung, dass jedes bestehende Widget jedes deklarierte Feld verwendet
   bereits ausgegebene zeitlich begrenzte Download-URLs verzögert sichtbar werden.
 - Das bisherige `membership_form` ist kein digitaler Aufnahmeprozess. Es darf keinen
   erfolgreichen Antrag bestätigen, bevor ein echter Antragsendpunkt angebunden ist.
+- Für „Kontakt“ und „Mitglied werden“ gibt es das echte Widget `contact_form`
+  (Name, E-Mail, Nachricht, Einwilligung, Spam-Schutz). Anfragen werden gespeichert,
+  der Vorstand wird benachrichtigt, der Verein bearbeitet sie unter
+  Verein → Kontaktanfragen bzw. mit `comvenio club contact-requests`. In der
+  Vorschau sendet es nicht. Nie ein Formular in `custom_html` nachbauen.
 
 ### Event-Datum im eigenen Layout
 
@@ -345,14 +350,30 @@ nicht die menschliche Designfreigabe.
 
 ## 8. Anwenden
 
-Erst nach der Freigabe:
+Erst nach der Freigabe. Vorher den Live-Stand sichern — `--clear` ersetzt alles:
 
 ```bash
-comvenio homepage apply --file home.json --clear --json
+comvenio homepage show --public --json > sicherung-home.json
+comvenio club info --json > sicherung-club.json
+
+comvenio club design --file design-settings.json --dry-run --json   # Warnungen lesen!
 comvenio club design --file design-settings.json --json
+comvenio homepage apply --file home.json --clear --json
 comvenio homepage show --public --json
 comvenio verify homepage --audit --json
 ```
+
+**`club design` führt zusammen, es ersetzt nicht.** Jeder Schlüssel, der live
+gesetzt ist und in der Datei fehlt, bleibt erhalten — und die Vorschau zeigt ihn
+nicht, weil sie nur die Datei rendert. Das CLI nennt diese Schlüssel auf stderr
+(„Diese Live-Schlüssel bleiben erhalten …“) und warnt ausdrücklich, wenn ein alter
+`custom_template_config.landing: true` überlebt: Dann zeigt die Live-Seite **keine
+Kopfzeile und keine Navigation**, obwohl die Vorschau richtig aussah. Für eine
+normale Website deshalb `"landing": false` immer ausdrücklich in die Datei schreiben.
+
+Nach dem Apply die Live-Seite im Bild prüfen (Kopfzeile, Navigation, Hero,
+mobil). Wer die Seite vorher im Browser offen hatte, sieht nach einem
+Plattform-Deploy mitunter einen alten App-Stand — `Strg+Umschalt+R` lädt neu.
 
 Der Agent dokumentiert, welche Revision angewendet wurde. Bei einem Fehler wird
 nicht mit direkten API-Aufrufen „nachgebessert“; stattdessen wird das CLI erweitert
@@ -412,3 +433,107 @@ Vor Übergabe prüfen:
 - Impressum, Datenschutz, AGB und Powered-by sind in Preview und Live vorhanden.
 - Preview-URL, Screenshots und Verifier-Bericht wurden gezeigt.
 - Apply erfolgte erst nach ausdrücklicher Freigabe.
+
+## 10. Qualitätsrezept: Homepages auf Referenzniveau
+
+Dieses Rezept beschreibt die Bauform der Referenz-Homepages (erstmals umgesetzt
+im September 2026 für einen Schützenverein). Wer es einhält, erreicht dieselbe
+Qualität, ohne Quelltext der Plattform zu sehen. Alle Namen unten sind Beispiele.
+
+### 10.1 Bauform: eigenes Layout, echte Daten als Slots
+
+- **Je Tab genau eine Section `full` mit genau einem `custom_html`-Widget.** Das
+  HTML trägt das komplette Seitenlayout: Hero, Sektionen, Karten, Raster.
+- **Alles, was sich ändert, ist ein Widget-Slot** — nie festgeschriebener Text:
+  `ticker` (Lauftext), `news`, `events_list` (Rückblick `past`, Ausschau
+  `upcoming`), `event_highlight` mit `layout: "date"` für Datumsangaben im Fließtext,
+  `team` mit `group_id` (Vorstandschaft), `image_gallery`/`files` mit `file_ids`,
+  `image` mit `file_id`, `background_video`, `contact_form`.
+- Slot-Syntax im HTML (Attributwert HTML-escaped):
+  `<div data-widget-slot="news" data-widget-config="{&quot;limit&quot;:3,&quot;layout&quot;:&quot;editorial&quot;,&quot;show_title&quot;:false}"></div>`
+- Keine erfundenen Termine, Namen, Zahlen oder Kontaktdaten im HTML. Fehlt eine
+  Information, bleibt die Stelle als ehrlicher Platzhalter für den Verein
+  („Vereinsfoto folgt“), nicht als Fantasiewert.
+- Navigation zwischen Tabs über `?tab=<slug>` als `href`.
+
+### 10.2 Design-Datei vollständig schreiben
+
+```json
+{
+  "homepage_theme": "modern",
+  "homepage_template": "flex",
+  "primary_color": "#006846",
+  "secondary_color": "#2B241D",
+  "accent_color": "#D3A52D",
+  "custom_template_config": {
+    "landing": false,
+    "public_header": { "layout": "brand-left", "surface": "light", "density": "comfortable", "sticky": true }
+  },
+  "custom_css": ".sv-page{...}"
+}
+```
+
+- `landing: false` immer ausdrücklich (siehe §8).
+- `custom_css` wird auf `.pub-site-root` begrenzt. Eigene Klassen mit einem
+  Vereinspräfix (`.sv-…`) benennen; Farben als CSS-Variablen am Seitenwurzel-Element.
+- Überschriften-Serif plus ruhige Grotesk für Fließtext, großzügige Abstände
+  (Sektionen 80–110 px vertikal), eine Akzentfarbe für Knöpfe und Kicker.
+
+### 10.3 Logo und Wappen
+
+- Das Vereinslogo in Kopfzeile und überall sonst: `comvenio club logo-upload --file wappen.png`
+  (nicht `data upload` — ein normaler Datei-Upload ersetzt das Logo nicht).
+- Liegt das Logo als EPS/SVG vor: lokal in ein PNG mit transparentem Hintergrund
+  umwandeln, mindestens ~1000 px Kantenlänge (z. B. Ghostscript `pngalpha`).
+- Im Hero ein freigestelltes Wappen als `image`-Slot mit `file_id` und
+  `"card_style": "none"` — sonst liegt ein Karten-Schatten mit runden Ecken als
+  Kasten um das transparente Bild. `source: "club_logo"` nimmt stattdessen das
+  aktuelle Vereinslogo.
+
+### 10.4 Mobil zuerst prüfen
+
+- Für jede Sektion ein Umbruch bei ≤ 900 px und ≤ 600 px; Raster einspaltig,
+  Knöpfe umbrechen statt überlaufen.
+- Hero-Grafiken auf dem Handy nicht per `display:none` wegwerfen. Bewährt:
+  Wappen absolut rechts neben der Schlagzeile, halbtransparent (`opacity ≈ .5`),
+  teils über den Rand hinaus, Text davor mit leichtem `text-shadow`.
+- Kein horizontaler Überlauf bei 390 px.
+
+### 10.5 CSS für Widget-Innenleben
+
+Widgets rendern in den Slot hinein; nicht jedes trägt die Klasse `.widget-base`.
+Regeln für Slot-Inhalte über den eigenen Container schreiben
+(`.sv-hero-mark > div { width: … }`) und **vor** dem Schreiben den echten Aufbau
+im Vorschau-Screenshot bzw. mit `comvenio verify url <preview-url>` ansehen. Eine
+Regel, die nie greift, fällt sonst erst im Bild auf.
+
+### 10.6 Prüfen wie die Referenz
+
+1. `homepage preview --ttl-hours 24` — Link dem Menschen geben.
+2. Bildvergleich an **390, 768, 1024 und 1440 px** (`verify url <preview-url>` bzw.
+   Screenshots aus `verify homepage`): Hero, Kopfzeile, Navigation, Sektionen.
+3. `verify homepage --file … --audit` — Exit 0 anstreben; Kontrastbefunde in
+   eingebetteten Fremdinhalten (Fest-/Event-Embeds, iframes) getrennt benennen.
+4. Nach dem Apply dieselben Breiten live prüfen, einschließlich Kopfzeile.
+
+### 10.7 Datenschutz beim Gestalten
+
+- Ein `team`-Widget mit `group_id` auf einer öffentlichen Seite macht die Namen
+  des Organs öffentlich (Freigabe ergibt sich aus dem Widget). Vorher mit dem
+  Verein klären.
+- `contact_form` speichert Anfragen; Löschfrist 30 Tage nach Löschen, 365 Tage
+  nach Eingang.
+- Geburtstage im Lauftext nur nach ausdrücklicher Klärung (Vorname, Tag/Monat).
+
+## 11. Fehlerbild → Ursache → Abhilfe
+
+| Fehlerbild | Ursache | Abhilfe |
+|---|---|---|
+| Live fehlen Kopfzeile und Navigation, Vorschau zeigt sie | alter `landing: true` überlebt das Zusammenführen | `"landing": false` in die Design-Datei, erneut `club design --file` |
+| Dunkler Kasten/Schatten um ein freigestelltes Logo | Bild-Widget zeichnet eine Karte | `"card_style": "none"` am `image`-Slot |
+| Hochformatiges Wappen in der runden Kopfzeile beschnitten | ältere Plattformversion | aktuelle Web-App; Logo quadratisch oder transparent hochladen |
+| „Kein Bild konfiguriert“ nur bei einer Person | alter App-Stand im Browser-Cache | `Strg+Umschalt+R` |
+| Hochgeladene Dateien fehlen im DataShare | Upload ohne Abteilung (vor Sept. 2026) | aktuelle Plattform setzt die Standard-Abteilung; Altbestand per Nachtrag |
+| Eigene CSS-Breite greift nicht | Selektor zielt auf eine Klasse, die der Slot nicht trägt | Slot-Container ansprechen (`.x > div`), DOM vorher ansehen |
+| Verifier Exit 4 nur auf einer Event-Seite | Kontrast im eingebetteten Event-Hub | getrennt melden; nicht mit Homepage-CSS „reparieren“ |
+| Organ zeigt viele „Nicht besetzt“ | Positionen im Verein ohne Zuordnung | Vereinsdaten pflegen, nicht im HTML überdecken |

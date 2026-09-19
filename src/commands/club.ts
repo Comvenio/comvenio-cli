@@ -62,6 +62,45 @@ export function contactRequestsPath(clubId: string, options: { status?: string; 
   return `${base}?status=${status}`;
 }
 
+/**
+ * Keys that are set in the live design_settings but absent from a --file
+ * payload. `club design` deep-merges, so these survive unchanged — the homepage
+ * preview does NOT show them (it renders only the file). Found 2026-09-19: a
+ * leftover `custom_template_config.landing: true` hid the whole public header
+ * and navigation live, while the preview looked right.
+ */
+export function survivingLiveDesignKeys(
+  live: Record<string, unknown> | undefined,
+  patch: Record<string, unknown>,
+): string[] {
+  if (!live) return [];
+  const surviving: string[] = [];
+  for (const key of Object.keys(live)) {
+    if (live[key] === null || live[key] === undefined) continue;
+    if (!(key in patch)) {
+      surviving.push(key);
+      continue;
+    }
+    const liveValue = live[key];
+    const patchValue = patch[key];
+    if (key === "custom_template_config" && liveValue && typeof liveValue === "object" && patchValue && typeof patchValue === "object") {
+      for (const inner of Object.keys(liveValue as Record<string, unknown>)) {
+        const value = (liveValue as Record<string, unknown>)[inner];
+        if (value !== null && value !== undefined && !(inner in (patchValue as Record<string, unknown>))) {
+          surviving.push(`custom_template_config.${inner}`);
+        }
+      }
+    }
+  }
+  return surviving.sort();
+}
+
+export function landingSurvives(live: Record<string, unknown> | undefined, patch: Record<string, unknown>): boolean {
+  const liveCtc = live?.custom_template_config as Record<string, unknown> | undefined;
+  const patchCtc = patch.custom_template_config as Record<string, unknown> | undefined;
+  return liveCtc?.landing === true && !(patchCtc && "landing" in patchCtc);
+}
+
 export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false, previewId?: string): string {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuid.test(clubId) || !groupId || !uuid.test(groupId)) {
@@ -500,8 +539,27 @@ export function registerClubCommands(cli: CAC): void {
             );
           }
 
+          // With --file the author means "this is the design"; show what the
+          // deep-merge keeps from the live state instead of letting it surprise.
+          let surviving: string[] = [];
+          if (opts.file) {
+            const current = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+            const liveDesign = current.design_settings as Record<string, unknown> | undefined;
+            surviving = survivingLiveDesignKeys(liveDesign, design);
+            if (landingSurvives(liveDesign, design)) {
+              console.error(
+                'WARNUNG: live ist custom_template_config.landing=true gesetzt und die Datei nennt "landing" nicht. ' +
+                  "Es bleibt aktiv: die oeffentliche Seite zeigt dann KEINE Kopfzeile und keine Navigation, " +
+                  'die Vorschau zeigt sie trotzdem. Fuer eine normale Website "landing": false in die Datei schreiben.',
+              );
+            }
+            if (surviving.length) {
+              console.error(`Hinweis: Diese Live-Schluessel bleiben erhalten (nicht in der Datei): ${surviving.join(", ")}`);
+            }
+          }
+
           if (opts.dryRun) {
-            output({ dry_run: true, design_settings: design }, opts.json, () =>
+            output({ dry_run: true, design_settings: design, surviving_live_keys: surviving }, opts.json, () =>
               `Dry-Run — wuerde design_settings setzen:\n${JSON.stringify(design, null, 2)}`,
             );
             break;
