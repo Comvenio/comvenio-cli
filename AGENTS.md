@@ -124,7 +124,7 @@ comvenio club info                    # Vereinsdaten
 | ingredient | `comvenio ingredient list\|show\|create\|update\|delete` (Club-Zutaten; komplexe Bodies via `--file`) |
 | ingredient-category | Kategorienbaum, CRUD und Zutaten-Zuordnung; bekannten Backend-Create-Blocker in `docs/speisekarten.md` beachten |
 | shopping | Einkaufslisten und Positionen, Generierung aus Rezept/Karte; bekannten Backend-Router-Blocker in `docs/speisekarten.md` beachten |
-| menu     | `comvenio menu create\|list\|show\|add-item\|update-item\|delete-item\|delete\|style\|apply\|export` (deklarativ; `generate`/`design` sind entfernt) |
+| menu     | `comvenio menu preview\|apply\|create\|list\|show\|add-item\|update-item\|delete-item\|delete\|style\|export` (deklarativ; `preview` ist schreibfrei, `generate`/`design` sind entfernt) |
 | homepage | `comvenio homepage preview\|apply\|show` · Design via `comvenio club design` |
 | news     | `comvenio news list\|show\|create\|update\|delete\|apply\|preview\|publish\|video`; Referenz: `docs/vereinsnews.md`. |
 | data     | Dateien, Ordner, Papierkorb, Suche, Papers, Bereichsfreigaben und CSV/XLSX-Export; Referenz: `docs/dateien.md`. |
@@ -249,7 +249,10 @@ Für **Homepage** existiert genau ein deklarativer Modus:
 
 Auch für **menu** gibt es keinen Backend-Generator: Der bedienende Agent liest ein
 Foto oder einen Text selbst, legt passende Rezepte an und persistiert die Karte
-deklarativ mit `menu apply --file` oder `menu create` + `menu add-item`.
+deklarativ mit `menu apply --file` oder `menu create` + `menu add-item`. Vor dem
+Schreiben läuft `menu preview --file`; es erzeugt Datenbericht, Online-PNG und
+DIN-A4-PDF ohne Backend-Write. Mehrere Gebinde desselben Produkts werden als
+`price_options` an einem MenuItem modelliert, beispielsweise `0,2 l` und `Flasche`.
 
 ## --json-Konvention
 
@@ -292,11 +295,20 @@ comvenio menu add-item $MID --recipe $RID --name "Schnitzel mit Kartoffelsalat" 
 > (z.B. via `apply --file` mit reinen name+price-Items) hat **keine Allergene** und fehlt in der
 > öffentlichen QR-Liste — für echte Karten immer ein Rezept hinterlegen.
 
+Ein Wein mit Glas- und Flaschenpreis bleibt ein Eintrag:
+```bash
+comvenio menu add-item $MID --recipe $RID --name "Riesling Nahe trocken" --price 4.20 \
+  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+```
+Bestehende Einträge werden mit `menu update-item <menu-item-id>` geändert. Dafür nie
+`add-item` oder `apply` verwenden, weil diese Befehle bewusst neue Einträge anlegen.
+
 **2b. Speisekarte deklarativ im Schwung (apply --file — wenn recipe_ids schon feststehen)**
 ```bash
 comvenio schema menu --json > schema.json     # gültige design_config-Felder / UnitType nachschlagen
 # menu.json komponieren (name + items[] MIT recipe_id + optional design_config), dann:
-comvenio menu apply --file menu.json          # Karte + Items im Bulk (kein ai-service, kein zweiter LLM-Call)
+comvenio menu preview --file menu.json --json # Daten + Online-PNG + DIN-A4 prüfen, keine Backend-Writes
+comvenio menu apply --file menu.json --json   # Karte + Items im Bulk (kein ai-service, kein zweiter LLM-Call)
 ```
 
 **2c. Speisekarte aus Foto (Agent interpretiert, CLI persistiert deklarativ)**

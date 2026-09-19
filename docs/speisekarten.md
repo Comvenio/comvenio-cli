@@ -25,6 +25,7 @@ Allergen (global, 14 EU-Allergene)        Colorant (global, E-Nummern)
         │ (1:N)
         │
      MenuItem (Eintrag auf EINER Karte) ── name + selling_price (Override pro Karte), display_order
+        │      price_options = benannte Ausgaben desselben Produkts (z.B. 0,2 l / Flasche)
         │      recipe_id ist OPTIONAL — aber ohne Recipe: keine Allergene, keine Kategorie,
         │      fehlt sogar in der öffentlichen QR-Item-Liste (INNER JOIN auf Recipe)
         │ (N:1)
@@ -43,6 +44,9 @@ Allergen (global, 14 EU-Allergene)        Colorant (global, E-Nummern)
 3. **Das Rezept ist die Wahrheit, der Karten-Eintrag die Darstellung.** Dasselbe Rezept (z.B. „Steaksemmel")
    kann auf mehreren Karten mit **unterschiedlichem Namen + Preis** erscheinen. Rezept einmal anlegen,
    pro Karte einen `MenuItem` mit eigenem Label + Preis setzen (`--name`/`--price` überschreiben).
+4. **Mehrere Gebinde sind Preisvarianten, keine doppelten Einträge.** Ein Wein mit Glas- und Flaschenpreis
+   bleibt ein `MenuItem`. Die Ausgaben stehen strukturiert in `price_options`, damit Online-Karte,
+   Vorschau und Druckansicht sie gemeinsam unter demselben Wein darstellen.
 
 ---
 
@@ -59,9 +63,10 @@ Allergen (global, 14 EU-Allergene)        Colorant (global, E-Nummern)
 | `comvenio ingredient-category list\|roots\|tree\|…` | Kategorienbaum und Zutaten-Zuordnungen verwalten |
 | `comvenio shopping list\|show\|create\|…` | Einkaufslisten und Positionen verwalten oder aus Rezept/Karte erzeugen |
 | `comvenio menu create --name [--description] [--category]` | Leere **Speisekarte** anlegen |
-| `comvenio menu add-item <menu_id> --recipe <id> [--name] [--price]` | Rezept als Eintrag auf eine Karte setzen (Name/Preis aus Rezept, wenn nicht angegeben) |
+| `comvenio menu add-item <menu_id> --recipe <id> [--name] [--price] [--price-options <json>]` | Rezept als Eintrag auf eine Karte setzen; optional mehrere benannte Ausgaben/Preise |
 | `comvenio menu list\|show\|delete` | Karten verwalten |
 | `comvenio menu style <menu_id> --css <datei>` | Freies CSS auf eine Karte (`design_config.custom_css`) |
+| `comvenio menu preview --file <menu.json> [--css <datei>] [--out <ordner>]` | Schreibfreie Daten- und Layoutprüfung mit Online-PNG, HTML und echtem DIN-A4-PDF |
 | `comvenio menu apply --file <menu.json>` | Vom Agenten komponierte Karte + Einträge im Bulk anlegen |
 | `comvenio menu update-item\|delete-item` | Bestehende Karten-Einträge ändern oder entfernen |
 | `comvenio menu export <menu_id> [--out]` | Karte über das echte Frontend als PDF exportieren |
@@ -142,6 +147,55 @@ laufen lassen, um die exakte Vorlagen-Schreibweise (und die Allergene) zu sehen.
 ---
 
 ## 5. Karte bauen + Wiederverwendung
+
+### Erst prüfen, dann anlegen
+
+Der Standardweg entspricht Homepage und News: `preview` läuft vor `apply`. Die Vorschau
+legt weder eine Karte noch MenuItems an. Sie prüft Pflichtfelder, Preise,
+`display_order`, alle `recipe_id`-Verknüpfungen und lädt die zugehörigen Rezeptdaten für
+Kategorie, Beschreibung, Altersangabe, Allergene und Farbstoffe. Anschließend entstehen
+lokal vier prüfbare Artefakte: Datenbericht, responsive HTML-/PNG-Ansicht und DIN-A4-PDF.
+
+```bash
+comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json
+# Daten + Online- und A4-Ansicht prüfen; erst danach:
+comvenio menu apply --file menu.json --json
+```
+
+Ein `valid: false` ist ein bewusst sichtbares Review-Ergebnis. Die Artefakte werden
+trotzdem erzeugt, damit Fehler im Zusammenhang beurteilt werden können. `writes_backend`
+bleibt bei `preview` immer `false`.
+
+### Ein Produkt mit mehreren Ausgaben
+
+Glas und Flasche sind keine zwei Weine. Das deklarative Format bildet beide Preise an einem
+Karten-Eintrag ab; `selling_price` bleibt als Grundpreis für ältere Darstellungen erhalten:
+
+```json
+{
+  "recipe_id": "<riesling-recipe-id>",
+  "name": "Riesling Nahe trocken",
+  "selling_price": 4.20,
+  "price_options": [
+    { "label": "0,2 l", "price": 4.20 },
+    { "label": "Flasche", "price": 15.60 }
+  ]
+}
+```
+
+```bash
+comvenio menu add-item <menu-id> --recipe <riesling-recipe-id> \
+  --name "Riesling Nahe trocken" --price 4.20 \
+  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+```
+
+Ein vorhandener Eintrag wird über seine `MenuItem`-ID geändert. Das erhält seine Identität und
+erzeugt weder einen zweiten Karten-Eintrag noch ein neues Rezept:
+
+```bash
+comvenio menu update-item <menu-item-id> --name "Riesling Nahe trocken" \
+  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+```
 
 ```bash
 # Karte anlegen
@@ -320,7 +374,10 @@ comvenio menu style <menu_id> --css ./meine-karte.css
   Kategorie (kommt transitiv vom Recipe), und der Eintrag **fehlt in `GET …/items/public`** (INNER JOIN auf
   Recipe). Für QR-Karten **immer** ein Recipe hinterlegen.
 - **Preis-Override.** `MenuItem.selling_price` überschreibt `Recipe.default_selling_price` pro Karte. NULL =
-  Rezept-Default. Sortierfeld heißt **`display_order`** (nicht `sort_order`).
+  Rezept-Default. Mehrere Gebinde desselben Produkts gehören in **`price_options`**, nicht in getrennte
+  `MenuItem`s. Sortierfeld heißt **`display_order`** (nicht `sort_order`).
+- **Bearbeiten heißt in-place aktualisieren.** Für bestehende Karten-Einträge immer deren Item-ID an
+  `menu update-item` übergeben. `menu add-item` und `menu apply` legen neue Einträge an.
 - **Single-Item-Route** ist `POST /menu/club/{club_id}/items` (mit `menu_id` im Body), **nicht**
   `/menus/{id}/items`. Bulk: `POST …/items/bulk` erwartet ein **rohes Array** `List[MenuItemCreate]`.
 - **RBAC ist serverseitig aktiv** (supply-service hat inzwischen RBAC): Mutationen brauchen eine Permission

@@ -1175,6 +1175,17 @@ function genMenu(): unknown {
     menu_item_fields: {
       name: { type: "string", required: true },
       selling_price: { type: "number", optional: true },
+      description: {
+        type: "string",
+        optional: true,
+        note: "Darstellungs-Override auf dieser Karte; ohne Wert gilt die Rezeptbeschreibung",
+      },
+      price_options: {
+        type: "array",
+        optional: true,
+        items: { label: "string", price: "number" },
+        note: "Benannte Ausgaben desselben Produkts, z. B. 0,2 l und Flasche",
+      },
       display_order: { type: "int" },
       recipe_id: {
         type: "string",
