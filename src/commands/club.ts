@@ -63,11 +63,14 @@ export function contactRequestsPath(clubId: string, options: { status?: string; 
 }
 
 /**
- * Keys that are set in the live design_settings but absent from a --file
- * payload. `club design` deep-merges, so these survive unchanged — the homepage
- * preview does NOT show them (it renders only the file). Found 2026-09-19: a
- * leftover `custom_template_config.landing: true` hid the whole public header
- * and navigation live, while the preview looked right.
+ * Keys that are set in the live design_settings and survive a --file payload.
+ * `club design` deep-merges like the club-service (`_deep_merge_dicts`): where
+ * both sides hold an object it recurses, anything else in the file — a value,
+ * an array or null — replaces the live subtree. What the file does not mention
+ * survives unchanged, at any depth, and the homepage preview does NOT show it
+ * (it renders only the file). Found 2026-09-19: a leftover
+ * `custom_template_config.landing: true` hid the whole public header and
+ * navigation live, while the preview looked right.
  */
 export function survivingLiveDesignKeys(
   live: Record<string, unknown> | undefined,
@@ -75,30 +78,32 @@ export function survivingLiveDesignKeys(
 ): string[] {
   if (!live) return [];
   const surviving: string[] = [];
-  for (const key of Object.keys(live)) {
-    if (live[key] === null || live[key] === undefined) continue;
-    if (!(key in patch)) {
-      surviving.push(key);
-      continue;
-    }
-    const liveValue = live[key];
-    const patchValue = patch[key];
-    if (key === "custom_template_config" && liveValue && typeof liveValue === "object" && patchValue && typeof patchValue === "object") {
-      for (const inner of Object.keys(liveValue as Record<string, unknown>)) {
-        const value = (liveValue as Record<string, unknown>)[inner];
-        if (value !== null && value !== undefined && !(inner in (patchValue as Record<string, unknown>))) {
-          surviving.push(`custom_template_config.${inner}`);
-        }
+  const walk = (liveNode: Record<string, unknown>, patchNode: Record<string, unknown>, prefix: string) => {
+    for (const key of Object.keys(liveNode)) {
+      const liveValue = liveNode[key];
+      if (liveValue === null || liveValue === undefined) continue;
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (!(key in patchNode)) {
+        surviving.push(path);
+        continue;
       }
+      const patchValue = patchNode[key];
+      if (isPlainObject(liveValue) && isPlainObject(patchValue)) walk(liveValue, patchValue, path);
     }
-  }
+  };
+  walk(live, patch, "");
   return surviving.sort();
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 export function landingSurvives(live: Record<string, unknown> | undefined, patch: Record<string, unknown>): boolean {
-  const liveCtc = live?.custom_template_config as Record<string, unknown> | undefined;
-  const patchCtc = patch.custom_template_config as Record<string, unknown> | undefined;
-  return liveCtc?.landing === true && !(patchCtc && "landing" in patchCtc);
+  const liveCtc = live?.custom_template_config;
+  return isPlainObject(liveCtc)
+    && liveCtc.landing === true
+    && survivingLiveDesignKeys(live, patch).includes("custom_template_config.landing");
 }
 
 export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false, previewId?: string): string {

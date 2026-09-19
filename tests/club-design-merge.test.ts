@@ -29,8 +29,35 @@ describe("club design --file: what the deep-merge keeps from the live state", ()
   });
 
   test("nothing survives when the file covers every live key", () => {
-    const full = { homepage_template: "flex", custom_css: "", custom_template_config: { landing: false, hero: {}, public_header: {} } };
+    const full = {
+      homepage_template: "flex",
+      custom_css: "",
+      custom_template_config: { landing: false, hero: { type: "image" }, public_header: { layout: "navigation" } },
+    };
     expect(survivingLiveDesignKeys(live, full)).toEqual([]);
     expect(survivingLiveDesignKeys(undefined, full)).toEqual([]);
+  });
+
+  // Fremdprüfung Runde 1 (2026-09-19): the server merges recursively at every depth.
+  test("names surviving keys at any depth, like the server's recursive merge", () => {
+    const deepLive = {
+      tokens: { palette: { primary: "#111", accent: "#f00" } },
+      custom_template_config: { public_header: { layout: "brand-left", sticky: true } },
+    };
+    const file = {
+      tokens: { palette: { primary: "#222" } },
+      custom_template_config: { public_header: { layout: "navigation" } },
+    };
+    expect(survivingLiveDesignKeys(deepLive, file)).toEqual([
+      "custom_template_config.public_header.sticky",
+      "tokens.palette.accent",
+    ]);
+  });
+
+  test("an empty object keeps the live subtree, null or a value replaces it", () => {
+    expect(survivingLiveDesignKeys(live, { custom_template_config: { hero: {} } })).toContain("custom_template_config.hero.type");
+    expect(survivingLiveDesignKeys(live, { custom_template_config: null })).not.toContain("custom_template_config.landing");
+    expect(landingSurvives(live, { custom_template_config: null })).toBe(false);
+    expect(survivingLiveDesignKeys(live, { custom_template_config: { hero: "none" } })).not.toContain("custom_template_config.hero.type");
   });
 });
