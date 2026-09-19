@@ -160,8 +160,9 @@ const menuDesignShape = {
 } as const;
 const menuDesign = z.object(menuDesignShape).strict().refine((value) => Object.keys(value).length > 0, "Mindestens eine Designänderung ist erforderlich.");
 const menuFields = { name: short.max(200), description: text.nullable().optional(), category: z.string().max(100).nullable().optional(), is_template: z.boolean().default(false), is_active: z.boolean().default(true) } as const;
-const menuItemFields = { menu_id: uuid, recipe_id: uuid.nullable().optional(), name: short.max(200), description: text.nullable().optional(), selling_price: money.nullable().optional(), display_order: z.number().int().min(0).max(100_000).default(0) } as const;
-const menuItemChanges = z.object({ name: short.max(200).optional(), description: text.nullable().optional(), selling_price: money.nullable().optional(), display_order: z.number().int().min(0).max(100_000).optional() }).strict().refine((value) => Object.keys(value).length > 0);
+const menuPriceOptions = z.array(z.object({ label: short.max(80), price: money }).strict()).max(100);
+const menuItemFields = { menu_id: uuid, recipe_id: uuid.nullable().optional(), name: short.max(200), description: text.nullable().optional(), selling_price: money.nullable().optional(), price_options: menuPriceOptions.optional(), display_order: z.number().int().min(0).max(100_000).default(0) } as const;
+const menuItemChanges = z.object({ name: short.max(200).optional(), description: text.nullable().optional(), selling_price: money.nullable().optional(), price_options: menuPriceOptions.optional(), display_order: z.number().int().min(0).max(100_000).optional() }).strict().refine((value) => Object.keys(value).length > 0);
 
 export const K11_ACTION_SCHEMAS: Readonly<Record<K11ActionId, K11ActionSchemaContract>> = Object.freeze({
   "cai.recipe.01.create": contract(single({ name: short.max(200), type_of_recipe: recipeType.default("food"), category: z.string().max(100).nullable().optional(), selling_price: money.nullable().optional(), ingredients: z.array(recipeIngredientByName).max(500).default([]), auto_create_missing_ingredients: z.literal(true).default(true) })),
@@ -219,7 +220,7 @@ export const K11_ACTION_SCHEMAS: Readonly<Record<K11ActionId, K11ActionSchemaCon
   "cai.menu.01.create": contract(single({ menu: z.object(menuFields).strict() })),
   "cai.menu.02.list": contract(single({ ...pagination })),
   "cai.menu.03.show": contract(single({ menu_id: uuid, item_limit: z.number().int().min(1).max(100).default(100) })),
-  "cai.menu.04.add_item": contract(single({ menu_id: uuid, item: z.object({ recipe_id: uuid.nullable().optional(), name: short.max(200), description: text.nullable().optional(), selling_price: money.nullable().optional(), display_order: z.number().int().min(0).max(100_000).default(0) }).strict() })),
+  "cai.menu.04.add_item": contract(single({ menu_id: uuid, item: z.object({ recipe_id: uuid.nullable().optional(), name: short.max(200), description: text.nullable().optional(), selling_price: money.nullable().optional(), price_options: menuPriceOptions.optional(), display_order: z.number().int().min(0).max(100_000).default(0) }).strict() })),
   "cai.menu.05.update_item": contract(single({ item_id: uuid, changes: menuItemChanges })),
   "cai.menu.06.delete_item": contract(single({ item_id: uuid })),
   "cai.menu.07.delete": contract(single({ menu_id: uuid })),

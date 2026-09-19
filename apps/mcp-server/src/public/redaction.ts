@@ -94,11 +94,18 @@ function menuItem(value: unknown): JsonValue | null {
   const id = uuid(raw?.id);
   const name = string(raw?.name);
   if (!raw || !id || !name) return null;
+  const priceOptions = array(raw.price_options).flatMap((entry): JsonValue[] => {
+    const option = object(entry);
+    const label = string(option?.label);
+    const price = number(option?.price);
+    return label && price !== null ? [{ label, price }] : [];
+  });
   return {
     id,
     name,
     description: nullableString(raw.description ?? recipe?.description),
     price: number(raw.price ?? raw.selling_price),
+    price_options: priceOptions,
     category: nullableString(raw.category ?? recipe?.category),
     type: nullableString(raw.type_of_recipe ?? recipe?.type_of_recipe),
     is_available: raw.is_available === undefined ? raw.is_active !== false : raw.is_available === true,
