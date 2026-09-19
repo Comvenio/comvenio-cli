@@ -7,7 +7,13 @@ import { prune } from "../util/body.ts";
 import { readImageAsBase64 } from "../util/image.ts";
 import { readJsonFile } from "../util/file.ts";
 import { mkdirSync, readFileSync } from "node:fs";
-import { frontendBase, hasPlaywrightCli, renderMenuToPdf } from "../util/render.ts";
+import { frontendBase, hasPlaywrightCli, renderMenuToPdf, screenshotToPng } from "../util/render.ts";
+import {
+  validateMenuPreview,
+  writeMenuPreviewBundle,
+  type MenuPreviewCard,
+  type MenuPreviewRecipe,
+} from "../util/menu-preview.ts";
 
 // KI-Gen Speisekarte (verified Sub-File 08). TWO modes (D-12):
 //   generative `menu generate` → ai-service /menu-content/generate (Foto/Text)
@@ -54,6 +60,7 @@ type Opts = {
   category?: string;
   recipe?: string;
   price?: string;
+  priceOptions?: string;
   css?: string;
   // export
   out?: string;
@@ -66,6 +73,7 @@ type MenuItemRead = {
   id?: string;
   name?: string;
   selling_price?: number | string | null;
+  price_options?: Array<{ label?: string; price?: number | string | null }>;
   recipe_id?: string | null;
   display_order?: number;
   [key: string]: unknown;
@@ -83,11 +91,11 @@ function today(): string {
  */
 export function registerMenuCommands(cli: CAC): void {
   cli
-    .command("menu <action> [id]", "Speisekarte (deklarativ, kein Backend-LLM): create | list | show | add-item | update-item | delete-item | delete | style | apply")
+    .command("menu <action> [id]", "Speisekarte (deklarativ, kein Backend-LLM): preview | apply | create | list | show | add-item | update-item | delete-item | delete | style | export")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--photo <file>", "Foto/Scan einer Papier-/PDF-Karte (generate/design)")
     .option("--text <desc>", "Freitext-Beschreibung (generate)")
-    .option("--file <path>", "menu.json: vom Agenten komponierte Karte (apply)")
+    .option("--file <path>", "menu.json: vom Agenten komponierte Karte (preview/apply)")
     .option("--menu <id>", "Ziel-Menu (Pflicht bei design)")
     .option("--menu-name <name>", "Name der neuen Karte")
     .option("--name <name>", "Name der Karte (create) bzw. des Eintrags (add-item)")
@@ -95,6 +103,7 @@ export function registerMenuCommands(cli: CAC): void {
     .option("--category <cat>", "Kategorie der Karte (create)")
     .option("--recipe <id>", "Rezept-ID fuer add-item")
     .option("--price <eur>", "Verkaufspreis fuer add-item (sonst Rezept-Default)")
+    .option("--price-options <json>", "Benannte Ausgaben als JSON, z. B. '[{\"label\":\"0,2 l\",\"price\":4.2}]'")
     .option("--css <file>", "CSS-Datei fuer 'style' (design_config.custom_css, frei stylbar)")
     .option("--prompt <stil>", "Design-Stil (design)")
     .option("--apply", "Vorschlag wirklich anlegen (generate/design)")
@@ -109,6 +118,83 @@ export function registerMenuCommands(cli: CAC): void {
       const clubId = requireClubId(state, opts.club);
 
       switch (action) {
+        case "preview": {
+          // Read-only stage before `menu apply`: validate JSON and recipe links,
+          // then render local online and A4 artifacts without backend writes.
+          if (!opts.file) throw new Error("menu preview benötigt --file <menu.json>.");
+          if (!(await hasPlaywrightCli())) {
+            throw new Error("playwright-cli nicht auf dem PATH; ohne Renderer ist keine visuelle Vorschau möglich.");
+          }
+          const card = readJsonFile<MenuPreviewCard>(opts.file);
+          const validation = validateMenuPreview(card);
+          const recipes = new Map<string, MenuPreviewRecipe>();
+          const recipeIds = [...new Set((card.items ?? []).map((item) => item.recipe_id).filter((value): value is string => !!value))];
+          await Promise.all(recipeIds.map(async (recipeId) => {
+            try {
+              const recipe = await client.get<MenuPreviewRecipe>("supply", `/recipe/club/${clubId}/recipes/${recipeId}`);
+              recipes.set(recipeId, recipe);
+            } catch {
+              validation.errors.push(`Rezept ${recipeId} konnte nicht geladen werden.`);
+            }
+          }));
+          validation.valid = validation.errors.length === 0;
+
+          const outDir = opts.out ?? ".menu-preview";
+          const bundle = writeMenuPreviewBundle({
+            card,
+            recipes,
+            customCss: opts.css ? readFileSync(opts.css, "utf-8") : undefined,
+            outDir,
+            validation,
+          });
+          const onlinePng = `${outDir}/menu-preview-online.png`;
+          const printPng = `${outDir}/menu-preview-a4.png`;
+          const printPdf = `${outDir}/menu-preview-a4.pdf`;
+          const waitMs = opts.wait ? Math.max(0, parseInt(opts.wait, 10) || 0) : 1000;
+          // playwright-cli blockiert file:-URLs. Ein nur lokal gebundener,
+          // kurzlebiger Server stellt exakt die geschriebenen Preview-Dateien
+          // bereit; es findet kein Upload und kein Backend-Write statt.
+          const onlineHtml = readFileSync(bundle.htmlPath);
+          const printHtml = readFileSync(bundle.printHtmlPath);
+          const server = Bun.serve({
+            hostname: "127.0.0.1",
+            port: 0,
+            fetch(request) {
+              const path = new URL(request.url).pathname;
+              return new Response(path === "/print" ? printHtml : onlineHtml, {
+                headers: { "content-type": "text/html; charset=utf-8" },
+              });
+            },
+          });
+          let pages = 0;
+          try {
+            const previewBase = `http://127.0.0.1:${server.port}`;
+            await screenshotToPng(`${previewBase}/online`, onlinePng, { waitMs, width: 1440 });
+            ({ pages } = await renderMenuToPdf(`${previewBase}/print`, printPdf, printPng, { waitMs }));
+          } finally {
+            server.stop(true);
+          }
+          output(
+            {
+              valid: validation.valid,
+              errors: validation.errors,
+              warnings: validation.warnings,
+              items: card.items?.length ?? 0,
+              recipes: recipes.size,
+              html: bundle.htmlPath,
+              data: bundle.dataPath,
+              online_png: onlinePng,
+              print_pdf: printPdf,
+              print_png: printPng,
+              pages,
+              writes_backend: false,
+            },
+            opts.json,
+            () => `${validation.valid ? "Preview bereit" : "Preview mit Datenfehlern"}: ${bundle.htmlPath}\nA4: ${printPdf} (${pages} Seite${pages === 1 ? "" : "n"})`,
+          );
+          break;
+        }
+
         case "generate": {
           // Product doctrine: this CLI NEVER calls the backend LLM.
           // The operating agent (Claude/Codex) IS the intelligence — it reads the
@@ -153,7 +239,9 @@ export function registerMenuCommands(cli: CAC): void {
             menu_id: menu.id,
             recipe_id: it.recipe_id ?? null,
             name: it.name,
+            description: it.description ?? null,
             selling_price: it.selling_price ?? null,
+            price_options: it.price_options ?? null,
             display_order: it.display_order ?? idx,
           }));
           const bulk = await client.post<BulkResponse>(
@@ -234,7 +322,9 @@ export function registerMenuCommands(cli: CAC): void {
             const items = ((menu as Record<string, unknown>).menu_items as MenuItemRead[] | undefined) ?? [];
             const lines = [`Speisekarte: ${menu.name ?? "—"} (${menu.id ?? id})`];
             for (const it of items) {
-              const price = it.selling_price != null ? ` — ${it.selling_price} €` : "";
+              const price = it.price_options?.length
+                ? ` — ${it.price_options.map((option) => `${option.label ?? "?"}: ${option.price ?? "?"} €`).join(" · ")}`
+                : it.selling_price != null ? ` — ${it.selling_price} €` : "";
               lines.push(`  - ${it.name ?? "?"}${price}`);
             }
             if (items.length === 0) lines.push("  (keine Eintraege)");
@@ -249,6 +339,7 @@ export function registerMenuCommands(cli: CAC): void {
           if (!id) throw new Error("menu add-item <menu_id> benoetigt eine Menu-ID.");
           let itemName = opts.name;
           let price = opts.price != null ? Number(opts.price) : undefined;
+          const priceOptions = opts.priceOptions ? JSON.parse(opts.priceOptions) : undefined;
           if (opts.recipe && (!itemName || price === undefined)) {
             const r = await client.get<{ name?: string; default_selling_price?: number | string | null }>(
               "supply",
@@ -270,6 +361,7 @@ export function registerMenuCommands(cli: CAC): void {
               recipe_id: opts.recipe,
               name: itemName,
               selling_price: price,
+              price_options: priceOptions,
               description: opts.description, // Item-Override (Option B: Praesentation = MenuItem-Master)
             }),
           );
@@ -293,6 +385,7 @@ export function registerMenuCommands(cli: CAC): void {
           const body = prune({
             name: opts.name,
             selling_price: opts.price != null ? Number(opts.price) : undefined,
+            price_options: opts.priceOptions ? JSON.parse(opts.priceOptions) : undefined,
             description: opts.description, // Item-Override (Option B: Praesentation = MenuItem-Master)
           });
           if (Object.keys(body).length === 0) {
@@ -392,7 +485,7 @@ export function registerMenuCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfuegbar: create, list, show, add-item, update-item, delete-item, delete, style, generate, apply, design, export`,
+            `Unbekannte Aktion "${action}". Verfuegbar: preview, apply, create, list, show, add-item, update-item, delete-item, delete, style, export`,
           );
       }
     });

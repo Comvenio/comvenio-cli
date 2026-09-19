@@ -55,12 +55,13 @@ export async function screenshotToPng(
     await pw(["close"], S);
     throw new Error(`Render fehlgeschlagen (open): ${open.stderr.trim().slice(0, 200)}`);
   }
-  await pw(["resize", String(opts.width ?? 900), "900"]);
+  await pw(["resize", String(opts.width ?? 900), "900"], S);
   await sleep(opts.waitMs ?? 3500); // SPA-Settle + Tile-Load
-  const shot = await pw(["screenshot", "--full-page", "--filename", outPath]);
-  await pw(["close"]);
+  const shot = await pw(["screenshot", "--full-page", "--filename", outPath], S);
+  await pw(["close"], S);
   if (shot.code !== 0) {
-    throw new Error(`Screenshot fehlgeschlagen: ${shot.stderr.trim().slice(0, 200)}`);
+    const detail = shot.stderr.trim() || shot.stdout.trim() || `Exit-Code ${shot.code}`;
+    throw new Error(`Screenshot fehlgeschlagen: ${detail.slice(0, 500)}`);
   }
 }
 
@@ -80,6 +81,38 @@ export async function pngFileToPdf(pngPath: string, pdfPath: string): Promise<vo
   const h = img.height * ratio;
   page.drawImage(img, { x: (pageW - w) / 2, y: (pageH - h) / 2, width: w, height: h });
   writeFileSync(pdfPath, await pdf.save());
+}
+
+/**
+ * Normalizes a browser PDF to exact, full-bleed A4 portrait dimensions while
+ * keeping the source pages as vectors. playwright-cli emits Letter-sized pages
+ * even when the application declares an A4 @page rule, so a contain-fit would
+ * add visible bands above and below the menu. Cover-fit crops only the outer
+ * paper edge and keeps the designed card page-filling.
+ */
+export async function normalizePdfToA4(pdfPath: string): Promise<number> {
+  const source = await PDFDocument.load(readFileSync(pdfPath));
+  const target = await PDFDocument.create();
+  const sourcePages = source.getPages();
+  const embeddedPages = await target.embedPages(sourcePages);
+  const pageW = 595.2756;
+  const pageH = 841.8898;
+
+  for (const embedded of embeddedPages) {
+    const page = target.addPage([pageW, pageH]);
+    const ratio = Math.max(pageW / embedded.width, pageH / embedded.height);
+    const width = embedded.width * ratio;
+    const height = embedded.height * ratio;
+    page.drawPage(embedded, {
+      x: (pageW - width) / 2,
+      y: (pageH - height) / 2,
+      width,
+      height,
+    });
+  }
+
+  writeFileSync(pdfPath, await target.save());
+  return sourcePages.length;
 }
 
 /**
@@ -133,14 +166,25 @@ export async function renderMenuToPdf(
     await pw(["close"], S);
     throw new Error("Menue-Karte nicht gerendert (Timeout/Ladefehler) — erneut versuchen.");
   }
+  // The print route includes the configurator and an offscreen A4 preview next
+  // to the real card. `visibility: hidden` keeps their layout space and can add
+  // blank pages, so isolate the rendered `.menu-theme` before exporting.
+  const isolate = await pw([
+    "eval",
+    "() => { try { const source = document.querySelector('.menu-theme'); if (!source) return 'PRINTTARGET_MISSING'; const clone = source.cloneNode(true); document.body.replaceChildren(clone); document.documentElement.style.cssText = 'margin:0!important;padding:0!important;height:auto!important;overflow:visible!important;background:#fff!important'; document.body.style.cssText = 'margin:0!important;padding:0!important;height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important'; const style = document.createElement('style'); style.textContent = '@media print { html, body { height:auto!important; min-height:0!important; overflow:visible!important; } .menu-theme { position:static!important; inset:auto!important; width:100%!important; height:auto!important; min-height:0!important; } }'; document.head.appendChild(style); return 'PRINTTARGET_OK'; } catch (error) { return 'PRINTTARGET_ERROR:' + String(error); } }",
+  ], S);
+  if (isolate.code !== 0 || !isolate.stdout.includes("PRINTTARGET_OK")) {
+    await pw(["close"], S);
+    const detail = isolate.stderr.trim() || isolate.stdout.trim() || `Exit-Code ${isolate.code}`;
+    throw new Error(`Menü-Karte konnte für den PDF-Export nicht isoliert werden: ${detail.slice(0, 500)}`);
+  }
   const pdf = await pw(["pdf", "--filename", pdfPath], S);
   await pw(["screenshot", "--full-page", "--filename", pngPath], S);
   await pw(["close"], S);
   if (pdf.code !== 0) throw new Error(`PDF fehlgeschlagen: ${pdf.stderr.trim().slice(0, 200)}`);
   let pages = 0;
   try {
-    const doc = await PDFDocument.load(readFileSync(pdfPath));
-    pages = doc.getPageCount();
+    pages = await normalizePdfToA4(pdfPath);
   } catch {
     /* pages bleibt 0 */
   }
