@@ -41,6 +41,8 @@ comvenio data upload ./bild.jpg \
 
 Das CLI führt den vollständigen Presign-Flow aus: reservieren, direkt hochladen, finalisieren. Das Limit beträgt 200 MB. `--sub-context-id` und `--department` werden im Upload-Vertrag mitgesendet. Der Upload funktioniert auch aus der kompilierten Standalone-Binary; Dateiinhalte werden als stabiler Byte-Body übertragen.
 
+**Abteilung (seit 2026-09-19):** Für die DataShare-Kontexte `club`, `none` und `department` lädt `data upload` ohne `--department` in die **Standard-Abteilung** des Vereins — dort erscheint die Datei im DataShare. Eine andere Abteilung wählt `--department <id>` (IDs: `comvenio club department-list --json`); `--department none` lädt bewusst ohne Abteilung hoch, die Datei ist dann **nicht** im DataShare sichtbar. Andere Kontexte (`event`, `news`, `certificate`, …) behalten die Regeln des Servers. Hochladen in eine Abteilung verlangt dort das Dateirecht.
+
 ### Video-Optimierung fürs mobile Autoplay (`--optimize-video`)
 
 Mobile Chrome (und Safari/iOS) autoplayen große Videos oft nicht — eine kleine, audio-freie MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig inline/muted an. `--optimize-video` re-encodiert das Video vor dem Hochladen automatisch:

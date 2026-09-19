@@ -1,6 +1,6 @@
 import type { CAC } from "cac";
 import { loadState } from "../auth.ts";
-import { createClient } from "../http.ts";
+import { createClient, type ComvenioClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
@@ -61,6 +61,34 @@ type DataOpts = {
   optimizeVideo?: boolean;
 };
 
+// DataShare contexts land in the club's default department unless --department
+// names another one, or "none" for files without department. Found 2026-09-19
+// (Jagabluat): CLI uploads without department never showed up in the DataShare,
+// which only opens departments. Other contexts keep their server-side rules.
+const DATASHARE_CONTEXTS = new Set(["club", "none", "department"]);
+
+export async function resolveUploadDepartment(
+  client: Pick<ComvenioClient, "get">,
+  clubId: string,
+  context: string,
+  department: string | undefined,
+): Promise<string | undefined> {
+  if (department === "none") return undefined;
+  if (department) return department;
+  if (!DATASHARE_CONTEXTS.has(context)) return undefined;
+  const departments = await client.get<Array<{ id: string; is_default?: boolean }>>(
+    "club",
+    `/departments/by_club/${encodeURIComponent(clubId)}`,
+  );
+  const standard = (departments ?? []).find((d) => d.is_default);
+  if (!standard) {
+    throw new Error(
+      "Keine Standard-Abteilung gefunden. --department <id> angeben oder --department none (ohne Abteilung, nicht im DataShare sichtbar).",
+    );
+  }
+  return standard.id;
+}
+
 // data update: CLI value "none" clears a field (sends explicit null to the PATCH)
 function contextPatchValue(v: string): string | null {
   return v === "none" ? null : v;
@@ -115,7 +143,7 @@ export function registerDataCommands(cli: CAC): void {
     )
     .option("--type <doc>", "document_type-Filter (papers): protokoll|flyer|bericht|...")
     .option("--format <fmt>", "Export-Format csv|xlsx (data export; Default csv)")
-    .option("--department <id>", "Abteilungs-ID fuer Ordner/Datei-Scope")
+    .option("--department <id>", "Abteilungs-ID fuer Ordner/Datei-Scope; upload: ohne Angabe Standard-Abteilung (Kontexte club/none/department), 'none' = ohne Abteilung")
     .option("--folder <id>", "Ordner-ID; root/none verschiebt in den Root")
     .option("--parent <id>", "Parent-Ordner; root/none fuer den Root")
     .option("--name <name>", "Ordnername fuer folder-create/folder-rename")
@@ -259,6 +287,7 @@ export function registerDataCommands(cli: CAC): void {
           }
 
           try {
+            const departmentId = await resolveUploadDepartment(client, clubId, opts.context, opts.department);
             const uploaded = await uploadClubFile({
               client,
               clubId,
@@ -266,7 +295,7 @@ export function registerDataCommands(cli: CAC): void {
               contextType: opts.context,
               contextId: opts.contextId,
               subContextId: opts.subContextId,
-              departmentId: opts.department,
+              departmentId,
               label: opts.label,
               isPublic: opts.public,
             });
