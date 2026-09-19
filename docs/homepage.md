@@ -400,6 +400,18 @@ Die Organansicht ist positionsbezogen: Auch unbesetzte, nicht-default Positionen
 erscheinen mit Positionsbeschreibung, leerem Avatarplatz und „Nicht besetzt“.
 Eine nicht verfügbare Datenquelle wird nicht als unbesetzte Position interpretiert.
 
+Reihenfolge und Hervorhebung der Ämter (seit 2026-09-19):
+
+- `position_order`: Ämter-IDs von oben nach unten, zum Beispiel
+  `["<id 1. Vorstand>", "<id 2. Vorstand>"]`. Nicht genannte Ämter folgen in
+  der Reihenfolge des Organs; unbekannte IDs werden ignoriert.
+- `highlighted_position_ids`: Ämter, deren Karten einen Rahmen in der
+  Vereinsfarbe bekommen (Raster, Karussell und Spotlight-Bühne).
+
+Die Ämter-IDs liefert `comvenio club position-list --json` (Feld `group_id`
+ordnet sie dem Organ zu) oder `club public-organ <group-id>`. Im Konfigurator
+stellt der Verein beides unter der Organ-Auswahl ein.
+
 Für das `image`-Widget bindet `source=club_logo` das aktuelle Vereinslogo;
 es hat Vorrang vor einer hinterlegten Datei oder URL. Änderungen am Vereinslogo
 werden beim nächsten Abruf übernommen. Der Editor bietet dieselbe Quellenauswahl.

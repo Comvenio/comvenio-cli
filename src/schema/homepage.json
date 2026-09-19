@@ -1254,6 +1254,12 @@
           "name": "featured_member_id"
         },
         {
+          "name": "position_order"
+        },
+        {
+          "name": "highlighted_position_ids"
+        },
+        {
           "name": "show_role"
         },
         {
@@ -3208,7 +3214,7 @@
   },
   "config_sync": {
     "widgets_checked": 72,
-    "fields_checked": 554,
+    "fields_checked": 556,
     "widgets_with_unread_fields": 12,
     "unread_fields": 22,
     "widgets_with_wrong_values": 0,
