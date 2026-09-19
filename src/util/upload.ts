@@ -103,13 +103,30 @@ export const MAX_LOGO_BYTES = 10 * 1024 * 1024;
 /** Image type from the file's first bytes; the extension alone proves nothing. */
 export function sniffImageType(bytes: Uint8Array): string | null {
   const ascii = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to));
-  if (bytes.length >= 8 && bytes[0] === 0x89 && ascii(1, 4) === "PNG") return "image/png";
+  const PNG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (bytes.length >= 8 && PNG.every((b, i) => bytes[i] === b)) return "image/png";
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
-  if (bytes.length >= 6 && ascii(0, 4) === "GIF8") return "image/gif";
+  if (bytes.length >= 6 && (ascii(0, 6) === "GIF87a" || ascii(0, 6) === "GIF89a")) return "image/gif";
   if (bytes.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
-  const head = new TextDecoder().decode(bytes.slice(0, 1024)).trimStart().toLowerCase();
-  if (head.startsWith("<") && head.includes("<svg")) return "image/svg+xml";
-  return null;
+  return isSvgDocument(bytes) ? "image/svg+xml" : null;
+}
+
+/**
+ * The root element is <svg> — after an optional BOM, XML declaration,
+ * processing instructions, comments and a doctype, however long those are.
+ * HTML with an embedded <svg> is not an SVG document.
+ */
+function isSvgDocument(bytes: Uint8Array): boolean {
+  let text = new TextDecoder().decode(bytes.slice(0, 256 * 1024)).replace(/^﻿/, "");
+  for (;;) {
+    text = text.trimStart();
+    const skip = [/^<\?[\s\S]*?\?>/, /^<!--[\s\S]*?-->/, /^<!doctype[^>]*>/i]
+      .map((re) => re.exec(text)?.[0].length ?? 0)
+      .find((n) => n > 0);
+    if (!skip) break;
+    text = text.slice(skip);
+  }
+  return /^<svg[\s>/]/i.test(text);
 }
 
 // Club logos have their own content-service route (/logos). The public logo

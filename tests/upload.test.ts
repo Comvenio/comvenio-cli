@@ -164,4 +164,19 @@ describe("club logo upload contract", () => {
     expect(sniffImageType(text('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>'))).toBe("image/svg+xml");
     expect(sniffImageType(text("%PDF-1.7"))).toBeNull();
   });
+
+  // Fremdprüfung Runde 2: signatures were checked only partly, and any text
+  // starting with "<" that mentioned <svg counted as SVG.
+  test("requires complete signatures and an <svg> root element", () => {
+    const bytes = (...b: number[]) => new Uint8Array(b);
+    const text = (s: string) => new TextEncoder().encode(s);
+    expect(sniffImageType(bytes(0x89, 0x50, 0x4e, 0x47, 0x00, 0x00, 0x00, 0x00))).toBeNull();
+    expect(sniffImageType(text("GIF8xa"))).toBeNull();
+    expect(sniffImageType(text("GIF87a"))).toBe("image/gif");
+    expect(sniffImageType(text("<html><body><svg></svg></body></html>"))).toBeNull();
+    expect(sniffImageType(text(`<?xml version="1.0"?><!-- ${"x".repeat(5000)} --><!DOCTYPE svg><svg viewBox="0 0 1 1"/>`)))
+      .toBe("image/svg+xml");
+    expect(sniffImageType(text("﻿  <svg>"))).toBe("image/svg+xml");
+    expect(sniffImageType(text("<svgx/>"))).toBeNull();
+  });
 });
