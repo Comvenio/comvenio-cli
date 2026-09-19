@@ -124,6 +124,10 @@ const publicMenuItem = z.object({
   name: z.string(),
   description: z.string().nullable(),
   price: z.number().nonnegative().nullable(),
+  price_options: z.array(z.object({
+    label: z.string(),
+    price: z.number().nonnegative(),
+  }).strict()),
   category: z.string().nullable(),
   type: z.string().nullable(),
   is_available: z.boolean(),

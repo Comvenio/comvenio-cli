@@ -1098,6 +1098,7 @@ describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
           id: k11IngredientId,
           name: "Vereinsburger",
           selling_price: 7.5,
+          price_options: [{ label: "Einzeln", price: 7.5 }, { label: "Menü", price: 10.5 }],
           ingredient_cost: 2.25,
           supplier_id: k11RecipeId,
           is_active: true,
@@ -1110,9 +1111,23 @@ describe("K11 recipe, ingredient, shopping and menu adapter contract", () => {
       description: "Speisen und Getränke",
       category: "Fest",
       design: null,
-      items: [{ id: k11IngredientId, name: "Vereinsburger", description: null, price: 7.5, category: null, type: null, is_available: true }],
+      items: [{ id: k11IngredientId, name: "Vereinsburger", description: null, price: 7.5, price_options: [{ label: "Einzeln", price: 7.5 }, { label: "Menü", price: 10.5 }], category: null, type: null, is_available: true }],
     });
     expect(JSON.stringify(result)).not.toMatch(/club_id|supplier|ingredient_cost|internal|secret/iu);
+  });
+
+  test("accepts named price options for menu create and update actions", () => {
+    const priceOptions = [{ label: "0,2 l", price: 4.2 }, { label: "Flasche", price: 15.6 }];
+    expect(K11_ACTION_SCHEMAS["cai.menu.04.add_item"].input.parse({
+      club_id: k7ClubId,
+      menu_id: k11MenuId,
+      item: { recipe_id: k11RecipeId, name: "Riesling", price_options: priceOptions },
+    })).toBeDefined();
+    expect(K11_ACTION_SCHEMAS["cai.menu.05.update_item"].input.parse({
+      club_id: k7ClubId,
+      item_id: k11IngredientId,
+      changes: { price_options: priceOptions },
+    })).toBeDefined();
   });
 
   test("TC-04: quantity scaling is read-only and missing prices remain UNKNOWN", async () => {
