@@ -96,6 +96,22 @@ export type UploadClubLogoResult = {
   filename: string;
 };
 
+// The logo is loaded by every page header and share preview; the content-service
+// logo route has no size limit of its own, so the CLI enforces one.
+export const MAX_LOGO_BYTES = 10 * 1024 * 1024;
+
+/** Image type from the file's first bytes; the extension alone proves nothing. */
+export function sniffImageType(bytes: Uint8Array): string | null {
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to));
+  if (bytes.length >= 8 && bytes[0] === 0x89 && ascii(1, 4) === "PNG") return "image/png";
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.length >= 6 && ascii(0, 4) === "GIF8") return "image/gif";
+  if (bytes.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  const head = new TextDecoder().decode(bytes.slice(0, 1024)).trimStart().toLowerCase();
+  if (head.startsWith("<") && head.includes("<svg")) return "image/svg+xml";
+  return null;
+}
+
 // Club logos have their own content-service route (/logos). The public logo
 // lookup only considers objects under .../public/logos/, so a regular
 // DataShare upload with context "club" never replaces the logo.
@@ -107,9 +123,16 @@ export async function uploadClubLogo({
   const file = Bun.file(path);
   if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${path}`);
   if (file.size <= 0) throw new Error(`Datei ist leer: ${path}`);
-  const contentType = (file.type || "").split(";")[0] ?? "";
-  if (!contentType.startsWith("image/")) {
-    throw new Error(`Vereinslogo muss ein Bild sein (erkannt: ${contentType || "unbekannt"}).`);
+  if (file.size > MAX_LOGO_BYTES) {
+    throw new Error(
+      `Vereinslogo ist zu groß (${Math.ceil(file.size / 1024 / 1024)} MB, erlaubt ${MAX_LOGO_BYTES / 1024 / 1024} MB).`,
+    );
+  }
+  // Size is checked first, so reading into memory is bounded.
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const contentType = sniffImageType(bytes);
+  if (!contentType) {
+    throw new Error("Vereinslogo muss ein Bild sein (PNG, JPEG, GIF, WebP oder SVG); der Dateiinhalt passt zu keinem davon.");
   }
 
   const query = `?filename=${encodeURIComponent(basename(path))}&content_type=${encodeURIComponent(contentType)}`;
@@ -126,7 +149,7 @@ export async function uploadClubLogo({
     method: "PUT",
     headers: presign.headers ?? { "Content-Type": contentType },
     // Same standalone-exe constraint as uploadClubFile: send bytes, not a stream.
-    body: await file.arrayBuffer(),
+    body: bytes,
   });
   if (!put.ok) throw new Error(`S3-Upload des Logos (PUT) fehlgeschlagen: HTTP ${put.status}`);
 

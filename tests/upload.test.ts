@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { ComvenioClient } from "../src/http.ts";
-import { uploadClubFile, uploadClubLogo } from "../src/util/upload.ts";
+import { MAX_LOGO_BYTES, sniffImageType, uploadClubFile, uploadClubLogo } from "../src/util/upload.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -123,5 +125,43 @@ describe("club logo upload contract", () => {
       uploadClubLogo({ client, clubId: "club-1", path: join(import.meta.dir, "fixtures", "upload.txt") }),
     ).rejects.toThrow("Vereinslogo muss ein Bild sein");
     expect(calls).toEqual([]);
+  });
+
+  // Fremdprüfung Runde 1 (2026-09-19): extension alone proved nothing, size was unbounded.
+  test("rejects a non-image renamed to .png before any request", async () => {
+    const calls: string[] = [];
+    const client = { post: async (_s: string, p: string) => (calls.push(p), {}) } as unknown as ComvenioClient;
+    const fake = join(tmpdir(), `kein-bild-${Date.now()}.png`);
+    await Bun.write(fake, "das ist kein Bild");
+    try {
+      await expect(uploadClubLogo({ client, clubId: "club-1", path: fake })).rejects.toThrow("Dateiinhalt passt zu keinem");
+    } finally {
+      await unlink(fake);
+    }
+    expect(calls).toEqual([]);
+  });
+
+  test("rejects a logo above the size limit before reading or sending it", async () => {
+    const calls: string[] = [];
+    const client = { post: async (_s: string, p: string) => (calls.push(p), {}) } as unknown as ComvenioClient;
+    const big = join(tmpdir(), `gross-${Date.now()}.png`);
+    await Bun.write(big, new Uint8Array(MAX_LOGO_BYTES + 1));
+    try {
+      await expect(uploadClubLogo({ client, clubId: "club-1", path: big })).rejects.toThrow("zu groß");
+    } finally {
+      await unlink(big);
+    }
+    expect(calls).toEqual([]);
+  });
+
+  test("recognises image types by their signature", () => {
+    const bytes = (...b: number[]) => new Uint8Array(b);
+    const text = (s: string) => new TextEncoder().encode(s);
+    expect(sniffImageType(bytes(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))).toBe("image/png");
+    expect(sniffImageType(bytes(0xff, 0xd8, 0xff, 0xe0))).toBe("image/jpeg");
+    expect(sniffImageType(text("GIF89a"))).toBe("image/gif");
+    expect(sniffImageType(text("RIFF\0\0\0\0WEBPVP8 "))).toBe("image/webp");
+    expect(sniffImageType(text('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>'))).toBe("image/svg+xml");
+    expect(sniffImageType(text("%PDF-1.7"))).toBeNull();
   });
 });
