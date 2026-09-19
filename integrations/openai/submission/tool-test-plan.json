@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "fdb1397dce434984b5a1cb08c9dcdaf7feb1b4ccfcdc4ac2db9e03403b6f035f",
+  "catalog_source_hash_sha256": "40d263db5cea90cf7b352bb1e6ccc59d0882d6fcf6dd2545c3c253936941ebbb",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1176,21 +1176,6 @@
     {
       "tool_name": "cv_event_20_registration_list_add_stats_show_update_adj_c0ffc0ba",
       "prompt": "Prüfe „Comvenio: Veranstaltungen – registration list add stats show update adjust delete aggregate“ mit synthetischen Daten im ausgewählten Testverein.",
-      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
-      "required_surfaces": [
-        "web",
-        "mobile"
-      ],
-      "verifies": [
-        "schema",
-        "security_schemes",
-        "annotations",
-        "rbac_recheck"
-      ]
-    },
-    {
-      "tool_name": "cv_event_21_budget_show_set_delete",
-      "prompt": "Prüfe „Comvenio: Veranstaltungen – budget show set delete“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",
