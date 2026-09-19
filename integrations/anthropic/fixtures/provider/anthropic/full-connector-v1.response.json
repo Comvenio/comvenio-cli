@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "fdb1397dce434984b5a1cb08c9dcdaf7feb1b4ccfcdc4ac2db9e03403b6f035f",
+  "runtime_tool_catalog_sha256": "40d263db5cea90cf7b352bb1e6ccc59d0882d6fcf6dd2545c3c253936941ebbb",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -1512,26 +1512,6 @@
     },
     {
       "tool_name": "cv_event_20_registration_list_add_stats_show_update_adj_c0ffc0ba",
-      "risk_class": "critical_write",
-      "required_scopes": [
-        "event.read",
-        "event.write"
-      ],
-      "expected_outcome": "confirmation_required_or_actionable_denial",
-      "oauth_bound_club_context": true,
-      "backend_rbac_recheck_required": true,
-      "confirmation_contract": true,
-      "response_contract": {
-        "structured_content_required": true,
-        "safe_text_summary_required": true,
-        "provider_specific_payload_forbidden": true,
-        "secret_or_token_echo_forbidden": true,
-        "delegated_capability_confirmation": false,
-        "provider_retry_contract": "idempotent_by_key"
-      }
-    },
-    {
-      "tool_name": "cv_event_21_budget_show_set_delete",
       "risk_class": "critical_write",
       "required_scopes": [
         "event.read",
