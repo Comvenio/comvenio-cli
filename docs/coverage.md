@@ -20,7 +20,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `logout` | `covered` | logout | Keine bekannte Kernlücke. |
 | `whoami` | `covered` | whoami | Keine bekannte Kernlücke. |
 | `action` | `covered` | list<br>call<br>confirm | Keine bekannte Kernlücke. |
-| `club` | `covered` | info<br>update<br>settings<br>settings-update<br>design<br>logo<br>logo-upload<br>department-list<br>department-show<br>department-add<br>department-update<br>department-delete | Keine bekannte Kernlücke. |
+| `club` | `covered` | info<br>update<br>settings<br>settings-update<br>design<br>logo<br>logo-upload<br>contact-requests<br>contact-request-done<br>contact-request-reopen<br>contact-request-delete<br>department-list<br>department-show<br>department-add<br>department-update<br>department-delete | Keine bekannte Kernlücke. |
 | `member` | `covered` | list<br>show<br>add<br>update<br>remove<br>import<br>family-list<br>family-show<br>family-add<br>family-update<br>family-delete<br>status-list<br>status-show<br>status-add<br>status-update<br>status-delete<br>period-list<br>period-show<br>period-add<br>period-update<br>period-delete | Keine bekannte Kernlücke. |
 | `team` | `covered` | list<br>show<br>create<br>update<br>delete<br>member list|add|update|remove<br>resource list|add|update|remove | Keine bekannte Kernlücke. |
 | `role` | `covered` | list<br>show<br>create<br>update<br>delete<br>permission-defs<br>permission set<br>permissions show|apply<br>assign<br>unassign<br>assignments<br>position-link<br>position-unlink<br>position-list<br>effective | Keine bekannte Kernlücke. |
@@ -168,7 +168,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## club
 
 - Status: `covered`
-- Actions: `info`, `update`, `settings`, `settings-update`, `design`, `logo`, `logo-upload`, `department-list`, `department-show`, `department-add`, `department-update`, `department-delete`
+- Actions: `info`, `update`, `settings`, `settings-update`, `design`, `logo`, `logo-upload`, `contact-requests`, `contact-request-done`, `contact-request-reopen`, `contact-request-delete`, `department-list`, `department-show`, `department-add`, `department-update`, `department-delete`
 - Wichtige Lücken:
   - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
 - Bewusste Ausschlüsse:

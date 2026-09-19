@@ -25,8 +25,9 @@ describe("homepage schema", () => {
   });
 
   test("mirrors all homepage vocabularies", () => {
-    expect(homepage.widget_count).toBe(71);
+    expect(homepage.widget_count).toBe(72);
     expect(homepage.widget_kinds).toContain("event_hub_embed");
+    expect(homepage.widget_kinds).toContain("contact_form");
     expect(homepage.widget_kinds).toContain("legal_notice");
     expect(homepage.widgets.legal_notice.config).toContainEqual({ name: "club_name", required: true });
     expect(homepage.widgets.news.config).toContainEqual({
@@ -354,12 +355,13 @@ describe("Herkunft der Config-Felder", () => {
 
   test("alle Felder haben es unveraendert durch den Umbau geschafft", () => {
     // Synchronized main renderer plus managed media and inline dates:
-    // 550 declared fields / 139 value sets. Keep losses explicit.
+    // 554 declared fields / 139 value sets (contact_form +4 on 2026-09-19).
+    // Keep losses explicit.
     // Sinkt eine der Zahlen, hat die Deklaration etwas verloren, was der
     // Prompt noch trug.
     const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
-    expect(felder).toBe(550);
+    expect(felder).toBe(554);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;

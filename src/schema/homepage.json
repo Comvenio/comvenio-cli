@@ -7,12 +7,12 @@
     "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py",
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
-  "widget_count": 71,
-  "widget_config_documented": 71,
+  "widget_count": 72,
+  "widget_config_documented": 72,
   "vocabulary_sync": {
-    "registry_count": 71,
-    "backend_count": 71,
-    "prompt_count": 71,
+    "registry_count": 72,
+    "backend_count": 72,
+    "prompt_count": 72,
     "missing_in_backend": [],
     "missing_in_prompt": [],
     "extra_in_backend": [],
@@ -191,6 +191,7 @@
     "weather",
     "live_match_ticker",
     "membership_form",
+    "contact_form",
     "gallery_slideshow",
     "department_calendar",
     "chat_preview",
@@ -3014,6 +3015,22 @@
         }
       ]
     },
+    "contact_form": {
+      "config": [
+        {
+          "name": "intro"
+        },
+        {
+          "name": "button_label"
+        },
+        {
+          "name": "success_text"
+        },
+        {
+          "name": "show_title"
+        }
+      ]
+    },
     "gallery_slideshow": {
       "config": [
         {
@@ -3190,8 +3207,8 @@
     ]
   },
   "config_sync": {
-    "widgets_checked": 71,
-    "fields_checked": 550,
+    "widgets_checked": 72,
+    "fields_checked": 554,
     "widgets_with_unread_fields": 12,
     "unread_fields": 22,
     "widgets_with_wrong_values": 0,

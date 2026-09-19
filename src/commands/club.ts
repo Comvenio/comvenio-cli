@@ -45,7 +45,22 @@ export type Opts = {
   tree?: boolean;
   avatars?: boolean;
   previewId?: string;
+  // contact-requests action
+  status?: string;
 };
+
+const CONTACT_REQUEST_STATUSES = ["open", "done", "all"] as const;
+
+/** Path of the club's contact requests (homepage-generator 16); validates the filter. */
+export function contactRequestsPath(clubId: string, options: { status?: string; requestId?: string } = {}): string {
+  const base = `/clubs/${encodeURIComponent(clubId)}/contact-requests`;
+  if (options.requestId) return `${base}/${encodeURIComponent(options.requestId)}`;
+  const status = options.status ?? "open";
+  if (!(CONTACT_REQUEST_STATUSES as readonly string[]).includes(status)) {
+    throw new Error("--status erwartet open, done oder all.");
+  }
+  return `${base}?status=${status}`;
+}
 
 export function publicOrganPath(clubId: string, groupId: string | undefined, avatars = false, previewId?: string): string {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -196,7 +211,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design und Vereinslogo (logo, logo-upload) verwalten; group-list, position-list, public-organ, public-legal lesen")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -218,6 +233,7 @@ export function registerClubCommands(cli: CAC): void {
     .option("--tree", "department-list: hierarchischen Abteilungsbaum laden")
     .option("--avatars", "public-organ: öffentliche Comvenio-Avatare mitladen")
     .option("--preview-id <id>", "public-organ: Organ innerhalb einer gültigen Homepage-Vorschau lesen")
+    .option("--status <status>", "contact-requests: open (Standard) | done | all")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
       const state = await loadState();
@@ -247,6 +263,49 @@ export function registerClubCommands(cli: CAC): void {
           output(meta, opts.json, () =>
             `Aktuelles Vereinslogo: ${String(meta.filename ?? "?")} (${String(meta.content_type ?? "?")}) — file_id ${String(meta.id ?? "?")}`,
           );
+          break;
+        }
+
+        case "contact-requests": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const requests = await client.get<Array<Record<string, unknown>>>(
+            "club",
+            contactRequestsPath(clubId, { status: opts.status }),
+          );
+          output(requests, opts.json, () =>
+            requests.length
+              ? requests
+                  .map((r) =>
+                    `${String(r.created_at ?? "").slice(0, 16)}  ${String(r.status)}  ${String(r.name)} <${String(r.email)}>  ${String(r.id)}\n` +
+                    `  ${String(r.message ?? "").replace(/\s+/g, " ").slice(0, 160)}`,
+                  )
+                  .join("\n")
+              : "Keine Kontaktanfragen.",
+          );
+          break;
+        }
+
+        case "contact-request-done":
+        case "contact-request-reopen": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!id) throw new Error(`club ${action} <request-id> benoetigt eine ID.`);
+          const updated = await client.patch<Record<string, unknown>>(
+            "club",
+            contactRequestsPath(clubId, { requestId: id }),
+            { status: action === "contact-request-done" ? "done" : "open" },
+          );
+          output(updated, opts.json, () => `Kontaktanfrage ${id}: ${String(updated.status)}`);
+          break;
+        }
+
+        case "contact-request-delete": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!id) throw new Error("club contact-request-delete <request-id> benoetigt eine ID.");
+          await client.del("club", contactRequestsPath(clubId, { requestId: id }));
+          output({ ok: true, id }, opts.json, () => `Kontaktanfrage ${id} geloescht (endgueltig nach 30 Tagen).`);
           break;
         }
 
@@ -474,7 +533,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });
