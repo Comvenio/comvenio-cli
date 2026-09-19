@@ -192,6 +192,22 @@ Wichtige Flags:
 
 Vor jeder Design-Mutation zuerst `--dry-run --json`, anschließend die Homepage-Vorschau und den Homepage-Verifier verwenden. Der vollständige Frontend-Workflow steht in [`homepage.md`](homepage.md).
 
+## Vereinslogo
+
+```bash
+comvenio club logo --json                          # aktuelles Logo (Metadaten)
+comvenio club logo-upload --file wappen.png --json # neues Logo hochladen
+```
+
+`logo-upload` nutzt die eigene Logo-Route des content-service und braucht
+`manage_club_settings`. Das zuletzt hochgeladene Logo gilt sofort überall, wo die
+Plattform das Vereinslogo zeigt: Homepage-Kopfzeile, `image`-Widget mit
+`source=club_logo`, Vereinsauswahl. Ein Bild mit transparentem Hintergrund
+(PNG) wirkt auf farbigen Flächen am besten.
+
+Ein normaler Datei-Upload (`data upload --context club`) ersetzt das Logo **nicht**:
+Die Logo-Auswahl berücksichtigt nur Dateien, die über `logo-upload` entstanden sind.
+
 ## Abgrenzung
 
 Homepage-Inhalte bleiben im eigenständigen `homepage`-Command; Mitglieder und Teams haben ebenfalls

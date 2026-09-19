@@ -99,6 +99,8 @@
         "settings",
         "settings-update",
         "design",
+        "logo",
+        "logo-upload",
         "department-list",
         "department-show",
         "department-add",

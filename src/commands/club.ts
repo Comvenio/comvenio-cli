@@ -3,6 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
+import { uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -195,7 +196,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen und Design verwalten; group-list, position-list, public-organ, public-legal lesen")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design und Vereinslogo (logo, logo-upload) verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -205,7 +206,7 @@ export function registerClubCommands(cli: CAC): void {
     .option("--font <pair>", `design: Font-Pair (${VALID_FONT_PAIRS.join("|")})`)
     .option("--spacing <mode>", `design: Spacing (${VALID_SPACING.join("|")})`)
     .option("--public-template <id>", `design: oeffentliches Website-Template (${VALID_PUBLIC_TEMPLATES.join("|")})`)
-    .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags)")
+    .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags); logo-upload: Bilddatei des Vereinslogos (PNG/JPG/SVG)")
     .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
     .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
     .option("--header-layout <mode>", `design: Public-Header-Aufbau (${VALID_PUBLIC_HEADER_LAYOUTS.join("|")})`)
@@ -236,6 +237,32 @@ export function registerClubCommands(cli: CAC): void {
           output(data, opts.json, () => JSON.stringify(data, null, 2));
           break;
         }
+        case "logo": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          const meta = await client.get<Record<string, unknown>>(
+            "content",
+            `/logos/club/${encodeURIComponent(clubId)}/meta`,
+          );
+          output(meta, opts.json, () =>
+            `Aktuelles Vereinslogo: ${String(meta.filename ?? "?")} (${String(meta.content_type ?? "?")}) — file_id ${String(meta.id ?? "?")}`,
+          );
+          break;
+        }
+
+        case "logo-upload": {
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file) throw new Error("club logo-upload benoetigt --file <bild>.");
+          // Replaces the logo everywhere the platform shows it (header, share cards,
+          // widgets with source=club_logo): the newest READY logo wins.
+          const uploaded = await uploadClubLogo({ client, clubId, path: opts.file });
+          output(uploaded, opts.json, () =>
+            `Vereinslogo ersetzt: ${uploaded.filename} (${uploaded.size_bytes ?? "?"} Bytes) — file_id ${uploaded.file_id}`,
+          );
+          break;
+        }
+
         case "list": {
           const query = opts.search
             ? `?search=${encodeURIComponent(opts.search)}`
@@ -447,7 +474,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });

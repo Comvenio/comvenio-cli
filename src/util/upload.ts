@@ -83,3 +83,57 @@ export async function uploadClubFile({
     filename: basename(path),
   };
 }
+
+export type UploadClubLogoInput = {
+  client: ComvenioClient;
+  clubId: string;
+  path: string;
+};
+
+export type UploadClubLogoResult = {
+  file_id: string;
+  size_bytes?: number;
+  filename: string;
+};
+
+// Club logos have their own content-service route (/logos). The public logo
+// lookup only considers objects under .../public/logos/, so a regular
+// DataShare upload with context "club" never replaces the logo.
+export async function uploadClubLogo({
+  client,
+  clubId,
+  path,
+}: UploadClubLogoInput): Promise<UploadClubLogoResult> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${path}`);
+  if (file.size <= 0) throw new Error(`Datei ist leer: ${path}`);
+  const contentType = (file.type || "").split(";")[0] ?? "";
+  if (!contentType.startsWith("image/")) {
+    throw new Error(`Vereinslogo muss ein Bild sein (erkannt: ${contentType || "unbekannt"}).`);
+  }
+
+  const query = `?filename=${encodeURIComponent(basename(path))}&content_type=${encodeURIComponent(contentType)}`;
+  const presign = await client.post<PresignUploadOut>(
+    "content",
+    `/logos/club/${encodeURIComponent(clubId)}/presign-upload${query}`,
+    {},
+  );
+  if (!presign.upload_url || !presign.file_id) {
+    throw new Error("Logo-presign-upload lieferte keine upload_url/file_id.");
+  }
+
+  const put = await fetch(presign.upload_url, {
+    method: "PUT",
+    headers: presign.headers ?? { "Content-Type": contentType },
+    // Same standalone-exe constraint as uploadClubFile: send bytes, not a stream.
+    body: await file.arrayBuffer(),
+  });
+  if (!put.ok) throw new Error(`S3-Upload des Logos (PUT) fehlgeschlagen: HTTP ${put.status}`);
+
+  const fin = await client.post<FinalizeOut>("content", `/logos/${presign.file_id}/finalize`, {});
+  return {
+    file_id: presign.file_id,
+    size_bytes: fin.size_bytes ?? file.size,
+    filename: basename(path),
+  };
+}

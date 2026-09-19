@@ -109,7 +109,7 @@ comvenio club info                    # Vereinsdaten
 
 | Domäne   | Beispiele                                                      |
 |----------|---------------------------------------------------------------|
-| club     | Profil/Settings/Abteilungen: `info\|update\|settings\|settings-update\|department-*` · `club design` |
+| club     | Profil/Settings/Abteilungen: `info\|update\|settings\|settings-update\|department-*` · `club design` · Vereinslogo: `logo\|logo-upload --file` |
 | member   | Mitglieder/Familien/Status/Zeiträume/Import: `list\|show\|add\|update\|remove\|family-*\|status-*\|period-*\|import` |
 | team     | `comvenio team list\|show\|create\|update\|delete` · `team member list\|add\|update\|remove` · `team resource list\|add\|update\|remove` |
 | teams    | Saisonale Mannschaften: `comvenio teams list\|show\|create\|update\|archive` · `teams season list\|show\|create\|update\|activate\|complete` · `teams roster show\|add\|update\|remove\|carry-over` · `teams competition list\|create\|update\|delete` · `teams ical list\|create\|preview\|activate\|deactivate` · `teams sync now\|runs\|clarifications\|resolve`. Wichtige Mutationen verlangen `--yes` (vorher nur Parameterzusammenfassung, kein Write); Exitcodes 0/2/3/4/5. Referenz: `docs/mitglieder-teams.md`. |
