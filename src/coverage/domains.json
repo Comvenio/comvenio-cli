@@ -1,7 +1,7 @@
 {
   "registry_version": "1.0.0",
   "cli_version": "0.1.0",
-  "verified_at": "2026-07-24",
+  "verified_at": "2026-09-20",
   "coverage_model": {
     "covered": "Der vorgesehene Club-Admin-Workflow ist über das CLI verfügbar. Das bedeutet nicht, dass jede technische Backend-Route eine eigene Action braucht.",
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
@@ -809,6 +809,33 @@
       "docs": [
         "docs/club-agent.md"
       ]
+    },
+    {
+      "id": "finance",
+      "status": "partial",
+      "actions": [
+        "plan list|show|create|update|close|reopen|copy",
+        "position list|create|show|update|delete|import-shopping",
+        "summary (je Plan und je Abteilung)",
+        "entry list|create|show|update|delete|approve"
+      ],
+      "gaps": [
+        "Welle 2: Dashboard, Kassenbericht (Entwurf/Einreichen/Freigeben/Ablehnen), Steuerbericht (reports.py)",
+        "Welle 3 (lesend): Event-Finanzen, Supply-Bruecke, Sponsoring-Deal",
+        "Investitionsplanung (investment_plans, funding_sources, investment_scenarios, investment_feasibility)",
+        "Stripe: Connect, Rechnungen, Auszahlungen, Abos, Kunden, Checkout"
+      ],
+      "intentional_exclusions": [
+        "/internal/* (supply-poll, sync-sponsoring) sind Dienst-zu-Dienst-Routen, kein Bedienweg fuer Menschen.",
+        "accounting, club_invoices, donations, member_fees liefern HTTP 501 — Platzhalter ohne Implementierung. Was es nicht gibt, bietet der Hilfetext nicht an."
+      ],
+      "source": [
+        "src/commands/finance.ts"
+      ],
+      "docs": [
+        "docs/finanzen.md"
+      ],
+      "note": "Bis 2026-09-20 stand finance hier als 'partial-gap' mit der Begruendung, Budgets und Kassenberichte lieferten HTTP 501. Das war vor dem Feature-Run am 2026-09-03 richtig und seither falsch: Die Vereins-Buchhaltung (Feature 6073e885) ist voll implementiert. Weil diese Datei sagte, es gebe dort nichts, hat niemand den fehlenden Befehl vermisst."
     }
   ],
   "uncovered_model": {
@@ -842,23 +869,6 @@
         "feed post --context-type <t> --context-id <id> --body <html>"
       ],
       "rationale": "Die Gäste-Post-Moderation ist ein DSGVO-relevanter, wiederkehrender Admin-Workflow und existiert bisher nur im Web-UI. Chat selbst (Nachrichten senden, Reactions, Typing, Read-Receipts) ist bewusst KEIN CLI-Ziel — das ist Endnutzer-Echtzeitkommunikation."
-    },
-    {
-      "id": "finance",
-      "service": "finance-service",
-      "verdict": "partial-gap",
-      "summary": "Drei real vorhandene, club-scoped Workflows fehlen im CLI. Die klassischen Vereinsfinanz-Workflows existieren serverseitig noch gar nicht.",
-      "missing_workflows": [
-        "Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)",
-        "Vereins-Rechnungen einsehen",
-        "Auszahlungshistorie einsehen und Auszahlung anstoßen"
-      ],
-      "proposed_actions": [
-        "finance connect-status|connect-onboard|connect-refresh",
-        "finance invoice-list|invoice-show",
-        "finance payout-list|payout-show|payout-create"
-      ],
-      "rationale": "Beiträge, Kassenberichte, Budgets, Spenden und Vereins-Rechnungen liefern serverseitig HTTP 501 — die Modelle existieren, die Routen sind Platzhalter. Das ist eine Backend-Lücke, kein CLI-Gap: zuerst Backend bauen, dann CLI. Nur Connect, Invoices und Payouts sind heute real nutzbar (manage_finances)."
     },
     {
       "id": "marketing-platform",
