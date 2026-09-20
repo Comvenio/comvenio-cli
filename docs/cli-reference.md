@@ -43,6 +43,7 @@ comvenio <command> ... --json
 | `template` | globale Gerichts- und Zutatenvorlagen durchsuchen | [`speisekarten.md`](speisekarten.md) |
 | `menu` | Karten, Einträge, CSS, deklaratives Apply und Export | [`speisekarten.md`](speisekarten.md) |
 | `meeting` | Sitzungsserien, Protokolle, Agenda, Teilnehmer, Abstimmungen, Beschlüsse und Einträge | [`meetings.md`](meetings.md) |
+| `finance` | Vereins-Buchhaltung: Jahresplan, Budgetposten und Buchungen | [`finanzen.md`](finanzen.md) |
 | `homepage` | `preview`, `apply`, `show` | [`homepage.md`](homepage.md) |
 | `schema` | verfügbare Domain-Schemas offline ausgeben | `comvenio schema --json` |
 | `verify` | visuelle Prüfung für URL, Event, Menü, Homepage, News, Urkunde | `comvenio verify --help` |
