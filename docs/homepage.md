@@ -331,6 +331,12 @@ Die Preview verändert die Live-Homepage nicht. Der Verifier prüft:
 - Mobile, Tablet, Landscape und Desktop
 - horizontales Überlaufen und leere Hauptregionen
 - unsichtbaren Text und WCAG-Kontrast
+  - Nicht messbar und deshalb kein Befund: Text auf Bild-, Video- oder
+    Verlaufsflächen — auch dann, wenn die Fläche als absolut positioniertes
+    Geschwister über dem Text liegt statt in seiner Elternkette (Karten mit
+    Bild und Lesbarkeits-Verlauf). Solche Stellen zählen als
+    `unverifiable_background`; vorher ergaben sie Phantombefunde mit einem
+    Verhältnis nahe 1,0.
 - Console- und Same-Origin-Netzwerkfehler
 - den unveränderbaren Rechtsfooter und alle festen Ziele
 - Sichtbarkeit, Pointer-Bedienbarkeit und Mittelpunkt-Hit-Test aller Pflichtlinks

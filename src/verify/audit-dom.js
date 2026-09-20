@@ -11,6 +11,22 @@
 //
 // **Bedingungen:** kein `//`-Kommentar unterhalb der Marke (der Text wird zu
 // einer Zeile komprimiert), und keine Referenz nach draussen.
+//
+// **Flaechen ausserhalb der Elternkette (RTS-Bug e673f4a5, 2026-09-20).**
+// `effectiveBackground` laeuft die Elternkette hinauf. Eine Karte, die ihren
+// Hintergrund als absolut positioniertes GESCHWISTER unter den Textstapel
+// legt — Bild, darueber ein Lesbarkeits-Verlauf, daneben der Text —, steht
+// nicht in dieser Kette. Gefunden wurde deshalb der helle Abschnitt darunter,
+// und weisser Text ergab ein Verhaeltnis von 1,06: vier solche Phantome in
+// einem einzigen Lauf, die schlimmer aussahen als die zwei echten Befunde
+// (2,8) und die Reparatur auf die falsche Stelle gelenkt haetten.
+//
+// `deckendeFremdschicht` sucht deshalb in den naechsten sechs Ebenen nach
+// einem absolut oder fix positionierten Nicht-Vorfahren, der das Textrechteck
+// abdeckt und einen Hintergrund traegt. Verglichen werden Rechtecke, kein
+// Treffertest: `elementsFromPoint` sieht nur das Sichtfenster, der Audit
+// laeuft aber ueber das ganze Dokument. Solche Faelle sind NICHT MESSBAR
+// (`unverifiable_background`) — sie werden nicht geraten und nicht gemeldet.
 
 /* AUDIT-DOM */
 const excludedSelector = '[aria-hidden="true"],[hidden],.sr-only,.screen-reader-text,.visually-hidden,.Mui-visuallyHidden';
@@ -38,7 +54,32 @@ const sichtbarerText = (w) => {
     }
     return s.join('').replace(/\s+/g, ' ').trim();
   };
+const deckendeFremdschicht = (element) => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    let parent = element.parentElement;
+    let tiefe = 0;
+    while (parent && tiefe < 6) {
+      const kinder = parent.children;
+      for (let i = 0; i < kinder.length; i++) {
+        const kind = kinder[i];
+        if (kind === element || kind.contains(element)) continue;
+        const st = getComputedStyle(kind);
+        if (st.position !== 'absolute' && st.position !== 'fixed') continue;
+        const r = kind.getBoundingClientRect();
+        if (r.left > rect.left + 1 || r.top > rect.top + 1) continue;
+        if (r.right < rect.right - 1 || r.bottom < rect.bottom - 1) continue;
+        if (st.backgroundImage && st.backgroundImage !== 'none') return true;
+        const farbe = toRGB(st.backgroundColor);
+        if (farbe && farbe.a > 0.001) return true;
+      }
+      parent = parent.parentElement;
+      tiefe += 1;
+    }
+    return false;
+  };
 const effectiveBackground = (element) => {
+    if (deckendeFremdschicht(element)) return null;
     const schichten = [];
     let current = element;
     while (current) {
