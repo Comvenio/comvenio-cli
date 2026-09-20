@@ -199,6 +199,45 @@ describe("§4.1 im echten Browser", () => {
     expect(ergebnis.checked_texts).toBe(0);
   });
 
+  fall("eine Karte mit Verlauf als Geschwister ist unverifiable, niemals contrast", () => {
+    // **Der Fehler aus RTS-Bug e673f4a5.** Die Bereichskarten des Event-Hubs
+    // legen Bild und Lesbarkeits-Verlauf als absolut positionierte
+    // GESCHWISTER unter den Textstapel. `effectiveBackground` lief nur die
+    // Elternkette hinauf, fand den hellen Abschnitt darunter und meldete fuer
+    // weissen Text ein Verhaeltnis von 1,06 — im Bild tadellos lesbar.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #fdf8f1; margin: 0">
+        <main style="padding: 24px">
+          <div style="position: relative; width: 300px; height: 200px; overflow: hidden">
+            <div style="position: absolute; inset: 0; background-image: linear-gradient(150deg, #2f7d52, #17120f)"></div>
+            <div style="position: relative; padding: 16px; color: #ffffff">
+              <p style="font-size: 26px; font-weight: 900">Festprogramm</p>
+              <p style="font-size: 14px">Drei Festtage mit Musik, Bewirtung und Programm.</p>
+            </div>
+          </div>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.unverifiable)).toContain("unverifiable_background");
+    expect(arten(ergebnis.failures)).not.toContain("contrast");
+  });
+
+  fall("eine deckende Flaeche in der Elternkette bleibt messbar", () => {
+    // Die Gegenprobe: Ohne sie wuerde eine Regel, die pauschal `null`
+    // liefert, den Fall darueber ebenfalls bestehen — und das Audit waere
+    // blind.
+    const ergebnis = audit(`<!doctype html>
+      <html><body style="background: #ffffff; margin: 0">
+        <main style="padding: 24px">
+          <div style="position: relative; background: #17120f; padding: 16px">
+            <p style="color: #3a332e; font-size: 16px">Dunkelgrauer Text auf fast schwarzem Grund.</p>
+          </div>
+        </main>
+      </body></html>`);
+
+    expect(arten(ergebnis.failures)).toContain("contrast");
+  });
+
   fall("nur versteckter Text laesst main leer", () => {
     // **Der Fehler, den Runde 2 fand.** `empty_main` nahm `textContent`
     // ungefiltert — ein `<main>`, dessen einziger langer Text `[hidden]`
