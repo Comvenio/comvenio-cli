@@ -57,6 +57,8 @@ export const OAUTH_SCOPE_VALUES = [
   "meeting.write",
   "sponsor.read",
   "sponsor.write",
+  "finance.read",
+  "finance.write",
   "admin.write",
   "files.read",
   "files.write",
