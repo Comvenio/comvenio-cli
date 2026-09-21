@@ -80,6 +80,12 @@ import {
   SponsorConfirmationPolicy,
   createK13ToolSet,
 } from "./tools/sponsor-marketing/index.ts";
+import {
+  FinanceConfirmationPolicy,
+  K14_ACTION_DEFINITIONS,
+  K14_ACTION_SCHEMAS,
+  createK14ToolSet,
+} from "./tools/finance/index.ts";
 
 type ActionRisk = "read" | "reversible_write" | "critical_write";
 
@@ -194,6 +200,7 @@ const DOMAIN_LABELS: Record<string, string> = {
   data: "Dateien und Daten",
   news: "News",
   sponsor: "Sponsoring",
+  finance: "Finanzen",
 };
 
 const ACTION_CONFIRM_TOOL_SUMMARY: DomainToolSummary = {
@@ -1011,6 +1018,7 @@ const ALL_DEFINITION_MAPS = [
   definitionMap(K11_ACTION_DEFINITIONS),
   definitionMap(K12_ACTION_DEFINITIONS),
   definitionMap(K13_ACTION_DEFINITIONS),
+  definitionMap(K14_ACTION_DEFINITIONS),
 ] as const;
 
 function highestRisk(operations: DomainOperation[]): ActionRisk {
@@ -1113,6 +1121,10 @@ export function registerFullDomainRuntime(input: {
     undefined,
     input.state_store,
   );
+  const financeConfirmation = new FinanceConfirmationPolicy(
+    undefined,
+    input.state_store,
+  );
   const bookingConfirmation = new BookingConflictPolicy(
     new AvailabilityContract(input.client),
     { preview_store: input.state_store },
@@ -1194,6 +1206,16 @@ export function registerFullDomainRuntime(input: {
     sets: [asToolSet(k13)],
     definitions: definitionMap(K13_ACTION_DEFINITIONS),
     schemas: schemaMap(K13_ACTION_SCHEMAS),
+  });
+  const k14 = createK14ToolSet({
+    client: input.client,
+    write_safety: writeSafety,
+    confirmation: financeConfirmation,
+  });
+  groups.push({
+    sets: [asToolSet(k14)],
+    definitions: definitionMap(K14_ACTION_DEFINITIONS),
+    schemas: schemaMap(K14_ACTION_SCHEMAS),
   });
 
   interface RegisteredDomainAction {
