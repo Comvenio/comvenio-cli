@@ -102,20 +102,47 @@ function openSystemBrowser(url: string): void {
   child.unref();
 }
 
+/**
+ * Jede OAuth-Anfrage bekommt eine Frist.
+ *
+ * Ohne sie haengt ein Refresh unbegrenzt — und mit ihm JEDER klassische
+ * Befehl, denn `loadState()` wartet darauf, bevor es den vorhandenen
+ * Geraete-Token zurueckgibt. Ein stiller Netzhaenger legte damit ein CLI
+ * lahm, das eigentlich alles haette tun koennen. Fremdvalidierung
+ * (2026-09-21), Befund 6.
+ *
+ * 20 Sekunden: lang genug fuer einen langsamen Anschluss, kurz genug, dass
+ * niemand glaubt, das Werkzeug sei abgestuerzt.
+ */
+const OAUTH_TIMEOUT_MS = 20_000;
+
 async function formPost(
   url: string,
   body: URLSearchParams,
   headers: Record<string, string> = {},
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/x-www-form-urlencoded",
-      ...headers,
-    },
-    body,
-  });
+  const abbruch = new AbortController();
+  const frist = setTimeout(() => abbruch.abort(), OAUTH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...headers,
+      },
+      body,
+      signal: abbruch.signal,
+    });
+  } catch (error) {
+    if ((error as Error).name === "AbortError") {
+      throw new Error(`OAuth-Anfrage nach ${OAUTH_TIMEOUT_MS / 1000} Sekunden ohne Antwort abgebrochen.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(frist);
+  }
   const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
   if (!response.ok) {
     const code = typeof payload.error === "string" ? payload.error : `HTTP ${response.status}`;

@@ -457,3 +457,28 @@ describe("gleichesGateway ist konservativ", () => {
     expect(gleichesGateway("kein-url", "kein-url")).toBe(false);
   });
 });
+
+describe("was ein gescheiterter Login aufräumt", () => {
+  const z = mitEigenemHeim("fehlschlag");
+  const modul = (marke: string) => import(`../src/auth.ts?${marke}=${encodeURIComponent(z.heim)}`);
+
+  // Die Fremdvalidierung bemängelte, dass der kritische Login-Fehlerpfad
+  // ungetestet blieb — er lag in der CLI-Definition. Die Entscheidung ist
+  // jetzt eine reine Funktion und damit prüfbar.
+  test("ein abgebrochener Wiederholungsversuch lässt die Verbindung in Ruhe", async () => {
+    const { aufraeumenNachFehlschlag } = await modul("x1");
+    // Nichts gespeichert, aber es gab vorher eine Verbindung.
+    expect(aufraeumenNachFehlschlag(false, true)).toBe("nichts");
+  });
+
+  test("ein Versuch, der schon etwas gespeichert hat, räumt auf", async () => {
+    const { aufraeumenNachFehlschlag } = await modul("x2");
+    expect(aufraeumenNachFehlschlag(true, true)).toBe("alles");
+    expect(aufraeumenNachFehlschlag(true, false)).toBe("alles");
+  });
+
+  test("ohne vorherige Verbindung bleibt kein halber Zustand", async () => {
+    const { aufraeumenNachFehlschlag } = await modul("x3");
+    expect(aufraeumenNachFehlschlag(false, false)).toBe("alles");
+  });
+});

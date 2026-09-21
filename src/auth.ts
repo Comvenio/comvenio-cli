@@ -461,6 +461,28 @@ export function clearConnectorState(): void {
   });
 }
 
+/**
+ * Was nach einem gescheiterten OAuth-Login aufzuraeumen ist.
+ *
+ * Als reine Funktion, weil sie die eigentliche Entscheidung traegt und in
+ * der CLI-Definition nicht pruefbar waere. Genau diese Luecke hatte die
+ * Fremdvalidierung benannt: "Die Tests messen den kritischen Login-Fehlerpfad
+ * nicht."
+ *
+ * - `hatNeueCredentials` — dieser Versuch hat bereits etwas gespeichert.
+ *   Dann muss es weg, sonst bleibt ein halber Zustand.
+ * - `bestandVorher` — es gab schon eine funktionierende Verbindung. Die
+ *   gehoert diesem Versuch nicht; ein im Browser abgebrochener
+ *   WIEDERHOLUNGSversuch darf sie nicht abmelden.
+ */
+export function aufraeumenNachFehlschlag(
+  hatNeueCredentials: boolean,
+  bestandVorher: boolean,
+): "alles" | "nichts" {
+  if (hatNeueCredentials) return "alles";
+  return bestandVorher ? "nichts" : "alles";
+}
+
 export function clearState(): void {
   if (existsSync(STATE_FILE)) rmSync(STATE_FILE);
 }

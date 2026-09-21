@@ -3,8 +3,10 @@ import { cac } from "cac";
 import type { OAuthScope } from "@comvenio/connector-contracts";
 import {
   AuthError,
+  aufraeumenNachFehlschlag,
   clearAllAuthState,
   clearConnectorState,
+  gleichesGateway,
   readStoredState,
   STATE_FILE,
   writeConnectorLogin,
@@ -59,6 +61,42 @@ const GATEWAY_BY_ENV: Record<string, string> = {
   dev: "https://apidev.comvenio.app",
   local: "http://localhost",
 };
+
+/**
+ * Widerruft einen Grant, der durch einen Gateway-Wechsel heimatlos wuerde.
+ *
+ * Ohne das bliebe er serverseitig aktiv, waehrend seine Metadaten lokal
+ * verworfen werden — niemand koennte ihn danach noch zuruecknehmen. Ein
+ * fehlgeschlagener Widerruf haelt die Anmeldung nicht auf; er wird gemeldet,
+ * damit der Mensch ihn im Konto von Hand beenden kann.
+ */
+async function widerrufeVerwaistenGrant(neuesGateway: string): Promise<void> {
+  let alt: ReturnType<typeof readStoredState>;
+  try {
+    alt = readStoredState();
+  } catch {
+    return;
+  }
+  if (!alt.connector || gleichesGateway(alt.gatewayBaseUrl, neuesGateway)) return;
+  const credentials = loadOAuthCredentials();
+  if (!credentials) return;
+  try {
+    await revokeOAuthCredentials(
+      oauthRuntime(
+        alt.gatewayBaseUrl,
+        new URL(alt.connector.resource).origin,
+        alt.connector.scopes as OAuthScope[],
+      ),
+      credentials,
+    );
+  } catch (error) {
+    console.error(
+      `Warnung: Der bisherige Connector-Grant an ${alt.gatewayBaseUrl} konnte nicht widerrufen werden `
+      + `(${(error as Error).message}). Bitte im Comvenio-Konto beenden.`,
+    );
+  }
+  clearOAuthCredentials();
+}
 
 const cli = cac("comvenio");
 
@@ -124,6 +162,13 @@ cli
       clubId = o.club ?? me?.main_club_id;
       userId = me?.id;
       userEmail = me?.email;
+      // Wechselt das Gateway, verliert ein bestehender Connector-Block hier
+      // seine Gueltigkeit — dann wird der Grant VORHER widerrufen. Sonst
+      // bliebe er serverseitig aktiv, waehrend die Metadaten zu seinem
+      // Widerruf lokal verschwinden. Der Widerruf steht hier und nicht im
+      // Schreibweg, weil er Netz braucht und `auth.ts` netzfrei bleibt.
+      // Fremdvalidierung (2026-09-21), Befund 4.
+      await widerrufeVerwaistenGrant(gatewayBaseUrl);
       // Schreibt NUR den Geraete-Block; ein bestehender Connector bleibt,
       // solange er zum selben Gateway gehoert. Bis zum 2026-09-21 loeschte
       // ein Geraete-Login die OAuth-Verbindung mit, so wie eine
@@ -153,9 +198,19 @@ cli
           "--club ist bei OAuth nicht zulässig. Der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden.",
         );
       }
+      // Ob es vorher eine Verbindung gab, entscheidet im Fehlerfall darueber,
+      // ob aufgeraeumt oder in Ruhe gelassen wird.
+      const bestandVorher = Boolean((() => {
+        try {
+          return readStoredState().connector;
+        } catch {
+          return null;
+        }
+      })());
       const requestedScopes = o.scopes
         ? o.scopes.split(/[,\s]+/u).map((value) => value.trim()).filter(Boolean) as OAuthScope[]
         : undefined;
+      await widerrufeVerwaistenGrant(gatewayBaseUrl);
       runtime = oauthRuntime(gatewayBaseUrl, o.connector, requestedScopes);
       if (!o.json) {
         console.error("Browser wird für die sichere Comvenio-Anmeldung geöffnet …");
@@ -193,13 +248,18 @@ cli
         if (oauthCredentials) {
           await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
         }
-        clearOAuthCredentials();
-        // Nur der Connector wird zurueckgenommen. Ein Abbruch im Browser, ein
-        // fehlgeschlagenes `whoami` oder ein Schreibfehler loeschte vorher die
-        // ganze Zustandsdatei — samt eines vorher gueltigen `cvn_`-Tokens.
-        // Jetzt raeumt `clearConnectorState` nur den eigenen Block ab und
-        // laesst stehen, was ihm nicht gehoert.
-        clearConnectorState();
+        // NUR aufraeumen, wenn dieser Versuch etwas angelegt hat. Vorher
+        // loeschte der Catch bedingungslos — ein im Browser abgebrochener
+        // WIEDERHOLUNGSversuch meldete damit eine vorher funktionierende
+        // Verbindung ab. Ein Login, der nichts geschrieben hat, darf nichts
+        // hinterlassen und nichts wegnehmen. Fremdvalidierung (2026-09-21),
+        // Befund 3: "der Login ist nicht transaktional".
+        if (aufraeumenNachFehlschlag(Boolean(oauthCredentials), bestandVorher) === "alles") {
+          clearOAuthCredentials();
+          clearConnectorState();
+        } else {
+          console.error("Die OAuth-Anmeldung ist fehlgeschlagen; die bestehende Verbindung bleibt unverändert.");
+        }
         throw error;
       }
     }
