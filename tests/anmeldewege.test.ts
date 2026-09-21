@@ -149,7 +149,7 @@ describe("der Zustand trägt beide Wege", () => {
     });
     // Eine Verbindung ohne gültige Tokens ist eine Karteileiche und wird
     // nicht künstlich am Leben gehalten.
-    expect(readOAuthConnectorState()).toBeUndefined();
+    expect(readOAuthConnectorState(GATEWAY)).toBeUndefined();
   });
 
   test("readOAuthConnectorState liefert nichts bei reinem Geräte-Login", async () => {
@@ -158,7 +158,7 @@ describe("der Zustand trägt beide Wege", () => {
       schemaVersion: 1, authMode: "device_token", token: GERAETE_TOKEN,
       gatewayBaseUrl: GATEWAY, environment: "prod",
     });
-    expect(readOAuthConnectorState()).toBeUndefined();
+    expect(readOAuthConnectorState(GATEWAY)).toBeUndefined();
   });
 
   test("eine unlesbare Zustandsdatei hält das OAuth-Schreiben nicht auf", async () => {
@@ -172,5 +172,244 @@ describe("der Zustand trägt beide Wege", () => {
     });
 
     expect(JSON.parse(readFileSync(pfad, "utf8")).authMode).toBe("oauth");
+  });
+});
+
+// ── Fremdvalidierung Runde 1 (2026-09-21) ───────────────────────────────────
+//
+// Die Prüfung stellte fest, dass die elf Fälle oben die drei schwersten
+// Befunde grün liessen: Keiner rief `loadState()` mit beiden Wegen, keiner
+// prüfte einen Gateway-Wechsel, und keiner sah sich an, was bei einem
+// abgelaufenen Grant passiert. Genau das steht hier.
+
+describe("ein abgelaufener Grant reisst die klassischen Befehle nicht mit", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-grant-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  // Ohne Credentials im Store wirft `resolveOAuthCredentials`. Vorher lief
+  // dieser Wurf VOR der Rückgabe — der vorhandene Geräte-Token wurde nie
+  // erreicht, und damit blieb der ursprüngliche Fehler für genau den Fall
+  // bestehen, der ihn am häufigsten auslöst.
+  test("loadState liefert den Geräte-Token, auch wenn OAuth nicht mehr trägt", async () => {
+    const { loadState } = await import(`../src/auth.ts?grant=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+
+    const state = await loadState();
+    expect(state.token).toBe(GERAETE_TOKEN);
+    expect(state.hasDeviceToken).toBe(true);
+    // Kein Connector-Token: Der Grant trägt nicht mehr, und `comvenio action`
+    // soll das merken statt still den falschen Token zu senden.
+    expect(state.connectorToken).toBeUndefined();
+    // Und der klassische Weg läuft.
+    expect(typeof createClient(state).get).toBe("function");
+  });
+
+  test("ohne Geräte-Token wirft loadState weiterhin — der Fehler gehört gemeldet", async () => {
+    const { loadState } = await import(`../src/auth.ts?ohne=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth",
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+
+    await expect(loadState()).rejects.toThrow();
+  });
+});
+
+describe("der Geräte-Token gehört zu seinem Gateway", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+  const FREMDES_GATEWAY = "https://fremd.example.org";
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-gateway-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  // Ohne diese Bindung nähme eine OAuth-Anmeldung gegen ein anderes
+  // `--gateway` den alten Token mit und sendete ihn im Authorization-Header
+  // an einen fremden Ursprung.
+  test("eine OAuth-Anmeldung an einem anderen Gateway nimmt ihn NICHT mit", async () => {
+    const { writeOAuthState } = await import(`../src/auth.ts?gw=${encodeURIComponent(heim)}`);
+    const pfad = join(heim, ".comvenio-cli-state.json");
+    writeFileSync(pfad, JSON.stringify({
+      schemaVersion: 1, authMode: "device_token", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+    }), "utf8");
+
+    writeOAuthState({
+      gatewayBaseUrl: FREMDES_GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${FREMDES_GATEWAY}/cli`, scopes: ["club.read"] },
+    });
+
+    const danach = JSON.parse(readFileSync(pfad, "utf8"));
+    expect(danach.token).toBeUndefined();
+  });
+
+  test("am selben Gateway bleibt er — auch mit abweichendem Schrägstrich", async () => {
+    const { writeOAuthState } = await import(`../src/auth.ts?gw2=${encodeURIComponent(heim)}`);
+    const pfad = join(heim, ".comvenio-cli-state.json");
+    writeFileSync(pfad, JSON.stringify({
+      schemaVersion: 1, authMode: "device_token", token: GERAETE_TOKEN,
+      gatewayBaseUrl: `${GATEWAY}/`, environment: "prod",
+    }), "utf8");
+
+    writeOAuthState({
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    });
+
+    expect(JSON.parse(readFileSync(pfad, "utf8")).token).toBe(GERAETE_TOKEN);
+  });
+
+  test("readOAuthConnectorState gibt an einem anderen Gateway nichts zurück", async () => {
+    const { readOAuthConnectorState } = await import(`../src/auth.ts?gw3=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth", gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+    expect(readOAuthConnectorState(FREMDES_GATEWAY)).toBeUndefined();
+  });
+});
+
+describe("die Secret-Prüfung sieht die Struktur, nicht den Text", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-secret-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  // Die alte Regex war case-sensitive und kannte drei Schreibweisen.
+  test("Schreibvarianten eines Secrets werden gefangen", async () => {
+    const { writeOAuthState } = await import(`../src/auth.ts?sec=${encodeURIComponent(heim)}`);
+    const basis = {
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    };
+    for (const feld of ["AccessToken", "access-token", "bearerToken", "refresh_Token", "clientSecret", "apiPassword"]) {
+      expect(() => writeOAuthState({ ...basis, [feld]: "geheim" } as never), feld).toThrow();
+    }
+  });
+
+  test("ein cvn_ in einem verschachtelten Feld wird gefangen", async () => {
+    const { writeOAuthState } = await import(`../src/auth.ts?sec2=${encodeURIComponent(heim)}`);
+    expect(() => writeOAuthState({
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      // @ts-expect-error — genau das soll die Strukturprüfung fangen
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"], token: GERAETE_TOKEN },
+    })).toThrow(/Feld/u);
+  });
+
+  test("ein unbekanntes Feld an der Wurzel wird abgelehnt", async () => {
+    const { writeOAuthState } = await import(`../src/auth.ts?sec3=${encodeURIComponent(heim)}`);
+    expect(() => writeOAuthState({
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+      // @ts-expect-error — unbekannte Felder koennten Secrets tragen
+      notiz: "harmlos aussehend",
+    })).toThrow(/Unbekanntes Feld/u);
+  });
+});
+
+describe("Abmelden hinterlässt keinen unverwaltbaren Rest", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-logout-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  // Vorher löschte ein `finally` die Zustandsdatei auch dann, wenn das
+  // Secret NICHT entfernt werden konnte: Es blieb im Betriebssystem, und die
+  // Metadaten für einen zweiten Versuch waren weg.
+  test("ohne Credentials im Store räumt der Logout die Datei ab", async () => {
+    const { clearAllAuthState } = await import(`../src/auth.ts?out=${encodeURIComponent(heim)}`);
+    const pfad = join(heim, ".comvenio-cli-state.json");
+    writeFileSync(pfad, JSON.stringify({
+      schemaVersion: 1, authMode: "device_token", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+    }), "utf8");
+
+    clearAllAuthState();
+    expect(existsSync(pfad)).toBe(false);
+  });
+});
+
+describe("der gerettete Geräte-Stand nach einem gescheiterten OAuth-Versuch", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-rettung-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  test("trägt den Token und lässt die OAuth-Metadaten fallen", async () => {
+    const { vorherigerGeraeteStand } = await import(`../src/auth.ts?ret=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod", clubId: "verein-1",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+
+    const stand = vorherigerGeraeteStand();
+    expect(stand).toMatchObject({ authMode: "device_token", token: GERAETE_TOKEN, clubId: "verein-1" });
+    expect(stand?.oauth).toBeUndefined();
+  });
+
+  test("gibt nichts zurück, wenn es gar keinen Geräte-Token gab", async () => {
+    const { vorherigerGeraeteStand } = await import(`../src/auth.ts?ret2=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth", gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+    expect(vorherigerGeraeteStand()).toBeNull();
   });
 });

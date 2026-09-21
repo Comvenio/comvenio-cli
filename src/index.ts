@@ -7,6 +7,7 @@ import {
   clearState,
   readOAuthConnectorState,
   readStoredState,
+  vorherigerGeraeteStand,
   STATE_FILE,
   writeOAuthState,
   writeState,
@@ -131,7 +132,7 @@ cli
       // desselben Fehlers. Die Wege schliessen einander nicht aus: Der
       // Geraete-Token traegt die klassischen Befehle, der OAuth-Grant
       // `comvenio action`.
-      const bestehenderConnector = readOAuthConnectorState();
+      const bestehenderConnector = readOAuthConnectorState(gatewayBaseUrl);
       writeState({
         schemaVersion: bestehenderConnector ? 2 : 1,
         authMode: bestehenderConnector ? "oauth" : "device_token",
@@ -144,6 +145,9 @@ cli
         oauth: bestehenderConnector,
       });
       if (bestehenderConnector) {
+        // Sonst meldet die JSON-Antwort `device_token`, waehrend `whoami`
+        // danach `oauth` zeigt. Fremdvalidierung Runde 1, Befund 7.
+        authMode = "oauth";
         console.log("Die bestehende Connector-Verbindung bleibt erhalten — „comvenio action …“ funktioniert weiter.");
       }
     } else {
@@ -195,7 +199,17 @@ cli
           await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
         }
         clearOAuthCredentials();
-        clearState();
+        // Einen bestehenden Geraete-Login NICHT mitreissen: Ein Abbruch im
+        // Browser, ein fehlgeschlagenes `whoami` oder ein Schreibfehler
+        // loeschte vorher die ganze Zustandsdatei — samt eines vorher
+        // gueltigen `cvn_`-Tokens. Fremdvalidierung Runde 1, Befund 2.
+        const geretteterStand = vorherigerGeraeteStand();
+        if (geretteterStand) {
+          writeState(geretteterStand);
+          console.error("Die OAuth-Anmeldung ist fehlgeschlagen; der bestehende Geräte-Login bleibt erhalten.");
+        } else {
+          clearState();
+        }
         throw error;
       }
     }
