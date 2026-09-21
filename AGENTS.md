@@ -57,7 +57,15 @@ kompiliert `src/index.ts` als eigenständige Plattform-Binary. Beispiel: `tourna
 <match-id> --home <n> --away <n>` wurde am 2026-07-08 ergänzt, weil Ergebnisse zuvor
 fälschlich per `POST /matches/{id}/result` gesetzt wurden.
 
-### Ganze Themengebiete ohne Command (Stand 2026-07-14)
+### Ganze Themengebiete ohne Command (Bestandsaufnahme 2026-07-14, Finanzen 2026-09-21)
+
+> **Diese Tabelle hat schon einmal geschadet.** Ihre Zeile zu den Finanzen sagte
+> „Budgets liefern serverseitig noch HTTP 501" — richtig am Tag der Aufnahme,
+> falsch ab dem Feature-Run am 2026-09-03. Weil sie autoritativ aussah, sah
+> niemand mehr nach: Das CLI kannte den finance-service bis zum 2026-09-20
+> nicht, und der Finanzbereich war über den einzigen erlaubten Weg nicht
+> bedienbar. Wer hier einen Eintrag liest, prüft ihn am Dienst nach, bevor er
+> sich darauf verlässt — und zieht ihn nach, wenn er nicht mehr stimmt.
 
 Die 26 Top-Level-Commands decken **nicht** die ganze Plattform ab. Diese Bereiche haben
 **gar keinen** Command — sie sind in `docs/coverage.md` unter „Nicht erschlossene
@@ -68,7 +76,7 @@ Themengebiete" mit Verdikt und Begründung geführt:
 | **Rollen & Rechte** (role-service) | `covered` | `comvenio role`: Custom Roles, Berechtigungsmatrix, direkte/positionsbasierte Zuweisungen und effektive Rechte |
 | **ClubAgent/Bot** (ai-service) | `gap` | Bot-Konfiguration, Skills/Guardrails, Routinen, **Freigaben**. Kein CLI-Zugang |
 | **Channels/Forum/Feeds** (message-service) | `gap` | Channel- + Forum-Verwaltung, **Gäste-Post-Moderation** (DSGVO-relevant). Kein CLI-Zugang |
-| **Finanzen** (finance-service) | `partial-gap` | Connect/Rechnungen/Payouts fehlen; Beiträge/Kassen/Budgets liefern serverseitig noch HTTP 501 |
+| **Finanzen** (finance-service) | `partial` | `comvenio finance` deckt seit 2026-09-20 Jahresplan, Budgetposten, Buchungen und Zusammenfassung ab (auch im Connector, K14). **Serverseitig weiterhin `501`:** Kassenbericht, Rechnungen, Spenden, Beiträge. **Vorhanden, aber ohne CLI:** Stripe-Connect, Auszahlungen, Abos, Event-Finanzen, Sponsoring-Brücke, Supply-Brücke, Berichte, Fördermittel (9 Router, 44 Routen) |
 | Werbe-Plattform, Benachrichtigungen, Automation | `no-gap` | Bewusst kein CLI-Ziel (Plattform-Ebene, Self-Service, Infrastruktur) |
 
 **Wichtig:** Ein `gap` ist **kein** Freibrief für einen direkten API-Call. Wenn du einen dieser
