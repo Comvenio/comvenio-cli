@@ -4,9 +4,18 @@ import type { JsonValue, OAuthScope, RequestContext } from "@comvenio/connector-
 import type { ActionRisk, PermissionPolicy } from "@comvenio/tool-catalog";
 import type { z } from "zod";
 
+// 06 fehlt mit Absicht: `plan-reopen` verlangt im Dienst eine PLATTFORMROLLE
+// (finance_plans.py:183 — `is_platform_admin`, also MasterAdmin oder
+// Developer), kein Vereinsrecht. Die `PermissionPolicy` des Connectors kennt
+// nur Vereinsrechte aus dem Capability-Snapshot; sie kann eine Plattformrolle
+// gar nicht pruefen. Die Aktion waere damit fuer jeden Vereinsnutzer sichtbar,
+// bestaetigungspflichtig — und danach immer 403. Eine Attrappe. Wer ein
+// geschlossenes Jahr wieder oeffnen muss, tut es ueber das CLI mit einem
+// Plattform-Konto: `comvenio finance plan-reopen --year <jahr> --reason "…"`.
+// Gefunden in der Fremdvalidierung Runde 1 (2026-09-21).
 export const K14_FINANCE_ACTION_IDS = [
   "cai.finance.01.plan_list", "cai.finance.02.plan_show", "cai.finance.03.plan_create", "cai.finance.04.plan_update",
-  "cai.finance.05.plan_close", "cai.finance.06.plan_reopen", "cai.finance.07.plan_copy", "cai.finance.08.position_list",
+  "cai.finance.05.plan_close", "cai.finance.07.plan_copy", "cai.finance.08.position_list",
   "cai.finance.09.position_create", "cai.finance.10.position_show", "cai.finance.11.position_update", "cai.finance.12.position_delete",
   "cai.finance.13.position_import_shopping", "cai.finance.14.summary", "cai.finance.15.entry_list", "cai.finance.16.entry_create",
   "cai.finance.17.entry_show", "cai.finance.18.entry_update", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve",

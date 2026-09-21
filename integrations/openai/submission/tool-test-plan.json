@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "72db5f8d7c447c2d767ddd68c45db7a5676011db24839f9881380b9aa2c5d9f2",
+  "catalog_source_hash_sha256": "5cd124b30fe086a07614d5220ca949854fad3e25fff4c676be6e911c2583590a",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1371,21 +1371,6 @@
     {
       "tool_name": "cv_finance_05_plan_close",
       "prompt": "Prüfe „Comvenio: Finanzen – plan close“ mit synthetischen Daten im ausgewählten Testverein.",
-      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
-      "required_surfaces": [
-        "web",
-        "mobile"
-      ],
-      "verifies": [
-        "schema",
-        "security_schemes",
-        "annotations",
-        "rbac_recheck"
-      ]
-    },
-    {
-      "tool_name": "cv_finance_06_plan_reopen",
-      "prompt": "Prüfe „Comvenio: Finanzen – plan reopen“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

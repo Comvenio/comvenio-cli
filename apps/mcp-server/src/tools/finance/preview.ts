@@ -16,7 +16,6 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   // übernommener Plan legt auf einen Schlag viele Posten an, und eine Freigabe
   // macht aus einem Entwurf einen verbuchten Beleg.
   if (definition.action_id === "cai.finance.05.plan_close") effects.push({ type: "plan_lock", year: data.year ?? null, blocks_further_bookings: true, forced: data.force === true });
-  if (definition.action_id === "cai.finance.06.plan_reopen") effects.push({ type: "plan_unlock", year: data.year ?? null, reopens_closed_accounting_year: true });
   if (definition.action_id === "cai.finance.07.plan_copy") {
     effects.push({ type: "bulk_position_creation", source_year: data.source_year ?? null, target_year: data.year ?? null, selected_positions: Array.isArray(data.position_ids) ? data.position_ids.length : null, includes_non_recurring: data.include_non_recurring === true });
   }

@@ -8,6 +8,12 @@ import { buildK14Preview } from "./preview.ts";
 import { K14_ACTION_SCHEMAS } from "./schemas.ts";
 import type { K14ActionDefinition, K14ActionResult, K14ExecutionDependencies, K14ExecutionRequest, K14MutationRequest, K14OperationDefinition } from "./types.ts";
 
+// Alles, was am Plan selbst haengt — Lesen wie Schreiben.
+const PLAN_ACTIONS = new Set<string>([
+  "cai.finance.01.plan_list", "cai.finance.02.plan_show", "cai.finance.03.plan_create",
+  "cai.finance.04.plan_update", "cai.finance.05.plan_close", "cai.finance.07.plan_copy",
+]);
+
 export interface K14VisibilityRequest { context: RequestContext; capability_snapshot: CapabilitySnapshot | null; provider_tool_updates?: ProviderToolUpdateMode; }
 function error(context: RequestContext, code: Parameters<typeof createConnectorError>[0]["code"], message: string): Error { return createConnectorError({ code, message, request_id: context.request_id, retryable: false }); }
 function assertJson(value: unknown, context: RequestContext): asserts value is JsonValue { if (!z.json().safeParse(value).success) throw error(context, "VALIDATION_FAILED", "Die Tool-Eingabe enthält ungültige JSON-Werte."); }
@@ -70,6 +76,24 @@ export class FinanceToolSet {
     // gefiltert, sondern gar nicht — mit dem Hinweis auf die Aktion, die passt.
     if (definition.action_id === "cai.finance.14.summary" && operation.operation === "total" && context.department_id) {
       throw error(context, "TENANT_MISMATCH", "Die vereinsweite Zusammenfassung ist im Abteilungskontext nicht verfügbar. Nutze die Teiloperation „by_department“.");
+    }
+    // Ein Jahresplan gehört dem Verein, nicht einer Abteilung: Er trägt das
+    // verfügbare Kapital und den Status, der für ALLE Abteilungen gilt. Im
+    // Abteilungskontext wäre jede Planaktion eine Grenzüberschreitung — Lesen
+    // zeigt das Vereinskapital, Schreiben sperrt oder öffnet das Jahr für
+    // Abteilungen, die nichts davon wissen. Der Filter `department_scope`
+    // leistet das nicht: `optional` heisst „darf, muss aber nicht", und die
+    // Pläne tragen selbst kein `department_id`, an dem der Abgleich greifen
+    // könnte. Fremdvalidierung Runde 1 (2026-09-21).
+    if (PLAN_ACTIONS.has(definition.action_id) && context.department_id) {
+      throw error(context, "TENANT_MISMATCH", "Der Jahresplan gehört dem Verein, nicht einer Abteilung. Wechsle in den vereinsweiten Kontext.");
+    }
+    // Ein Posten ohne Abteilung ist vereinsweit. Im Abteilungskontext angelegt,
+    // entstünde er ausserhalb der eigenen Grenze — deshalb wird sie hier
+    // gesetzt statt stillschweigend weggelassen.
+    if (definition.action_id === "cai.finance.09.position_create" && context.department_id
+      && !valuesFor(input, new Set(["department_id"])).length) {
+      throw error(context, "VALIDATION_FAILED", "Im Abteilungskontext braucht ein Budgetposten die eigene Abteilung in „department_id“.");
     }
     const decision = visibilityDecision(this.#visibility, definition, operation, context, requestInput.capability_snapshot, "dynamic");
     if (!decision.authorized) throw decisionError(operation, context, decision.reason);
