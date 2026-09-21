@@ -8,10 +8,22 @@ import { buildK14Preview } from "./preview.ts";
 import { K14_ACTION_SCHEMAS } from "./schemas.ts";
 import type { K14ActionDefinition, K14ActionResult, K14ExecutionDependencies, K14ExecutionRequest, K14MutationRequest, K14OperationDefinition } from "./types.ts";
 
+// Alles, was am Plan selbst haengt — Lesen wie Schreiben.
+const PLAN_ACTIONS = new Set<string>([
+  "cai.finance.01.plan_list", "cai.finance.02.plan_show", "cai.finance.03.plan_create",
+  "cai.finance.04.plan_update", "cai.finance.05.plan_close", "cai.finance.07.plan_copy",
+]);
+
 export interface K14VisibilityRequest { context: RequestContext; capability_snapshot: CapabilitySnapshot | null; provider_tool_updates?: ProviderToolUpdateMode; }
 function error(context: RequestContext, code: Parameters<typeof createConnectorError>[0]["code"], message: string): Error { return createConnectorError({ code, message, request_id: context.request_id, retryable: false }); }
 function assertJson(value: unknown, context: RequestContext): asserts value is JsonValue { if (!z.json().safeParse(value).success) throw error(context, "VALIDATION_FAILED", "Die Tool-Eingabe enthält ungültige JSON-Werte."); }
 function operationFor(definition: K14ActionDefinition, input: JsonValue): K14OperationDefinition { const row = input !== null && typeof input === "object" && !Array.isArray(input) ? input : {}; const names = Object.keys(definition.operations); const name = typeof row.operation === "string" ? row.operation : names.length === 1 ? names[0] : null; const operation = name ? definition.operations[name] : null; if (!operation) throw new Error("Operation fehlt."); return operation; }
+// Sucht ein ausdrueckliches `department_id: null` — im Rumpf wie in `changes`.
+function setztAbteilungAufNull(value: JsonValue): boolean {
+  if (value === null || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some(setztAbteilungAufNull);
+  return Object.entries(value).some(([key, entry]) => (key === "department_id" && entry === null) || setztAbteilungAufNull(entry));
+}
 function valuesFor(value: JsonValue, keys: Set<string>): string[] { if (value === null || typeof value !== "object") return []; if (Array.isArray(value)) return value.flatMap((entry) => valuesFor(entry, keys)); return Object.entries(value).flatMap(([key, entry]) => keys.has(key) && typeof entry === "string" ? [entry] : valuesFor(entry, keys)); }
 function confirmationFrom(input: JsonValue): { preview_id: string; confirmation_token: string } | null { if (input === null || typeof input !== "object" || Array.isArray(input)) return null; const value = input.confirmation; return value !== null && typeof value === "object" && !Array.isArray(value) && typeof value.preview_id === "string" && typeof value.confirmation_token === "string" ? { preview_id: value.preview_id, confirmation_token: value.confirmation_token } : null; }
 function withoutConfirmation(input: JsonValue): JsonValue { if (input === null || typeof input !== "object" || Array.isArray(input)) return input; return Object.fromEntries(Object.entries(input).filter(([key]) => key !== "confirmation")) as JsonValue; }
@@ -70,6 +82,31 @@ export class FinanceToolSet {
     // gefiltert, sondern gar nicht — mit dem Hinweis auf die Aktion, die passt.
     if (definition.action_id === "cai.finance.14.summary" && operation.operation === "total" && context.department_id) {
       throw error(context, "TENANT_MISMATCH", "Die vereinsweite Zusammenfassung ist im Abteilungskontext nicht verfügbar. Nutze die Teiloperation „by_department“.");
+    }
+    // Ein Jahresplan gehört dem Verein, nicht einer Abteilung: Er trägt das
+    // verfügbare Kapital und den Status, der für ALLE Abteilungen gilt. Im
+    // Abteilungskontext wäre jede Planaktion eine Grenzüberschreitung — Lesen
+    // zeigt das Vereinskapital, Schreiben sperrt oder öffnet das Jahr für
+    // Abteilungen, die nichts davon wissen. Der Filter `department_scope`
+    // leistet das nicht: `optional` heisst „darf, muss aber nicht", und die
+    // Pläne tragen selbst kein `department_id`, an dem der Abgleich greifen
+    // könnte. Fremdvalidierung Runde 1 (2026-09-21).
+    if (PLAN_ACTIONS.has(definition.action_id) && context.department_id) {
+      throw error(context, "TENANT_MISMATCH", "Der Jahresplan gehört dem Verein, nicht einer Abteilung. Wechsle in den vereinsweiten Kontext.");
+    }
+    // Ein Posten ohne Abteilung ist vereinsweit. Im Abteilungskontext angelegt,
+    // entstünde er ausserhalb der eigenen Grenze — deshalb wird sie hier
+    // gesetzt statt stillschweigend weggelassen.
+    if (definition.action_id === "cai.finance.09.position_create" && context.department_id
+      && !valuesFor(input, new Set(["department_id"])).length) {
+      throw error(context, "VALIDATION_FAILED", "Im Abteilungskontext braucht ein Budgetposten die eigene Abteilung in „department_id“.");
+    }
+    // `department_id: null` ist keine Auslassung, sondern eine Verschiebung:
+    // Der Posten wird vereinsweit und verlaesst damit die eigene Abteilung.
+    // Der Abgleich oben sieht das nicht — `valuesFor` sammelt nur Strings.
+    // Fremdvalidierung Runde 2 (2026-09-21).
+    if (context.department_id && setztAbteilungAufNull(input)) {
+      throw error(context, "TENANT_MISMATCH", "Einen Posten aus der Abteilung in den vereinsweiten Bereich zu verschieben, verlangt einen vereinsweiten Kontext.");
     }
     const decision = visibilityDecision(this.#visibility, definition, operation, context, requestInput.capability_snapshot, "dynamic");
     if (!decision.authorized) throw decisionError(operation, context, decision.reason);

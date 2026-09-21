@@ -192,19 +192,24 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(358);
-    expect(new Set(directActionIds).size).toBe(358);
+    expect(directActionIds).toHaveLength(357);
+    expect(new Set(directActionIds).size).toBe(357);
     expect(additiveActionIds).toEqual([
       // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
-      // Vereinsbuchhaltung nicht. Die 20 Aktionen decken Jahresplan, Posten und
+      // Vereinsbuchhaltung nicht. Die 19 Aktionen decken Jahresplan, Posten und
       // Buchungen des finance-service ab; Rechnungen, Beitraege, Spenden und
       // Auszahlungen desselben Dienstes bleiben bewusst draussen.
+      //
+      // Die 06 fehlt: `plan-reopen` verlangt im Dienst eine Plattformrolle
+      // (finance_plans.py:183, `is_platform_admin`), kein Vereinsrecht. Die
+      // PermissionPolicy kennt nur Vereinsrechte — die Aktion waere sichtbar,
+      // bestaetigungspflichtig und danach immer 403. Fremdvalidierung
+      // Runde 1, 2026-09-21.
       "cai.finance.01.plan_list",
       "cai.finance.02.plan_show",
       "cai.finance.03.plan_create",
       "cai.finance.04.plan_update",
       "cai.finance.05.plan_close",
-      "cai.finance.06.plan_reopen",
       "cai.finance.07.plan_copy",
       "cai.finance.08.position_list",
       "cai.finance.09.position_create",
@@ -271,8 +276,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 358,
-      published_domain_actions: 356,
+      discovered_actions: 357,
+      published_domain_actions: 355,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",

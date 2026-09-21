@@ -189,22 +189,18 @@ describe("K14: die vereinsweite Zusammenfassung im Abteilungskontext", () => {
 });
 
 describe("K14: was der Dienst im Rumpf verlangt", () => {
-  // Ohne diesen Rumpf antwortet der Dienst mit 422: `reason` ist Pflicht
-  // (FinancePlanReopenRequest, min_length=3).
-  test("plan_reopen sendet den Grund mit", async () => {
-    const { calls, client: adapter } = recording(plan);
-    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites, confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } } });
-    await finance.execute({ action_id: "cai.finance.06.plan_reopen", input: { club_id: clubId, year: 2026, reason: "Nachtragsbuchung der Hallenmiete" }, context: reader(["finance.write"]), capability_snapshot: manager });
-    expect(calls[0]?.path).toBe(`/clubs/${clubId}/finance-plans/2026/reopen`);
-    expect(calls[0]?.body).toEqual({ reason: "Nachtragsbuchung der Hallenmiete" });
-  });
-
-  test("plan_reopen ohne Grund kommt gar nicht erst zum Dienst", async () => {
-    const { calls, client: adapter } = recording(plan);
-    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
-    await expect(finance.execute({ action_id: "cai.finance.06.plan_reopen", input: { club_id: clubId, year: 2026 }, context: reader(["finance.write"]), capability_snapshot: manager }))
-      .rejects.toMatchObject({ code: "VALIDATION_FAILED" });
-    expect(calls.length).toBe(0);
+  // `plan-reopen` gibt es hier NICHT, und das ist der Punkt: Der Dienst
+  // verlangt dafuer eine Plattformrolle (finance_plans.py:183,
+  // `is_platform_admin`), kein Vereinsrecht. Die PermissionPolicy des
+  // Connectors kennt nur Vereinsrechte — die Aktion waere fuer jeden
+  // Finanzverantwortlichen sichtbar, bestaetigungspflichtig und danach immer
+  // 403. Dieser Test haelt die Abwesenheit fest, damit sie niemand
+  // "vervollstaendigt".
+  test("plan_reopen ist bewusst nicht im Connector", () => {
+    const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
+    const ids = finance.listDefinitions().map((definition) => definition.action_id);
+    expect(ids).toHaveLength(19);
+    expect(ids.some((id) => id.includes("reopen"))).toBe(false);
   });
 
   test("plan_close und entry_approve senden ihren Rumpf", async () => {
@@ -213,10 +209,13 @@ describe("K14: was der Dienst im Rumpf verlangt", () => {
     await finance.execute({ action_id: "cai.finance.05.plan_close", input: { club_id: clubId, year: 2026 }, context: reader(["finance.write"]), capability_snapshot: manager });
     expect(closeCalls.calls[0]?.body).toEqual({ force: false });
 
+    // `entry_approve` liest die Buchung zuerst (Herkunftsprüfung vor der
+    // Wirkung), der Rumpf steht deshalb am ZWEITEN Aufruf.
     const approveCalls = recording(entry);
     const zweiter = createK14ToolSet({ client: approveCalls.client, write_safety: allowWrites, confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } } });
     await zweiter.execute({ action_id: "cai.finance.20.entry_approve", input: { club_id: clubId, entry_id: entryId, note: "geprüft" }, context: reader(["finance.write"]), capability_snapshot: manager });
-    expect(approveCalls.calls[0]?.body).toEqual({ note: "geprüft" });
+    expect(approveCalls.calls.map((call) => call.method)).toEqual(["GET", "POST"]);
+    expect(approveCalls.calls[1]?.body).toEqual({ note: "geprüft" });
   });
 });
 
@@ -282,9 +281,9 @@ describe("K14: Löschen prüft erst, wem der Satz gehört", () => {
 });
 
 describe("K14: kritische Wirkungen gehen nicht ohne Bestätigung", () => {
-  const kritisch = ["cai.finance.05.plan_close", "cai.finance.06.plan_reopen", "cai.finance.07.plan_copy", "cai.finance.12.position_delete", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve"] as const;
+  const kritisch = ["cai.finance.05.plan_close", "cai.finance.07.plan_copy", "cai.finance.12.position_delete", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve"] as const;
 
-  test("alle sechs verlangen eine Vorschau", () => {
+  test("alle fünf verlangen eine Vorschau", () => {
     const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
     const definitionen = finance.listDefinitions();
     for (const id of kritisch) {
@@ -348,3 +347,258 @@ describe("K14: die Postenliste filtert nach der Abteilung des Kontexts", () => {
     expect(calls[0]?.query).toEqual({});
   });
 });
+
+// ── Fremdvalidierung Runde 1 (2026-09-21) ───────────────────────────────────
+
+describe("K14: eine Mutation prueft die Herkunft, BEVOR sie wirkt", () => {
+  // Der schwerste Befund der Pruefung: Bei einer nackten Ressourcenkennung
+  // ermittelt der Dienst den Verein aus der Ressource und prueft die Rechte
+  // fuer GENAU DIESEN Verein. Wer in zwei Vereinen Rechte hat, konnte im
+  // Kontext von A eine Kennung aus B aendern — `assertTenant` auf der Antwort
+  // verwarf danach nur noch das Ergebnis. Geschrieben war es trotzdem.
+  const fremd = { ...entry, club_id: otherClubId };
+  const fremdePosition = { id: positionId, club_id: otherClubId, department_id: null, name: "Fremder Posten" };
+
+  test("entry_approve schreibt nicht in einen fremden Verein", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return fremd; }),
+      write_safety: allowWrites,
+      confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } },
+    });
+    await expect(finance.execute({ action_id: "cai.finance.20.entry_approve", input: { club_id: clubId, entry_id: entryId }, context: reader(["finance.write"]), capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("entry_create legt nichts an einer fremden Position an", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return fremdePosition; }), write_safety: allowWrites });
+    await expect(finance.execute({
+      action_id: "cai.finance.16.entry_create",
+      input: { club_id: clubId, position_id: positionId, description: "Fremd", expense_cents: 100, booking_date: "2026-03-01" },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("position_update, entry_update und import-shopping ebenso", async () => {
+    for (const fall of [
+      { id: "cai.finance.11.position_update" as const, input: { club_id: clubId, position_id: positionId, changes: { name: "Neu" } }, antwort: fremdePosition },
+      { id: "cai.finance.18.entry_update" as const, input: { club_id: clubId, entry_id: entryId, changes: { notes: "Neu" } }, antwort: fremd },
+      { id: "cai.finance.13.position_import_shopping" as const, input: { club_id: clubId, position_id: positionId }, antwort: fremdePosition },
+    ]) {
+      const calls: ComvenioApiRequest[] = [];
+      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return fall.antwort; }), write_safety: allowWrites });
+      await expect(finance.execute({ action_id: fall.id, input: fall.input, context: reader(["finance.write"]), capability_snapshot: manager }), fall.id)
+        .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(calls.map((call) => call.method), fall.id).toEqual(["GET"]);
+    }
+  });
+
+  test("der eigene Verein geht durch — erst lesen, dann schreiben", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return entry; }),
+      write_safety: allowWrites,
+      confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } },
+    });
+    const ergebnis = await finance.execute({ action_id: "cai.finance.20.entry_approve", input: { club_id: clubId, entry_id: entryId }, context: reader(["finance.write"]), capability_snapshot: manager });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /entries/${entryId}`, `POST /entries/${entryId}/approve`]);
+    expect(ergebnis.result).toMatchObject({ entry_id: entryId });
+  });
+});
+
+describe("K14: der Jahresplan gehoert dem Verein, nicht einer Abteilung", () => {
+  const imBereich = { ...context, department_id: departmentId, scopes: ["finance.read", "finance.write"] as RequestContext["scopes"] };
+
+  test("keine Planaktion laeuft im Abteilungskontext", async () => {
+    for (const [id, input] of [
+      ["cai.finance.01.plan_list", { club_id: clubId }],
+      ["cai.finance.02.plan_show", { club_id: clubId, year: 2026 }],
+      ["cai.finance.03.plan_create", { club_id: clubId, year: 2026 }],
+      ["cai.finance.04.plan_update", { club_id: clubId, year: 2026, changes: { notes: "x" } }],
+      ["cai.finance.05.plan_close", { club_id: clubId, year: 2026 }],
+      ["cai.finance.07.plan_copy", { club_id: clubId, year: 2026, source_year: 2025 }],
+    ] as const) {
+      const { calls, client: adapter } = recording(plan);
+      const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+      await expect(finance.execute({ action_id: id, input, context: imBereich, capability_snapshot: manager }), id)
+        .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(calls.length, id).toBe(0);
+    }
+  });
+
+  test("ein Posten im Abteilungskontext braucht seine Abteilung", async () => {
+    const { calls, client: adapter } = recording(null);
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await expect(finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Ohne Abteilung" },
+      context: imBereich, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls.length).toBe(0);
+  });
+
+  // Eine Buchung traegt kein `department_id`; ihre Abteilung steht an der
+  // Position. Ohne das Nachladen blieb die Abteilungsgrenze bei Buchungen
+  // wirkungslos.
+  test("eine Buchung aus einer fremden Abteilung wird verworfen", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => {
+        calls.push(request);
+        return request.path.startsWith("/entries/")
+          ? entry
+          : { id: positionId, club_id: clubId, department_id: otherDepartmentId, name: "Fremde Abteilung" };
+      }),
+    });
+    await expect(finance.execute({ action_id: "cai.finance.17.entry_show", input: { club_id: clubId, entry_id: entryId }, context: { ...imBereich, scopes: ["finance.read"] }, capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.path)).toEqual([`/entries/${entryId}`, `/positions/${positionId}`]);
+  });
+
+  test("ohne Abteilungskontext wird die Position nicht nachgeladen", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return entry; }) });
+    await finance.execute({ action_id: "cai.finance.17.entry_show", input: { club_id: clubId, entry_id: entryId }, context: reader(["finance.read"]), capability_snapshot: manager });
+    expect(calls.map((call) => call.path)).toEqual([`/entries/${entryId}`]);
+  });
+});
+
+describe("K14: die Postenfelder decken den Dienstvertrag", () => {
+  test("Vorjahreswerte gehen beim Anlegen mit", async () => {
+    const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: departmentId, name: "Sommerfest" });
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Sommerfest", revenue_previous_year_cents: 1_000, expense_previous_year_cents: 2_000 },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    });
+    expect(calls[0]?.body).toMatchObject({ revenue_previous_year_cents: 1_000, expense_previous_year_cents: 2_000 });
+  });
+
+  // Die erste Fassung dieses Falls rief nur `position_create` ohne
+  // `department_id` und haette auch dann bestanden, wenn das Feld aus
+  // `positionChanges` ganz verschwunden waere. Er behauptete etwas, das er
+  // nicht mass. Fremdvalidierung Runde 2 (2026-09-21).
+  test("department_id ist beim Aendern wirklich uebertragbar", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: positionId, club_id: clubId, department_id: departmentId, name: "Sommerfest" }; }),
+      write_safety: allowWrites,
+    });
+    await finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { department_id: otherDepartmentId, revenue_previous_year_cents: 500 } },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    });
+    const patch = calls.find((call) => call.method === "PATCH");
+    expect(patch?.body).toEqual({ department_id: otherDepartmentId, revenue_previous_year_cents: 500 });
+  });
+});
+
+// ── Fremdvalidierung Runde 2 (2026-09-21) ───────────────────────────────────
+
+describe("K14: die Vorpruefung verlangt einen Beleg, sie vermutet nicht", () => {
+  // `club_id` ist im finance-service `nullable=True` (base_model.py:14). Eine
+  // Antwort ohne Verein passierte die alte Pruefung, ohne je verglichen
+  // worden zu sein — fail-open genau an der Stelle, die schuetzen soll.
+  test("eine Antwort ohne club_id wird abgelehnt, nicht durchgelassen", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: entryId, budget_position_id: positionId, description: "Ohne Verein" }; }),
+      write_safety: allowWrites,
+      confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } },
+    });
+    await expect(finance.execute({ action_id: "cai.finance.20.entry_approve", input: { club_id: clubId, entry_id: entryId }, context: reader(["finance.write"]), capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("auch eine leere oder unlesbare Antwort haelt die Mutation auf", async () => {
+    // Kein `as const`: Das machte die Liste `readonly`, und `readonly []`
+    // passt nicht auf `JsonValue`. bun test merkt davon nichts — `tsc -b`
+    // schon.
+    for (const antwort of [null, [], "nichts"] as JsonValue[]) {
+      const calls: ComvenioApiRequest[] = [];
+      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return antwort; }), write_safety: allowWrites });
+      await expect(finance.execute({ action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes: { notes: "x" } }, context: reader(["finance.write"]), capability_snapshot: manager }), String(antwort))
+        .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(calls.map((call) => call.method), String(antwort)).toEqual(["GET"]);
+    }
+  });
+
+  // `department_id: null` heisst vereinsweit — das liegt AUSSERHALB eines
+  // Abteilungskontexts und wurde vorher als unauffaellig durchgewunken.
+  test("ein vereinsweiter Posten ist im Abteilungskontext nicht aenderbar", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: positionId, club_id: clubId, department_id: null, name: "Vereinsweit" }; }),
+      write_safety: allowWrites,
+    });
+    await expect(finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { name: "Neu" } },
+      context: { ...context, department_id: departmentId, scopes: ["finance.write"] }, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("einen Posten vereinsweit zu machen, verlangt den vereinsweiten Kontext", async () => {
+    const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: departmentId });
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await expect(finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { department_id: null } },
+      context: { ...context, department_id: departmentId, scopes: ["finance.write"] }, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.length).toBe(0);
+  });
+});
+
+describe("K14: ein Elternposten ist eine Wirkung auf fremdem Gebiet", () => {
+  // Die Werte des Kindes werden in den Elternposten eingerollt und in der
+  // Zusammenfassung SEINER Abteilung gezaehlt. Der Dienst prueft dabei nur
+  // den Jahresplan, nicht die Abteilung (budget_positions.py:99/184).
+  test("ein fremder Elternposten haelt das Anlegen auf", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: "99999999-9999-4999-8999-999999999999", club_id: otherClubId, department_id: null, name: "Fremdes Festival" }; }),
+      write_safety: allowWrites,
+    });
+    await expect(finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Kind", parent_position_id: "99999999-9999-4999-8999-999999999999" },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("ohne Elternposten wird nichts nachgeladen", async () => {
+    const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: null, name: "Eigenstaendig" });
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Eigenstaendig" },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    });
+    expect(calls.map((call) => call.method)).toEqual(["POST"]);
+  });
+});
+
+describe("K14: der Routenvertrag nennt die Vorpruefungen", () => {
+  // Die Definitionen verschwiegen fuenf GET-Aufrufe, die zur Laufzeit
+  // stattfinden. Wer den veroeffentlichten Vertrag liest, muss sehen, was der
+  // Connector wirklich ruft.
+  test("jede Aktion mit Vorpruefung fuehrt sie als preflight", () => {
+    const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
+    const mitPreflight = ["cai.finance.09.position_create", "cai.finance.11.position_update", "cai.finance.12.position_delete", "cai.finance.13.position_import_shopping", "cai.finance.16.entry_create", "cai.finance.18.entry_update", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve"];
+    for (const definition of finance.listDefinitions()) {
+      const routen = Object.values(definition.operations).flatMap((operation) => operation.backend_routes);
+      const hatPreflight = routen.some((route) => route.purpose === "preflight");
+      expect(hatPreflight, definition.action_id).toBe(mitPreflight.includes(definition.action_id));
+    }
+  });
+});
+

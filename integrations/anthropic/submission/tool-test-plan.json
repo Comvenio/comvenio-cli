@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "72db5f8d7c447c2d767ddd68c45db7a5676011db24839f9881380b9aa2c5d9f2",
+  "tool_sync_version": "5cd124b30fe086a07614d5220ca949854fad3e25fff4c676be6e911c2583590a",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1372,21 +1372,6 @@
       "tool_name": "cv_finance_05_plan_close",
       "happy_path_prompt": "Führe „Comvenio: Finanzen – plan close“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – plan close“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
-      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
-      "required_clients": [
-        "mcp_inspector",
-        "claude_custom_connector"
-      ],
-      "required_surfaces": [
-        "web",
-        "desktop",
-        "mobile"
-      ]
-    },
-    {
-      "tool_name": "cv_finance_06_plan_reopen",
-      "happy_path_prompt": "Führe „Comvenio: Finanzen – plan reopen“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
-      "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – plan reopen“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

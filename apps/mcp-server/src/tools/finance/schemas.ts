@@ -42,13 +42,22 @@ const positionFields = {
   parent_position_id: uuid.nullable().optional(),
   revenue_planned_cents: plannedCents.default(0),
   expense_planned_cents: plannedCents.default(0),
+  // Der Dienst nimmt sie beim Anlegen entgegen (BudgetPositionCreate); ohne sie
+  // liesse sich ein uebernommener Plan nicht mit Vorjahreszahlen fuellen.
+  revenue_previous_year_cents: plannedCents.default(0),
+  expense_previous_year_cents: plannedCents.default(0),
   comment: notes.nullable().optional(),
   recurring: z.boolean().default(true),
 } as const;
 const positionChanges = nonEmpty({
   name: short.optional(), category: z.string().trim().min(1).max(100).optional(), position_number: z.number().int().min(0).max(100_000).optional(),
   context_type: contextType.optional(), context_id: uuid.nullable().optional(), parent_position_id: uuid.nullable().optional(),
-  revenue_planned_cents: plannedCents.optional(), expense_planned_cents: plannedCents.optional(), comment: notes.nullable().optional(), recurring: z.boolean().optional(),
+  revenue_planned_cents: plannedCents.optional(), expense_planned_cents: plannedCents.optional(),
+  revenue_previous_year_cents: plannedCents.optional(), expense_previous_year_cents: plannedCents.optional(),
+  // `department_id` steht auch in `base`, dort aber als KONTEXT. Hier ist es
+  // das Ziel einer Verschiebung und wird vom ToolSet gegen den Kontext geprueft.
+  department_id: uuid.nullable().optional(),
+  comment: notes.nullable().optional(), recurring: z.boolean().optional(),
 });
 // Genau eine Richtung je Buchung — dieselbe Regel wie `xor_amount` im Dienst,
 // hier vorgezogen, damit der Fehler vor dem Netz auffällt und als Satz statt
@@ -72,7 +81,6 @@ export const K14_ACTION_SCHEMAS: Readonly<Record<K14ActionId, K14ActionSchemaCon
   // `status: "CLOSED"` fehlt in plan_update mit Absicht: Schliessen läuft über
   // die eigene Aktion, die den Übergang prüft und bestätigen lässt.
   "cai.finance.05.plan_close": contract(single({ year, force: z.boolean().default(false), note: notes.nullable().optional() })),
-  "cai.finance.06.plan_reopen": contract(single({ year, reason: z.string().trim().min(3).max(500) })),
   "cai.finance.07.plan_copy": contract(single({ year, source_year: year, position_ids: z.array(uuid).min(1).max(500).nullable().optional(), include_non_recurring: z.boolean().default(false) })
     .refine((value) => value.year !== value.source_year, "Quell- und Zieljahr dürfen nicht dasselbe sein.")),
   "cai.finance.08.position_list": contract(single({ year, limit: z.number().int().min(1).max(200).default(100) })),
