@@ -46,6 +46,13 @@ export type FinanceCommandOpts = {
   notes?: string;
   capital?: string;
   status?: string;
+  // Diese fuenf Endpunkte verlangen einen Rumpf; `reason` ist dort sogar ein
+  // Pflichtfeld. Ohne sie antwortet der Dienst mit 422 statt zu arbeiten.
+  reason?: string;
+  force?: boolean;
+  overwrite?: boolean;
+  includeNonRecurring?: boolean;
+  positions?: string;
 };
 
 export type FinanceOperation = {
@@ -79,6 +86,24 @@ function euro(cents: unknown): string {
 function requiredId(id: string | undefined, action: string, kind: string): string {
   if (!id) throw new Error(`finance ${action} benötigt eine ${kind}.`);
   return id;
+}
+
+/** `reason` ist am Dienst Pflicht (min_length=3); hier vor dem Netz geprueft. */
+function requiredReason(opts: FinanceCommandOpts, action: string): string {
+  const grund = (opts.reason ?? "").trim();
+  if (grund.length < 3) {
+    throw new Error(`finance ${action} benötigt --reason <text> mit mindestens 3 Zeichen.`);
+  }
+  return grund;
+}
+
+/** `--positions a,b,c` in die Liste, die FinancePlanCopyRequest erwartet. */
+function positionIds(roh: string, action: string): string[] {
+  const ids = roh.split(",").map((teil) => teil.trim()).filter(Boolean);
+  if (ids.length === 0) {
+    throw new Error(`finance ${action}: --positions darf nicht leer sein.`);
+  }
+  return ids;
 }
 
 /** Das Jahr ist Pflicht, wo der Pfad es traegt — und es muss eine Zahl sein. */
@@ -187,14 +212,29 @@ export async function handleFinanceOperation({
         status: opts.status,
       }));
     case "plan-close":
-      return client.post("finance", `/clubs/${clubId}/finance-plans/${requiredYear(opts, action)}/close`);
+      // FinancePlanCloseRequest — der Rumpf ist Pflicht, seine Felder haben
+      // Vorgaben. Ohne Rumpf: 422 "Field required".
+      return client.post("finance", `/clubs/${clubId}/finance-plans/${requiredYear(opts, action)}/close`, {
+        force: opts.force === true,
+        ...(opts.notes ? { note: opts.notes } : {}),
+      });
     case "plan-reopen":
-      return client.post("finance", `/clubs/${clubId}/finance-plans/${requiredYear(opts, action)}/reopen`);
+      // FinancePlanReopenRequest.reason ist Pflicht (min_length=3) — hier
+      // geprueft, damit der Fehler als Satz kommt und nicht als 422.
+      return client.post("finance", `/clubs/${clubId}/finance-plans/${requiredYear(opts, action)}/reopen`, {
+        reason: requiredReason(opts, action),
+      });
     case "plan-copy":
       // Die Quelle steht als Argument, das Ziel in --year: `finance plan-copy 2025 --year 2026`.
       return client.post(
         "finance",
         `/clubs/${clubId}/finance-plans/${requiredYear(opts, action)}/copy-from/${requiredId(id, action, "Quelljahr")}`,
+        // FinancePlanCopyRequest: wiederkehrende Posten kommen von selbst mit,
+        // einmalige nur auf Wunsch oder per Auswahl.
+        {
+          include_non_recurring: opts.includeNonRecurring === true,
+          ...(opts.positions ? { position_ids: positionIds(opts.positions, action) } : {}),
+        },
       );
 
     // ── Budgetposten ──────────────────────────────────────────────────────
@@ -230,7 +270,10 @@ export async function handleFinanceOperation({
     case "position-delete":
       return client.del("finance", `/positions/${requiredId(id, action, "Positions-ID")}`);
     case "position-import-shopping":
-      return client.post("finance", `/positions/${requiredId(id, action, "Positions-ID")}/import-shopping-estimate`);
+      // ImportShoppingEstimateRequest — Rumpf ist Pflicht.
+      return client.post("finance", `/positions/${requiredId(id, action, "Positions-ID")}/import-shopping-estimate`, {
+        overwrite: opts.overwrite === true,
+      });
 
     // ── Zusammenfassung ───────────────────────────────────────────────────
     case "summary":
@@ -272,7 +315,10 @@ export async function handleFinanceOperation({
     case "entry-delete":
       return client.del("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
     case "entry-approve":
-      return client.post("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}/approve`);
+      // BookingEntryApproveRequest — Rumpf ist Pflicht, die Notiz freiwillig.
+      return client.post("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}/approve`, {
+        ...(opts.notes ? { note: opts.notes } : {}),
+      });
 
     default:
       throw new Error(
@@ -386,6 +432,11 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--status <wert>", "Status beim plan-update")
     .option("--notes <text>", "Notiz bzw. Kommentar")
     .option("--source-type <typ>", "entry-list nach Herkunft filtern (manual, supply, sponsoring, …)")
+    .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen)")
+    .option("--force", "plan-close auch bei offenen Posten erzwingen")
+    .option("--overwrite", "position-import-shopping: vorhandene Schätzung überschreiben")
+    .option("--include-non-recurring", "plan-copy: auch einmalige Posten übernehmen")
+    .option("--positions <ids>", "plan-copy: nur diese Posten übernehmen (Komma-getrennt)")
     .option("--json", "Maschinenlesbare JSON-Ausgabe")
     .example("  $ comvenio finance plan-list")
     .example("  $ comvenio finance plan-create --year 2026 --capital 500000")

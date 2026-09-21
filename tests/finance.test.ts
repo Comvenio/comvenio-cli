@@ -76,17 +76,55 @@ describe("finance CLI route contracts", () => {
     ]);
   });
 
-  test("Lebenszyklus des Plans trifft die eigenen Endpunkte", async () => {
+  // Diese drei Endpunkte verlangen einen RUMPF. Bis zum 2026-09-21 schickte
+  // das CLI keinen, und dieser Test hat es nicht bemerkt: Er prüfte den Pfad
+  // und liess `body: undefined` als richtig durchgehen. Der Dienst hätte mit
+  // 422 "Field required" geantwortet — ein gruener Test auf einen Aufruf, den
+  // es so nie gegeben hätte. Aufgefallen beim Bau des Connector-Bereichs, weil
+  // dort die Schemas des Dienstes Zeile für Zeile gelesen wurden.
+  test("Lebenszyklus des Plans trifft die eigenen Endpunkte — mit dem Rumpf, den sie verlangen", async () => {
     expect(await run("plan-close", undefined, { year: "2026" })).toEqual([
-      { method: "POST", service: "finance", path: "/clubs/club-1/finance-plans/2026/close", body: undefined },
+      { method: "POST", service: "finance", path: "/clubs/club-1/finance-plans/2026/close", body: { force: false } },
     ]);
-    expect(await run("plan-reopen", undefined, { year: "2026" })).toEqual([
-      { method: "POST", service: "finance", path: "/clubs/club-1/finance-plans/2026/reopen", body: undefined },
+    expect(await run("plan-close", undefined, { year: "2026", force: true, notes: "Jahresabschluss" })).toEqual([
+      {
+        method: "POST",
+        service: "finance",
+        path: "/clubs/club-1/finance-plans/2026/close",
+        body: { force: true, note: "Jahresabschluss" },
+      },
+    ]);
+    // FinancePlanReopenRequest.reason ist Pflicht (min_length=3).
+    expect(await run("plan-reopen", undefined, { year: "2026", reason: "Nachtragsbuchung" })).toEqual([
+      {
+        method: "POST",
+        service: "finance",
+        path: "/clubs/club-1/finance-plans/2026/reopen",
+        body: { reason: "Nachtragsbuchung" },
+      },
     ]);
     // Die Quelle ist das Argument, das Ziel steht in --year.
     expect(await run("plan-copy", "2025", { year: "2026" })).toEqual([
-      { method: "POST", service: "finance", path: "/clubs/club-1/finance-plans/2026/copy-from/2025", body: undefined },
+      {
+        method: "POST",
+        service: "finance",
+        path: "/clubs/club-1/finance-plans/2026/copy-from/2025",
+        body: { include_non_recurring: false },
+      },
     ]);
+    expect(await run("plan-copy", "2025", { year: "2026", includeNonRecurring: true, positions: "p1, p2" })).toEqual([
+      {
+        method: "POST",
+        service: "finance",
+        path: "/clubs/club-1/finance-plans/2026/copy-from/2025",
+        body: { include_non_recurring: true, position_ids: ["p1", "p2"] },
+      },
+    ]);
+  });
+
+  test("plan-reopen ohne Grund kommt gar nicht erst zum Dienst", async () => {
+    expect(await fehler("plan-reopen", undefined, { year: "2026" })).toContain("--reason");
+    expect(await fehler("plan-reopen", undefined, { year: "2026", reason: "ab" })).toContain("3 Zeichen");
   });
 
   test("Positionen hängen am Plan, die Zusammenfassung optional an der Abteilung", async () => {
@@ -110,6 +148,26 @@ describe("finance CLI route contracts", () => {
     ]);
   });
 
+  // Hatte bis zum 2026-09-21 gar keinen Test und schickte keinen Rumpf.
+  test("die Uebernahme der Einkaufsschaetzung sendet ihren Rumpf", async () => {
+    expect(await run("position-import-shopping", "pos-1")).toEqual([
+      {
+        method: "POST",
+        service: "finance",
+        path: "/positions/pos-1/import-shopping-estimate",
+        body: { overwrite: false },
+      },
+    ]);
+    expect(await run("position-import-shopping", "pos-1", { overwrite: true })).toEqual([
+      {
+        method: "POST",
+        service: "finance",
+        path: "/positions/pos-1/import-shopping-estimate",
+        body: { overwrite: true },
+      },
+    ]);
+  });
+
   test("Buchungen hängen an der Position, die Freigabe an der Buchung", async () => {
     expect(await run("entry-list", "pos-1")).toEqual([
       { method: "GET", service: "finance", path: "/positions/pos-1/entries", body: undefined },
@@ -117,8 +175,12 @@ describe("finance CLI route contracts", () => {
     expect(await run("entry-list", "pos-1", { sourceType: "supply" })).toEqual([
       { method: "GET", service: "finance", path: "/positions/pos-1/entries?source_type=supply", body: undefined },
     ]);
+    // BookingEntryApproveRequest — der Rumpf ist Pflicht, die Notiz freiwillig.
     expect(await run("entry-approve", "entry-1")).toEqual([
-      { method: "POST", service: "finance", path: "/entries/entry-1/approve", body: undefined },
+      { method: "POST", service: "finance", path: "/entries/entry-1/approve", body: {} },
+    ]);
+    expect(await run("entry-approve", "entry-1", { notes: "Beleg liegt vor" })).toEqual([
+      { method: "POST", service: "finance", path: "/entries/entry-1/approve", body: { note: "Beleg liegt vor" } },
     ]);
     expect(await run("entry-delete", "entry-1")).toEqual([
       { method: "DELETE", service: "finance", path: "/entries/entry-1", body: undefined },

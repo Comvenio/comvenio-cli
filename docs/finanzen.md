@@ -27,11 +27,18 @@ comvenio finance plan-show   --year 2026
 comvenio finance plan-create --year 2026 --capital 500000 --notes "Haushalt 2026"
 comvenio finance plan-update --year 2026 --capital 550000
 comvenio finance plan-close  --year 2026
-comvenio finance plan-reopen --year 2026
+comvenio finance plan-close  --year 2026 --force --notes "Jahresabschluss"
+comvenio finance plan-reopen --year 2026 --reason "Nachtragsbuchung Hallenmiete"
 comvenio finance plan-copy 2025 --year 2026     # Quelle als Argument, Ziel in --year
+comvenio finance plan-copy 2025 --year 2026 --include-non-recurring
+comvenio finance plan-copy 2025 --year 2026 --positions POS_A,POS_B
 ```
 
 `plan-close` schliesst das Jahr ab. Danach weisen Änderungen an Positionen und Buchungen der Dienst mit `409` ab — auch das Stornieren einer Auto-Buchung (RTS-Bug `d5327bb5`). `plan-reopen` macht es rückgängig.
+
+**`--reason` ist bei `plan-reopen` Pflicht** (mindestens 3 Zeichen) — der Dienst verlangt eine Begründung, wer ein abgeschlossenes Jahr wieder öffnet. `--force` bei `plan-close` schliesst auch bei offenen Posten.
+
+`plan-copy` übernimmt **wiederkehrende** Posten von selbst; einmalige nur mit `--include-non-recurring` oder über eine Auswahl in `--positions`. Posten, deren Veranstaltung es im Zieljahr nicht gibt, meldet die Antwort unter `unlinked_positions` — die bleiben zu verknüpfen.
 
 ## Budgetposten
 
@@ -43,9 +50,10 @@ comvenio finance position-show   POSITION_UUID
 comvenio finance position-update POSITION_UUID --expense 135000
 comvenio finance position-delete POSITION_UUID
 comvenio finance position-import-shopping POSITION_UUID
+comvenio finance position-import-shopping POSITION_UUID --overwrite
 ```
 
-`position-import-shopping` übernimmt die Einkaufsschätzung aus dem `supply-service` als Planwert.
+`position-import-shopping` übernimmt die Einkaufsschätzung aus dem `supply-service` als Planwert. Ohne `--overwrite` bleibt ein bereits gesetzter Planwert stehen; die Antwort sagt unter `applied` und `reason`, ob übernommen wurde.
 
 Für die selteneren Felder — `position_number`, `context_type`, `context_id`, `parent_position_id`, `recurring`, die Vorjahreswerte — eine JSON-Datei nehmen:
 
@@ -72,6 +80,7 @@ comvenio finance entry-create POSITION_UUID --description "Standgebühr" --reven
 comvenio finance entry-show   ENTRY_UUID
 comvenio finance entry-update ENTRY_UUID --expense 4990
 comvenio finance entry-approve ENTRY_UUID
+comvenio finance entry-approve ENTRY_UUID --notes "Beleg liegt vor"
 comvenio finance entry-delete ENTRY_UUID
 ```
 
