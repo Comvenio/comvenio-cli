@@ -42,13 +42,20 @@ export type StoredComvenioCliState = {
   /** Beide Wege reden mit demselben Gateway — deshalb steht es gemeinsam. */
   gatewayBaseUrl: string;
   environment: string;
-  /** Der `cvn_`-Token für die klassischen Befehle. */
-  device?: { token: string };
+  /**
+   * Der `cvn_`-Token für die klassischen Befehle, MIT seiner Identität.
+   *
+   * `clubId` steht hier und nicht an der Wurzel: Ein Geräte-Login für
+   * Verein A kann neben einem OAuth-Grant für Verein B bestehen. Solange die
+   * Vereinskennung gemeinsam war, überschrieb der zweite Login sie — und die
+   * klassischen Befehle liefen danach mit dem Geräte-Token im Verein des
+   * Connectors. Dieselbe Klasse wie beim alten `token`-Feld: ein Feld, das
+   * zwei Dingen gehört. Fremdvalidierung zur neuen Form (2026-09-21),
+   * Befund 1.
+   */
+  device?: { token: string; clubId?: string; userId?: string; userEmail?: string };
   /** Die OAuth-Metadaten; die Tokens selbst liegen im Credential-Store. */
-  connector?: { clientId: string; resource: string; scopes: string[] };
-  clubId?: string;
-  userId?: string;
-  userEmail?: string;
+  connector?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
 };
 
 export type ComvenioCliState = {
@@ -116,16 +123,39 @@ function parseStoredState(): StoredComvenioCliState {
     throw new AuthError(`Pflichtfeld "gatewayBaseUrl" fehlt. ${LOGIN_HINT}`);
   }
 
-  const alterToken = text(parsed.token);
-  const device = typeof parsed.device === "object" && parsed.device !== null
-    ? (text((parsed.device as Record<string, unknown>).token) ? { token: (parsed.device as { token: string }).token } : undefined)
-    : alterToken && alterToken.startsWith("cvn_")
-      ? { token: alterToken }
-      : undefined;
+  // Der Leser verlangt dasselbe wie der Schreiber: ein Geraete-Token ist ein
+  // `cvn_`. Vorher reichte ihm ein nichtleerer String — eine von Hand
+  // gebaute Datei mit `device: { token: "<OAuth-Token>" }` haette ihn als
+  // Bearer an die Fachdienste geschickt, obwohl der Schreiber genau diese
+  // Form zurueckweist. Asymmetrie zwischen Lesen und Schreiben ist genau die
+  // Luecke, die eine geschlossene Form vermeiden soll. Befund 2.
+  const geraeteBlock = typeof parsed.device === "object" && parsed.device !== null && !Array.isArray(parsed.device)
+    ? (parsed.device as Record<string, unknown>)
+    : null;
+  const geraeteToken = geraeteBlock ? text(geraeteBlock.token) : text(parsed.token);
+  const device = geraeteToken?.startsWith("cvn_")
+    ? {
+        token: geraeteToken,
+        // Aus dem Block, sonst aus der Altform an der Wurzel.
+        ...(text(geraeteBlock?.clubId ?? parsed.clubId) ? { clubId: text(geraeteBlock?.clubId ?? parsed.clubId) } : {}),
+        ...(text(geraeteBlock?.userId ?? parsed.userId) ? { userId: text(geraeteBlock?.userId ?? parsed.userId) } : {}),
+        ...(text(geraeteBlock?.userEmail ?? parsed.userEmail) ? { userEmail: text(geraeteBlock?.userEmail ?? parsed.userEmail) } : {}),
+      }
+    : undefined;
 
-  const connector = leseConnector(parsed.connector)
-    // Altform 2: `oauth` plus `authMode: "oauth"`.
-    ?? (parsed.authMode === "oauth" ? leseConnector(parsed.oauth) : undefined);
+  // Die Altform 2 traegt `oauth` plus `authMode: "oauth"`. Eine GEMISCHTE
+  // Altform (Geraete-Modus, aber `oauth` gesetzt) verlor den Connector still
+  // — jetzt wird er gelesen, denn eine Verbindung, die man nicht sieht, kann
+  // man auch nicht widerrufen. Befund 6.
+  const rohConnector = leseConnector(parsed.connector) ?? leseConnector(parsed.oauth);
+  const connector = rohConnector
+    ? {
+        ...rohConnector,
+        ...(text((parsed.connector as Record<string, unknown> | undefined)?.clubId ?? (device ? undefined : parsed.clubId))
+          ? { clubId: text((parsed.connector as Record<string, unknown> | undefined)?.clubId ?? parsed.clubId) }
+          : {}),
+      }
+    : undefined;
 
   if (!device && !connector) throw new AuthError(LOGIN_HINT);
 
@@ -135,28 +165,37 @@ function parseStoredState(): StoredComvenioCliState {
     environment: text(parsed.environment) ?? "prod",
     ...(device ? { device } : {}),
     ...(connector ? { connector } : {}),
-    ...(text(parsed.clubId) ? { clubId: text(parsed.clubId) } : {}),
-    ...(text(parsed.userId) ? { userId: text(parsed.userId) } : {}),
-    ...(text(parsed.userEmail) ? { userEmail: text(parsed.userEmail) } : {}),
   };
 }
 
 /** Zwei Adressen desselben Gateways dürfen nicht als verschieden gelten. */
 export function gleichesGateway(a: string, b: string): boolean {
-  const kanonisch = (roh: string): string => {
+  const kanonisch = (roh: string): string | null => {
+    let url: URL;
     try {
-      const url = new URL(roh);
-      const port = url.port === "" || (url.protocol === "https:" && url.port === "443")
-        || (url.protocol === "http:" && url.port === "80")
-        ? ""
-        : `:${url.port}`;
-      // Der Pfad bleibt bedeutsam: `…/a` und `…/b` sind verschiedene Ziele.
-      return `${url.protocol}//${url.hostname.toLowerCase()}${port}${url.pathname.replace(/\/+$/u, "")}`;
+      url = new URL(roh);
     } catch {
-      return roh.replace(/\/+$/u, "").toLowerCase();
+      // Nicht deutbar heisst nicht gleich: Zwei unlesbare Werte duerfen nicht
+      // als dasselbe Gateway gelten, nur weil ihr Rohtext uebereinstimmt.
+      return null;
     }
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    // Userinfo, Query und Fragment gehoeren nicht zu einem Gateway. Statt sie
+    // stillschweigend zu ignorieren, gilt eine solche Adresse als nicht
+    // vergleichbar — sonst waeren `https://user@host` und `https://host`
+    // dasselbe.
+    if (url.username || url.password || url.search || url.hash) return null;
+    const port = url.port === "" || (url.protocol === "https:" && url.port === "443")
+      || (url.protocol === "http:" && url.port === "80")
+      ? ""
+      : `:${url.port}`;
+    // Der abschliessende Punkt im Hostnamen bezeichnet dieselbe Wurzel.
+    const host = url.hostname.toLowerCase().replace(/\.$/u, "");
+    // Der Pfad bleibt bedeutsam: `…/a` und `…/b` sind verschiedene Ziele.
+    return `${url.protocol}//${host}${port}${url.pathname.replace(/\/+$/u, "")}`;
   };
-  return kanonisch(a) === kanonisch(b);
+  const links = kanonisch(a);
+  return links !== null && links === kanonisch(b);
 }
 
 function runtimeForState(state: StoredComvenioCliState): OAuthRuntime {
@@ -223,13 +262,18 @@ async function resolveOAuthCredentials(
 export async function loadState(): Promise<ComvenioCliState> {
   const state = parseStoredState();
   const deviceToken = state.device?.token ?? null;
+  // Die Identitaet gehoert zu dem Weg, der gleich benutzt wird. `token`
+  // traegt den Geraete-Token, sobald einer vorliegt — also gilt auch dessen
+  // Verein. `comvenio action` braucht das nicht: Dort leitet der Dienst
+  // Verein, Benutzer und Scopes aus dem Grant ab (action.ts).
+  const identitaet = deviceToken ? state.device : state.connector;
   const gemeinsam = {
     schemaVersion: 3 as const,
     gatewayBaseUrl: state.gatewayBaseUrl,
     environment: state.environment,
-    ...(state.clubId ? { clubId: state.clubId } : {}),
-    ...(state.userId ? { userId: state.userId } : {}),
-    ...(state.userEmail ? { userEmail: state.userEmail } : {}),
+    ...(identitaet?.clubId ? { clubId: identitaet.clubId } : {}),
+    ...(state.device?.userId ? { userId: state.device.userId } : {}),
+    ...(state.device?.userEmail ? { userEmail: state.device.userEmail } : {}),
     ...(state.connector ? { oauth: state.connector } : {}),
     authMode: (state.connector ? "oauth" : "device_token") as "oauth" | "device_token",
   };
@@ -257,7 +301,6 @@ export async function loadState(): Promise<ComvenioCliState> {
 /** Was in der Datei stehen darf — alles andere wird beim Schreiben abgelehnt. */
 const ERLAUBTE_WURZELFELDER = new Set([
   "schemaVersion", "gatewayBaseUrl", "environment", "device", "connector",
-  "clubId", "userId", "userEmail",
 ]);
 
 /**
@@ -276,22 +319,28 @@ function schreibeZustand(state: StoredComvenioCliState): void {
       throw new AuthError(`Unbekanntes Feld „${name}“ im CLI-State — es könnte ein Geheimnis tragen.`);
     }
   }
-  if (state.device && (typeof state.device.token !== "string" || !state.device.token.startsWith("cvn_"))) {
-    throw new AuthError("Im Feld „device.token“ steht kein Geräte-Token.");
+  if (!state.gatewayBaseUrl || !state.environment) {
+    throw new AuthError("Gateway und Umgebung dürfen nicht leer sein.");
   }
-  if (state.device && Object.keys(state.device).length !== 1) {
-    throw new AuthError("Der Block „device“ trägt nur „token“.");
+  if (state.device) {
+    const erlaubt = new Set(["token", "clubId", "userId", "userEmail"]);
+    for (const name of Object.keys(state.device)) {
+      if (!erlaubt.has(name)) throw new AuthError(`Unbekanntes Feld „device.${name}“.`);
+    }
+    if (typeof state.device.token !== "string" || !state.device.token.startsWith("cvn_")) {
+      throw new AuthError("Im Feld „device.token“ steht kein Geräte-Token.");
+    }
   }
   if (state.connector) {
-    const erlaubt = new Set(["clientId", "resource", "scopes"]);
+    const erlaubt = new Set(["clientId", "resource", "scopes", "clubId"]);
     for (const name of Object.keys(state.connector)) {
       if (!erlaubt.has(name)) {
         throw new AuthError(`Unbekanntes Feld „connector.${name}“ — Tokens gehören in den Credential-Store.`);
       }
     }
     const { clientId, resource, scopes } = state.connector;
-    if (typeof clientId !== "string" || typeof resource !== "string"
-      || !Array.isArray(scopes) || !scopes.every((s) => typeof s === "string")) {
+    if (!clientId || !resource || typeof clientId !== "string" || typeof resource !== "string"
+      || !Array.isArray(scopes) || !scopes.every((s) => typeof s === "string" && s.length > 0)) {
       throw new AuthError("Der Block „connector“ hat nicht die erwartete Form.");
     }
   }
@@ -343,11 +392,13 @@ export function writeDeviceLogin(input: {
     schemaVersion: 3,
     gatewayBaseUrl: input.gatewayBaseUrl.replace(/\/+$/u, ""),
     environment: input.environment,
-    device: { token: input.token },
+    device: {
+      token: input.token,
+      ...(input.clubId ? { clubId: input.clubId } : {}),
+      ...(input.userId ? { userId: input.userId } : {}),
+      ...(input.userEmail ? { userEmail: input.userEmail } : {}),
+    },
     ...(connector ? { connector } : {}),
-    ...(input.clubId ? { clubId: input.clubId } : {}),
-    ...(input.userId ? { userId: input.userId } : {}),
-    ...(input.userEmail ? { userEmail: input.userEmail } : {}),
   });
   return { connectorBleibt: Boolean(connector) };
 }
@@ -373,11 +424,17 @@ export function writeConnectorLogin(input: {
     schemaVersion: 3,
     gatewayBaseUrl: input.gatewayBaseUrl.replace(/\/+$/u, ""),
     environment: input.environment,
+    // Der Geraete-Block wandert UNVERAENDERT mit — samt seiner eigenen
+    // Vereinskennung. Vorher ueberschrieb der Connector-Login die gemeinsame
+    // `clubId`, und die klassischen Befehle liefen danach im falschen Verein.
     ...(device ? { device } : {}),
-    connector: input.connector,
-    ...(input.clubId ? { clubId: input.clubId } : {}),
-    ...(alt?.userId ? { userId: alt.userId } : {}),
-    ...(alt?.userEmail ? { userEmail: alt.userEmail } : {}),
+    connector: {
+      // Nur die bekannten Felder, damit ein Aufrufer nichts danebenlegen kann.
+      clientId: input.connector.clientId,
+      resource: input.connector.resource,
+      scopes: [...input.connector.scopes],
+      ...(input.clubId ? { clubId: input.clubId } : {}),
+    },
   });
   return { geraetBleibt: Boolean(device) };
 }
@@ -401,9 +458,6 @@ export function clearConnectorState(): void {
     gatewayBaseUrl: alt.gatewayBaseUrl,
     environment: alt.environment,
     device: alt.device,
-    ...(alt.clubId ? { clubId: alt.clubId } : {}),
-    ...(alt.userId ? { userId: alt.userId } : {}),
-    ...(alt.userEmail ? { userEmail: alt.userEmail } : {}),
   });
 }
 

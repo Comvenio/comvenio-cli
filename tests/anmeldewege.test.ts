@@ -109,15 +109,15 @@ describe("die beiden Blöcke fassen einander nicht an", () => {
     const { clearConnectorState } = await modul("a3");
     schreibe(z.heim, {
       schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod",
-      device: { token: GERAETE_TOKEN }, connector: CONNECTOR, clubId: "verein-1",
+      device: { token: GERAETE_TOKEN, clubId: "verein-a" }, connector: { ...CONNECTOR, clubId: "verein-b" },
     });
 
     clearConnectorState();
 
     const danach = lies(z.heim);
     expect(danach.device.token).toBe(GERAETE_TOKEN);
+    expect(danach.device.clubId).toBe("verein-a");
     expect(danach.connector).toBeUndefined();
-    expect(danach.clubId).toBe("verein-1");
   });
 
   test("ohne Geräte-Block räumt er die Datei ganz ab", async () => {
@@ -205,13 +205,20 @@ describe("die Schreibprüfung kennt die Form, nicht nur Textmuster", () => {
     );
   });
 
-  test("ein unbekanntes Feld IM Connector wird abgelehnt", async () => {
+  // Befund 7 der Bauform-Prüfung: `connector` wurde als GANZES
+  // Eingabeobjekt weitergereicht — ein Aufrufer konnte dort ein Secret
+  // danebenlegen. Jetzt übernimmt der Schreibweg nur die bekannten Felder,
+  // und das Fremdfeld kommt gar nicht erst bis zur Formprüfung.
+  test("ein Fremdfeld im Connector landet nicht in der Datei", async () => {
     const { writeConnectorLogin } = await modul("f2");
-    expect(() => writeConnectorLogin({
+    writeConnectorLogin({
       gatewayBaseUrl: GATEWAY, environment: "prod",
       // @ts-expect-error — Tokens gehören in den Credential-Store
       connector: { ...CONNECTOR, token: "opaque-oauth-access-token" },
-    })).toThrow(/connector\.token/u);
+    });
+    const roh = readFileSync(pfadIn(z.heim), "utf8");
+    expect(roh).not.toContain("opaque-oauth-access-token");
+    expect(Object.keys(lies(z.heim).connector).sort()).toEqual(["clientId", "resource", "scopes"]);
   });
 
   test("ein Geräte-Token darf nur in device.token stehen", async () => {
@@ -253,7 +260,8 @@ describe("alte Zustandsdateien funktionieren weiter", () => {
     const stand = readStoredState();
     expect(stand.device?.token).toBe(GERAETE_TOKEN);
     expect(stand.connector).toBeUndefined();
-    expect(stand.clubId).toBe("verein-1");
+    // Die Vereinskennung der Altform wandert in den Block, dem sie gehört.
+    expect(stand.device?.clubId).toBe("verein-1");
   });
 
   test("Schema 2 (nur OAuth) wird übersetzt", async () => {
@@ -333,5 +341,119 @@ describe("Abmelden hinterlässt keinen unverwaltbaren Rest", () => {
     schreibe(z.heim, { schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod", device: { token: GERAETE_TOKEN } });
     clearAllAuthState();
     expect(existsSync(pfadIn(z.heim))).toBe(false);
+  });
+});
+
+// ── Fremdvalidierung zur neuen Form (2026-09-21) ────────────────────────────
+
+describe("jeder Weg trägt seine eigene Identität", () => {
+  const z = mitEigenemHeim("identitaet");
+  const modul = (marke: string) => import(`../src/auth.ts?${marke}=${encodeURIComponent(z.heim)}`);
+
+  // Der schwerste Befund an der ersten Fassung der neuen Form: `clubId` war
+  // GEMEINSAM geblieben. Ein Geräte-Login für Verein A neben einem
+  // OAuth-Grant für Verein B — und der zweite überschrieb die Kennung. Die
+  // klassischen Befehle liefen danach mit dem Geräte-Token im FALSCHEN
+  // Verein. Dieselbe Klasse wie beim alten `token`: ein Feld, zwei Besitzer.
+  test("ein Connector-Login für Verein B lässt Verein A des Geräts stehen", async () => {
+    const { writeConnectorLogin, loadState } = await modul("i1");
+    schreibe(z.heim, {
+      schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod",
+      device: { token: GERAETE_TOKEN, clubId: "verein-a", userEmail: "a@example.org" },
+    });
+
+    writeConnectorLogin({
+      gatewayBaseUrl: GATEWAY, environment: "prod", clubId: "verein-b", connector: CONNECTOR,
+    });
+
+    const danach = lies(z.heim);
+    expect(danach.device.clubId).toBe("verein-a");
+    expect(danach.connector.clubId).toBe("verein-b");
+    // Und der klassische Weg arbeitet in SEINEM Verein.
+    const state = await loadState().catch(() => null);
+    expect(state?.clubId).toBe("verein-a");
+  });
+
+  test("ohne Gerät gilt der Verein des Connectors", async () => {
+    const { readStoredState } = await modul("i2");
+    schreibe(z.heim, {
+      schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod",
+      connector: { ...CONNECTOR, clubId: "verein-b" },
+    });
+    expect(readStoredState().connector?.clubId).toBe("verein-b");
+  });
+
+  test("ein Geräte-Login schreibt seine Identität in den eigenen Block", async () => {
+    const { writeDeviceLogin } = await modul("i3");
+    writeDeviceLogin({
+      token: GERAETE_TOKEN, gatewayBaseUrl: GATEWAY, environment: "prod",
+      clubId: "verein-a", userId: "u-1", userEmail: "a@example.org",
+    });
+    const danach = lies(z.heim);
+    expect(danach.device).toMatchObject({ clubId: "verein-a", userId: "u-1", userEmail: "a@example.org" });
+    // Nicht mehr an der Wurzel — dort gehörte sie nie hin.
+    expect(danach.clubId).toBeUndefined();
+  });
+});
+
+describe("der Leser ist so streng wie der Schreiber", () => {
+  const z = mitEigenemHeim("symmetrie");
+  const modul = (marke: string) => import(`../src/auth.ts?${marke}=${encodeURIComponent(z.heim)}`);
+
+  // Der Schreiber weist `device.token` ohne `cvn_` zurück — der Leser nahm
+  // ihn an. Eine von Hand gebaute Datei hätte damit einen OAuth-Token als
+  // Bearer an die Fachdienste geschickt.
+  test("ein device.token ohne cvn_ zählt nicht als Geräte-Token", async () => {
+    const { readStoredState } = await modul("s1");
+    schreibe(z.heim, {
+      schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod",
+      device: { token: "opaque-oauth-access-token" }, connector: CONNECTOR,
+    });
+    expect(readStoredState().device).toBeUndefined();
+  });
+
+  test("eine Datei mit NUR einem falschen device.token gilt als nicht angemeldet", async () => {
+    const { readStoredState } = await modul("s2");
+    schreibe(z.heim, {
+      schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod",
+      device: { token: "opaque-oauth-access-token" },
+    });
+    expect(() => readStoredState()).toThrow(/Nicht eingeloggt/u);
+  });
+
+  // Befund 6: Die gemischte Altform verlor den Connector still — und damit
+  // die Möglichkeit, ihn je zu widerrufen.
+  test("eine gemischte Altform verliert den Connector nicht", async () => {
+    const { readStoredState } = await modul("s3");
+    schreibe(z.heim, {
+      schemaVersion: 1, authMode: "device_token", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod", oauth: CONNECTOR,
+    });
+    const stand = readStoredState();
+    expect(stand.device?.token).toBe(GERAETE_TOKEN);
+    expect(stand.connector?.resource).toBe(CONNECTOR.resource);
+  });
+});
+
+describe("gleichesGateway ist konservativ", () => {
+  const z = mitEigenemHeim("kanon");
+  const modul = (marke: string) => import(`../src/auth.ts?${marke}=${encodeURIComponent(z.heim)}`);
+
+  test("Userinfo, Query und Fragment machen eine Adresse unvergleichbar", async () => {
+    const { gleichesGateway } = await modul("kg1");
+    expect(gleichesGateway("https://user@api.example.org", "https://api.example.org")).toBe(false);
+    expect(gleichesGateway("https://api.example.org?a=1", "https://api.example.org")).toBe(false);
+    expect(gleichesGateway("https://api.example.org#x", "https://api.example.org")).toBe(false);
+  });
+
+  test("der abschliessende Punkt im Hostnamen zählt nicht", async () => {
+    const { gleichesGateway } = await modul("kg2");
+    expect(gleichesGateway("https://api.example.org.", "https://api.example.org")).toBe(true);
+  });
+
+  test("fremde Protokolle und unlesbare Werte sind nie gleich", async () => {
+    const { gleichesGateway } = await modul("kg3");
+    expect(gleichesGateway("file:///etc/passwd", "file:///etc/passwd")).toBe(false);
+    expect(gleichesGateway("kein-url", "kein-url")).toBe(false);
   });
 });
