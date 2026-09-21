@@ -52,12 +52,22 @@ async function connector(): Promise<CliConnectorClient> {
       + 'Führe "comvenio login" ohne --device-token aus.',
     );
   }
+  // KEIN Rueckfall auf `state.token`. Der ist seit dem Nebeneinander der
+  // Anmeldewege der GERAETE-Token, sobald einer vorliegt — und der gehoert
+  // den Fachdiensten, nie dem Connector. Der Fallback `?? state.token` stand
+  // genau hier und schickte ihn an `mcp.comvenio.app`, sobald die
+  // OAuth-Aufloesung ausfiel: dieselbe Token-Grenze wie in
+  // `03-oauth-connection-lifecycle.md` §11, nur in der Gegenrichtung.
+  // Fremdvalidierung Runde 2 (2026-09-21), Befund 1.
+  if (!state.connectorToken) {
+    throw new AuthError(
+      "Die Connector-Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
+      + 'Melde dich mit "comvenio login" neu an; dein Geräte-Token bleibt dabei bestehen.',
+    );
+  }
   return new CliConnectorClient({
     endpoint: state.oauth.resource,
-    // NICHT `state.token`: Seit beide Anmeldewege nebeneinander liegen, ist
-    // das der Geräte-Token, sobald einer vorliegt. Der Connector braucht den
-    // OAuth-Access-Token.
-    access_token: state.connectorToken ?? state.token,
+    access_token: state.connectorToken,
   });
 }
 

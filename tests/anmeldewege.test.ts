@@ -413,3 +413,54 @@ describe("der gerettete Geräte-Stand nach einem gescheiterten OAuth-Versuch", (
     expect(vorherigerGeraeteStand()).toBeNull();
   });
 });
+
+// ── Fremdvalidierung Runde 2 (2026-09-21), Befund 1 ─────────────────────────
+
+describe("der Geraete-Token geht nie an den Connector", () => {
+  let heim: string;
+  const gesichert: Record<string, string | undefined> = {};
+  const umgebogen = ["HOME", "USERPROFILE", "APPDATA"] as const;
+
+  beforeEach(() => {
+    heim = mkdtempSync(join(tmpdir(), "comvenio-grenze-"));
+    for (const name of umgebogen) { gesichert[name] = process.env[name]; process.env[name] = heim; }
+  });
+  afterEach(() => {
+    for (const name of umgebogen) {
+      if (gesichert[name] === undefined) delete process.env[name]; else process.env[name] = gesichert[name];
+    }
+    rmSync(heim, { recursive: true, force: true });
+  });
+
+  // Der Fallback `state.connectorToken ?? state.token` in action.ts und
+  // whoami.ts schickte bei ausgefallenem OAuth den GERAETE-Token an
+  // `mcp.comvenio.app`. Der Kommentar darueber sagte sogar "NICHT
+  // state.token" — und die Zeile darunter tat es doch. Dieser Fall haelt die
+  // Grenze fest, statt sich auf einen Kommentar zu verlassen.
+  test("faellt OAuth aus, traegt loadState keinen connectorToken", async () => {
+    const { loadState } = await import(`../src/auth.ts?grenze=${encodeURIComponent(heim)}`);
+    writeFileSync(join(heim, ".comvenio-cli-state.json"), JSON.stringify({
+      schemaVersion: 2, authMode: "oauth", token: GERAETE_TOKEN,
+      gatewayBaseUrl: GATEWAY, environment: "prod",
+      oauth: { clientId: "client-1", resource: `${GATEWAY}/cli`, scopes: ["club.read"] },
+    }), "utf8");
+
+    const state = await loadState();
+    // Der Geraete-Token ist da und traegt die klassischen Befehle …
+    expect(state.token).toBe(GERAETE_TOKEN);
+    expect(state.hasDeviceToken).toBe(true);
+    // … aber er steht NICHT als Connector-Token zur Verfuegung.
+    expect(state.connectorToken).toBeUndefined();
+  });
+
+  // Die Gegenprobe im Quelltext: Kein Aufrufer darf den Geraete-Token als
+  // Connector-Token einsetzen. Ein `?? state.token` neben `access_token`
+  // waere genau dieser Fehler — und er stand schon einmal da.
+  test("kein Aufrufer faellt auf state.token zurueck", () => {
+    for (const datei of ["src/commands/action.ts", "src/commands/whoami.ts"]) {
+      const quelle = readFileSync(join(process.cwd(), datei), "utf8");
+      expect(quelle, datei).not.toMatch(/access_token:\s*state\.connectorToken\s*\?\?/u);
+      expect(quelle, datei).not.toMatch(/access_token:\s*state\.token/u);
+    }
+  });
+});
