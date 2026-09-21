@@ -95,6 +95,11 @@ import {
   type K13ExecutionDependencies,
 } from "../../../apps/mcp-server/src/tools/sponsor-marketing/index.ts";
 import {
+  K14_ACTION_DEFINITIONS,
+  K14_ACTION_SCHEMAS,
+  K14_FINANCE_ACTION_IDS,
+} from "../../../apps/mcp-server/src/tools/finance/index.ts";
+import {
   FULL_CONNECTOR_REPLACEMENTS,
   fullDomainCatalogSummary,
   fullDomainProtectedToolDescriptors,
@@ -146,6 +151,7 @@ describe("Comvenio connector inventory contract", () => {
       ...K11_ACTION_IDS,
       ...K12_ACTION_IDS,
       ...K13_SPONSOR_ACTION_IDS,
+      ...K14_FINANCE_ACTION_IDS,
     ];
     const definitions = {
       ...K7_ACTION_DEFINITIONS,
@@ -155,6 +161,7 @@ describe("Comvenio connector inventory contract", () => {
       ...K11_ACTION_DEFINITIONS,
       ...K12_ACTION_DEFINITIONS,
       ...K13_ACTION_DEFINITIONS,
+      ...K14_ACTION_DEFINITIONS,
     } as Record<string, {
       publication_state: "implemented" | "blocked";
       source_path: string;
@@ -171,6 +178,7 @@ describe("Comvenio connector inventory contract", () => {
       ...K11_ACTION_SCHEMAS,
       ...K12_ACTION_SCHEMAS,
       ...K13_ACTION_SCHEMAS,
+      ...K14_ACTION_SCHEMAS,
     } as Record<string, unknown>;
     const inventoryActionIds = inventory.actions.entries
       .map((entry) => entry.id)
@@ -184,9 +192,33 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(338);
-    expect(new Set(directActionIds).size).toBe(338);
+    expect(directActionIds).toHaveLength(358);
+    expect(new Set(directActionIds).size).toBe(358);
     expect(additiveActionIds).toEqual([
+      // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
+      // Vereinsbuchhaltung nicht. Die 20 Aktionen decken Jahresplan, Posten und
+      // Buchungen des finance-service ab; Rechnungen, Beitraege, Spenden und
+      // Auszahlungen desselben Dienstes bleiben bewusst draussen.
+      "cai.finance.01.plan_list",
+      "cai.finance.02.plan_show",
+      "cai.finance.03.plan_create",
+      "cai.finance.04.plan_update",
+      "cai.finance.05.plan_close",
+      "cai.finance.06.plan_reopen",
+      "cai.finance.07.plan_copy",
+      "cai.finance.08.position_list",
+      "cai.finance.09.position_create",
+      "cai.finance.10.position_show",
+      "cai.finance.11.position_update",
+      "cai.finance.12.position_delete",
+      "cai.finance.13.position_import_shopping",
+      "cai.finance.14.summary",
+      "cai.finance.15.entry_list",
+      "cai.finance.16.entry_create",
+      "cai.finance.17.entry_show",
+      "cai.finance.18.entry_update",
+      "cai.finance.19.entry_delete",
+      "cai.finance.20.entry_approve",
       // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
       // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
       "cai.homepage.04.screenshot",
@@ -239,8 +271,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 338,
-      published_domain_actions: 336,
+      discovered_actions: 358,
+      published_domain_actions: 356,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
