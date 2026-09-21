@@ -4,13 +4,11 @@ import type { OAuthScope } from "@comvenio/connector-contracts";
 import {
   AuthError,
   clearAllAuthState,
-  clearState,
-  readOAuthConnectorState,
+  clearConnectorState,
   readStoredState,
-  vorherigerGeraeteStand,
   STATE_FILE,
-  writeOAuthState,
-  writeState,
+  writeConnectorLogin,
+  writeDeviceLogin,
 } from "./auth.ts";
 import {
   clearOAuthCredentials,
@@ -126,27 +124,21 @@ cli
       clubId = o.club ?? me?.main_club_id;
       userId = me?.id;
       userEmail = me?.email;
-      // Eine bestehende OAuth-Verbindung bleibt stehen. Bis zum 2026-09-21
-      // loeschte ein Geraete-Login sie mit (`clearOAuthCredentials`), so wie
-      // eine OAuth-Anmeldung den Geraete-Token loeschte — beide Richtungen
-      // desselben Fehlers. Die Wege schliessen einander nicht aus: Der
-      // Geraete-Token traegt die klassischen Befehle, der OAuth-Grant
-      // `comvenio action`.
-      const bestehenderConnector = readOAuthConnectorState(gatewayBaseUrl);
-      writeState({
-        schemaVersion: bestehenderConnector ? 2 : 1,
-        authMode: bestehenderConnector ? "oauth" : "device_token",
+      // Schreibt NUR den Geraete-Block; ein bestehender Connector bleibt,
+      // solange er zum selben Gateway gehoert. Bis zum 2026-09-21 loeschte
+      // ein Geraete-Login die OAuth-Verbindung mit, so wie eine
+      // OAuth-Anmeldung den Geraete-Token loeschte — beide Richtungen
+      // desselben Fehlers, und der Grund war ein gemeinsames `authMode`.
+      const { connectorBleibt } = writeDeviceLogin({
         token: deviceToken,
         gatewayBaseUrl,
         environment: o.env,
         clubId,
         userId,
         userEmail,
-        oauth: bestehenderConnector,
       });
-      if (bestehenderConnector) {
-        // Sonst meldet die JSON-Antwort `device_token`, waehrend `whoami`
-        // danach `oauth` zeigt. Fremdvalidierung Runde 1, Befund 7.
+      if (connectorBleibt) {
+        // Die Antwort muss dasselbe sagen wie `whoami` danach.
         authMode = "oauth";
         console.log("Die bestehende Connector-Verbindung bleibt erhalten — „comvenio action …“ funktioniert weiter.");
       }
@@ -184,32 +176,30 @@ cli
           );
         }
         saveOAuthCredentials(oauthCredentials);
-        writeOAuthState({
+        const { geraetBleibt } = writeConnectorLogin({
           gatewayBaseUrl,
           environment: o.env,
           clubId,
-          oauth: {
+          connector: {
             clientId: runtime.clientId,
             resource: runtime.resource,
             scopes: [...runtime.scopes],
           },
         });
+        if (geraetBleibt && !o.json) {
+          console.log("Dein Geräte-Token bleibt erhalten — die klassischen Befehle funktionieren weiter.");
+        }
       } catch (error) {
         if (oauthCredentials) {
           await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
         }
         clearOAuthCredentials();
-        // Einen bestehenden Geraete-Login NICHT mitreissen: Ein Abbruch im
-        // Browser, ein fehlgeschlagenes `whoami` oder ein Schreibfehler
-        // loeschte vorher die ganze Zustandsdatei — samt eines vorher
-        // gueltigen `cvn_`-Tokens. Fremdvalidierung Runde 1, Befund 2.
-        const geretteterStand = vorherigerGeraeteStand();
-        if (geretteterStand) {
-          writeState(geretteterStand);
-          console.error("Die OAuth-Anmeldung ist fehlgeschlagen; der bestehende Geräte-Login bleibt erhalten.");
-        } else {
-          clearState();
-        }
+        // Nur der Connector wird zurueckgenommen. Ein Abbruch im Browser, ein
+        // fehlgeschlagenes `whoami` oder ein Schreibfehler loeschte vorher die
+        // ganze Zustandsdatei — samt eines vorher gueltigen `cvn_`-Tokens.
+        // Jetzt raeumt `clearConnectorState` nur den eigenen Block ab und
+        // laesst stehen, was ihm nicht gehoert.
+        clearConnectorState();
         throw error;
       }
     }
@@ -247,17 +237,17 @@ cli
     let revokeWarning: string | undefined;
     try {
       const stored = readStoredState();
-      if (stored.authMode === "oauth") {
+      if (stored.connector) {
         const credentials = loadOAuthCredentials();
         if (credentials) {
           try {
             await revokeOAuthCredentials(
               oauthRuntime(
                 stored.gatewayBaseUrl,
-                stored.oauth?.resource
-                  ? new URL(stored.oauth.resource).origin
+                stored.connector?.resource
+                  ? new URL(stored.connector.resource).origin
                   : undefined,
-                stored.oauth?.scopes as OAuthScope[] | undefined,
+                stored.connector?.scopes as OAuthScope[] | undefined,
               ),
               credentials,
             );
