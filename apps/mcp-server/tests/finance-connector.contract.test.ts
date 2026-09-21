@@ -467,7 +467,7 @@ describe("K14: der Jahresplan gehoert dem Verein, nicht einer Abteilung", () => 
 });
 
 describe("K14: die Postenfelder decken den Dienstvertrag", () => {
-  test("Vorjahreswerte gehen mit, department_id ist aenderbar", async () => {
+  test("Vorjahreswerte gehen beim Anlegen mit", async () => {
     const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: departmentId, name: "Sommerfest" });
     const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
     await finance.execute({
@@ -477,4 +477,128 @@ describe("K14: die Postenfelder decken den Dienstvertrag", () => {
     });
     expect(calls[0]?.body).toMatchObject({ revenue_previous_year_cents: 1_000, expense_previous_year_cents: 2_000 });
   });
+
+  // Die erste Fassung dieses Falls rief nur `position_create` ohne
+  // `department_id` und haette auch dann bestanden, wenn das Feld aus
+  // `positionChanges` ganz verschwunden waere. Er behauptete etwas, das er
+  // nicht mass. Fremdvalidierung Runde 2 (2026-09-21).
+  test("department_id ist beim Aendern wirklich uebertragbar", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: positionId, club_id: clubId, department_id: departmentId, name: "Sommerfest" }; }),
+      write_safety: allowWrites,
+    });
+    await finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { department_id: otherDepartmentId, revenue_previous_year_cents: 500 } },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    });
+    const patch = calls.find((call) => call.method === "PATCH");
+    expect(patch?.body).toEqual({ department_id: otherDepartmentId, revenue_previous_year_cents: 500 });
+  });
 });
+
+// ── Fremdvalidierung Runde 2 (2026-09-21) ───────────────────────────────────
+
+describe("K14: die Vorpruefung verlangt einen Beleg, sie vermutet nicht", () => {
+  // `club_id` ist im finance-service `nullable=True` (base_model.py:14). Eine
+  // Antwort ohne Verein passierte die alte Pruefung, ohne je verglichen
+  // worden zu sein — fail-open genau an der Stelle, die schuetzen soll.
+  test("eine Antwort ohne club_id wird abgelehnt, nicht durchgelassen", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: entryId, budget_position_id: positionId, description: "Ohne Verein" }; }),
+      write_safety: allowWrites,
+      confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } },
+    });
+    await expect(finance.execute({ action_id: "cai.finance.20.entry_approve", input: { club_id: clubId, entry_id: entryId }, context: reader(["finance.write"]), capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("auch eine leere oder unlesbare Antwort haelt die Mutation auf", async () => {
+    // Kein `as const`: Das machte die Liste `readonly`, und `readonly []`
+    // passt nicht auf `JsonValue`. bun test merkt davon nichts — `tsc -b`
+    // schon.
+    for (const antwort of [null, [], "nichts"] as JsonValue[]) {
+      const calls: ComvenioApiRequest[] = [];
+      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return antwort; }), write_safety: allowWrites });
+      await expect(finance.execute({ action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes: { notes: "x" } }, context: reader(["finance.write"]), capability_snapshot: manager }), String(antwort))
+        .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(calls.map((call) => call.method), String(antwort)).toEqual(["GET"]);
+    }
+  });
+
+  // `department_id: null` heisst vereinsweit — das liegt AUSSERHALB eines
+  // Abteilungskontexts und wurde vorher als unauffaellig durchgewunken.
+  test("ein vereinsweiter Posten ist im Abteilungskontext nicht aenderbar", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: positionId, club_id: clubId, department_id: null, name: "Vereinsweit" }; }),
+      write_safety: allowWrites,
+    });
+    await expect(finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { name: "Neu" } },
+      context: { ...context, department_id: departmentId, scopes: ["finance.write"] }, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("einen Posten vereinsweit zu machen, verlangt den vereinsweiten Kontext", async () => {
+    const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: departmentId });
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await expect(finance.execute({
+      action_id: "cai.finance.11.position_update",
+      input: { club_id: clubId, position_id: positionId, changes: { department_id: null } },
+      context: { ...context, department_id: departmentId, scopes: ["finance.write"] }, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.length).toBe(0);
+  });
+});
+
+describe("K14: ein Elternposten ist eine Wirkung auf fremdem Gebiet", () => {
+  // Die Werte des Kindes werden in den Elternposten eingerollt und in der
+  // Zusammenfassung SEINER Abteilung gezaehlt. Der Dienst prueft dabei nur
+  // den Jahresplan, nicht die Abteilung (budget_positions.py:99/184).
+  test("ein fremder Elternposten haelt das Anlegen auf", async () => {
+    const calls: ComvenioApiRequest[] = [];
+    const finance = createK14ToolSet({
+      client: client(async (request) => { calls.push(request); return { id: "99999999-9999-4999-8999-999999999999", club_id: otherClubId, department_id: null, name: "Fremdes Festival" }; }),
+      write_safety: allowWrites,
+    });
+    await expect(finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Kind", parent_position_id: "99999999-9999-4999-8999-999999999999" },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("ohne Elternposten wird nichts nachgeladen", async () => {
+    const { calls, client: adapter } = recording({ id: positionId, club_id: clubId, department_id: null, name: "Eigenstaendig" });
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites });
+    await finance.execute({
+      action_id: "cai.finance.09.position_create",
+      input: { club_id: clubId, year: 2026, name: "Eigenstaendig" },
+      context: reader(["finance.write"]), capability_snapshot: manager,
+    });
+    expect(calls.map((call) => call.method)).toEqual(["POST"]);
+  });
+});
+
+describe("K14: der Routenvertrag nennt die Vorpruefungen", () => {
+  // Die Definitionen verschwiegen fuenf GET-Aufrufe, die zur Laufzeit
+  // stattfinden. Wer den veroeffentlichten Vertrag liest, muss sehen, was der
+  // Connector wirklich ruft.
+  test("jede Aktion mit Vorpruefung fuehrt sie als preflight", () => {
+    const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
+    const mitPreflight = ["cai.finance.09.position_create", "cai.finance.11.position_update", "cai.finance.12.position_delete", "cai.finance.13.position_import_shopping", "cai.finance.16.entry_create", "cai.finance.18.entry_update", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve"];
+    for (const definition of finance.listDefinitions()) {
+      const routen = Object.values(definition.operations).flatMap((operation) => operation.backend_routes);
+      const hatPreflight = routen.some((route) => route.purpose === "preflight");
+      expect(hatPreflight, definition.action_id).toBe(mitPreflight.includes(definition.action_id));
+    }
+  });
+});
+

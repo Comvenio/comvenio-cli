@@ -18,6 +18,12 @@ export interface K14VisibilityRequest { context: RequestContext; capability_snap
 function error(context: RequestContext, code: Parameters<typeof createConnectorError>[0]["code"], message: string): Error { return createConnectorError({ code, message, request_id: context.request_id, retryable: false }); }
 function assertJson(value: unknown, context: RequestContext): asserts value is JsonValue { if (!z.json().safeParse(value).success) throw error(context, "VALIDATION_FAILED", "Die Tool-Eingabe enthält ungültige JSON-Werte."); }
 function operationFor(definition: K14ActionDefinition, input: JsonValue): K14OperationDefinition { const row = input !== null && typeof input === "object" && !Array.isArray(input) ? input : {}; const names = Object.keys(definition.operations); const name = typeof row.operation === "string" ? row.operation : names.length === 1 ? names[0] : null; const operation = name ? definition.operations[name] : null; if (!operation) throw new Error("Operation fehlt."); return operation; }
+// Sucht ein ausdrueckliches `department_id: null` — im Rumpf wie in `changes`.
+function setztAbteilungAufNull(value: JsonValue): boolean {
+  if (value === null || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some(setztAbteilungAufNull);
+  return Object.entries(value).some(([key, entry]) => (key === "department_id" && entry === null) || setztAbteilungAufNull(entry));
+}
 function valuesFor(value: JsonValue, keys: Set<string>): string[] { if (value === null || typeof value !== "object") return []; if (Array.isArray(value)) return value.flatMap((entry) => valuesFor(entry, keys)); return Object.entries(value).flatMap(([key, entry]) => keys.has(key) && typeof entry === "string" ? [entry] : valuesFor(entry, keys)); }
 function confirmationFrom(input: JsonValue): { preview_id: string; confirmation_token: string } | null { if (input === null || typeof input !== "object" || Array.isArray(input)) return null; const value = input.confirmation; return value !== null && typeof value === "object" && !Array.isArray(value) && typeof value.preview_id === "string" && typeof value.confirmation_token === "string" ? { preview_id: value.preview_id, confirmation_token: value.confirmation_token } : null; }
 function withoutConfirmation(input: JsonValue): JsonValue { if (input === null || typeof input !== "object" || Array.isArray(input)) return input; return Object.fromEntries(Object.entries(input).filter(([key]) => key !== "confirmation")) as JsonValue; }
@@ -94,6 +100,13 @@ export class FinanceToolSet {
     if (definition.action_id === "cai.finance.09.position_create" && context.department_id
       && !valuesFor(input, new Set(["department_id"])).length) {
       throw error(context, "VALIDATION_FAILED", "Im Abteilungskontext braucht ein Budgetposten die eigene Abteilung in „department_id“.");
+    }
+    // `department_id: null` ist keine Auslassung, sondern eine Verschiebung:
+    // Der Posten wird vereinsweit und verlaesst damit die eigene Abteilung.
+    // Der Abgleich oben sieht das nicht — `valuesFor` sammelt nur Strings.
+    // Fremdvalidierung Runde 2 (2026-09-21).
+    if (context.department_id && setztAbteilungAufNull(input)) {
+      throw error(context, "TENANT_MISMATCH", "Einen Posten aus der Abteilung in den vereinsweiten Bereich zu verschieben, verlangt einen vereinsweiten Kontext.");
     }
     const decision = visibilityDecision(this.#visibility, definition, operation, context, requestInput.capability_snapshot, "dynamic");
     if (!decision.authorized) throw decisionError(operation, context, decision.reason);
