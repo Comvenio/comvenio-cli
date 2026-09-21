@@ -25,6 +25,39 @@ function assertTenant(value: JsonValue, context: RequestContext, departments = t
 async function request(client: ComvenioApiClient, context: RequestContext, method: ComvenioHttpMethod, path: string, options: { body?: JsonValue; query?: Record<string, string> } = {}): Promise<JsonValue> {
   return client.request<JsonValue>({ method, service: "finance", path, context, ...options });
 }
+
+// Die strenge Schwester von `assertTenant` — fuer die Vorpruefung genau EINER
+// Ressource, bevor etwas geschrieben wird.
+//
+// Der Unterschied ist die Beweislast. `assertTenant` weist ab, was
+// NACHWEISLICH fremd ist; alles andere laesst es durch. Fuer eine Liste ist
+// das richtig, fuer eine Schreibfreigabe nicht: `club_id` ist im
+// finance-service `nullable=True` (base_model.py:14), und `department_id`
+// einer vereinsweiten Position ist `null`. Beide Formen passierten die
+// Pruefung, ohne je verglichen worden zu sein — die Vorpruefung war
+// fail-open. Hier muss die Herkunft BELEGT sein, sonst faellt die Aktion.
+// Fremdvalidierung Runde 2 (2026-09-21).
+function assertHerkunft(quelle: JsonValue, context: RequestContext, was: string): JsonObject {
+  const row = quelle !== null && typeof quelle === "object" && !Array.isArray(quelle) ? quelle : null;
+  const ablehnen = (grund: string): never => {
+    throw createConnectorError({ code: "TENANT_MISMATCH", message: `${was}: ${grund}`, request_id: context.request_id, retryable: false });
+  };
+  if (!row) return ablehnen("Der Finance-Service lieferte keinen pruefbaren Datensatz.");
+  if (typeof row.club_id !== "string") return ablehnen("Der Datensatz nennt keinen Verein; ohne Beleg wird nicht geschrieben.");
+  if (row.club_id !== context.club_id) return ablehnen("Der Datensatz gehoert zu einem anderen Verein.");
+  if (context.department_id) {
+    // Eine Position traegt ihre Abteilung selbst; `null` heisst vereinsweit
+    // und liegt damit ausserhalb eines Abteilungskontexts.
+    if ("department_id" in row) {
+      if (typeof row.department_id !== "string") return ablehnen("Der Datensatz gehoert dem ganzen Verein, nicht der gewaehlten Abteilung.");
+      if (row.department_id !== context.department_id) return ablehnen("Der Datensatz gehoert zu einer anderen Abteilung.");
+    } else if (typeof row.budget_position_id !== "string") {
+      // Weder eigene Abteilung noch ein Weg, sie zu ermitteln.
+      return ablehnen("Die Abteilung des Datensatzes ist nicht feststellbar.");
+    }
+  }
+  return row;
+}
 const handlers = new Map<string, Handler>(); const key = (id: K14ActionId, operation: string) => `${id}:${operation}`; const add = (id: K14ActionId, operation: string, handler: Handler) => handlers.set(key(id, operation), handler);
 function simple(id: K14ActionId, operation: string, method: ComvenioHttpMethod, path: (input: JsonObject) => string, options: { body?: (input: JsonObject) => JsonValue; query?: (input: JsonObject, context: RequestContext) => Record<string, string>; map?: (value: JsonValue, input: JsonObject) => JsonValue; departments?: boolean } = {}): void {
   add(id, operation, async (input, context, client) => {
@@ -59,13 +92,30 @@ function mitVorpruefung(
   options: { body?: (input: JsonObject) => JsonValue; map?: (value: JsonValue, input: JsonObject) => JsonValue } = {},
 ): void {
   add(id, operation, async (input, context, client) => {
-    const quelle = await request(client, context, "GET", vorpruefung(input));
-    assertTenant(quelle, context);
+    const quelle = assertHerkunft(await request(client, context, "GET", vorpruefung(input)), context, "Vorpruefung");
     await assertDepartmentOfEntry(quelle, context, client);
+    await assertParentPosition(input, context, client);
     const value = await request(client, context, method, path(input), { ...(options.body ? { body: options.body(input) } : {}) });
     const safe = assertTenant(value, context);
     return options.map ? options.map(safe, input) : safe;
   });
+}
+
+// Ein Elternposten ist eine WIRKUNG auf fremdem Gebiet: Die Werte des Kindes
+// werden in ihn eingerollt (crud/budget_position.py:173) und in der
+// Zusammenfassung SEINER Abteilung zugerechnet
+// (routes/budget_positions.py:350). Der Dienst prueft dabei nur, ob der
+// Elternposten zum selben Jahresplan gehoert (budget_positions.py:99/184) —
+// nicht, ob er zur selben Abteilung gehoert. Diese Luecke schliesst der
+// Connector hier. Fremdvalidierung Runde 2 (2026-09-21).
+async function assertParentPosition(input: JsonObject, context: RequestContext, client: ComvenioApiClient): Promise<void> {
+  const direkt = input.parent_position_id;
+  const ausChanges = input.changes !== null && typeof input.changes === "object" && !Array.isArray(input.changes)
+    ? (input.changes as JsonObject).parent_position_id
+    : undefined;
+  const parentId = typeof direkt === "string" ? direkt : typeof ausChanges === "string" ? ausChanges : null;
+  if (!parentId) return;
+  assertHerkunft(await request(client, context, "GET", `/positions/${parentId}`), context, "Elternposten");
 }
 
 // Eine Buchung traegt keine Abteilung (BookingEntryRead hat kein
@@ -75,10 +125,19 @@ function mitVorpruefung(
 async function assertDepartmentOfEntry(quelle: JsonValue, context: RequestContext, client: ComvenioApiClient): Promise<void> {
   if (!context.department_id) return;
   const row = quelle !== null && typeof quelle === "object" && !Array.isArray(quelle) ? quelle : {};
-  if (typeof row.department_id === "string") return; // schon geprueft, es ist eine Position
+  if ("department_id" in row) return; // `assertHerkunft` hat sie schon geprueft — auch auf null.
   const positionId = row.budget_position_id;
-  if (typeof positionId !== "string") return;
-  assertTenant(await request(client, context, "GET", `/positions/${positionId}`), context);
+  if (typeof positionId !== "string") return; // ebenso schon abgelehnt.
+  assertHerkunft(await request(client, context, "GET", `/positions/${positionId}`), context, "Position der Buchung");
+}
+
+function addMitElternpruefung(id: K14ActionId, operation: string, method: ComvenioHttpMethod, path: (input: JsonObject) => string, options: { body?: (input: JsonObject) => JsonValue; map?: (value: JsonValue, input: JsonObject) => JsonValue }): void {
+  add(id, operation, async (input, context, client) => {
+    await assertParentPosition(input, context, client);
+    const value = await request(client, context, method, path(input), { ...(options.body ? { body: options.body(input) } : {}) });
+    const safe = assertTenant(value, context);
+    return options.map ? options.map(safe, input) : safe;
+  });
 }
 
 const plans = (input: JsonObject) => `/clubs/${string(input, "club_id")}/finance-plans`;
@@ -107,7 +166,9 @@ simple("cai.finance.08.position_list", "list", "GET", (input) => `${plan(input)}
   query: (input, context) => { const department = typeof input.department_id === "string" ? input.department_id : context.department_id; return department ? { department_id: department } : ({} as Record<string, string>); },
   map: (value, input) => boundedFinanceList(value, Number(input.limit), minimizePosition),
 });
-simple("cai.finance.09.position_create", "create", "POST", (input) => `${plan(input)}/positions`, {
+// Der Pfad traegt `club_id`, eine Vorpruefung der Position gibt es also nicht
+// — wohl aber die des Elternpostens, falls einer genannt ist.
+addMitElternpruefung("cai.finance.09.position_create", "create", "POST", (input) => `${plan(input)}/positions`, {
   body: (input) => compact({
     name: input.name!, category: input.category!, department_id: input.department_id, position_number: input.position_number!,
     context_type: input.context_type!, context_id: input.context_id, parent_position_id: input.parent_position_id,
