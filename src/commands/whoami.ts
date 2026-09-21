@@ -29,7 +29,7 @@ export function registerWhoamiCommand(cli: CAC): void {
       if (state.authMode === "oauth" && state.oauth?.resource) {
         connectorIdentity = await new CliConnectorClient({
           endpoint: state.oauth.resource,
-          access_token: state.token,
+          access_token: state.connectorToken ?? state.token,
         }).whoami();
       } else {
         const client = createClient(state);
@@ -57,6 +57,11 @@ export function registerWhoamiCommand(cli: CAC): void {
           ? connectorIdentity.club_id
           : state.clubId ?? user?.main_club_id ?? null,
         authMode: state.authMode,
+        // Beide Wege getrennt, weil sie jetzt nebeneinander bestehen können:
+        // Wer verbunden ist und trotzdem „kein Zugriff" sieht, soll hier
+        // erkennen, welcher der beiden fehlt.
+        connectorLogin: state.authMode === "oauth",
+        deviceToken: state.hasDeviceToken,
         scopes: Array.isArray(connectorIdentity?.scopes)
           ? connectorIdentity.scopes
           : state.oauth?.scopes ?? null,
