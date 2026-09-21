@@ -34,6 +34,53 @@ function simple(id: K14ActionId, operation: string, method: ComvenioHttpMethod, 
   });
 }
 
+// Jede Mutation, deren Pfad nur eine nackte Ressourcenkennung traegt, laeuft
+// ueber diesen Weg: erst lesen, Herkunft pruefen, dann aendern.
+//
+// WARUM DAS NOETIG IST — und warum die Antwortpruefung allein NICHT reicht:
+// Der Dienst ermittelt den Verein aus der Ressource und prueft die Rechte des
+// anfragenden Menschen fuer GENAU DIESEN Verein (budget_positions.py:176,
+// booking_entries.py:88/147/224). Wer in zwei Vereinen Finanzrechte hat, kann
+// im Kontext von A eine Kennung aus B uebergeben. Der Dienst fuehrt die
+// Aenderung aus; `assertTenant` auf der ANTWORT verwirft dann zwar das
+// Ergebnis — geschrieben ist es trotzdem. Bei `entry_create` erzeugt jeder
+// Wiederholungsversuch eine weitere Buchung in einem fremden Verein.
+//
+// Gefunden in der Fremdvalidierung (Runde 1, 2026-09-21). Die beiden
+// Loeschwege hatten den Preflight schon — dort war die Begruendung „204 ohne
+// Rumpf, also nichts zu pruefen", und die war zu eng: Der Grund ist nicht die
+// leere Antwort, sondern die vollzogene Wirkung.
+function mitVorpruefung(
+  id: K14ActionId,
+  operation: string,
+  vorpruefung: (input: JsonObject) => string,
+  method: ComvenioHttpMethod,
+  path: (input: JsonObject) => string,
+  options: { body?: (input: JsonObject) => JsonValue; map?: (value: JsonValue, input: JsonObject) => JsonValue } = {},
+): void {
+  add(id, operation, async (input, context, client) => {
+    const quelle = await request(client, context, "GET", vorpruefung(input));
+    assertTenant(quelle, context);
+    await assertDepartmentOfEntry(quelle, context, client);
+    const value = await request(client, context, method, path(input), { ...(options.body ? { body: options.body(input) } : {}) });
+    const safe = assertTenant(value, context);
+    return options.map ? options.map(safe, input) : safe;
+  });
+}
+
+// Eine Buchung traegt keine Abteilung (BookingEntryRead hat kein
+// `department_id`), ihre Position schon. Steht ein Abteilungskontext, wird sie
+// deshalb nachgeladen — sonst nicht, denn ohne Abteilungskontext gibt es
+// nichts zu pruefen und der Aufruf waere reine Last.
+async function assertDepartmentOfEntry(quelle: JsonValue, context: RequestContext, client: ComvenioApiClient): Promise<void> {
+  if (!context.department_id) return;
+  const row = quelle !== null && typeof quelle === "object" && !Array.isArray(quelle) ? quelle : {};
+  if (typeof row.department_id === "string") return; // schon geprueft, es ist eine Position
+  const positionId = row.budget_position_id;
+  if (typeof positionId !== "string") return;
+  assertTenant(await request(client, context, "GET", `/positions/${positionId}`), context);
+}
+
 const plans = (input: JsonObject) => `/clubs/${string(input, "club_id")}/finance-plans`;
 const plan = (input: JsonObject) => `${plans(input)}/${integer(input, "year")}`;
 const position = (input: JsonObject) => `/positions/${string(input, "position_id")}`;
@@ -44,10 +91,8 @@ simple("cai.finance.01.plan_list", "list", "GET", plans, { map: (value, input) =
 simple("cai.finance.02.plan_show", "show", "GET", plan, { map: minimizePlan });
 simple("cai.finance.03.plan_create", "create", "POST", plans, { body: (input) => compact({ year: input.year!, available_capital_cents: input.available_capital_cents!, notes: input.notes }), map: minimizePlan });
 simple("cai.finance.04.plan_update", "update", "PATCH", plan, { body: (input) => object(input, "changes"), map: minimizePlan });
-// Jeder dieser drei Endpunkte verlangt einen Rumpf — `reopen` sogar ein
-// Pflichtfeld (`reason`, min_length=3). Ein Aufruf ohne Rumpf endet in 422.
+// Diese Endpunkte verlangen einen Rumpf; ohne ihn antwortet der Dienst mit 422.
 simple("cai.finance.05.plan_close", "close", "POST", (input) => `${plan(input)}/close`, { body: (input) => compact({ force: input.force!, note: input.note }), map: minimizePlan });
-simple("cai.finance.06.plan_reopen", "reopen", "POST", (input) => `${plan(input)}/reopen`, { body: (input) => ({ reason: string(input, "reason") }), map: minimizePlan });
 simple("cai.finance.07.plan_copy", "copy", "POST", (input) => `${plan(input)}/copy-from/${integer(input, "source_year")}`, {
   body: (input) => compact({ position_ids: input.position_ids, include_non_recurring: input.include_non_recurring! }),
   map: minimizeCopyResult,
@@ -66,19 +111,23 @@ simple("cai.finance.09.position_create", "create", "POST", (input) => `${plan(in
   body: (input) => compact({
     name: input.name!, category: input.category!, department_id: input.department_id, position_number: input.position_number!,
     context_type: input.context_type!, context_id: input.context_id, parent_position_id: input.parent_position_id,
-    revenue_planned_cents: input.revenue_planned_cents!, expense_planned_cents: input.expense_planned_cents!, comment: input.comment, recurring: input.recurring!,
+    revenue_planned_cents: input.revenue_planned_cents!, expense_planned_cents: input.expense_planned_cents!,
+    revenue_previous_year_cents: input.revenue_previous_year_cents!, expense_previous_year_cents: input.expense_previous_year_cents!,
+    comment: input.comment, recurring: input.recurring!,
   }),
   map: minimizePosition,
 });
 simple("cai.finance.10.position_show", "show", "GET", position, { map: minimizePosition });
-simple("cai.finance.11.position_update", "update", "PATCH", position, { body: (input) => object(input, "changes"), map: minimizePosition });
+mitVorpruefung("cai.finance.11.position_update", "update", position, "PATCH", position, { body: (input) => object(input, "changes"), map: minimizePosition });
 add("cai.finance.12.position_delete", "delete", async (input, context, client) => {
   const path = position(input);
-  assertTenant(await request(client, context, "GET", path), context);
+  const quelle = await request(client, context, "GET", path);
+  assertTenant(quelle, context);
+  await assertDepartmentOfEntry(quelle, context, client);
   await request(client, context, "DELETE", path);
   return { deleted: true, position_id: input.position_id! };
 });
-simple("cai.finance.13.position_import_shopping", "import", "POST", (input) => `${position(input)}/import-shopping-estimate`, { body: (input) => ({ overwrite: input.overwrite === true }), map: minimizeImportResult });
+mitVorpruefung("cai.finance.13.position_import_shopping", "import", position, "POST", (input) => `${position(input)}/import-shopping-estimate`, { body: (input) => ({ overwrite: input.overwrite === true }), map: minimizeImportResult });
 
 // ── Zusammenfassung ─────────────────────────────────────────────────────────
 simple("cai.finance.14.summary", "total", "GET", (input) => `${plan(input)}/summary`, { map: minimizeSummary, departments: false });
@@ -87,23 +136,36 @@ simple("cai.finance.14.summary", "total", "GET", (input) => `${plan(input)}/summ
 simple("cai.finance.14.summary", "by_department", "GET", (input) => `${plan(input)}/summary/${string(input, "department_id")}`, { map: (value) => boundedFinanceList(value, 200, minimizePosition) });
 
 // ── Buchungen ───────────────────────────────────────────────────────────────
-simple("cai.finance.15.entry_list", "list", "GET", (input) => `${position(input)}/entries`, {
-  query: (input) => (typeof input.source_type === "string" ? { source_type: input.source_type } : ({} as Record<string, string>)),
-  map: (value, input) => boundedFinanceList(value, Number(input.limit), minimizeEntry),
+// Liest ueber die Position — deren Abteilung wird mitgeprueft, denn die
+// Buchungen selbst tragen keine.
+add("cai.finance.15.entry_list", "list", async (input, context, client) => {
+  const quelle = await request(client, context, "GET", position(input));
+  assertTenant(quelle, context);
+  const value = await request(client, context, "GET", `${position(input)}/entries`, {
+    ...(typeof input.source_type === "string" ? { query: { source_type: input.source_type } } : {}),
+  });
+  return boundedFinanceList(assertTenant(value, context), Number(input.limit), minimizeEntry);
 });
-simple("cai.finance.16.entry_create", "create", "POST", (input) => `${position(input)}/entries`, {
+mitVorpruefung("cai.finance.16.entry_create", "create", position, "POST", (input) => `${position(input)}/entries`, {
   body: (input) => compact({ description: input.description!, revenue_cents: input.revenue_cents, expense_cents: input.expense_cents, booking_date: input.booking_date!, receipt_file_id: input.receipt_file_id, notes: input.notes }),
   map: minimizeEntry,
 });
-simple("cai.finance.17.entry_show", "show", "GET", entry, { map: minimizeEntry });
-simple("cai.finance.18.entry_update", "update", "PATCH", entry, { body: (input) => object(input, "changes"), map: minimizeEntry });
+add("cai.finance.17.entry_show", "show", async (input, context, client) => {
+  const value = await request(client, context, "GET", entry(input));
+  assertTenant(value, context);
+  await assertDepartmentOfEntry(value, context, client);
+  return minimizeEntry(value);
+});
+mitVorpruefung("cai.finance.18.entry_update", "update", entry, "PATCH", entry, { body: (input) => object(input, "changes"), map: minimizeEntry });
 add("cai.finance.19.entry_delete", "delete", async (input, context, client) => {
   const path = entry(input);
-  assertTenant(await request(client, context, "GET", path), context);
+  const quelle = await request(client, context, "GET", path);
+  assertTenant(quelle, context);
+  await assertDepartmentOfEntry(quelle, context, client);
   await request(client, context, "DELETE", path);
   return { deleted: true, entry_id: input.entry_id! };
 });
-simple("cai.finance.20.entry_approve", "approve", "POST", (input) => `${entry(input)}/approve`, { body: (input) => compact({ note: input.note }), map: minimizeEntry });
+mitVorpruefung("cai.finance.20.entry_approve", "approve", entry, "POST", (input) => `${entry(input)}/approve`, { body: (input) => compact({ note: input.note }), map: minimizeEntry });
 
 export function hasK14OperationHandler(actionId: K14ActionId, operation: string): boolean { return handlers.has(key(actionId, operation)); }
 export async function executeK14Operation(actionId: K14ActionId, operation: string, input: JsonValue, context: RequestContext, client: ComvenioApiClient): Promise<JsonValue> {

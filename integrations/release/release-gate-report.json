@@ -6,8 +6,8 @@
   "generated_at": "2026-07-23T00:00:00.000Z",
   "evidence": {
     "release_scope": "full_connector_v1",
-    "published_tool_count": 379,
-    "runtime_tool_catalog_sha256": "72db5f8d7c447c2d767ddd68c45db7a5676011db24839f9881380b9aa2c5d9f2",
+    "published_tool_count": 378,
+    "runtime_tool_catalog_sha256": "5cd124b30fe086a07614d5220ca949854fad3e25fff4c676be6e911c2583590a",
     "planned_action_count": 303,
     "planned_route_callsite_count": 572,
     "published_runtime_catalog_verified": false,
@@ -34,7 +34,7 @@
     "schema_version": "1.1.0",
     "suite": "ConnectorEvalSuite",
     "status": "blocked",
-    "evaluated_candidate_tool_count": 379,
+    "evaluated_candidate_tool_count": 378,
     "tested_tool_count": 0,
     "results": [],
     "blockers": [
@@ -45,7 +45,7 @@
     "schema_version": "1.0.0",
     "suite": "ResponseQualitySuite",
     "release_scope": "full_connector_v1",
-    "runtime_tool_catalog_sha256": "72db5f8d7c447c2d767ddd68c45db7a5676011db24839f9881380b9aa2c5d9f2",
+    "runtime_tool_catalog_sha256": "5cd124b30fe086a07614d5220ca949854fad3e25fff4c676be6e911c2583590a",
     "providers": [
       "openai",
       "anthropic"

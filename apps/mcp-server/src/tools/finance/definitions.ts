@@ -41,10 +41,10 @@ export const K14_ACTION_DEFINITIONS: Readonly<Record<K14ActionId, K14ActionDefin
   "cai.finance.02.plan_show": action("cai.finance.02.plan_show", "plan-show", [read("show", PLAN)]),
   "cai.finance.03.plan_create": action("cai.finance.03.plan_create", "plan-create", [write("create", "POST", PLANS)]),
   "cai.finance.04.plan_update": action("cai.finance.04.plan_update", "plan-update", [write("update", "PATCH", PLAN)]),
-  // Schliessen und Wiedereröffnen sperren bzw. entsperren ein ganzes Jahr für
-  // jede weitere Buchung — die Wirkung reicht über den einzelnen Satz hinaus.
+  // Schliessen sperrt ein ganzes Jahr für jede weitere Buchung — die Wirkung
+  // reicht über den einzelnen Satz hinaus.
   "cai.finance.05.plan_close": action("cai.finance.05.plan_close", "plan-close", [write("close", "POST", `${PLAN}/close`, true)]),
-  "cai.finance.06.plan_reopen": action("cai.finance.06.plan_reopen", "plan-reopen", [write("reopen", "POST", `${PLAN}/reopen`, true)]),
+  // 06 (plan-reopen) fehlt mit Absicht — Begruendung in types.ts.
   "cai.finance.07.plan_copy": action("cai.finance.07.plan_copy", "plan-copy", [write("copy", "POST", `${PLAN}/copy-from/{source_year}`, true)]),
   "cai.finance.08.position_list": action("cai.finance.08.position_list", "position-list", [read("list", `${PLAN}/positions`)]),
   "cai.finance.09.position_create": action("cai.finance.09.position_create", "position-create", [write("create", "POST", `${PLAN}/positions`)]),
