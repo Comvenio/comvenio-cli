@@ -32,13 +32,22 @@ export type LegacyClientState = {
   token: string;
   gatewayBaseUrl: string;
   authMode?: "device_token" | "oauth";
+  /** true, wenn `token` ein echter Geräte-Token ist und kein OAuth-Ersatz. */
+  hasDeviceToken?: boolean;
 };
 
 export function createClient(state: LegacyClientState): ComvenioClient {
-  if (state.authMode === "oauth") {
+  // Die Sperre galt bis zum 2026-09-21 jeder OAuth-Anmeldung und machte damit
+  // das ganze klassische CLI unbrauchbar, sobald sich jemand verband. Sie
+  // gilt jetzt nur noch dem eigentlichen Fall: Es gibt keinen Geräte-Token,
+  // und der OAuth-Access-Token ist kein Ersatz dafür — er gehört dem
+  // Connector und wird nie an die Fachdienste gereicht
+  // (`03-oauth-connection-lifecycle.md` §11).
+  if (state.authMode === "oauth" && state.hasDeviceToken !== true) {
     throw new Error(
-      "OAuth-Aktionen müssen über den typisierten Connector ausgeführt werden. "
-      + "Verwende „comvenio action …“; der Backend-Aktor-Token wird nicht an das CLI ausgegeben.",
+      "Für diesen Befehl fehlt ein Geräte-Token. Der OAuth-Grant gilt nur für „comvenio action …“; "
+      + "der Backend-Aktor-Token wird nicht an das CLI ausgegeben. "
+      + "Hole dir einen Geräte-Token mit „comvenio login --device-token“ — die OAuth-Verbindung bleibt dabei bestehen.",
     );
   }
   const gatewayBase = state.gatewayBaseUrl.replace(/\/+$/, "");

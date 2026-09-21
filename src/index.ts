@@ -5,7 +5,9 @@ import {
   AuthError,
   clearAllAuthState,
   clearState,
+  readOAuthConnectorState,
   readStoredState,
+  vorherigerGeraeteStand,
   STATE_FILE,
   writeOAuthState,
   writeState,
@@ -124,18 +126,30 @@ cli
       clubId = o.club ?? me?.main_club_id;
       userId = me?.id;
       userEmail = me?.email;
-      clearOAuthCredentials();
+      // Eine bestehende OAuth-Verbindung bleibt stehen. Bis zum 2026-09-21
+      // loeschte ein Geraete-Login sie mit (`clearOAuthCredentials`), so wie
+      // eine OAuth-Anmeldung den Geraete-Token loeschte — beide Richtungen
+      // desselben Fehlers. Die Wege schliessen einander nicht aus: Der
+      // Geraete-Token traegt die klassischen Befehle, der OAuth-Grant
+      // `comvenio action`.
+      const bestehenderConnector = readOAuthConnectorState(gatewayBaseUrl);
       writeState({
-        schemaVersion: 1,
-        authMode: "device_token",
+        schemaVersion: bestehenderConnector ? 2 : 1,
+        authMode: bestehenderConnector ? "oauth" : "device_token",
         token: deviceToken,
         gatewayBaseUrl,
         environment: o.env,
         clubId,
         userId,
         userEmail,
-        oauth: undefined,
+        oauth: bestehenderConnector,
       });
+      if (bestehenderConnector) {
+        // Sonst meldet die JSON-Antwort `device_token`, waehrend `whoami`
+        // danach `oauth` zeigt. Fremdvalidierung Runde 1, Befund 7.
+        authMode = "oauth";
+        console.log("Die bestehende Connector-Verbindung bleibt erhalten — „comvenio action …“ funktioniert weiter.");
+      }
     } else {
       if (o.env === "local" || gatewayBaseUrl.startsWith("http://")) {
         throw new AuthError(
@@ -185,7 +199,17 @@ cli
           await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
         }
         clearOAuthCredentials();
-        clearState();
+        // Einen bestehenden Geraete-Login NICHT mitreissen: Ein Abbruch im
+        // Browser, ein fehlgeschlagenes `whoami` oder ein Schreibfehler
+        // loeschte vorher die ganze Zustandsdatei — samt eines vorher
+        // gueltigen `cvn_`-Tokens. Fremdvalidierung Runde 1, Befund 2.
+        const geretteterStand = vorherigerGeraeteStand();
+        if (geretteterStand) {
+          writeState(geretteterStand);
+          console.error("Die OAuth-Anmeldung ist fehlgeschlagen; der bestehende Geräte-Login bleibt erhalten.");
+        } else {
+          clearState();
+        }
         throw error;
       }
     }

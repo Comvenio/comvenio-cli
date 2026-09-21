@@ -54,7 +54,10 @@ async function connector(): Promise<CliConnectorClient> {
   }
   return new CliConnectorClient({
     endpoint: state.oauth.resource,
-    access_token: state.token,
+    // NICHT `state.token`: Seit beide Anmeldewege nebeneinander liegen, ist
+    // das der Geräte-Token, sobald einer vorliegt. Der Connector braucht den
+    // OAuth-Access-Token.
+    access_token: state.connectorToken ?? state.token,
   });
 }
 
