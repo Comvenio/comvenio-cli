@@ -121,7 +121,9 @@ export class FinanceToolSet {
       else if (operation.execution_gate === "write_safety") { if (!this.#dependencies.write_safety) throw error(context, "CONFIG_INVALID", "Der Write-Safety-Flow ist nicht konfiguriert."); result = await this.#dependencies.write_safety.execute(safeMutationRequest, mutation); }
       else {
         if (!this.#dependencies.write_safety) throw error(context, "CONFIG_INVALID", "Der Write-Safety-Flow ist nicht konfiguriert.");
-        const preview = await buildK14Preview(definition, operation, input, context);
+        // The preview reads (sub positions, the frame so far) only for the call
+        // that shows it; the confirmed call needs no second read.
+        const preview = await buildK14Preview(definition, operation, input, context, confirmationFrom(input) ? undefined : this.#dependencies.client);
         result = await this.#confirmation.confirmOrPreview({ mutation: mutationRequest, ...preview, confirmation: confirmationFrom(input) }, () => this.#dependencies.write_safety!.execute(safeMutationRequest, mutation));
         if (result !== null && typeof result === "object" && !Array.isArray(result) && result.confirmation_required === true) status = "confirmation_required";
       }

@@ -255,9 +255,44 @@ describe("Finance Hub: Budget im Organigramm", () => {
       input: { club_id: clubId, operation: "frame_set", plan_id: planId, node_kind: "CLUB", node_id: "club", data: { amount_cents: 5750000 } },
       context, capability_snapshot: manager,
     });
-    expect(calls[0]?.method).toBe("PUT");
-    expect(calls[0]?.path).toBe(`/clubs/${clubId}/finance-plans/by-id/${planId}/frames/CLUB/club`);
-    expect(calls[0]?.body).toEqual({ amount_cents: 5750000 });
+    const put = calls.find((call) => call.method === "PUT");
+    expect(put?.path).toBe(`/clubs/${clubId}/finance-plans/by-id/${planId}/frames/CLUB/club`);
+    expect(put?.body).toEqual({ amount_cents: 5750000 });
+  });
+
+  test("DC-8: die Vorschau des Rahmens nennt alten und neuen Betrag und den Grund", async () => {
+    const { client } = recording((call): JsonValue => call.method === "GET"
+      ? { plan_id: planId, nodes: [{ node_kind: "DEPARTMENT", node_id: jugendId, frame_cents: 800000 }], totals: { scope: "CLUB" } }
+      : {});
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "frame_set", plan_id: planId, node_kind: "DEPARTMENT", node_id: jugendId, data: { amount_cents: 900000, reason: "Zuschuss Gemeinde" } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "frame_change")).toMatchObject({
+      old_amount_cents: 800000, old_amount_read: true, new_amount_cents: 900000, reason: "Zuschuss Gemeinde",
+    });
+  });
+
+  test("DC-2: die Vorschau des Löschens nennt jeden Unterposten, der mitgeht", async () => {
+    const childId = "abcdabcd-0000-4000-8000-000000000001";
+    const { calls, client } = recording((call): JsonValue => call.path === `/positions/${positionId}`
+      ? { id: positionId, club_id: clubId, finance_plan_id: planId, name: "Neue Trikots" }
+      : [
+          { id: positionId, club_id: clubId, parent_position_id: null, name: "Neue Trikots", expense_planned_cents: 30000 },
+          { id: childId, club_id: clubId, parent_position_id: positionId, name: "E1", expense_planned_cents: 15000 },
+        ]);
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.12.position_delete", input: { club_id: clubId, position_id: positionId }, context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    expect(calls.some((call) => call.method === "DELETE")).toBe(false);
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    const removals = effects.filter((effect) => effect.type === "position_removal");
+    expect(removals.map((effect) => effect.position_id)).toEqual([positionId, childId]);
+    expect(removals[0]).toMatchObject({ sub_positions_read: true });
   });
 
   test("TC-04: eine ungültige Knotenart erreicht den Dienst nicht", async () => {
