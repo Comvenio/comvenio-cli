@@ -96,7 +96,7 @@ const own = (template: string, path: (input: JsonObject) => string, was: string)
 const listed = (template: string, list: (input: JsonObject) => string, idKey: string, was: string, owner?: (input: JsonObject) => string, query?: Record<string, string>) => ({
   template,
   check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
-    if (owner) assertHerkunft(await request(client, context, "GET", owner(input)), context, `${was} (Plan)`);
+    if (owner) assertHerkunft(investmentPlanRecord(await request(client, context, "GET", owner(input))), context, `${was} (Plan)`);
     const rows = await request(client, context, "GET", list(input), query ? { query } : {});
     const items = Array.isArray(rows) ? rows : [];
     const id = str(input, idKey);
@@ -109,7 +109,17 @@ const listed = (template: string, list: (input: JsonObject) => string, idKey: st
 const entryOwn = own("/entries/{entry_id}", (i) => `/entries/${str(i, "entry_id")}`, "Buchung");
 const positionOwn = own("/positions/{position_id}", (i) => `/positions/${str(i, "position_id")}`, "Position");
 const reportOwn = own("/reports/cash/{report_id}", (i) => `/reports/cash/${str(i, "report_id")}`, "Kassenbericht");
-const investmentOwn = own("/investment-plans/{investment_plan_id}", (i) => `/investment-plans/${str(i, "investment_plan_id")}`, "Investitionsplan");
+// GET /investment-plans/{id} answers the dashboard view {plan, items, …};
+// the club is on `plan`, not on the top level.
+function investmentPlanRecord(value: JsonValue): JsonValue {
+  return value !== null && typeof value === "object" && !Array.isArray(value) && value.plan !== undefined ? value.plan : value;
+}
+const investmentOwn = {
+  template: "/investment-plans/{investment_plan_id}",
+  check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
+    assertHerkunft(investmentPlanRecord(await request(client, context, "GET", `/investment-plans/${str(input, "investment_plan_id")}`)), context, "Investitionsplan");
+  },
+};
 const scenarioOwn = {
   template: "/scenarios/{scenario_id}",
   check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
@@ -117,7 +127,7 @@ const scenarioOwn = {
     const scenario = await request(client, context, "GET", `/scenarios/${str(input, "scenario_id")}`);
     const planId = scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) ? scenario.investment_plan_id : null;
     if (typeof planId !== "string") throw createConnectorError({ code: "TENANT_MISMATCH", message: "Szenario: Der Plan ist nicht feststellbar.", request_id: context.request_id, retryable: false });
-    assertHerkunft(await request(client, context, "GET", `/investment-plans/${planId}`), context, "Szenario (Plan)");
+    assertHerkunft(investmentPlanRecord(await request(client, context, "GET", `/investment-plans/${planId}`)), context, "Szenario (Plan)");
   },
 };
 

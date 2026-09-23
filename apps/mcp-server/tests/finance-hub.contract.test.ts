@@ -118,6 +118,21 @@ describe("Finance Hub: Mandant und Vorprüfung", () => {
     expect(result.result).toEqual({ id: reportId, club_id: clubId, report_status: "APPROVED" });
   });
 
+  test("Investitionsplan: die Herkunft steht in der Dashboard-Antwort unter plan", async () => {
+    // GET /investment-plans/{id} answers {plan, items, …} — first seen in PROD on 2026-09-23.
+    const dashboard = (club: string): JsonValue => ({ plan: { id: planId, club_id: club }, items: [], total_estimated_cost_cents: 0 });
+    const own = recording((request): JsonValue => request.method === "GET" ? dashboard(clubId) : { id: entryId, investment_plan_id: planId });
+    const finance = createK14ToolSet({ client: own.client, write_safety: allowWrites });
+    const input = { club_id: clubId, operation: "create", investment_plan_id: planId, data: { title: "Rohbau", estimated_cost_cents: 100 } };
+    await finance.execute({ action_id: "cai.finance.33.investment_item", input, context, capability_snapshot: manager });
+    expect(own.calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /investment-plans/${planId}`, `POST /investment-plans/${planId}/items`]);
+
+    const foreign = recording(() => dashboard(otherClubId));
+    await expect(createK14ToolSet({ client: foreign.client, write_safety: allowWrites }).execute({ action_id: "cai.finance.33.investment_item", input, context, capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(foreign.calls).toHaveLength(1);
+  });
+
   test("eine Antwort mit fremdem Verein wird verworfen", async () => {
     const { client } = recording(() => ({ id: planId, club_id: otherClubId }));
     const finance = createK14ToolSet({ client });
