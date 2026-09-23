@@ -70,6 +70,9 @@ describe("Finance Hub: Inventar", () => {
     expect(gate("cai.finance.22.plan_lifecycle", "next_period")).toBe("confirmation");
     expect(gate("cai.finance.25.entry_correction", "reverse")).toBe("confirmation");
     expect(gate("cai.finance.26.cash_report", "approve")).toBe("confirmation");
+    // Correction loop: the bulk approval fixes entries — confirmed like the report's approval.
+    expect(gate("cai.finance.26.cash_report", "approve_entries")).toBe("confirmation");
+    expect(gate("cai.finance.25.entry_correction", "objection_create")).toBe("write_safety");
     expect(gate("cai.finance.30.audit_export", "create")).toBe("confirmation");
     expect(gate("cai.finance.24.money_account", "reconciliation")).toBe("inline");
   });
@@ -86,6 +89,30 @@ describe("Finance Hub: Mandant und Vorprüfung", () => {
       capability_snapshot: manager,
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
     expect(calls.map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  test("Korrekturschleife: eine Beanstandung wird nur über die Liste ihrer vereinseigenen Buchung zurückgezogen", async () => {
+    const objectionId = "cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd";
+    const input = { club_id: clubId, operation: "objection_withdraw", entry_id: entryId, objection_id: objectionId, data: { note: "Beleg gefunden" } };
+    const own = recording((request): JsonValue => request.method === "GET"
+      ? [{ id: objectionId, club_id: clubId, booking_entry_id: entryId }]
+      : { id: objectionId, club_id: clubId, resolution: "WITHDRAWN" });
+    await createK14ToolSet({ client: own.client, write_safety: allowWrites })
+      .execute({ action_id: "cai.finance.25.entry_correction", input, context, capability_snapshot: manager });
+    expect(own.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      `GET /entries/${entryId}/objections`,
+      `POST /objections/${objectionId}/withdraw`,
+    ]);
+    expect(own.calls[1]?.body).toEqual({ note: "Beleg gefunden" });
+
+    // Not in the list of this entry, or listed under another club: refused before the write.
+    for (const rows of [[], [{ id: objectionId, club_id: otherClubId }]]) {
+      const foreign = recording(() => rows as JsonValue);
+      await expect(createK14ToolSet({ client: foreign.client, write_safety: allowWrites })
+        .execute({ action_id: "cai.finance.25.entry_correction", input, context, capability_snapshot: manager }))
+        .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(foreign.calls).toHaveLength(1);
+    }
   });
 
   test("ein Geldkonto, das nicht in der Liste des Vereins steht, wird nicht geändert", async () => {

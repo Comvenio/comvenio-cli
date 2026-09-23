@@ -168,7 +168,7 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "cash_book", method: "GET", template: `${BY_ID}/cash-book`, path: (i) => `${byId(i)}/cash-book`, risk: "read", shape: { plan_id: uuid, money_account_id: uuid }, query: (i) => optional(i, ["money_account_id"]) },
     { op: "reconciliation", method: "GET", template: `${BY_ID}/money-accounts/reconciliation`, path: (i) => `${byId(i)}/money-accounts/reconciliation`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
   ] },
-  "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere", ops: [
+  "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere|objections", ops: [
     // Die Buchung mit allem, was die GoBD-Klammer verlangt: Geldkonto
     // (money_account_required) und Beleg oder Eigenbeleg-Begründung
     // (receipt_required). cai.finance.16 kennt beides nicht — in einem Verein
@@ -179,6 +179,14 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "receipt", method: "PUT", template: "/entries/{entry_id}/receipt", path: (i) => `/entries/${str(i, "entry_id")}/receipt`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
     { op: "versions", method: "GET", template: "/entries/{entry_id}/versions", path: (i) => `/entries/${str(i, "entry_id")}/versions`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
     { op: "tax_sphere", method: "PUT", template: "/positions/{position_id}/tax-sphere", path: (i) => `/positions/${str(i, "position_id")}/tax-sphere`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
+    // Korrekturschleife (Tom 2026-09-23): Beanstandung einer Buchung mit Grund.
+    // Erledigt wird sie durch Korrektur, Storno, Beleg oder Rückzug.
+    { op: "objection_create", method: "POST", template: "/entries/{entry_id}/objections", path: (i) => `/entries/${str(i, "entry_id")}/objections`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
+    { op: "objections", method: "GET", template: "/entries/{entry_id}/objections", path: (i) => `/entries/${str(i, "entry_id")}/objections`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
+    // Die Route kennt nur die Beanstandung; die Buchung gehört in die Eingabe,
+    // damit die Vorprüfung die Beanstandung in der Liste dieser Buchung findet.
+    { op: "objection_withdraw", method: "POST", template: "/objections/{objection_id}/withdraw", path: (i) => `/objections/${str(i, "objection_id")}/withdraw`, risk: "write", shape: { entry_id: uuid, objection_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue,
+      preflight: listed("/entries/{entry_id}/objections", (i) => `/entries/${str(i, "entry_id")}/objections`, "objection_id", "Beanstandung") },
   ] },
   "cai.finance.26.cash_report": { source: "cash-report", ops: [
     { op: "list", method: "GET", template: "/clubs/{club_id}/reports/cash", path: (i) => `${club(i)}/reports/cash`, risk: "read", shape: {} },
@@ -186,6 +194,10 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "show", method: "GET", template: "/reports/cash/{report_id}", path: (i) => `/reports/cash/${str(i, "report_id")}`, risk: "read", shape: { report_id: uuid }, preflight: reportOwn },
     { op: "submit", method: "POST", template: "/reports/cash/{report_id}/submit", path: (i) => `/reports/cash/${str(i, "report_id")}/submit`, risk: "write", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
     { op: "reject", method: "POST", template: "/reports/cash/{report_id}/reject", path: (i) => `/reports/cash/${str(i, "report_id")}/reject`, risk: "write", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
+    // Einsicht: die Buchungen des Zeitraums mit Freigabe- und Beanstandungsstand.
+    { op: "entries", method: "GET", template: "/reports/cash/{report_id}/entries", path: (i) => `/reports/cash/${str(i, "report_id")}/entries`, risk: "read", shape: { report_id: uuid }, preflight: reportOwn },
+    // Sammelfreigabe der offenen fremden Buchungen — schreibt sie fest.
+    { op: "approve_entries", method: "POST", template: "/reports/cash/{report_id}/approve-entries", path: (i) => `/reports/cash/${str(i, "report_id")}/approve-entries`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
     // Die Freigabe schreibt die Buchungen des Zeitraums fest.
     { op: "approve", method: "POST", template: "/reports/cash/{report_id}/approve", path: (i) => `/reports/cash/${str(i, "report_id")}/approve`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
     { op: "tax_report", method: "GET", template: "/clubs/{club_id}/reports/tax", path: (i) => `${club(i)}/reports/tax`, risk: "read", shape: { year }, query: (i) => optional(i, ["year"]), multiDepartment: true },
