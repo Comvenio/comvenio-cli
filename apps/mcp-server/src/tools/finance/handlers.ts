@@ -17,12 +17,12 @@ function valuesFor(value: JsonValue, keys: Set<string>): string[] { if (value ==
 // Abteilungsabgleich kein Schutz, sondern ein Fehlalarm. Dass ein reiner
 // Abteilungskontext die vereinsweite Sicht gar nicht erst bekommt, entscheidet
 // das ToolSet vor dem Aufruf.
-function assertTenant(value: JsonValue, context: RequestContext, departments = true): JsonValue {
+export function assertTenant(value: JsonValue, context: RequestContext, departments = true): JsonValue {
   if (context.club_id && valuesFor(value, new Set(["club_id"])).some((id) => id !== context.club_id)) throw createConnectorError({ code: "TENANT_MISMATCH", message: "Der Finance-Service lieferte Daten eines anderen Vereins.", request_id: context.request_id, retryable: false });
   if (departments && context.department_id && valuesFor(value, new Set(["department_id"])).some((id) => id !== context.department_id)) throw createConnectorError({ code: "TENANT_MISMATCH", message: "Der Finance-Service lieferte Daten einer anderen Abteilung.", request_id: context.request_id, retryable: false });
   return value;
 }
-async function request(client: ComvenioApiClient, context: RequestContext, method: ComvenioHttpMethod, path: string, options: { body?: JsonValue; query?: Record<string, string> } = {}): Promise<JsonValue> {
+export async function request(client: ComvenioApiClient, context: RequestContext, method: ComvenioHttpMethod, path: string, options: { body?: JsonValue; query?: Record<string, string> } = {}): Promise<JsonValue> {
   return client.request<JsonValue>({ method, service: "finance", path, context, ...options });
 }
 
@@ -37,7 +37,7 @@ async function request(client: ComvenioApiClient, context: RequestContext, metho
 // Pruefung, ohne je verglichen worden zu sein — die Vorpruefung war
 // fail-open. Hier muss die Herkunft BELEGT sein, sonst faellt die Aktion.
 // Fremdvalidierung Runde 2 (2026-09-21).
-function assertHerkunft(quelle: JsonValue, context: RequestContext, was: string): JsonObject {
+export function assertHerkunft(quelle: JsonValue, context: RequestContext, was: string): JsonObject {
   const row = quelle !== null && typeof quelle === "object" && !Array.isArray(quelle) ? quelle : null;
   const ablehnen = (grund: string): never => {
     throw createConnectorError({ code: "TENANT_MISMATCH", message: `${was}: ${grund}`, request_id: context.request_id, retryable: false });
@@ -59,6 +59,8 @@ function assertHerkunft(quelle: JsonValue, context: RequestContext, was: string)
   return row;
 }
 const handlers = new Map<string, Handler>(); const key = (id: K14ActionId, operation: string) => `${id}:${operation}`; const add = (id: K14ActionId, operation: string, handler: Handler) => handlers.set(key(id, operation), handler);
+// The Finance-Hub actions (hub.ts) register through this — one handler map for all of K14.
+export function addK14Handler(id: K14ActionId, operation: string, handler: (input: { [key: string]: JsonValue }, context: RequestContext, client: ComvenioApiClient) => Promise<JsonValue>): void { add(id, operation, handler); }
 function simple(id: K14ActionId, operation: string, method: ComvenioHttpMethod, path: (input: JsonObject) => string, options: { body?: (input: JsonObject) => JsonValue; query?: (input: JsonObject, context: RequestContext) => Record<string, string>; map?: (value: JsonValue, input: JsonObject) => JsonValue; departments?: boolean } = {}): void {
   add(id, operation, async (input, context, client) => {
     const value = await request(client, context, method, path(input), { ...(options.body ? { body: options.body(input) } : {}), ...(options.query ? { query: options.query(input, context) } : {}) });
