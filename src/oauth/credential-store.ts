@@ -1,7 +1,10 @@
 import { execFileSync } from "node:child_process";
 
+import { cliProfile, profileSuffix } from "../profile.ts";
+
 const SERVICE = "comvenio-cli-oauth";
-const ACCOUNT = "default";
+// One credential entry per profile; "default" keeps the entry it always had.
+const ACCOUNT = cliProfile();
 
 export type OAuthCredentials = {
   accessToken: string;
@@ -68,7 +71,7 @@ function windowsUnprotect(cipherText: string): string {
 }
 
 function powershellCredentialCommand(command: "read" | "write" | "delete", value?: string): string {
-  const path = `${process.env.APPDATA ?? process.env.USERPROFILE ?? "."}\\Comvenio\\cli-oauth.dpapi`;
+  const path = `${process.env.APPDATA ?? process.env.USERPROFILE ?? "."}\\Comvenio\\cli-oauth${profileSuffix(ACCOUNT)}.dpapi`;
   const escapedPath = path.replace(/'/g, "''");
   if (command === "write") {
     const protectedValue = windowsProtect(value ?? "");
