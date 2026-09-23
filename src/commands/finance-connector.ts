@@ -76,6 +76,10 @@ export async function callFinance(
   const key = options.write ? randomUUID() : undefined;
   const first = await client.callAction({ action_id: actionId, input: input as never, ...(key ? { idempotency_key: key } : {}) }) as JsonObject;
   const challenge = findConfirmation(first);
+  // A confirmation widget without a credential must never pass as done.
+  if (!challenge && first.widget === "confirmation") {
+    throw new Error("Der Schritt verlangt eine Bestätigung, die Antwort trägt aber kein Bestätigungs-Token — nichts wurde ausgeführt.");
+  }
   if (!challenge || !key) return first;
   if (options.confirm === false) return { confirmation_required: true, idempotency_key: key, ...first };
   return await client.confirm({ ...challenge, idempotency_key: key }) as JsonObject;
