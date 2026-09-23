@@ -187,8 +187,13 @@ add("cai.finance.12.position_delete", "delete", async (input, context, client) =
   const quelle = await request(client, context, "GET", path);
   assertTenant(quelle, context);
   await assertDepartmentOfEntry(quelle, context, client);
-  await request(client, context, "DELETE", path);
-  return { deleted: true, position_id: input.position_id! };
+  const answer = await request(client, context, "DELETE", path);
+  // budget-organigramm-01 section 4.5: the sub positions go along — the
+  // service names every deleted id (an older service answers 204).
+  const deleted = answer !== null && typeof answer === "object" && !Array.isArray(answer) && Array.isArray(answer.deleted_ids)
+    ? answer.deleted_ids
+    : [input.position_id!];
+  return { deleted: true, position_id: input.position_id!, deleted_ids: deleted };
 });
 mitVorpruefung("cai.finance.13.position_import_shopping", "import", position, "POST", (input) => `${position(input)}/import-shopping-estimate`, { body: (input) => ({ overwrite: input.overwrite === true }), map: minimizeImportResult });
 

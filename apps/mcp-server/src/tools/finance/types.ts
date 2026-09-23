@@ -24,7 +24,7 @@ export const K14_FINANCE_ACTION_IDS = [
   "cai.finance.21.plan_period", "cai.finance.22.plan_lifecycle", "cai.finance.23.settings", "cai.finance.24.money_account",
   "cai.finance.25.entry_correction", "cai.finance.26.cash_report", "cai.finance.27.department_transfer", "cai.finance.28.plan_result",
   "cai.finance.29.procedure_doc", "cai.finance.30.audit_export", "cai.finance.31.finance_views", "cai.finance.32.investment_plan",
-  "cai.finance.33.investment_item", "cai.finance.34.investment_funding", "cai.finance.35.investment_scenario",
+  "cai.finance.33.investment_item", "cai.finance.34.investment_funding", "cai.finance.35.investment_scenario", "cai.finance.36.budget_organigram",
 ] as const;
 
 export type K14ActionId = (typeof K14_FINANCE_ACTION_IDS)[number];

@@ -199,8 +199,8 @@ describe("K14: was der Dienst im Rumpf verlangt", () => {
   test("plan_reopen ist bewusst nicht im Connector", () => {
     const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
     const ids = finance.listDefinitions().map((definition) => definition.action_id);
-    // 19 aus K14, 15 aus dem vollständigen Finance Hub (hub.ts) — keine davon öffnet wieder.
-    expect(ids).toHaveLength(34);
+    // 19 aus K14, 16 aus dem vollständigen Finance Hub (hub.ts) — keine davon öffnet wieder.
+    expect(ids).toHaveLength(35); // +1 budget-organigramm-04 (cai.finance.36)
     expect(ids.some((id) => id.includes("reopen"))).toBe(false);
   });
 
@@ -596,7 +596,9 @@ describe("K14: der Routenvertrag nennt die Vorpruefungen", () => {
     const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
     const mitPreflight = ["cai.finance.09.position_create", "cai.finance.11.position_update", "cai.finance.12.position_delete", "cai.finance.13.position_import_shopping", "cai.finance.16.entry_create", "cai.finance.18.entry_update", "cai.finance.19.entry_delete", "cai.finance.20.entry_approve",
       // hub.ts: Vorprüfung, wo der Pfad nur eine nackte Kennung trägt.
-      "cai.finance.24.money_account", "cai.finance.25.entry_correction", "cai.finance.26.cash_report", "cai.finance.32.investment_plan", "cai.finance.33.investment_item", "cai.finance.34.investment_funding", "cai.finance.35.investment_scenario"];
+      "cai.finance.24.money_account", "cai.finance.25.entry_correction", "cai.finance.26.cash_report", "cai.finance.32.investment_plan", "cai.finance.33.investment_item", "cai.finance.34.investment_funding", "cai.finance.35.investment_scenario",
+      // budget-organigramm-04: Rubrik ändern/löschen und Aufteilen tragen nur eine nackte Kennung.
+      "cai.finance.36.budget_organigram"];
     for (const definition of finance.listDefinitions()) {
       const routen = Object.values(definition.operations).flatMap((operation) => operation.backend_routes);
       const hatPreflight = routen.some((route) => route.purpose === "preflight");

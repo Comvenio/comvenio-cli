@@ -1,4 +1,5 @@
-// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .35.
+// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .36 (.36 Budget
+// im Organigramm, budget-organigramm-04).
 //
 // K14 bediente nur Jahresplan, Budgetposten und Buchung. Alles andere, was der
 // finance-service kann — Pläne je Zeitraum und Abteilung, Geldkonten mit
@@ -132,6 +133,12 @@ const scenarioOwn = {
     assertHerkunft(investmentPlanRecord(await request(client, context, "GET", `/investment-plans/${planId}`)), context, "Szenario (Plan)");
   },
 };
+
+// budget-organigramm-04: Knoten des Organigramms und Rubrikenkatalog.
+const nodeKind = z.enum(["CLUB", "DEPARTMENT", "TEAM"]);
+const nodeId = z.union([uuid, z.literal("club")]);
+const rubricsPath = (input: JsonObject) => `${club(input)}/departments/${str(input, "department_id")}/budget-rubrics`;
+const rubricOwn = listed("/clubs/{club_id}/departments/{department_id}/budget-rubrics", rubricsPath, "rubric_id", "Rubrik");
 
 // ── Die Aktionen ─────────────────────────────────────────────────────────
 const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
@@ -301,6 +308,28 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
         },
       },
     })),
+  ] },
+  // Budget im Organigramm (budget-organigramm-04): Baum, Rahmen, Abrechnung,
+  // Rubrikenkatalog und Aufteilen eines Postens. Baum und Abrechnung tragen
+  // von Natur aus mehrere Abteilungen; der Dienst filtert sie schon nach dem
+  // Recht des Menschen.
+  "cai.finance.36.budget_organigram": { source: "budget-organigram", ops: [
+    { op: "tree", method: "GET", template: `${BY_ID}/budget-tree`, path: (i) => `${byId(i)}/budget-tree`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
+    // Ein Rahmen nach dem Aktivieren ist ein Nachtrag mit Grund — er bleibt im Verlauf.
+    { op: "frame_set", method: "PUT", template: `${BY_ID}/frames/{node_kind}/{node_id}`, path: (i) => `${byId(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}`, risk: "critical", shape: { plan_id: uuid, node_kind: nodeKind, node_id: nodeId, data }, body: payload, multiDepartment: true },
+    { op: "frame_versions", method: "GET", template: `${BY_ID}/frames/{node_kind}/{node_id}/versions`, path: (i) => `${byId(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}/versions`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
+    { op: "statement", method: "GET", template: `${BY_ID}/budget-statement/{node_kind}/{node_id}`, path: (i) => `${byId(i)}/budget-statement/${str(i, "node_kind")}/${str(i, "node_id")}`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
+    // Der Katalog einer Abteilung trägt die geerbten Rubriken ihrer Vorfahren
+    // mit deren department_id — daher ohne Abteilungsabgleich der Antwort; die
+    // Abteilung der Eingabe gleicht der ToolSet gegen den Grant ab.
+    { op: "rubrics", method: "GET", template: "/clubs/{club_id}/departments/{department_id}/budget-rubrics", path: rubricsPath, risk: "read", shape: { department_id: uuid }, multiDepartment: true },
+    { op: "rubric_create", method: "POST", template: "/clubs/{club_id}/departments/{department_id}/budget-rubrics", path: rubricsPath, risk: "write", shape: { department_id: uuid, data }, body: payload },
+    // Ändern und Löschen: die Rubrik muss im Katalog der genannten Abteilung
+    // stehen UND ihr gehören — eine geerbte fällt in der Vorprüfung durch.
+    { op: "rubric_update", method: "PATCH", template: "/budget-rubrics/{rubric_id}", path: (i) => `/budget-rubrics/${str(i, "rubric_id")}`, risk: "write", shape: { department_id: uuid, rubric_id: uuid, data }, body: payload, preflight: rubricOwn },
+    { op: "rubric_delete", method: "DELETE", template: "/budget-rubrics/{rubric_id}", path: (i) => `/budget-rubrics/${str(i, "rubric_id")}`, risk: "critical", shape: { department_id: uuid, rubric_id: uuid }, preflight: rubricOwn },
+    // Aufteilen: Unterposten und Eigenanteil in einer Transaktion des Dienstes.
+    { op: "position_split", method: "PUT", template: "/positions/{position_id}/split", path: (i) => `/positions/${str(i, "position_id")}/split`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn, multiDepartment: true },
   ] },
 };
 

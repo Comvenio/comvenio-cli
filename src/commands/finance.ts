@@ -276,6 +276,7 @@ export async function handleFinanceOperation({
         comment: opts.notes,
       }));
     case "position-delete":
+      // Deletes the sub positions along; the answer names them in deleted_ids.
       return client.del("finance", `/positions/${requiredId(id, action, "Positions-ID")}`);
     case "position-import-shopping":
       // ImportShoppingEstimateRequest — Rumpf ist Pflicht.
@@ -332,7 +333,7 @@ export async function handleFinanceOperation({
       throw new Error(
         `Unbekannte finance-Aktion: ${action}. Verfügbar: plan-list|plan-show|plan-create|plan-update|` +
         `plan-close|plan-reopen|plan-copy, position-list|position-create|position-show|position-update|` +
-        `position-delete|position-import-shopping, summary, ` +
+        `position-delete (löscht die Unterposten mit)|position-import-shopping, summary, ` +
         `entry-list|entry-create|entry-show|entry-update|entry-delete|entry-approve`,
       );
   }
@@ -413,6 +414,17 @@ export function renderHuman(action: string, result: unknown): string {
       `Buchung ${str(row.booking_date)}: ${pick(row, ["description"])} [${str(row.status)}]`,
       row.revenue_cents != null ? `Einnahme: ${euro(row.revenue_cents)}` : `Ausgabe: ${euro(row.expense_cents)}`,
       `ID: ${str(row.id)}`,
+    ].join("\n");
+  }
+
+  // budget-organigramm-04 DC-2: the service deletes the sub positions along
+  // and names every id — say so instead of a bare "erfolgreich".
+  if (row && action === "position-delete" && Array.isArray(row.deleted_ids)) {
+    const ids = row.deleted_ids.map((id) => str(id));
+    const unter = ids.length - 1;
+    return [
+      unter > 0 ? `Posten gelöscht, mit ${unter} Unterposten.` : "Posten gelöscht.",
+      ...ids.map((id) => `  ${id}`),
     ].join("\n");
   }
 
