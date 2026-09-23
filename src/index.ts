@@ -52,6 +52,7 @@ import { registerShoppingCommands } from "./commands/shopping.ts";
 import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
 import { registerActionCommands } from "./commands/action.ts";
+import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
 
 // --env selects the API gateway. OAuth intentionally has its own CLI resource
@@ -366,6 +367,7 @@ registerTournamentCommands(cli);
 registerSponsorCommands(cli);
 registerIngredientCommands(cli);
 registerIngredientCategoryCommands(cli);
+registerWeeklyPreviewCommands(cli);
 registerShoppingCommands(cli);
 registerRoleCommands(cli);
 registerAgentCommands(cli);
