@@ -836,6 +836,26 @@
         "docs/finanzen.md"
       ],
       "note": "Bis 2026-09-20 stand finance hier als 'partial-gap' mit der Begruendung, Budgets und Kassenberichte lieferten HTTP 501. Das war vor dem Feature-Run am 2026-09-03 richtig und seither falsch: Die Vereins-Buchhaltung (Feature 6073e885) ist voll implementiert. Weil diese Datei sagte, es gebe dort nichts, hat niemand den fehlenden Befehl vermisst."
+    },
+    {
+      "id": "weekly-preview",
+      "status": "core-partial",
+      "actions": [
+        "template list",
+        "template show",
+        "template set",
+        "template delete"
+      ],
+      "gaps": [
+        "template preview (lokales PNG) folgt mit dem Render-Dienst der Wochenvorschau (K2-Bildteil)."
+      ],
+      "intentional_exclusions": [
+        "Die Share-Seite /share/weekly-preview/{token} ist anonym und braucht keine Action."
+      ],
+      "source": [
+        "src/commands/weekly-preview.ts"
+      ],
+      "docs": []
     }
   ],
   "uncovered_model": {
