@@ -2267,6 +2267,36 @@ describe("Remote MCP runtime", () => {
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
   });
 
+  test("reports a transient rights lookup as a retryable context failure, never as an upstream one", async () => {
+    // The rights load while the context is built, before any tool runs. Only
+    // AUTH_TEMPORARILY_UNAVAILABLE tells the CLI it may repeat without a
+    // double write; UPSTREAM_UNAVAILABLE may follow a write and stays final.
+    const failing = (error: Error) => new StatelessTransportContextFactory({
+      ...runtimeOptions(),
+      capability_resolver: { async resolve() { throw error; } },
+    });
+    const call = { method: "tools/call", params: { arguments: { club_id: clubId } } };
+    await expect(failing(createConnectorError({
+      code: "UPSTREAM_UNAVAILABLE",
+      message: "Die aktuellen Berechtigungen können derzeit nicht geladen werden.",
+      request_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      retryable: true,
+    })).create({ authorization: "Bearer token-openai", provider_hint: "openai", body: call }))
+      .rejects.toMatchObject({
+        code: "AUTH_TEMPORARILY_UNAVAILABLE",
+        message: "Die aktuellen Berechtigungen können derzeit nicht geladen werden.",
+        retryable: true,
+      });
+    // A final answer of the rights service is passed on unchanged.
+    await expect(failing(createConnectorError({
+      code: "PERMISSION_DENIED",
+      message: "Der gewählte Vereins- oder Abteilungskontext ist nicht erlaubt.",
+      request_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      retryable: false,
+    })).create({ authorization: "Bearer token-openai", provider_hint: "openai", body: call }))
+      .rejects.toMatchObject({ code: "PERMISSION_DENIED", retryable: false });
+  });
+
   test("accepts Claude, Codex and ChatGPT without a proprietary provider header", async () => {
     const factory = new StatelessTransportContextFactory(runtimeOptions());
     const claude = await factory.create({
