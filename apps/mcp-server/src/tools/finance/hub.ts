@@ -124,7 +124,9 @@ const scenarioOwn = {
   template: "/scenarios/{scenario_id}",
   check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
     // Ein Szenario trägt keinen Verein, wohl aber seinen Plan.
-    const scenario = await request(client, context, "GET", `/scenarios/${str(input, "scenario_id")}`);
+    // GET /scenarios/{id} answers the detail view {scenario, entries, liquidity}.
+    const detail = await request(client, context, "GET", `/scenarios/${str(input, "scenario_id")}`);
+    const scenario = detail !== null && typeof detail === "object" && !Array.isArray(detail) && detail.scenario !== undefined ? detail.scenario : detail;
     const planId = scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) ? scenario.investment_plan_id : null;
     if (typeof planId !== "string") throw createConnectorError({ code: "TENANT_MISMATCH", message: "Szenario: Der Plan ist nicht feststellbar.", request_id: context.request_id, retryable: false });
     assertHerkunft(investmentPlanRecord(await request(client, context, "GET", `/investment-plans/${planId}`)), context, "Szenario (Plan)");

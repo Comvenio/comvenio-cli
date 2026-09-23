@@ -133,6 +133,19 @@ describe("Finance Hub: Mandant und Vorprüfung", () => {
     expect(foreign.calls).toHaveLength(1);
   });
 
+  test("Szenario: der Plan steht in der Detail-Antwort unter scenario", async () => {
+    // GET /scenarios/{id} answers {scenario, entries, liquidity} — seen in PROD on 2026-09-23.
+    const scenarioId = "abababab-abab-4bab-8bab-abababababab";
+    const { calls, client } = recording((request): JsonValue => {
+      if (request.path === `/scenarios/${scenarioId}`) return { scenario: { id: scenarioId, investment_plan_id: planId }, entries: [], liquidity: {} };
+      if (request.path === `/investment-plans/${planId}`) return { plan: { id: planId, club_id: clubId }, items: [] };
+      return [];
+    });
+    const finance = createK14ToolSet({ client, write_safety: allowWrites });
+    await finance.execute({ action_id: "cai.finance.35.investment_scenario", input: { club_id: clubId, operation: "auto_generate", scenario_id: scenarioId }, context, capability_snapshot: manager });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /scenarios/${scenarioId}`, `GET /investment-plans/${planId}`, `POST /scenarios/${scenarioId}/auto-generate`]);
+  });
+
   test("eine Antwort mit fremdem Verein wird verworfen", async () => {
     const { client } = recording(() => ({ id: planId, club_id: otherClubId }));
     const finance = createK14ToolSet({ client });
