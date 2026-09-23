@@ -175,6 +175,78 @@ describe("native CLI OAuth", () => {
     expect(result.status).toBe("completed");
   });
 
+  // The server raises AUTH_TEMPORARILY_UNAVAILABLE while building the access
+  // context, before any tool runs, and marks it retryable (http/auth.ts).
+  const unavailable = (id: unknown, code = "AUTH_TEMPORARILY_UNAVAILABLE", retryable = true) =>
+    Response.json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: "Der Zugriffskontext kann derzeit nicht erstellt werden.",
+        data: { code, request_id: id, retryable },
+      },
+      id: null,
+    }, { status: 503 });
+  const completed = (id: unknown) => Response.json({
+    jsonrpc: "2.0",
+    id,
+    result: { content: [], structuredContent: { status: "completed" } },
+  });
+
+  test("retries a temporarily unavailable access context and then succeeds", async () => {
+    let calls = 0;
+    const pauses: number[] = [];
+    const connector = new CliConnectorClient({
+      endpoint: "https://mcp.example.test/cli",
+      access_token: "opaque-connector-access-token",
+      sleep: async (ms) => { pauses.push(ms); },
+      fetch: (async (_input, init) => {
+        calls += 1;
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return calls < 3 ? unavailable(body.id) : completed(body.id);
+      }) as typeof fetch,
+    });
+
+    const result = await connector.whoami();
+
+    expect(result.status).toBe("completed");
+    expect(calls).toBe(3);
+    expect(pauses).toEqual([750, 1500]);
+  });
+
+  test("gives up on the access context after three attempts", async () => {
+    let calls = 0;
+    const connector = new CliConnectorClient({
+      endpoint: "https://mcp.example.test/cli",
+      access_token: "opaque-connector-access-token",
+      sleep: async () => {},
+      fetch: (async (_input, init) => {
+        calls += 1;
+        return unavailable(JSON.parse(String(init?.body)).id);
+      }) as typeof fetch,
+    });
+
+    await expect(connector.whoami()).rejects.toThrow("Der Zugriffskontext kann derzeit nicht erstellt werden.");
+    expect(calls).toBe(3);
+  });
+
+  test("never retries any other error, even one marked retryable", async () => {
+    let calls = 0;
+    const connector = new CliConnectorClient({
+      endpoint: "https://mcp.example.test/cli",
+      access_token: "opaque-connector-access-token",
+      sleep: async () => {},
+      fetch: (async (_input, init) => {
+        calls += 1;
+        // UPSTREAM_UNAVAILABLE may come after a write reached the service.
+        return unavailable(JSON.parse(String(init?.body)).id, "UPSTREAM_UNAVAILABLE");
+      }) as typeof fetch,
+    });
+
+    await expect(connector.whoami()).rejects.toThrow();
+    expect(calls).toBe(1);
+  });
+
   test("reads canonical action identity only from namespaced server metadata", () => {
     expect(connectorToolActionId({
       name: "cv_event_01_list",

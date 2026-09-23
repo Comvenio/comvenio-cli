@@ -57,15 +57,20 @@ export function connectorActionToolName(actionId: string): string {
   return `${base.slice(0, 55).replace(/_+$/u, "")}_${hash}`;
 }
 
+const AUTH_RETRY_ATTEMPTS = 3;
+const AUTH_RETRY_DELAY_MS = 750;
+
 export class CliConnectorClient {
   readonly #endpoint: string;
   readonly #accessToken: string;
   readonly #fetch: typeof fetch;
+  readonly #sleep: (ms: number) => Promise<void>;
 
   constructor(input: {
     endpoint: string;
     access_token: string;
     fetch?: typeof fetch;
+    sleep?: (ms: number) => Promise<void>;
   }) {
     const endpoint = new URL(input.endpoint);
     if (
@@ -86,9 +91,26 @@ export class CliConnectorClient {
     this.#endpoint = endpoint.toString().replace(/\/$/u, "");
     this.#accessToken = input.access_token;
     this.#fetch = input.fetch ?? globalThis.fetch.bind(globalThis);
+    this.#sleep = input.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }
 
+  // AUTH_TEMPORARILY_UNAVAILABLE is raised while the server builds the access
+  // context — before any tool runs — and is marked retryable. Retrying exactly
+  // this code cannot execute an action twice; every other error is final.
   async #request(method: string, params?: JsonObject): Promise<JsonObject> {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await this.#requestOnce(method, params);
+      } catch (error) {
+        const data = error instanceof ConnectorClientError ? object(error.details) : null;
+        if (data?.code !== "AUTH_TEMPORARILY_UNAVAILABLE" || data.retryable !== true
+          || attempt >= AUTH_RETRY_ATTEMPTS) throw error;
+        await this.#sleep(AUTH_RETRY_DELAY_MS * attempt);
+      }
+    }
+  }
+
+  async #requestOnce(method: string, params?: JsonObject): Promise<JsonObject> {
     const id = randomUUID();
     const response = await this.#fetch(this.#endpoint, {
       method: "POST",
