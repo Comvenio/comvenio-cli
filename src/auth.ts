@@ -13,8 +13,9 @@ import {
   refreshOAuthCredentials,
   type OAuthRuntime,
 } from "./oauth/client.ts";
+import { profileSuffix } from "./profile.ts";
 
-export const STATE_FILE = join(homedir(), ".comvenio-cli-state.json");
+export const STATE_FILE = join(homedir(), `.comvenio-cli-state${profileSuffix()}.json`);
 const LOGIN_HINT = 'Nicht eingeloggt. Führe "comvenio login" aus.';
 const EXPIRY_SKEW_MS = 30_000;
 
