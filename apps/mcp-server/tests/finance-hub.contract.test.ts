@@ -57,8 +57,8 @@ function recording(answer: (request: ComvenioApiRequest) => JsonValue, bytes?: C
 }
 
 describe("Finance Hub: Inventar", () => {
-  test("15 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
-    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(15);
+  test("16 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
+    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(16);
     expect(hubOperationCount()).toBeGreaterThan(70);
     const routes = Object.values(HUB_ACTION_DEFINITIONS).flatMap((definition) => Object.values(definition.operations).flatMap((operation) => operation.backend_routes));
     expect(routes.some((route) => route.normalized_path_template.includes("reopen"))).toBe(false);
@@ -215,5 +215,99 @@ describe("Finance Hub: Prüfexport als Datei", () => {
       sha256: createHash("sha256").update(bytes).digest("hex"),
       content_base64: Buffer.from(bytes).toString("base64"),
     });
+  });
+});
+
+// budget-organigramm-04 (cai.finance.36): Baum, Rahmen, Abrechnung, Rubriken, Aufteilen.
+describe("Finance Hub: Budget im Organigramm", () => {
+  const jugendId = "abababab-abab-4bab-8bab-abababababab";
+  const rubricId = "cdcdcdcd-1111-4ddd-8ddd-cdcdcdcdcdcd";
+  const positionId = "efefefef-efef-4fef-8fef-efefefefefef";
+  const action = "cai.finance.36.budget_organigram";
+
+  test("TC-01: neun Teiloperationen, der Rahmen und das Löschen einer Rubrik verlangen eine Bestätigung", () => {
+    const operations = HUB_ACTION_DEFINITIONS[action]!.operations;
+    expect(Object.keys(operations).sort()).toEqual(
+      ["frame_set", "frame_versions", "position_split", "rubric_create", "rubric_delete", "rubric_update", "rubrics", "statement", "tree"],
+    );
+    expect(operations.frame_set!.execution_gate).toBe("confirmation");
+    expect(operations.rubric_delete!.execution_gate).toBe("confirmation");
+    expect(operations.position_split!.execution_gate).toBe("write_safety");
+    expect(operations.tree!.execution_gate).toBe("inline");
+  });
+
+  test("TC-02: der Baum ruft genau GET …/budget-tree und nimmt Knoten mehrerer Abteilungen an", async () => {
+    const { calls, client } = recording(() => ({ plan_id: planId, nodes: [
+      { node_kind: "DEPARTMENT", node_id: jugendId, department_id: jugendId, name: "Jugend" },
+      { node_kind: "DEPARTMENT", node_id: accountId, department_id: accountId, name: "Tennis" },
+    ], totals: { scope: "CLUB" } }));
+    const result = await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "tree", plan_id: planId }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /clubs/${clubId}/finance-plans/by-id/${planId}/budget-tree`]);
+    expect((result.result as { nodes: unknown[] }).nodes).toHaveLength(2);
+  });
+
+  test("TC-03: der Rahmen geht mit Rumpf an PUT …/frames/{kind}/{id}, der Verein als club", async () => {
+    const { calls, client } = recording(() => ({ node_kind: "CLUB", node_id: null, amount_cents: 5750000 }));
+    await createK14ToolSet({ client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "frame_set", plan_id: planId, node_kind: "CLUB", node_id: "club", data: { amount_cents: 5750000 } },
+      context, capability_snapshot: manager,
+    });
+    expect(calls[0]?.method).toBe("PUT");
+    expect(calls[0]?.path).toBe(`/clubs/${clubId}/finance-plans/by-id/${planId}/frames/CLUB/club`);
+    expect(calls[0]?.body).toEqual({ amount_cents: 5750000 });
+  });
+
+  test("TC-04: eine ungültige Knotenart erreicht den Dienst nicht", async () => {
+    const { calls, client } = recording(() => ({}));
+    await expect(createK14ToolSet({ client, confirmation: confirmAll }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "frame_set", plan_id: planId, node_kind: "SPARTE", node_id: jugendId, data: { amount_cents: 1 } },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls).toHaveLength(0);
+  });
+
+  test("Rubriken: geerbte Zeilen tragen die Abteilung des Vorfahren und werden angenommen", async () => {
+    const { calls, client } = recording(() => [
+      { id: rubricId, club_id: clubId, name: "Trikots", department_id: accountId, inherited: true },
+    ]);
+    const result = await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "rubrics", department_id: jugendId }, context, capability_snapshot: manager,
+    });
+    expect(calls[0]?.path).toBe(`/clubs/${clubId}/departments/${jugendId}/budget-rubrics`);
+    expect(result.result).toHaveLength(1);
+  });
+
+  test("Rubrik ändern: nur, wenn sie im Katalog der Abteilung steht", async () => {
+    const input = { club_id: clubId, operation: "rubric_update", department_id: jugendId, rubric_id: rubricId, data: { name: "Spielkleidung" } };
+    const own = recording((request): JsonValue => request.method === "GET"
+      ? [{ id: rubricId, club_id: clubId, name: "Trikots", department_id: jugendId }]
+      : { id: rubricId, club_id: clubId, name: "Spielkleidung", department_id: jugendId });
+    await createK14ToolSet({ client: own.client, write_safety: allowWrites })
+      .execute({ action_id: action, input, context, capability_snapshot: manager });
+    expect(own.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      `GET /clubs/${clubId}/departments/${jugendId}/budget-rubrics`,
+      `PATCH /budget-rubrics/${rubricId}`,
+    ]);
+    const foreign = recording(() => [] as JsonValue);
+    await expect(createK14ToolSet({ client: foreign.client, write_safety: allowWrites })
+      .execute({ action_id: action, input, context, capability_snapshot: manager }))
+      .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(foreign.calls).toHaveLength(1);
+  });
+
+  test("Aufteilen prüft den Posten und schickt den Rumpf an PUT /positions/{id}/split", async () => {
+    const { calls, client } = recording((request): JsonValue => request.method === "GET"
+      ? { id: positionId, club_id: clubId }
+      : { position: { id: positionId, club_id: clubId }, children: [], deleted_ids: [] });
+    const body = { own_expense_planned_cents: 30000, children: [{ department_id: jugendId, expense_planned_cents: 60000 }] };
+    await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: action, input: { club_id: clubId, operation: "position_split", position_id: positionId, data: body }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /positions/${positionId}`, `PUT /positions/${positionId}/split`]);
+    expect(calls[1]?.body).toEqual(body);
   });
 });

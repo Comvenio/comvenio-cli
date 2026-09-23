@@ -39,6 +39,8 @@ export const FINANCE_AREAS: Record<string, string> = {
   "investment-item": "cai.finance.33.investment_item",
   "investment-funding": "cai.finance.34.investment_funding",
   "investment-scenario": "cai.finance.35.investment_scenario",
+  // budget-organigramm-04: Baum, Rahmen, Abrechnung, Rubriken, Aufteilen.
+  budget: "cai.finance.36.budget_organigram",
 };
 
 function isObject(value: unknown): value is JsonObject {

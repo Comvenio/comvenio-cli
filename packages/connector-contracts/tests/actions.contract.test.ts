@@ -192,8 +192,9 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(372);
-    expect(new Set(directActionIds).size).toBe(372);
+    // +1 budget-organigramm-04 (cai.finance.36.budget_organigram).
+    expect(directActionIds).toHaveLength(373);
+    expect(new Set(directActionIds).size).toBe(373);
     expect(additiveActionIds).toEqual([
       // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
       // Vereinsbuchhaltung nicht. Die 19 Aktionen decken Jahresplan, Posten und
@@ -241,6 +242,7 @@ describe("Comvenio connector inventory contract", () => {
       "cai.finance.33.investment_item",
       "cai.finance.34.investment_funding",
       "cai.finance.35.investment_scenario",
+      "cai.finance.36.budget_organigram",
       // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
       // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
       "cai.homepage.04.screenshot",
@@ -293,8 +295,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 372,
-      published_domain_actions: 370,
+      discovered_actions: 373,
+      published_domain_actions: 371,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",

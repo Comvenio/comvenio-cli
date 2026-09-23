@@ -19,7 +19,9 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   if (definition.action_id === "cai.finance.07.plan_copy") {
     effects.push({ type: "bulk_position_creation", source_year: data.source_year ?? null, target_year: data.year ?? null, selected_positions: Array.isArray(data.position_ids) ? data.position_ids.length : null, includes_non_recurring: data.include_non_recurring === true });
   }
-  if (definition.action_id === "cai.finance.12.position_delete") effects.push({ type: "position_removal", position_id: data.position_id ?? null, affects_attached_bookings: true });
+  // budget-organigramm-01 section 4.5: the sub positions go along; the answer names them in deleted_ids.
+  if (definition.action_id === "cai.finance.12.position_delete")
+    effects.push({ type: "position_removal", position_id: data.position_id ?? null, affects_attached_bookings: true, includes_sub_positions: true });
   if (definition.action_id === "cai.finance.19.entry_delete") effects.push({ type: "booking_removal", entry_id: data.entry_id ?? null, changes_actual_totals: true });
   if (definition.action_id === "cai.finance.20.entry_approve") effects.push({ type: "booking_approval", entry_id: data.entry_id ?? null, marks_entry_as_verified: true });
   return { subject: identifier(data), summary: `${definition.source_action}: ${operation.operation}`, effects };
