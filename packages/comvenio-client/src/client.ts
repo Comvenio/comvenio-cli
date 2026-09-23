@@ -18,9 +18,20 @@ export interface ComvenioApiRequest {
   body?: JsonValue;
 }
 
+export interface ComvenioApiBinary {
+  content_type: string;
+  bytes: Uint8Array;
+}
+
 export interface ComvenioApiClient {
   readonly timeout_ms: 15000;
   request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T>;
+  /**
+   * The same request for an answer that is not JSON (the GoBD audit export
+   * ZIP). Optional so the many client fakes in the tests stay valid; a caller
+   * that needs it checks for it.
+   */
+  requestBytes?(request: ComvenioApiRequest): Promise<ComvenioApiBinary>;
 }
 
 export interface ClientTelemetryEvent {
@@ -138,6 +149,32 @@ function isJsonValue(value: unknown, seen = new WeakSet<object>()): value is Jso
   return valid;
 }
 
+/**
+ * The service's own reason for a refusal — `detail` of a FastAPI error, cut
+ * to one line. Without it a code like `opening_mismatch` or `cash_negative`,
+ * which names the way forward, never reached the person (finance CLI,
+ * 2026-09-23). A validation error (a list) gives its first message.
+ */
+async function upstreamDetail(response: Response): Promise<string | null> {
+  try {
+    const text = (await response.text()).slice(0, 4000);
+    const parsed: unknown = JSON.parse(text);
+    const detail = parsed !== null && typeof parsed === "object" ? (parsed as { detail?: unknown }).detail : undefined;
+    let line: string | null = null;
+    if (typeof detail === "string") line = detail;
+    else if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0] as { msg?: unknown; loc?: unknown };
+      const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
+      line = typeof first.msg === "string" ? (where ? `${where}: ${first.msg}` : first.msg) : null;
+    }
+    if (!line) return null;
+    const clean = line.replace(/\s+/gu, " ").trim();
+    return clean.length > 300 ? `${clean.slice(0, 297)}...` : clean;
+  } catch {
+    return null;
+  }
+}
+
 async function discardResponseBody(response: Response): Promise<void> {
   try {
     await response.body?.cancel();
@@ -211,6 +248,49 @@ export function createComvenioApiClient(
   return {
     timeout_ms: REQUEST_TIMEOUT_MS,
 
+    async requestBytes(input: ComvenioApiRequest): Promise<ComvenioApiBinary> {
+      const context = normalizeRequestContext(input.context);
+      const request = { ...input, context };
+      validateRequestTarget(request);
+      const base = normalizeGatewayBaseUrl(config.gatewayBaseUrl, context.request_id);
+      const url = buildUrl(base, request);
+      const token = await resolveAccessToken(config.accessToken, context);
+      const headers: Record<string, string> = { Accept: "*/*", "X-Request-ID": context.request_id };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const controller = new AbortController();
+      // A stored export can be large; the JSON timeout would cut it off.
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS * 4);
+      try {
+        const response = await fetchImpl(url, { method: request.method, headers, signal: controller.signal });
+        if (!response.ok) {
+          const detail = await upstreamDetail(response);
+          const mapped = errorForStatus(response.status);
+          throw createConnectorError({
+            code: mapped.code,
+            message: detail
+              ? `Der Comvenio-Dienst hat die Anfrage abgelehnt: ${detail}`
+              : "Der Comvenio-Dienst hat die Anfrage abgelehnt.",
+            request_id: context.request_id,
+            retryable: mapped.retryable,
+          });
+        }
+        return {
+          content_type: response.headers.get("content-type") ?? "application/octet-stream",
+          bytes: new Uint8Array(await response.arrayBuffer()),
+        };
+      } catch (error) {
+        if (isConnectorError(error)) throw error;
+        throw createConnectorError({
+          code: isAbortError(error) ? "UPSTREAM_TIMEOUT" : "UPSTREAM_UNAVAILABLE",
+          message: "Der Comvenio-Dienst hat die Datei nicht geliefert.",
+          request_id: context.request_id,
+          retryable: true,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+
     async request<T extends JsonValue>(input: ComvenioApiRequest): Promise<T> {
       const context = normalizeRequestContext(input.context);
       const request = { ...input, context };
@@ -242,8 +322,10 @@ export function createComvenioApiClient(
           });
 
           if (!response.ok) {
-            await discardResponseBody(response);
-            if (canRetry && RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS) {
+            const willRetry = canRetry && RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS;
+            const detail = willRetry ? null : await upstreamDetail(response);
+            if (willRetry) await discardResponseBody(response);
+            if (willRetry) {
               emit({
                 request_id: context.request_id,
                 surface: context.surface,
@@ -275,7 +357,9 @@ export function createComvenioApiClient(
             });
             throw createConnectorError({
               code: mapped.code,
-              message: "Der Comvenio-Dienst hat die Anfrage abgelehnt.",
+              message: detail
+                ? `Der Comvenio-Dienst hat die Anfrage abgelehnt: ${detail}`
+                : "Der Comvenio-Dienst hat die Anfrage abgelehnt.",
               request_id: context.request_id,
               retryable: mapped.retryable,
               ...(retryAfter === undefined ? {} : { retry_after_seconds: retryAfter }),

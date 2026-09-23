@@ -2,6 +2,7 @@ import type { ComvenioHttpMethod } from "@comvenio/comvenio-client";
 import type { OAuthScope } from "@comvenio/connector-contracts";
 import type { ActionRisk, PermissionPolicy } from "@comvenio/tool-catalog";
 
+import { HUB_ACTION_DEFINITIONS } from "./hub.ts";
 import { K14_FINANCE_ACTION_IDS, type K14ActionDefinition, type K14ActionId, type K14BackendRoute, type K14ExecutionGate, type K14OperationDefinition } from "./types.ts";
 
 // Der finance-service kennt KEIN getrenntes Leserecht: `require_club_finance_access`
@@ -66,7 +67,10 @@ export const K14_ACTION_DEFINITIONS: Readonly<Record<K14ActionId, K14ActionDefin
   "cai.finance.19.entry_delete": action("cai.finance.19.entry_delete", "entry-delete", [write("delete", "DELETE", "/entries/{entry_id}", true, [entryPreflight, route("DELETE", "/entries/{entry_id}")])]),
   // Freigeben ist die Stelle, an der aus einem Entwurf ein verbuchter Beleg wird.
   "cai.finance.20.entry_approve": action("cai.finance.20.entry_approve", "entry-approve", [write("approve", "POST", "/entries/{entry_id}/approve", true, [entryPreflight, route("POST", "/entries/{entry_id}/approve")])]),
-});
+
+  // Finance Hub vollständig (hub.ts).
+  ...(HUB_ACTION_DEFINITIONS as Record<string, K14ActionDefinition>),
+}) as Readonly<Record<K14ActionId, K14ActionDefinition>>;
 
 export function validateK14Definitions(): void {
   if (Object.keys(K14_ACTION_DEFINITIONS).length !== K14_FINANCE_ACTION_IDS.length) throw new Error("K14-Aktionsinventar und Definitionen sind nicht deckungsgleich.");

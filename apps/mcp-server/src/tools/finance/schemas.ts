@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { K14ActionId, K14ActionSchemaContract } from "./types.ts";
+import { HUB_ACTION_SCHEMAS } from "./hub.ts";
 
 const uuid = z.string().uuid();
 const short = z.string().trim().min(1).max(200);
@@ -105,4 +106,7 @@ export const K14_ACTION_SCHEMAS: Readonly<Record<K14ActionId, K14ActionSchemaCon
   "cai.finance.18.entry_update": contract(single({ entry_id: uuid, changes: oneDirection(entryChanges, false) })),
   "cai.finance.19.entry_delete": contract(single({ entry_id: uuid })),
   "cai.finance.20.entry_approve": contract(single({ entry_id: uuid, note: notes.nullable().optional() })),
-});
+
+  // Finance Hub vollständig (hub.ts).
+  ...(HUB_ACTION_SCHEMAS as Record<string, K14ActionSchemaContract>),
+}) as Readonly<Record<K14ActionId, K14ActionSchemaContract>>;

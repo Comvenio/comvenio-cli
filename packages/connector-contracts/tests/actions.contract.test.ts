@@ -192,8 +192,8 @@ describe("Comvenio connector inventory contract", () => {
       .filter((actionId) => !candidateActionIds.includes(actionId))
       .sort();
 
-    expect(directActionIds).toHaveLength(357);
-    expect(new Set(directActionIds).size).toBe(357);
+    expect(directActionIds).toHaveLength(372);
+    expect(new Set(directActionIds).size).toBe(372);
     expect(additiveActionIds).toEqual([
       // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
       // Vereinsbuchhaltung nicht. Die 19 Aktionen decken Jahresplan, Posten und
@@ -224,6 +224,23 @@ describe("Comvenio connector inventory contract", () => {
       "cai.finance.18.entry_update",
       "cai.finance.19.entry_delete",
       "cai.finance.20.entry_approve",
+      // Finance Hub vollständig (hub.ts, 2026-09-23): der Rest des finance-service,
+      // damit das CLI über die OAuth-Anmeldung den ganzen Bereich bedient.
+      "cai.finance.21.plan_period",
+      "cai.finance.22.plan_lifecycle",
+      "cai.finance.23.settings",
+      "cai.finance.24.money_account",
+      "cai.finance.25.entry_correction",
+      "cai.finance.26.cash_report",
+      "cai.finance.27.department_transfer",
+      "cai.finance.28.plan_result",
+      "cai.finance.29.procedure_doc",
+      "cai.finance.30.audit_export",
+      "cai.finance.31.finance_views",
+      "cai.finance.32.investment_plan",
+      "cai.finance.33.investment_item",
+      "cai.finance.34.investment_funding",
+      "cai.finance.35.investment_scenario",
       // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
       // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
       "cai.homepage.04.screenshot",
@@ -276,8 +293,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 357,
-      published_domain_actions: 355,
+      discovered_actions: 372,
+      published_domain_actions: 370,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",

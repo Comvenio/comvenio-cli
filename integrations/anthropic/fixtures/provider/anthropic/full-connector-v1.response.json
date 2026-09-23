@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "5cd124b30fe086a07614d5220ca949854fad3e25fff4c676be6e911c2583590a",
+  "runtime_tool_catalog_sha256": "b9bc098fda80f85549715f64bd48ba274d92bf4e8a434f4823fdc9572dd0893e",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -2035,6 +2035,304 @@
       "tool_name": "cv_finance_20_entry_approve",
       "risk_class": "critical_write",
       "required_scopes": [
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_21_plan_period",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_22_plan_lifecycle",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_23_settings",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_24_money_account",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_25_entry_correction",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_26_cash_report",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_27_department_transfer",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_28_plan_result",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_29_procedure_doc",
+      "risk_class": "reversible_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_30_audit_export",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_31_finance_views",
+      "risk_class": "read",
+      "required_scopes": [
+        "finance.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_finance_32_investment_plan",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_33_investment_item",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_34_investment_funding",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_35_investment_scenario",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
         "finance.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
