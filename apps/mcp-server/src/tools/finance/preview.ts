@@ -31,11 +31,16 @@ async function subPositions(client: ComvenioApiClient, context: RequestContext, 
   }
 }
 
-// DC-8: the frame before the change, from the tree the service filters anyway.
+// DC-8: the frame before the change, from the tree the service filters anyway —
+// the plan tree for a plan frame, the season tree for a season frame (budget-saison-03).
 async function currentFrame(client: ComvenioApiClient, context: RequestContext, data: JsonObject): Promise<number | null | undefined> {
   try {
-    if (!context.club_id || typeof data.plan_id !== "string") return undefined;
-    const tree = record(await request(client, context, "GET", `/clubs/${context.club_id}/finance-plans/by-id/${data.plan_id}/budget-tree`));
+    if (!context.club_id) return undefined;
+    const path = typeof data.season_start === "string"
+      ? `/clubs/${context.club_id}/budget-seasons/${data.season_start}/tree`
+      : typeof data.plan_id === "string" ? `/clubs/${context.club_id}/finance-plans/by-id/${data.plan_id}/budget-tree` : null;
+    if (path === null) return undefined;
+    const tree = record(await request(client, context, "GET", path));
     const nodes = Array.isArray(tree.nodes) ? tree.nodes.map(record) : [];
     const node = nodes.find((n) => n.node_kind === data.node_kind && String(n.node_id ?? "club") === String(data.node_id ?? "club"));
     if (!node) return undefined;
@@ -66,10 +71,12 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
       effects.push({ type: "position_removal", position_id: kind.id ?? null, name: kind.name ?? null, parent_position_id: positionId, expense_planned_cents: kind.expense_planned_cents ?? null });
   }
   // DC-8: a frame change shows the old and the new amount and the reason.
-  if (definition.action_id === "cai.finance.36.budget_organigram" && operation.operation === "frame_set") {
+  const rahmen = (definition.action_id === "cai.finance.36.budget_organigram" && operation.operation === "frame_set")
+    || (definition.action_id === "cai.finance.37.budget_season" && operation.operation === "season_frame_set");
+  if (rahmen) {
     const payload = record(data.data ?? null);
     const before = client ? await currentFrame(client, context, data) : undefined;
-    effects.push({ type: "frame_change", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, old_amount_cents: before ?? null, old_amount_read: before !== undefined, new_amount_cents: payload.amount_cents ?? null, reason: payload.reason ?? null });
+    effects.push({ type: "frame_change", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, ...(data.season_start ? { season_start: data.season_start } : {}), old_amount_cents: before ?? null, old_amount_read: before !== undefined, new_amount_cents: payload.amount_cents ?? null, reason: payload.reason ?? null });
   }
   if (definition.action_id === "cai.finance.19.entry_delete") effects.push({ type: "booking_removal", entry_id: data.entry_id ?? null, changes_actual_totals: true });
   if (definition.action_id === "cai.finance.20.entry_approve") effects.push({ type: "booking_approval", entry_id: data.entry_id ?? null, marks_entry_as_verified: true });

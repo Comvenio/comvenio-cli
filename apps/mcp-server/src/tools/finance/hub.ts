@@ -138,6 +138,9 @@ const scenarioOwn = {
 const nodeKind = z.enum(["CLUB", "DEPARTMENT", "TEAM"]);
 const nodeId = z.union([uuid, z.literal("club")]);
 const rubricsPath = (input: JsonObject) => `${club(input)}/departments/${str(input, "department_id")}/budget-rubrics`;
+// budget-saison-03: eine Saison heißt nach ihrem Beginn (YYYY-MM-DD).
+const seasonStart = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "season_start als YYYY-MM-DD");
+const seasonPath = (input: JsonObject) => `${club(input)}/budget-seasons/${str(input, "season_start")}`;
 const rubricOwn = listed("/clubs/{club_id}/departments/{department_id}/budget-rubrics", rubricsPath, "rubric_id", "Rubrik");
 
 // ── Die Aktionen ─────────────────────────────────────────────────────────
@@ -330,6 +333,18 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "rubric_delete", method: "DELETE", template: "/budget-rubrics/{rubric_id}", path: (i) => `/budget-rubrics/${str(i, "rubric_id")}`, risk: "critical", shape: { department_id: uuid, rubric_id: uuid }, preflight: rubricOwn },
     // Aufteilen: Unterposten und Eigenanteil in einer Transaktion des Dienstes.
     { op: "position_split", method: "PUT", template: "/positions/{position_id}/split", path: (i) => `/positions/${str(i, "position_id")}/split`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn, multiDepartment: true },
+  ] },
+  // Saison und Haushaltsjahr (budget-saison-03): die Saison als Budgetsicht über
+  // die Haushaltspläne. Sie hängt an keinem Plan, deshalb eine eigene Aktion;
+  // der Saisonbaum ist wie der Haushaltsbaum schon nach dem Recht gefiltert.
+  "cai.finance.37.budget_season": { source: "budget-season", ops: [
+    { op: "seasons", method: "GET", template: "/clubs/{club_id}/budget-seasons", path: (i) => `${club(i)}/budget-seasons`, risk: "read", shape: {}, multiDepartment: true },
+    { op: "season_tree", method: "GET", template: "/clubs/{club_id}/budget-seasons/{season_start}/tree", path: (i) => `${seasonPath(i)}/tree`, risk: "read", shape: { season_start: seasonStart }, multiDepartment: true },
+    // Ein Saisonrahmen ist eine beschlossene Zahl — Vorschau mit alt, neu und Grund.
+    { op: "season_frame_set", method: "PUT", template: "/clubs/{club_id}/budget-seasons/{season_start}/frames/{node_kind}/{node_id}", path: (i) => `${seasonPath(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}`, risk: "critical", shape: { season_start: seasonStart, node_kind: nodeKind, node_id: nodeId, data }, body: payload, multiDepartment: true },
+    { op: "season_frame_versions", method: "GET", template: "/clubs/{club_id}/budget-seasons/{season_start}/frames/{node_kind}/{node_id}/versions", path: (i) => `${seasonPath(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}/versions`, risk: "read", shape: { season_start: seasonStart, node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
+    // Der Vorschlag des Haushaltsrahmens schreibt nie (D31).
+    { op: "frame_proposal", method: "GET", template: `${BY_ID}/frames/{node_kind}/{node_id}/proposal`, path: (i) => `${byId(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}/proposal`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
   ] },
 };
 

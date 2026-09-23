@@ -41,6 +41,8 @@ export const FINANCE_AREAS: Record<string, string> = {
   "investment-scenario": "cai.finance.35.investment_scenario",
   // budget-organigramm-04: Baum, Rahmen, Abrechnung, Rubriken, Aufteilen.
   budget: "cai.finance.36.budget_organigram",
+  // budget-saison-03: Saisons, Saisonbaum, Saisonrahmen, Vorschlag.
+  season: "cai.finance.37.budget_season",
 };
 
 function isObject(value: unknown): value is JsonObject {

@@ -57,8 +57,9 @@ function recording(answer: (request: ComvenioApiRequest) => JsonValue, bytes?: C
 }
 
 describe("Finance Hub: Inventar", () => {
-  test("16 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
-    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(16);
+  test("17 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
+    // +1 budget-saison-03 (cai.finance.37.budget_season).
+    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(17);
     expect(hubOperationCount()).toBeGreaterThan(70);
     const routes = Object.values(HUB_ACTION_DEFINITIONS).flatMap((definition) => Object.values(definition.operations).flatMap((operation) => operation.backend_routes));
     expect(routes.some((route) => route.normalized_path_template.includes("reopen"))).toBe(false);
@@ -355,5 +356,66 @@ describe("Finance Hub: Budget im Organigramm", () => {
     });
     expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /positions/${positionId}`, `PUT /positions/${positionId}/split`]);
     expect(calls[1]?.body).toEqual(body);
+  });
+});
+
+// budget-saison-03 (cai.finance.37): Saisons, Saisonbaum, Saisonrahmen, Vorschlag.
+describe("Finance Hub: Saison und Haushaltsjahr", () => {
+  const action = "cai.finance.37.budget_season";
+  const jugendId = "abababab-abab-4bab-8bab-abababababab";
+
+  test("TC-01: fünf Teiloperationen, nur der Saisonrahmen verlangt eine Bestätigung", () => {
+    const operations = HUB_ACTION_DEFINITIONS[action]!.operations;
+    expect(Object.keys(operations).sort()).toEqual(
+      ["frame_proposal", "season_frame_set", "season_frame_versions", "season_tree", "seasons"],
+    );
+    expect(operations.season_frame_set!.execution_gate).toBe("confirmation");
+    for (const op of ["seasons", "season_tree", "season_frame_versions", "frame_proposal"]) {
+      expect(operations[op]!.execution_gate, op).toBe("inline");
+    }
+  });
+
+  test("TC-02: der Saisonbaum ruft genau GET …/budget-seasons/{season_start}/tree", async () => {
+    const { calls, client } = recording(() => ({ season_start: "2026-07-01", season_end: "2027-04-30", label: "2026/27",
+      plans: [], uncovered: [], nodes: [], totals: { scope: "CLUB" } }));
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "season_tree", season_start: "2026-07-01" }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /clubs/${clubId}/budget-seasons/2026-07-01/tree`]);
+  });
+
+  test("TC-03: der Saisonrahmen antwortet zuerst mit Vorschau (alt, neu, Grund); eine ungültige Knotenart erreicht den Dienst nicht", async () => {
+    const { calls, client } = recording((call): JsonValue => call.method === "GET"
+      ? { season_start: "2026-07-01", nodes: [{ node_kind: "DEPARTMENT", node_id: jugendId, frame_cents: 900000 }], totals: { scope: "CLUB" } }
+      : {});
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "season_frame_set", season_start: "2026-07-01", node_kind: "DEPARTMENT", node_id: jugendId, data: { amount_cents: 1000000, reason: "Beschluss Jugendausschuss" } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    expect(calls.some((call) => call.method === "PUT")).toBe(false);
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "frame_change")).toMatchObject({
+      season_start: "2026-07-01", old_amount_cents: 900000, new_amount_cents: 1000000, reason: "Beschluss Jugendausschuss",
+    });
+    const refused = recording(() => ({}));
+    await expect(createK14ToolSet({ client: refused.client, confirmation: confirmAll }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "season_frame_set", season_start: "2026-07-01", node_kind: "SPARTE", node_id: jugendId, data: { amount_cents: 1 } },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(refused.calls).toHaveLength(0);
+  });
+
+  test("TC-04: der Vorschlag ruft GET …/by-id/{plan_id}/frames/{kind}/{id}/proposal", async () => {
+    const { calls, client } = recording(() => ({ frame_cents: null, proposal_cents: 995000, parts: [] }));
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "frame_proposal", plan_id: planId, node_kind: "DEPARTMENT", node_id: jugendId },
+      context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      `GET /clubs/${clubId}/finance-plans/by-id/${planId}/frames/DEPARTMENT/${jugendId}/proposal`,
+    ]);
   });
 });
