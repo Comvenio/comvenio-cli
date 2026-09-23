@@ -279,7 +279,7 @@ describe("Finance Hub: Budget im Organigramm", () => {
   test("DC-2: die Vorschau des Löschens nennt jeden Unterposten, der mitgeht", async () => {
     const childId = "abcdabcd-0000-4000-8000-000000000001";
     const { calls, client } = recording((call): JsonValue => call.path === `/positions/${positionId}`
-      ? { id: positionId, club_id: clubId, finance_plan_id: planId, name: "Neue Trikots" }
+      ? { id: positionId, club_id: clubId, finance_plan_id: planId, name: "Neue Trikots", child_count: 1 }
       : [
           { id: positionId, club_id: clubId, parent_position_id: null, name: "Neue Trikots", expense_planned_cents: 30000 },
           { id: childId, club_id: clubId, parent_position_id: positionId, name: "E1", expense_planned_cents: 15000 },
@@ -293,6 +293,17 @@ describe("Finance Hub: Budget im Organigramm", () => {
     const removals = effects.filter((effect) => effect.type === "position_removal");
     expect(removals.map((effect) => effect.position_id)).toEqual([positionId, childId]);
     expect(removals[0]).toMatchObject({ sub_positions_read: true });
+  });
+
+  test("R2-02: sieht die Leitung nicht alle Unterposten, sagt die Vorschau das", async () => {
+    const { client } = recording((call): JsonValue => call.path === `/positions/${positionId}`
+      ? { id: positionId, club_id: clubId, finance_plan_id: planId, name: "Neue Trikots", child_count: 2 }
+      : [{ id: "abcdabcd-0000-4000-8000-000000000001", club_id: clubId, parent_position_id: positionId, name: "E1" }]);
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.12.position_delete", input: { club_id: clubId, position_id: positionId }, context, capability_snapshot: manager,
+    });
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects[1]).toMatchObject({ type: "position_removal", sub_positions_read: false });
   });
 
   test("TC-04: eine ungültige Knotenart erreicht den Dienst nicht", async () => {

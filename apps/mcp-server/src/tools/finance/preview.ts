@@ -13,13 +13,19 @@ function identifier(input: JsonObject): string {
 // budget-organigramm-04 DC-2: the sub positions a delete takes along, read
 // BEFORE the confirmation. null when they cannot be read — the preview then
 // says so instead of pretending there were none.
-async function subPositions(client: ComvenioApiClient, context: RequestContext, positionId: string): Promise<JsonObject[] | null> {
+// A lead sees only her subtree; the service deletes every sub position. The
+// list counts as complete only when it matches the service's child_count
+// (review R2-02).
+async function subPositions(client: ComvenioApiClient, context: RequestContext, positionId: string): Promise<{ rows: JsonObject[]; complete: boolean } | null> {
   try {
     const position = record(await request(client, context, "GET", `/positions/${positionId}`));
     const planId = position.finance_plan_id;
     if (typeof planId !== "string" || !context.club_id) return null;
     const rows = await request(client, context, "GET", `/clubs/${context.club_id}/finance-plans/by-id/${planId}/positions`);
-    return Array.isArray(rows) ? rows.map(record).filter((row) => row.parent_position_id === positionId) : null;
+    if (!Array.isArray(rows)) return null;
+    const unter = rows.map(record).filter((row) => row.parent_position_id === positionId);
+    const erwartet = typeof position.child_count === "number" ? position.child_count : unter.length;
+    return { rows: unter, complete: unter.length === erwartet };
   } catch {
     return null;
   }
@@ -55,8 +61,8 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   if (definition.action_id === "cai.finance.12.position_delete") {
     const positionId = typeof data.position_id === "string" ? data.position_id : null;
     const unter = client && positionId ? await subPositions(client, context, positionId) : null;
-    effects.push({ type: "position_removal", position_id: positionId, affects_attached_bookings: true, includes_sub_positions: true, sub_positions_read: unter !== null });
-    for (const kind of unter ?? [])
+    effects.push({ type: "position_removal", position_id: positionId, affects_attached_bookings: true, includes_sub_positions: true, sub_positions_read: unter?.complete === true });
+    for (const kind of unter?.rows ?? [])
       effects.push({ type: "position_removal", position_id: kind.id ?? null, name: kind.name ?? null, parent_position_id: positionId, expense_planned_cents: kind.expense_planned_cents ?? null });
   }
   // DC-8: a frame change shows the old and the new amount and the reason.
