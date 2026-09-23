@@ -169,7 +169,10 @@ export class CliConnectorClient {
     if (!structured) {
       throw new ConnectorClientError("Die Comvenio-Antwort enthält kein strukturiertes Ergebnis.");
     }
-    return structured;
+    // A critical write answers with a confirmation widget; the credential for
+    // action_confirm travels in _meta (widget-only), not in structuredContent.
+    const credential = object(object(result._meta)?.["comvenio/confirmation"]);
+    return credential ? { ...structured, confirmation: credential } : structured;
   }
 
   callAction(input: {

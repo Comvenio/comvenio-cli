@@ -71,6 +71,31 @@ describe("finance über OAuth: Bestätigung", () => {
     expect(calls[0]?.key).toBe(calls[1]?.key!);
   });
 
+  test("das Token aus _meta (comvenio/confirmation) wird zur Bestätigung benutzt", async () => {
+    // Shape of the PROD answer on 2026-09-23: the widget itself carries no token.
+    const calls: string[] = [];
+    const client = {
+      async callAction() {
+        calls.push("call");
+        return { widget: "confirmation", data: { preview: { preview_id: "p-1" } }, confirmation: { preview_id: "p-1", confirmation_token: "t".repeat(43), idempotency_key: "k" } };
+      },
+      async confirm(input: { preview_id: string; confirmation_token: string }) {
+        calls.push(`confirm ${input.preview_id}`);
+        return { status: "completed" };
+      },
+    } as unknown as CliConnectorClient;
+    expect(await callFinance(client, "cai.finance.22.plan_lifecycle", { operation: "close" }, { write: true })).toEqual({ status: "completed" });
+    expect(calls).toEqual(["call", "confirm p-1"]);
+  });
+
+  test("ein Bestätigungs-Widget ohne Token gilt nie als erledigt", async () => {
+    const client = {
+      async callAction() { return { widget: "confirmation", data: { preview: { preview_id: "p-1" } } }; },
+      async confirm() { throw new Error("darf nicht bestätigt werden"); },
+    } as unknown as CliConnectorClient;
+    await expect(callFinance(client, "cai.finance.22.plan_lifecycle", { operation: "close" }, { write: true })).rejects.toThrow(/Bestätigungs-Token/);
+  });
+
   test("--no-confirm hält vor der Bestätigung an", async () => {
     const client = {
       async callAction() { return { widget: { preview_id: "p-1", confirmation_token: "t".repeat(43) } }; },
