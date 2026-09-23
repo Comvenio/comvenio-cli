@@ -156,7 +156,12 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "cash_book", method: "GET", template: `${BY_ID}/cash-book`, path: (i) => `${byId(i)}/cash-book`, risk: "read", shape: { plan_id: uuid, money_account_id: uuid }, query: (i) => optional(i, ["money_account_id"]) },
     { op: "reconciliation", method: "GET", template: `${BY_ID}/money-accounts/reconciliation`, path: (i) => `${byId(i)}/money-accounts/reconciliation`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
   ] },
-  "cai.finance.25.entry_correction": { source: "entry-reverse|receipt|tax-sphere", ops: [
+  "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere", ops: [
+    // Die Buchung mit allem, was die GoBD-Klammer verlangt: Geldkonto
+    // (money_account_required) und Beleg oder Eigenbeleg-Begründung
+    // (receipt_required). cai.finance.16 kennt beides nicht — in einem Verein
+    // mit Geldkonten nimmt der Dienst dort keine Buchung an.
+    { op: "entry_create", method: "POST", template: "/positions/{position_id}/entries", path: (i) => `/positions/${str(i, "position_id")}/entries`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
     // Ein Storno ist eine neue, festgeschriebene Gegenbuchung — nicht umkehrbar.
     { op: "reverse", method: "POST", template: "/entries/{entry_id}/reverse", path: (i) => `/entries/${str(i, "entry_id")}/reverse`, risk: "critical", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
     { op: "receipt", method: "PUT", template: "/entries/{entry_id}/receipt", path: (i) => `/entries/${str(i, "entry_id")}/receipt`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },

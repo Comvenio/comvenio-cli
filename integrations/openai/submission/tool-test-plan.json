@@ -1655,7 +1655,7 @@
     },
     {
       "tool_name": "cv_finance_25_entry_correction",
-      "prompt": "Prüfe „Comvenio: Finanzen – entry reverse receipt tax sphere“ mit synthetischen Daten im ausgewählten Testverein.",
+      "prompt": "Prüfe „Comvenio: Finanzen – entry create reverse receipt tax sphere“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

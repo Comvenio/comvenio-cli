@@ -1655,8 +1655,8 @@
     },
     {
       "tool_name": "cv_finance_25_entry_correction",
-      "happy_path_prompt": "Führe „Comvenio: Finanzen – entry reverse receipt tax sphere“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
-      "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – entry reverse receipt tax sphere“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "happy_path_prompt": "Führe „Comvenio: Finanzen – entry create reverse receipt tax sphere“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – entry create reverse receipt tax sphere“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

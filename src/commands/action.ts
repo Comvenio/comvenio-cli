@@ -44,7 +44,8 @@ function parseInput(options: Options): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-async function connector(): Promise<CliConnectorClient> {
+// Auch vom finance-Befehl genutzt: Dort ist die OAuth-Anmeldung der Standardweg.
+export async function connector(): Promise<CliConnectorClient> {
   const state = await loadState();
   if (state.authMode !== "oauth" || !state.oauth?.resource) {
     throw new AuthError(

@@ -4,6 +4,8 @@ import { createClient, type ComvenioClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
+import { connector } from "./action.ts";
+import { callFinance, mapClassic, runHub } from "./finance-connector.ts";
 
 // Vereins-Buchhaltung des finance-service: Jahresplan, Budgetposten, Buchungen.
 //
@@ -53,6 +55,12 @@ export type FinanceCommandOpts = {
   overwrite?: boolean;
   includeNonRecurring?: boolean;
   positions?: string;
+  // Über die OAuth-Anmeldung (finance-connector.ts):
+  account?: string;
+  receiptReason?: string;
+  input?: string;
+  out?: string;
+  confirm?: boolean;
 };
 
 export type FinanceOperation = {
@@ -415,8 +423,8 @@ export function renderHuman(action: string, result: unknown): string {
 export function registerFinanceCommands(cli: CAC): void {
   cli
     .command(
-      "finance <action> [id]",
-      "Vereins-Buchhaltung: Jahresplan, Budgetposten und Buchungen",
+      "finance <action> [id] [operation]",
+      "Vereins-Buchhaltung und Investitionsplaner — mit der OAuth-Anmeldung der ganze Finance Hub (finance run <bereich> <operation>)",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--year <jahr>", "Planjahr — Pflicht bei allen plan-*, position-list/create und summary")
@@ -437,14 +445,37 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--overwrite", "position-import-shopping: vorhandene Schätzung überschreiben")
     .option("--include-non-recurring", "plan-copy: auch einmalige Posten übernehmen")
     .option("--positions <ids>", "plan-copy: nur diese Posten übernehmen (Komma-getrennt)")
+    .option("--account <id>", "entry-create: Geldkonto der Buchung (Pflicht, sobald der Verein Geldkonten führt)")
+    .option("--receipt-reason <text>", "entry-create: Begründung eines Eigenbelegs (10–500 Zeichen), wenn kein Beleg vorliegt")
+    .option("--input <json>", "finance run: Eingabe als JSON-Objekt (ohne club_id — der Verein kommt aus der Anmeldung)")
+    .option("--out <datei>", "finance run audit-export download: den Prüfexport als Datei schreiben (Prüfsumme wird geprüft)")
+    .option("--no-confirm", "Kritische Schritte nicht selbst bestätigen, sondern die Vorschau ausgeben")
     .option("--json", "Maschinenlesbare JSON-Ausgabe")
+    .example("  $ comvenio finance run money-account list")
+    .example("  $ comvenio finance run cash-report create --input '{\"data\": {\"period_start\": \"2026-01-01\", \"period_end\": \"2026-01-31\", \"money_account_id\": \"…\"}}'")
     .example("  $ comvenio finance plan-list")
     .example("  $ comvenio finance plan-create --year 2026 --capital 500000")
     .example("  $ comvenio finance position-create --year 2026 --name Sommerfest --expense 120000")
     .example("  $ comvenio finance entry-create <positions-id> --description Getränke --expense 4550 --date 2026-07-01")
     .example("  $ comvenio finance entry-approve <buchungs-id>")
-    .action(async (action: string, id: string | undefined, opts: FinanceCommandOpts) => {
+    .action(async (action: string, id: string | undefined, operation: string | undefined, opts: FinanceCommandOpts) => {
       const state = await loadState();
+      // Standardweg: die OAuth-Anmeldung über den Connector. Der Geräte-Token
+      // bleibt der Rückfall für eine Sitzung ohne OAuth-Verbindung.
+      if (state.connectorToken) {
+        const via = await connector();
+        const result = action === "run"
+          ? await runHub(via, id, operation, opts)
+          : await (async () => {
+            const call = mapClassic(action, id, opts);
+            return callFinance(via, call.actionId, call.input, { write: call.write, confirm: opts.confirm !== false });
+          })();
+        output(result, opts.json, () => JSON.stringify(result, null, 2));
+        return;
+      }
+      if (action === "run") {
+        throw new Error("finance run läuft über die OAuth-Anmeldung: comvenio login");
+      }
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
       const result = await handleFinanceOperation({ action, id, opts, client, clubId });
