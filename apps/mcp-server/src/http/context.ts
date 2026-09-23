@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  isConnectorError,
   normalizeRequestContext,
   type McpClientKind,
   type ProviderId,
@@ -213,6 +214,20 @@ export class StatelessTransportContextFactory {
         context: request,
         force_recheck: risk === "write",
         backend_actor_token: principal!.backend_actor_token,
+      }).catch((error: unknown) => {
+        // The rights are loaded while the context is built, before any tool
+        // runs. A transient failure here is therefore safe to repeat — unlike
+        // UPSTREAM_UNAVAILABLE from a tool, which may follow a write. Only
+        // this code tells a client it may retry without risking a double write.
+        if (isConnectorError(error) && error.code === "UPSTREAM_UNAVAILABLE" && error.retryable) {
+          throw runtimeError({
+            code: "AUTH_TEMPORARILY_UNAVAILABLE",
+            message: error.message,
+            request_id: requestId,
+            retryable: true,
+          });
+        }
+        throw error;
       })
       : null;
     if (capabilitySnapshot) {
