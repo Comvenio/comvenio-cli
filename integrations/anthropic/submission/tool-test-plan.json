@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "7bbfdc3141a33629df9775114ac4bd4f7eacd34b44d0f3fde43862fb158a6ee5",
+  "tool_sync_version": "6848f2d2f3531a7e01e2ea61e231fc68de7710786f9774b89cf5a148f2b39415",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1822,6 +1822,21 @@
       "tool_name": "cv_finance_36_budget_organigram",
       "happy_path_prompt": "Führe „Comvenio: Finanzen – budget organigram“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – budget organigram“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_finance_37_budget_season",
+      "happy_path_prompt": "Führe „Comvenio: Finanzen – budget season“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – budget season“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

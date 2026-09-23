@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "7bbfdc3141a33629df9775114ac4bd4f7eacd34b44d0f3fde43862fb158a6ee5",
+  "runtime_tool_catalog_sha256": "6848f2d2f3531a7e01e2ea61e231fc68de7710786f9774b89cf5a148f2b39415",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -2350,6 +2350,26 @@
     },
     {
       "tool_name": "cv_finance_36_budget_organigram",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "finance.read",
+        "finance.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_finance_37_budget_season",
       "risk_class": "critical_write",
       "required_scopes": [
         "finance.read",
