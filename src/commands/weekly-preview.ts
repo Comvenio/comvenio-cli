@@ -24,7 +24,35 @@ type Opts = {
   department?: string;
   name?: string;
   file?: string;
+  teams?: string;
+  range?: string;
+  telegram?: boolean;
+  plan?: string;
 };
+
+type CreateResult = { run_id: string; plan_id: string; status: string; error?: string | null };
+type SnapshotRead = {
+  id: string;
+  plan_run_id: string;
+  range_start: string;
+  events: Array<{ title: string; start_time: string }>;
+  published_at?: string | null;
+  share_token?: string | null;
+};
+
+/** Body of the function call (ai-service POST /club-agents/{club}/weekly-previews/create). */
+export function buildCreateBody(opts: { department?: string; teams?: string; range?: string; telegram?: boolean }): Record<string, unknown> {
+  if (!opts.department) throw new Error("weekly-preview create benötigt --department <id>.");
+  const range = opts.range ?? "next_week";
+  if (range !== "next_week" && range !== "next_7_days") {
+    throw new Error("--range ist next_week oder next_7_days.");
+  }
+  const teamIds = (opts.teams ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+  return { department_id: opts.department, team_ids: teamIds, range, telegram: Boolean(opts.telegram) };
+}
+
+export const shareUrlFor = (gatewayBaseUrl: string, shareToken: string): string =>
+  `${gatewayBaseUrl.replace(/\/+$/, "")}/event/share/weekly-preview/${encodeURIComponent(shareToken)}`;
 
 export const WEEKLY_PREVIEW_TEMPLATE_ACTIONS = ["list", "show", "set", "delete"] as const;
 
@@ -67,21 +95,52 @@ export function buildTemplateBody(
 export function registerWeeklyPreviewCommands(cli: CAC): void {
   cli
     .command(
-      "weekly-preview <area> <action> [id]",
-      "Wochenvorschau-Flyervorlagen: template list | show | set | delete (design_config als JSON-Datei)",
+      "weekly-preview <area> [action] [id]",
+      "Wochenvorschau als Funktion: create --department <id> [--teams a,b] [--range] [--telegram] | list --plan <id>; Vorlagen: template list | show | set | delete",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
-    .option("--department <id>", "Abteilung (list: Filter, set: Abteilung der neuen Vorlage)")
-    .option("--name <name>", "Name der Vorlage (set)")
-    .option("--file <path>", "design.json mit design_config (set)")
+    .option("--department <id>", "Abteilung (create; template list: Filter, template set: Abteilung der neuen Vorlage)")
+    .option("--teams <ids>", "create: Mannschafts-IDs, komma-getrennt (ohne: alle Mannschaften der Abteilung)")
+    .option("--range <v>", "create: next_week (Standard) | next_7_days")
+    .option("--telegram", "create: nach Freigabe auch in die verknüpften Telegram-Chats")
+    .option("--plan <id>", "list: Plan-ID aus create")
+    .option("--name <name>", "Name der Vorlage (template set)")
+    .option("--file <path>", "design.json mit design_config (template set)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (area: string, action: string, id: string | undefined, opts: Opts) => {
-      if (area !== "template") {
-        throw new Error(`Unbekannter Bereich "${area}". Verfuegbar: template`);
-      }
+    .action(async (area: string, action: string | undefined, id: string | undefined, opts: Opts) => {
       const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
+
+      if (area === "create") {
+        // The function (Tom 2026-09-23): same entry as the web button and the agent tool.
+        const result = await client.post<CreateResult>("ai", `/club-agents/${clubId}/weekly-previews/create`, buildCreateBody(opts));
+        output(result, opts.json, () =>
+          result.status === "failed"
+            ? `Nicht erstellt: ${result.error ?? "unbekannter Fehler"}`
+            : `Wochenvorschau erstellt (Lauf ${result.run_id}, Status ${result.status}). Der Entwurf liegt im Agent-Messenger zur Freigabe.\nPlan: ${result.plan_id}`,
+        );
+        return;
+      }
+      if (area === "list") {
+        if (!opts.plan) throw new Error("weekly-preview list benötigt --plan <id> (aus create).");
+        const rows = await client.get<SnapshotRead[]>("ai", `/club-agents/${clubId}/weekly-previews?plan_id=${encodeURIComponent(opts.plan)}`);
+        output(rows, opts.json, () =>
+          rows.length === 0
+            ? "Noch keine Wochenvorschau für diesen Plan."
+            : rows
+                .map((row) => {
+                  const state_ = row.share_token ? `veröffentlicht: ${shareUrlFor(state.gatewayBaseUrl, row.share_token)}` : row.published_at ? "veröffentlicht (Link abgelaufen)" : "wartet auf Freigabe";
+                  return `${row.range_start.slice(0, 10)} · ${row.events.length} Termine · ${state_}`;
+                })
+                .join("\n"),
+        );
+        return;
+      }
+      if (area !== "template") {
+        throw new Error(`Unbekannter Bereich "${area}". Verfuegbar: create, list, template`);
+      }
+      if (!action) throw new Error(`weekly-preview template benötigt eine Aktion: ${WEEKLY_PREVIEW_TEMPLATE_ACTIONS.join(", ")}`);
 
       switch (action) {
         case "list": {

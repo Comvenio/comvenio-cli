@@ -841,6 +841,8 @@
       "id": "weekly-preview",
       "status": "core-partial",
       "actions": [
+        "create",
+        "list",
         "template list",
         "template show",
         "template set",
