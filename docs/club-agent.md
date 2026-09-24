@@ -25,13 +25,31 @@ Benutzers; die Backend-Services prüfen Verein und RBAC erneut.
 comvenio agent chat "Plane die Helfereinteilung für unser Sommerfest."
 ```
 
-Die Antwort enthält eine Session-ID. Für Rückfragen, Korrekturen und
-Freigaben muss dieselbe Session weiterverwendet werden:
+Die Antwort enthält eine Session-ID. Für Rückfragen und Korrekturen
+wird dieselbe Session weiterverwendet:
 
 ```powershell
-comvenio agent chat "Ja, bereite den Aufruf vor." `
+comvenio agent chat "Nimm lieber Samstag statt Freitag." `
   --session 12121212-1212-4212-8212-121212121212
 ```
+
+## Freigaben
+
+Schreibt der Agent etwas, legt er eine Freigabe-Anfrage an. Ein getipptes
+„Ja“ gibt nichts frei — weder im Terminal noch im Web. Die Antwort nennt
+den Direktlink der Anfrage; `--json` enthält sie als `approval_refs`.
+
+```powershell
+comvenio agent approval list                # offene Freigaben
+comvenio agent approval list --state decided # entschieden, letzte 7 Tage
+comvenio agent approval show <id>
+comvenio agent approval approve <id>        # gibt nur den Direktlink aus
+```
+
+Entschieden wird ausschließlich in Web oder App: `approve` und `reject`
+geben den Link aus, und der Dienst lehnt eine Entscheidung mit dem
+Geräte-Token ab (`decision_requires_app`). Dauerfreigaben entstehen und
+enden ebenfalls nur dort, im Reiter „Fähigkeiten & Routinen“.
 
 Für Agenten und Skripte:
 
@@ -62,8 +80,8 @@ Vereins-Tools bleiben nutzbar.
 
 ## Noch offene CLI-Administration
 
-`agent chat` deckt die dialogische Nutzung ab. Die administrativen
-Club-Agent-Workflows (Konfiguration, Skill-Pakete, Routinen, Watch-Rules,
-Freigabe-Cockpit, Journal und Memory) bleiben in der Coverage-Registry
+`agent chat` deckt die dialogische Nutzung ab, `agent approval` das Lesen
+von Freigaben. Die administrativen Club-Agent-Workflows (Konfiguration,
+Skill-Pakete, Routinen, Watch-Rules, Journal und Memory) bleiben in der Coverage-Registry
 explizit als `core-partial` sichtbar, bis sie als sichere CLI-Actions
 implementiert sind.

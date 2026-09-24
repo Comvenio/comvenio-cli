@@ -792,12 +792,14 @@
       "id": "agent",
       "status": "core-partial",
       "actions": [
-        "chat"
+        "chat",
+        "approval"
       ],
       "gaps": [
-        "Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions."
+        "Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions."
       ],
       "intentional_exclusions": [
+        "agent approval approve|reject entscheidet nicht: Freigaben und Dauerfreigaben entstehen nur mit einer Sitzung in Web oder App (D-AF-16, D-AF-18); das Terminal gibt den Direktlink aus.",
         "Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.",
         "Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft."
       ],
