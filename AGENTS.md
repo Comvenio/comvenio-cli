@@ -270,6 +270,24 @@ IMMER `--json` verwenden.** (`schema` ist standardmäßig JSON.)
 
 Exit-Codes: 0 OK · 2 Auth-/Eingabefehler · 3 API-Fehler (HTTP) · 1 sonstiges.
 
+## Mit dem Club Agent arbeiten (Funktionen und Freigaben)
+
+Der Club Agent eines Vereins bietet **Funktionen** an (Wochenvorschau, Sponsoring-Check,
+Aufgaben …). Du rufst sie im Namen des angemeldeten Menschen auf — **freigeben kannst du
+nie**. Braucht ein Lauf eine Freigabe, meldest du die `approval_url` an den Menschen und
+arbeitest weiter; `agent approval approve|reject` gibt nur diesen Link aus.
+
+```bash
+comvenio function list --club <id> --json                     # was darf ich aufrufen? (input_schema, approval_required)
+comvenio function run <capability_id> --club <id> --args '<json>' --idempotency-key <k> --json
+comvenio function show <lauf-id> --club <id> --json           # state: succeeded | awaiting_approval | failed | …
+comvenio agent chat "<frage>" --club <id> --json              # response + run_refs + approval_refs
+comvenio agent approval list --club <id> --json               # lesen ja, entscheiden nur in Web/App
+```
+
+Vollständiger Ablauf (Zustände, was du meldest, Grenzen): Skill `club-agent-lokal` in
+`comvenio-tools/workspace-config/skills/club-agent-lokal/SKILL.md`.
+
 ## Beispiel-Workflows (Rezepte)
 
 **1. Event mit Bereichen anlegen**
