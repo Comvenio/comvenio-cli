@@ -1,0 +1,45 @@
+{
+  "art": "geruest",
+  "beschreibung": "R3: doppelter Name, Name ohne Eintrag, Eintrag ohne Name, ungültiger Name (TC-07)",
+  "html": "<div><h1 data-slot=\"a\"></h1><p data-slot=\"a\"></p><p data-slot=\"b\"></p><p data-slot=\"Gross\"></p></div>",
+  "slots": {
+    "a": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    },
+    "verwaist": {
+      "kind": "text",
+      "config": {
+        "content": "x"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "duplicate_slot_name",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "a"
+    },
+    {
+      "klasse": "missing_slot_entry",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "b"
+    },
+    {
+      "klasse": "unnamed_slot",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "Gross"
+    },
+    {
+      "klasse": "orphan_slot_entry",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "verwaist"
+    }
+  ]
+}

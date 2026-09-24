@@ -1041,10 +1041,44 @@ function genHomepage(): unknown {
       legacy_without_design_snapshot: "readable_until_ttl_with_live_design_warning",
     },
     templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"],
+    slots_contract: SLOTS_CONTRACT,
     widget_kinds: kinds,
     widgets: mergedWidgets,
   };
 }
+
+// Named slots (Lastenheft homepage-generator/17-designer-struktur, Klammer §5.1/§5.7,
+// Sub-File 06 §4.5). Fixed contract text, mirrored from club-service
+// app/utils/geruest_regeln.py — the rules themselves live in src/homepage/regeln.ts.
+const SLOTS_CONTRACT = {
+  where: "custom_html.config.slots: Record<SlotName, SlotEntry>; das Gerüst markiert Slots mit data-slot=\"<SlotName>\"",
+  slot_name: { pattern: "^[a-z0-9][a-z0-9-]{0,62}$", unique: "je Reiter über alle Gerüste (TD-17)", address: "<reiter-slug>/<slot> (homepage slot get|set)" },
+  slot_entry: {
+    kind: "Widget-Art außer custom_html",
+    config: "Konfiguration der Art, bereinigt wie ein eigenständiges Widget",
+    style: "optional: id eines Eintrags in design_settings.styles (TD-10)",
+  },
+  building_blocks: {
+    heading: { config: { text: "string; \\n wird Zeilenumbruch" } },
+    text: { config: { content: "HTML: strong em b i a[href] br p ul ol li; Blöcke werden in Inline-Elementen entfaltet (TD-9)" } },
+    link: { config: { label: "string <=120", href: "?tab=… | /… | #… | http(s) | mailto: | tel:", new_tab: "boolean" } },
+  },
+  element_itself: "Ein Grundbaustein-Slot IST das Element (<h2 class=\"…\" data-slot=\"…\"></h2>), keine Hülle; die Ebene gehört zum Gerüst (TD-1). Live-Widgets behalten ihr div.",
+  link_slot: "Ein Slot der Art link ist ein a-Element (R3 link_slot_not_anchor).",
+  base_vs_catalog_class: "Klassen eines Katalogeintrags sind Katalogklassen und stehen als style im Slot, nicht im Gerüst; alle anderen Klassen sind Grundklassen (TD-16).",
+  format: "Neues Format = mindestens ein data-slot und kein data-widget-slot; sonst Altformat: Regeln nur als Warnung (TD-14).",
+  rules: [
+    { rule: "R1", class: "fixed_text_in_skeleton", severity: "fehler", check: "kein sichtbarer Text im Gerüst außerhalb von Slots (ausgenommen aria-hidden, svg, Leerraum)" },
+    { rule: "R2", class: "content_in_skeleton", severity: "fehler", check: "kein a[href] und kein img außerhalb von Slots" },
+    { rule: "R3", class: ["unnamed_slot", "duplicate_slot_name", "missing_slot_entry", "orphan_slot_entry", "link_slot_not_anchor"], severity: "fehler", check: "Slots benannt, eindeutig, je Name genau ein Eintrag; link-Slot ist ein a" },
+    { rule: "R4", class: "unlabeled_region", severity: "warnung", check: "jedes section/article trägt aria-label" },
+    { rule: "R5", class: ["unknown_style", "unused_catalog_style", "catalog_class_in_skeleton"], severity: "fehler / warnung / warnung", check: "Stil im Katalog; Katalogklasse im CSS definiert; Katalogklasse nicht im Gerüst" },
+    { rule: "R6", class: "heading_outline", severity: "warnung", check: "genau eine h1 je Reiter" },
+    { rule: "ALT", class: "legacy_inline_slot", severity: "warnung", check: "data-widget-slot (Altformat)" },
+  ],
+  enforced: "club-service prüft auf jedem Schreibweg (bulk, Widget POST/PUT, slot set, publish): Fehler im neuen Format -> 422 skeleton_rules mit befunde.",
+  cli: ["homepage tree [--tab <slug>]", "homepage slot get <slug>/<slot>", "homepage slot set <slug>/<slot> --file entry.json [--expected-version n] [--dry-run]", "homepage convert --out home.json [--tab <slug>] [--styles styles.json] [--styles-out vorschlag.json]", "verify homepage --file home.json (R1-R6 vor dem Browserlauf)"],
+};
 
 // ─── Domain: menu ────────────────────────────────────────────────────────────
 

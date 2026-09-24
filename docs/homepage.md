@@ -458,21 +458,57 @@ Dieses Rezept beschreibt die Bauform der Referenz-Homepages (erstmals umgesetzt
 im September 2026 für einen Schützenverein). Wer es einhält, erreicht dieselbe
 Qualität, ohne Quelltext der Plattform zu sehen. Alle Namen unten sind Beispiele.
 
-### 10.1 Bauform: eigenes Layout, echte Daten als Slots
+### 10.1 Bauform: Gerüst und benannte Slots
 
-- **Je Tab genau eine Section `full` mit genau einem `custom_html`-Widget.** Das
-  HTML trägt das komplette Seitenlayout: Hero, Sektionen, Karten, Raster.
-- **Alles, was sich ändert, ist ein Widget-Slot** — nie festgeschriebener Text:
-  `ticker` (Lauftext), `news`, `events_list` (Rückblick `past`, Ausschau
-  `upcoming`), `event_highlight` mit `layout: "date"` für Datumsangaben im Fließtext,
-  `team` mit `group_id` (Vorstandschaft), `image_gallery`/`files` mit `file_ids`,
-  `image` mit `file_id`, `background_video`, `contact_form`.
-- Slot-Syntax im HTML (Attributwert HTML-escaped):
-  `<div data-widget-slot="news" data-widget-config="{&quot;limit&quot;:3,&quot;layout&quot;:&quot;editorial&quot;,&quot;show_title&quot;:false}"></div>`
-- Keine erfundenen Termine, Namen, Zahlen oder Kontaktdaten im HTML. Fehlt eine
-  Information, bleibt die Stelle als ehrlicher Platzhalter für den Verein
-  („Vereinsfoto folgt“), nicht als Fantasiewert.
-- Navigation zwischen Tabs über `?tab=<slug>` als `href`.
+Seit dem Homepage-Designer (Lastenheft `homepage-generator/17-designer-struktur`)
+gilt: **Das HTML ist nur Gerüst, jeder Inhalt ist ein benannter Slot.** Nur so
+zeigt der Designer die Seite als Baum und ein Mensch kann jede Überschrift, jeden
+Absatz und jeden Knopf im Formular ändern.
+
+- **Je Tab genau eine Section `full` mit genau einem `custom_html`-Widget — dem
+  Gerüst.** Es trägt nur Layout: Elemente, Klassen, und je Bereich ein
+  `aria-label` (`<section aria-label="Startbild">`). Bereiche mit Namen werden im
+  Designer zu Baumknoten; Container ohne Namen bleiben unsichtbar.
+- **Jeder Inhalt ist ein benannter Slot** (`data-slot="<name>"`, Inhalt in
+  `config.slots`) — auch Überschrift, Text und Knopf:
+  - `heading` (`text`, `\n` für Zeilenumbruch), `text` (`content`: einfaches
+    HTML mit strong, em, a, br, p, Listen), `link` (`label`, `href`, `new_tab`);
+  - Live-Daten wie bisher als Slot ihrer Art: `ticker`, `news`, `events_list`,
+    `event_highlight` mit `layout: "date"`, `team`, `image_gallery`, `files`,
+    `image`, `background_video`, `contact_form`.
+- **Ein Grundbaustein-Slot ist das Element selbst**, keine Hülle:
+  `<h2 class="jaga-title" data-slot="verein-titel"></h2>`. Die Ebene (h1–h6)
+  gehört zum Gerüst. Ein `link`-Slot ist ein `a`-Element. Live-Widgets stehen in
+  einem `div`.
+- **Namen** `^[a-z0-9][a-z0-9-]{0,62}$`, **je Reiter eindeutig** über alle
+  Gerüste. Die Adresse `<reiter-slug>/<slot>` nutzen Designer und CLI gleich:
+  `comvenio homepage slot get start/hero-titel`,
+  `comvenio homepage slot set start/hero-titel --file entry.json`.
+- **Stile, die ein Mensch umschalten soll, als Katalog anmelden**
+  (`design_settings.styles`, `comvenio club design --file`). Katalogklassen stehen
+  dann **nicht im Gerüst**, sondern als `style` im Slot; am Element bleiben nur
+  Grundklassen. Wiederkehrende Bereiche als Vorlage anmelden
+  (`design_settings.area_templates`).
+- **Regeln R1–R6** (`comvenio schema homepage` → `slots_contract`): kein fester
+  Text und kein Link/Bild im Gerüst außerhalb von Slots, jeder Slot benannt mit
+  genau einem Eintrag, Bereiche mit `aria-label`, bekannte Stile, genau eine `h1`
+  je Reiter. Der club-service lehnt Fehler im neuen Format mit
+  `422 skeleton_rules` ab — auf jedem Schreibweg.
+- **Vor `apply`:** `comvenio verify homepage --file home.json` meldet R1–R6 vor dem
+  Browserlauf; Fehler beenden den Lauf mit Exit 4.
+- Keine erfundenen Termine, Namen, Zahlen oder Kontaktdaten. Fehlt eine
+  Information, bleibt der Slot mit einem ehrlichen Platzhalter („Vereinsfoto
+  folgt“), nicht mit einem Fantasiewert.
+- Navigation zwischen Tabs als `link`-Slot mit `href: "?tab=<slug>"`.
+
+**Bestehende Seiten im Altformat** (`data-widget-slot`, fester Text im HTML)
+bleiben lesbar, der Designer bearbeitet dort aber nur die Slot-Inhalte. Umstellen:
+`comvenio homepage convert --out home.json [--styles styles.json]` → offene
+Stellen aus dem Bericht von Hand lösen → `homepage preview --file home.json` →
+Bildvergleich gegen die Live-Seite → `homepage apply` erst nach Freigabe.
+
+Altformat zum Vergleich (nicht mehr für neue Seiten):
+`<div data-widget-slot="news" data-widget-config="{&quot;limit&quot;:3}"></div>`
 
 ### 10.2 Design-Datei vollständig schreiben
 

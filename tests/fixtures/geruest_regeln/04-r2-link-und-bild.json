@@ -1,0 +1,25 @@
+{
+  "art": "geruest",
+  "beschreibung": "R2: Link und Bild im Gerüst außerhalb eines Slots",
+  "html": "<div><a href=\"/x\" data-x=\"1\"></a><img src=\"https://example.org/a.png\"><h1 data-slot=\"titel\"></h1></div>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "content_in_skeleton",
+      "regel": "R2",
+      "schwere": "fehler"
+    },
+    {
+      "klasse": "content_in_skeleton",
+      "regel": "R2",
+      "schwere": "fehler"
+    }
+  ]
+}

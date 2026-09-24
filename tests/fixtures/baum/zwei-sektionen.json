@@ -1,0 +1,151 @@
+{
+  "beschreibung": "TC-CC-17-01: derselbe Baum aus Designer (web-page designerModel.baum) und CLI (homepage tree). Kopie in web-page designer/__fixtures__/baum.",
+  "tab": {
+    "id": "t1",
+    "label": "Start",
+    "slug": "start",
+    "visibility_scope": "public"
+  },
+  "sections": [
+    {
+      "id": "s1",
+      "sort_order": 0,
+      "layout": "full",
+      "style_variant": "default",
+      "is_visible": true,
+      "title": null
+    },
+    {
+      "id": "s2",
+      "sort_order": 1,
+      "layout": "two-col",
+      "style_variant": "default",
+      "is_visible": true,
+      "title": "Termine"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "w1",
+      "section_id": "s1",
+      "kind": "custom_html",
+      "slot_index": 0,
+      "position": 0,
+      "version": 3,
+      "config": {
+        "html": "<section class=\"jaga-hero\" aria-label=\"Startbild\"><p class=\"jaga-eyebrow\" data-slot=\"hero-kicker\"></p><h1 data-slot=\"hero-titel\"></h1><div class=\"reihe\"><a class=\"jaga-button\" data-slot=\"hero-knopf\"></a></div></section><section aria-label=\"Aus dem Vereinsleben\"><div data-slot=\"news\"></div></section>",
+        "slots": {
+          "hero-kicker": {
+            "kind": "text",
+            "config": {
+              "content": "Verein"
+            }
+          },
+          "hero-titel": {
+            "kind": "heading",
+            "config": {
+              "text": "Titel"
+            }
+          },
+          "hero-knopf": {
+            "kind": "link",
+            "config": {
+              "label": "Fest",
+              "href": "?tab=fest"
+            }
+          },
+          "news": {
+            "kind": "news",
+            "config": {
+              "limit": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "w2",
+      "section_id": "s2",
+      "kind": "events_list",
+      "slot_index": 0,
+      "position": 1,
+      "config": {}
+    },
+    {
+      "id": "w3",
+      "section_id": "s2",
+      "kind": "image",
+      "slot_index": 1,
+      "position": 2,
+      "config": {}
+    }
+  ],
+  "erwartet": [
+    [
+      "bereich",
+      "t1/w1/bereich:0",
+      "Startbild",
+      null,
+      [
+        [
+          "slot",
+          "t1/w1/slot:hero-kicker",
+          "hero-kicker",
+          "T",
+          []
+        ],
+        [
+          "slot",
+          "t1/w1/slot:hero-titel",
+          "hero-titel",
+          "H1",
+          []
+        ],
+        [
+          "slot",
+          "t1/w1/slot:hero-knopf",
+          "hero-knopf",
+          "K",
+          []
+        ]
+      ]
+    ],
+    [
+      "bereich",
+      "t1/w1/bereich:1",
+      "Aus dem Vereinsleben",
+      null,
+      [
+        [
+          "slot",
+          "t1/w1/slot:news",
+          "news",
+          "N",
+          []
+        ]
+      ]
+    ],
+    [
+      "sektion",
+      "t1/s2",
+      "Termine",
+      null,
+      [
+        [
+          "widget",
+          "t1/w2",
+          "events_list",
+          "E",
+          []
+        ],
+        [
+          "widget",
+          "t1/w3",
+          "Bild",
+          "B",
+          []
+        ]
+      ]
+    ]
+  ]
+}

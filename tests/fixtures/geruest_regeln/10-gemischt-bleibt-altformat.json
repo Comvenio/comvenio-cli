@@ -1,0 +1,25 @@
+{
+  "art": "geruest",
+  "beschreibung": "Gemischt (data-slot und data-widget-slot) gilt als Altformat (TD-14)",
+  "html": "<div><h1 data-slot=\"titel\"></h1><p>fest</p><div data-widget-slot=\"news\"></div></div>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "fixed_text_in_skeleton",
+      "regel": "R1",
+      "schwere": "warnung"
+    },
+    {
+      "klasse": "legacy_inline_slot",
+      "regel": "ALT",
+      "schwere": "warnung"
+    }
+  ]
+}
