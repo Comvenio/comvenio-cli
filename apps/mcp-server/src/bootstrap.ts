@@ -337,10 +337,12 @@ function runtimeServerFactory(
         backend_actor_token: context.backend_actor_token,
       })
       : [];
+    // A token with only club.write may call write functions (R1+); the server filters the list
+    // by the scope it carries, so either club scope loads it.
     const releasedAgentFunctions = exposesClubAgent
       && context.request.club_id
       && context.backend_actor_token
-      && context.request.scopes.includes("club.read")
+      && (context.request.scopes.includes("club.read") || context.request.scopes.includes("club.write"))
       ? await agentCapabilities.resolveFunctions({
         context: context.request,
         backend_actor_token: context.backend_actor_token,

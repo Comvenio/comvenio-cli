@@ -37,6 +37,7 @@ export type FunctionRun = {
 
 type FunctionOptions = {
   club?: string;
+  channel?: string;
   args?: string;
   idempotencyKey?: string;
   json?: boolean;
@@ -64,6 +65,19 @@ export function resolveFunctionCommand(action: string, target: string | undefine
     throw new Error("function show braucht die Kennung des Laufs (UUID).");
   }
   return { action: action as FunctionAction, target };
+}
+
+export const FUNCTION_CHANNELS = ["web", "cli", "mcp"] as const;
+
+/** `--channel` for `function list`: which channel's view to show (§11.4); the server keeps a
+ * device token on its own channel and only lets the web preview the others. */
+export function functionListPath(clubId: string, channel: string | undefined): string {
+  const base = `/club-agents/${clubId}/functions`;
+  if (channel === undefined || channel === "") return base;
+  if (!FUNCTION_CHANNELS.includes(channel as (typeof FUNCTION_CHANNELS)[number])) {
+    throw new Error(`--channel kennt nur ${FUNCTION_CHANNELS.join(", ")}.`);
+  }
+  return `${base}?channel=${channel}`;
 }
 
 /** The intent as JSON object (`--args '{"title":"…"}'`). */
@@ -120,6 +134,7 @@ export function registerFunctionCommands(cli: CAC): void {
       "Funktionen des Club-Agenten: list — freigegebene Funktionen; run <kennung> --args '<json>' — aufrufen; show <lauf> — Stand",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
+    .option("--channel <kanal>", "list: Sicht eines Kanals (web | cli | mcp)")
     .option("--args <json>", "run: die Absicht als JSON-Objekt")
     .option("--idempotency-key <key>", "run: gleicher Schlüssel, gleicher Lauf (Wiederholung sicher)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
@@ -130,7 +145,7 @@ export function registerFunctionCommands(cli: CAC): void {
       const clubId = requireClubId(state, opts.club);
       const client = createClient(state);
       if (command.action === "list") {
-        const list = await client.get<{ items: FunctionDescriptor[] }>("ai", `/club-agents/${clubId}/functions`);
+        const list = await client.get<{ items: FunctionDescriptor[] }>("ai", functionListPath(clubId, opts.channel));
         output(list, opts.json, () => formatFunctionList(list.items));
         return;
       }

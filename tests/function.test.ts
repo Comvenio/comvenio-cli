@@ -4,6 +4,7 @@ import cac from "cac";
 import {
   formatFunctionList,
   formatFunctionRun,
+  functionListPath,
   parseFunctionArgs,
   registerFunctionCommands,
   resolveFunctionCommand,
@@ -49,5 +50,15 @@ describe("comvenio function (Agent-Funktionen K2, Strang 02 §11)", () => {
     });
     expect(waiting).toContain("wartet auf Freigabe");
     expect(waiting).toContain("entscheide in Web oder App: https://comvenio.app/club/c?approval=a1");
+  });
+});
+
+describe("function list --channel", () => {
+  test("adds the channel only when one is asked for", () => {
+    expect(functionListPath("c1", undefined)).toBe("/club-agents/c1/functions");
+    expect(functionListPath("c1", "mcp")).toBe("/club-agents/c1/functions?channel=mcp");
+  });
+  test("rejects an unknown channel before any request", () => {
+    expect(() => functionListPath("c1", "fax")).toThrow("--channel kennt nur web, cli, mcp.");
   });
 });
