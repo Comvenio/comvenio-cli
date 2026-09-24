@@ -16,6 +16,7 @@ import { runtimeError } from "./errors.ts";
 import type {
   ActorTokenPort,
   AgentCapabilityProjection,
+  AgentFunctionDescriptor,
   CapabilityContextResolver,
   IntrospectionPort,
   ProviderRegistrationResolver,
@@ -45,6 +46,18 @@ const agentCapabilityProjectionSchema = z.object({
   evidence_bundle_hash: z.string().trim().min(1).nullable(),
 });
 const agentCapabilityResponseSchema = z.array(z.unknown());
+
+const agentFunctionSchema = z.object({
+  capability_id: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/u),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000),
+  risk_level: z.number().int().min(0).max(3),
+  approval_required: z.boolean(),
+  input_schema: z.record(z.string(), z.unknown()),
+  capability_version: z.number().int().min(0),
+  input_schema_hash: z.string().nullable().optional(),
+});
+const agentFunctionListSchema = z.object({ items: z.array(z.unknown()) });
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -431,6 +444,42 @@ export class HttpAgentCapabilityResolver {
     } catch {
       // The Club-Agent bridge is optional relative to direct data tools. Any
       // unavailable, denied or malformed gate response hides only this bridge.
+      return [];
+    }
+  }
+
+  /** Agent-Funktionen K2: the released functions of the MCP channel (fail-closed: [] on any error). */
+  async resolveFunctions(input: {
+    context: RequestContext;
+    backend_actor_token: string;
+  }): Promise<AgentFunctionDescriptor[]> {
+    if (!input.context.club_id || !input.context.subject_id) return [];
+    try {
+      const response = await timedFetch(
+        this.#fetch,
+        `${this.#apiBaseUrl}/ai/club-agents/${encodeURIComponent(input.context.club_id)}/functions?channel=mcp`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${input.backend_actor_token}`,
+            "x-request-id": input.context.request_id,
+          },
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined);
+        return [];
+      }
+      const list = agentFunctionListSchema.parse(await jsonResponse(response));
+      const functions: AgentFunctionDescriptor[] = [];
+      for (const value of list.items) {
+        const parsed = agentFunctionSchema.safeParse(value);
+        if (!parsed.success) continue;
+        functions.push({ ...parsed.data, input_schema_hash: parsed.data.input_schema_hash ?? null });
+      }
+      return functions;
+    } catch {
       return [];
     }
   }

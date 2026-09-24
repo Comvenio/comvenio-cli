@@ -337,12 +337,22 @@ function runtimeServerFactory(
         backend_actor_token: context.backend_actor_token,
       })
       : [];
+    const releasedAgentFunctions = exposesClubAgent
+      && context.request.club_id
+      && context.backend_actor_token
+      && context.request.scopes.includes("club.read")
+      ? await agentCapabilities.resolveFunctions({
+        context: context.request,
+        backend_actor_token: context.backend_actor_token,
+      })
+      : [];
     const server = createRuntimeServer({
       environment: config.environment,
       api_base_url: config.api_base_url,
       public_origin: config.public_origin,
       context,
       club_agent_capabilities: releasedAgentCapabilities,
+      club_agent_functions: releasedAgentFunctions,
       domain_state_store: stateStore,
       release_scope: config.release_scope,
     });
