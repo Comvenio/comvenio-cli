@@ -57,9 +57,10 @@ function recording(answer: (request: ComvenioApiRequest) => JsonValue, bytes?: C
 }
 
 describe("Finance Hub: Inventar", () => {
-  test("18 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
-    // +1 budget-saison-03 (cai.finance.37.budget_season), +1 buchhaltung-13-04 (cai.finance.38.entry_detail).
-    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(18);
+  test("19 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
+    // +1 budget-saison-03 (cai.finance.37.budget_season), +1 buchhaltung-13-04 (cai.finance.38.entry_detail),
+    // +1 bereich-als-sicht-04 (cai.finance.39.budget_period).
+    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(19);
     expect(hubOperationCount()).toBeGreaterThan(70);
     const routes = Object.values(HUB_ACTION_DEFINITIONS).flatMap((definition) => Object.values(definition.operations).flatMap((operation) => operation.backend_routes));
     expect(routes.some((route) => route.normalized_path_template.includes("reopen"))).toBe(false);
@@ -529,5 +530,179 @@ describe("Finance Hub: Buchung im Detail", () => {
     const post = calls.find((call) => call.method === "POST");
     expect(post?.path).toBe(`/clubs/${clubId}/department-transfers/${transferId}/reject`);
     expect(post?.body).toEqual({ decision_note: "Kein Budget mehr" });
+  });
+});
+
+
+// bereich-als-sicht-04 (cai.finance.39 und die Ergänzungen an .24 und .25).
+describe("Finance Hub: Bereich als Sicht", () => {
+  const action = "cai.finance.39.budget_period";
+  const mobileId = "acacacac-acac-4cac-8cac-acacacacacac";
+  const jugendId = "abababab-abab-4bab-8bab-abababababab";
+  const groupId = "adadadad-adad-4dad-8dad-adadadadadad";
+  const plan2026 = "a2020202-2026-4026-8026-202620262026";
+  const plan2027 = "a2020202-2027-4027-8027-202720272027";
+
+  test("TC-06: acht Teiloperationen; Schreiben verlangt eine Bestätigung, Lesen nicht", () => {
+    const operations = HUB_ACTION_DEFINITIONS[action]!.operations;
+    expect(Object.keys(operations).sort()).toEqual(
+      ["frame_set", "frame_versions", "set", "show", "statement", "tree", "window_position_create", "window_position_update"],
+    );
+    for (const op of ["set", "frame_set", "window_position_create", "window_position_update"]) expect(operations[op]!.execution_gate, op).toBe("confirmation");
+    for (const op of ["show", "tree", "frame_versions", "statement"]) expect(operations[op]!.execution_gate, op).toBe("inline");
+    const accounts = HUB_ACTION_DEFINITIONS["cai.finance.24.money_account"]!.operations;
+    expect(accounts.grant_set!.execution_gate).toBe("confirmation");
+    expect(accounts.grant_revoke!.execution_gate).toBe("confirmation");
+    expect(accounts.grants!.execution_gate).toBe("inline");
+    expect(accounts.booking_accounts!.execution_gate).toBe("inline");
+    expect(HUB_ACTION_DEFINITIONS["cai.finance.25.entry_correction"]!.operations.entry_create_unplanned!.execution_gate).toBe("confirmation");
+  });
+
+  test("TC-01: period show ruft genau GET …/budget-periods/DEPARTMENT/{id}; der Baum das Fenster", async () => {
+    const { calls, client } = recording(() => ({ node_kind: "DEPARTMENT", node_id: mobileId, period_kind: "CUSTOM", source: "own", windows: [] }));
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "show", node_kind: "DEPARTMENT", node_id: mobileId }, context, capability_snapshot: manager,
+    });
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "tree", node_kind: "DEPARTMENT", node_id: mobileId, window_start: "2026-04-01" }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      `GET /clubs/${clubId}/budget-periods/DEPARTMENT/${mobileId}`,
+      `GET /clubs/${clubId}/budget-periods/DEPARTMENT/${mobileId}/2026-04-01/tree`,
+    ]);
+  });
+
+  test("TC-02: window_position_create zeigt die Teile je Haushalt, bevor etwas angelegt wird", async () => {
+    const { calls, client } = recording((call): JsonValue => {
+      if (call.path.endsWith(`/budget-periods/DEPARTMENT/${mobileId}`)) {
+        return { windows: [{ start: "2026-04-01", end: "2027-03-31", label: "2026/27", current: true }] };
+      }
+      if (call.path.endsWith("/finance-plans")) {
+        return [
+          { id: plan2026, club_id: clubId, department_id: null, label: "2026", period_start: "2026-01-01", period_end: "2026-12-31" },
+          { id: plan2027, club_id: clubId, department_id: null, label: "2027", period_start: "2027-01-01", period_end: "2027-12-31" },
+        ];
+      }
+      return {};
+    });
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "window_position_create", node_kind: "DEPARTMENT", node_id: mobileId, window_start: "2026-04-01",
+        data: { name: "Testgeräte", expense_planned_cents: 120000 } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "window_position")).toMatchObject({
+      parts_read: true,
+      parts: [
+        { plan_id: plan2026, planned_from: "2026-04-01", planned_until: "2026-12-31", expense_planned_cents: 90000 },
+        { plan_id: plan2027, planned_from: "2027-01-01", planned_until: "2027-03-31", expense_planned_cents: 30000 },
+      ],
+    });
+
+    const done = recording(() => ({ window_group_id: groupId, parts: [] }));
+    await createK14ToolSet({ client: done.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "window_position_create", node_kind: "DEPARTMENT", node_id: mobileId, window_start: "2026-04-01",
+        data: { name: "Testgeräte", expense_planned_cents: 120000 } },
+      context, capability_snapshot: manager,
+    });
+    // The confirmed run reads for its preview first; it writes exactly once.
+    expect(done.calls.filter((call) => call.method !== "GET").map((call) => `${call.method} ${call.path}`)).toEqual([
+      `POST /clubs/${clubId}/budget-periods/DEPARTMENT/${mobileId}/2026-04-01/positions`,
+    ]);
+    const update = recording(() => ({ window_group_id: groupId, parts: [] }));
+    await createK14ToolSet({ client: update.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: action, input: { club_id: clubId, operation: "window_position_update", window_group_id: groupId, data: { expense_planned_cents: 150000 } },
+      context, capability_snapshot: manager,
+    });
+    expect(update.calls[0]).toMatchObject({ method: "PATCH", path: `/clubs/${clubId}/budget-positions/groups/${groupId}`, body: { expense_planned_cents: 150000 } });
+  });
+
+  test("TC-03: grant_set belegt zuerst die Herkunft des Kontos und nennt Konto und Eigentümer in der Vorschau", async () => {
+    const accounts = [{ id: accountId, club_id: clubId, name: "Girokonto Verein", department_id: null }];
+    const { calls, client } = recording((call): JsonValue => call.method === "GET" ? accounts : {});
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "grant_set", account_id: accountId, node_kind: "DEPARTMENT", node_id: jugendId, data: { reason: "Jugend ohne eigenes Konto" } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "account_grant")).toMatchObject({
+      account_name: "Girokonto Verein", node_kind: "DEPARTMENT", node_id: jugendId, reason: "Jugend ohne eigenes Konto",
+    });
+    expect(calls.some((call) => call.method === "PUT")).toBe(false);
+
+    const done = recording((call): JsonValue => call.method === "GET" ? accounts : { id: groupId });
+    await createK14ToolSet({ client: done.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "grant_set", account_id: accountId, node_kind: "DEPARTMENT", node_id: jugendId },
+      context, capability_snapshot: manager,
+    });
+    // Preview and preflight both read the account list; the grant is written after the preflight.
+    expect(done.calls.map((call) => `${call.method} ${call.path}`).slice(-2)).toEqual([
+      `GET /clubs/${clubId}/money-accounts`,
+      `PUT /money-accounts/${accountId}/grants/DEPARTMENT/${jugendId}`,
+    ]);
+    // An account of another club never reaches the write.
+    const foreign = recording((call): JsonValue => call.method === "GET" ? [{ id: accountId, club_id: otherClubId }] : {});
+    await expect(createK14ToolSet({ client: foreign.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "grant_set", account_id: accountId, node_kind: "DEPARTMENT", node_id: jugendId },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(foreign.calls.some((call) => call.method === "PUT")).toBe(false);
+  });
+
+  test("TC-04: entry_create_unplanned ohne Rubrik und Kategorie scheitert vor dem Aufruf; mit Rubrik nennt die Vorschau den neuen Posten", async () => {
+    const refused = recording(() => ({}));
+    await expect(createK14ToolSet({ client: refused.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "entry_create_unplanned", plan_id: planId, data: { node_kind: "DEPARTMENT", node_id: jugendId, description: "Kabel", expense_cents: 1299, booking_date: "2026-08-12" } },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(refused.calls).toHaveLength(0);
+
+    const rubricId = "aeaeaeae-aeae-4eae-8eae-aeaeaeaeaeae";
+    const { calls, client } = recording((call): JsonValue => call.method === "GET" ? [] : {});
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "entry_create_unplanned", plan_id: planId,
+        data: { node_kind: "DEPARTMENT", node_id: jugendId, rubric_id: rubricId, description: "Kabel", expense_cents: 1299, booking_date: "2026-08-12", money_account_id: accountId } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "unplanned_entry")).toMatchObject({ creates_position: true, rubric_id: rubricId, money_account_id: accountId });
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+
+    const done = recording(() => ({ id: entryId, club_id: clubId, position_created: true }));
+    await createK14ToolSet({ client: done.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "entry_create_unplanned", plan_id: planId, data: { node_kind: "DEPARTMENT", node_id: jugendId, category: "Store-Gebühren", description: "Kabel", expense_cents: 1299, booking_date: "2026-08-12" } },
+      context, capability_snapshot: manager,
+    });
+    expect(done.calls.filter((call) => call.method !== "GET").map((call) => `${call.method} ${call.path}`)).toEqual([`POST /clubs/${clubId}/finance-plans/by-id/${planId}/entries/unplanned`]);
+  });
+
+  test("TC-05: booking_accounts trägt Knotenart und Knoten als Abfrage", async () => {
+    const { calls, client } = recording(() => ({ node_kind: "DEPARTMENT", node_id: jugendId, node_name: "Jugend", accounts: [] }));
+    await createK14ToolSet({ client }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "booking_accounts", plan_id: planId, node_kind: "DEPARTMENT", node_id: jugendId },
+      context, capability_snapshot: manager,
+    });
+    expect(calls[0]).toMatchObject({ method: "GET", path: `/clubs/${clubId}/finance-plans/by-id/${planId}/booking-accounts`, query: { node_kind: "DEPARTMENT", node_id: jugendId } });
+  });
+
+  test("TD-S2 in der Vorschau rechnet wie der Dienst: kumulativ gerundet, Summe exakt", async () => {
+    const { windowShare } = await import("../src/tools/finance/preview.ts");
+    const span: [string, string] = ["2026-04-01", "2027-03-31"];
+    const parts = [windowShare(150000, span, ["2026-04-01", "2026-12-31"]), windowShare(150000, span, ["2027-01-01", "2027-03-31"])];
+    expect(parts).toEqual([112500, 37500]);
+    const odd = [windowShare(1000, ["2026-04-15", "2026-06-10"], ["2026-04-15", "2026-04-30"]), windowShare(1000, ["2026-04-15", "2026-06-10"], ["2026-05-01", "2026-06-10"])];
+    expect(odd[0]! + odd[1]!).toBe(1000);
   });
 });

@@ -201,7 +201,7 @@ describe("K14: was der Dienst im Rumpf verlangt", () => {
     const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
     const ids = finance.listDefinitions().map((definition) => definition.action_id);
     // 19 aus K14, 16 aus dem vollständigen Finance Hub (hub.ts) — keine davon öffnet wieder.
-    expect(ids).toHaveLength(37); // +1 budget-organigramm-04 (cai.finance.36), +1 budget-saison-03 (cai.finance.37), +1 buchhaltung-13-04 (cai.finance.38)
+    expect(ids).toHaveLength(38); // +1 budget-organigramm-04 (cai.finance.36), +1 budget-saison-03 (cai.finance.37), +1 buchhaltung-13-04 (cai.finance.38), +1 bereich-als-sicht-04 (cai.finance.39)
     expect(ids.some((id) => id.includes("reopen"))).toBe(false);
   });
 

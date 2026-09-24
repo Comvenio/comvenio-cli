@@ -45,6 +45,8 @@ export const FINANCE_AREAS: Record<string, string> = {
   season: "cai.finance.37.budget_season",
   // buchhaltung-13-04: Buchung im Detail und offene Punkte.
   detail: "cai.finance.38.entry_detail",
+  // bereich-als-sicht-04: Zeitraum der Abteilung, Sicht, Rahmen, Abrechnung, Posten im Fenster.
+  period: "cai.finance.39.budget_period",
 };
 
 function isObject(value: unknown): value is JsonObject {
@@ -191,6 +193,8 @@ const READ_OPERATIONS = new Set([
   "opening_versions", "cash_book", "reconciliation", "versions", "tax_report", "account_choices", "result",
   "open_items", "resolutions", "version", "download", "event", "event_reconciliation", "series_comparison",
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
+  // bereich-als-sicht-04
+  "tree", "frame_versions", "statement", "grants", "booking_accounts",
 ]);
 
 /**

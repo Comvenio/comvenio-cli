@@ -1,6 +1,7 @@
-// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .38 (.36 Budget
+// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .39 (.36 Budget
 // im Organigramm, budget-organigramm-04; .37 Saison, budget-saison-03; .38
-// Buchung im Detail, buchhaltung-13-04).
+// Buchung im Detail, buchhaltung-13-04; .39 Zeitraum einer Abteilung,
+// bereich-als-sicht-04).
 //
 // K14 bediente nur Jahresplan, Budgetposten und Buchung. Alles andere, was der
 // finance-service kann — Pläne je Zeitraum und Abteilung, Geldkonten mit
@@ -33,6 +34,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { addK14Handler, assertHerkunft, assertTenant, request } from "./handlers.ts";
+import { unplannedCheck } from "./preview.ts";
 import { redactFinanceValue } from "./privacy.ts";
 import type { K14ActionDefinition, K14ActionId, K14ActionSchemaContract, K14BackendRoute, K14ExecutionGate, K14OperationDefinition } from "./types.ts";
 
@@ -73,6 +75,8 @@ interface Op {
   binary?: boolean;
   /** Antworten, die von Natur aus mehrere Abteilungen tragen. */
   multiDepartment?: boolean;
+  /** Prüfung der Eingabe vor jedem Aufruf — als Satz statt als 422 des Dienstes. */
+  check?: (input: JsonObject, context: RequestContext) => void;
 }
 
 function str(input: JsonObject, key: string): string { const value = input[key]; if (typeof value !== "string") throw new Error(`${key} fehlt.`); return value; }
@@ -143,6 +147,16 @@ const rubricsPath = (input: JsonObject) => `${club(input)}/departments/${str(inp
 const seasonStart = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "season_start als YYYY-MM-DD");
 const seasonPath = (input: JsonObject) => `${club(input)}/budget-seasons/${str(input, "season_start")}`;
 const rubricOwn = listed("/clubs/{club_id}/departments/{department_id}/budget-rubrics", rubricsPath, "rubric_id", "Rubrik");
+// bereich-als-sicht-04: der Zeitraum eines Knotens und seine Fenster (YYYY-MM-DD).
+const windowStart = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "window_start als YYYY-MM-DD");
+const periodPath = (input: JsonObject) => `${club(input)}/budget-periods/${str(input, "node_kind")}/${str(input, "node_id")}`;
+const windowPath = (input: JsonObject) => `${periodPath(input)}/${str(input, "window_start")}`;
+const PERIOD = "/clubs/{club_id}/budget-periods/{node_kind}/{node_id}";
+// Die Freigabe schreibt an einem Konto, das der Pfad nur mit seiner Kennung
+// nennt: Herkunft vorher über die Kontenliste des Vereins belegen.
+const accountOwn = listed("/clubs/{club_id}/money-accounts", (i) => `${club(i)}/money-accounts`, "account_id", "Geldkonto", undefined, { include_archived: "true" });
+const grantPath = (input: JsonObject) => `/money-accounts/${str(input, "account_id")}/grants/${str(input, "node_kind")}/${str(input, "node_id")}`;
+const grantKind = z.enum(["DEPARTMENT", "TEAM"]);
 // buchhaltung-13-04 DC-3: Knotenart und Knoten gehören zusammen — der Fehler
 // fällt vor dem Aufruf auf, als Satz statt als 422 des Dienstes.
 function journalQuery(input: JsonObject, context?: RequestContext): Record<string, string> {
@@ -193,6 +207,13 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "opening_versions", method: "GET", template: `${BY_ID}/money-accounts/{account_id}/opening/versions`, path: (i) => `${byId(i)}/money-accounts/${str(i, "account_id")}/opening/versions`, risk: "read", shape: { plan_id: uuid, account_id: uuid } },
     { op: "cash_book", method: "GET", template: `${BY_ID}/cash-book`, path: (i) => `${byId(i)}/cash-book`, risk: "read", shape: { plan_id: uuid, money_account_id: uuid }, query: (i) => optional(i, ["money_account_id"]) },
     { op: "reconciliation", method: "GET", template: `${BY_ID}/money-accounts/reconciliation`, path: (i) => `${byId(i)}/money-accounts/reconciliation`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
+    // bereich-als-sicht-04 §4.2: Freigaben eines Kontos für Knoten (D40, D41).
+    // Lesen ohne Vorprüfung wie das Kassenbuch: Auch der freigegebene Knoten
+    // liest, obwohl ihm die Kontenliste das Konto nicht zeigt.
+    { op: "grants", method: "GET", template: "/money-accounts/{account_id}/grants", path: (i) => `/money-accounts/${str(i, "account_id")}/grants`, risk: "read", shape: { account_id: uuid }, multiDepartment: true },
+    { op: "grant_set", method: "PUT", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}", path: grantPath, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
+    { op: "grant_revoke", method: "POST", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}/revoke", path: (i) => `${grantPath(i)}/revoke`, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
+    { op: "booking_accounts", method: "GET", template: `${BY_ID}/booking-accounts`, path: (i) => `${byId(i)}/booking-accounts`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind.optional(), node_id: nodeId.optional() }, query: (i) => optional(i, ["node_kind", "node_id"]), multiDepartment: true },
   ] },
   "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere|objections", ops: [
     // Die Buchung mit allem, was die GoBD-Klammer verlangt: Geldkonto
@@ -200,6 +221,9 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     // (receipt_required). cai.finance.16 kennt beides nicht — in einem Verein
     // mit Geldkonten nimmt der Dienst dort keine Buchung an.
     { op: "entry_create", method: "POST", template: "/positions/{position_id}/entries", path: (i) => `/positions/${str(i, "position_id")}/entries`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
+    // bereich-als-sicht-04 §4.3: ungeplant buchen — der Dienst legt beim ersten
+    // Mal den Posten „Ungeplant · <Rubrik>“ an (D46); die Vorschau sagt, ob.
+    { op: "entry_create_unplanned", method: "POST", template: `${BY_ID}/entries/unplanned`, path: (i) => `${byId(i)}/entries/unplanned`, risk: "critical", shape: { plan_id: uuid, data }, body: payload, check: unplannedCheck, multiDepartment: true },
     // Ein Storno ist eine neue, festgeschriebene Gegenbuchung — nicht umkehrbar.
     { op: "reverse", method: "POST", template: "/entries/{entry_id}/reverse", path: (i) => `/entries/${str(i, "entry_id")}/reverse`, risk: "critical", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
     { op: "receipt", method: "PUT", template: "/entries/{entry_id}/receipt", path: (i) => `/entries/${str(i, "entry_id")}/receipt`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
@@ -367,6 +391,21 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
   // Buchung im Detail (buchhaltung-13-04): eine Buchung mit Zeitleiste,
   // Kostenverlauf und den erlaubten Aktionen, dazu die offenen Punkte des
   // Menschen. Beides nur lesend; der Dienst filtert nach seinem Recht.
+  // bereich-als-sicht-04: der Zeitraum einer Abteilung, ihre Sicht über ein
+  // Fenster, Rahmen je Fenster, Abrechnung und Posten im Fenster (02). Eigene
+  // Aktion, weil der Zeitraum an keinem Plan hängt.
+  "cai.finance.39.budget_period": { source: "budget-period", ops: [
+    { op: "show", method: "GET", template: PERIOD, path: periodPath, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
+    { op: "set", method: "PUT", template: PERIOD, path: periodPath, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, data }, body: payload, multiDepartment: true },
+    { op: "tree", method: "GET", template: `${PERIOD}/{window_start}/tree`, path: (i) => `${windowPath(i)}/tree`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart }, multiDepartment: true },
+    // Ein Rahmen je Fenster ist eine beschlossene Zahl — Vorschau mit alt, neu und Grund.
+    { op: "frame_set", method: "PUT", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}`, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, frame_kind: nodeKind, frame_id: nodeId, data }, body: payload, multiDepartment: true },
+    { op: "frame_versions", method: "GET", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}/versions`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}/versions`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, frame_kind: nodeKind, frame_id: nodeId }, multiDepartment: true },
+    { op: "statement", method: "GET", template: `${PERIOD}/{window_start}/statement`, path: (i) => `${windowPath(i)}/statement`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart }, multiDepartment: true },
+    // D49: ein Teil je berührtem Haushalt — die Vorschau nennt die Teile.
+    { op: "window_position_create", method: "POST", template: `${PERIOD}/{window_start}/positions`, path: (i) => `${windowPath(i)}/positions`, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, data }, body: payload, multiDepartment: true },
+    { op: "window_position_update", method: "PATCH", template: "/clubs/{club_id}/budget-positions/groups/{window_group_id}", path: (i) => `${club(i)}/budget-positions/groups/${str(i, "window_group_id")}`, risk: "critical", shape: { window_group_id: uuid, data }, body: payload, multiDepartment: true },
+  ] },
   "cai.finance.38.entry_detail": { source: "entry-detail", ops: [
     { op: "entry", method: "GET", template: "/entries/{entry_id}/detail", path: (i) => `/entries/${str(i, "entry_id")}/detail`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
     { op: "open_items", method: "GET", template: "/clubs/{club_id}/finance/open-items", path: (i) => `${club(i)}/finance/open-items`, risk: "read", shape: { plan_id: uuid.optional() }, query: (i) => optional(i, ["plan_id"]), multiDepartment: true },
@@ -415,6 +454,7 @@ const MAX_EXPORT_BYTES = 20 * 1024 * 1024;
 for (const [id, spec] of Object.entries(ACTIONS)) {
   for (const op of spec.ops) {
     addK14Handler(id as K14ActionId, op.op, async (input, context, client) => {
+      op.check?.(input, context);
       if (op.preflight) await op.preflight.check(input, context, client);
       const query = op.query?.(input, context);
       if (op.binary) {

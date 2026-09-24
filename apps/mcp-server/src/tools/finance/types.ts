@@ -28,6 +28,8 @@ export const K14_FINANCE_ACTION_IDS = [
   // budget-saison-03: Saisons, Saisonbaum, Saisonrahmen, Vorschlag des Haushaltsrahmens.
   "cai.finance.37.budget_season",
   "cai.finance.38.entry_detail",
+  // bereich-als-sicht-04: Zeitraum einer Abteilung, Sicht, Rahmen je Fenster, Posten im Fenster.
+  "cai.finance.39.budget_period",
 ] as const;
 
 export type K14ActionId = (typeof K14_FINANCE_ACTION_IDS)[number];
