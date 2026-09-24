@@ -313,8 +313,8 @@ export async function handleFinanceOperation({
       );
     case "entry-show":
       return client.get("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
-    case "entry-update":
-      return client.patch("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`, bodyFrom(opts, action, {
+    case "entry-update": {
+      const aenderung = bodyFrom(opts, action, {
         description: opts.description,
         revenue_cents: cents(opts.revenue, "--revenue"),
         expense_cents: cents(opts.expense, "--expense"),
@@ -322,7 +322,13 @@ export async function handleFinanceOperation({
         notes: opts.notes,
         // buchhaltung-13 D-13-02: the reason of a correction, required while an objection is open.
         reason: opts.reason,
-      }));
+      });
+      // A reason alone changes nothing — the objection would stay open (13 review R2-10).
+      if (!Object.keys(aenderung).some((schluessel) => schluessel !== "reason")) {
+        throw new Error("finance entry-update: Ein Grund allein ändert nichts — mindestens ein Feld der Buchung angeben.");
+      }
+      return client.patch("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`, aenderung);
+    }
     case "entry-delete":
       return client.del("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
     case "entry-approve":
