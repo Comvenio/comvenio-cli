@@ -28,6 +28,7 @@ type Opts = {
   range?: string;
   telegram?: boolean;
   plan?: string;
+  idempotencyKey?: string;
 };
 
 type CreateResult = { run_id: string; plan_id: string; status: string; error?: string | null };
@@ -41,14 +42,28 @@ type SnapshotRead = {
 };
 
 /** Body of the function call (ai-service POST /club-agents/{club}/weekly-previews/create). */
-export function buildCreateBody(opts: { department?: string; teams?: string; range?: string; telegram?: boolean }): Record<string, unknown> {
+export function buildCreateBody(
+  opts: { department?: string; teams?: string; range?: string; telegram?: boolean; idempotencyKey?: string },
+): Record<string, unknown> {
   if (!opts.department) throw new Error("weekly-preview create benötigt --department <id>.");
   const range = opts.range ?? "next_week";
   if (range !== "next_week" && range !== "next_7_days") {
     throw new Error("--range ist next_week oder next_7_days.");
   }
   const teamIds = (opts.teams ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-  return { department_id: opts.department, team_ids: teamIds, range, telegram: Boolean(opts.telegram) };
+  // Always a key: a repeat with the same key after a timeout answers with the first run
+  // instead of starting a second preview (Codex, 24.09.).
+  const idempotencyKey = opts.idempotencyKey?.trim() || `weekly-preview-${crypto.randomUUID()}`;
+  return {
+    department_id: opts.department, team_ids: teamIds, range, telegram: Boolean(opts.telegram),
+    idempotency_key: idempotencyKey,
+  };
+}
+
+/** A timeout does not mean the server stopped: say how to look and how to repeat safely. */
+export function createTimeoutHint(idempotencyKey: string): string {
+  return "Zeitgrenze erreicht — der Server arbeitet eventuell weiter. Stand: comvenio function runs weekly_preview.create. "
+    + `Wiederholen ohne zweiten Lauf: --idempotency-key ${idempotencyKey}`;
 }
 
 export const shareUrlFor = (gatewayBaseUrl: string, shareToken: string): string =>
@@ -103,6 +118,7 @@ export function registerWeeklyPreviewCommands(cli: CAC): void {
     .option("--teams <ids>", "create: Mannschafts-IDs, komma-getrennt (ohne: alle Mannschaften der Abteilung)")
     .option("--range <v>", "create: next_week (Standard) | next_7_days")
     .option("--telegram", "create: nach Freigabe auch in die verknüpften Telegram-Chats")
+    .option("--idempotency-key <key>", "create: gleicher Schlüssel, gleicher Lauf (Wiederholung nach Abbruch sicher)")
     .option("--plan <id>", "list: Plan-ID aus create")
     .option("--name <name>", "Name der Vorlage (template set)")
     .option("--file <path>", "design.json mit design_config (template set)")
@@ -114,7 +130,17 @@ export function registerWeeklyPreviewCommands(cli: CAC): void {
 
       if (area === "create") {
         // The function (Tom 2026-09-23): same entry as the web button and the agent tool.
-        const result = await client.post<CreateResult>("ai", `/club-agents/${clubId}/weekly-previews/create`, buildCreateBody(opts));
+        const body = buildCreateBody(opts);
+        let result: CreateResult;
+        try {
+          result = await client.post<CreateResult>(
+            "ai", `/club-agents/${clubId}/weekly-previews/create`, body, { timeoutMs: 120_000 },
+          );
+        } catch (error) {
+          const aborted = error instanceof Error && /abort/i.test(`${error.name} ${error.message}`);
+          if (aborted) throw new Error(createTimeoutHint(String(body.idempotency_key)));
+          throw error;
+        }
         output(result, opts.json, () =>
           result.status === "failed"
             ? `Nicht erstellt: ${result.error ?? "unbekannter Fehler"}`
