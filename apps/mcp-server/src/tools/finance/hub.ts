@@ -34,7 +34,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { addK14Handler, assertHerkunft, assertTenant, request } from "./handlers.ts";
-import { unplannedCheck } from "./preview.ts";
+import { periodDefaults, unplannedCheck } from "./preview.ts";
 import { redactFinanceValue } from "./privacy.ts";
 import type { K14ActionDefinition, K14ActionId, K14ActionSchemaContract, K14BackendRoute, K14ExecutionGate, K14OperationDefinition } from "./types.ts";
 
@@ -77,6 +77,8 @@ interface Op {
   multiDepartment?: boolean;
   /** Prüfung der Eingabe vor jedem Aufruf — als Satz statt als 422 des Dienstes. */
   check?: (input: JsonObject, context: RequestContext) => void;
+  /** Ergänzt Standardwerte der Eingabe vor Vorprüfung und Pfad (04 DC-5). */
+  prepare?: (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => Promise<void>;
 }
 
 function str(input: JsonObject, key: string): string { const value = input[key]; if (typeof value !== "string") throw new Error(`${key} fehlt.`); return value; }
@@ -213,7 +215,7 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "grants", method: "GET", template: "/money-accounts/{account_id}/grants", path: (i) => `/money-accounts/${str(i, "account_id")}/grants`, risk: "read", shape: { account_id: uuid }, multiDepartment: true },
     { op: "grant_set", method: "PUT", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}", path: grantPath, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
     { op: "grant_revoke", method: "POST", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}/revoke", path: (i) => `${grantPath(i)}/revoke`, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
-    { op: "booking_accounts", method: "GET", template: `${BY_ID}/booking-accounts`, path: (i) => `${byId(i)}/booking-accounts`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind.optional(), node_id: nodeId.optional() }, query: (i) => optional(i, ["node_kind", "node_id"]), multiDepartment: true },
+    { op: "booking_accounts", method: "GET", template: `${BY_ID}/booking-accounts`, path: (i) => `${byId(i)}/booking-accounts`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind.optional(), node_id: nodeId.optional() }, query: (i) => optional(i, ["node_kind", "node_id"]), multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl) },
   ] },
   "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere|objections", ops: [
     // Die Buchung mit allem, was die GoBD-Klammer verlangt: Geldkonto
@@ -395,15 +397,15 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
   // Fenster, Rahmen je Fenster, Abrechnung und Posten im Fenster (02). Eigene
   // Aktion, weil der Zeitraum an keinem Plan hängt.
   "cai.finance.39.budget_period": { source: "budget-period", ops: [
-    { op: "show", method: "GET", template: PERIOD, path: periodPath, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
-    { op: "set", method: "PUT", template: PERIOD, path: periodPath, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, data }, body: payload, multiDepartment: true },
-    { op: "tree", method: "GET", template: `${PERIOD}/{window_start}/tree`, path: (i) => `${windowPath(i)}/tree`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart }, multiDepartment: true },
+    { op: "show", method: "GET", template: PERIOD, path: periodPath, risk: "read", shape: { node_kind: nodeKind.optional(), node_id: nodeId }, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl) },
+    { op: "set", method: "PUT", template: PERIOD, path: periodPath, risk: "critical", shape: { node_kind: nodeKind.optional(), node_id: nodeId, data }, body: payload, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl) },
+    { op: "tree", method: "GET", template: `${PERIOD}/{window_start}/tree`, path: (i) => `${windowPath(i)}/tree`, risk: "read", shape: { node_kind: nodeKind.optional(), node_id: nodeId, window_start: windowStart.optional() }, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl, true) },
     // Ein Rahmen je Fenster ist eine beschlossene Zahl — Vorschau mit alt, neu und Grund.
-    { op: "frame_set", method: "PUT", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}`, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, frame_kind: nodeKind, frame_id: nodeId, data }, body: payload, multiDepartment: true },
-    { op: "frame_versions", method: "GET", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}/versions`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}/versions`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, frame_kind: nodeKind, frame_id: nodeId }, multiDepartment: true },
-    { op: "statement", method: "GET", template: `${PERIOD}/{window_start}/statement`, path: (i) => `${windowPath(i)}/statement`, risk: "read", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart }, multiDepartment: true },
+    { op: "frame_set", method: "PUT", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}`, risk: "critical", shape: { node_kind: nodeKind.optional(), node_id: nodeId, window_start: windowStart.optional(), frame_kind: nodeKind, frame_id: nodeId, data }, body: payload, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl, true) },
+    { op: "frame_versions", method: "GET", template: `${PERIOD}/{window_start}/frames/{frame_kind}/{frame_id}/versions`, path: (i) => `${windowPath(i)}/frames/${str(i, "frame_kind")}/${str(i, "frame_id")}/versions`, risk: "read", shape: { node_kind: nodeKind.optional(), node_id: nodeId, window_start: windowStart.optional(), frame_kind: nodeKind, frame_id: nodeId }, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl, true) },
+    { op: "statement", method: "GET", template: `${PERIOD}/{window_start}/statement`, path: (i) => `${windowPath(i)}/statement`, risk: "read", shape: { node_kind: nodeKind.optional(), node_id: nodeId, window_start: windowStart.optional() }, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl, true) },
     // D49: ein Teil je berührtem Haushalt — die Vorschau nennt die Teile.
-    { op: "window_position_create", method: "POST", template: `${PERIOD}/{window_start}/positions`, path: (i) => `${windowPath(i)}/positions`, risk: "critical", shape: { node_kind: nodeKind, node_id: nodeId, window_start: windowStart, data }, body: payload, multiDepartment: true },
+    { op: "window_position_create", method: "POST", template: `${PERIOD}/{window_start}/positions`, path: (i) => `${windowPath(i)}/positions`, risk: "critical", shape: { node_kind: nodeKind.optional(), node_id: nodeId, window_start: windowStart.optional(), data }, body: payload, multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl, true) },
     { op: "window_position_update", method: "PATCH", template: "/clubs/{club_id}/budget-positions/groups/{window_group_id}", path: (i) => `${club(i)}/budget-positions/groups/${str(i, "window_group_id")}`, risk: "critical", shape: { window_group_id: uuid, data }, body: payload, multiDepartment: true },
   ] },
   "cai.finance.38.entry_detail": { source: "entry-detail", ops: [
@@ -455,6 +457,7 @@ for (const [id, spec] of Object.entries(ACTIONS)) {
   for (const op of spec.ops) {
     addK14Handler(id as K14ActionId, op.op, async (input, context, client) => {
       op.check?.(input, context);
+      if (op.prepare) await op.prepare(input, context, client);
       if (op.preflight) await op.preflight.check(input, context, client);
       const query = op.query?.(input, context);
       if (op.binary) {

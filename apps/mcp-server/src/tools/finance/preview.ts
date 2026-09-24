@@ -80,40 +80,72 @@ export function unplannedCheck(input: JsonObject, context: RequestContext): void
 
 // ── bereich-als-sicht-04 ──────────────────────────────────────────────
 
-// TD-S2 (budget-saison §5.3), as the service computes it: per calendar month
-// the share of its days, amounts rounded cumulatively (half to even), so the
-// parts add up to the cent. The preview only shows it — the service decides.
+// TD-S2 (budget-saison §5.3), exactly as the service computes it (Fraction
+// and Decimal ROUND_HALF_EVEN): per calendar month the share of its days as a
+// fraction, amounts rounded cumulatively half to even — so the parts add up
+// to the cent and match the service to the cent (review K9 R2-6).
+type Frac = { n: bigint; d: bigint };
+function gcd(a: bigint, b: bigint): bigint { a = a < 0n ? -a : a; b = b < 0n ? -b : b; while (b) [a, b] = [b, a % b]; return a || 1n; }
+function frac(n: bigint, d: bigint): Frac { const g = gcd(n, d); return { n: n / g, d: d / g }; }
+function add(a: Frac, b: Frac): Frac { return frac(a.n * b.d + b.n * a.d, a.d * b.d); }
 function days(year: number, month: number): number { return new Date(Date.UTC(year, month, 0)).getUTCDate(); }
 function parse(value: string): Date { return new Date(`${value}T00:00:00Z`); }
-function iso(value: Date): string { return value.toISOString().slice(0, 10); }
-function monthShare(start: Date, end: Date): number {
-  if (end < start) return 0;
-  let total = 0;
+function monthShare(start: Date, end: Date): Frac {
+  let total: Frac = { n: 0n, d: 1n };
+  if (end < start) return total;
   for (let y = start.getUTCFullYear(), m = start.getUTCMonth() + 1; y < end.getUTCFullYear() || (y === end.getUTCFullYear() && m <= end.getUTCMonth() + 1); m === 12 ? (m = 1, y += 1) : (m += 1)) {
     const n = days(y, m);
     const first = Math.max(start.getTime(), Date.UTC(y, m - 1, 1));
     const last = Math.min(end.getTime(), Date.UTC(y, m - 1, n));
-    total += ((last - first) / 86_400_000 + 1) / n;
+    total = add(total, frac(BigInt(Math.round((last - first) / 86_400_000) + 1), BigInt(n)));
   }
   return total;
 }
-function roundHalfEven(value: number): number {
-  const floor = Math.floor(value);
-  const rest = value - floor;
-  if (Math.abs(rest - 0.5) < 1e-9) return floor % 2 === 0 ? floor : floor + 1;
-  return Math.round(value);
+function roundHalfEven(value: Frac): bigint {
+  const negative = value.n < 0n;
+  const n = negative ? -value.n : value.n;
+  const q = n / value.d;
+  const r = n % value.d;
+  const twice = 2n * r;
+  const up = twice > value.d || (twice === value.d && q % 2n === 1n);
+  const rounded = up ? q + 1n : q;
+  return negative ? -rounded : rounded;
 }
-function cumulative(amount: number, span: [Date, Date], until: Date, total: number): number {
-  if (until < span[0]) return 0;
-  return roundHalfEven((amount * monthShare(span[0], until < span[1] ? until : span[1])) / total);
+function cumulative(amount: bigint, span: [Date, Date], until: Date, total: Frac): bigint {
+  if (until < span[0]) return 0n;
+  const part = monthShare(span[0], until < span[1] ? until : span[1]);
+  return roundHalfEven(frac(amount * part.n * total.d, part.d * total.n));
 }
 export function windowShare(amount: number, span: [string, string], part: [string, string]): number {
   const s: [Date, Date] = [parse(span[0]), parse(span[1])];
   const p: [Date, Date] = [parse(part[0]), parse(part[1])];
   const total = monthShare(s[0], s[1]);
-  if (!amount || total === 0) return 0;
-  const before = new Date(p[0].getTime() - 86_400_000);
-  return cumulative(amount, s, p[1], total) - cumulative(amount, s, before, total);
+  if (!amount || total.n === 0n) return 0;
+  const from = p[0] > s[0] ? p[0] : s[0];
+  const until = p[1] < s[1] ? p[1] : s[1];
+  if (from > until) return 0;
+  const before = new Date(from.getTime() - 86_400_000);
+  const value = BigInt(amount);
+  return Number(cumulative(value, s, until, total) - cumulative(value, s, before, total));
+}
+
+// 04 DC-5: node_kind DEPARTMENT when only node_id is named (the club as
+// "club"), and window_start the running window from `show` — before the
+// preview and before the call (review K9 R2-5).
+export async function periodDefaults(input: JsonObject, context: RequestContext, client?: ComvenioApiClient, window = false): Promise<void> {
+  if ((input.node_kind === undefined || input.node_kind === null) && input.node_id !== undefined && input.node_id !== null) {
+    input.node_kind = input.node_id === "club" ? "CLUB" : "DEPARTMENT";
+  }
+  if (!window || typeof input.window_start === "string") return;
+  if (!client || !context.club_id || typeof input.node_kind !== "string" || input.node_id === undefined || input.node_id === null) {
+    throw createConnectorError({ code: "VALIDATION_FAILED", message: "window_start fehlt und das laufende Fenster ist nicht bestimmbar — window_start angeben.", request_id: context.request_id, retryable: false });
+  }
+  const period = record(await request(client, context, "GET", `/clubs/${context.club_id}/budget-periods/${input.node_kind}/${String(input.node_id)}`));
+  const current = (Array.isArray(period.windows) ? period.windows.map(record) : []).find((w) => w.current === true);
+  if (!current || typeof current.start !== "string") {
+    throw createConnectorError({ code: "VALIDATION_FAILED", message: "Der Zeitraum hat kein laufendes Fenster — window_start angeben.", request_id: context.request_id, retryable: false });
+  }
+  input.window_start = current.start;
 }
 
 // The parts a window position would get: one per club plan the span touches.
@@ -177,8 +209,11 @@ async function unplannedPosition(client: ComvenioApiClient, context: RequestCont
   }
 }
 
+export const PERIOD_WINDOW_OPS = new Set(["tree", "frame_set", "frame_versions", "statement", "window_position_create"]);
+
 export async function buildK14Preview(definition: K14ActionDefinition, operation: K14OperationDefinition, input: JsonValue, context: RequestContext, client?: ComvenioApiClient): Promise<{ subject: string; summary: string; effects: JsonValue[] }> {
   const data = record(input);
+  if (definition.action_id === "cai.finance.39.budget_period") await periodDefaults(data, context, client, PERIOD_WINDOW_OPS.has(operation.operation));
   const effects: JsonValue[] = [{ type: "backend_mutation", action_id: definition.action_id, operation: operation.operation, target: identifier(data), external_effect: operation.external_effect }];
   // Was der Mensch vor dem Klick wissen muss, ist nicht die Route, sondern die
   // Reichweite: Ein geschlossenes Jahr nimmt keine Buchung mehr an, ein

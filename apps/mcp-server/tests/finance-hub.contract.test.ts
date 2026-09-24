@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 
 import type { JsonValue, RequestContext } from "@comvenio/connector-contracts";
+import { createConnectorError } from "@comvenio/connector-contracts";
 import type { ComvenioApiBinary, ComvenioApiClient, ComvenioApiRequest } from "@comvenio/comvenio-client";
 import type { CapabilitySnapshot } from "../../../packages/auth/src/index.ts";
 
@@ -704,5 +705,82 @@ describe("Finance Hub: Bereich als Sicht", () => {
     expect(parts).toEqual([112500, 37500]);
     const odd = [windowShare(1000, ["2026-04-15", "2026-06-10"], ["2026-04-15", "2026-04-30"]), windowShare(1000, ["2026-04-15", "2026-06-10"], ["2026-05-01", "2026-06-10"])];
     expect(odd[0]! + odd[1]!).toBe(1000);
+  });
+});
+
+
+// bereich-als-sicht-04, Fremdprüfung Runde 2.
+describe("Finance Hub: Bereich als Sicht — Runde 2", () => {
+  const action = "cai.finance.39.budget_period";
+  const mobileId = "acacacac-acac-4cac-8cac-acacacacacac";
+  const jugendId = "abababab-abab-4bab-8bab-abababababab";
+
+  test("R2-6: die Vorschau rechnet exakt wie der Dienst (Grenzfall aus der Prüfung)", async () => {
+    const { windowShare } = await import("../src/tools/finance/preview.ts");
+    // Sollwert aus budget_seasons.share des finance-service.
+    expect(windowShare(181080915, ["2061-03-28", "2061-12-05"], ["2061-07-02", "2061-09-23"])).toBe(59726170);
+  });
+
+  test("R2-5: nur node_id und ohne window_start — DEPARTMENT und das laufende Fenster aus show", async () => {
+    const { calls, client } = recording((call): JsonValue => call.path.endsWith(`/budget-periods/DEPARTMENT/${mobileId}`)
+      ? { windows: [{ start: "2026-04-01", end: "2027-03-31", label: "2026/27", current: true }] }
+      : { nodes: [], totals: { scope: "NODE" } });
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "tree", node_id: mobileId }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+      `GET /clubs/${clubId}/budget-periods/DEPARTMENT/${mobileId}`,
+      `GET /clubs/${clubId}/budget-periods/DEPARTMENT/${mobileId}/2026-04-01/tree`,
+    ]);
+    const accounts = recording(() => ({ accounts: [] }));
+    await createK14ToolSet({ client: accounts.client }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "booking_accounts", plan_id: planId, node_id: jugendId },
+      context, capability_snapshot: manager,
+    });
+    expect(accounts.calls[0]?.query).toEqual({ node_kind: "DEPARTMENT", node_id: jugendId });
+  });
+
+  test("R2-5: ohne laufendes Fenster und ohne window_start — VALIDATION_FAILED vor dem Baum", async () => {
+    const { calls, client } = recording(() => ({ windows: [{ start: "2025-04-01", end: "2026-03-31", label: "2025/26", current: false }] }));
+    await expect(createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "statement", node_id: mobileId }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls.every((call) => !call.path.endsWith("/statement"))).toBe(true);
+  });
+
+  test("TC-05: Fehler des Dienstes kommen mit ihrem Code unverändert an", async () => {
+    for (const [op, input, code] of [
+      ["window_position_create", { node_kind: "DEPARTMENT", node_id: mobileId, window_start: "2026-04-01", data: { name: "Testgeräte", expense_planned_cents: 120000 } }, "window_plan_missing"],
+    ] as const) {
+      const failing: ComvenioApiClient = {
+        timeout_ms: 15_000,
+        async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> {
+          if (request.method === "GET") return { windows: [] } as unknown as T;
+          throw createConnectorError({ code: "CONFLICT", message: `Der Comvenio-Dienst hat die Anfrage abgelehnt: ${code}: There is no club plan for Januar 2027`, request_id: context.request_id, retryable: false });
+        },
+      };
+      await expect(createK14ToolSet({ client: failing, confirmation: confirmAll, write_safety: allowWrites }).execute({
+        action_id: action, input: { club_id: clubId, operation: op, ...input }, context, capability_snapshot: manager,
+      })).rejects.toMatchObject({ code: "CONFLICT", message: expect.stringContaining(code) });
+    }
+    const refused: ComvenioApiClient = {
+      timeout_ms: 15_000,
+      async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        if (request.method === "GET") return [] as unknown as T;
+        throw createConnectorError({ code: "VALIDATION_FAILED", message: "Der Comvenio-Dienst hat die Anfrage abgelehnt: money_account_not_granted: The account Girokonto belongs to Verein", request_id: context.request_id, retryable: false });
+      },
+    };
+    await expect(createK14ToolSet({ client: refused, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "entry_create_unplanned", plan_id: planId, data: { node_kind: "DEPARTMENT", node_id: jugendId, category: "Kabel", description: "Kabel", expense_cents: 1299, booking_date: "2026-08-12", money_account_id: accountId } },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED", message: expect.stringContaining("money_account_not_granted") });
+  });
+
+  test("R2-4: Freigaben eines fremden Vereins fallen am Vereinsabgleich der Antwort", async () => {
+    const { client } = recording(() => [{ id: accountId, club_id: otherClubId, money_account_id: accountId, node_kind: "DEPARTMENT", node_id: jugendId }]);
+    await expect(createK14ToolSet({ client }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "grants", account_id: accountId }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
   });
 });
