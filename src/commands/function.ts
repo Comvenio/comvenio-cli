@@ -43,7 +43,7 @@ type FunctionOptions = {
   json?: boolean;
 };
 
-export const FUNCTION_ACTIONS = ["list", "run", "show"] as const;
+export const FUNCTION_ACTIONS = ["list", "run", "show", "runs"] as const;
 type FunctionAction = (typeof FUNCTION_ACTIONS)[number];
 
 const CAPABILITY_ID = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$/u;
@@ -57,6 +57,13 @@ export function resolveFunctionCommand(action: string, target: string | undefine
   if (action === "list") {
     if (target) throw new Error("function list nimmt kein Ziel.");
     return { action };
+  }
+  if (action === "runs") {
+    // Optional target: only the runs of this function.
+    if (target && !CAPABILITY_ID.test(target)) {
+      throw new Error("function runs nimmt optional die Kennung einer Funktion, etwa weekly_preview.create.");
+    }
+    return { action, target };
   }
   if (action === "run" && (!target || !CAPABILITY_ID.test(target))) {
     throw new Error("function run braucht die Kennung der Funktion, etwa weekly_preview.create.");
@@ -116,6 +123,14 @@ export function formatFunctionList(items: FunctionDescriptor[]): string {
     .join("\n");
 }
 
+/** One line per run, newest first: when, function, state, run id. */
+export function formatFunctionRuns(runs: FunctionRun[]): string {
+  if (runs.length === 0) return "Keine Funktionsläufe.";
+  return runs
+    .map((run) => `${run.created_at.slice(0, 16).replace("T", " ")}  ${run.capability_id}: ${STATE_LABELS[run.state] ?? run.state}  (${run.channel})  ${run.id}`)
+    .join("\n");
+}
+
 export function formatFunctionRun(run: FunctionRun): string {
   const lines = [
     `${run.capability_id}: ${STATE_LABELS[run.state] ?? run.state}`,
@@ -131,7 +146,7 @@ export function registerFunctionCommands(cli: CAC): void {
   cli
     .command(
       "function <action> [target]",
-      "Funktionen des Club-Agenten: list — freigegebene Funktionen; run <kennung> --args '<json>' — aufrufen; show <lauf> — Stand",
+      "Funktionen des Club-Agenten: list — freigegebene Funktionen; run <kennung> --args '<json>' — aufrufen; show <lauf> — Stand; runs [kennung] — eigene Läufe",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--channel <kanal>", "list: Sicht eines Kanals (web | cli | mcp)")
@@ -147,6 +162,12 @@ export function registerFunctionCommands(cli: CAC): void {
       if (command.action === "list") {
         const list = await client.get<{ items: FunctionDescriptor[] }>("ai", functionListPath(clubId, opts.channel));
         output(list, opts.json, () => formatFunctionList(list.items));
+        return;
+      }
+      if (command.action === "runs") {
+        const query = command.target ? `?capability_id=${encodeURIComponent(command.target)}` : "";
+        const list = await client.get<{ items: FunctionRun[] }>("ai", `/club-agents/${clubId}/function-runs${query}`);
+        output(list, opts.json, () => formatFunctionRuns(list.items));
         return;
       }
       if (command.action === "show") {

@@ -114,7 +114,9 @@ export function registerWeeklyPreviewCommands(cli: CAC): void {
 
       if (area === "create") {
         // The function (Tom 2026-09-23): same entry as the web button and the agent tool.
-        const result = await client.post<CreateResult>("ai", `/club-agents/${clubId}/weekly-previews/create`, buildCreateBody(opts));
+        const result = await client.post<CreateResult>(
+          "ai", `/club-agents/${clubId}/weekly-previews/create`, buildCreateBody(opts), { timeoutMs: 120_000 },
+        );
         output(result, opts.json, () =>
           result.status === "failed"
             ? `Nicht erstellt: ${result.error ?? "unbekannter Fehler"}`

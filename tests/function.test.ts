@@ -4,6 +4,7 @@ import cac from "cac";
 import {
   formatFunctionList,
   formatFunctionRun,
+  formatFunctionRuns,
   functionListPath,
   parseFunctionArgs,
   registerFunctionCommands,
@@ -60,5 +61,21 @@ describe("function list --channel", () => {
   });
   test("rejects an unknown channel before any request", () => {
     expect(() => functionListPath("c1", "fax")).toThrow("--channel kennt nur web, cli, mcp.");
+  });
+});
+
+describe("function runs", () => {
+  test("takes an optional function id and rejects anything else", () => {
+    expect(resolveFunctionCommand("runs", undefined)).toEqual({ action: "runs", target: undefined });
+    expect(resolveFunctionCommand("runs", "weekly_preview.create").target).toBe("weekly_preview.create");
+    expect(() => resolveFunctionCommand("runs", "not a function")).toThrow("function runs nimmt optional");
+  });
+  test("lists newest runs one per line", () => {
+    const text = formatFunctionRuns([
+      { id: "r1", capability_id: "weekly_preview.create", state: "succeeded", channel: "cli", idempotency_key: "k",
+        args: {}, created_at: "2026-09-24T20:41:18Z" },
+    ]);
+    expect(text).toBe("2026-09-24 20:41  weekly_preview.create: erledigt  (cli)  r1");
+    expect(formatFunctionRuns([])).toBe("Keine Funktionsläufe.");
   });
 });
