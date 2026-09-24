@@ -1,0 +1,28 @@
+{
+  "art": "geruest",
+  "beschreibung": "R3: ein Link-Slot muss ein a-Element sein",
+  "html": "<div><h1 data-slot=\"titel\"></h1><span data-slot=\"knopf\"></span></div>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    },
+    "knopf": {
+      "kind": "link",
+      "config": {
+        "label": "L",
+        "href": "/"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "link_slot_not_anchor",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "knopf"
+    }
+  ]
+}

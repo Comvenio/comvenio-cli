@@ -1,0 +1,45 @@
+{
+  "art": "geruest",
+  "beschreibung": "R5: unbekannter Stil (TC-08) und Katalogklasse im Gerüst (TD-16)",
+  "html": "<div aria-label=\"x\"><h1 data-slot=\"titel\"></h1><a class=\"jaga-button gold\" data-slot=\"knopf\"></a></div>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      },
+      "style": "kicker"
+    },
+    "knopf": {
+      "kind": "link",
+      "config": {
+        "label": "L",
+        "href": "/"
+      }
+    }
+  },
+  "styles": [
+    {
+      "id": "knopf-gold",
+      "label": "Knopf gold",
+      "class": "gold",
+      "fuer": [
+        "link"
+      ]
+    }
+  ],
+  "erwartet": [
+    {
+      "klasse": "unknown_style",
+      "regel": "R5",
+      "schwere": "fehler",
+      "slot": "titel"
+    },
+    {
+      "klasse": "catalog_class_in_skeleton",
+      "regel": "R5",
+      "schwere": "warnung",
+      "slot": "knopf"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "art": "geruest",
+  "beschreibung": "R1-Ausnahmen: aria-hidden, svg, Leerraum",
+  "html": "<div><span aria-hidden=\"true\">★</span><svg><path d=\"M0\"></path></svg>   <h1 data-slot=\"titel\"></h1></div>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    }
+  },
+  "erwartet": []
+}

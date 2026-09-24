@@ -1,0 +1,38 @@
+{
+  "art": "geruest",
+  "beschreibung": "Neues Format ohne Befunde: ein benannter Bereich, drei Grundbaustein-Slots, eine h1",
+  "html": "<section class=\"jaga-hero\" aria-label=\"Startbild\"><p class=\"jaga-eyebrow\" data-slot=\"hero-kicker\"></p><h1 data-slot=\"hero-titel\"></h1><a class=\"jaga-button\" data-slot=\"hero-knopf\"></a></section>",
+  "slots": {
+    "hero-kicker": {
+      "kind": "text",
+      "config": {
+        "content": "Verein"
+      }
+    },
+    "hero-titel": {
+      "kind": "heading",
+      "config": {
+        "text": "Titel"
+      }
+    },
+    "hero-knopf": {
+      "kind": "link",
+      "config": {
+        "label": "Mehr",
+        "href": "?tab=verein"
+      },
+      "style": "knopf-gold"
+    }
+  },
+  "styles": [
+    {
+      "id": "knopf-gold",
+      "label": "Knopf gold",
+      "class": "gold",
+      "fuer": [
+        "link"
+      ]
+    }
+  ],
+  "erwartet": []
+}

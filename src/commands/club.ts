@@ -95,6 +95,40 @@ export function survivingLiveDesignKeys(
   return surviving.sort();
 }
 
+type KatalogListe = { id?: unknown }[] | undefined;
+
+/**
+ * What a --file changes in the style catalog and the area templates
+ * (Lastenheft 17-designer-struktur 06 §4.5): lists replace the stored value
+ * (the deep merge only merges objects), so the dry run names the difference.
+ */
+export function katalogAenderung(
+  live: Record<string, unknown> | undefined,
+  design: Record<string, unknown>,
+): { feld: string; anzahl: number; neu: string[]; entfernt: string[] }[] {
+  const r: { feld: string; anzahl: number; neu: string[]; entfernt: string[] }[] = [];
+  for (const feld of ["styles", "area_templates"]) {
+    if (!(feld in design)) continue;
+    const ids = (liste: unknown) => (Array.isArray(liste) ? (liste as KatalogListe) ?? [] : []).map((e) => String(e?.id ?? ""));
+    const vorher = new Set(ids(live?.[feld]));
+    const nachher = ids(design[feld]);
+    r.push({
+      feld,
+      anzahl: nachher.length,
+      neu: nachher.filter((i) => !vorher.has(i)),
+      entfernt: [...vorher].filter((i) => !nachher.includes(i)),
+    });
+  }
+  return r;
+}
+
+export function katalogAenderungAlsText(a: ReturnType<typeof katalogAenderung>): string {
+  const name: Record<string, string> = { styles: "Stilkatalog", area_templates: "Bereichsvorlagen" };
+  return a
+    .map((x) => `${name[x.feld] ?? x.feld}: ${x.anzahl} Einträge${x.neu.length ? `, neu: ${x.neu.join(", ")}` : ""}${x.entfernt.length ? `, entfernt: ${x.entfernt.join(", ")}` : ""}`)
+    .join("\n");
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
@@ -547,10 +581,12 @@ export function registerClubCommands(cli: CAC): void {
           // With --file the author means "this is the design"; show what the
           // deep-merge keeps from the live state instead of letting it surprise.
           let surviving: string[] = [];
+          let katalog: ReturnType<typeof katalogAenderung> = [];
           if (opts.file) {
             const current = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
             const liveDesign = current.design_settings as Record<string, unknown> | undefined;
             surviving = survivingLiveDesignKeys(liveDesign, design);
+            katalog = katalogAenderung(liveDesign, design);
             if (landingSurvives(liveDesign, design)) {
               console.error(
                 'WARNUNG: live ist custom_template_config.landing=true gesetzt und die Datei nennt "landing" nicht. ' +
@@ -564,8 +600,8 @@ export function registerClubCommands(cli: CAC): void {
           }
 
           if (opts.dryRun) {
-            output({ dry_run: true, design_settings: design, surviving_live_keys: surviving }, opts.json, () =>
-              `Dry-Run — wuerde design_settings setzen:\n${JSON.stringify(design, null, 2)}`,
+            output({ dry_run: true, design_settings: design, surviving_live_keys: surviving, katalog }, opts.json, () =>
+              `Dry-Run — wuerde design_settings setzen:\n${JSON.stringify(design, null, 2)}${katalog.length ? `\n${katalogAenderungAlsText(katalog)}` : ""}`,
             );
             break;
           }
@@ -588,6 +624,8 @@ export function registerClubCommands(cli: CAC): void {
               ctc?.public_header === null ? "PublicHeader=entfernt" : ctc?.public_header ? "PublicHeader=gesetzt" : "",
               typeof design.custom_css === "string" ? `CustomCSS=${design.custom_css.length}B` : design.custom_css === null ? "CustomCSS=geloescht" : "",
               design.tokens ? "Tokens=gesetzt" : "",
+              Array.isArray(design.styles) ? `Stile=${design.styles.length}` : "",
+              Array.isArray(design.area_templates) ? `Vorlagen=${design.area_templates.length}` : "",
             ].filter(Boolean);
             return `Design gesetzt (${parts.join(", ")}).`;
           });

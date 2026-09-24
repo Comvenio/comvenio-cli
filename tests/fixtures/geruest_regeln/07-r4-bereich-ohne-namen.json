@@ -1,0 +1,25 @@
+{
+  "art": "geruest",
+  "beschreibung": "R4: section und article ohne aria-label",
+  "html": "<section><h1 data-slot=\"titel\"></h1></section><article aria-label=\"  \"></article>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "unlabeled_region",
+      "regel": "R4",
+      "schwere": "warnung"
+    },
+    {
+      "klasse": "unlabeled_region",
+      "regel": "R4",
+      "schwere": "warnung"
+    }
+  ]
+}

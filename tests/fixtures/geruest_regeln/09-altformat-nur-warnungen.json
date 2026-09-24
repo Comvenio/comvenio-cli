@@ -1,0 +1,23 @@
+{
+  "art": "geruest",
+  "beschreibung": "Altformat: nur data-widget-slot und fester Text — alles Warnung (TC-06)",
+  "html": "<section class=\"hero\"><h2>Willkommen</h2><div data-widget-slot=\"events_list\" data-widget-config=\"{}\"></div></section>",
+  "slots": {},
+  "erwartet": [
+    {
+      "klasse": "fixed_text_in_skeleton",
+      "regel": "R1",
+      "schwere": "warnung"
+    },
+    {
+      "klasse": "unlabeled_region",
+      "regel": "R4",
+      "schwere": "warnung"
+    },
+    {
+      "klasse": "legacy_inline_slot",
+      "regel": "ALT",
+      "schwere": "warnung"
+    }
+  ]
+}

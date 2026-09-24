@@ -7,12 +7,12 @@
     "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py",
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
-  "widget_count": 72,
-  "widget_config_documented": 72,
+  "widget_count": 75,
+  "widget_config_documented": 75,
   "vocabulary_sync": {
-    "registry_count": 72,
-    "backend_count": 72,
-    "prompt_count": 72,
+    "registry_count": 75,
+    "backend_count": 75,
+    "prompt_count": 75,
     "missing_in_backend": [],
     "missing_in_prompt": [],
     "extra_in_backend": [],
@@ -192,6 +192,9 @@
     "live_match_ticker",
     "membership_form",
     "contact_form",
+    "heading",
+    "text",
+    "link",
     "gallery_slideshow",
     "department_calendar",
     "chat_preview",
@@ -3037,6 +3040,33 @@
         }
       ]
     },
+    "heading": {
+      "config": [
+        {
+          "name": "text"
+        }
+      ]
+    },
+    "text": {
+      "config": [
+        {
+          "name": "content"
+        }
+      ]
+    },
+    "link": {
+      "config": [
+        {
+          "name": "label"
+        },
+        {
+          "name": "href"
+        },
+        {
+          "name": "new_tab"
+        }
+      ]
+    },
     "gallery_slideshow": {
       "config": [
         {
@@ -3213,8 +3243,8 @@
     ]
   },
   "config_sync": {
-    "widgets_checked": 72,
-    "fields_checked": 556,
+    "widgets_checked": 75,
+    "fields_checked": 561,
     "widgets_with_unread_fields": 12,
     "unread_fields": 22,
     "widgets_with_wrong_values": 0,
@@ -3226,5 +3256,103 @@
     "undocumented_fields": 0,
     "stale_exemptions": [],
     "note": "Ein Feld unter config_not_read_by_widget kommt im Quelltext des Widgets nicht vor. Wer es setzt, konfiguriert ins Leere: Das Backend nimmt unbekannte Config-Schluessel an, und niemand meldet etwas. Das ist ein HINWEIS, kein Urteil — geprueft wird ein Wortvorkommen, kein Auslesen. Die Pruefung schweigt also eher, als dass sie falsch anschlaegt; ein Treffer lohnt trotzdem den Blick in das Widget. config_values_not_in_widget ist die zweite Haelfte: Der Feldname kann stimmen und die Wertemenge trotzdem erfunden sein — `stats` dokumentierte layout: card|bold|minimal, das Widget kennt grid|horizontal|bento. Gelesen wird die Wertemenge aus einer Inline-Union oder einem Typalias; ist sie so nicht auffindbar, gibt es keinen Befund — value_sets_unreadable zaehlt genau diese Faelle, damit die Null nicht wie eine Entwarnung fuer alle liest. Am 2026-08-28 waren es 15 von 76, alle von Hand geprueft und korrekt; ein dritter Leseweg ueber Rumpf-Vergleiche wurde gemessen und verworfen, weil er bei drei gelesenen Feldern zwei Fehlalarme erzeugte (ein Wert im else-Zweig und ein abgeleiteter Bezeichner). ACHTUNG, ab 2026-08-29: Diese Pruefung VERSTUMMT mit dem Umbau. Sie liest die Wertemenge aus dem Config-Typ IM WIDGET — und ein Widget, das seinen Typ aus widget-felder.json ableitet (WidgetConfig<...>), hat dort keinen mehr. Jede Umstellung senkt value_sets_checked und hebt value_sets_unreadable, ohne dass etwas schlechter geworden waere; im Gegenteil, dort erzwingt jetzt der Typpruefer die Werte. Wenn value_sets_checked gegen null geht, ist diese Pruefung erledigt und gehoert entfernt statt repariert."
+  },
+  "slots_contract": {
+    "where": "custom_html.config.slots: Record<SlotName, SlotEntry>; das Gerüst markiert Slots mit data-slot=\"<SlotName>\"",
+    "slot_name": {
+      "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+      "unique": "je Reiter über alle Gerüste (TD-17)",
+      "address": "<reiter-slug>/<slot> (homepage slot get|set)"
+    },
+    "slot_entry": {
+      "kind": "Widget-Art außer custom_html",
+      "config": "Konfiguration der Art, bereinigt wie ein eigenständiges Widget",
+      "style": "optional: id eines Eintrags in design_settings.styles (TD-10)"
+    },
+    "building_blocks": {
+      "heading": {
+        "config": {
+          "text": "string; \\n wird Zeilenumbruch"
+        }
+      },
+      "text": {
+        "config": {
+          "content": "HTML: strong em b i a[href] br p ul ol li; Blöcke werden in Inline-Elementen entfaltet (TD-9)"
+        }
+      },
+      "link": {
+        "config": {
+          "label": "string <=120",
+          "href": "?tab=… | /… | #… | http(s) | mailto: | tel:",
+          "new_tab": "boolean"
+        }
+      }
+    },
+    "element_itself": "Ein Grundbaustein-Slot IST das Element (<h2 class=\"…\" data-slot=\"…\"></h2>), keine Hülle; die Ebene gehört zum Gerüst (TD-1). Live-Widgets behalten ihr div.",
+    "link_slot": "Ein Slot der Art link ist ein a-Element (R3 link_slot_not_anchor).",
+    "base_vs_catalog_class": "Klassen eines Katalogeintrags sind Katalogklassen und stehen als style im Slot, nicht im Gerüst; alle anderen Klassen sind Grundklassen (TD-16).",
+    "format": "Neues Format = mindestens ein data-slot und kein data-widget-slot; sonst Altformat: Regeln nur als Warnung (TD-14).",
+    "rules": [
+      {
+        "rule": "R1",
+        "class": "fixed_text_in_skeleton",
+        "severity": "fehler",
+        "check": "kein sichtbarer Text im Gerüst außerhalb von Slots (ausgenommen aria-hidden, svg, Leerraum)"
+      },
+      {
+        "rule": "R2",
+        "class": "content_in_skeleton",
+        "severity": "fehler",
+        "check": "kein a[href] und kein img außerhalb von Slots"
+      },
+      {
+        "rule": "R3",
+        "class": [
+          "unnamed_slot",
+          "duplicate_slot_name",
+          "missing_slot_entry",
+          "orphan_slot_entry",
+          "link_slot_not_anchor"
+        ],
+        "severity": "fehler",
+        "check": "Slots benannt, eindeutig, je Name genau ein Eintrag; link-Slot ist ein a"
+      },
+      {
+        "rule": "R4",
+        "class": "unlabeled_region",
+        "severity": "warnung",
+        "check": "jedes section/article trägt aria-label"
+      },
+      {
+        "rule": "R5",
+        "class": [
+          "unknown_style",
+          "unused_catalog_style",
+          "catalog_class_in_skeleton"
+        ],
+        "severity": "fehler / warnung / warnung",
+        "check": "Stil im Katalog; Katalogklasse im CSS definiert; Katalogklasse nicht im Gerüst"
+      },
+      {
+        "rule": "R6",
+        "class": "heading_outline",
+        "severity": "warnung",
+        "check": "genau eine h1 je Reiter"
+      },
+      {
+        "rule": "ALT",
+        "class": "legacy_inline_slot",
+        "severity": "warnung",
+        "check": "data-widget-slot (Altformat)"
+      }
+    ],
+    "enforced": "club-service prüft auf jedem Schreibweg (bulk, Widget POST/PUT, slot set, publish): Fehler im neuen Format -> 422 skeleton_rules mit befunde.",
+    "cli": [
+      "homepage tree [--tab <slug>]",
+      "homepage slot get <slug>/<slot>",
+      "homepage slot set <slug>/<slot> --file entry.json [--expected-version n] [--dry-run]",
+      "homepage convert --out home.json [--tab <slug>] [--styles styles.json] [--styles-out vorschlag.json]",
+      "verify homepage --file home.json (R1-R6 vor dem Browserlauf)"
+    ]
   }
 }

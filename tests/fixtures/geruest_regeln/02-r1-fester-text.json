@@ -1,0 +1,21 @@
+{
+  "art": "geruest",
+  "beschreibung": "R1: fester Text im Gerüst neben einem Slot (TC-05)",
+  "html": "<section aria-label=\"Start\"><h1 data-slot=\"titel\"></h1>\n<p>Hallo</p></section>",
+  "slots": {
+    "titel": {
+      "kind": "heading",
+      "config": {
+        "text": "T"
+      }
+    }
+  },
+  "erwartet": [
+    {
+      "klasse": "fixed_text_in_skeleton",
+      "regel": "R1",
+      "schwere": "fehler",
+      "zeile": 2
+    }
+  ]
+}

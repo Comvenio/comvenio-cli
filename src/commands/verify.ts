@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 // ausrichten, gegen serialisierten Code schon (siehe Kopf der Datei).
 import auditFarbenQuelle from "../verify/audit-farben.js" with { type: "text" };
 import homepageAuditQuelle from "../verify/audit-homepage.js" with { type: "text" };
+import { strukturBefunde, strukturBefundeAlsText } from "../verify/geruest-befunde.ts";
 import auditDomQuelle from "../verify/audit-dom.js" with { type: "text" };
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
@@ -780,6 +781,14 @@ export function registerVerifyCommands(cli: CAC): void {
             const tabs = Array.isArray(struct) ? struct : (struct.tabs ?? []);
             if (!Array.isArray(tabs) || tabs.length === 0) {
               throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
+            }
+            // Skeleton rules first (Lastenheft 17-designer-struktur 06 §4.4):
+            // an error the service would refuse ends the run before any browser.
+            const befunde = strukturBefunde(tabs as Parameters<typeof strukturBefunde>[0]);
+            console.error(strukturBefundeAlsText(befunde));
+            if (befunde.some((b) => b.schwere === "fehler")) {
+              process.exitCode = 4;
+              break;
             }
             const designSettings = opts.designFile
               ? readJsonFile<Record<string, unknown>>(opts.designFile)

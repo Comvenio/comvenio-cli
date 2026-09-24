@@ -1,0 +1,76 @@
+{
+  "beschreibung": "TC-CC-17-01: ein aria-label im Inhalt eines Slots zählt nicht als Bereich (Prüfrunde 2, S2). Kopie in web-page designer/__fixtures__/baum.",
+  "tab": {
+    "id": "t1",
+    "label": "Start",
+    "slug": "start",
+    "visibility_scope": "public"
+  },
+  "sections": [
+    {
+      "id": "s1",
+      "sort_order": 0,
+      "layout": "full",
+      "style_variant": "default",
+      "is_visible": true,
+      "title": null
+    }
+  ],
+  "widgets": [
+    {
+      "id": "w1",
+      "section_id": "s1",
+      "kind": "custom_html",
+      "slot_index": 0,
+      "position": 0,
+      "version": 1,
+      "config": {
+        "html": "<section aria-label=\"A\"><div data-slot=\"termine\"><div aria-label=\"Platzhalter\"></div></div></section><section aria-label=\"B\"><h2 data-slot=\"b-titel\"></h2></section>",
+        "slots": {
+          "termine": {
+            "kind": "news",
+            "config": {}
+          },
+          "b-titel": {
+            "kind": "heading",
+            "config": {
+              "text": "B"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "erwartet": [
+    [
+      "bereich",
+      "t1/w1/bereich:0",
+      "A",
+      null,
+      [
+        [
+          "slot",
+          "t1/w1/slot:termine",
+          "termine",
+          "N",
+          []
+        ]
+      ]
+    ],
+    [
+      "bereich",
+      "t1/w1/bereich:1",
+      "B",
+      null,
+      [
+        [
+          "slot",
+          "t1/w1/slot:b-titel",
+          "b-titel",
+          "H2",
+          []
+        ]
+      ]
+    ]
+  ]
+}

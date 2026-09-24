@@ -4,7 +4,8 @@
   "source": [
     "Frontend/web-page/src/components/ClubHome/templates/flexConfig.ts",
     "Frontend/web-page/src/components/ClubHome/templates/lookRecipes.ts",
-    "AI-docs/concepts/club/homepage-generator/12-public-header-action-contract.md"
+    "AI-docs/concepts/club/homepage-generator/12-public-header-action-contract.md",
+    "AI-docs/concepts/club/homepage-generator/17-designer-struktur/01-slot-vertrag-und-veroeffentlichen.md"
   ],
   "note": "Config-getriebenes Design-Vokabular fuer das GENERISCHE Flex-Template. LookRecipes sind additive Defaults; explizite Club-Werte gewinnen. Clubs ohne look_recipe_id behalten die bestehenden Flex-Defaults.",
   "applies_when": "Flex-Vokabular bei homepage_template == 'flex'; public_header gilt templateübergreifend",
@@ -85,6 +86,18 @@
       "scope": ".pub-site-root",
       "forbidden": ["@import", "url(javascript:...)", "position:fixed outside approved shell"],
       "note": "serverseitig sanitisiert und beim Public-Read erneut sanitisiert"
+    },
+    "styles": {
+      "type": "StyleEntry[]",
+      "max": 64,
+      "entry": { "id": "Muster ^[a-z0-9][a-z0-9-]{0,62}$", "label": "1–60 Zeichen", "class": "1–4 CSS-Klassen, jede in custom_css definiert", "fuer": "nicht leer, Teilmenge von heading|text|link" },
+      "note": "Stilkatalog (Lastenheft 17-designer-struktur D5, TD-10). Ein Slot nennt die Kennung (SlotEntry.style), die Klassen stehen nur hier. Katalogklassen stehen NICHT im Gerüst (TD-16). Öffentlich werden nur id und class ausgeliefert. Listen ersetzen den gespeicherten Wert (kein Deep-Merge von Listen)."
+    },
+    "area_templates": {
+      "type": "AreaTemplate[]",
+      "max": 32,
+      "entry": { "id": "Muster wie styles.id", "label": "1–60 Zeichen", "beschreibung": "0–200 Zeichen", "html": "≤ 16 KB, genau ein Wurzelelement mit aria-label, bereinigt wie custom_html, erfüllt R1–R5", "slots": "Record<SlotName, SlotEntry>" },
+      "note": "Bereichsvorlagen für den Designer (TD-5). Intern: nicht in den öffentlichen Einstellungen. Fehler → 422 area_template_rules mit befunde."
     }
   },
   "look_recipes": [

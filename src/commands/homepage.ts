@@ -4,6 +4,11 @@ import { createClient } from "../http.ts";
 import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
+import { writeFileSync } from "node:fs";
+import { baumAlsText } from "../homepage/geruest.ts";
+import type { SlotEntry } from "../homepage/geruest.ts";
+import type { BulkTab, StyleEntry } from "../homepage/umwandeln.ts";
+import { berichtAlsText, convert, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree } from "../homepage/befehle.ts";
 
 // Homepage is declarative (D-12): the operating agent composes JSON from the
 // schema, previews it, and applies it directly through club-service.
@@ -56,7 +61,19 @@ type Opts = {
   tab?: string;
   settleMs?: string;
   out?: string;
+  expectedVersion?: string;
+  dryRun?: boolean;
+  from?: string;
+  styles?: string;
+  stylesOut?: string;
 };
+
+/** Refusals of tree/slot/convert end with their own exit code (06 §4, DC-3). */
+function abbrechen(err: HomepageAbbruch, json?: boolean): void {
+  if (json) console.log(JSON.stringify({ fehler: err.code, meldung: err.message, daten: err.daten ?? null }, null, 2));
+  console.error(`\nFehler (${err.code}): ${err.message}\n`);
+  process.exitCode = err.exitCode;
+}
 
 export function parsePreviewTtlHours(value?: string): number | undefined {
   if (value === undefined) return undefined;
@@ -109,7 +126,10 @@ async function openInBrowser(url: string): Promise<boolean> {
  */
 export function registerHomepageCommands(cli: CAC): void {
   cli
-    .command("homepage <action>", "Homepage (deklarativ, kein Backend-LLM): preview (Vorschau) | apply | show — der Agent komponiert via schema homepage")
+    .command(
+      "homepage <action> [...args]",
+      "Homepage (deklarativ, kein Backend-LLM): preview | apply | show | screenshot | tree | slot get|set <reiter>/<slot> | convert — der Agent komponiert via schema homepage",
+    )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "home.json: vom Agenten komponierte Struktur (preview/apply)")
     .option("--design-file <path>", "preview: design_settings-JSON als versionierter No-Write-Snapshot")
@@ -122,8 +142,13 @@ export function registerHomepageCommands(cli: CAC): void {
     .option("--tab <slug>", "screenshot: ein bestimmter Reiter statt der Startseite")
     .option("--settle-ms <n>", "screenshot: Wartezeit nach dem Laden (Vorgabe 1500)")
     .option("--out <dir>", "screenshot: Bilder als Dateien ablegen statt base64 auszugeben")
+    .option("--expected-version <n>", "slot set: erwartete Version des Gerüst-Widgets (sonst die gerade gelesene)")
+    .option("--dry-run", "slot set: Vorher/Nachher und Regelbefunde zeigen, nichts schreiben")
+    .option("--from <path>", "convert: Bulk-Datei statt Live-Stand umwandeln")
+    .option("--styles <path>", "convert: Stilkatalog (JSON-Liste); Katalogklassen wandern in den Slot-Stil (TD-16)")
+    .option("--styles-out <path>", "convert: Vorschlag für den Stilkatalog aus den umgewandelten Klassen schreiben")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (action: string, opts: Opts) => {
+    .action(async (action: string, args: string[], opts: Opts) => {
       const state = await loadState();
       const client = createClient(state);
       const clubId = requireClubId(state, opts.club);
@@ -314,8 +339,78 @@ export function registerHomepageCommands(cli: CAC): void {
           break;
         }
 
+        case "tree": {
+          // Lastenheft 17-designer-struktur 06 §4.1: the designer's tree.
+          try {
+            const baeume = await tree(client, clubId, opts.tab);
+            output({ tabs: baeume }, opts.json, () => baeume.map((b) => baumAlsText(b)).join("\n\n"));
+          } catch (err) {
+            if (err instanceof HomepageAbbruch) return abbrechen(err, opts.json);
+            throw err;
+          }
+          break;
+        }
+
+        case "slot": {
+          // 06 §4.2: `slot get <reiter>/<slot>` and `slot set <reiter>/<slot> --file entry.json`.
+          const [unter, adresse] = args ?? [];
+          try {
+            if (unter === "get") {
+              const stand = await slotGet(client, clubId, adresse ?? "");
+              output(stand, opts.json, () =>
+                `${stand.adresse} · Widget ${stand.widget_id} · Version ${stand.version}\n${JSON.stringify(stand.entry, null, 2)}`,
+              );
+            } else if (unter === "set") {
+              if (!opts.file) throw new Error("homepage slot set benoetigt --file <entry.json> ({ kind, config, style? }).");
+              const eintrag = readJsonFile<SlotEntry>(opts.file);
+              const erwartet = opts.expectedVersion !== undefined ? Number(opts.expectedVersion) : undefined;
+              if (erwartet !== undefined && (!Number.isInteger(erwartet) || erwartet < 1)) {
+                throw new Error("--expected-version muss eine ganze Zahl ab 1 sein.");
+              }
+              const r = await slotSet(client, clubId, adresse ?? "", eintrag, { expectedVersion: erwartet, trockenlauf: !!opts.dryRun });
+              output(r, opts.json, () => {
+                const befunde = r.befunde.length
+                  ? `\nBefunde:\n${r.befunde.map((b) => `  ${b.schwere} ${b.klasse}${b.slot ? ` (${b.slot})` : ""}`).join("\n")}`
+                  : "";
+                return `${r.geschrieben ? "Geschrieben" : "Trockenlauf — nichts geschrieben"}: ${adresse}${r.version ? ` (Version ${r.version})` : ""}\nvorher: ${JSON.stringify(r.vorher)}\nnachher: ${JSON.stringify(r.nachher)}${befunde}`;
+              });
+            } else {
+              throw new Error('homepage slot erwartet "get <reiter>/<slot>" oder "set <reiter>/<slot> --file <entry.json>".');
+            }
+          } catch (err) {
+            if (err instanceof HomepageAbbruch) return abbrechen(err, opts.json);
+            throw err;
+          }
+          break;
+        }
+
+        case "convert": {
+          // 06 §4.3: legacy skeleton → named slots, into a file. Applying stays
+          // `homepage apply` after the human approved (07).
+          if (!opts.out) throw new Error("homepage convert benoetigt --out <home.json>.");
+          try {
+            const quelle = opts.from
+              ? { tabs: readJsonFile<{ tabs?: BulkTab[] }>(opts.from).tabs ?? [], hinweise: [] as string[] }
+              : await liveAlsBulk(client, clubId);
+            const styles = opts.styles ? readJsonFile<StyleEntry[]>(opts.styles) : undefined;
+            const e = convert({ tabs: quelle.tabs }, { tab: opts.tab, styles });
+            e.hinweise.push(...quelle.hinweise);
+            writeFileSync(opts.out, JSON.stringify(e.home, null, 2));
+            if (opts.stylesOut) writeFileSync(opts.stylesOut, JSON.stringify(e.katalog, null, 2));
+            output(
+              { datei: opts.out, katalog: opts.stylesOut ?? null, berichte: e.berichte, hinweise: e.hinweise },
+              opts.json,
+              () => `${berichtAlsText(e)}\nGeschrieben: ${opts.out}${opts.stylesOut ? `, ${opts.stylesOut}` : ""}\nNächster Schritt: homepage preview --file ${opts.out}`,
+            );
+          } catch (err) {
+            if (err instanceof HomepageAbbruch) return abbrechen(err, opts.json);
+            throw err;
+          }
+          break;
+        }
+
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, screenshot, apply, show (generate/design entfernt — Agent komponiert deklarativ)`);
+          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, screenshot, apply, show, tree, slot, convert (generate/design entfernt — Agent komponiert deklarativ)`);
       }
     });
 }

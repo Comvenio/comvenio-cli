@@ -1,0 +1,28 @@
+{
+  "art": "reiter",
+  "beschreibung": "Reiterweit: gleicher Slot-Name in zwei Gerüsten (TC-17) und zwei h1 (R6)",
+  "gerueste": [
+    {
+      "widget_id": "w1",
+      "html": "<div><h1 data-slot=\"titel\"></h1></div>"
+    },
+    {
+      "widget_id": "w2",
+      "html": "<div><h1 data-slot=\"titel\"></h1></div>"
+    }
+  ],
+  "erwartet": [
+    {
+      "klasse": "duplicate_slot_name",
+      "regel": "R3",
+      "schwere": "fehler",
+      "slot": "titel",
+      "widget_id": "w2"
+    },
+    {
+      "klasse": "heading_outline",
+      "regel": "R6",
+      "schwere": "warnung"
+    }
+  ]
+}
