@@ -48,6 +48,13 @@ describe("homepage tree", () => {
     expect(kicker.adresse).toBe("start/hero-kicker");
   });
 
+  for (const datei of readdirSync(join(FIXTURES, "baum")).filter((f) => f.endsWith(".json")).sort()) {
+    test(`TC-CC-17-01 ${datei}`, () => {
+      const fall = JSON.parse(readFileSync(join(FIXTURES, "baum", datei), "utf8"));
+      expect(baum(fall.tab, fall.sections, fall.widgets).kinder.map(kurz)).toEqual(fall.erwartet);
+    });
+  }
+
   test("TC-02 legacy slots as '<kind> · Position n'", () => {
     const b = baum({ id: "t", slug: "alt" }, [{ id: "s", sort_order: 0 }], [
       { id: "w", kind: "custom_html", section_id: "s", config: { html: '<section aria-label="S"><h2>fest</h2><div data-widget-slot="news"></div></section>' } },

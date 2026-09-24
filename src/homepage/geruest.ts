@@ -115,8 +115,15 @@ export function dokument(html: string): DomDokument {
   return new DOMParser().parseFromString(`<!doctype html><html><body>${html}</body></html>`, "text/html") as unknown as DomDokument;
 }
 
+/** Named areas in document order; content inside a slot is not skeleton (designerModel.benannteBereiche). */
 const bereicheVon = (body: DomElement) =>
-  Array.from(body.querySelectorAll("[aria-label]")).filter((e) => (e.getAttribute("aria-label") ?? "").trim());
+  Array.from(body.querySelectorAll("[aria-label]")).filter((e) => {
+    if (!(e.getAttribute("aria-label") ?? "").trim()) return false;
+    for (let p = e.parentElement; p && p !== body; p = p.parentElement) {
+      if (p.hasAttribute("data-slot") || p.hasAttribute("data-widget-slot")) return false;
+    }
+    return true;
+  });
 
 function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): { knoten: BaumKnoten[]; altformat: boolean } {
   const html = htmlVon(w);
