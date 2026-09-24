@@ -61,6 +61,24 @@ Das CLI sendet ausschließlich Nachricht, gebundenen Verein, festen
 Gesprächskontext und optional die Session-ID. `user_id`, Rollen,
 Berechtigungen oder Zielpersonen können nicht mitgegeben werden.
 
+## Funktionen direkt aufrufen
+
+Jede freigegebene Funktion des Club-Agenten lässt sich ohne Chat aufrufen — mit
+derselben Prüfung wie der Knopf im Web und der Agent (Absichtsschema, Recht,
+Freigabe):
+
+```powershell
+comvenio function list                                   # was du hier aufrufen darfst
+comvenio function run task.create --args '{"title":"Protokoll verschicken"}'
+comvenio function show <lauf-id>
+```
+
+Welche Funktionen es gibt und welche Angaben sie brauchen, liefert der Dienst zur
+Laufzeit; eine neue Funktion braucht kein neues CLI. Braucht eine Funktion eine
+Freigabe, gibt `run` den Direktlink aus — entschieden wird in Web oder App.
+Mit `--idempotency-key` ist eine Wiederholung sicher: derselbe Schlüssel liefert
+denselben Lauf.
+
 ## Verfügbarkeit
 
 Der Connector verursacht keinen eigenen Comvenio-Aufpreis. Für einen
