@@ -63,7 +63,8 @@ export const K14_ACTION_DEFINITIONS: Readonly<Record<K14ActionId, K14ActionDefin
   "cai.finance.15.entry_list": action("cai.finance.15.entry_list", "entry-list", [read("list", "/positions/{position_id}/entries")]),
   "cai.finance.16.entry_create": action("cai.finance.16.entry_create", "entry-create", [write("create", "POST", "/positions/{position_id}/entries", false, [positionPreflight, route("POST", "/positions/{position_id}/entries")])]),
   "cai.finance.17.entry_show": action("cai.finance.17.entry_show", "entry-show", [read("show", "/entries/{entry_id}")]),
-  "cai.finance.18.entry_update": action("cai.finance.18.entry_update", "entry-update", [write("update", "PATCH", "/entries/{entry_id}", false, [entryPreflight, route("PATCH", "/entries/{entry_id}")])]),
+  // buchhaltung-13-04 DC-4: eine Korrektur ändert eine verbuchte Zahl — mit Bestätigung.
+  "cai.finance.18.entry_update": action("cai.finance.18.entry_update", "entry-update", [write("update", "PATCH", "/entries/{entry_id}", true, [entryPreflight, route("PATCH", "/entries/{entry_id}")])]),
   "cai.finance.19.entry_delete": action("cai.finance.19.entry_delete", "entry-delete", [write("delete", "DELETE", "/entries/{entry_id}", true, [entryPreflight, route("DELETE", "/entries/{entry_id}")])]),
   // Freigeben ist die Stelle, an der aus einem Entwurf ein verbuchter Beleg wird.
   "cai.finance.20.entry_approve": action("cai.finance.20.entry_approve", "entry-approve", [write("approve", "POST", "/entries/{entry_id}/approve", true, [entryPreflight, route("POST", "/entries/{entry_id}/approve")])]),

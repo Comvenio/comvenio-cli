@@ -57,9 +57,9 @@ function recording(answer: (request: ComvenioApiRequest) => JsonValue, bytes?: C
 }
 
 describe("Finance Hub: Inventar", () => {
-  test("17 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
-    // +1 budget-saison-03 (cai.finance.37.budget_season).
-    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(17);
+  test("18 Aktionen mit ihren Teiloperationen, keine davon öffnet einen Plan wieder", () => {
+    // +1 budget-saison-03 (cai.finance.37.budget_season), +1 buchhaltung-13-04 (cai.finance.38.entry_detail).
+    expect(Object.keys(HUB_ACTION_DEFINITIONS)).toHaveLength(18);
     expect(hubOperationCount()).toBeGreaterThan(70);
     const routes = Object.values(HUB_ACTION_DEFINITIONS).flatMap((definition) => Object.values(definition.operations).flatMap((operation) => operation.backend_routes));
     expect(routes.some((route) => route.normalized_path_template.includes("reopen"))).toBe(false);
@@ -417,5 +417,109 @@ describe("Finance Hub: Saison und Haushaltsjahr", () => {
     expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([
       `GET /clubs/${clubId}/finance-plans/by-id/${planId}/frames/DEPARTMENT/${jugendId}/proposal`,
     ]);
+  });
+});
+
+// buchhaltung-13-04 (cai.finance.38 und die Ergänzungen an .18, .21, .27).
+describe("Finance Hub: Buchung im Detail", () => {
+  const action = "cai.finance.38.entry_detail";
+  const transferId = "cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd";
+  const jugendId = "abababab-abab-4bab-8bab-abababababab";
+  const tennisId = "efefefef-efef-4fef-8fef-efefefefefef";
+
+  test("TC-01: entry und open_items, beide lesend; Detail liest erst die Herkunft der Buchung", async () => {
+    const operations = HUB_ACTION_DEFINITIONS[action]!.operations;
+    expect(Object.keys(operations).sort()).toEqual(["entry", "open_items"]);
+    for (const op of ["entry", "open_items"]) expect(operations[op]!.execution_gate, op).toBe("inline");
+
+    const { calls, client } = recording((call): JsonValue => call.path.endsWith("/detail")
+      ? { entry: { id: entryId, club_id: clubId }, timeline: [], allowed_actions: { correct: true } }
+      : { id: entryId, club_id: clubId });
+    await createK14ToolSet({ client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "entry", entry_id: entryId }, context, capability_snapshot: manager,
+    });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /entries/${entryId}`, `GET /entries/${entryId}/detail`]);
+
+    const open = recording(() => ({ counts: { OBJECTION_TO_ANSWER: 0 }, items: [] }));
+    await createK14ToolSet({ client: open.client }).execute({
+      action_id: action, input: { club_id: clubId, operation: "open_items", plan_id: planId }, context, capability_snapshot: manager,
+    });
+    expect(open.calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /clubs/${clubId}/finance/open-items`]);
+    expect(open.calls[0]?.query).toEqual({ plan_id: planId });
+  });
+
+  test("TC-02: journal mit nur node_kind scheitert vor dem Aufruf; mit beiden trägt die Abfrage beide Felder", async () => {
+    const refused = recording(() => ({}));
+    await expect(createK14ToolSet({ client: refused.client }).execute({
+      action_id: "cai.finance.21.plan_period", input: { club_id: clubId, operation: "journal", plan_id: planId, node_kind: "DEPARTMENT" },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(refused.calls).toHaveLength(0);
+
+    const { calls, client } = recording(() => ({ plan: {}, rows: [], next_after: null, next_before: null, totals: {} }));
+    await createK14ToolSet({ client }).execute({
+      action_id: "cai.finance.21.plan_period",
+      input: { club_id: clubId, operation: "journal", plan_id: planId, node_kind: "DEPARTMENT", node_id: jugendId, order: "desc", before_journal_number: 40 },
+      context, capability_snapshot: manager,
+    });
+    expect(calls[0]?.path).toBe(`/clubs/${clubId}/finance-plans/by-id/${planId}/journal`);
+    expect(calls[0]?.query).toEqual({ node_kind: "DEPARTMENT", node_id: jugendId, order: "desc", before_journal_number: "40" });
+  });
+
+  test("TC-03: entry_update trägt den Grund im PATCH-Rumpf und verlangt eine Bestätigung", async () => {
+    const changes = { expense_cents: 28000, reason: "Rechnung nachgerechnet" };
+    const preview = recording(() => ({ id: entryId, club_id: clubId }));
+    const asked = await createK14ToolSet({ client: preview.client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes }, context, capability_snapshot: manager,
+    });
+    expect(asked.status).toBe("confirmation_required");
+    expect(preview.calls.some((call) => call.method === "PATCH")).toBe(false);
+    const effects = (asked.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "booking_correction")).toMatchObject({ fields: ["expense_cents"], reason: "Rechnung nachgerechnet" });
+
+    const { calls, client } = recording(() => ({ id: entryId, club_id: clubId }));
+    await createK14ToolSet({ client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes }, context, capability_snapshot: manager,
+    });
+    const patch = calls.find((call) => call.method === "PATCH");
+    expect(patch?.path).toBe(`/entries/${entryId}`);
+    expect(patch?.body).toMatchObject({ reason: "Rechnung nachgerechnet", expense_cents: 28000 });
+  });
+
+  test("TC-04: transfer confirm ist kritisch, die Vorschau liest show; die Zahl der Operationen bleibt", async () => {
+    const operations = HUB_ACTION_DEFINITIONS["cai.finance.27.department_transfer"]!.operations;
+    // list, account_choices, show, create, confirm, reject, withdraw, reverse — wie vor 13-04.
+    expect(Object.keys(operations)).toHaveLength(8);
+    for (const step of ["confirm", "reject", "withdraw"]) expect(operations[step]!.execution_gate, step).toBe("confirmation");
+
+    const show = { id: transferId, club_id: clubId, amount_cents: 25000, from_department_id: jugendId, to_department_id: tennisId, status: "REQUESTED", reason: "Hallenzeit" };
+    const preview = recording(() => show);
+    const asked = await createK14ToolSet({ client: preview.client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.27.department_transfer", input: { club_id: clubId, operation: "confirm", transfer_id: transferId }, context, capability_snapshot: manager,
+    });
+    expect(asked.status).toBe("confirmation_required");
+    expect(preview.calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /clubs/${clubId}/department-transfers/${transferId}`]);
+    const effects = (asked.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "department_transfer_decision")).toMatchObject({
+      step: "confirm", transfer_read: true, amount_cents: 25000, from_department_id: jugendId, to_department_id: tennisId, status: "REQUESTED",
+    });
+
+    const { calls, client } = recording(() => show);
+    await createK14ToolSet({ client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.27.department_transfer", input: { club_id: clubId, operation: "confirm", transfer_id: transferId }, context, capability_snapshot: manager,
+    });
+    expect(calls.filter((call) => call.method === "POST").map((call) => call.path)).toEqual([`/clubs/${clubId}/department-transfers/${transferId}/confirm`]);
+  });
+
+  test("TC-05: transfer reject mit decision_note schickt den Rumpf", async () => {
+    const { calls, client } = recording(() => ({ id: transferId, club_id: clubId, status: "REJECTED" }));
+    await createK14ToolSet({ client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.27.department_transfer",
+      input: { club_id: clubId, operation: "reject", transfer_id: transferId, data: { decision_note: "Kein Budget mehr" } },
+      context, capability_snapshot: manager,
+    });
+    const post = calls.find((call) => call.method === "POST");
+    expect(post?.path).toBe(`/clubs/${clubId}/department-transfers/${transferId}/reject`);
+    expect(post?.body).toEqual({ decision_note: "Kein Budget mehr" });
   });
 });

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "6848f2d2f3531a7e01e2ea61e231fc68de7710786f9774b89cf5a148f2b39415",
+  "catalog_source_hash_sha256": "7b18b6e7904578d7e4a3bc70d2503533052d79cba2e30eac47262f068b0279d6",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1836,6 +1836,21 @@
     {
       "tool_name": "cv_finance_37_budget_season",
       "prompt": "Prüfe „Comvenio: Finanzen – budget season“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_finance_38_entry_detail",
+      "prompt": "Prüfe „Comvenio: Finanzen – entry detail“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

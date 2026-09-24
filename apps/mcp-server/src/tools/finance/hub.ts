@@ -1,5 +1,6 @@
-// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .36 (.36 Budget
-// im Organigramm, budget-organigramm-04).
+// Finance Hub, vollständig (2026-09-23): cai.finance.21 bis .38 (.36 Budget
+// im Organigramm, budget-organigramm-04; .37 Saison, budget-saison-03; .38
+// Buchung im Detail, buchhaltung-13-04).
 //
 // K14 bediente nur Jahresplan, Budgetposten und Buchung. Alles andere, was der
 // finance-service kann — Pläne je Zeitraum und Abteilung, Geldkonten mit
@@ -65,7 +66,7 @@ interface Op {
   risk: Risk;
   shape: z.ZodRawShape;
   body?: (input: JsonObject) => JsonValue;
-  query?: (input: JsonObject) => Record<string, string>;
+  query?: (input: JsonObject, context?: RequestContext) => Record<string, string>;
   /** Vorprüfung der Herkunft vor dem eigentlichen Aufruf. */
   preflight?: { template: string; check: (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => Promise<void> };
   /** Antwort ist eine Datei (Prüfexport). */
@@ -142,6 +143,16 @@ const rubricsPath = (input: JsonObject) => `${club(input)}/departments/${str(inp
 const seasonStart = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "season_start als YYYY-MM-DD");
 const seasonPath = (input: JsonObject) => `${club(input)}/budget-seasons/${str(input, "season_start")}`;
 const rubricOwn = listed("/clubs/{club_id}/departments/{department_id}/budget-rubrics", rubricsPath, "rubric_id", "Rubrik");
+// buchhaltung-13-04 DC-3: Knotenart und Knoten gehören zusammen — der Fehler
+// fällt vor dem Aufruf auf, als Satz statt als 422 des Dienstes.
+function journalQuery(input: JsonObject, context?: RequestContext): Record<string, string> {
+  const hasKind = input.node_kind !== undefined && input.node_kind !== null;
+  const hasNode = input.node_id !== undefined && input.node_id !== null;
+  if (hasKind !== hasNode) {
+    throw createConnectorError({ code: "VALIDATION_FAILED", message: "journal: node_kind und node_id gehören zusammen — beide angeben oder keines.", request_id: context?.request_id ?? "", retryable: false });
+  }
+  return optional(input, ["after_journal_number", "limit", "node_kind", "node_id", "order", "before_journal_number"]);
+}
 
 // ── Die Aktionen ─────────────────────────────────────────────────────────
 const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
@@ -153,7 +164,12 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "positions", method: "GET", template: `${BY_ID}/positions`, path: (i) => `${byId(i)}/positions`, risk: "read", shape: { plan_id: uuid } },
     { op: "position_create", method: "POST", template: `${BY_ID}/positions`, path: (i) => `${byId(i)}/positions`, risk: "write", shape: { plan_id: uuid, data }, body: payload },
     { op: "summary", method: "GET", template: `${BY_ID}/summary`, path: (i) => `${byId(i)}/summary`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
-    { op: "journal", method: "GET", template: `${BY_ID}/journal`, path: (i) => `${byId(i)}/journal`, risk: "read", shape: { plan_id: uuid, after_journal_number: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(500).optional() }, query: (i) => optional(i, ["after_journal_number", "limit"]), multiDepartment: true },
+    // buchhaltung-13-04: node_kind/node_id begrenzen auf den Teilbaum eines
+    // Knotens (beide oder keines), order=desc blättert von der jüngsten Buchung.
+    { op: "journal", method: "GET", template: `${BY_ID}/journal`, path: (i) => `${byId(i)}/journal`, risk: "read",
+      shape: { plan_id: uuid, after_journal_number: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(500).optional(),
+        node_kind: nodeKind.optional(), node_id: nodeId.optional(), order: z.enum(["asc", "desc"]).optional(), before_journal_number: z.number().int().min(1).optional() },
+      query: (i, c) => journalQuery(i, c), multiDepartment: true },
     { op: "entries_without_receipt", method: "GET", template: `${BY_ID}/entries-without-receipt`, path: (i) => `${byId(i)}/entries-without-receipt`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     { op: "sphere_report", method: "GET", template: `${BY_ID}/sphere-report`, path: (i) => `${byId(i)}/sphere-report`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     { op: "dashboard", method: "GET", template: "/clubs/{club_id}/finance-plans/{year}/dashboard", path: (i) => `${club(i)}/finance-plans/${int(i, "year")}/dashboard`, risk: "read", shape: { year }, multiDepartment: true },
@@ -217,9 +233,11 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "account_choices", method: "GET", template: "/clubs/{club_id}/department-transfers/account-choices", path: (i) => `${club(i)}/department-transfers/account-choices`, risk: "read", shape: {}, multiDepartment: true },
     { op: "show", method: "GET", template: "/clubs/{club_id}/department-transfers/{transfer_id}", path: (i) => `${club(i)}/department-transfers/${str(i, "transfer_id")}`, risk: "read", shape: { transfer_id: uuid }, multiDepartment: true },
     { op: "create", method: "POST", template: "/clubs/{club_id}/department-transfers", path: (i) => `${club(i)}/department-transfers`, risk: "write", shape: { data }, body: payload, multiDepartment: true },
+    // buchhaltung-13-04 DC-4: Bestätigen, Ablehnen und Zurückziehen bucht oder
+    // beendet eine Umbuchung — mit Vorschau (Betrag, Abteilungen, Zustand).
     ...(["confirm", "reject", "withdraw"] as const).map((step): Op => ({
       op: step, method: "POST", template: `/clubs/{club_id}/department-transfers/{transfer_id}/${step}`, path: (i) => `${club(i)}/department-transfers/${str(i, "transfer_id")}/${step}`,
-      risk: "write", shape: { transfer_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, multiDepartment: true,
+      risk: "critical", shape: { transfer_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, multiDepartment: true,
     })),
     { op: "reverse", method: "POST", template: "/clubs/{club_id}/department-transfers/{transfer_id}/reverse", path: (i) => `${club(i)}/department-transfers/${str(i, "transfer_id")}/reverse`, risk: "critical", shape: { transfer_id: uuid, data }, body: payload, multiDepartment: true },
   ] },
@@ -346,6 +364,13 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     // Der Vorschlag des Haushaltsrahmens schreibt nie (D31).
     { op: "frame_proposal", method: "GET", template: `${BY_ID}/frames/{node_kind}/{node_id}/proposal`, path: (i) => `${byId(i)}/frames/${str(i, "node_kind")}/${str(i, "node_id")}/proposal`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind, node_id: nodeId }, multiDepartment: true },
   ] },
+  // Buchung im Detail (buchhaltung-13-04): eine Buchung mit Zeitleiste,
+  // Kostenverlauf und den erlaubten Aktionen, dazu die offenen Punkte des
+  // Menschen. Beides nur lesend; der Dienst filtert nach seinem Recht.
+  "cai.finance.38.entry_detail": { source: "entry-detail", ops: [
+    { op: "entry", method: "GET", template: "/entries/{entry_id}/detail", path: (i) => `/entries/${str(i, "entry_id")}/detail`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
+    { op: "open_items", method: "GET", template: "/clubs/{club_id}/finance/open-items", path: (i) => `${club(i)}/finance/open-items`, risk: "read", shape: { plan_id: uuid.optional() }, query: (i) => optional(i, ["plan_id"]), multiDepartment: true },
+  ] },
 };
 
 // ── Definitionen, Schemas, Handler ───────────────────────────────────────
@@ -391,7 +416,7 @@ for (const [id, spec] of Object.entries(ACTIONS)) {
   for (const op of spec.ops) {
     addK14Handler(id as K14ActionId, op.op, async (input, context, client) => {
       if (op.preflight) await op.preflight.check(input, context, client);
-      const query = op.query?.(input);
+      const query = op.query?.(input, context);
       if (op.binary) {
         if (!client.requestBytes) throw createConnectorError({ code: "CONFIG_INVALID", message: "Der Dienst-Client kann keine Dateien laden.", request_id: context.request_id, retryable: false });
         const file = await client.requestBytes({ method: op.method, service: "finance", path: op.path(input), context, ...(query ? { query } : {}) });
