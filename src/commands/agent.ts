@@ -14,10 +14,13 @@ type AgentChatOptions = {
 
 type ApprovalRef = { approval_id: string; state: string; approval_url?: string };
 
+type RunRef = { run_id: string; kind?: string; state?: string | null };
+
 type ClubAgentChatResponse = {
   session_id: string;
   response: string;
   approval_refs?: ApprovalRef[];
+  run_refs?: RunRef[];
 };
 
 /** Agent-Funktionen K1 (Strang 01 §11): an approval request as the ai-service returns it. */
@@ -158,7 +161,10 @@ export function formatChatResponse(response: ClubAgentChatResponse): string {
   const refs = (response.approval_refs ?? [])
     .filter((ref) => ref.approval_url)
     .map((ref) => `Freigabe (${STATE_LABELS[ref.state] ?? ref.state}): ${ref.approval_url}`);
-  return [response.response, "", ...refs, `Session: ${response.session_id}`].join("\n");
+  const runs = (response.run_refs ?? []).map(
+    (ref) => `Lauf ${ref.kind === "plan_run" ? "Routine" : "Kommando"} ${ref.run_id}: ${ref.state ?? "–"}`,
+  );
+  return [response.response, "", ...refs, ...runs, `Session: ${response.session_id}`].join("\n");
 }
 
 export function registerAgentCommands(cli: CAC): void {
@@ -195,7 +201,7 @@ export function registerAgentCommands(cli: CAC): void {
         }),
         { timeoutMs: 120_000 },
       );
-      // --json passes approval_refs through unchanged (Strang 01 §11).
+      // --json passes approval_refs and run_refs through unchanged (Strang 01 §11).
       output(response, opts.json, () => formatChatResponse(response));
     });
 }

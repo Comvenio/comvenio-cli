@@ -136,3 +136,19 @@ describe("agent approval (Agent-Funktionen K1, CLI-16)", () => {
     expect(text.endsWith("Session: s1")).toBe(true);
   });
 });
+
+describe("agent chat run_refs (Strang 01 §11)", () => {
+  test("the text answer lists the runs of the turn", () => {
+    const text = formatChatResponse({
+      session_id: "s1",
+      response: "Ich habe das Kommando vorbereitet.",
+      run_refs: [
+        { run_id: "r1", kind: "command_run", state: "awaiting_approval" },
+        { run_id: "r2", kind: "plan_run", state: "completed" },
+      ],
+    });
+    expect(text).toContain("Lauf Kommando r1: awaiting_approval");
+    expect(text).toContain("Lauf Routine r2: completed");
+    expect(text.endsWith("Session: s1")).toBe(true);
+  });
+});
