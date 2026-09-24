@@ -486,6 +486,14 @@ describe("Finance Hub: Buchung im Detail", () => {
     expect(patch?.body).toMatchObject({ reason: "Rechnung nachgerechnet", expense_cents: 28000 });
   });
 
+  test("R1-13: ein Grund allein ist keine Änderung und erreicht den Dienst nicht", async () => {
+    const { calls, client } = recording(() => ({ id: entryId, club_id: clubId }));
+    await expect(createK14ToolSet({ client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes: { reason: "nur ein Grund" } }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(calls).toHaveLength(0);
+  });
+
   test("TC-04: transfer confirm ist kritisch, die Vorschau liest show; die Zahl der Operationen bleibt", async () => {
     const operations = HUB_ACTION_DEFINITIONS["cai.finance.27.department_transfer"]!.operations;
     // list, account_choices, show, create, confirm, reject, withdraw, reverse — wie vor 13-04.

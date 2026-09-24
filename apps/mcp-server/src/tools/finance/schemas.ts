@@ -76,7 +76,12 @@ const entryChanges = nonEmpty({
   // beanstandet ist — der Dienst prüft das), Geldkonto und Eigenbeleg-Grund.
   reason: z.string().trim().min(1).max(500).optional(), money_account_id: uuid.nullable().optional(),
   receipt_exemption_reason: z.string().trim().min(10).max(500).nullable().optional(),
-});
+}).refine(
+  // A reason alone changes nothing — the service answers unchanged and the
+  // objection stays open (13 review R1-13).
+  (value) => Object.keys(value).some((key) => key !== "reason"),
+  "Ein Grund allein ändert nichts — mindestens ein Feld der Buchung angeben.",
+);
 
 export const K14_ACTION_SCHEMAS: Readonly<Record<K14ActionId, K14ActionSchemaContract>> = Object.freeze({
   "cai.finance.01.plan_list": contract(single({ limit: z.number().int().min(1).max(100).default(50) })),

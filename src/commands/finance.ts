@@ -320,6 +320,8 @@ export async function handleFinanceOperation({
         expense_cents: cents(opts.expense, "--expense"),
         booking_date: opts.date,
         notes: opts.notes,
+        // buchhaltung-13 D-13-02: the reason of a correction, required while an objection is open.
+        reason: opts.reason,
       }));
     case "entry-delete":
       return client.del("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
@@ -452,7 +454,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--status <wert>", "Status beim plan-update")
     .option("--notes <text>", "Notiz bzw. Kommentar")
     .option("--source-type <typ>", "entry-list nach Herkunft filtern (manual, supply, sponsoring, …)")
-    .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen)")
+    .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen); bei entry-update der Grund der Korrektur (Pflicht, solange die Buchung beanstandet ist)")
     .option("--force", "plan-close auch bei offenen Posten erzwingen")
     .option("--overwrite", "position-import-shopping: vorhandene Schätzung überschreiben")
     .option("--include-non-recurring", "plan-copy: auch einmalige Posten übernehmen")
