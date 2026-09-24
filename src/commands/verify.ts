@@ -363,6 +363,17 @@ export const INHALTSHOEHE_JS = `() => {
 }`;
 const MAX_AUFNAHMEHOEHE = 20000;
 
+// Sections fade in (SectionRenderer, useRevealInView forces visibility after
+// 2 s). A screenshot taken earlier shows an empty page — and still "passed".
+// Wait until no section is transparent anymore; report how many stayed so.
+export const SICHTBAR_JS = `async () => {
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const unsichtbar = () => Array.from(document.querySelectorAll("[data-section-layout]"))
+    .filter((el) => Number(getComputedStyle(el).opacity) < 0.99 && el.getBoundingClientRect().height > 8).length;
+  for (let i = 0; i < 32 && unsichtbar() > 0; i += 1) await delay(250);
+  return JSON.stringify(unsichtbar());
+}`;
+
 export const SCROLL_SETTLE_JS = `async () => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const step = Math.max(320, Math.floor(window.innerHeight * 0.75));
@@ -635,7 +646,13 @@ async function verifyHomepageMatrix(
           const gross = await pw(["resize", String(viewport.width), String(hoehe)]);
           const grossFehler = pwFailure(gross, "Viewport auf Seitenhöhe");
           if (grossFehler) throw new Error(grossFehler);
-          await sleep(Math.min(waitMs, 1500));
+          await sleep(waitMs);
+        }
+
+        const sichtbar = await pw(["eval", SICHTBAR_JS.replace(/\s+/g, " ")]);
+        const unsichtbar = parseEvalJson<number>(sichtbar.stdout) ?? 0;
+        if (unsichtbar > 0) {
+          throw new Error(`${unsichtbar} Sektion(en) nach 8 s noch unsichtbar (opacity < 1) — Aufnahme wäre leer`);
         }
 
         const screenshot = await pw(["screenshot", "--full-page", "--filename", screenshotFile]);
