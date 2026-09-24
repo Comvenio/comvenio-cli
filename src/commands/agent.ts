@@ -47,11 +47,23 @@ export function buildClubAgentChatPayload(input: {
   };
 }
 
+export const AGENT_ACTIONS = ["chat"] as const;
+
+/** Resolve `agent <action> [...message]` to the chat message (throws on unknown action). */
+export function resolveAgentChatMessage(action: string, words: string[] | undefined): string {
+  if (action !== "chat") {
+    throw new Error(`Unbekannte agent-Aktion "${action}". Erlaubt: ${AGENT_ACTIONS.join(", ")}.`);
+  }
+  return (words ?? []).join(" ");
+}
+
 export function registerAgentCommands(cli: CAC): void {
+  // cac matches only the FIRST word as command name: "agent chat <message>" was
+  // never reachable (silent exit 0). One word plus an action, like weekly-preview.
   cli
     .command(
-      "agent chat <message>",
-      "Mit dem vereinseigenen Club-Agenten sprechen; für komplexe Planung und mehrstufige Aufgaben",
+      "agent <action> [...message]",
+      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen; für komplexe Planung und mehrstufige Aufgaben",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option(
@@ -59,7 +71,8 @@ export function registerAgentCommands(cli: CAC): void {
       "Session-ID der vorherigen Antwort für Rückfragen, Korrekturen und Freigaben",
     )
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
-    .action(async (message: string, opts: AgentChatOptions) => {
+    .action(async (action: string, words: string[], opts: AgentChatOptions) => {
+      const message = resolveAgentChatMessage(action, words);
       const state = await loadState();
       const clubId = requireClubId(state, opts.club);
       const client = createClient(state);
