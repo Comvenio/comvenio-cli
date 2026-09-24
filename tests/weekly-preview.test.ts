@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildCreateBody, buildTemplateBody, shareUrlFor, templateListPath, templatePath } from "../src/commands/weekly-preview.ts";
+import { buildCreateBody, buildTemplateBody, createTimeoutHint, shareUrlFor, templateListPath, templatePath } from "../src/commands/weekly-preview.ts";
 
 describe("weekly-preview template routes", () => {
   test("maps to the event-service template endpoints", () => {
@@ -27,18 +27,28 @@ describe("weekly-preview template routes", () => {
 
 describe("weekly-preview create (Funktion)", () => {
   test("baut den Aufruf mit Abteilung, optionalen Teams und Zeitraum", () => {
-    expect(buildCreateBody({ department: "d1" })).toEqual({ department_id: "d1", team_ids: [], range: "next_week", telegram: false });
-    expect(buildCreateBody({ department: "d1", teams: "t1, t2", range: "next_7_days", telegram: true })).toEqual({
+    const plain = buildCreateBody({ department: "d1" });
+    expect(plain).toMatchObject({ department_id: "d1", team_ids: [], range: "next_week", telegram: false });
+    // Always a key, so a repeat after a timeout can reuse it (Codex, 24.09.).
+    expect(String(plain.idempotency_key)).toStartWith("weekly-preview-");
+    expect(buildCreateBody({ department: "d1", teams: "t1, t2", range: "next_7_days", telegram: true, idempotencyKey: "k1" })).toEqual({
       department_id: "d1",
       team_ids: ["t1", "t2"],
       range: "next_7_days",
       telegram: true,
+      idempotency_key: "k1",
     });
   });
 
   test("verlangt eine Abteilung und einen gültigen Zeitraum", () => {
     expect(() => buildCreateBody({})).toThrow("--department");
     expect(() => buildCreateBody({ department: "d1", range: "morgen" })).toThrow("--range");
+  });
+
+  test("nennt nach einer Zeitgrenze den Schlüssel für eine sichere Wiederholung", () => {
+    const hint = createTimeoutHint("weekly-preview-abc");
+    expect(hint).toContain("function runs weekly_preview.create");
+    expect(hint).toContain("--idempotency-key weekly-preview-abc");
   });
 
   test("baut den Share-Link über das Gateway", () => {
