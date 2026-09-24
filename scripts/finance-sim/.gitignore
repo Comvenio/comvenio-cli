@@ -1,0 +1,6 @@
+# State, log and audit exports of a local run — the reports in berichte/ are versioned.
+state.json
+log.jsonl
+*.zip
+tmp-*.json
+*-bericht.json
