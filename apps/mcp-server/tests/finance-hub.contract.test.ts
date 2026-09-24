@@ -468,6 +468,21 @@ describe("Finance Hub: Buchung im Detail", () => {
     expect(calls[0]?.query).toEqual({ node_kind: "DEPARTMENT", node_id: jugendId, order: "desc", before_journal_number: "40" });
   });
 
+  test("bereich-als-sicht: journal filtert „ungeplant“ wie die Oberfläche (filter-ungeplant)", async () => {
+    const { calls, client } = recording(() => ({ plan: {}, rows: [], next_after: null, next_before: null, totals: {} }));
+    await createK14ToolSet({ client }).execute({
+      action_id: "cai.finance.21.plan_period",
+      input: { club_id: clubId, operation: "journal", plan_id: planId, filter: "unplanned" },
+      context, capability_snapshot: manager,
+    });
+    expect(calls[0]?.query).toEqual({ filter: "unplanned" });
+    await expect(createK14ToolSet({ client }).execute({
+      action_id: "cai.finance.21.plan_period",
+      input: { club_id: clubId, operation: "journal", plan_id: planId, filter: "alles" },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+  });
+
   test("TC-03: entry_update trägt den Grund im PATCH-Rumpf und verlangt eine Bestätigung", async () => {
     const changes = { expense_cents: 28000, reason: "Rechnung nachgerechnet" };
     const preview = recording(() => ({ id: entryId, club_id: clubId }));

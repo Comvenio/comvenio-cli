@@ -167,7 +167,7 @@ function journalQuery(input: JsonObject, context?: RequestContext): Record<strin
   if (hasKind !== hasNode) {
     throw createConnectorError({ code: "VALIDATION_FAILED", message: "journal: node_kind und node_id gehören zusammen — beide angeben oder keines.", request_id: context?.request_id ?? "", retryable: false });
   }
-  return optional(input, ["after_journal_number", "limit", "node_kind", "node_id", "order", "before_journal_number"]);
+  return optional(input, ["after_journal_number", "limit", "node_kind", "node_id", "order", "before_journal_number", "filter"]);
 }
 
 // ── Die Aktionen ─────────────────────────────────────────────────────────
@@ -184,7 +184,9 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     // Knotens (beide oder keines), order=desc blättert von der jüngsten Buchung.
     { op: "journal", method: "GET", template: `${BY_ID}/journal`, path: (i) => `${byId(i)}/journal`, risk: "read",
       shape: { plan_id: uuid, after_journal_number: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(500).optional(),
-        node_kind: nodeKind.optional(), node_id: nodeId.optional(), order: z.enum(["asc", "desc"]).optional(), before_journal_number: z.number().int().min(1).optional() },
+        node_kind: nodeKind.optional(), node_id: nodeId.optional(), order: z.enum(["asc", "desc"]).optional(), before_journal_number: z.number().int().min(1).optional(),
+        // bereich-als-sicht-01 §4.6: unplanned — the entries on „Ungeplant“ positions (ui-spec filter-ungeplant).
+        filter: z.enum(["missing_receipt", "late_entry", "unplanned"]).optional() },
       query: (i, c) => journalQuery(i, c), multiDepartment: true },
     { op: "entries_without_receipt", method: "GET", template: `${BY_ID}/entries-without-receipt`, path: (i) => `${byId(i)}/entries-without-receipt`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     { op: "sphere_report", method: "GET", template: `${BY_ID}/sphere-report`, path: (i) => `${byId(i)}/sphere-report`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
