@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import auditFarbenQuelle from "../verify/audit-farben.js" with { type: "text" };
 import homepageAuditQuelle from "../verify/audit-homepage.js" with { type: "text" };
 import { strukturBefunde, strukturBefundeAlsText } from "../verify/geruest-befunde.ts";
+import { ladeKatalog } from "../homepage/befehle.ts";
 import auditDomQuelle from "../verify/audit-dom.js" with { type: "text" };
 import { loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
@@ -346,6 +347,33 @@ export const AUDIT_JS = `() => {
   return JSON.stringify({ checked: checked, fail_count: fails.length, invisible_texts: invisible, gradient_skipped: gradientSkipped, worst: fails.slice(0, 15) });
 }`;
 
+// Full height of the page: the document or a scrolling container (the public
+// site scrolls inside one, so --full-page alone stops at the viewport). The
+// viewport is then made this tall before the screenshot — lazy content comes
+// into view, and the image covers the whole page (07 §4.3).
+export const INHALTSHOEHE_JS = `() => {
+  let h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  for (const el of document.querySelectorAll("*")) {
+    const oy = getComputedStyle(el).overflowY;
+    if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 2) {
+      h = Math.max(h, Math.ceil(el.getBoundingClientRect().top + window.scrollY + el.scrollHeight));
+    }
+  }
+  return JSON.stringify(Math.min(h, 20000));
+}`;
+const MAX_AUFNAHMEHOEHE = 20000;
+
+// Sections fade in (SectionRenderer, useRevealInView forces visibility after
+// 2 s). A screenshot taken earlier shows an empty page — and still "passed".
+// Wait until no section is transparent anymore; report how many stayed so.
+export const SICHTBAR_JS = `async () => {
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const unsichtbar = () => Array.from(document.querySelectorAll("[data-section-layout]"))
+    .filter((el) => Number(getComputedStyle(el).opacity) < 0.99 && el.getBoundingClientRect().height > 8).length;
+  for (let i = 0; i < 32 && unsichtbar() > 0; i += 1) await delay(250);
+  return JSON.stringify(unsichtbar());
+}`;
+
 export const SCROLL_SETTLE_JS = `async () => {
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const step = Math.max(320, Math.floor(window.innerHeight * 0.75));
@@ -612,6 +640,21 @@ async function verifyHomepageMatrix(
         const scrollFailure = pwFailure(scroll, "Scroll-Settling");
         if (scrollFailure) throw new Error(scrollFailure);
 
+        const hoeheErgebnis = await pw(["eval", INHALTSHOEHE_JS.replace(/\s+/g, " ")]);
+        const hoehe = Math.min(parseEvalJson<number>(hoeheErgebnis.stdout) ?? 0, MAX_AUFNAHMEHOEHE);
+        if (hoehe > viewport.height) {
+          const gross = await pw(["resize", String(viewport.width), String(hoehe)]);
+          const grossFehler = pwFailure(gross, "Viewport auf Seitenhöhe");
+          if (grossFehler) throw new Error(grossFehler);
+          await sleep(waitMs);
+        }
+
+        const sichtbar = await pw(["eval", SICHTBAR_JS.replace(/\s+/g, " ")]);
+        const unsichtbar = parseEvalJson<number>(sichtbar.stdout) ?? 0;
+        if (unsichtbar > 0) {
+          throw new Error(`${unsichtbar} Sektion(en) nach 8 s noch unsichtbar (opacity < 1) — Aufnahme wäre leer`);
+        }
+
         const screenshot = await pw(["screenshot", "--full-page", "--filename", screenshotFile]);
         const screenshotFailure = pwFailure(screenshot, "Screenshot");
         if (screenshotFailure) throw new Error(screenshotFailure);
@@ -782,19 +825,24 @@ export function registerVerifyCommands(cli: CAC): void {
             if (!Array.isArray(tabs) || tabs.length === 0) {
               throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
             }
-            // Skeleton rules first (Lastenheft 17-designer-struktur 06 §4.4):
-            // an error the service would refuse ends the run before any browser.
-            const befunde = strukturBefunde(tabs as Parameters<typeof strukturBefunde>[0]);
-            console.error(strukturBefundeAlsText(befunde));
-            if (befunde.some((b) => b.schwere === "fehler")) {
-              process.exitCode = 4;
-              break;
-            }
             const designSettings = opts.designFile
               ? readJsonFile<Record<string, unknown>>(opts.designFile)
               : !Array.isArray(struct)
                 ? struct.design_settings
                 : undefined;
+            // Skeleton rules first (Lastenheft 17-designer-struktur 06 §4.4):
+            // an error the service would refuse ends the run before any browser.
+            // The catalog is the one the preview renders with: the design file's,
+            // else the live one (R5 unknown_style otherwise flags every style).
+            const katalog = Array.isArray(designSettings?.styles)
+              ? (designSettings.styles as { id?: unknown; class?: unknown }[])
+              : await ladeKatalog(client, clubId);
+            const befunde = strukturBefunde(tabs as Parameters<typeof strukturBefunde>[0], katalog);
+            console.error(strukturBefundeAlsText(befunde));
+            if (befunde.some((b) => b.schwere === "fehler")) {
+              process.exitCode = 4;
+              break;
+            }
             const body: Record<string, unknown> = { tabs };
             if (designSettings) {
               body.design_snapshot_version = 1;
