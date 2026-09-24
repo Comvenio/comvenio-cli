@@ -20,6 +20,7 @@ import { z } from "zod";
 
 import type {
   AgentCapabilityProjection,
+  AgentFunctionDescriptor,
   StatelessTransportContext,
 } from "./http/types.ts";
 import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
@@ -657,12 +658,104 @@ function protectedToolError(
   };
 }
 
+/** Agent-Funktionen K2 (Strang 02 §11): one MCP tool per released function of the MCP channel.
+ *
+ * `tools/list` follows GET /functions?channel=mcp at connection time — a new function needs no
+ * MCP release. A call is POST /functions/{id}/runs; the server checks rights, schema and
+ * approval, and a function that needs an approval returns its direct link (decided in the
+ * web/app only, D-AF-16). A schema that cannot be expressed is left out (fail-closed).
+ */
+export function agentFunctionToolName(capabilityId: string): string {
+  return `cv_fn_${capabilityId.replace(/\./gu, "_")}`.slice(0, 64);
+}
+
+function registerAgentFunctionTools(input: {
+  server: McpServer;
+  functions: readonly AgentFunctionDescriptor[];
+  club_id: string;
+  context: RequestContext;
+  public_origin: string;
+  advertised_security_schemes: Map<string, readonly ToolSecurityScheme[]>;
+  call: (capabilityId: string, body: JsonValue) => Promise<JsonValue>;
+}): string[] {
+  const registered: string[] = [];
+  for (const fn of input.functions) {
+    let schema: z.ZodType;
+    try {
+      schema = z.fromJSONSchema(fn.input_schema as Parameters<typeof z.fromJSONSchema>[0]);
+    } catch {
+      continue;
+    }
+    const name = agentFunctionToolName(fn.capability_id);
+    if (registered.includes(name)) continue;
+    const scope: OAuthScope = fn.risk_level >= 1 ? "club.write" : "club.read";
+    const securitySchemes = oauthSecuritySchemes([scope]);
+    input.advertised_security_schemes.set(name, securitySchemes);
+    registerAppTool(input.server, name, {
+      title: fn.title,
+      description: fn.approval_required
+        ? `${fn.description} Braucht eine Freigabe in Web oder App; das Werkzeug gibt den Link zurück.`
+        : fn.description,
+      inputSchema: schema,
+      _meta: withSecurityMetadata(undefined, securitySchemes),
+      annotations: {
+        readOnlyHint: fn.risk_level === 0,
+        destructiveHint: fn.approval_required,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    }, async (arguments_) => {
+      if (!input.context.scopes.includes(scope)) {
+        return insufficientScopeToolResult({
+          public_origin: input.public_origin,
+          required_scopes: [scope],
+          context: input.context,
+        });
+      }
+      try {
+        const run = record(await input.call(fn.capability_id, { args: arguments_ as JsonValue }));
+        const state = typeof run?.state === "string" ? run.state : "unknown";
+        const approval = record(run?.approval ?? null);
+        const approvalUrl = typeof approval?.approval_url === "string" ? approval.approval_url : null;
+        const summary = typeof run?.result_summary === "string" ? run.result_summary : null;
+        const output = {
+          run_id: typeof run?.id === "string" ? run.id : null,
+          state,
+          result_summary: summary,
+          approval_url: approvalUrl,
+          error: typeof run?.error === "string" ? run.error : null,
+        };
+        const text = approvalUrl
+          ? `Die Funktion braucht eine Freigabe. Entscheide in Web oder App: ${approvalUrl}`
+          : summary ?? (state === "succeeded" ? "Erledigt." : `Stand: ${state}`);
+        return toMcpResult(createProviderNeutralResult(input.context, output, [{ type: "text", text }]));
+      } catch (error) {
+        if (isConnectorError(error)) {
+          const codes: Record<string, [string, string]> = {
+            PERMISSION_DENIED: ["permission_denied", "Diese Funktion darfst du im aktuellen Verein nicht ausführen."],
+            NOT_FOUND: ["function_not_found", "Diese Funktion ist nicht verfügbar."],
+            VALIDATION_FAILED: ["validation_failed", "Die Angaben passen nicht zur Funktion."],
+            CONFLICT: ["conflict", "Dieser Aufruf widerspricht einem früheren mit demselben Schlüssel."],
+            RATE_LIMITED: ["rate_limited", "Der Club-Agent ist vorübergehend ausgelastet."],
+          };
+          const mapped = codes[error.code];
+          if (mapped) return protectedToolError(input.context, mapped[0], mapped[1]);
+        }
+        throw error;
+      }
+    });
+    registered.push(name);
+  }
+  return registered;
+}
+
 export function createRuntimeServer(input: {
   environment: OAuthEnvironment;
   api_base_url: string;
   public_origin: string;
   context: StatelessTransportContext;
   club_agent_capabilities?: readonly AgentCapabilityProjection[];
+  club_agent_functions?: readonly AgentFunctionDescriptor[];
   domain_state_store: DomainStateStore;
   release_scope?: ConnectorReleaseScope;
 }): McpServer {
@@ -958,6 +1051,23 @@ export function createRuntimeServer(input: {
             }
             throw error;
           }
+        });
+      }
+      if (includesClubAgent(releaseScope)) {
+        registerAgentFunctionTools({
+          server,
+          functions: input.club_agent_functions ?? [],
+          club_id: clubId,
+          context: input.context.request,
+          public_origin: input.public_origin,
+          advertised_security_schemes: advertisedSecuritySchemes,
+          call: (capabilityId, body) => apiClient.request<JsonValue>({
+            method: "POST",
+            service: "ai",
+            path: `/club-agents/${encodeURIComponent(clubId)}/functions/${encodeURIComponent(capabilityId)}/runs`,
+            body,
+            context: input.context.request,
+          }),
         });
       }
       if (personalTaskToolsAvailable) {

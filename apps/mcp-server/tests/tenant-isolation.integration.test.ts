@@ -728,6 +728,114 @@ describe("Remote MCP runtime", () => {
     }
   });
 
+  test("exposes released functions as tools and calls the one write path (Agent-Funktionen K2)", async () => {
+    const calls: Array<{ path: string; authorized: boolean; body: Record<string, unknown> }> = [];
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        const url = new URL(request.url);
+        if (request.method === "POST" && url.pathname.startsWith("/ai/club-agents/")) {
+          calls.push({
+            path: url.pathname,
+            authorized: request.headers.get("authorization") === "Bearer backend-actor-token",
+            body: await request.json() as Record<string, unknown>,
+          });
+          return Response.json({
+            id: "33333333-3333-4333-8333-333333333333",
+            state: "succeeded",
+            result_summary: "Die Satzung liegt im Mitgliederbereich.",
+            internal_trace: "Darf nicht über den MCP ausgegeben werden.",
+          }, { status: 201 });
+        }
+        return Response.json({ error: "unexpected_request" }, { status: 404 });
+      },
+    });
+    const functions = [
+      {
+        capability_id: "club.faq.answer",
+        title: "Vereinsfrage beantworten",
+        description: "Beantwortet eine Frage zum Verein.",
+        risk_level: 0,
+        approval_required: false,
+        input_schema: {
+          type: "object",
+          properties: { question: { type: "string", minLength: 1, maxLength: 500 } },
+          required: ["question"],
+          additionalProperties: false,
+        },
+        capability_version: 1,
+        input_schema_hash: "sha256:a",
+      },
+      {
+        capability_id: "task.create",
+        title: "Aufgabe anlegen",
+        description: "Legt eine Aufgabe an.",
+        risk_level: 2,
+        approval_required: true,
+        input_schema: {
+          type: "object",
+          properties: { title: { type: "string", minLength: 1, maxLength: 200 } },
+          required: ["title"],
+          additionalProperties: false,
+        },
+        capability_version: 1,
+        input_schema_hash: "sha256:b",
+      },
+    ];
+    const server = new McpHttpServer(runtimeOptions({
+      access_policy: createRuntimeAccessPolicy("development", "club_agent_bridge_v1"),
+      server_factory: (requestContext) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        club_agent_capabilities: [releasedAgentCapability],
+        club_agent_functions: functions,
+        release_scope: "club_agent_bridge_v1",
+      }),
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const list = await postMcp(baseUrl, { jsonrpc: "2.0", id: 71, method: "tools/list", params: {} }, "token-openai");
+      const tools = (await list.json() as any).result.tools;
+      const faq = tools.find((item: { name: string }) => item.name === "cv_fn_club_faq_answer");
+      const task = tools.find((item: { name: string }) => item.name === "cv_fn_task_create");
+      expect(faq.inputSchema.properties.question.type).toBe("string");
+      expect(faq.inputSchema.properties.club_id).toBeUndefined();
+      expect(faq.securitySchemes).toEqual([{ type: "oauth2", scopes: ["club.read"] }]);
+      expect(task.securitySchemes).toEqual([{ type: "oauth2", scopes: ["club.write"] }]);
+      expect(task.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+
+      const read = await postMcp(baseUrl, {
+        jsonrpc: "2.0", id: 72, method: "tools/call",
+        params: { name: "cv_fn_club_faq_answer", arguments: { question: "Wo ist die Satzung?" } },
+      }, "token-openai");
+      const result = (await read.json() as any).result;
+      expect(result.isError).not.toBe(true);
+      expect(result.structuredContent).toMatchObject({ state: "succeeded", result_summary: "Die Satzung liegt im Mitgliederbereich." });
+      expect(JSON.stringify(result)).not.toContain("internal_trace");
+      expect(calls).toEqual([{
+        path: `/ai/club-agents/${clubId}/functions/club.faq.answer/runs`,
+        authorized: true,
+        body: { args: { question: "Wo ist die Satzung?" } },
+      }]);
+
+      // A write function needs club.write — this grant has only club.read: nothing reaches the service.
+      const write = await postMcp(baseUrl, {
+        jsonrpc: "2.0", id: 73, method: "tools/call",
+        params: { name: "cv_fn_task_create", arguments: { title: "Protokoll" } },
+      }, "token-openai");
+      expect(JSON.stringify(await write.json())).toContain("club.write");
+      expect(calls).toHaveLength(1);
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
+    }
+  });
+
   test("hides the Club-Agent bridge from both providers when the canonical gate has no external release", async () => {
     const bridgeRuntimeOptions: Partial<McpRuntimeOptions> = {
       access_policy: createRuntimeAccessPolicy(

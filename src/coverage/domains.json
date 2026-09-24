@@ -793,7 +793,8 @@
       "status": "core-partial",
       "actions": [
         "chat",
-        "approval"
+        "approval",
+        "function"
       ],
       "gaps": [
         "Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions."
@@ -805,6 +806,7 @@
       ],
       "source": [
         "src/commands/agent.ts",
+        "src/commands/function.ts",
         "Backend/Microservice-Backend/ai-service/app/routes/chat.py",
         "Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/"
       ],

@@ -48,6 +48,18 @@ export interface AgentCapabilityProjection {
   evidence_bundle_hash: string | null;
 }
 
+/** Agent-Funktionen K2 (Strang 02 §11): a released function the MCP channel may call. */
+export interface AgentFunctionDescriptor {
+  capability_id: string;
+  title: string;
+  description: string;
+  risk_level: number;
+  approval_required: boolean;
+  input_schema: Record<string, unknown>;
+  capability_version: number;
+  input_schema_hash: string | null;
+}
+
 export interface AuthenticatedConnectorPrincipal {
   subject_id: UUID;
   oauth_grant_id: UUID;

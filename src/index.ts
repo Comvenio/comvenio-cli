@@ -51,6 +51,7 @@ import { registerIngredientCategoryCommands } from "./commands/ingredient-catego
 import { registerShoppingCommands } from "./commands/shopping.ts";
 import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
+import { registerFunctionCommands } from "./commands/function.ts";
 import { registerActionCommands } from "./commands/action.ts";
 import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
@@ -371,6 +372,7 @@ registerWeeklyPreviewCommands(cli);
 registerShoppingCommands(cli);
 registerRoleCommands(cli);
 registerAgentCommands(cli);
+registerFunctionCommands(cli);
 registerActionCommands(cli);
 
 cli.help();
