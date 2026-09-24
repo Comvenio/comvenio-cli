@@ -1,0 +1,534 @@
+{
+  "lauf": "bereich-als-sicht",
+  "verein": "0ec34e70-999a-47c4-a1b1-bdb293110fa5",
+  "beginn": "2026-09-24T21:34:30.683Z",
+  "heute": "2026-09-24",
+  "abweichung_vom_vertrag": "Die „Jugend“ aus 05 DC-5 gibt es im Comvenio-Verein nicht; ihre Rolle übernimmt „Webpage“ (Abteilung ohne eigenes Konto, Vereinssaison, bucht auf dem Vereinskonto erst nach der Freigabe).",
+  "schritte": [
+    {
+      "schritt": "ausgangslage",
+      "haushalt_2026": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+      "haushalt_2027": "a9b27956-12fb-4237-ad18-0adca68da445",
+      "bereichsplaene": [
+        {
+          "id": "8201b4d0-2075-4c6d-a6fd-d891ed234724",
+          "label": "App-Jahr 26/27",
+          "status": "ACTIVE"
+        },
+        {
+          "id": "41133e7a-5136-4cc1-bb05-d5a180fae478",
+          "label": "Web-App 2026",
+          "status": "ACTIVE"
+        },
+        {
+          "id": "dff37f1b-de18-47c2-8245-597eca4351a4",
+          "label": "Architektur 2025",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "schritt": "bereichsplan_geschlossen_App-Jahr 26/27",
+      "plan_id": "8201b4d0-2075-4c6d-a6fd-d891ed234724",
+      "ergebnis_cents": 65700,
+      "offene_punkte": [
+        {
+          "art": "OBLIGATION",
+          "text": "Store-Freigabe iOS: externe Prüfung",
+          "betrag_cents": 15000
+        }
+      ]
+    },
+    {
+      "schritt": "bereichsplan_geschlossen_Web-App 2026",
+      "plan_id": "41133e7a-5136-4cc1-bb05-d5a180fae478",
+      "ergebnis_cents": -37600,
+      "offene_punkte": [
+        {
+          "art": "OBLIGATION",
+          "text": "Terminverwaltung, Schlussrate",
+          "betrag_cents": 80000
+        },
+        {
+          "art": "RECEIVABLE",
+          "text": "Zuschuss Digitalisierung, 2. Rate",
+          "betrag_cents": 100000
+        }
+      ]
+    },
+    {
+      "schritt": "bereichsplan_geschlossen_Architektur 2025",
+      "plan_id": "dff37f1b-de18-47c2-8245-597eca4351a4",
+      "ergebnis_cents": -143500,
+      "offene_punkte": [
+        {
+          "art": "OBLIGATION",
+          "text": "Architekturberatung Dezember",
+          "betrag_cents": 25000
+        },
+        {
+          "art": "RECEIVABLE",
+          "text": "Zuschuss Weiterbildung, Restbetrag",
+          "betrag_cents": 20000
+        }
+      ]
+    },
+    {
+      "schritt": "tc01_keine_aktiven_bereichsplaene",
+      "aktiv": [],
+      "geschlossen_lesbar": [
+        {
+          "label": "App-Jahr 26/27",
+          "posten": 5
+        },
+        {
+          "label": "Web-App 2026",
+          "posten": 7
+        },
+        {
+          "label": "Architektur 2025",
+          "posten": 3
+        }
+      ]
+    },
+    {
+      "schritt": "zeitraeume",
+      "Web-App": {
+        "art": "FISCAL",
+        "label": "Haushaltsjahr",
+        "herkunft": "fiscal",
+        "laufend": "2026-01-01 – 2026-12-31"
+      },
+      "Mobile-App": {
+        "art": "CUSTOM",
+        "label": "1.4.–31.3.",
+        "herkunft": "own",
+        "laufend": "2026-04-01 – 2027-03-31"
+      },
+      "Webpage": {
+        "art": "CLUB_SEASON",
+        "label": "Vereinssaison",
+        "herkunft": "own",
+        "laufend": "2026-07-01 – 2027-04-30"
+      }
+    },
+    {
+      "schritt": "tc04_vor_der_freigabe",
+      "antwort": "money_account_not_granted"
+    },
+    {
+      "schritt": "tc04_nach_der_freigabe",
+      "buchung": "5038daae-2079-414c-a5fd-6810a098eeac",
+      "posten_angelegt": true
+    },
+    {
+      "schritt": "freigaben_vereinskonto",
+      "freigaben": [
+        {
+          "knoten": "Web-App",
+          "seit": "2026-09-24T21:37:18.705461Z",
+          "zurueckgenommen": null
+        },
+        {
+          "knoten": "Webpage",
+          "seit": "2026-09-24T21:36:57.512138Z",
+          "zurueckgenommen": null
+        }
+      ]
+    },
+    {
+      "schritt": "architektur_im_haushalt",
+      "anfangsbestand_cents": -138500,
+      "posten": 3
+    },
+    {
+      "schritt": "posten_im_fenster_apple",
+      "gruppe": "7f396cb1-440f-4704-b96b-78271de931e8",
+      "teile": [
+        {
+          "plan": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+          "von": "2026-04-01",
+          "bis": "2026-12-31",
+          "soll_cents": 7425
+        },
+        {
+          "plan": "a9b27956-12fb-4237-ad18-0adca68da445",
+          "von": "2027-01-01",
+          "bis": "2027-03-31",
+          "soll_cents": 2475
+        }
+      ]
+    },
+    {
+      "schritt": "posten_im_fenster_google",
+      "gruppe": "ff1e9e67-8203-4aae-b95b-d8c376c2fb2d",
+      "teile": [
+        {
+          "plan": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+          "von": "2026-04-01",
+          "bis": "2026-12-31",
+          "soll_cents": 1875
+        },
+        {
+          "plan": "a9b27956-12fb-4237-ad18-0adca68da445",
+          "von": "2027-01-01",
+          "bis": "2027-03-31",
+          "soll_cents": 625
+        }
+      ]
+    },
+    {
+      "schritt": "posten_im_fenster_geraete",
+      "gruppe": "e356bfc6-0718-41d6-b422-a5de4bc4c614",
+      "teile": [
+        {
+          "plan": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+          "von": "2026-04-01",
+          "bis": "2026-12-31",
+          "soll_cents": 90000
+        },
+        {
+          "plan": "a9b27956-12fb-4237-ad18-0adca68da445",
+          "von": "2027-01-01",
+          "bis": "2027-03-31",
+          "soll_cents": 30000
+        }
+      ]
+    },
+    {
+      "schritt": "posten_im_fenster_push",
+      "gruppe": "ef7b69e2-6b59-4b38-bace-2f4e13f6ca68",
+      "teile": [
+        {
+          "plan": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+          "von": "2026-04-01",
+          "bis": "2026-12-31",
+          "soll_cents": 27000
+        },
+        {
+          "plan": "a9b27956-12fb-4237-ad18-0adca68da445",
+          "von": "2027-01-01",
+          "bis": "2027-03-31",
+          "soll_cents": 9000
+        }
+      ]
+    },
+    {
+      "schritt": "posten_im_fenster_inapp",
+      "gruppe": "98ed24fd-9a5f-44e5-8f79-b38e5e7e45b8",
+      "teile": [
+        {
+          "plan": "04f31be4-bf7f-4ec9-beb0-5c0ea2621c1d",
+          "von": "2026-04-01",
+          "bis": "2026-12-31",
+          "soll_cents": 67500
+        },
+        {
+          "plan": "a9b27956-12fb-4237-ad18-0adca68da445",
+          "von": "2027-01-01",
+          "bis": "2027-03-31",
+          "soll_cents": 22500
+        }
+      ]
+    },
+    {
+      "schritt": "ungeplant_gebucht",
+      "buchung": "bde1f2bb-00f9-437b-86af-4b90cbcf0410",
+      "posten_angelegt": true
+    },
+    {
+      "schritt": "tc02_sicht_mobile_app_app_jahr",
+      "fenster": "2026-04-01 – 2027-03-31",
+      "haushalte": [
+        "2026",
+        "2027"
+      ],
+      "luecke": [],
+      "rahmen_cents": 200000,
+      "verplant_cents": 168400,
+      "frei_cents": 31600,
+      "ist_cents": 145720,
+      "posten": [
+        {
+          "name": "Testgeräte",
+          "rubrik": "Ausstattung",
+          "quelle": "MANUAL",
+          "haushalte": 2,
+          "soll": 120000,
+          "ist": 114900,
+          "einnahmen_soll": 0,
+          "einnahmen_ist": 0,
+          "buchungen": 1
+        },
+        {
+          "name": "Push-Dienst und Analyse",
+          "rubrik": "Betrieb",
+          "quelle": "MANUAL",
+          "haushalte": 2,
+          "soll": 36000,
+          "ist": 17700,
+          "einnahmen_soll": 0,
+          "einnahmen_ist": 0,
+          "buchungen": 6
+        },
+        {
+          "name": "In-App-Spenden",
+          "rubrik": "Einnahmen",
+          "quelle": "MANUAL",
+          "haushalte": 2,
+          "soll": 0,
+          "ist": 0,
+          "einnahmen_soll": 90000,
+          "einnahmen_ist": 38000,
+          "buchungen": 5
+        },
+        {
+          "name": "Apple Developer Program",
+          "rubrik": "Store-Gebühren",
+          "quelle": "MANUAL",
+          "haushalte": 2,
+          "soll": 9900,
+          "ist": 10100,
+          "einnahmen_soll": 0,
+          "einnahmen_ist": 0,
+          "buchungen": 1
+        },
+        {
+          "name": "Google Play Konsole",
+          "rubrik": "Store-Gebühren",
+          "quelle": "MANUAL",
+          "haushalte": 2,
+          "soll": 2500,
+          "ist": 2600,
+          "einnahmen_soll": 0,
+          "einnahmen_ist": 0,
+          "buchungen": 1
+        },
+        {
+          "name": "Ungeplant · Store-Gebühren",
+          "rubrik": "Store-Gebühren",
+          "quelle": "UNPLANNED",
+          "haushalte": 1,
+          "soll": 0,
+          "ist": 420,
+          "einnahmen_soll": 0,
+          "einnahmen_ist": 0,
+          "buchungen": 1
+        }
+      ]
+    },
+    {
+      "schritt": "tc03_journal_ungeplant",
+      "zeilen": [
+        {
+          "nr": 42,
+          "text": "Ersatzkabel HDMI für den Vereinsraum",
+          "knoten": "Webpage",
+          "rubrik": "Material",
+          "posten": "Ungeplant · Material",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": true
+        },
+        {
+          "nr": 63,
+          "text": "Wechselkursgebühr Apple Developer",
+          "knoten": "Mobile-App",
+          "rubrik": "Store-Gebühren",
+          "posten": "Ungeplant · Store-Gebühren",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": true
+        }
+      ]
+    },
+    {
+      "schritt": "tc03_journal_mobile_app",
+      "zeilen": [
+        {
+          "nr": 63,
+          "text": "Wechselkursgebühr Apple Developer",
+          "knoten": "Mobile-App",
+          "rubrik": "Store-Gebühren",
+          "posten": "Ungeplant · Store-Gebühren",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": true
+        },
+        {
+          "nr": 62,
+          "text": "In-App-Spenden 08/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Einnahmen",
+          "posten": "In-App-Spenden",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 61,
+          "text": "In-App-Spenden 07/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Einnahmen",
+          "posten": "In-App-Spenden",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 60,
+          "text": "In-App-Spenden 06/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Einnahmen",
+          "posten": "In-App-Spenden",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 59,
+          "text": "In-App-Spenden 05/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Einnahmen",
+          "posten": "In-App-Spenden",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 58,
+          "text": "In-App-Spenden 04/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Einnahmen",
+          "posten": "In-App-Spenden",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 57,
+          "text": "Push-Dienst 09/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Betrieb",
+          "posten": "Push-Dienst und Analyse",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 56,
+          "text": "Push-Dienst 08/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Betrieb",
+          "posten": "Push-Dienst und Analyse",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 55,
+          "text": "Push-Dienst 07/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Betrieb",
+          "posten": "Push-Dienst und Analyse",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        },
+        {
+          "nr": 54,
+          "text": "Push-Dienst 06/2026",
+          "knoten": "Mobile-App",
+          "rubrik": "Betrieb",
+          "posten": "Push-Dienst und Analyse",
+          "konto": "[Finanz-Simulation] Girokonto Sparkasse",
+          "ungeplant": false
+        }
+      ]
+    },
+    {
+      "schritt": "tc05_abrechnung_app_jahr",
+      "rahmen_cents": 200000,
+      "verplant_cents": 168400,
+      "ist_cents": 145720,
+      "einnahmen_ist_cents": 38000,
+      "ergebnis_cents": -107720,
+      "vorschlag_rahmen_cents": 54280,
+      "luecke": []
+    },
+    {
+      "schritt": "tc05_abrechnung_haushalt_2026_Mobile-App",
+      "rahmen_cents": null,
+      "verplant_cents": 126300,
+      "ist_cents": 145720,
+      "rest_cents": null,
+      "je_rubrik": [
+        {
+          "rubric": "Ausstattung",
+          "planned": 90000,
+          "actual": 114900,
+          "rest": -24900
+        },
+        {
+          "rubric": "Betrieb",
+          "planned": 27000,
+          "actual": 17700,
+          "rest": 9300
+        },
+        {
+          "rubric": "Einnahmen",
+          "planned": 0,
+          "actual": 0,
+          "rest": 0
+        },
+        {
+          "rubric": "Store-Gebühren",
+          "planned": 9300,
+          "actual": 13120,
+          "rest": -3820
+        }
+      ]
+    },
+    {
+      "schritt": "tc05_abrechnung_haushalt_2026_Webpage",
+      "rahmen_cents": null,
+      "verplant_cents": 0,
+      "ist_cents": 1299,
+      "rest_cents": null,
+      "je_rubrik": [
+        {
+          "rubric": "Material",
+          "planned": 0,
+          "actual": 1299,
+          "rest": -1299
+        }
+      ]
+    },
+    {
+      "schritt": "tc05_abrechnung_haushalt_2026_Architektur",
+      "rahmen_cents": null,
+      "verplant_cents": 374400,
+      "ist_cents": 302900,
+      "rest_cents": null,
+      "je_rubrik": [
+        {
+          "rubric": "Beratung",
+          "planned": 312000,
+          "actual": 239600,
+          "rest": 72400
+        },
+        {
+          "rubric": "Einnahmen",
+          "planned": 0,
+          "actual": 0,
+          "rest": 0
+        },
+        {
+          "rubric": "Weiterbildung",
+          "planned": 62400,
+          "actual": 63300,
+          "rest": -900
+        }
+      ]
+    },
+    {
+      "schritt": "offen_fuer_tom",
+      "freigaben_offen_haushalt_2026": 38,
+      "kassenberichte_eingereicht": [
+        "a2ee42e3-9efa-430a-952b-d1e5952e0a30",
+        "90b91cfb-8732-4dd6-a54b-6cd507a9b6af"
+      ]
+    }
+  ],
+  "ergebnis": "vollständig",
+  "ende": "2026-09-24T21:42:59.237Z"
+}
