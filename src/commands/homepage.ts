@@ -124,11 +124,13 @@ async function openInBrowser(url: string): Promise<boolean> {
  * Empfohlener Flow: schema homepage (komponieren) → preview --file (ansehen)
  *   → apply --file (live schalten).
  */
+const NL = String.fromCharCode(10);
+
 export function registerHomepageCommands(cli: CAC): void {
   cli
     .command(
       "homepage <action> [...args]",
-      "Homepage (deklarativ, kein Backend-LLM): preview | apply | show | screenshot | tree | slot get|set <reiter>/<slot> | convert — der Agent komponiert via schema homepage",
+      "Homepage (deklarativ, kein Backend-LLM): preview | apply | show | export | screenshot | tree | slot get|set <reiter>/<slot> | convert — der Agent komponiert via schema homepage",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--file <path>", "home.json: vom Agenten komponierte Struktur (preview/apply)")
@@ -141,7 +143,7 @@ export function registerHomepageCommands(cli: CAC): void {
     .option("--viewport <liste>", "screenshot: desktop, mobile oder beide (Vorgabe: desktop,mobile)")
     .option("--tab <slug>", "screenshot: ein bestimmter Reiter statt der Startseite")
     .option("--settle-ms <n>", "screenshot: Wartezeit nach dem Laden (Vorgabe 1500)")
-    .option("--out <dir>", "screenshot: Bilder als Dateien ablegen statt base64 auszugeben")
+    .option("--out <dir>", "screenshot: Bilder als Dateien ablegen; convert/export: Ausgabedatei (home.json)")
     .option("--expected-version <n>", "slot set: erwartete Version des Gerüst-Widgets (sonst die gerade gelesene)")
     .option("--dry-run", "slot set: Vorher/Nachher und Regelbefunde zeigen, nichts schreiben")
     .option("--from <path>", "convert: Bulk-Datei statt Live-Stand umwandeln")
@@ -409,8 +411,23 @@ export function registerHomepageCommands(cli: CAC): void {
           break;
         }
 
+        case "export": {
+          // Full live structure in bulk format (tabs → sections → widgets), the
+          // backup before a conversion (07 §4.1): `homepage apply --file <out> --clear`
+          // restores it. `show` lists only the tabs.
+          if (!opts.out) throw new Error("homepage export benoetigt --out <home.json>.");
+          const { tabs, hinweise } = await liveAlsBulk(client, clubId);
+          writeFileSync(opts.out, JSON.stringify({ tabs }, null, 2));
+          const sektionen = tabs.reduce((n, t) => n + t.sections.length, 0);
+          const widgets = tabs.reduce((n, t) => n + t.sections.reduce((m, s) => m + s.widgets.length, 0), 0);
+          output({ datei: opts.out, reiter: tabs.length, sektionen, widgets, hinweise }, opts.json, () =>
+            [`Geschrieben: ${opts.out} — ${tabs.length} Reiter, ${sektionen} Sektionen, ${widgets} Widgets`, ...hinweise.map((h) => `Hinweis: ${h}`)].join(NL),
+          );
+          break;
+        }
+
         default:
-          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, screenshot, apply, show, tree, slot, convert (generate/design entfernt — Agent komponiert deklarativ)`);
+          throw new Error(`Unbekannte Aktion "${action}". Verfuegbar: preview, screenshot, apply, show, export, tree, slot, convert (generate/design entfernt — Agent komponiert deklarativ)`);
       }
     });
 }

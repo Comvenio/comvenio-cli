@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
 import { baum, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
-import { convert, HomepageAbbruch, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
+import { convert, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
 import { strukturBefunde } from "../src/verify/geruest-befunde.ts";
@@ -231,5 +231,20 @@ describe("verify homepage structure", () => {
       { slug: "start", sections: [{ widgets: [{ kind: "custom_html", config: { html: '<div><h1 data-slot="t"></h1><p>fest</p></div>', slots: { t: { kind: "heading", config: {} } } } }] }] },
     ]);
     expect(befunde.some((b) => b.klasse === "fixed_text_in_skeleton" && b.schwere === "fehler" && b.tab === "start")).toBe(true);
+  });
+});
+
+
+// ── homepage export: the full live structure for the backup (07 §4.1) ──────────
+
+describe("homepage export", () => {
+  test("liveAlsBulk keeps tabs, sections in order and every widget with its config", async () => {
+    const { client } = stub();
+    const { tabs, hinweise } = await liveAlsBulk(client, "c");
+    expect(hinweise).toEqual([]);
+    expect(tabs.map((t) => t.slug)).toEqual(["start"]);
+    expect(tabs[0].sections.map((s) => [s.layout, s.title, s.sort_order])).toEqual([["full", null, 0], ["two-col", "Termine", 1]]);
+    expect(tabs[0].sections[1].widgets.map((w) => [w.kind, w.slot_index])).toEqual([["events_list", 0], ["image", 1]]);
+    expect(tabs[0].sections[0].widgets[0].config.slots).toBeDefined();
   });
 });
