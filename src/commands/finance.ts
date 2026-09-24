@@ -313,14 +313,22 @@ export async function handleFinanceOperation({
       );
     case "entry-show":
       return client.get("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
-    case "entry-update":
-      return client.patch("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`, bodyFrom(opts, action, {
+    case "entry-update": {
+      const aenderung = bodyFrom(opts, action, {
         description: opts.description,
         revenue_cents: cents(opts.revenue, "--revenue"),
         expense_cents: cents(opts.expense, "--expense"),
         booking_date: opts.date,
         notes: opts.notes,
-      }));
+        // buchhaltung-13 D-13-02: the reason of a correction, required while an objection is open.
+        reason: opts.reason,
+      });
+      // A reason alone changes nothing — the objection would stay open (13 review R2-10).
+      if (!Object.keys(aenderung).some((schluessel) => schluessel !== "reason")) {
+        throw new Error("finance entry-update: Ein Grund allein ändert nichts — mindestens ein Feld der Buchung angeben.");
+      }
+      return client.patch("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`, aenderung);
+    }
     case "entry-delete":
       return client.del("finance", `/entries/${requiredId(id, action, "Buchungs-ID")}`);
     case "entry-approve":
@@ -452,7 +460,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--status <wert>", "Status beim plan-update")
     .option("--notes <text>", "Notiz bzw. Kommentar")
     .option("--source-type <typ>", "entry-list nach Herkunft filtern (manual, supply, sponsoring, …)")
-    .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen)")
+    .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen); bei entry-update der Grund der Korrektur (Pflicht, solange die Buchung beanstandet ist)")
     .option("--force", "plan-close auch bei offenen Posten erzwingen")
     .option("--overwrite", "position-import-shopping: vorhandene Schätzung überschreiben")
     .option("--include-non-recurring", "plan-copy: auch einmalige Posten übernehmen")

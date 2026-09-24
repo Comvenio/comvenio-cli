@@ -43,6 +43,8 @@ export const FINANCE_AREAS: Record<string, string> = {
   budget: "cai.finance.36.budget_organigram",
   // budget-saison-03: Saisons, Saisonbaum, Saisonrahmen, Vorschlag.
   season: "cai.finance.37.budget_season",
+  // buchhaltung-13-04: Buchung im Detail und offene Punkte.
+  detail: "cai.finance.38.entry_detail",
 };
 
 function isObject(value: unknown): value is JsonObject {

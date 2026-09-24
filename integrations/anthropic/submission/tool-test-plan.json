@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "6848f2d2f3531a7e01e2ea61e231fc68de7710786f9774b89cf5a148f2b39415",
+  "tool_sync_version": "7b18b6e7904578d7e4a3bc70d2503533052d79cba2e30eac47262f068b0279d6",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1837,6 +1837,21 @@
       "tool_name": "cv_finance_37_budget_season",
       "happy_path_prompt": "Führe „Comvenio: Finanzen – budget season“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – budget season“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_finance_38_entry_detail",
+      "happy_path_prompt": "Führe „Comvenio: Finanzen – entry detail“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Finanzen – entry detail“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

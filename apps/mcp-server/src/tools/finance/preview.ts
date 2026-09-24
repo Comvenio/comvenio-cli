@@ -6,7 +6,7 @@ import type { K14ActionDefinition, K14OperationDefinition } from "./types.ts";
 type JsonObject = { [key: string]: JsonValue };
 function record(value: JsonValue): JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {}; }
 function identifier(input: JsonObject): string {
-  for (const key of ["entry_id", "position_id", "year", "club_id"]) if (input[key] !== undefined && input[key] !== null) return String(input[key]);
+  for (const key of ["entry_id", "transfer_id", "position_id", "year", "club_id"]) if (input[key] !== undefined && input[key] !== null) return String(input[key]);
   return "Finanzen";
 }
 
@@ -50,6 +50,16 @@ async function currentFrame(client: ComvenioApiClient, context: RequestContext, 
   }
 }
 
+async function transferShow(client: ComvenioApiClient, context: RequestContext, transferId: string): Promise<JsonObject | null> {
+  try {
+    if (!context.club_id) return null;
+    const transfer = record(await request(client, context, "GET", `/clubs/${context.club_id}/department-transfers/${transferId}`));
+    return transfer.id === transferId ? transfer : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function buildK14Preview(definition: K14ActionDefinition, operation: K14OperationDefinition, input: JsonValue, context: RequestContext, client?: ComvenioApiClient): Promise<{ subject: string; summary: string; effects: JsonValue[] }> {
   const data = record(input);
   const effects: JsonValue[] = [{ type: "backend_mutation", action_id: definition.action_id, operation: operation.operation, target: identifier(data), external_effect: operation.external_effect }];
@@ -77,6 +87,23 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
     const payload = record(data.data ?? null);
     const before = client ? await currentFrame(client, context, data) : undefined;
     effects.push({ type: "frame_change", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, ...(data.season_start ? { season_start: data.season_start } : {}), old_amount_cents: before ?? null, old_amount_read: before !== undefined, new_amount_cents: payload.amount_cents ?? null, reason: payload.reason ?? null });
+  }
+  // buchhaltung-13-04 DC-5: eine Umbuchung zeigt vor der Entscheidung Betrag,
+  // Abteilungen und Zustand — aus show, gelesen vor der Bestätigung.
+  if (definition.action_id === "cai.finance.27.department_transfer" && ["confirm", "reject", "withdraw"].includes(operation.operation)) {
+    const transferId = typeof data.transfer_id === "string" ? data.transfer_id : null;
+    const transfer = client && transferId ? await transferShow(client, context, transferId) : null;
+    effects.push({
+      type: "department_transfer_decision", step: operation.operation, transfer_id: transferId, transfer_read: transfer !== null,
+      amount_cents: transfer?.amount_cents ?? null, from_department_id: transfer?.from_department_id ?? null,
+      to_department_id: transfer?.to_department_id ?? null, status: transfer?.status ?? null, reason: transfer?.reason ?? null,
+      decision_note: record(data.data ?? null).decision_note ?? null,
+    });
+  }
+  // Eine Korrektur nennt die geänderten Felder und ihren Grund.
+  if (definition.action_id === "cai.finance.18.entry_update") {
+    const changes = record(data.changes ?? null);
+    effects.push({ type: "booking_correction", entry_id: data.entry_id ?? null, fields: Object.keys(changes).filter((key) => key !== "reason").sort(), reason: changes.reason ?? null });
   }
   if (definition.action_id === "cai.finance.19.entry_delete") effects.push({ type: "booking_removal", entry_id: data.entry_id ?? null, changes_actual_totals: true });
   if (definition.action_id === "cai.finance.20.entry_approve") effects.push({ type: "booking_approval", entry_id: data.entry_id ?? null, marks_entry_as_verified: true });

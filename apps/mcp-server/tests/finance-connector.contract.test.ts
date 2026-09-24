@@ -47,6 +47,7 @@ const capabilitySnapshot: CapabilitySnapshot = {
   expires_at: "2099-01-01T00:00:00Z",
 };
 const allowWrites = { async execute(_request: unknown, mutation: () => Promise<JsonValue>) { return mutation(); } };
+const confirmAll = { async confirmOrPreview(_request: unknown, mutation: () => Promise<JsonValue>) { return mutation(); } };
 
 function client(handler: (request: ComvenioApiRequest) => Promise<JsonValue>): ComvenioApiClient {
   return { timeout_ms: 15_000, async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> { return await handler(request) as T; } };
@@ -200,7 +201,7 @@ describe("K14: was der Dienst im Rumpf verlangt", () => {
     const finance = createK14ToolSet({ client: client(async () => null), write_safety: allowWrites });
     const ids = finance.listDefinitions().map((definition) => definition.action_id);
     // 19 aus K14, 16 aus dem vollständigen Finance Hub (hub.ts) — keine davon öffnet wieder.
-    expect(ids).toHaveLength(36); // +1 budget-organigramm-04 (cai.finance.36), +1 budget-saison-03 (cai.finance.37)
+    expect(ids).toHaveLength(37); // +1 budget-organigramm-04 (cai.finance.36), +1 budget-saison-03 (cai.finance.37), +1 buchhaltung-13-04 (cai.finance.38)
     expect(ids.some((id) => id.includes("reopen"))).toBe(false);
   });
 
@@ -390,7 +391,8 @@ describe("K14: eine Mutation prueft die Herkunft, BEVOR sie wirkt", () => {
       { id: "cai.finance.13.position_import_shopping" as const, input: { club_id: clubId, position_id: positionId }, antwort: fremdePosition },
     ]) {
       const calls: ComvenioApiRequest[] = [];
-      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return fall.antwort; }), write_safety: allowWrites });
+      // entry_update ist seit buchhaltung-13-04 kritisch: bestätigt, damit die Vorprüfung vor dem PATCH läuft.
+      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return fall.antwort; }), write_safety: allowWrites, confirmation: confirmAll });
       await expect(finance.execute({ action_id: fall.id, input: fall.input, context: reader(["finance.write"]), capability_snapshot: manager }), fall.id)
         .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
       expect(calls.map((call) => call.method), fall.id).toEqual(["GET"]);
@@ -523,7 +525,7 @@ describe("K14: die Vorpruefung verlangt einen Beleg, sie vermutet nicht", () => 
     // schon.
     for (const antwort of [null, [], "nichts"] as JsonValue[]) {
       const calls: ComvenioApiRequest[] = [];
-      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return antwort; }), write_safety: allowWrites });
+      const finance = createK14ToolSet({ client: client(async (request) => { calls.push(request); return antwort; }), write_safety: allowWrites, confirmation: confirmAll });
       await expect(finance.execute({ action_id: "cai.finance.18.entry_update", input: { club_id: clubId, entry_id: entryId, changes: { notes: "x" } }, context: reader(["finance.write"]), capability_snapshot: manager }), String(antwort))
         .rejects.toMatchObject({ code: "TENANT_MISMATCH" });
       expect(calls.map((call) => call.method), String(antwort)).toEqual(["GET"]);
@@ -598,7 +600,9 @@ describe("K14: der Routenvertrag nennt die Vorpruefungen", () => {
       // hub.ts: Vorprüfung, wo der Pfad nur eine nackte Kennung trägt.
       "cai.finance.24.money_account", "cai.finance.25.entry_correction", "cai.finance.26.cash_report", "cai.finance.32.investment_plan", "cai.finance.33.investment_item", "cai.finance.34.investment_funding", "cai.finance.35.investment_scenario",
       // budget-organigramm-04: Rubrik ändern/löschen und Aufteilen tragen nur eine nackte Kennung.
-      "cai.finance.36.budget_organigram"];
+      "cai.finance.36.budget_organigram",
+      // buchhaltung-13-04: das Detail trägt nur die nackte Kennung der Buchung.
+      "cai.finance.38.entry_detail"];
     for (const definition of finance.listDefinitions()) {
       const routen = Object.values(definition.operations).flatMap((operation) => operation.backend_routes);
       const hatPreflight = routen.some((route) => route.purpose === "preflight");
