@@ -573,6 +573,32 @@ describe("Finance Hub: Bereich als Sicht", () => {
     ]);
   });
 
+  test("R3-8: fehlt ein Haushalt im Fenster, zeigt die Vorschau keine Teile, sondern die Lücke und den Weg", async () => {
+    const { client } = recording((call): JsonValue => {
+      if (call.path.endsWith(`/budget-periods/DEPARTMENT/${mobileId}`)) {
+        return { windows: [{ start: "2026-04-01", end: "2027-03-31", label: "2026/27", current: true }] };
+      }
+      if (call.path.endsWith("/finance-plans")) {
+        return [{ id: plan2026, club_id: clubId, department_id: null, label: "2026", period_start: "2026-01-01", period_end: "2026-12-31" }];
+      }
+      return {};
+    });
+    const result = await createK14ToolSet({ client, write_safety: allowWrites }).execute({
+      action_id: action,
+      input: { club_id: clubId, operation: "window_position_create", node_kind: "DEPARTMENT", node_id: mobileId, window_start: "2026-04-01",
+        data: { name: "Testgeräte", expense_planned_cents: 120000 } },
+      context, capability_snapshot: manager,
+    });
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "window_position")).toMatchObject({
+      parts_read: true,
+      executable: false,
+      uncovered: [{ from: "2027-01-01", until: "2027-03-31" }],
+      parts: [],
+      refusal: "window_plan_missing",
+    });
+  });
+
   test("TC-02: window_position_create zeigt die Teile je Haushalt, bevor etwas angelegt wird", async () => {
     const { calls, client } = recording((call): JsonValue => {
       if (call.path.endsWith(`/budget-periods/DEPARTMENT/${mobileId}`)) {
@@ -597,6 +623,8 @@ describe("Finance Hub: Bereich als Sicht", () => {
     const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
     expect(effects.find((effect) => effect.type === "window_position")).toMatchObject({
       parts_read: true,
+      executable: true,
+      uncovered: [],
       parts: [
         { plan_id: plan2026, planned_from: "2026-04-01", planned_until: "2026-12-31", expense_planned_cents: 90000 },
         { plan_id: plan2027, planned_from: "2027-01-01", planned_until: "2027-03-31", expense_planned_cents: 30000 },

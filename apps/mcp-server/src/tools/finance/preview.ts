@@ -148,8 +148,33 @@ export async function periodDefaults(input: JsonObject, context: RequestContext,
   input.window_start = current.start;
 }
 
+function shiftDay(value: string, days: number): string {
+  return new Date(parse(value).getTime() + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+// Months of the span no club plan covers — the service then refuses the
+// position as a whole (409 window_plan_missing), so the preview must not show
+// the covered parts as if they would be created (review K9 R3-8).
+function uncoveredParts(span: [string, string], plans: [string, string][]): { from: string; until: string }[] {
+  const gaps: { from: string; until: string }[] = [];
+  let cursor = span[0];
+  for (const [start, end] of [...plans].sort((a, b) => a[0].localeCompare(b[0]))) {
+    if (cursor > span[1]) break;
+    if (end < cursor) continue;
+    if (start > cursor) gaps.push({ from: cursor, until: shiftDay(start, -1) < span[1] ? shiftDay(start, -1) : span[1] });
+    const next = shiftDay(end, 1);
+    if (next > cursor) cursor = next;
+  }
+  if (cursor <= span[1]) gaps.push({ from: cursor, until: span[1] });
+  return gaps;
+}
+
 // The parts a window position would get: one per club plan the span touches.
-async function windowParts(client: ComvenioApiClient, context: RequestContext, data: JsonObject): Promise<JsonValue[] | null> {
+async function windowParts(
+  client: ComvenioApiClient,
+  context: RequestContext,
+  data: JsonObject,
+): Promise<{ parts: JsonValue[]; uncovered: { from: string; until: string }[] } | null> {
   try {
     if (!context.club_id || typeof data.window_start !== "string") return null;
     const body = record(data.data ?? null);
@@ -160,6 +185,7 @@ async function windowParts(client: ComvenioApiClient, context: RequestContext, d
     const span: [string, string] = [typeof body.planned_from === "string" ? body.planned_from : data.window_start, typeof body.planned_until === "string" ? body.planned_until : window.end];
     const plans = await request(client, context, "GET", `/clubs/${context.club_id}/finance-plans`);
     const club = (Array.isArray(plans) ? plans.map(record) : []).filter((p) => (p.department_id ?? null) === null && typeof p.period_start === "string" && typeof p.period_end === "string");
+    const uncovered = uncoveredParts(span, club.map((p) => [String(p.period_start), String(p.period_end)] as [string, string]));
     const parts: JsonValue[] = [];
     for (const plan of club.sort((a, b) => String(a.period_start).localeCompare(String(b.period_start)))) {
       const from = String(plan.period_start) > span[0] ? String(plan.period_start) : span[0];
@@ -171,7 +197,7 @@ async function windowParts(client: ComvenioApiClient, context: RequestContext, d
         revenue_planned_cents: windowShare(Number(body.revenue_planned_cents ?? 0), span, [from, until]),
       });
     }
-    return parts;
+    return { parts, uncovered };
   } catch {
     return null;
   }
@@ -259,8 +285,17 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
     effects.push({ type: "budget_period_change", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, period: record(data.data ?? null) });
   }
   if (definition.action_id === "cai.finance.39.budget_period" && operation.operation === "window_position_create") {
-    const parts = client ? await windowParts(client, context, data) : null;
-    effects.push({ type: "window_position", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, window_start: data.window_start ?? null, name: record(data.data ?? null).name ?? null, parts_read: parts !== null, parts: parts ?? [] });
+    const read = client ? await windowParts(client, context, data) : null;
+    const uncovered = read?.uncovered ?? [];
+    effects.push({
+      type: "window_position", node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, window_start: data.window_start ?? null,
+      name: record(data.data ?? null).name ?? null, parts_read: read !== null,
+      // With a gap nothing is created: no parts, and the gap named (02 §4.8, D35).
+      executable: read === null ? null : uncovered.length === 0,
+      uncovered,
+      parts: read && uncovered.length === 0 ? read.parts : [],
+      ...(uncovered.length ? { refusal: "window_plan_missing", next_step: "plan-lifecycle next_period des jüngsten Vereinsplans" } : {}),
+    });
   }
   if (definition.action_id === "cai.finance.39.budget_period" && operation.operation === "window_position_update") {
     effects.push({ type: "window_group_change", window_group_id: data.window_group_id ?? null, fields: Object.keys(record(data.data ?? null)).sort() });
