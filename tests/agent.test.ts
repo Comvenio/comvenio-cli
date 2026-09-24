@@ -1,6 +1,34 @@
 import { describe, expect, test } from "bun:test";
+import cac from "cac";
 
-import { buildClubAgentChatPayload } from "../src/commands/agent.ts";
+import {
+  buildClubAgentChatPayload,
+  registerAgentCommands,
+  resolveAgentChatMessage,
+} from "../src/commands/agent.ts";
+
+describe("agent command is reachable (2026-09-24: 'agent chat <message>' never matched)", () => {
+  test("`agent chat <words>` matches the registered command", () => {
+    const cli = cac("comvenio");
+    registerAgentCommands(cli);
+    cli.parse(["bun", "comvenio", "agent", "chat", "Welche", "Events?", "--json"], { run: false });
+    expect(cli.matchedCommandName).toBe("agent");
+    expect(cli.args).toEqual(["chat", "Welche", "Events?"]);
+    expect(cli.options.json).toBe(true);
+  });
+
+  test("the variadic words become one message", () => {
+    expect(resolveAgentChatMessage("chat", ["Welche", "Events?"])).toBe("Welche Events?");
+    expect(resolveAgentChatMessage("chat", ["Plane unser Sommerfest."])).toBe("Plane unser Sommerfest.");
+  });
+
+  test("an unknown action fails loudly instead of exiting silently", async () => {
+    const cli = cac("comvenio");
+    registerAgentCommands(cli);
+    cli.parse(["bun", "comvenio", "agent", "plaudern", "hallo"], { run: false });
+    await expect(cli.runMatchedCommand()).rejects.toThrow("Unbekannte agent-Aktion");
+  });
+});
 
 describe("Club-Agent CLI contract", () => {
   test("binds the club and fixed conversation surface without accepting an actor", () => {
