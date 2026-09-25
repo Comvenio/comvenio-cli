@@ -43,8 +43,12 @@ type JsonObject = { [key: string]: JsonValue };
 // ── Bausteine der Definition (wie definitions.ts, ohne dessen Import: der
 //    Kreis definitions → hub → definitions bliebe sonst stehen) ─────────────
 const FINANCE_PERMISSIONS = ["manage_finances", "manage_club_settings"] as const;
-function policy(): PermissionPolicy {
-  return { all_of: [], any_of: [...FINANCE_PERMISSIONS], owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance-hub"] };
+// buchhaltung-16-01: view_finances reads (tax auditor, tax advisor) and never
+// writes — the finance-service decides the same by the kind of request.
+const READ_PERMISSIONS = [...FINANCE_PERMISSIONS, "view_finances"] as const;
+function policy(risk: Risk): PermissionPolicy {
+  const any_of = risk === "read" ? [...READ_PERMISSIONS] : [...FINANCE_PERMISSIONS];
+  return { all_of: [], any_of, owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance-hub"] };
 }
 function route(method: ComvenioHttpMethod, path: string, purpose?: K14BackendRoute["purpose"]): K14BackendRoute {
   return { method, service: "finance", normalized_path_template: path, purpose: purpose ?? (method === "GET" ? "read" : "mutation") };
@@ -446,7 +450,7 @@ function operationDefinition(op: Op): K14OperationDefinition {
   return {
     operation: op.op,
     required_scopes: scopes(op.risk),
-    permission_policy: policy(),
+    permission_policy: policy(op.risk),
     risk_class: actionRisk(op.risk),
     execution_gate: gate(op.risk),
     backend_routes: [...(op.preflight ? [route("GET", op.preflight.template, "preflight")] : []), route(op.method, op.template)],

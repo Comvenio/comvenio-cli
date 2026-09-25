@@ -611,3 +611,38 @@ describe("K14: der Routenvertrag nennt die Vorpruefungen", () => {
   });
 });
 
+
+// buchhaltung-16-01: view_finances reads and never writes.
+describe("K16-01: das Leserecht Finanzen einsehen", () => {
+  const leser: CapabilitySnapshot = { ...capabilitySnapshot, permissions: { view_finances: true } };
+
+  test("jede lesende Operation öffnet sich mit view_finances, keine schreibende", async () => {
+    const { K14_ACTION_DEFINITIONS, HUB_ACTION_DEFINITIONS } = await import("../src/tools/finance/index.ts");
+    const operationen = [...Object.values(K14_ACTION_DEFINITIONS), ...Object.values(HUB_ACTION_DEFINITIONS)]
+      .flatMap((definition) => Object.values(definition.operations));
+    expect(operationen.length).toBeGreaterThan(20);
+    for (const operation of operationen) {
+      const liest = operation.risk_class === "read";
+      expect(operation.permission_policy.any_of.includes("view_finances")).toBe(liest);
+    }
+  });
+
+  test("ein Leser sieht die lesenden Aktionen und keine schreibende", () => {
+    const finance = createK14ToolSet({ client: client(async () => []), write_safety: allowWrites });
+    const sichtbar = finance.listVisible({ context: reader(["finance.read", "finance.write"]), capability_snapshot: leser }).map((definition) => definition.action_id);
+    expect(sichtbar).toContain("cai.finance.01.plan_list");
+    expect(sichtbar).not.toContain("cai.finance.03.plan_create");
+  });
+
+  test("ein Leser liest die Planliste und legt keinen Plan an", async () => {
+    const { calls, client: adapter } = recording([plan]);
+    const finance = createK14ToolSet({ client: adapter, write_safety: allowWrites, confirmation: confirmAll });
+    await finance.execute({ action_id: "cai.finance.01.plan_list", input: { club_id: clubId }, context: reader(["finance.read"]), capability_snapshot: leser });
+    expect(calls.length).toBe(1);
+    await expect(finance.execute({
+      action_id: "cai.finance.03.plan_create", input: { club_id: clubId, year: 2027 },
+      context: reader(["finance.read", "finance.write"]), capability_snapshot: leser,
+    })).rejects.toBeDefined();
+    expect(calls.length).toBe(1);
+  });
+});
