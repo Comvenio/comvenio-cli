@@ -195,6 +195,8 @@ const READ_OPERATIONS = new Set([
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
   // bereich-als-sicht-04
   "tree", "frame_versions", "statement", "grants", "booking_accounts",
+  // buchhaltung-14-02
+  "transfers", "transfer_show",
 ]);
 
 /**
