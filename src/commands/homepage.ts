@@ -393,7 +393,7 @@ export function registerHomepageCommands(cli: CAC): void {
           const [unter, slug] = args ?? [];
           try {
             if (unter !== "set" || !slug) throw new Error('homepage geruest erwartet "set <reiter> --widget <id> --file <geruest.html>".');
-            if (!opts.widget) throw new Error("homepage geruest set benoetigt --widget <id> (Gerüst-Widget aus homepage tree/export).");
+            if (!opts.widget) throw new Error("homepage geruest set benoetigt --widget <id> (widget_id aus \"homepage slot get <reiter>/<slot> --json\" oder zweites Pfadglied in \"homepage tree --json\").");
             if (!opts.file) throw new Error("homepage geruest set benoetigt --file <geruest.html>.");
             const { readFileSync } = await import("node:fs");
             const html = geruestAusDatei(readFileSync(opts.file, "utf8"));
