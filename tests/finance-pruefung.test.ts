@@ -61,7 +61,7 @@ describe("finance pruefung", () => {
       expect(md).toContain("| Journalnummern lückenlos | B-04 | ERROR | 1 Befund(e) |");
       expect(md).toContain("| Kasse nie unter null | B-12 | ERROR | erfüllt (keine Kasse geführt) |");
       expect(md).toContain("nicht prüfbar: Quelle nicht verfügbar: club_service_unavailable");
-      expect(md).toContain("| 2 |  | Journalnummer fehlt |");
+      expect(md).toContain("| 2 |  | Journalnummer fehlt |  |");
       expect(JSON.parse(readFileSync(`${basis}.json`, "utf-8")).summary.errors).toBe(1);
     } finally {
       rmSync(ordner, { recursive: true, force: true });
@@ -71,6 +71,28 @@ describe("finance pruefung", () => {
 
   test("ohne Vereinsplan des Jahres nennt der Befehl das Jahr", async () => {
     await expect(runPruefung(client([]), { year: "2019" })).rejects.toThrow(/2019/);
+  });
+
+  test("mehrere Vereinspläne im Jahr: der Befehl wählt nicht still, eine Plan-ID entscheidet", async () => {
+    const zwei = {
+      async callAction(input: { input: { operation: string; plan_id?: string } }) {
+        if (input.input.operation === "list") {
+          return { result: [{ id: "a", year: 2025, department_id: null, period_start: "2025-01-01", period_end: "2025-06-30" },
+                            { id: "b", year: 2025, department_id: null, period_start: "2025-07-01", period_end: "2026-06-30" }] };
+        }
+        return { result: { ...ERGEBNIS, plan_id: input.input.plan_id } };
+      },
+    } as unknown as CliConnectorClient;
+    await expect(runPruefung(zwei, { year: "2025" })).rejects.toThrow(/2 Vereinspläne.*a \(2025-01-01/);
+    const vorher = process.exitCode;
+    expect((await runPruefung(zwei, {}, "b")).plan_id).toBe("b");
+    process.exitCode = vorher;
+  });
+
+  test("Fundstellen und Zeilenumbrüche im Bericht", () => {
+    const md = renderPruefbericht({ ...ERGEBNIS, rules: [{ ...ERGEBNIS.rules[0]!, findings: [
+      { journal_number: null, detail: "zwei\nZeilen", position_id: "p-1", money_account_id: "k-1" }] }] }, 2025);
+    expect(md).toContain("| zwei Zeilen | Posten p-1, Konto k-1 |");
   });
 
   test("ein senkrechter Strich im Detail bricht die Tabelle nicht", () => {

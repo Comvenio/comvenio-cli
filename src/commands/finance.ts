@@ -488,7 +488,7 @@ export function registerFinanceCommands(cli: CAC): void {
         const result = action === "run"
           ? await runHub(via, id, operation, opts)
           : action === "pruefung"
-          ? await runPruefung(via, opts)
+          ? await runPruefung(via, opts, id)
           : await (async () => {
             const call = mapClassic(action, id, opts);
             return callFinance(via, call.actionId, call.input, { write: call.write, confirm: opts.confirm !== false });

@@ -206,17 +206,30 @@ type PruefRegel = { code: string; requirement: string; severity: string; fulfill
 const REGEL_TITEL: Record<string, string> = {
   JOURNAL_GAP: "Journalnummern lückenlos",
   PERIOD_NOT_CLOSED: "Abgelaufener Zeitraum festgeschrieben",
-  DELETED_BEFORE_PROTOCOL: "Vor dem Protokoll gelöschte Buchungen",
   ENTRY_NOT_APPROVED: "Freigabe durch eine zweite Person",
   RECEIPT_MISSING: "Beleg oder Begründung je Buchung",
   SELF_ISSUED: "Eigenbelege",
   SPHERE_MISSING: "Steuerliche Sphäre je Posten",
   CASH_NEGATIVE: "Kasse nie unter null",
   RECONCILIATION_OPEN: "Abgleich mit dem Kontoauszug",
+  ENTRY_WITHOUT_ACCOUNT: "Geldkonto je Buchung",
+  OUT_OF_PERIOD: "Buchungsdatum im Zeitraum",
+  LATE_ENTRY: "Zeitgerechte Erfassung",
+  SOFT_DELETED_ENTRY: "Weich gelöschte Altbuchungen",
   PROCEDURE_DOC_MISSING: "Verfahrensdokumentation",
 };
 
-const zelle = (wert: unknown): string => (wert === null || wert === undefined ? "" : String(wert)).replace(/\|/g, "\\|");
+// Backslash, senkrechter Strich und Zeilenumbrüche würden eine Tabellenzeile brechen (review R1-11).
+const zelle = (wert: unknown): string => (wert === null || wert === undefined ? "" : String(wert))
+  .replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+
+/** Alle Fundstellen eines Befunds — Buchung, Posten, Konto (review R1-7). */
+function fundstelle(f: JsonObject): string {
+  return [["Buchung", f.entry_id], ["Posten", f.position_id], ["Konto", f.money_account_id]]
+    .filter(([, wert]) => wert)
+    .map(([name, wert]) => `${name} ${zelle(wert)}`)
+    .join(", ");
+}
 
 /** Der Bericht in Markdown — Kopf, eine Zeile je Regel, je Befund die Fundstellen. */
 export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
@@ -240,31 +253,40 @@ export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
     }),
   ];
   for (const r of regeln.filter((regel) => regel.findings.length > 0)) {
-    zeilen.push("", `## ${REGEL_TITEL[r.code] ?? r.code} (${r.code})`, "", "| Journal | Datum | Detail |", "|---|---|---|");
-    for (const f of r.findings) zeilen.push(`| ${zelle(f.journal_number)} | ${zelle(f.date)} | ${zelle(f.detail)} |`);
+    zeilen.push("", `## ${REGEL_TITEL[r.code] ?? r.code} (${r.code})`, "", "| Journal | Datum | Detail | Fundstelle |", "|---|---|---|---|");
+    for (const f of r.findings) zeilen.push(`| ${zelle(f.journal_number)} | ${zelle(f.date)} | ${zelle(f.detail)} | ${fundstelle(f)} |`);
   }
   return zeilen.join("\n") + "\n";
 }
 
 /**
- * `comvenio finance pruefung --year <jahr> [--out <basisname>]` — prüft den
- * Vereinsplan des Jahres (buchhaltung-16-03). Mit --out entstehen
- * <basisname>.md und <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln.
+ * `comvenio finance pruefung [plan-id] --year <jahr> [--out <basisname>]` —
+ * prüft den Vereinsplan des Jahres, mit Plan-ID genau diesen Plan (auch einen
+ * Abteilungsplan; buchhaltung-16-03). Mit --out entstehen <basisname>.md und
+ * <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln.
  */
-export async function runPruefung(client: CliConnectorClient, opts: FinanceCommandOpts): Promise<JsonObject> {
+export async function runPruefung(client: CliConnectorClient, opts: FinanceCommandOpts, planId?: string): Promise<JsonObject> {
   const jahr = Number(opts.year);
-  if (!opts.year || !Number.isInteger(jahr)) throw new Error("finance pruefung benötigt --year <jahr>.");
-  const liste = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "list" }, { write: false });
-  const plaene = (Array.isArray(liste.result) ? liste.result : []) as JsonObject[];
-  const plan = plaene.find((p) => p.year === jahr && !p.department_id);
-  if (!plan) throw new Error(`Für ${jahr} gibt es keinen Vereinsplan.`);
-  const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_check", plan_id: plan.id as string }, { write: false });
+  if (!planId && (!opts.year || !Number.isInteger(jahr))) throw new Error("finance pruefung benötigt --year <jahr> oder eine Plan-ID.");
+  let id = planId;
+  if (!id) {
+    const liste = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "list" }, { write: false });
+    const plaene = (Array.isArray(liste.result) ? liste.result : []) as JsonObject[];
+    const treffer = plaene.filter((p) => p.year === jahr && !p.department_id);
+    if (treffer.length === 0) throw new Error(`Für ${jahr} gibt es keinen Vereinsplan.`);
+    // Two club periods can begin in one year — never pick one silently (review R1-8).
+    if (treffer.length > 1) {
+      throw new Error(`Für ${jahr} gibt es ${treffer.length} Vereinspläne — Plan-ID angeben: ${treffer.map((p) => `${p.id} (${p.period_start} bis ${p.period_end})`).join(", ")}`);
+    }
+    id = treffer[0]!.id as string;
+  }
+  const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_check", plan_id: id }, { write: false });
   const ergebnis = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
   const summe = (ergebnis.summary ?? {}) as JsonObject;
   if (Number(summe.errors ?? 0) > 0 || Number(summe.check_failed ?? 0) > 0) process.exitCode = 1;
   if (!opts.out) return ergebnis;
   writeFileSync(`${opts.out}.json`, JSON.stringify(ergebnis, null, 2));
-  writeFileSync(`${opts.out}.md`, renderPruefbericht(ergebnis, jahr));
+  writeFileSync(`${opts.out}.md`, renderPruefbericht(ergebnis, Number(ergebnis.year ?? jahr)));
   return { written: [`${opts.out}.md`, `${opts.out}.json`], summary: summe };
 }
 
