@@ -489,6 +489,14 @@ Absatz und jeden Knopf im Formular ändern.
   dann **nicht im Gerüst**, sondern als `style` im Slot; am Element bleiben nur
   Grundklassen. Wiederkehrende Bereiche als Vorlage anmelden
   (`design_settings.area_templates`).
+- **Theme-Farben und Spalten lesen, damit der Designer sie ändern kann**
+  (Lastenheft 17-designer-struktur 09). Farben im CSS über die Tokens:
+  `--green: var(--tok-primary)` statt fester Werte, die Palette in
+  `design_settings.tokens` mit denselben Werten. Ein Raster, dessen Spaltenzahl
+  ein Mensch umschalten soll, trägt `data-spalten="<1–4>"` mit dem heutigen Wert,
+  und sein CSS liest ihn: `grid-template-columns: repeat(var(--spalten, 3),
+  minmax(0, 1fr))`, auf schmaleren Stufen begrenzt (`min(var(--spalten, 3), 2)`).
+  Andere Werte entfernt der Dienst; `verify` meldet sie als `invalid_spalten`.
 - **Regeln R1–R6** (`comvenio schema homepage` → `slots_contract`): kein fester
   Text und kein Link/Bild im Gerüst außerhalb von Slots, jeder Slot benannt mit
   genau einem Eintrag, Bereiche mit `aria-label`, bekannte Stile, genau eine `h1`

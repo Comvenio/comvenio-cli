@@ -196,6 +196,10 @@ export function pruefeGeruest(
     if ((e.tag === "section" || e.tag === "article") && !(e.attrs["aria-label"] ?? "").trim()) {
       befunde.push(befund({ klasse: "unlabeled_region", regel: "R4", schwere: "warnung", zeile: e.zeile, text: `<${e.tag}>` }));
     }
+    // 09 §4.2: the service drops any column count but 1–4 silently.
+    if ("data-spalten" in e.attrs && !/^[1-4]$/.test((e.attrs["data-spalten"] ?? "").trim())) {
+      befunde.push(befund({ klasse: "invalid_spalten", regel: "R4", schwere: "warnung", zeile: e.zeile, text: e.attrs["data-spalten"] ?? "" }));
+    }
   }
 
   const katalog = katalogKlassen(styles);

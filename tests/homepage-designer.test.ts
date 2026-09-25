@@ -248,3 +248,17 @@ describe("homepage export", () => {
     expect(tabs[0].sections[0].widgets[0].config.slots).toBeDefined();
   });
 });
+
+// 09 §4.2: only code view and CLI see the raw value — the service drops it
+// before its own rules run, so this is not a mirrored fixture.
+describe("invalid_spalten", () => {
+  test("warns at the line for anything but 1–4, keeps 1–4 silent", () => {
+    const html = [
+      '<section aria-label="A" data-spalten="3"><h1 data-slot="t"></h1></section>',
+      '<section aria-label="B" data-spalten="7"></section>',
+      '<div data-spalten="zwei"></div>',
+    ].join("\n");
+    const befunde = pruefeGeruest(html, { t: { kind: "heading", config: { text: "T" } } }).filter((b) => b.klasse === "invalid_spalten");
+    expect(befunde.map((b) => [b.regel, b.schwere, b.text, b.zeile])).toEqual([["R4", "warnung", "7", 2], ["R4", "warnung", "zwei", 3]]);
+  });
+});
