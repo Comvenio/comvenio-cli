@@ -26,7 +26,6 @@ import { katalogVorschlag, wandleUm, type BulkTab, type StyleEntry, type Umwandl
 export interface HomepageClient {
   get<T = unknown>(service: string, path: string): Promise<T>;
   patch<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
-  put<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
 }
 
 export class HomepageAbbruch extends Error {
@@ -185,8 +184,13 @@ export interface GeruestSetErgebnis {
   befunde: GeruestBefund[];
 }
 
-function widgetGeaendert(widgetId: string, gelesen: number, live: number): HomepageAbbruch {
-  return new HomepageAbbruch(4, "widget_changed", `Das Gerüst-Widget ${widgetId} wurde inzwischen geändert (erwartet Version ${gelesen}, live ${live}). Neu lesen und erneut setzen.`, { live_version: live });
+function widgetGeaendert(widgetId: string, gelesen: number, live: unknown): HomepageAbbruch {
+  return new HomepageAbbruch(4, "widget_changed", `Das Gerüst-Widget ${widgetId} wurde inzwischen geändert (erwartet Version ${gelesen}, live ${String(live ?? "?")}). Neu lesen und erneut setzen.`, { live_version: live ?? null });
+}
+
+/** Skeleton files come from editors: no BOM, LF line ends — otherwise equal HTML reads as a change. */
+export function geruestAusDatei(text: string): string {
+  return text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
 }
 
 /**
@@ -194,10 +198,9 @@ function widgetGeaendert(widgetId: string, gelesen: number, live: number): Homep
  * (09 §4.6: a club's grids get data-spalten without rebuilding the homepage).
  * `apply --clear` would recreate every tab, section and widget with new ids.
  *
- * The widget PUT has no server-side version check, so the version is compared
- * twice on the client: against --expected-version (or the one just read) and
- * again on a fresh read right before the write. What changes in between those
- * milliseconds is not caught — said here instead of promised.
+ * Written through `PATCH …/widgets/{id}/geruest`: the service checks the
+ * version under the tab lock and takes the slots from the stored config, so a
+ * slot changed meanwhile is a 409, never overwritten (Fremdprüfung K9 R4).
  */
 export async function geruestSet(
   client: HomepageClient,
@@ -239,20 +242,29 @@ export async function geruestSet(
   if (fehler.length) {
     throw new HomepageAbbruch(4, "geruest_fehler", `Das neue Gerüst hat ${fehler.length} Fehler: ${fehler.map((b) => b.klasse + (b.slot ? ` (${b.slot})` : "")).join(", ")}. Mit --dry-run ansehen.`, fehler);
   }
-  const frisch = await client.get<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}`);
-  if ((frisch.version ?? 1) !== version) throw widgetGeaendert(widget.id, version, frisch.version ?? 1);
+  let res: WidgetRead;
   try {
-    // The whole config goes back, slots and all: PUT replaces config.
-    const res = await client.put<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}`, {
-      config: { ...(frisch.config ?? {}), html },
+    res = await client.patch<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}/geruest`, {
+      expected_version: optionen.expectedVersion ?? version,
+      html,
     });
-    return { ...ergebnis, geschrieben: true, version: res?.version ?? version };
   } catch (err) {
-    if (err instanceof HttpError && err.status === 422) {
-      throw new HomepageAbbruch(4, "abgelehnt", `Der Dienst hat das Gerüst abgelehnt: ${err.body.slice(0, 400)}`);
+    if (err instanceof HttpError && (err.status === 409 || err.status === 422)) {
+      let detail: Record<string, unknown> = {};
+      try {
+        const roh = (JSON.parse(err.body) as { detail?: unknown }).detail;
+        detail = roh && typeof roh === "object" ? (roh as Record<string, unknown>) : { text: roh };
+      } catch {
+        detail = { text: err.body };
+      }
+      if (err.status === 409) throw widgetGeaendert(widget.id, optionen.expectedVersion ?? version, detail.live_version);
+      throw new HomepageAbbruch(4, String(detail.code ?? "abgelehnt"), `Der Dienst hat das Gerüst abgelehnt: ${JSON.stringify(detail.befunde ?? detail)}`, detail);
     }
-    throw err;
+    if (err instanceof HttpError) throw err;
+    // No answer: the write may or may not have arrived.
+    throw new Error(`Keine Antwort vom Dienst (${(err as Error).message}). Ob das Gerüst geschrieben wurde, ist offen — mit "homepage tree --tab ${slug} --json" oder --dry-run nachsehen.`);
   }
+  return { ...ergebnis, geschrieben: true, version: res?.version ?? version };
 }
 
 // ── convert ──────────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
 import { baum, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
-import { convert, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
+import { convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
 import { strukturBefunde } from "../src/verify/geruest-befunde.ts";
@@ -67,7 +67,7 @@ describe("homepage tree", () => {
 
 // ── TC-03/04/05: slot get / set against a stub client ────────────────────────
 
-function stub(opts: { patch?: (path: string, body: unknown) => unknown; put?: (path: string, body: unknown) => unknown; frischeVersion?: number } = {}) {
+function stub(opts: { patch?: (path: string, body: unknown) => unknown } = {}) {
   const fall = JSON.parse(readFileSync(join(FIXTURES, "baum", "zwei-sektionen.json"), "utf8"));
   const aufrufe: { methode: string; path: string; body?: unknown }[] = [];
   const client: HomepageClient = {
@@ -77,13 +77,7 @@ function stub(opts: { patch?: (path: string, body: unknown) => unknown; put?: (p
       if (path.endsWith("/sections")) return fall.sections as T;
       if (path.endsWith("/widgets")) return fall.widgets as T;
       if (path.endsWith("/settings")) return { design_settings: { styles: [] } } as T;
-      const einzeln = fall.widgets.find((w: { id: string }) => path.endsWith(`/widgets/${w.id}`));
-      if (einzeln) return { ...einzeln, version: opts.frischeVersion ?? einzeln.version } as T;
       throw new Error(`unerwartet ${path}`);
-    },
-    async put<T>(_service: string, path: string, body?: unknown): Promise<T> {
-      aufrufe.push({ methode: "PUT", path, body });
-      return (opts.put ? opts.put(path, body) : { id: "w1", version: 4 }) as T;
     },
     async patch<T>(_service: string, path: string, body?: unknown): Promise<T> {
       aufrufe.push({ methode: "PATCH", path, body });
@@ -143,15 +137,15 @@ describe("homepage slot", () => {
 describe("homepage geruest set", () => {
   const LIVE = JSON.parse(readFileSync(join(FIXTURES, "baum", "zwei-sektionen.json"), "utf8")).widgets[0];
   const MIT_SPALTEN = (LIVE.config.html as string).replace('<div class="reihe">', '<div class="reihe" data-spalten="3">');
+  const geschrieben = (aufrufe: { methode: string }[]) => aufrufe.some((a) => a.methode === "PATCH");
 
-  test("writes the new HTML with the slots it read, after a fresh version check", async () => {
+  test("writes through PATCH …/geruest with the version it read — no slots sent", async () => {
     const { client, aufrufe } = stub();
     const r = await geruestSet(client, "c", "start", "w1", MIT_SPALTEN);
     expect(r).toMatchObject({ geschrieben: true, unveraendert: false, widget_id: "w1", version: 4 });
-    const put = aufrufe.find((a) => a.methode === "PUT")!;
-    expect(put.path).toBe("/home-config/c/widgets/w1");
-    expect(put.body).toEqual({ config: { ...LIVE.config, html: MIT_SPALTEN } });
-    expect(aufrufe.filter((a) => a.path === "/home-config/c/widgets/w1" && a.methode === "GET").length).toBe(1);
+    const patch = aufrufe.find((a) => a.methode === "PATCH")!;
+    expect(patch.path).toBe("/home-config/c/widgets/w1/geruest");
+    expect(patch.body).toEqual({ expected_version: 3, html: MIT_SPALTEN });
   });
 
   test("dry run and unchanged HTML write nothing", async () => {
@@ -159,24 +153,27 @@ describe("homepage geruest set", () => {
     const r = await geruestSet(trocken.client, "c", "start", "w1", MIT_SPALTEN, { trockenlauf: true });
     expect(r.geschrieben).toBe(false);
     expect(r.nachher_zeichen - r.vorher_zeichen).toBe(' data-spalten="3"'.length);
-    expect(trocken.aufrufe.some((a) => a.methode === "PUT")).toBe(false);
+    expect(geschrieben(trocken.aufrufe)).toBe(false);
     const gleich = stub();
     const u = await geruestSet(gleich.client, "c", "start", "w1", LIVE.config.html);
     expect(u).toMatchObject({ geschrieben: false, unveraendert: true });
-    expect(gleich.aufrufe.some((a) => a.methode === "PUT")).toBe(false);
+    expect(geschrieben(gleich.aufrufe)).toBe(false);
   });
 
-  test("a changed version refuses with exit 4 — before and on the fresh read", async () => {
+  test("BOM and CRLF from an editor are not a change", () => {
+    expect(geruestAusDatei("\uFEFF<a>\r\n<b>\r</b>")).toBe("<a>\n<b>\n</b>");
+  });
+
+  test("a stale --expected-version refuses before writing; a 409 of the service is exit 4 with live_version", async () => {
     const vorher = stub();
     const e = await geruestSet(vorher.client, "c", "start", "w1", MIT_SPALTEN, { expectedVersion: 2 }).catch((x) => x);
     expect((e as HomepageAbbruch).exitCode).toBe(4);
     expect((e as HomepageAbbruch).code).toBe("widget_changed");
-    expect(vorher.aufrufe.some((a) => a.methode === "PUT")).toBe(false);
-    const zwischendurch = stub({ frischeVersion: 5 });
-    const f = await geruestSet(zwischendurch.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+    expect(geschrieben(vorher.aufrufe)).toBe(false);
+    const konflikt = stub({ patch: () => { throw new HttpError(409, JSON.stringify({ detail: { code: "widget_changed", live_version: 5 } }), "u"); } });
+    const f = await geruestSet(konflikt.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
     expect((f as HomepageAbbruch).code).toBe("widget_changed");
     expect((f as HomepageAbbruch).message).toContain("live 5");
-    expect(zwischendurch.aufrufe.some((a) => a.methode === "PUT")).toBe(false);
   });
 
   test("errors in the new skeleton refuse without writing; a widget that is no skeleton is exit 3", async () => {
@@ -185,17 +182,21 @@ describe("homepage geruest set", () => {
     const e = await geruestSet(client, "c", "start", "w1", ohneNews).catch((x) => x);
     expect((e as HomepageAbbruch).code).toBe("geruest_fehler");
     expect((e as HomepageAbbruch).message).toContain("orphan_slot_entry");
-    expect(aufrufe.some((a) => a.methode === "PUT")).toBe(false);
+    expect(geschrieben(aufrufe)).toBe(false);
     const keins = await geruestSet(client, "c", "start", "w2", MIT_SPALTEN).catch((x) => x);
     expect((keins as HomepageAbbruch).exitCode).toBe(3);
     expect((keins as HomepageAbbruch).code).toBe("widget_not_found");
   });
 
-  test("a 422 of the service is exit 4", async () => {
-    const { client } = stub({ put: () => { throw new HttpError(422, JSON.stringify({ detail: "nein" }), "u"); } });
-    const e = await geruestSet(client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+  test("a 422 keeps the service's code and findings; no answer says the write is open", async () => {
+    const abgelehnt = stub({ patch: () => { throw new HttpError(422, JSON.stringify({ detail: { code: "skeleton_rules", befunde: [{ klasse: "fixed_text_in_skeleton" }] } }), "u"); } });
+    const e = await geruestSet(abgelehnt.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
     expect((e as HomepageAbbruch).exitCode).toBe(4);
-    expect((e as HomepageAbbruch).code).toBe("abgelehnt");
+    expect((e as HomepageAbbruch).code).toBe("skeleton_rules");
+    expect((e as HomepageAbbruch).message).toContain("fixed_text_in_skeleton");
+    const weg = stub({ patch: () => { throw new Error("socket hang up"); } });
+    const f = await geruestSet(weg.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+    expect((f as Error).message).toContain("ist offen");
   });
 });
 

@@ -502,11 +502,15 @@ Absatz und jeden Knopf im Formular ändern.
 - **Eine bestehende Seite nachrüsten, ohne sie neu anzulegen:** nur das Gerüst
   eines Widgets tauschen, Slots bleiben —
   `comvenio homepage geruest set <reiter> --widget <id> --file geruest.html --dry-run`,
-  dann ohne `--dry-run`. Die Widget-ID steht in `homepage export`. Der Befehl
-  prüft R1–R6 vor dem Schreiben und vergleicht die Version zweimal (gelesen und
-  unmittelbar vor dem Schreiben); `--expected-version` legt sie fest. Der Dienst
-  selbst prüft beim Schreiben keine Version. `apply --clear` dagegen legt alle
-  Reiter, Sektionen und Widgets mit neuen IDs neu an.
+  dann ohne `--dry-run`. Die Widget-ID liefert `homepage slot get <reiter>/<slot> --json`
+  (`widget_id`) für einen Slot im Gerüst, oder `homepage tree --json` (zweites
+  Pfadglied). `homepage export` trägt keine IDs. Der Befehl prüft R1–R6 vor dem
+  Schreiben; die Version prüft der Dienst unter der Reitersperre und nimmt die
+  Slots aus dem gespeicherten Stand — ein inzwischen geänderter Slot ergibt
+  Exit 4 (`widget_changed`), nie ein Überschreiben. `--expected-version` legt
+  die erwartete Version fest. BOM und Windows-Zeilenenden der Datei werden
+  vereinheitlicht. `apply --clear` dagegen legt alle Reiter, Sektionen und
+  Widgets mit neuen IDs neu an.
 - **Regeln R1–R6** (`comvenio schema homepage` → `slots_contract`): kein fester
   Text und kein Link/Bild im Gerüst außerhalb von Slots, jeder Slot benannt mit
   genau einem Eintrag, Bereiche mit `aria-label`, bekannte Stile, genau eine `h1`

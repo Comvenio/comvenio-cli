@@ -8,7 +8,7 @@ import { writeFileSync } from "node:fs";
 import { baumAlsText } from "../homepage/geruest.ts";
 import type { SlotEntry } from "../homepage/geruest.ts";
 import type { BulkTab, StyleEntry } from "../homepage/umwandeln.ts";
-import { berichtAlsText, convert, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree } from "../homepage/befehle.ts";
+import { berichtAlsText, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree } from "../homepage/befehle.ts";
 
 // Homepage is declarative (D-12): the operating agent composes JSON from the
 // schema, previews it, and applies it directly through club-service.
@@ -396,7 +396,7 @@ export function registerHomepageCommands(cli: CAC): void {
             if (!opts.widget) throw new Error("homepage geruest set benoetigt --widget <id> (Gerüst-Widget aus homepage tree/export).");
             if (!opts.file) throw new Error("homepage geruest set benoetigt --file <geruest.html>.");
             const { readFileSync } = await import("node:fs");
-            const html = readFileSync(opts.file, "utf8");
+            const html = geruestAusDatei(readFileSync(opts.file, "utf8"));
             const erwartet = opts.expectedVersion !== undefined ? Number(opts.expectedVersion) : undefined;
             if (erwartet !== undefined && (!Number.isInteger(erwartet) || erwartet < 1)) {
               throw new Error("--expected-version muss eine ganze Zahl ab 1 sein.");
