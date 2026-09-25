@@ -97,6 +97,15 @@ type CalendarSyncRunRead = {
   [key: string]: unknown;
 };
 
+type TeamSeasonEventRead = {
+  event_id: string;
+  title: string;
+  start_time?: string | null;
+  status: string;
+  home_state?: "HOME" | "AWAY" | "UNKNOWN" | null;
+  competition_id?: string | null;
+};
+
 type CalendarSubscriptionRead = {
   id?: string;
   team_season_id?: string;
@@ -289,7 +298,7 @@ const fmt = (value: unknown): string =>
 
 const ACTION_OVERVIEW =
   "Saisonale Mannschaften: list | show | create | update | archive | " +
-  "season list|show|create|update|activate|complete | " +
+  "season list|show|events|create|update|activate|complete | " +
   "roster show|add|update|remove|carry-over | " +
   "competition list|create|update|delete | " +
   "ical list|create|preview|activate|deactivate | " +
@@ -385,7 +394,7 @@ async function runTeamsAction(
     default:
       throw new TeamsInputError(
         `Unbekannte Aktion "${action}". Verfügbar: list, show, create, update, archive, ` +
-        "season list|show|create|update|activate|complete, " +
+        "season list|show|events|create|update|activate|complete, " +
         "roster show|add|update|remove|carry-over, " +
         "competition list|create|update|delete, " +
         "ical list|create|preview|activate|deactivate, " +
@@ -515,6 +524,22 @@ async function seasonAction(
           `Zeitraum:     ${fmt(season.starts_on)} – ${fmt(season.ends_on)}`,
           `Sichtbarkeit: ${fmt(season.default_visibility)}`,
         ].join("\n"),
+      );
+      return;
+    }
+    case "events": {
+      // Projected matches of a season (event-service K7 read path), incl. home role.
+      const seasonId = requireId(id, "teams season events benötigt eine <season-id>.");
+      const events = await client.get<TeamSeasonEventRead[]>("event", `/team-seasons/${seasonId}/events`);
+      output(events, opts.json, () =>
+        events.length
+          ? renderTable(events, [
+              { header: "Termin", width: 20, get: (e) => fmt(e.start_time) },
+              { header: "Heim", width: 8, get: (e) => fmt(e.home_state) },
+              { header: "Status", width: 10, get: (e) => fmt(e.status) },
+              { header: "Titel", width: 60, get: (e) => fmt(e.title) },
+            ])
+          : "Keine Spiele in dieser Saison.",
       );
       return;
     }
