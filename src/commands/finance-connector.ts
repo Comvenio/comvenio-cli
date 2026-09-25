@@ -13,7 +13,7 @@
 // Bestätigung. Die Vorschau steht mit `--json` in der Ausgabe; `--no-confirm`
 // hält vor der Bestätigung an und gibt sie aus.
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { CliConnectorClient } from "../mcp/client.ts";
@@ -334,6 +334,9 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
     return { written: opts.out, size_bytes: datei.bytes.byteLength, sha256: datei.sha256, content_type: datei.content_type };
   }
   const planId = await vereinsplanDesJahres(client, "belege", opts, id);
+  const verzeichnis = join(opts.out, "belege.csv");
+  // An earlier index is evidence too — never overwritten (review K16-02 R1-5).
+  if (existsSync(verzeichnis)) throw new Error(`${verzeichnis} gibt es schon — ein neues Verzeichnis wählen; nichts überschrieben.`);
   mkdirSync(opts.out, { recursive: true });
   const zeilen: string[][] = [["journal", "datum", "buchung", "datei", "sha256", "zustand"]];
   let nach: number | undefined;
@@ -356,7 +359,12 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
         const datei = await belegLaden(client, row.entry_id as string);
         const name = `${row.journal_number}_${row.booking_date}.${ENDUNG[datei.content_type] ?? "bin"}`;
         const pfad = join(opts.out, name);
-        if (existsSync(pfad)) { zeilen.push([...basis, name, datei.sha256, "vorhanden, nicht überschrieben"]); continue; }
+        if (existsSync(pfad)) {
+          // The index names the checksum of the file that is there, and says when it differs.
+          const lokal = createHash("sha256").update(readFileSync(pfad)).digest("hex");
+          zeilen.push([...basis, name, lokal, lokal === datei.sha256 ? "vorhanden, gleich" : `vorhanden, abweichend von der Quelle (${datei.sha256})`]);
+          continue;
+        }
         writeFileSync(pfad, datei.bytes);
         geladen += 1;
         zeilen.push([...basis, name, datei.sha256, "geladen"]);
@@ -367,7 +375,6 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
     }
     nach = typeof inhalt.next_after === "number" ? inhalt.next_after : undefined;
   } while (nach !== undefined);
-  const verzeichnis = join(opts.out, "belege.csv");
   writeFileSync(verzeichnis, zeilen.map((z) => z.map(csvZelle).join(";")).join("\n") + "\n");
   if (fehler > 0) process.exitCode = 1;
   return { plan_id: planId, written: verzeichnis, entries: zeilen.length - 1, downloaded: geladen, failed: fehler };

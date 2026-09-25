@@ -82,12 +82,24 @@ describe("finance belege", () => {
       expect(readFileSync(join(ordner, "1_2025-03-01.pdf"), "utf-8")).toBe("alt");
       expect(antwort).toMatchObject({ downloaded: 0, failed: 1 });
       const csv = readFileSync(join(ordner, "belege.csv"), "utf-8");
-      expect(csv).toContain("vorhanden, nicht überschrieben");
+      expect(csv).toContain("vorhanden, abweichend von der Quelle");
+      expect(csv).toContain(createHash("sha256").update("alt").digest("hex"));
       expect(csv).toContain("Fehler: receipt_forbidden: refused");
       expect(process.exitCode).toBe(1);
     } finally {
       rmSync(ordner, { recursive: true, force: true });
       process.exitCode = vorher;
+    }
+  });
+
+  test("ein vorhandenes belege.csv wird nicht überschrieben", async () => {
+    const ordner = mkdtempSync(join(tmpdir(), "belege-"));
+    try {
+      writeFileSync(join(ordner, "belege.csv"), "alt");
+      await expect(runBelege(client([]), { year: "2025", out: ordner })).rejects.toThrow(/nichts überschrieben/);
+      expect(readFileSync(join(ordner, "belege.csv"), "utf-8")).toBe("alt");
+    } finally {
+      rmSync(ordner, { recursive: true, force: true });
     }
   });
 
