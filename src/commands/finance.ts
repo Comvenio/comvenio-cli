@@ -61,6 +61,7 @@ export type FinanceCommandOpts = {
   input?: string;
   out?: string;
   confirm?: boolean;
+  idempotencyKey?: string;
 };
 
 export type FinanceOperation = {
@@ -470,6 +471,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--input <json>", "finance run: Eingabe als JSON-Objekt (ohne club_id — der Verein kommt aus der Anmeldung)")
     .option("--out <datei>", "finance run audit-export download: den Prüfexport als Datei schreiben (Prüfsumme wird geprüft); finance pruefung: Basisname für <name>.md und <name>.json")
     .option("--no-confirm", "Kritische Schritte nicht selbst bestätigen, sondern die Vorschau ausgeben")
+    .option("--idempotency-key <uuid>", "finance run: fester Schlüssel eines Schreibschritts — ein Wiederholungslauf mit demselben Schlüssel und derselben Eingabe liefert 24 Stunden lang das erste Ergebnis statt einer zweiten Wirkung")
     .option("--json", "Maschinenlesbare JSON-Ausgabe")
     .example("  $ comvenio finance run money-account list")
     .example("  $ comvenio finance run cash-report create --input '{\"data\": {\"period_start\": \"2026-01-01\", \"period_end\": \"2026-01-31\", \"money_account_id\": \"…\"}}'")

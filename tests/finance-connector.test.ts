@@ -88,6 +88,26 @@ describe("finance über OAuth: Bestätigung", () => {
     expect(calls[0]?.key).toBe(calls[1]?.key!);
   });
 
+  test("ein mitgegebener Schlüssel gilt für Aufruf und Bestätigung — ein Wiederholungslauf wirkt nicht doppelt", async () => {
+    const keys: Array<string | undefined> = [];
+    const client = {
+      async callAction(input: { idempotency_key?: string }) {
+        keys.push(input.idempotency_key);
+        return { widget: { preview_id: "p-1", confirmation_token: "t".repeat(43) } };
+      },
+      async confirm(input: { idempotency_key: string }) {
+        keys.push(input.idempotency_key);
+        return { status: "completed" };
+      },
+    } as unknown as CliConnectorClient;
+    const key = "5f0c1a2b-3c4d-5e6f-8a9b-0c1d2e3f4a5b";
+    await callFinance(client, "cai.finance.24.money_account", { operation: "transfer_create" }, { write: true, key });
+    expect(keys).toEqual([key, key]);
+    // Reads never carry one.
+    await callFinance(client, "cai.finance.24.money_account", { operation: "list" }, { write: false, key });
+    expect(keys[2]).toBeUndefined();
+  });
+
   test("das Token aus _meta (comvenio/confirmation) wird zur Bestätigung benutzt", async () => {
     // Shape of the PROD answer on 2026-09-23: the widget itself carries no token.
     const calls: string[] = [];
