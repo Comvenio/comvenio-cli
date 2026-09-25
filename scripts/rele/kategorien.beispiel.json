@@ -1,0 +1,30 @@
+{
+  "_hinweis": "Synthetisches Beispiel (buchhaltung-14-04 §4.2a) — erfundene Zeilen und Zellen. Die echte Zuordnung liegt beim Verein neben den Übernahmedateien, nie im Repositorium.",
+  "2031": {
+    "kopfzeile_jahr": "1.1.-31.12.2031",
+    "konten": {
+      "Barkasse": { "art": "CASH", "uebersicht": "Kasse", "spalten": { "E": ["D", "E"], "A": ["D", "E"] } },
+      "Girokonto": { "art": "BANK", "standard": true, "uebersicht": "Girokonto", "spalten": { "E": ["G", "H"], "A": ["G", "H"] } },
+      "Tagesgeld": { "art": "BANK", "uebersicht": "Tagesgeld", "spalten": { "E": ["M"], "A": ["M"] } },
+      "Sachwerte": { "art": "IN_KIND", "spalten": { "E": ["O"], "A": ["O"] } }
+    },
+    "summenzeile": { "E": 8, "A": 14 },
+    "summen": {
+      "E": { "B": "B8", "Barkasse": "E9", "Girokonto": "K8" },
+      "A": { "B": "B14", "Barkasse": "E15", "Girokonto": "N14" }
+    },
+    "ergebniszelle": "B16",
+    "uebersicht": { "anfang": "D", "ende": "B" },
+    "kategorien": [
+      { "zeile": 3, "text": "Mitgliedsbeiträge", "rubrik": "Mitglieder", "sphaere": "IDEELL" },
+      { "zeile": 4, "text": "Sommerfest", "rubrik": "Veranstaltungen", "sphaere": "WIRTSCHAFTLICH" },
+      { "zeile": 5, "text": "Geldtransit", "rubrik": "Geldtransit", "sphaere": null },
+      { "zeile": 6, "text": "Zinsen", "rubrik": "Vermögen", "sphaere": "VERMOEGENSVERWALTUNG" },
+      { "zeile": 7, "text": "Sachspenden", "rubrik": "Sachspenden", "sphaere": "IDEELL" },
+      { "zeile": 11, "text": "Wareneinkauf Sommerfest", "rubrik": "Veranstaltungen", "sphaere": "WIRTSCHAFTLICH" },
+      { "zeile": 12, "text": "Verbandsabgaben", "rubrik": "Verwaltung", "sphaere": "IDEELL" },
+      { "zeile": 13, "text": "Verbrauch Sachspenden", "rubrik": "Sportbetrieb", "sphaere": "IDEELL" }
+    ],
+    "stichtagsdifferenzen": []
+  }
+}
