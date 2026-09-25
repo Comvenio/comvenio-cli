@@ -495,8 +495,18 @@ Absatz und jeden Knopf im Formular ändern.
   `design_settings.tokens` mit denselben Werten. Ein Raster, dessen Spaltenzahl
   ein Mensch umschalten soll, trägt `data-spalten="<1–4>"` mit dem heutigen Wert,
   und sein CSS liest ihn: `grid-template-columns: repeat(var(--spalten, 3),
-  minmax(0, 1fr))`, auf schmaleren Stufen begrenzt (`min(var(--spalten, 3), 2)`).
+  minmax(0, 1fr))`. Auf schmaleren Stufen begrenzen, ohne `min()` in `repeat()`:
+  die Stufe behält ihre feste Spaltenzahl, und nur kleinere Werte fallen darunter
+  (`.raster[data-spalten="1"]{grid-template-columns:1fr}`).
   Andere Werte entfernt der Dienst; `verify` meldet sie als `invalid_spalten`.
+- **Eine bestehende Seite nachrüsten, ohne sie neu anzulegen:** nur das Gerüst
+  eines Widgets tauschen, Slots bleiben —
+  `comvenio homepage geruest set <reiter> --widget <id> --file geruest.html --dry-run`,
+  dann ohne `--dry-run`. Die Widget-ID steht in `homepage export`. Der Befehl
+  prüft R1–R6 vor dem Schreiben und vergleicht die Version zweimal (gelesen und
+  unmittelbar vor dem Schreiben); `--expected-version` legt sie fest. Der Dienst
+  selbst prüft beim Schreiben keine Version. `apply --clear` dagegen legt alle
+  Reiter, Sektionen und Widgets mit neuen IDs neu an.
 - **Regeln R1–R6** (`comvenio schema homepage` → `slots_contract`): kein fester
   Text und kein Link/Bild im Gerüst außerhalb von Slots, jeder Slot benannt mit
   genau einem Eintrag, Bereiche mit `aria-label`, bekannte Stile, genau eine `h1`

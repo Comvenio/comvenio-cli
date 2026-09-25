@@ -26,6 +26,7 @@ import { katalogVorschlag, wandleUm, type BulkTab, type StyleEntry, type Umwandl
 export interface HomepageClient {
   get<T = unknown>(service: string, path: string): Promise<T>;
   patch<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
+  put<T = unknown>(service: string, path: string, body?: unknown): Promise<T>;
 }
 
 export class HomepageAbbruch extends Error {
@@ -165,6 +166,90 @@ export async function slotSet(
         throw new HomepageAbbruch(4, "widget_changed", `Der Slot wurde inzwischen geändert (Version live: ${String(detail.live_version ?? "?")}). Erneut lesen mit "homepage slot get ${adresse}".`, detail);
       }
       throw new HomepageAbbruch(4, String(detail.code ?? "abgelehnt"), `Der Dienst hat den Slot abgelehnt: ${JSON.stringify(detail.befunde ?? detail)}`, detail);
+    }
+    throw err;
+  }
+}
+
+// ── geruest set ──────────────────────────────────────────────────────────────
+
+export interface GeruestSetErgebnis {
+  geschrieben: boolean;
+  /** The new HTML equals the live one — nothing to write. */
+  unveraendert: boolean;
+  widget_id: string;
+  /** Version read before writing; after a write the version the service returned. */
+  version: number;
+  vorher_zeichen: number;
+  nachher_zeichen: number;
+  befunde: GeruestBefund[];
+}
+
+function widgetGeaendert(widgetId: string, gelesen: number, live: number): HomepageAbbruch {
+  return new HomepageAbbruch(4, "widget_changed", `Das Gerüst-Widget ${widgetId} wurde inzwischen geändert (erwartet Version ${gelesen}, live ${live}). Neu lesen und erneut setzen.`, { live_version: live });
+}
+
+/**
+ * Replaces the skeleton HTML of ONE custom_html widget and keeps its slots
+ * (09 §4.6: a club's grids get data-spalten without rebuilding the homepage).
+ * `apply --clear` would recreate every tab, section and widget with new ids.
+ *
+ * The widget PUT has no server-side version check, so the version is compared
+ * twice on the client: against --expected-version (or the one just read) and
+ * again on a fresh read right before the write. What changes in between those
+ * milliseconds is not caught — said here instead of promised.
+ */
+export async function geruestSet(
+  client: HomepageClient,
+  clubId: string,
+  slug: string,
+  widgetId: string,
+  html: string,
+  optionen: { expectedVersion?: number; trockenlauf?: boolean } = {},
+): Promise<GeruestSetErgebnis> {
+  const tab = reiterZu(await ladeReiter(client, clubId), slug);
+  const { widgets } = await ladeInhalt(client, clubId, tab.id);
+  const gerueste = widgets.filter((w) => w.kind === "custom_html");
+  const widget = gerueste.find((w) => w.id === widgetId);
+  if (!widget) {
+    throw new HomepageAbbruch(3, "widget_not_found", `Gerüst-Widget "${widgetId}" gibt es im Reiter "${slug}" nicht. Gerüste dort: ${gerueste.map((w) => w.id).join(", ") || "keine"}`);
+  }
+  const version = widget.version ?? 1;
+  if (optionen.expectedVersion !== undefined && optionen.expectedVersion !== version) {
+    throw widgetGeaendert(widget.id, optionen.expectedVersion, version);
+  }
+  const styles = await ladeKatalog(client, clubId);
+  const nachbarn = gerueste.filter((w) => w.id !== widget.id);
+  const befunde = [
+    ...pruefeGeruest(html, slotsVon(widget.config), styles),
+    ...pruefeReiter([...nachbarn.map((w) => [w.id, htmlVon(w)] as [string, string]), [widget.id, html]]).filter((b) => b.widget_id === widget.id || !b.widget_id),
+  ];
+  const vorher = htmlVon(widget);
+  const ergebnis: GeruestSetErgebnis = {
+    geschrieben: false,
+    unveraendert: vorher === html,
+    widget_id: widget.id,
+    version,
+    vorher_zeichen: vorher.length,
+    nachher_zeichen: html.length,
+    befunde,
+  };
+  if (optionen.trockenlauf || ergebnis.unveraendert) return ergebnis;
+  const fehler = befunde.filter((b) => b.schwere === "fehler");
+  if (fehler.length) {
+    throw new HomepageAbbruch(4, "geruest_fehler", `Das neue Gerüst hat ${fehler.length} Fehler: ${fehler.map((b) => b.klasse + (b.slot ? ` (${b.slot})` : "")).join(", ")}. Mit --dry-run ansehen.`, fehler);
+  }
+  const frisch = await client.get<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}`);
+  if ((frisch.version ?? 1) !== version) throw widgetGeaendert(widget.id, version, frisch.version ?? 1);
+  try {
+    // The whole config goes back, slots and all: PUT replaces config.
+    const res = await client.put<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}`, {
+      config: { ...(frisch.config ?? {}), html },
+    });
+    return { ...ergebnis, geschrieben: true, version: res?.version ?? version };
+  } catch (err) {
+    if (err instanceof HttpError && err.status === 422) {
+      throw new HomepageAbbruch(4, "abgelehnt", `Der Dienst hat das Gerüst abgelehnt: ${err.body.slice(0, 400)}`);
     }
     throw err;
   }
