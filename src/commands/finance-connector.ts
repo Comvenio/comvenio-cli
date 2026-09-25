@@ -78,11 +78,12 @@ export async function callFinance(
   client: CliConnectorClient,
   actionId: string,
   input: JsonObject,
-  options: { write: boolean; confirm?: boolean },
+  options: { write: boolean; confirm?: boolean; key?: string },
 ): Promise<JsonObject> {
   // Lesen braucht keinen Schlüssel; Schreiben einen stabilen, damit die
-  // Bestätigung dieselbe Anfrage meint.
-  const key = options.write ? randomUUID() : undefined;
+  // Bestätigung dieselbe Anfrage meint. A caller's own key makes a retry
+  // replay the first result instead of acting twice.
+  const key = options.write ? options.key ?? randomUUID() : undefined;
   const first = await client.callAction({ action_id: actionId, input: input as never, ...(key ? { idempotency_key: key } : {}) }) as JsonObject;
   const challenge = findConfirmation(first);
   // A confirmation widget without a credential must never pass as done.
@@ -441,7 +442,10 @@ export async function runHub(client: CliConnectorClient, area: string | undefine
   }
   if ("club_id" in input) throw new Error("Der Verein kommt aus der OAuth-Anmeldung; club_id gehört nicht in die Eingabe.");
   const write = !READ_OPERATIONS.has(operation);
-  const result = await callFinance(client, actionId, { ...input, operation }, { write, confirm: opts.confirm !== false });
+  if (opts.idempotencyKey !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(opts.idempotencyKey)) {
+    throw new Error("--idempotency-key muss eine UUID sein.");
+  }
+  const result = await callFinance(client, actionId, { ...input, operation }, { write, confirm: opts.confirm !== false, key: opts.idempotencyKey });
   // Der Prüfexport kommt als base64 mit Prüfsumme — mit --out landet er als Datei.
   const inner = isObject(result.result) ? result.result : result;
   if (opts.out && typeof inner.content_base64 === "string") {

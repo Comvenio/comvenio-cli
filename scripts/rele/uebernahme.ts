@@ -12,6 +12,7 @@
 // The protocol (JSON) holds club data and every created id: it lies next to
 // the transfer files at the club, never in a repository. A rerun continues
 // from it; a plan of the year that the protocol does not know stops the run.
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -134,11 +135,23 @@ export function pruefeGate(verein: string, manifest: string, schreiben: boolean)
 
 export type Cli = (args: string[]) => any;
 
+/**
+ * The key of one writing step: the same club and step always give the same
+ * UUID, so a rerun after a crash between the call and the protocol replays
+ * the first result instead of booking twice (the connector keeps it 24 h).
+ */
+export function schrittSchluessel(verein: string, key: string): string {
+  const h = createHash("sha256").update(`rele-uebernahme:${verein}:${key}`).digest("hex");
+  const variante = ((parseInt(h.slice(16, 18), 16) & 0x3f) | 0x80).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variante}${h.slice(18, 20)}-${h.slice(20, 32)}`;
+}
+
 type Protokoll = { verein: string; schritte: Record<string, unknown>; ereignisse: Array<Record<string, unknown>>; vorschau?: Schritt[] };
 
 export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll: Protokoll, speichern: () => void): Protokoll {
-  const fin = (area: string, op: string, input: object = {}): any => {
-    const res = cli(["finance", "run", area, op, "--input", JSON.stringify(input)]);
+  const fin = (area: string, op: string, input: object = {}, schritt?: string): any => {
+    const schluessel = schritt ? ["--idempotency-key", schrittSchluessel(verein, schritt)] : [];
+    const res = cli(["finance", "run", area, op, "--input", JSON.stringify(input), ...schluessel]);
     if (res?.widget === "confirmation" || res?.confirmation_required) throw new LaufFehler(`${area} ${op}: nur Vorschau, nicht ausgeführt`);
     if (res?.status && res.status !== "completed") throw new LaufFehler(`${area} ${op}: ${JSON.stringify(res).slice(0, 600)}`);
     return res?.result ?? res;
@@ -169,24 +182,24 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
     switch (x.art) {
       case "konto": {
         const vorhanden = (fin("money-account", "list") as any[]).find((a) => a.name === x.konto && !a.archived_at);
-        merke(x.key, vorhanden?.id ?? fin("money-account", "create", { data: { name: x.konto, kind: x.kind, is_default: x.standard } }).id);
+        merke(x.key, vorhanden?.id ?? fin("money-account", "create", { data: { name: x.konto, kind: x.kind, is_default: x.standard } }, x.key).id);
         break;
       }
       case "haushalt": {
         if (x.startkapital_cents !== null) {
-          merke(x.key, fin("plan-period", "create", { data: { year: x.jahr, available_capital_cents: x.startkapital_cents, notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }).id);
+          merke(x.key, fin("plan-period", "create", { data: { year: x.jahr, available_capital_cents: x.startkapital_cents, notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, x.key).id);
         } else {
-          fin("plan-lifecycle", "next_period", { plan_id: s[`${x.jahr - 1}:haushalt`], data: { include_non_recurring: false } });
+          fin("plan-lifecycle", "next_period", { plan_id: s[`${x.jahr - 1}:haushalt`], data: { include_non_recurring: false } }, x.key);
           const neu = (fin("plan-period", "list") as any[]).find((p) => p.year === x.jahr && !p.department_id);
           if (!neu) throw new LaufFehler(`next_period legte keinen Haushalt ${x.jahr} an.`);
           merke(x.key, neu.id);
-          fin("plan-period", "update", { plan_id: neu.id, data: { notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } });
+          fin("plan-period", "update", { plan_id: neu.id, data: { notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, `${x.key}:notiz`);
         }
         break;
       }
       case "anfang":
         fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
-          opening_date: `${x.key.split(":")[0]}-01-01`, opening_balance_cents: x.cents, reason: `Übernahme aus Rechenschaftsbericht ${x.key.split(":")[0]}` } });
+          opening_date: `${x.key.split(":")[0]}-01-01`, opening_balance_cents: x.cents, reason: `Übernahme aus Rechenschaftsbericht ${x.key.split(":")[0]}` } }, x.key);
         merke(x.key, x.cents);
         break;
       case "anfang_pruefen": {
@@ -199,24 +212,24 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
         break;
       }
       case "aktivieren":
-        merke(x.key, fin("plan-period", "update", { plan_id: plan(x.key), data: { status: "ACTIVE" } }).status);
+        merke(x.key, fin("plan-period", "update", { plan_id: plan(x.key), data: { status: "ACTIVE" } }, x.key).status);
         break;
       case "posten":
         merke(x.key, fin("plan-period", "position_create", { plan_id: plan(x.key), data: {
           name: x.name, category: x.rubrik, position_number: x.nummer, recurring: false,
           revenue_planned_cents: 0, expense_planned_cents: 0, context_type: "GENERAL",
           ...(x.sphaere ? { tax_sphere: x.sphaere, comment: "Sphäre: Vorschlag aus der Übernahme, vom Verein zu bestätigen" } : {}),
-        } }).id);
+        } }, x.key).id);
         break;
       case "buchung":
         merke(x.key, fin("entry", "entry_create", { position_id: s[x.posten], data: {
           description: x.text, booking_date: x.datum, money_account_id: konten()[x.konto],
           [x.richtung === "revenue" ? "revenue_cents" : "expense_cents"]: x.cents, receipt_exemption_reason: x.grund,
-        } }).id);
+        } }, x.key).id);
         break;
       case "uebertrag":
         merke(x.key, fin("money-account", "transfer_create", { data: {
-          from_account_id: konten()[x.von], to_account_id: konten()[x.nach], amount_cents: x.cents, transfer_date: x.datum, reason: x.grund } }).id);
+          from_account_id: konten()[x.von], to_account_id: konten()[x.nach], amount_cents: x.cents, transfer_date: x.datum, reason: x.grund } }, x.key).id);
         break;
       case "probe": {
         const j = jahrVon(x.key);
@@ -242,7 +255,7 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
         // The opening goes along unchanged: only the statement is new.
         fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
           opening_date: zeile?.opening_date ?? `${y}-01-01`, opening_balance_cents: zeile?.opening_balance_cents ?? 0,
-          statement_balance_cents: x.cents, statement_date: `${y}-12-31`, reason: `Auszug 31.12.${y} laut Vermögensübersicht` } });
+          statement_balance_cents: x.cents, statement_date: `${y}-12-31`, reason: `Auszug 31.12.${y} laut Vermögensübersicht` } }, x.key);
         merke(x.key, x.cents);
         break;
       }
@@ -251,7 +264,7 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
         // Collective entries of a report the general meeting discharged: no
         // second person approves them one by one — hence force, said in the note.
         fin("plan-lifecycle", "close", { plan_id: plan(x.key), force: true,
-          note: `Übernahme aus Rechenschaftsbericht ${y}; Sammelbuchungen, von der Hauptversammlung entlastet` });
+          note: `Übernahme aus Rechenschaftsbericht ${y}; Sammelbuchungen, von der Hauptversammlung entlastet` }, x.key);
         merke(x.key, "geschlossen");
         break;
       }

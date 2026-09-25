@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { type Cli, LaufFehler, laufen, planen, pruefeGate, type Uebernahme } from "../scripts/rele/uebernahme.ts";
+import { type Cli, laufen, planen, pruefeGate, schrittSchluessel, type Uebernahme } from "../scripts/rele/uebernahme.ts";
 
 // buchhaltung-14-04 §4.2: the run over a finance service kept in memory —
 // synthetic years 2031/2032, no club data.
@@ -188,6 +188,17 @@ describe("Übernahme: Lauf", () => {
     const anzahl = d.buchungen.length;
     laufen([JAHR_1], DEV, d.cli, p, () => {});
     expect(d.buchungen.length).toBe(anzahl);
+  });
+
+  test("jeder Schreibschritt trägt einen festen Schlüssel aus Verein und Schritt", () => {
+    const d = dienst();
+    laufen([JAHR_1], DEV, d.cli, neu(), () => {});
+    const buchung = d.aufrufe.find((a) => a[3] === "entry_create") as string[];
+    expect(buchung.slice(-2)).toEqual(["--idempotency-key", schrittSchluessel(DEV, "2031:buchung:3:Girokonto")]);
+    expect(schrittSchluessel(DEV, "x")).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(schrittSchluessel(SVM, "x")).not.toBe(schrittSchluessel(DEV, "x"));
+    // Reads carry none.
+    expect(d.aufrufe.filter((a) => a[3] === "reconciliation").every((a) => !a.includes("--idempotency-key"))).toBe(true);
   });
 
   test("die Anmeldung muss auf dem Verein stehen", () => {
