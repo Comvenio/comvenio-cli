@@ -170,6 +170,103 @@ export async function slotSet(
   }
 }
 
+// ── geruest set ──────────────────────────────────────────────────────────────
+
+export interface GeruestSetErgebnis {
+  geschrieben: boolean;
+  /** The new HTML equals the live one — nothing to write. */
+  unveraendert: boolean;
+  widget_id: string;
+  /** Version read before writing; after a write the version the service returned. */
+  version: number;
+  vorher_zeichen: number;
+  nachher_zeichen: number;
+  befunde: GeruestBefund[];
+}
+
+function widgetGeaendert(widgetId: string, gelesen: number, live: unknown): HomepageAbbruch {
+  return new HomepageAbbruch(4, "widget_changed", `Das Gerüst-Widget ${widgetId} wurde inzwischen geändert (erwartet Version ${gelesen}, live ${String(live ?? "?")}). Neu lesen und erneut setzen.`, { live_version: live ?? null });
+}
+
+/** Skeleton files come from editors: no BOM, LF line ends — otherwise equal HTML reads as a change. */
+export function geruestAusDatei(text: string): string {
+  return text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+}
+
+/**
+ * Replaces the skeleton HTML of ONE custom_html widget and keeps its slots
+ * (09 §4.6: a club's grids get data-spalten without rebuilding the homepage).
+ * `apply --clear` would recreate every tab, section and widget with new ids.
+ *
+ * Written through `PATCH …/widgets/{id}/geruest`: the service checks the
+ * version under the tab lock and takes the slots from the stored config, so a
+ * slot changed meanwhile is a 409, never overwritten (Fremdprüfung K9 R4).
+ */
+export async function geruestSet(
+  client: HomepageClient,
+  clubId: string,
+  slug: string,
+  widgetId: string,
+  html: string,
+  optionen: { expectedVersion?: number; trockenlauf?: boolean } = {},
+): Promise<GeruestSetErgebnis> {
+  const tab = reiterZu(await ladeReiter(client, clubId), slug);
+  const { widgets } = await ladeInhalt(client, clubId, tab.id);
+  const gerueste = widgets.filter((w) => w.kind === "custom_html");
+  const widget = gerueste.find((w) => w.id === widgetId);
+  if (!widget) {
+    throw new HomepageAbbruch(3, "widget_not_found", `Gerüst-Widget "${widgetId}" gibt es im Reiter "${slug}" nicht. Gerüste dort: ${gerueste.map((w) => w.id).join(", ") || "keine"}`);
+  }
+  const version = widget.version ?? 1;
+  if (optionen.expectedVersion !== undefined && optionen.expectedVersion !== version) {
+    throw widgetGeaendert(widget.id, optionen.expectedVersion, version);
+  }
+  const styles = await ladeKatalog(client, clubId);
+  const nachbarn = gerueste.filter((w) => w.id !== widget.id);
+  const befunde = [
+    ...pruefeGeruest(html, slotsVon(widget.config), styles),
+    ...pruefeReiter([...nachbarn.map((w) => [w.id, htmlVon(w)] as [string, string]), [widget.id, html]]).filter((b) => b.widget_id === widget.id || !b.widget_id),
+  ];
+  const vorher = htmlVon(widget);
+  const ergebnis: GeruestSetErgebnis = {
+    geschrieben: false,
+    unveraendert: vorher === html,
+    widget_id: widget.id,
+    version,
+    vorher_zeichen: vorher.length,
+    nachher_zeichen: html.length,
+    befunde,
+  };
+  if (optionen.trockenlauf || ergebnis.unveraendert) return ergebnis;
+  const fehler = befunde.filter((b) => b.schwere === "fehler");
+  if (fehler.length) {
+    throw new HomepageAbbruch(4, "geruest_fehler", `Das neue Gerüst hat ${fehler.length} Fehler: ${fehler.map((b) => b.klasse + (b.slot ? ` (${b.slot})` : "")).join(", ")}. Mit --dry-run ansehen.`, fehler);
+  }
+  let res: WidgetRead;
+  try {
+    res = await client.patch<WidgetRead>("club", `/home-config/${clubId}/widgets/${widget.id}/geruest`, {
+      expected_version: optionen.expectedVersion ?? version,
+      html,
+    });
+  } catch (err) {
+    if (err instanceof HttpError && (err.status === 409 || err.status === 422)) {
+      let detail: Record<string, unknown> = {};
+      try {
+        const roh = (JSON.parse(err.body) as { detail?: unknown }).detail;
+        detail = roh && typeof roh === "object" ? (roh as Record<string, unknown>) : { text: roh };
+      } catch {
+        detail = { text: err.body };
+      }
+      if (err.status === 409) throw widgetGeaendert(widget.id, optionen.expectedVersion ?? version, detail.live_version);
+      throw new HomepageAbbruch(4, String(detail.code ?? "abgelehnt"), `Der Dienst hat das Gerüst abgelehnt: ${JSON.stringify(detail.befunde ?? detail)}`, detail);
+    }
+    if (err instanceof HttpError) throw err;
+    // No answer: the write may or may not have arrived.
+    throw new Error(`Keine Antwort vom Dienst (${(err as Error).message}). Ob das Gerüst geschrieben wurde, ist offen — mit "homepage tree --tab ${slug} --json" oder --dry-run nachsehen.`);
+  }
+  return { ...ergebnis, geschrieben: true, version: res?.version ?? version };
+}
+
 // ── convert ──────────────────────────────────────────────────────────────────
 
 export interface ConvertErgebnis {

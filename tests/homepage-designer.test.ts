@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
 import { baum, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
-import { convert, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
+import { convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
 import { strukturBefunde } from "../src/verify/geruest-befunde.ts";
@@ -129,6 +129,74 @@ describe("homepage slot", () => {
     const baeume = await tree(client, "c");
     expect(baeume.length).toBe(1);
     expect(baeume[0].name).toBe("Start");
+  });
+});
+
+// ── geruest set (09 §4.6): skeleton HTML of one widget, slots unchanged ─────
+
+describe("homepage geruest set", () => {
+  const LIVE = JSON.parse(readFileSync(join(FIXTURES, "baum", "zwei-sektionen.json"), "utf8")).widgets[0];
+  const MIT_SPALTEN = (LIVE.config.html as string).replace('<div class="reihe">', '<div class="reihe" data-spalten="3">');
+  const geschrieben = (aufrufe: { methode: string }[]) => aufrufe.some((a) => a.methode === "PATCH");
+
+  test("writes through PATCH …/geruest with the version it read — no slots sent", async () => {
+    const { client, aufrufe } = stub();
+    const r = await geruestSet(client, "c", "start", "w1", MIT_SPALTEN);
+    expect(r).toMatchObject({ geschrieben: true, unveraendert: false, widget_id: "w1", version: 4 });
+    const patch = aufrufe.find((a) => a.methode === "PATCH")!;
+    expect(patch.path).toBe("/home-config/c/widgets/w1/geruest");
+    expect(patch.body).toEqual({ expected_version: 3, html: MIT_SPALTEN });
+  });
+
+  test("dry run and unchanged HTML write nothing", async () => {
+    const trocken = stub();
+    const r = await geruestSet(trocken.client, "c", "start", "w1", MIT_SPALTEN, { trockenlauf: true });
+    expect(r.geschrieben).toBe(false);
+    expect(r.nachher_zeichen - r.vorher_zeichen).toBe(' data-spalten="3"'.length);
+    expect(geschrieben(trocken.aufrufe)).toBe(false);
+    const gleich = stub();
+    const u = await geruestSet(gleich.client, "c", "start", "w1", LIVE.config.html);
+    expect(u).toMatchObject({ geschrieben: false, unveraendert: true });
+    expect(geschrieben(gleich.aufrufe)).toBe(false);
+  });
+
+  test("BOM and CRLF from an editor are not a change", () => {
+    expect(geruestAusDatei("\uFEFF<a>\r\n<b>\r</b>")).toBe("<a>\n<b>\n</b>");
+  });
+
+  test("a stale --expected-version refuses before writing; a 409 of the service is exit 4 with live_version", async () => {
+    const vorher = stub();
+    const e = await geruestSet(vorher.client, "c", "start", "w1", MIT_SPALTEN, { expectedVersion: 2 }).catch((x) => x);
+    expect((e as HomepageAbbruch).exitCode).toBe(4);
+    expect((e as HomepageAbbruch).code).toBe("widget_changed");
+    expect(geschrieben(vorher.aufrufe)).toBe(false);
+    const konflikt = stub({ patch: () => { throw new HttpError(409, JSON.stringify({ detail: { code: "widget_changed", live_version: 5 } }), "u"); } });
+    const f = await geruestSet(konflikt.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+    expect((f as HomepageAbbruch).code).toBe("widget_changed");
+    expect((f as HomepageAbbruch).message).toContain("live 5");
+  });
+
+  test("errors in the new skeleton refuse without writing; a widget that is no skeleton is exit 3", async () => {
+    const { client, aufrufe } = stub();
+    const ohneNews = (LIVE.config.html as string).replace('<div data-slot="news"></div>', "<div></div>");
+    const e = await geruestSet(client, "c", "start", "w1", ohneNews).catch((x) => x);
+    expect((e as HomepageAbbruch).code).toBe("geruest_fehler");
+    expect((e as HomepageAbbruch).message).toContain("orphan_slot_entry");
+    expect(geschrieben(aufrufe)).toBe(false);
+    const keins = await geruestSet(client, "c", "start", "w2", MIT_SPALTEN).catch((x) => x);
+    expect((keins as HomepageAbbruch).exitCode).toBe(3);
+    expect((keins as HomepageAbbruch).code).toBe("widget_not_found");
+  });
+
+  test("a 422 keeps the service's code and findings; no answer says the write is open", async () => {
+    const abgelehnt = stub({ patch: () => { throw new HttpError(422, JSON.stringify({ detail: { code: "skeleton_rules", befunde: [{ klasse: "fixed_text_in_skeleton" }] } }), "u"); } });
+    const e = await geruestSet(abgelehnt.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+    expect((e as HomepageAbbruch).exitCode).toBe(4);
+    expect((e as HomepageAbbruch).code).toBe("skeleton_rules");
+    expect((e as HomepageAbbruch).message).toContain("fixed_text_in_skeleton");
+    const weg = stub({ patch: () => { throw new Error("socket hang up"); } });
+    const f = await geruestSet(weg.client, "c", "start", "w1", MIT_SPALTEN).catch((x) => x);
+    expect((f as Error).message).toContain("ist offen");
   });
 });
 
