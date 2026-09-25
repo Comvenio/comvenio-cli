@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 import { cliProfile, profileSuffix } from "../profile.ts";
 
@@ -118,32 +119,86 @@ function powershellCredentialCommand(command: "read" | "write" | "delete", value
   }
 }
 
-function macosCredentialCommand(command: "read" | "write" | "delete", value?: string): string {
-  if (command === "write") {
-    execFileSync(
-      "security",
-      ["add-generic-password", "-U", "-s", SERVICE, "-a", ACCOUNT, "-w"],
-      { input: value ?? "", encoding: "utf8" },
-    );
-    return "";
-  }
-  if (command === "delete") {
+type Run = (program: string, args: string[], options?: { input?: string; encoding: "utf8" }) => string;
+const execRun: Run = (program, args, options) =>
+  String(execFileSync(program, args, { encoding: "utf8", ...options, stdio: ["pipe", "pipe", "pipe"] }));
+
+// `security add-generic-password -w` without a value prompts on the terminal and ignores
+// the pipe (2026-09-25, first Mac: "passwords don't match", an empty entry). `security -i`
+// reads commands from stdin, keeping the secret out of argv — but only ~4 KB per line
+// (measured on macOS 26: 4000 characters pass, 5000 fail), and two tokens may be larger.
+const KEYCHAIN_LINE_LIMIT = 3500;
+const KEYCHAIN_PART_BYTES = 2048;
+const KEYCHAIN_HEAD = /^comvenio-parts-v1:([1-9][0-9]{0,3}):[a-f0-9]{64}$/;
+
+function keychainHead(parts: number, bytes: Buffer): string {
+  return `comvenio-parts-v1:${parts}:${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+function keychainPartCount(head: string): number | null {
+  const match = KEYCHAIN_HEAD.exec(head);
+  return match ? Number(match[1]) : null;
+}
+
+export function macosCredentialCommand(
+  command: "read" | "write" | "delete",
+  value?: string,
+  account: string = ACCOUNT,
+  run: Run = execRun,
+): string {
+  const line = (entry: string, secret: string) =>
+    `add-generic-password -U -s ${SERVICE} -a ${entry} -w ${JSON.stringify(secret)}\n`;
+  const write = (entry: string, secret: string) => { run("security", ["-i"], { input: line(entry, secret), encoding: "utf8" }); };
+  const read = (entry: string): string | null => {
     try {
-      execFileSync("security", ["delete-generic-password", "-s", SERVICE, "-a", ACCOUNT]);
+      return run("security", ["find-generic-password", "-s", SERVICE, "-a", entry, "-w"], { encoding: "utf8" }).trim();
+    } catch {
+      return null;
+    }
+  };
+  const remove = (entry: string) => {
+    try {
+      run("security", ["delete-generic-password", "-s", SERVICE, "-a", entry]);
     } catch {
       // Deleting a missing keychain entry is idempotent.
     }
+  };
+  const removeParts = (from: number, to: number) => { for (let i = from; i <= to; i++) remove(`${account}.${i}`); };
+  const partsNow = () => keychainPartCount(read(account) ?? "") ?? 0;
+
+  if (command === "write") {
+    const secret = value ?? "", before = partsNow();
+    let parts = 0;
+    if (Buffer.byteLength(line(account, secret)) <= KEYCHAIN_LINE_LIMIT) write(account, secret);
+    else {
+      // The head entry, written last, names the parts and their hash.
+      const bytes = Buffer.from(secret, "utf8");
+      parts = Math.ceil(bytes.length / KEYCHAIN_PART_BYTES);
+      for (let i = 0; i < parts; i++) {
+        write(`${account}.${i + 1}`, bytes.subarray(i * KEYCHAIN_PART_BYTES, (i + 1) * KEYCHAIN_PART_BYTES).toString("base64"));
+      }
+      write(account, keychainHead(parts, bytes));
+    }
+    removeParts(parts + 1, before);
+    if (macosCredentialCommand("read", undefined, account, run) !== secret) {
+      throw new Error("Der Schlüsselbund gibt den gespeicherten Eintrag nicht unverändert zurück.");
+    }
     return "";
   }
-  try {
-    return execFileSync(
-      "security",
-      ["find-generic-password", "-s", SERVICE, "-a", ACCOUNT, "-w"],
-      { encoding: "utf8" },
-    ).trim();
-  } catch {
+  if (command === "delete") {
+    removeParts(1, partsNow());
+    remove(account);
     return "";
   }
+  const head = read(account);
+  if (!head) return "";
+  const parts = keychainPartCount(head);
+  if (parts === null) return head;
+  const pieces = Array.from({ length: parts }, (_, i) => read(`${account}.${i + 1}`));
+  if (pieces.some(piece => piece === null)) throw new Error("Ein Teil des Schlüsselbund-Eintrags fehlt.");
+  const bytes = Buffer.concat(pieces.map(piece => Buffer.from(piece!, "base64")));
+  if (head !== keychainHead(parts, bytes)) throw new Error("Die Teile des Schlüsselbund-Eintrags passen nicht zusammen.");
+  return bytes.toString("utf8");
 }
 
 function linuxCredentialCommand(command: "read" | "write" | "delete", value?: string): string {
