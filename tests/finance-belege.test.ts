@@ -103,6 +103,26 @@ describe("finance belege", () => {
     }
   });
 
+  test("entsteht belege.csv während des Laufs, bleibt sie unberührt (R2-3)", async () => {
+    const ordner = mkdtempSync(join(tmpdir(), "belege-"));
+    try {
+      const basis = client([]);
+      const zweiterLauf = {
+        async callAction(input: { input: JsonLike }) {
+          // A second run writes its index while this one is still loading.
+          if (input.input.operation === "receipt_file" && !existsSync(join(ordner, "belege.csv"))) {
+            writeFileSync(join(ordner, "belege.csv"), "fremd");
+          }
+          return basis.callAction(input as never);
+        },
+      } as unknown as CliConnectorClient;
+      await expect(runBelege(zweiterLauf, { year: "2025", out: ordner })).rejects.toThrow(/zweiter Lauf/);
+      expect(readFileSync(join(ordner, "belege.csv"), "utf-8")).toBe("fremd");
+    } finally {
+      rmSync(ordner, { recursive: true, force: true });
+    }
+  });
+
   test("ohne --out nennt der Befehl, was fehlt", async () => {
     await expect(runBelege(client([]), { year: "2025" })).rejects.toThrow(/--out/);
   });

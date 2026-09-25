@@ -318,6 +318,18 @@ const csvZelle = (wert: unknown): string => {
   return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
+/** Creates a file only if it does not exist yet — atomic, so two runs never
+ *  overwrite each other (review K16-02 R2-3). False when it was already there. */
+function exklusivSchreiben(pfad: string, daten: Buffer | string): boolean {
+  try {
+    writeFileSync(pfad, daten, { flag: "wx" });
+    return true;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
+    throw err;
+  }
+}
+
 /**
  * `comvenio finance belege <buchungs-id> --out <datei>` — ein Beleg;
  * `comvenio finance belege --year <jahr> [plan-id] --out <verzeichnis>` — alle
@@ -329,8 +341,7 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
   if (!opts.out) throw new Error("finance belege benötigt --out (eine Datei für einen Beleg, ein Verzeichnis für ein Jahr).");
   if (id && !opts.year) {
     const datei = await belegLaden(client, id);
-    if (existsSync(opts.out)) throw new Error(`${opts.out} gibt es schon — nichts überschrieben.`);
-    writeFileSync(opts.out, datei.bytes);
+    if (!exklusivSchreiben(opts.out, datei.bytes)) throw new Error(`${opts.out} gibt es schon — nichts überschrieben.`);
     return { written: opts.out, size_bytes: datei.bytes.byteLength, sha256: datei.sha256, content_type: datei.content_type };
   }
   const planId = await vereinsplanDesJahres(client, "belege", opts, id);
@@ -359,13 +370,12 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
         const datei = await belegLaden(client, row.entry_id as string);
         const name = `${row.journal_number}_${row.booking_date}.${ENDUNG[datei.content_type] ?? "bin"}`;
         const pfad = join(opts.out, name);
-        if (existsSync(pfad)) {
+        if (!exklusivSchreiben(pfad, datei.bytes)) {
           // The index names the checksum of the file that is there, and says when it differs.
           const lokal = createHash("sha256").update(readFileSync(pfad)).digest("hex");
           zeilen.push([...basis, name, lokal, lokal === datei.sha256 ? "vorhanden, gleich" : `vorhanden, abweichend von der Quelle (${datei.sha256})`]);
           continue;
         }
-        writeFileSync(pfad, datei.bytes);
         geladen += 1;
         zeilen.push([...basis, name, datei.sha256, "geladen"]);
       } catch (err) {
@@ -375,7 +385,9 @@ export async function runBelege(client: CliConnectorClient, opts: FinanceCommand
     }
     nach = typeof inhalt.next_after === "number" ? inhalt.next_after : undefined;
   } while (nach !== undefined);
-  writeFileSync(verzeichnis, zeilen.map((z) => z.map(csvZelle).join(";")).join("\n") + "\n");
+  if (!exklusivSchreiben(verzeichnis, zeilen.map((z) => z.map(csvZelle).join(";")).join("\n") + "\n")) {
+    throw new Error(`${verzeichnis} ist während des Laufs entstanden — ein zweiter Lauf? Nichts überschrieben.`);
+  }
   if (fehler > 0) process.exitCode = 1;
   return { plan_id: planId, written: verzeichnis, entries: zeilen.length - 1, downloaded: geladen, failed: fehler };
 }
