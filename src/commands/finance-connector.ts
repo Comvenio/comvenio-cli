@@ -13,7 +13,8 @@
 // Bestätigung. Die Vorschau steht mit `--json` in der Ausgabe; `--no-confirm`
 // hält vor der Bestätigung an und gibt sie aus.
 import { createHash, randomUUID } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type { CliConnectorClient } from "../mcp/client.ts";
 import { readJsonFile } from "../util/file.ts";
@@ -189,7 +190,7 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
 
 /** Lesende Teiloperationen des Hubs — alles andere schreibt und bekommt einen Idempotenz-Schlüssel. */
 const READ_OPERATIONS = new Set([
-  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard", "audit_check",
+  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard", "audit_check", "receipt_file",
   "opening_versions", "cash_book", "reconciliation", "versions", "account_choices", "result",
   "open_items", "resolutions", "version", "download", "event", "event_reconciliation", "series_comparison",
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
@@ -265,21 +266,24 @@ export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
  * Abteilungsplan; buchhaltung-16-03). Mit --out entstehen <basisname>.md und
  * <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln.
  */
+/** The club plan of a year — never picked silently among several (16-03 R1-8). */
+async function vereinsplanDesJahres(client: CliConnectorClient, befehl: string, opts: FinanceCommandOpts, planId?: string): Promise<string> {
+  if (planId) return planId;
+  const jahr = Number(opts.year);
+  if (!opts.year || !Number.isInteger(jahr)) throw new Error(`finance ${befehl} benötigt --year <jahr> oder eine Plan-ID.`);
+  const liste = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "list" }, { write: false });
+  const plaene = (Array.isArray(liste.result) ? liste.result : []) as JsonObject[];
+  const treffer = plaene.filter((p) => p.year === jahr && !p.department_id);
+  if (treffer.length === 0) throw new Error(`Für ${jahr} gibt es keinen Vereinsplan.`);
+  if (treffer.length > 1) {
+    throw new Error(`Für ${jahr} gibt es ${treffer.length} Vereinspläne — Plan-ID angeben: ${treffer.map((p) => `${p.id} (${p.period_start} bis ${p.period_end})`).join(", ")}`);
+  }
+  return treffer[0]!.id as string;
+}
+
 export async function runPruefung(client: CliConnectorClient, opts: FinanceCommandOpts, planId?: string): Promise<JsonObject> {
   const jahr = Number(opts.year);
-  if (!planId && (!opts.year || !Number.isInteger(jahr))) throw new Error("finance pruefung benötigt --year <jahr> oder eine Plan-ID.");
-  let id = planId;
-  if (!id) {
-    const liste = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "list" }, { write: false });
-    const plaene = (Array.isArray(liste.result) ? liste.result : []) as JsonObject[];
-    const treffer = plaene.filter((p) => p.year === jahr && !p.department_id);
-    if (treffer.length === 0) throw new Error(`Für ${jahr} gibt es keinen Vereinsplan.`);
-    // Two club periods can begin in one year — never pick one silently (review R1-8).
-    if (treffer.length > 1) {
-      throw new Error(`Für ${jahr} gibt es ${treffer.length} Vereinspläne — Plan-ID angeben: ${treffer.map((p) => `${p.id} (${p.period_start} bis ${p.period_end})`).join(", ")}`);
-    }
-    id = treffer[0]!.id as string;
-  }
+  const id = await vereinsplanDesJahres(client, "pruefung", opts, planId);
   const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_check", plan_id: id }, { write: false });
   const ergebnis = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
   const summe = (ergebnis.summary ?? {}) as JsonObject;
@@ -288,6 +292,104 @@ export async function runPruefung(client: CliConnectorClient, opts: FinanceComma
   writeFileSync(`${opts.out}.json`, JSON.stringify(ergebnis, null, 2));
   writeFileSync(`${opts.out}.md`, renderPruefbericht(ergebnis, Number(ergebnis.year ?? jahr)));
   return { written: [`${opts.out}.md`, `${opts.out}.json`], summary: summe };
+}
+
+// ── buchhaltung-16-02: Belege je Buchung ─────────────────────────────────
+
+const ENDUNG: Record<string, string> = {
+  "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/heic": "heic", "image/webp": "webp",
+};
+
+type BelegDatei = { bytes: Buffer; sha256: string; content_type: string };
+
+/** One receipt through the connector, its checksum verified before anything is written. */
+async function belegLaden(client: CliConnectorClient, entryId: string): Promise<BelegDatei> {
+  const antwort = await callFinance(client, FINANCE_AREAS["entry"]!, { operation: "receipt_file", entry_id: entryId }, { write: false });
+  const datei = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
+  if (typeof datei.content_base64 !== "string") throw new Error("Die Antwort trägt keine Datei.");
+  const bytes = Buffer.from(datei.content_base64, "base64");
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  if (typeof datei.sha256 === "string" && datei.sha256 !== sha256) throw new Error("Die Prüfsumme des Belegs stimmt nicht.");
+  return { bytes, sha256, content_type: String(datei.content_type ?? "application/octet-stream") };
+}
+
+const csvZelle = (wert: unknown): string => {
+  const text = wert === null || wert === undefined ? "" : String(wert);
+  return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/** Creates a file only if it does not exist yet — atomic, so two runs never
+ *  overwrite each other (review K16-02 R2-3). False when it was already there. */
+function exklusivSchreiben(pfad: string, daten: Buffer | string): boolean {
+  try {
+    writeFileSync(pfad, daten, { flag: "wx" });
+    return true;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") return false;
+    throw err;
+  }
+}
+
+/**
+ * `comvenio finance belege <buchungs-id> --out <datei>` — ein Beleg;
+ * `comvenio finance belege --year <jahr> [plan-id] --out <verzeichnis>` — alle
+ * Belege des Vereinsplans in Journalreihenfolge, dazu belege.csv mit dem
+ * Zustand jeder Buchung (buchhaltung-16-02). Vorhandene Dateien bleiben
+ * unberührt; Exit 1, wenn ein Beleg nicht geladen werden konnte.
+ */
+export async function runBelege(client: CliConnectorClient, opts: FinanceCommandOpts, id?: string): Promise<JsonObject> {
+  if (!opts.out) throw new Error("finance belege benötigt --out (eine Datei für einen Beleg, ein Verzeichnis für ein Jahr).");
+  if (id && !opts.year) {
+    const datei = await belegLaden(client, id);
+    if (!exklusivSchreiben(opts.out, datei.bytes)) throw new Error(`${opts.out} gibt es schon — nichts überschrieben.`);
+    return { written: opts.out, size_bytes: datei.bytes.byteLength, sha256: datei.sha256, content_type: datei.content_type };
+  }
+  const planId = await vereinsplanDesJahres(client, "belege", opts, id);
+  const verzeichnis = join(opts.out, "belege.csv");
+  // An earlier index is evidence too — never overwritten (review K16-02 R1-5).
+  if (existsSync(verzeichnis)) throw new Error(`${verzeichnis} gibt es schon — ein neues Verzeichnis wählen; nichts überschrieben.`);
+  mkdirSync(opts.out, { recursive: true });
+  const zeilen: string[][] = [["journal", "datum", "buchung", "datei", "sha256", "zustand"]];
+  let nach: number | undefined;
+  let geladen = 0;
+  let fehler = 0;
+  do {
+    const seite = await callFinance(client, FINANCE_AREAS["plan-period"]!, {
+      operation: "journal", plan_id: planId, limit: 500, ...(nach !== undefined ? { after_journal_number: nach } : {}),
+    }, { write: false });
+    const inhalt = (isObject(seite.result) ? seite.result : seite) as JsonObject;
+    for (const row of (Array.isArray(inhalt.rows) ? inhalt.rows : []) as JsonObject[]) {
+      const basis = [String(row.journal_number ?? ""), String(row.booking_date ?? ""), String(row.entry_id ?? "")];
+      if (row.deleted_before_protocol) { zeilen.push([...basis, "", "", "weich gelöscht"]); continue; }
+      if (row.reversal_of_journal_number) { zeilen.push([...basis, "", "", `Storno von ${row.reversal_of_journal_number}`]); continue; }
+      if (!row.has_receipt) {
+        zeilen.push([...basis, "", "", row.receipt_exemption_reason ? `Eigenbeleg: ${row.receipt_exemption_reason}` : `kein Beleg (${row.receipt_state ?? "fehlt"})`]);
+        continue;
+      }
+      try {
+        const datei = await belegLaden(client, row.entry_id as string);
+        const name = `${row.journal_number}_${row.booking_date}.${ENDUNG[datei.content_type] ?? "bin"}`;
+        const pfad = join(opts.out, name);
+        if (!exklusivSchreiben(pfad, datei.bytes)) {
+          // The index names the checksum of the file that is there, and says when it differs.
+          const lokal = createHash("sha256").update(readFileSync(pfad)).digest("hex");
+          zeilen.push([...basis, name, lokal, lokal === datei.sha256 ? "vorhanden, gleich" : `vorhanden, abweichend von der Quelle (${datei.sha256})`]);
+          continue;
+        }
+        geladen += 1;
+        zeilen.push([...basis, name, datei.sha256, "geladen"]);
+      } catch (err) {
+        fehler += 1;
+        zeilen.push([...basis, "", "", `Fehler: ${(err as Error).message}`]);
+      }
+    }
+    nach = typeof inhalt.next_after === "number" ? inhalt.next_after : undefined;
+  } while (nach !== undefined);
+  if (!exklusivSchreiben(verzeichnis, zeilen.map((z) => z.map(csvZelle).join(";")).join("\n") + "\n")) {
+    throw new Error(`${verzeichnis} ist während des Laufs entstanden — ein zweiter Lauf? Nichts überschrieben.`);
+  }
+  if (fehler > 0) process.exitCode = 1;
+  return { plan_id: planId, written: verzeichnis, entries: zeilen.length - 1, downloaded: geladen, failed: fehler };
 }
 
 /**
