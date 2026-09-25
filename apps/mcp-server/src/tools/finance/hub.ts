@@ -43,8 +43,12 @@ type JsonObject = { [key: string]: JsonValue };
 // ── Bausteine der Definition (wie definitions.ts, ohne dessen Import: der
 //    Kreis definitions → hub → definitions bliebe sonst stehen) ─────────────
 const FINANCE_PERMISSIONS = ["manage_finances", "manage_club_settings"] as const;
-function policy(): PermissionPolicy {
-  return { all_of: [], any_of: [...FINANCE_PERMISSIONS], owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance-hub"] };
+// buchhaltung-16-01: view_finances reads (tax auditor, tax advisor) and never
+// writes — the finance-service decides the same by the kind of request.
+const READ_PERMISSIONS = [...FINANCE_PERMISSIONS, "view_finances"] as const;
+function policy(risk: Risk): PermissionPolicy {
+  const any_of = risk === "read" ? [...READ_PERMISSIONS] : [...FINANCE_PERMISSIONS];
+  return { all_of: [], any_of, owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance-hub"] };
 }
 function route(method: ComvenioHttpMethod, path: string, purpose?: K14BackendRoute["purpose"]): K14BackendRoute {
   return { method, service: "finance", normalized_path_template: path, purpose: purpose ?? (method === "GET" ? "read" : "mutation") };
@@ -275,7 +279,8 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "approve_entries", method: "POST", template: "/reports/cash/{report_id}/approve-entries", path: (i) => `/reports/cash/${str(i, "report_id")}/approve-entries`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
     // Die Freigabe schreibt die Buchungen des Zeitraums fest.
     { op: "approve", method: "POST", template: "/reports/cash/{report_id}/approve", path: (i) => `/reports/cash/${str(i, "report_id")}/approve`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
-    { op: "tax_report", method: "GET", template: "/clubs/{club_id}/reports/tax", path: (i) => `${club(i)}/reports/tax`, risk: "read", shape: { year }, query: (i) => optional(i, ["year"]), multiDepartment: true },
+    // Stores a TaxReport on every call — a write, even though it is a GET (16-01 R1-4).
+    { op: "tax_report", method: "GET", template: "/clubs/{club_id}/reports/tax", path: (i) => `${club(i)}/reports/tax`, risk: "write", shape: { year }, query: (i) => optional(i, ["year"]), multiDepartment: true },
   ] },
   "cai.finance.27.department_transfer": { source: "department-transfer", ops: [
     { op: "list", method: "GET", template: "/clubs/{club_id}/department-transfers", path: (i) => `${club(i)}/department-transfers`, risk: "read", shape: { status: z.string().max(20).optional() }, query: (i) => optional(i, ["status"]), multiDepartment: true },
@@ -446,10 +451,12 @@ function operationDefinition(op: Op): K14OperationDefinition {
   return {
     operation: op.op,
     required_scopes: scopes(op.risk),
-    permission_policy: policy(),
+    permission_policy: policy(op.risk),
     risk_class: actionRisk(op.risk),
     execution_gate: gate(op.risk),
-    backend_routes: [...(op.preflight ? [route("GET", op.preflight.template, "preflight")] : []), route(op.method, op.template)],
+    // The purpose follows the risk, not the method: a GET that stores
+    // something (tax_report) is a mutation (16-01 R2-2).
+    backend_routes: [...(op.preflight ? [route("GET", op.preflight.template, "preflight")] : []), route(op.method, op.template, op.risk === "read" ? "read" : "mutation")],
     external_effect: op.risk === "read" ? "none" : "comvenio_private",
   };
 }

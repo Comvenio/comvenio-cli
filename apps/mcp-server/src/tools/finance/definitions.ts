@@ -11,15 +11,18 @@ import { K14_FINANCE_ACTION_IDS, type K14ActionDefinition, type K14ActionId, typ
 // dem Agenten Einblick ohne Schreibrecht, obwohl sein eigenes Vereinsrecht beides
 // erlauben würde.
 const FINANCE_PERMISSIONS = ["manage_finances", "manage_club_settings"] as const;
-function policy(): PermissionPolicy {
-  return { all_of: [], any_of: [...FINANCE_PERMISSIONS], owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance"] };
+// buchhaltung-16-01: view_finances opens the reading operations only.
+const READ_PERMISSIONS = [...FINANCE_PERMISSIONS, "view_finances"] as const;
+function policy(risk: ActionRisk): PermissionPolicy {
+  const any_of = risk === "read" ? [...READ_PERMISSIONS] : [...FINANCE_PERMISSIONS];
+  return { all_of: [], any_of, owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: ["k14:finance"] };
 }
 function route(method: ComvenioHttpMethod, path: string, purpose?: K14BackendRoute["purpose"]): K14BackendRoute {
   return { method, service: "finance", normalized_path_template: path, purpose: purpose ?? (method === "GET" ? "read" : "mutation") };
 }
 function operation(input: { name: string; scopes: OAuthScope[]; risk: ActionRisk; gate?: K14ExecutionGate; routes: K14BackendRoute[] }): K14OperationDefinition {
   const gate = input.gate ?? (input.risk === "read" ? "inline" : input.risk === "critical_write" ? "confirmation" : "write_safety");
-  return { operation: input.name, required_scopes: input.scopes, permission_policy: policy(), risk_class: input.risk, execution_gate: gate, backend_routes: input.routes, external_effect: input.risk === "read" ? "none" : "comvenio_private" };
+  return { operation: input.name, required_scopes: input.scopes, permission_policy: policy(input.risk), risk_class: input.risk, execution_gate: gate, backend_routes: input.routes, external_effect: input.risk === "read" ? "none" : "comvenio_private" };
 }
 const read = (name: string, path: string, extraRoutes: K14BackendRoute[] = []) => operation({ name, scopes: ["finance.read"], risk: "read", routes: [route("GET", path), ...extraRoutes] });
 const write = (name: string, method: ComvenioHttpMethod, path: string, critical = false, routes?: K14BackendRoute[]) =>

@@ -190,7 +190,7 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
 /** Lesende Teiloperationen des Hubs — alles andere schreibt und bekommt einen Idempotenz-Schlüssel. */
 const READ_OPERATIONS = new Set([
   "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard",
-  "opening_versions", "cash_book", "reconciliation", "versions", "tax_report", "account_choices", "result",
+  "opening_versions", "cash_book", "reconciliation", "versions", "account_choices", "result",
   "open_items", "resolutions", "version", "download", "event", "event_reconciliation", "series_comparison",
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
   // bereich-als-sicht-04
