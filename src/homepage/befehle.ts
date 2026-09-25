@@ -302,6 +302,8 @@ export async function liveAlsBulk(client: HomepageClient, clubId: string): Promi
           title: s.title ?? null,
           is_visible: s.is_visible ?? true,
           bg_image_url: s.bg_image_url ?? null,
+          // 10 §4.3/§4.7: stored widths travel with the section, also where they do not take effect (D24).
+          spalten_breiten: s.spalten_breiten ?? null,
           widgets: widgets
             .filter((w) => w.section_id === s.id)
             .sort((a, b) => (a.slot_index ?? 0) - (b.slot_index ?? 0) || (a.position ?? 0) - (b.position ?? 0))

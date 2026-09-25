@@ -1,0 +1,166 @@
+{
+  "beschreibung": "TC-CC-17-01 mit Reihe (17-designer-struktur 10 §4.2): eine Reihe im Gerüst ist ein eigener Knoten „Reihe · 65 / 35“ mit ihren Spalten als Kindern; eine Sektion mit zwei Widgets in two-col bleibt ein Sektionsknoten. Kopie in web-page designer/__fixtures__/baum.",
+  "tab": {
+    "id": "t1",
+    "label": "Start",
+    "slug": "start",
+    "visibility_scope": "public"
+  },
+  "sections": [
+    {
+      "id": "s1",
+      "sort_order": 0,
+      "layout": "full",
+      "style_variant": "default",
+      "is_visible": true,
+      "title": null
+    },
+    {
+      "id": "s2",
+      "sort_order": 1,
+      "layout": "two-col",
+      "style_variant": "default",
+      "is_visible": true,
+      "title": "Termine",
+      "spalten_breiten": [
+        65,
+        35
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "id": "w1",
+      "section_id": "s1",
+      "kind": "custom_html",
+      "slot_index": 0,
+      "position": 0,
+      "version": 1,
+      "config": {
+        "html": "<section aria-label=\"Oben\"><div data-reihe=\"\" data-spalten=\"2\" data-breiten=\"65 35\"><h2 data-slot=\"titel\"></h2><div aria-label=\"Termine\"><p data-slot=\"text\"></p></div></div><div data-reihe=\"\" data-spalten=\"2\"><p data-slot=\"links\"></p><p data-slot=\"rechts\"></p></div></section>",
+        "slots": {
+          "titel": {
+            "kind": "heading",
+            "config": {
+              "text": "Titel"
+            }
+          },
+          "text": {
+            "kind": "text",
+            "config": {}
+          },
+          "links": {
+            "kind": "text",
+            "config": {}
+          },
+          "rechts": {
+            "kind": "text",
+            "config": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "e1",
+      "section_id": "s2",
+      "kind": "events_list",
+      "slot_index": 0,
+      "position": 1,
+      "version": 1,
+      "config": {}
+    },
+    {
+      "id": "i1",
+      "section_id": "s2",
+      "kind": "image",
+      "slot_index": 1,
+      "position": 2,
+      "version": 1,
+      "config": {}
+    }
+  ],
+  "erwartet": [
+    [
+      "bereich",
+      "t1/w1/bereich:0",
+      "Oben",
+      null,
+      [
+        [
+          "reihe",
+          "t1/w1/reihe:0",
+          "Reihe · 65 / 35",
+          "▥",
+          [
+            [
+              "slot",
+              "t1/w1/slot:titel",
+              "titel",
+              "H2",
+              []
+            ],
+            [
+              "bereich",
+              "t1/w1/bereich:1",
+              "Termine",
+              null,
+              [
+                [
+                  "slot",
+                  "t1/w1/slot:text",
+                  "text",
+                  "T",
+                  []
+                ]
+              ]
+            ]
+          ]
+        ],
+        [
+          "reihe",
+          "t1/w1/reihe:1",
+          "Reihe · gleich",
+          "▥",
+          [
+            [
+              "slot",
+              "t1/w1/slot:links",
+              "links",
+              "T",
+              []
+            ],
+            [
+              "slot",
+              "t1/w1/slot:rechts",
+              "rechts",
+              "T",
+              []
+            ]
+          ]
+        ]
+      ]
+    ],
+    [
+      "sektion",
+      "t1/s2",
+      "Termine",
+      null,
+      [
+        [
+          "widget",
+          "t1/e1",
+          "events_list",
+          "E",
+          []
+        ],
+        [
+          "widget",
+          "t1/i1",
+          "Bild",
+          "B",
+          []
+        ]
+      ]
+    ]
+  ]
+}

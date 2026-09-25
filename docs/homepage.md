@@ -499,6 +499,23 @@ Absatz und jeden Knopf im Formular ändern.
   die Stufe behält ihre feste Spaltenzahl, und nur kleinere Werte fallen darunter
   (`.raster[data-spalten="1"]{grid-template-columns:1fr}`).
   Andere Werte entfernt der Dienst; `verify` meldet sie als `invalid_spalten`.
+- **Elemente nebeneinander stellen: die Reihe** (Lastenheft 17-designer-struktur 10).
+  `<div data-reihe data-spalten="2" data-breiten="65 35">` mit genau so vielen
+  Kindern wie Spalten ist ein Plattform-Baustein, den die CLI selbst schreiben
+  darf. Die Plattform stellt die Kinder ab 640 px nebeneinander, darunter
+  untereinander; das Vereins-CSS muss die Reihe nicht kennen. `data-breiten` sind
+  2–4 ganze Prozentwerte in 5er-Schritten, jeder mindestens 20, Summe 100, und
+  genau so viele wie `data-spalten` — sonst entfernt der Dienst das Attribut
+  (gleich breit), und `verify`, `slot set` und `geruest set --dry-run` melden
+  `invalid_breiten`. Keine Reihe in einer Reihe; ein Inline-Stil an der Reihe
+  mit `display`, `grid*` oder `all` wird entfernt. `homepage tree` zeigt sie als
+  „Reihe · 2 Spalten · 65/35“.
+- **Reihe als Sektion:** Eine Sektion mit mehrspaltigem `layout` und höchstens so
+  vielen Widgets wie Spalten ist eine Reihe. Ihre Breiten stehen in
+  `spalten_breiten` (gleiche Form wie `data-breiten`, etwa `[65, 35]`) und wirken
+  nur, wenn die Anzahl zur Spaltenzahl des Layouts passt; sonst bleiben sie
+  gespeichert, und das Layout gilt wie ohne Breiten. `homepage export` und
+  `apply` tragen das Feld mit.
 - **Eine bestehende Seite nachrüsten, ohne sie neu anzulegen:** nur das Gerüst
   eines Widgets tauschen, Slots bleiben —
   `comvenio homepage geruest set <reiter> --widget <id> --file geruest.html --dry-run`,

@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
-import { baum, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
+import { baum, baumAlsText, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
 import { convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
@@ -328,5 +328,46 @@ describe("invalid_spalten", () => {
     ].join("\n");
     const befunde = pruefeGeruest(html, { t: { kind: "heading", config: { text: "T" } } }).filter((b) => b.klasse === "invalid_spalten");
     expect(befunde.map((b) => [b.regel, b.schwere, b.text, b.zeile])).toEqual([["R4", "warnung", "7", 2], ["R4", "warnung", "zwei", 3]]);
+  });
+});
+
+// ── 17-designer-struktur 10 §4.7: rows in the CLI ─────────────────────────────
+
+describe("Reihen (10 §4.7)", () => {
+  const fall = JSON.parse(readFileSync(join(FIXTURES, "baum", "reihe.json"), "utf8"));
+
+  test("homepage tree names a row with its columns and widths; a row section too", () => {
+    const text = baumAlsText(baum(fall.tab, fall.sections, fall.widgets));
+    expect(text).toContain("[▥] Reihe · 2 Spalten · 65/35");
+    expect(text).toContain("[▥] Reihe · 2 Spalten · gleich");
+    expect(text).toContain("Termine (Reihe · 2 Spalten · 65/35)");
+  });
+
+  test("invalid_breiten: wrong form, wrong count or no columns warn at the line; a fitting row stays silent", () => {
+    const html = [
+      '<div data-reihe data-spalten="2" data-breiten="65 35"><h1 data-slot="t"></h1></div>',
+      '<div data-reihe data-spalten="2" data-breiten="70 20"></div>',
+      '<div data-reihe data-spalten="3" data-breiten="65 35"></div>',
+      '<div data-reihe data-breiten="65 35"></div>',
+    ].join("\n");
+    const befunde = pruefeGeruest(html, { t: { kind: "heading", config: { text: "T" } } }).filter((b) => b.klasse === "invalid_breiten");
+    expect(befunde.map((b) => [b.regel, b.schwere, b.zeile])).toEqual([["R4", "warnung", 2], ["R4", "warnung", 3], ["R4", "warnung", 4]]);
+  });
+
+  test("homepage export carries spalten_breiten, also where they do not take effect (D24)", async () => {
+    const sections = [...fall.sections, { id: "s3", sort_order: 2, layout: "three-col", title: null, spalten_breiten: [65, 35] }];
+    const client: HomepageClient = {
+      async get<T>(_service: string, path: string): Promise<T> {
+        if (path.endsWith("/tabs")) return [{ ...fall.tab, position: 0 }] as T;
+        if (path.endsWith("/sections")) return sections as T;
+        if (path.endsWith("/widgets")) return fall.widgets as T;
+        throw new Error(`unerwartet ${path}`);
+      },
+      async patch<T>(): Promise<T> {
+        throw new Error("kein Schreiben");
+      },
+    };
+    const { tabs } = await liveAlsBulk(client, "c");
+    expect(tabs[0].sections.map((s) => s.spalten_breiten)).toEqual([null, [65, 35], [65, 35]]);
   });
 });

@@ -39,6 +39,8 @@ export interface BulkSection {
   title?: string | null;
   is_visible?: boolean;
   bg_image_url?: string | null;
+  /** Column widths of a row section (10 §4.3): 2–4 whole percentages, multiples of 5, each ≥ 20, sum 100. */
+  spalten_breiten?: number[] | null;
   widgets: BulkWidget[];
 }
 
