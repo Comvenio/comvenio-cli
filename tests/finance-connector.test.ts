@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { callFinance, FINANCE_AREAS, findConfirmation, mapClassic } from "../src/commands/finance-connector.ts";
+import { callFinance, checkClubChoice, FINANCE_AREAS, findConfirmation, mapClassic } from "../src/commands/finance-connector.ts";
 import type { CliConnectorClient } from "../src/mcp/client.ts";
 
 // `comvenio finance` über die OAuth-Anmeldung: die klassischen Befehle auf
@@ -43,6 +43,23 @@ describe("finance über OAuth: Zuordnung", () => {
   test("unbekannte Aktion verweist auf finance run", () => {
     expect(() => mapClassic("kassenbuch", undefined, {})).toThrow(/finance run/);
     expect(Object.keys(FINANCE_AREAS)).toContain("audit-export");
+  });
+});
+
+describe("finance über OAuth: Vereinswahl", () => {
+  const grant = "0ec34e70-999a-47c4-a1b1-bdb293110fa5";
+
+  test("--club eines anderen Vereins scheitert, statt still den Verein der Anmeldung zu lesen", () => {
+    expect(() => checkClubChoice("9ea9d95a-0c79-4efb-b873-696fc07cfd96", grant)).toThrow(/wirkt unter der OAuth-Anmeldung nicht/);
+  });
+
+  test("ohne bekannten Verein der Anmeldung zählt --club nie als bestätigt", () => {
+    expect(() => checkClubChoice(grant, undefined)).toThrow(/unbekannt/);
+  });
+
+  test("ohne --club oder mit dem Verein der Anmeldung läuft der Befehl", () => {
+    expect(() => checkClubChoice(undefined, grant)).not.toThrow();
+    expect(() => checkClubChoice(grant, grant)).not.toThrow();
   });
 });
 

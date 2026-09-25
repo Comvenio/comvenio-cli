@@ -120,6 +120,19 @@ function fileInput(opts: FinanceCommandOpts): JsonObject {
 }
 
 /**
+ * `--club` under the OAuth login: the grant decides the club, so a different
+ * one must fail instead of being ignored. It was ignored silently — a read
+ * "for club X" returned the grant's club and looked like X's data.
+ */
+export function checkClubChoice(requested: string | undefined, grantClub: string | undefined): void {
+  if (requested === undefined || requested === grantClub) return;
+  throw new Error(
+    `--club ${requested} wirkt unter der OAuth-Anmeldung nicht: Der Verein kommt aus der Anmeldung`
+    + ` (${grantClub ?? "unbekannt"}). Für einen anderen Verein mit "comvenio login" dort anmelden.`,
+  );
+}
+
+/**
  * Die klassischen finance-Befehle auf die Connector-Aktionen. `club_id` fehlt
  * mit Absicht: Der Verein kommt aus dem OAuth-Grant, nie aus der Eingabe.
  */

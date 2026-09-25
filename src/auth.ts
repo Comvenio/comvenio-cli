@@ -76,7 +76,7 @@ export type ComvenioCliState = {
   hasDeviceToken: boolean;
   /** Für Aufrufer, die den alten Namen lesen. */
   authMode: "device_token" | "oauth";
-  oauth?: { clientId: string; resource: string; scopes: string[] };
+  oauth?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
 };
 
 export class AuthError extends Error {
