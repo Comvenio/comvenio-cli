@@ -933,3 +933,101 @@ describe("buchhaltung-14-02: Kontoübertrag", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: `/clubs/${clubId}/account-transfers`, query: { money_account_id: cashId, plan_id: planId } });
   });
 });
+
+// Fremdprüfung Runde 2 (Teil B): echte Bestätigung, geschlossene Vorschau, Abteilungskontext.
+describe("buchhaltung-14-02: Fremdprüfung Runde 2", () => {
+  const cashId = "c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1";
+  const bankId = "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2";
+  const youthCashId = "e4e4e4e4-e4e4-4e4e-8e4e-e4e4e4e4e4e4";
+  const youthBankId = "f5f5f5f5-f5f5-4f5f-8f5f-f5f5f5f5f5f5";
+  const defaultDepartmentId = "abababab-abab-4bab-8bab-abababababab";
+  const youthId = "cdcdcdcd-cdcd-4cdc-8cdc-cdcdcdcdcdcd";
+  const accounts: JsonValue = [
+    { id: cashId, club_id: clubId, name: "Barkasse", kind: "CASH", department_id: defaultDepartmentId },
+    { id: bankId, club_id: clubId, name: "Raiffeisenbank Girokonto", kind: "BANK", department_id: defaultDepartmentId },
+    { id: youthCashId, club_id: clubId, name: "Jugendkasse", kind: "CASH", department_id: youthId },
+    { id: youthBankId, club_id: clubId, name: "Jugendkonto", kind: "BANK", department_id: youthId },
+  ];
+  const body = { from_account_id: cashId, to_account_id: bankId, amount_cents: 4700000, transfer_date: "2025-12-31", reason: "Einzahlungen aus der Barkasse 2025" };
+  type Preview = { preview: { preview_id: string; confirmation_token: string; effects: Record<string, unknown>[] } };
+
+  test("B4: Vorschau → Token → bestätigter Aufruf bucht genau einmal; ein fremdes Token oder eine geänderte Eingabe bucht nicht", async () => {
+    const { calls, client } = recording((call): JsonValue => call.method === "GET" ? accounts : { id: "d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3" });
+    const tools = createK14ToolSet({ client, write_safety: allowWrites });
+    const first = await tools.execute({ action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_create", data: { ...body } }, context, capability_snapshot: manager });
+    expect(first.status).toBe("confirmation_required");
+    const { preview_id, confirmation_token } = (first.result as Preview).preview;
+
+    // Another amount with the token of the first preview: no write.
+    await expect(tools.execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "transfer_create", data: { ...body, amount_cents: 1 }, confirmation: { preview_id, confirmation_token } }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+
+    const second = await createK14ToolSet({ client, write_safety: allowWrites }).execute({ action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_create", data: { ...body } }, context, capability_snapshot: manager });
+    const token = (second.result as Preview).preview;
+    const tools2 = createK14ToolSet({ client, write_safety: allowWrites });
+    await expect(tools2.execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "transfer_create", data: { ...body }, confirmation: { preview_id: token.preview_id, confirmation_token: token.confirmation_token } }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+
+    const confirmed = await tools.execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "transfer_create", data: { ...body }, confirmation: { preview_id, confirmation_token } }, context, capability_snapshot: manager,
+    });
+    expect(confirmed.status).toBe("completed");
+    expect(calls.filter((call) => call.method === "POST")).toHaveLength(1);
+  });
+
+  test("B2: ohne Datum nennt die Vorschau den Buchungstag, und der POST trägt denselben", async () => {
+    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
+    const { calls, client } = recording((call): JsonValue => call.method === "GET" ? accounts : { id: "d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3" });
+    const tools = createK14ToolSet({ client, write_safety: allowWrites });
+    const withoutDate = { from_account_id: cashId, to_account_id: bankId, amount_cents: 1000, reason: "Wechselgeld" };
+    const first = await tools.execute({ action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_create", data: { ...withoutDate } }, context, capability_snapshot: manager });
+    const preview = (first.result as Preview).preview;
+    expect(preview.effects.find((effect) => effect.type === "account_transfer")).toMatchObject({ transfer_date: today });
+    await tools.execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "transfer_create", data: { ...withoutDate }, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } }, context, capability_snapshot: manager,
+    });
+    expect(calls.find((call) => call.method === "POST")!.body).toMatchObject({ transfer_date: today });
+  });
+
+  test("B2: scheitert das Lesen der Konten oder des Übertrags, gibt es keine Vorschau und keinen POST", async () => {
+    const failing: ComvenioApiClient & { posts: number } = {
+      timeout_ms: 15_000,
+      posts: 0,
+      async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> {
+        if (request.method === "POST") { failing.posts += 1; return {} as T; }
+        throw createConnectorError({ code: "UPSTREAM_UNAVAILABLE", message: "Finance-Service nicht erreichbar", request_id: context.request_id, retryable: true });
+      },
+    };
+    await expect(createK14ToolSet({ client: failing, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_create", data: { ...body } }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+    await expect(createK14ToolSet({ client: failing, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_reverse", transfer_id: "d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3", data: { reason: "Falscher Betrag" } }, context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+    expect(failing.posts).toBe(0);
+  });
+
+  test("B3: im Abteilungskontext nur Konten dieser Abteilung", async () => {
+    const youthContext: RequestContext = { ...context, department_id: youthId };
+    const youthManager: CapabilitySnapshot = { ...manager, department_ids: [youthId] };
+    const refused = recording((call): JsonValue => call.method === "GET" ? accounts : {});
+    await expect(createK14ToolSet({ client: refused.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account", input: { club_id: clubId, operation: "transfer_create", data: { ...body } }, context: youthContext, capability_snapshot: youthManager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(refused.calls.some((call) => call.method === "POST")).toBe(false);
+
+    const own = recording((call): JsonValue => call.method === "GET" ? accounts : { id: "d3d3d3d3-d3d3-4d3d-8d3d-d3d3d3d3d3d3" });
+    await createK14ToolSet({ client: own.client, confirmation: confirmAll, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.24.money_account",
+      input: { club_id: clubId, operation: "transfer_create", data: { ...body, from_account_id: youthCashId, to_account_id: youthBankId } }, context: youthContext, capability_snapshot: youthManager,
+    });
+    expect(own.calls.filter((call) => call.method === "POST")).toHaveLength(1);
+  });
+});

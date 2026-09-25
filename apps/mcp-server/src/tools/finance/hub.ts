@@ -34,7 +34,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { addK14Handler, assertHerkunft, assertTenant, request } from "./handlers.ts";
-import { accountTransferShow, periodDefaults, transferAccounts, transferCheck, unplannedCheck } from "./preview.ts";
+import { accountTransferShow, periodDefaults, transferAccounts, transferCheck, transferDateDefault, unplannedCheck } from "./preview.ts";
 import { redactFinanceValue } from "./privacy.ts";
 import type { K14ActionDefinition, K14ActionId, K14ActionSchemaContract, K14BackendRoute, K14ExecutionGate, K14OperationDefinition } from "./types.ts";
 
@@ -236,7 +236,7 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     // Buchungen auf „Geldtransit“, nur gemeinsam storniert (14-01).
     { op: "transfers", method: "GET", template: "/clubs/{club_id}/account-transfers", path: (i) => `${club(i)}/account-transfers`, risk: "read", shape: { money_account_id: uuid.optional(), plan_id: uuid.optional() }, query: (i) => optional(i, ["money_account_id", "plan_id"]), multiDepartment: true },
     { op: "transfer_show", method: "GET", template: "/clubs/{club_id}/account-transfers/{transfer_id}", path: (i) => `${club(i)}/account-transfers/${str(i, "transfer_id")}`, risk: "read", shape: { transfer_id: uuid }, multiDepartment: true },
-    { op: "transfer_create", method: "POST", template: "/clubs/{club_id}/account-transfers", path: (i) => `${club(i)}/account-transfers`, risk: "critical", shape: { data }, body: payload, check: transferCheck, preflight: transferAccountsOwn, multiDepartment: true },
+    { op: "transfer_create", method: "POST", template: "/clubs/{club_id}/account-transfers", path: (i) => `${club(i)}/account-transfers`, risk: "critical", shape: { data }, body: payload, check: transferCheck, prepare: async (i) => transferDateDefault(i), preflight: transferAccountsOwn, multiDepartment: true },
     { op: "transfer_reverse", method: "POST", template: "/clubs/{club_id}/account-transfers/{transfer_id}/reverse", path: (i) => `${club(i)}/account-transfers/${str(i, "transfer_id")}/reverse`, risk: "critical", shape: { transfer_id: uuid, data }, body: payload, preflight: transferOwn, multiDepartment: true },
     { op: "booking_accounts", method: "GET", template: `${BY_ID}/booking-accounts`, path: (i) => `${byId(i)}/booking-accounts`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind.optional(), node_id: nodeId.optional() }, query: (i) => optional(i, ["node_kind", "node_id"]), multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl) },
   ] },

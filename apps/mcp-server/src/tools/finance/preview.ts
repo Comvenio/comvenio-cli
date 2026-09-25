@@ -99,6 +99,11 @@ export async function transferAccounts(client: ComvenioApiClient, context: Reque
     if (!row || row.club_id !== context.club_id) {
       throw createConnectorError({ code: "TENANT_MISMATCH", message: "Geldkonto: Die Kennung gehört nicht zu diesem Verein.", request_id: context.request_id, retryable: false });
     }
+    // In a department context both accounts belong to that department — the
+    // service would decide by all the person's rights (review K14 R2-B3).
+    if (context.department_id && row.department_id !== context.department_id) {
+      throw createConnectorError({ code: "TENANT_MISMATCH", message: "Geldkonto: Das Konto gehört nicht zur gewählten Abteilung — für Konten mehrerer Abteilungen den vereinsweiten Kontext wählen.", request_id: context.request_id, retryable: false });
+    }
     return row;
   };
   return [find(fromId), find(toId)];
@@ -113,11 +118,14 @@ export async function accountTransferShow(client: ComvenioApiClient, context: Re
   return transfer;
 }
 
-function tenantOrNull<T>(promise: Promise<T>): Promise<T | null> {
-  return promise.catch((error: unknown) => {
-    if (error !== null && typeof error === "object" && (error as { code?: string }).code === "TENANT_MISMATCH") throw error;
-    return null;
-  });
+// The service books without a date on today (Europe/Berlin). The date goes
+// into the input before the preview and the confirmation digest, so the preview
+// shows the day that is booked (review K14 R2-B2).
+export function transferDateDefault(input: JsonObject): void {
+  const body = input.data;
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return;
+  if (typeof body.transfer_date === "string" && body.transfer_date.length > 0) return;
+  body.transfer_date = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
 }
 
 // 04 DC-8: ungeplant ohne Rubrik und ohne Kategorie fällt vor jedem Aufruf auf —
@@ -360,8 +368,11 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   // buchhaltung-14-02 TC-01: Konten, Betrag, Datum und Grund vor dem Klick.
   if (definition.action_id === "cai.finance.24.money_account" && operation.operation === "transfer_create") {
     transferCheck(data, context);
+    transferDateDefault(data);
     const body = record(data.data ?? null);
-    const accounts = client ? await tenantOrNull(transferAccounts(client, context, String(body.from_account_id), String(body.to_account_id))) : null;
+    // Only the first call reads (the confirmed one has no client); a failed
+    // read refuses the preview instead of showing an empty one (review K14 R2-B2).
+    const accounts = client ? await transferAccounts(client, context, String(body.from_account_id), String(body.to_account_id)) : null;
     effects.push({
       type: "account_transfer", accounts_read: accounts !== null,
       from_account_id: body.from_account_id ?? null, from_account_name: accounts?.[0].name ?? null, from_account_kind: accounts?.[0].kind ?? null,
@@ -373,7 +384,7 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   // TC-04: the reversal names both entries by their journal numbers.
   if (definition.action_id === "cai.finance.24.money_account" && operation.operation === "transfer_reverse") {
     const transferId = typeof data.transfer_id === "string" ? data.transfer_id : null;
-    const transfer = client && transferId ? await tenantOrNull(accountTransferShow(client, context, transferId)) : null;
+    const transfer = client && transferId ? await accountTransferShow(client, context, transferId) : null;
     effects.push({
       type: "account_transfer_reversal", transfer_id: transferId, transfer_read: transfer !== null,
       status: transfer?.status ?? null, amount_cents: transfer?.amount_cents ?? null, transfer_date: transfer?.transfer_date ?? null,
