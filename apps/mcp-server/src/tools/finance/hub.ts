@@ -454,7 +454,9 @@ function operationDefinition(op: Op): K14OperationDefinition {
     permission_policy: policy(op.risk),
     risk_class: actionRisk(op.risk),
     execution_gate: gate(op.risk),
-    backend_routes: [...(op.preflight ? [route("GET", op.preflight.template, "preflight")] : []), route(op.method, op.template)],
+    // The purpose follows the risk, not the method: a GET that stores
+    // something (tax_report) is a mutation (16-01 R2-2).
+    backend_routes: [...(op.preflight ? [route("GET", op.preflight.template, "preflight")] : []), route(op.method, op.template, op.risk === "read" ? "read" : "mutation")],
     external_effect: op.risk === "read" ? "none" : "comvenio_private",
   };
 }

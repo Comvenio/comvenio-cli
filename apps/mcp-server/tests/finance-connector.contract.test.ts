@@ -646,3 +646,18 @@ describe("K16-01: das Leserecht Finanzen einsehen", () => {
     expect(calls.length).toBe(1);
   });
 });
+
+
+describe("K16-01 R2: tax_report schreibt", () => {
+  test("Risiko, Scope, Gate und Routen-Zweck sind die einer schreibenden Operation", async () => {
+    const { HUB_ACTION_DEFINITIONS } = await import("../src/tools/finance/index.ts");
+    const operation = Object.values(HUB_ACTION_DEFINITIONS)
+      .map((definition) => definition.operations["tax_report"])
+      .find((entry) => entry !== undefined)!;
+    expect(operation.risk_class).toBe("reversible_write");
+    expect(operation.required_scopes).toEqual(["finance.write"]);
+    expect(operation.execution_gate).toBe("write_safety");
+    expect(operation.backend_routes.at(-1)!.purpose).toBe("mutation");
+    expect(operation.permission_policy.any_of).not.toContain("view_finances");
+  });
+});
