@@ -46,9 +46,24 @@ export type Schritt =
   | { art: "uebertrag"; key: string; von: string; nach: string; cents: number; datum: string; grund: string }
   | { art: "probe"; key: string }
   | { art: "auszug"; key: string; konto: string; cents: number }
-  | { art: "abschluss"; key: string };
+  | { art: "bericht"; key: string; konto: string }
+  | { art: "einreichen"; key: string; konto: string }
+  | { art: "freigabe"; key: string }
+  | { art: "pruefung"; key: string }
+  | { art: "abschluss"; key: string }
+  | { art: "pruefung_nach"; key: string };
 
 export class LaufFehler extends Error {}
+
+/**
+ * Not an error: the run stops at a point only a person can pass — the
+ * second person's approval, a missing procedure documentation. A rerun
+ * continues there.
+ */
+export class LaufWartet extends Error {}
+
+/** The audit rules that hold a year open: every error, and the notes an import can and must fulfil. */
+export const PRUEFTOR_HINWEISE = new Set(["ENTRY_NOT_APPROVED", "RECONCILIATION_OPEN", "ENTRY_WITHOUT_ACCOUNT"]);
 
 const SAMMEL = (jahr: number) => `Übernahme aus Rechenschaftsbericht ${jahr} (Sammelbuchung, Belege beim Verein)`;
 const DIFFERENZ = "Übernahmedifferenz";
@@ -84,7 +99,7 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
 
     const posten = j.kategorien.map((k, n) => ({ art: "posten" as const, key: `${y}:posten:${k.zeile}`, name: k.text, rubrik: k.rubrik, sphaere: k.sphaere, nummer: n + 1 }));
     if (i > 0 && j.stichtagsdifferenzen.length) {
-      posten.push({ art: "posten", key: `${y}:posten:differenz`, name: DIFFERENZ, rubrik: "Übernahme", sphaere: null, nummer: posten.length + 1 });
+      posten.push({ art: "posten", key: `${y}:posten:differenz`, name: DIFFERENZ, rubrik: "Übernahme", sphaere: "IDEELL", nummer: posten.length + 1 });
     }
     schritte.push(...posten);
 
@@ -124,7 +139,17 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
       grund: `Übernahmekorrektur ${y} (${n + 1} von ${j.korrektur.uebertraege.length}): Bestand laut Vermögensübersicht` }));
     schritte.push({ art: "probe", key: `${y}:probe` });
     for (const k of geld) schritte.push({ art: "auszug", key: `${y}:auszug:${k.name}`, konto: k.name, cents: k.ende_cents as number });
+    // The cash audit of the year: one report per money account, submitted;
+    // the second person approves its entries (four eyes) — then the audit
+    // gate, the close without force, and the audit of the closed year.
+    for (const k of geld) {
+      schritte.push({ art: "bericht", key: `${y}:bericht:${k.name}`, konto: k.name });
+      schritte.push({ art: "einreichen", key: `${y}:eingereicht:${k.name}`, konto: k.name });
+    }
+    schritte.push({ art: "freigabe", key: `${y}:freigabe` });
+    schritte.push({ art: "pruefung", key: `${y}:pruefung` });
     schritte.push({ art: "abschluss", key: `${y}:abschluss` });
+    schritte.push({ art: "pruefung_nach", key: `${y}:pruefung_nach` });
   });
   return schritte;
 }
@@ -195,7 +220,12 @@ function bruttoSoll(schritte: Schritt[], jahr: number): Record<string, { ein: nu
   return soll;
 }
 
-export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll: Protokoll, speichern: () => void): Protokoll {
+/**
+ * `freigabe` is the CLI of a second person, signed in under their own
+ * profile: it approves the entries of the cash reports (four eyes). Without
+ * it the run waits there.
+ */
+export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll: Protokoll, speichern: () => void, freigabe?: Cli): Protokoll {
   const fin = (area: string, op: string, input: object = {}, schritt?: string): any => {
     const schluessel = schritt ? ["--idempotency-key", schrittSchluessel(verein, schritt)] : [];
     const res = cli(["finance", "run", area, op, "--input", JSON.stringify(input), ...schluessel]);
@@ -206,11 +236,16 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
   const s = protokoll.schritte;
   const merke = (key: string, wert: unknown) => { s[key] = wert; speichern(); return wert; };
   const vermerke = (eintrag: Record<string, unknown>) => { protokoll.ereignisse.push({ zeit: new Date().toISOString(), ...eintrag }); speichern(); };
+  const pruefen = (planId: string) => fin("plan-period", "audit_check", { plan_id: planId }) as { rules: Array<{ code: string; severity: string; fulfilled: boolean; count: number; findings: Array<{ entry_id?: string; detail?: string }> }>; summary: Record<string, number> };
 
   try {
     const wer = cli(["whoami", "--json"]);
     if (wer?.clubId !== verein) {
       throw new LaufFehler(`Die CLI-Anmeldung steht auf ${wer?.clubId ?? "keinem Verein"}, nicht auf ${verein} — mit „comvenio login“ im Verein anmelden.`);
+    }
+    const zweite = freigabe?.(["whoami", "--json"]);
+    if (zweite && (zweite.clubId !== verein || !zweite.userId || zweite.userId === wer?.userId)) {
+      throw new LaufFehler(`Die Freigabe-Anmeldung muss eine andere Person im selben Verein sein (steht auf ${zweite.clubId}, ${zweite.email ?? zweite.userId}).`);
     }
     // The protocol belongs to exactly this input: a changed file never
     // continues a half-booked year (review R1-2).
@@ -402,16 +437,75 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           merke(x.key, x.cents);
           break;
         }
+        case "bericht": {
+          const y = jahrDes(x.key);
+          merke(x.key, fin("cash-report", "create", { data: { period_start: `${y}-01-01`, period_end: `${y}-12-31`, money_account_id: konten()[x.konto],
+            notes: `Kassenprüfung ${y} laut Rechenschaftsbericht (Übernahme)` } }, x.key).id);
+          break;
+        }
+        case "einreichen":
+          fin("cash-report", "submit", { report_id: s[`${jahrDes(x.key)}:bericht:${x.konto}`] }, x.key);
+          merke(x.key, true);
+          break;
+        case "freigabe": {
+          // Four eyes: the booking person never approves — a second person
+          // does, per cash report and for the few entries of the goods account.
+          const y = jahrDes(x.key);
+          const offen = () => pruefen(plan(x.key)).rules.find((r) => r.code === "ENTRY_NOT_APPROVED")?.findings ?? [];
+          const berichte = jahrVon(x.key).konten.filter((k) => k.art !== "IN_KIND").map((k) => s[`${y}:bericht:${k.name}`] as string);
+          if (offen().length && freigabe) {
+            const fin2 = (area: string, op: string, input: object, schritt: string) => {
+              const res = freigabe(["finance", "run", area, op, "--input", JSON.stringify(input), "--idempotency-key", schrittSchluessel(verein, schritt)]);
+              if (res?.status && res.status !== "completed") throw new LaufFehler(`Freigabe ${area} ${op}: ${JSON.stringify(res).slice(0, 400)}`);
+              return res?.result ?? res;
+            };
+            for (const bericht of berichte) {
+              fin2("cash-report", "approve_entries", { report_id: bericht, data: { note: `Kassenprüfung ${y}` } }, `${x.key}:${bericht}:eintraege`);
+              fin2("cash-report", "approve", { report_id: bericht, data: {} }, `${x.key}:${bericht}:bericht`);
+            }
+            for (const rest of offen()) {
+              if (rest.entry_id) freigabe(["finance", "entry-approve", rest.entry_id, "--notes", `Kassenprüfung ${y}`, "--json"]);
+            }
+          }
+          const bleibt = offen();
+          if (bleibt.length) {
+            throw new LaufWartet(`${y}: ${bleibt.length} Buchungen warten auf die Freigabe einer zweiten Person (Vier-Augen). `
+              + `Kassenberichte ${berichte.join(", ")}: je „finance run cash-report approve_entries“, dann „approve“; `
+              + `einzeln: ${bleibt.filter((b) => b.entry_id).slice(0, 5).map((b) => b.entry_id).join(", ")}${bleibt.length > 5 ? " …" : ""}. `
+              + "Oder den Lauf mit --freigabe-profil <profil> einer angemeldeten zweiten Person fortsetzen.");
+          }
+          merke(x.key, "freigegeben");
+          break;
+        }
+        case "pruefung": {
+          // The audit gate before the close: every error and the notes an
+          // import must fulfil hold the year open (a closed year changes no more).
+          const bericht = pruefen(plan(x.key));
+          const offen = bericht.rules.filter((r) => !r.fulfilled && (r.severity !== "NOTE" || PRUEFTOR_HINWEISE.has(r.code)));
+          vermerke({ key: x.key, art: "pruefung", summary: bericht.summary, offen: offen.map((r) => ({ code: r.code, severity: r.severity, count: r.count, beispiel: r.findings[0]?.detail })) });
+          if (offen.length) {
+            throw new LaufWartet(`Prüfung ${jahrDes(x.key)} vor dem Abschluss: ${offen.map((r) => `${r.code} (${r.count || r.severity})`).join(", ")} — erst beheben, dann fortsetzen.`);
+          }
+          merke(x.key, bericht.summary);
+          break;
+        }
         case "abschluss": {
           const y = jahrDes(x.key);
           const p = (fin("plan-period", "list") as any[]).find((q) => q.id === plan(x.key));
-          // Collective entries of a report the general meeting discharged: no
-          // second person approves them one by one — hence force, said in the note.
+          // Without force: every entry carries its approval, so the close needs none.
           if (p?.status !== "CLOSED") {
-            fin("plan-lifecycle", "close", { plan_id: plan(x.key), force: true,
-              note: `Übernahme aus Rechenschaftsbericht ${y}; Sammelbuchungen, von der Hauptversammlung entlastet` }, x.key);
+            fin("plan-lifecycle", "close", { plan_id: plan(x.key), force: false,
+              note: `Übernahme aus Rechenschaftsbericht ${y}; Kassenprüfung und Freigabe erteilt` }, x.key);
           }
           merke(x.key, "geschlossen");
+          break;
+        }
+        case "pruefung_nach": {
+          const bericht = pruefen(plan(x.key));
+          const fehler = bericht.rules.filter((r) => !r.fulfilled && r.severity !== "NOTE");
+          vermerke({ key: x.key, art: "pruefung_nach", summary: bericht.summary, offen: fehler.map((r) => ({ code: r.code, count: r.count })) });
+          if (fehler.length) throw new LaufFehler(`Prüfung des geschlossenen Jahres ${jahrDes(x.key)}: ${fehler.map((r) => r.code).join(", ")}`);
+          merke(x.key, bericht.summary);
           break;
         }
       }
@@ -420,12 +514,12 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
     return protokoll;
   } catch (fehler) {
     // Every stop is on record before it propagates (review R1-6).
-    vermerke({ fehler: (fehler as Error).message });
+    vermerke(fehler instanceof LaufWartet ? { wartet: fehler.message } : { fehler: (fehler as Error).message });
     throw fehler;
   }
 }
 
-function argumente(argv: string[]): { dateien: string[]; verein?: string; vorschau: boolean; protokoll?: string; gates?: string } {
+function argumente(argv: string[]): { dateien: string[]; verein?: string; vorschau: boolean; protokoll?: string; gates?: string; freigabeProfil?: string } {
   const out = { dateien: [] as string[], vorschau: false } as ReturnType<typeof argumente>;
   const wert = (i: number): string => {
     const v = argv[i];
@@ -439,6 +533,7 @@ function argumente(argv: string[]): { dateien: string[]; verein?: string; vorsch
     else if (a === "--nur-vorschau") out.vorschau = true;
     else if (a === "--protokoll") out.protokoll = wert(++i);
     else if (a === "--gates") out.gates = wert(++i);
+    else if (a === "--freigabe-profil") out.freigabeProfil = wert(++i);
     else throw new LaufFehler(`Unbekanntes Argument: ${a}`);
   }
   return out;
@@ -466,16 +561,22 @@ if (import.meta.main) {
       pruefeGate(args.verein, existsSync(gates) ? readFileSync(gates, "utf8") : "", true);
       const protokoll: Protokoll = existsSync(ziel) ? JSON.parse(readFileSync(ziel, "utf8")) : { verein: args.verein, schritte: {}, ereignisse: [] };
       if (protokoll.verein !== args.verein) throw new LaufFehler(`Das Protokoll ${ziel} gehört zum Verein ${protokoll.verein}.`);
-      const cli: Cli = (a) => {
-        const p = Bun.spawnSync(["bun", "run", "src/index.ts", ...a], { cwd: cliDir, stdout: "pipe", stderr: "pipe" });
+      const cliMit = (profil?: string): Cli => (a) => {
+        const env = { ...process.env, ...(profil ? { COMVENIO_CLI_PROFILE: profil } : {}) };
+        const p = Bun.spawnSync(["bun", "run", "src/index.ts", ...a], { cwd: cliDir, stdout: "pipe", stderr: "pipe", env });
         const out = p.stdout.toString().trim();
         if (p.exitCode !== 0) throw new LaufFehler(`CLI ${a.slice(0, 4).join(" ")} → exit ${p.exitCode}: ${(p.stderr.toString() || out).slice(0, 800)}`);
         return JSON.parse(out);
       };
-      laufen(jahre, args.verein, cli, protokoll, () => writeFileSync(ziel, JSON.stringify(protokoll, null, 2)));
+      laufen(jahre, args.verein, cliMit(), protokoll, () => writeFileSync(ziel, JSON.stringify(protokoll, null, 2)),
+        args.freigabeProfil ? cliMit(args.freigabeProfil) : undefined);
       console.log(`Übernahme abgeschlossen → ${ziel}`);
     }
   } catch (fehler) {
+    if (fehler instanceof LaufWartet) {
+      console.log(`Wartet: ${fehler.message}`);
+      process.exit(3);
+    }
     console.error(`Abbruch: ${(fehler as Error).message}`);
     process.exit(1);
   }

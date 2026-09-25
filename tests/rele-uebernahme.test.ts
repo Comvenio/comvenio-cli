@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { type Cli, laufen, planen, pruefeGate, schrittSchluessel, type Uebernahme } from "../scripts/rele/uebernahme.ts";
+import { type Cli, LaufWartet, laufen, planen, pruefeGate, schrittSchluessel, type Uebernahme } from "../scripts/rele/uebernahme.ts";
 
 // buchhaltung-14-04 §4.2: the run over a finance service kept in memory —
 // synthetic years 2031/2032, no club data.
@@ -51,13 +51,16 @@ const JAHR_2: Uebernahme = {
  * every successful call: throwing there is a crash after the service acted
  * and before the run could note it.
  */
-function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => boolean; kapitalVersatz?: number } = {}) {
+function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => boolean; kapitalVersatz?: number; ohneVerfahrensdoku?: boolean; zweitePerson?: string } = {}) {
   let n = 0;
   const id = (p: string) => `${p}-${++n}`;
   const plaene: any[] = [];
   const konten: any[] = [];
   const posten: Array<{ id: string; plan: string; name: string; position_number: number }> = [];
-  const buchungen: Array<{ id: string; plan: string; konto: string; rev: number; exp: number; datum: string; text: string; position?: string; transfer?: string }> = [];
+  const buchungen: Array<{ id: string; plan: string; konto: string; rev: number; exp: number; datum: string; text: string; position?: string; transfer?: string; von?: string; frei?: string }> = [];
+  const berichte: Array<{ id: string; konto: string; jahr: number; status: string }> = [];
+  // Manual entries carry the four-eyes duty; the entries of a transfer do not.
+  const offen = (plan: string) => buchungen.filter((b) => b.plan === plan && !b.transfer && !b.frei);
   const uebertraege: any[] = [];
   const anfang: Record<string, any> = {};
   const aufrufe: string[][] = [];
@@ -72,8 +75,31 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
         period_end_balance_cents: k.kind === "IN_KIND" ? null : o.opening_balance_cents + rev - exp };
     }),
   });
-  const antwort = (area: string, op: string, i: any): unknown => {
+  const antwort = (area: string, op: string, i: any, wer: string): unknown => {
+    const freigeben = (b: (typeof buchungen)[number]) => {
+      if (b.von === wer) return false;
+      if (plaene.find((x) => x.id === b.plan)?.status !== "ACTIVE") return false;
+      b.frei = wer;
+      return true;
+    };
     switch (`${area} ${op}`) {
+      case "plan-period audit_check": {
+        const regeln = [
+          { code: "ENTRY_NOT_APPROVED", severity: "NOTE", findings: offen(i.plan_id).map((b) => ({ entry_id: b.id, detail: "ohne Freigabe" })) },
+          { code: "PROCEDURE_DOC_MISSING", severity: "ERROR", findings: optionen.ohneVerfahrensdoku ? [{ detail: "keine Fassung der Verfahrensdokumentation" }] : [] },
+          { code: "SELF_ISSUED", severity: "NOTE", findings: [{ detail: "Eigenbeleg" }] },
+        ].map((r) => ({ ...r, fulfilled: r.findings.length === 0, count: r.findings.length }));
+        return { rules: regeln, summary: { errors: regeln.filter((r) => r.severity === "ERROR" && !r.fulfilled).length } };
+      }
+      case "cash-report create": { const b = { id: id("bericht"), konto: i.data.money_account_id, jahr: Number(i.data.period_start.slice(0, 4)), status: "DRAFT" }; berichte.push(b); return b; }
+      case "cash-report submit": { const b = berichte.find((x) => x.id === i.report_id)!; b.status = "SUBMITTED"; return b; }
+      case "cash-report approve_entries": {
+        const b = berichte.find((x) => x.id === i.report_id)!;
+        const plan = planVon(b.jahr);
+        return { approved: buchungen.filter((x) => x.plan === plan && x.konto === b.konto && !x.transfer && !x.frei).filter(freigeben).length };
+      }
+      case "cash-report approve": { const b = berichte.find((x) => x.id === i.report_id)!; b.status = "APPROVED"; return b; }
+      case "entry approve_one": { const b = buchungen.find((x) => x.id === i.entry_id)!; if (!freigeben(b)) throw new Error("Four-eyes principle"); return b; }
       case "plan-period list": return plaene;
       case "plan-period positions": return posten.filter((p) => p.plan === i.plan_id);
       case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null, available_capital_cents: i.data.available_capital_cents, notes: i.data.notes }; plaene.push(p); return p; }
@@ -89,7 +115,14 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
         for (const z of ende) anfang[`${p.id}:${z.account.id}`] = { opening_date: `${p.year}-01-01`, opening_balance_cents: z.period_end_balance_cents };
         return p;
       }
-      case "plan-lifecycle close": { const p = plaene.find((x) => x.id === i.plan_id); p.status = "CLOSED"; p.force = i.force; return p; }
+      case "plan-lifecycle close": {
+        const p = plaene.find((x) => x.id === i.plan_id);
+        // Like the service: without force, open approvals refuse the close.
+        if (!i.force && offen(p.id).length) throw new Error(`${offen(p.id).length} booking entries still await approval — use force=true`);
+        p.status = "CLOSED";
+        p.force = i.force;
+        return p;
+      }
       case "plan-period position_create": { const p = { id: id("pos"), plan: i.plan_id, name: i.data.name, position_number: i.data.position_number }; posten.push(p); return p; }
       case "money-account list": return konten;
       case "money-account create": { const k = { id: id("konto"), name: i.data.name, kind: i.data.kind }; konten.push(k); return k; }
@@ -109,22 +142,24 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
       }
       case "entry entry_create": {
         const plan = posten.find((p) => p.id === i.position_id)?.plan as string;
-        const b = { id: id("buchung"), plan, konto: i.data.money_account_id, rev: i.data.revenue_cents ?? 0, exp: i.data.expense_cents ?? 0, datum: i.data.booking_date, text: i.data.description, position: i.position_id };
+        const b = { id: id("buchung"), plan, konto: i.data.money_account_id, rev: i.data.revenue_cents ?? 0, exp: i.data.expense_cents ?? 0, datum: i.data.booking_date, text: i.data.description, position: i.position_id, von: wer };
         buchungen.push(b);
         return b;
       }
       default: throw new Error(`Unbekannt im Testdienst: ${area} ${op}`);
     }
   };
-  const cli: Cli = (args) => {
+  const cliFuer = (wer: string): Cli => (args) => {
     aufrufe.push(args);
-    if (args[0] === "whoami") return { clubId: club };
+    if (args[0] === "whoami") return { clubId: club, userId: wer, email: `${wer}@verein.test` };
+    // The classic single approval: finance entry-approve <id>.
+    if (args[1] === "entry-approve") return { status: "completed", result: antwort("entry", "approve_one", { entry_id: args[2] }, wer) };
     const [, , area = "", op = "", , roh] = args;
-    const ergebnis = antwort(area, op, JSON.parse(roh ?? "{}"));
+    const ergebnis = antwort(area, op, JSON.parse(roh ?? "{}"), wer);
     if (optionen.absturz?.(area, op)) throw new Error(`Absturz nach ${area} ${op}`);
     return { status: "completed", result: ergebnis };
   };
-  return { cli, plaene, buchungen, aufrufe, konten, posten, uebertraege };
+  return { cli: cliFuer("kassier"), zweit: cliFuer(optionen.zweitePerson ?? "pruefer"), plaene, buchungen, aufrufe, konten, posten, uebertraege, berichte };
 }
 
 const neu = (verein = DEV) => ({ verein, schritte: {} as Record<string, unknown>, ereignisse: [] as Array<Record<string, unknown>> });
@@ -189,22 +224,22 @@ describe("Übernahme: Gate", () => {
 describe("Übernahme: Lauf", () => {
   test("TC-05 zwei Jahre: Probe je Geldkonto, Sachwerte nach Summen, beide Haushalte geschlossen", () => {
     const d = dienst();
-    const p = laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {});
-    expect(d.plaene.map((x) => [x.year, x.status, x.force])).toEqual([[2031, "CLOSED", true], [2032, "CLOSED", true]]);
+    const p = laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {}, d.zweit);
+    expect(d.plaene.map((x) => [x.year, x.status, x.force])).toEqual([[2031, "CLOSED", false], [2032, "CLOSED", false]]);
     expect(p.schritte["2031:probe"]).toBe("bestanden");
     expect(p.schritte["2032:probe"]).toBe("bestanden");
   });
 
   test("TC-11 eine benannte Stichtagsdifferenz wird zum 1.1. als Übernahmedifferenz gebucht", () => {
     const d = dienst();
-    laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {});
+    laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {}, d.zweit);
     const diff = d.buchungen.filter((b) => b.text.startsWith("Übernahmedifferenz"));
     expect(diff.map((b) => [b.datum, b.exp])).toEqual([["2032-01-01", 86]]);
   });
 
   test("TC-11 dieselbe Differenz ohne Eintrag bricht vor der ersten Buchung des Jahres ab", () => {
     const d = dienst();
-    expect(() => laufen([JAHR_1, { ...JAHR_2, stichtagsdifferenzen: [] }], DEV, d.cli, neu(), () => {}))
+    expect(() => laufen([JAHR_1, { ...JAHR_2, stichtagsdifferenzen: [] }], DEV, d.cli, neu(), () => {}, d.zweit))
       .toThrow(/Girokonto: abgeleiteter Anfangsbestand 331000 ct, laut Bericht 330914 ct/);
     expect(d.buchungen.some((b) => b.datum.startsWith("2032"))).toBe(false);
   });
@@ -212,22 +247,22 @@ describe("Übernahme: Lauf", () => {
   test("TC-06 ein fremder Haushalt des Jahres bricht ab, bevor etwas gebucht wird", () => {
     const d = dienst();
     d.plaene.push({ id: "fremd", year: 2031, status: "ACTIVE", department_id: null });
-    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {})).toThrow(/schon ein Haushalt \(fremd\)/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/schon ein Haushalt \(fremd\)/);
     expect(d.buchungen).toEqual([]);
   });
 
   test("ein zweiter Lauf mit dem eigenen Protokoll setzt fort und bucht nichts doppelt", () => {
     const d = dienst();
     const p = neu();
-    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit);
     const anzahl = d.buchungen.length;
-    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit);
     expect(d.buchungen.length).toBe(anzahl);
   });
 
   test("jeder Schreibschritt trägt einen festen Schlüssel aus Verein und Schritt", () => {
     const d = dienst();
-    laufen([JAHR_1], DEV, d.cli, neu(), () => {});
+    laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit);
     const buchung = d.aufrufe.find((a) => a[3] === "entry_create") as string[];
     expect(buchung.slice(-2)).toEqual(["--idempotency-key", schrittSchluessel(DEV, "2031:buchung:3:Girokonto")]);
     expect(schrittSchluessel(DEV, "x")).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
@@ -236,9 +271,44 @@ describe("Übernahme: Lauf", () => {
     expect(d.aufrufe.filter((a) => a[3] === "reconciliation").every((a) => !a.includes("--idempotency-key"))).toBe(true);
   });
 
+  test("Vier Augen: ohne zweite Person wartet der Lauf vor dem Abschluss, und das Protokoll sagt worauf", () => {
+    const d = dienst();
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(LaufWartet);
+    expect(d.plaene[0].status).toBe("ACTIVE");
+    expect(String(p.ereignisse.at(-1)?.wartet)).toMatch(/^2031: 7 Buchungen warten auf die Freigabe einer zweiten Person/);
+    // The second person continues the same protocol; nothing is booked twice.
+    const anzahl = d.buchungen.length;
+    laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit);
+    expect(d.buchungen.length).toBe(anzahl);
+    expect(d.plaene[0].status).toBe("CLOSED");
+    expect(d.buchungen.filter((b) => !b.transfer).every((b) => b.frei === "pruefer")).toBe(true);
+    expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "APPROVED"]);
+  });
+
+  test("Vier Augen: die Freigabe-Anmeldung darf nicht dieselbe Person sein", () => {
+    const d = dienst(DEV, { zweitePerson: "kassier" });
+    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/andere Person im selben Verein/);
+    expect(d.plaene).toEqual([]);
+  });
+
+  test("Prüftor: ohne Verfahrensdokumentation wird nicht abgeschlossen", () => {
+    const d = dienst(DEV, { ohneVerfahrensdoku: true });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Prüfung 2031 vor dem Abschluss: PROCEDURE_DOC_MISSING \(1\)/);
+    expect(d.plaene[0].status).toBe("ACTIVE");
+    const tor = p.ereignisse.find((e) => e.art === "pruefung") as any;
+    expect(tor.offen).toEqual([{ code: "PROCEDURE_DOC_MISSING", severity: "ERROR", count: 1, beispiel: "keine Fassung der Verfahrensdokumentation" }]);
+  });
+
+  test("die Übernahmedifferenz trägt eine Sphäre (SPHERE_MISSING ist ein Fehler)", () => {
+    const posten = planen([JAHR_1, JAHR_2]).find((s) => s.key === "2032:posten:differenz") as any;
+    expect(posten.sphaere).toBe("IDEELL");
+  });
+
   test("die Anmeldung muss auf dem Verein stehen", () => {
     const d = dienst("0ec34e70-999a-47c4-a1b1-bdb293110fa5");
-    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {})).toThrow(/Anmeldung steht auf 0ec34e70/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/Anmeldung steht auf 0ec34e70/);
     expect(d.aufrufe).toEqual([["whoami", "--json"]]);
   });
 
@@ -246,9 +316,9 @@ describe("Übernahme: Lauf", () => {
     let buchungen = 0;
     const d = dienst(DEV, { absturz: (area, op) => area === "entry" && op === "entry_create" && ++buchungen === 3 });
     const p = neu();
-    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {})).toThrow(/Absturz nach entry entry_create/);
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz nach entry entry_create/);
     const nachAbsturz = d.buchungen.length;
-    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {});
+    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {}, d.zweit);
     expect(p.schritte["2032:abschluss"]).toBe("geschlossen");
     // The third entry exists once and was taken over, not booked again.
     expect(p.ereignisse.filter((e) => e.uebernommen).length).toBe(1);
@@ -266,14 +336,14 @@ describe("Übernahme: Lauf", () => {
       }
       return false;
     } });
-    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}))
+    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit))
       .toThrow(/Probe 2031 nicht bestanden .*Girokonto \{"einnahmen":\{"soll":136000,"ist":136700\}/);
   });
 
   test("R1-2 ein geänderter Stand setzt ein Protokoll nicht fort", () => {
     const d = dienst(DEV, { absturz: (area, op) => area === "entry" && op === "entry_create" });
     const p = neu();
-    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz/);
     const geaendert = { ...JAHR_1, kategorien: JAHR_1.kategorien.map((k) => (k.zeile === 3 ? { ...k, rubrik: "Beiträge" } : k)) };
     expect(() => laufen([geaendert], DEV, dienst().cli, p, () => {})).toThrow(/haben sich seit dem ersten Lauf geändert/);
   });
@@ -282,9 +352,9 @@ describe("Übernahme: Lauf", () => {
     let einmal = true;
     const d = dienst(DEV, { absturz: (area, op) => area === "plan-period" && op === "create" && einmal && !(einmal = false) });
     const p = neu();
-    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz nach plan-period create/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz nach plan-period create/);
     expect(p.schritte["2031:haushalt"]).toBeUndefined();
-    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit);
     expect(d.plaene.map((x) => [x.year, x.status])).toEqual([[2031, "CLOSED"]]);
   });
 
@@ -292,8 +362,8 @@ describe("Übernahme: Lauf", () => {
     let einmal = true;
     const d = dienst(DEV, { absturz: (area, op) => area === "plan-lifecycle" && op === "next_period" && einmal && !(einmal = false) });
     const p = neu();
-    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {})).toThrow(/Absturz nach plan-lifecycle next_period/);
-    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {});
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz nach plan-lifecycle next_period/);
+    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {}, d.zweit);
     expect(d.plaene.map((x) => [x.year, x.status])).toEqual([[2031, "CLOSED"], [2032, "CLOSED"]]);
   });
 
@@ -301,9 +371,9 @@ describe("Übernahme: Lauf", () => {
     let einmal = true;
     const d = dienst(DEV, { absturz: (area, op) => area === "plan-period" && op === "create" && einmal && !(einmal = false) });
     const p = neu();
-    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz/);
     d.plaene[0].notes = "Haushalt 2031 (Kassier)";
-    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/schon ein Haushalt/);
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/schon ein Haushalt/);
   });
 
   test("R2-8 gleiche Überträge bekommen beim Fortsetzen je ihre eigene Kennung", () => {
@@ -311,8 +381,8 @@ describe("Übernahme: Lauf", () => {
     let n = 0;
     const d = dienst(DEV, { absturz: (area, op) => area === "money-account" && op === "transfer_create" && ++n === 2 });
     const p = neu();
-    expect(() => laufen([zwei], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
-    laufen([zwei], DEV, d.cli, p, () => {});
+    expect(() => laufen([zwei], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Absturz/);
+    laufen([zwei], DEV, d.cli, p, () => {}, d.zweit);
     expect(p.schritte["2031:transit:0"]).not.toBe(p.schritte["2031:transit:1"]);
     expect(d.uebertraege.length).toBe(3);
   });
@@ -320,13 +390,13 @@ describe("Übernahme: Lauf", () => {
   test("R2-7 das Wechselgeld steht im Laufprotokoll", () => {
     const d = dienst();
     const p = neu();
-    laufen([{ ...JAHR_1, wechselgeld: [{ konto: "Barkasse", zeile: 5, betrag_cents: 600000 }] }], DEV, d.cli, p, () => {});
+    laufen([{ ...JAHR_1, wechselgeld: [{ konto: "Barkasse", zeile: 5, betrag_cents: 600000 }] }], DEV, d.cli, p, () => {}, d.zweit);
     expect(p.ereignisse.find((e) => e.art === "wechselgeld")?.eintraege).toEqual([{ konto: "Barkasse", zeile: 5, betrag_cents: 600000 }]);
   });
 
   test("R1-5 ein falsches Startkapital hält vor der ersten Buchung des Folgejahres an", () => {
     const d = dienst(DEV, { kapitalVersatz: 100 });
-    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {})).toThrow(/Startkapital 2032: 343100 ct, erwartet 343000 ct/);
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/Startkapital 2032: 343100 ct, erwartet 343000 ct/);
     expect(d.buchungen.some((b) => b.datum.startsWith("2032"))).toBe(false);
   });
 
@@ -334,7 +404,7 @@ describe("Übernahme: Lauf", () => {
     const d = dienst();
     const p = neu();
     const falsch = { ...JAHR_1, korrektur: { abweichung: {}, uebertraege: [] } };
-    expect(() => laufen([falsch], DEV, d.cli, p, () => {})).toThrow(/Probe 2031/);
+    expect(() => laufen([falsch], DEV, d.cli, p, () => {}, d.zweit)).toThrow(/Probe 2031/);
     const probe = p.ereignisse.find((e) => e.art === "probe") as any;
     expect(probe.werte.find((w: any) => w.konto === "Barkasse").endbestand).toEqual({ soll: 12000, ist: 15000 });
     expect(String(p.ereignisse.at(-1)?.fehler)).toMatch(/^Probe 2031 nicht bestanden/);
@@ -343,7 +413,7 @@ describe("Übernahme: Lauf", () => {
   test("eine nicht bestandene Probe lässt den Haushalt aktiv", () => {
     const d = dienst();
     const falsch = { ...JAHR_1, korrektur: { abweichung: {}, uebertraege: [] } };
-    expect(() => laufen([falsch], DEV, d.cli, neu(), () => {})).toThrow(/Probe 2031 nicht bestanden .*Barkasse .*"endbestand":\{"soll":12000,"ist":15000\}/);
+    expect(() => laufen([falsch], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/Probe 2031 nicht bestanden .*Barkasse .*"endbestand":\{"soll":12000,"ist":15000\}/);
     expect(d.plaene[0].status).toBe("ACTIVE");
   });
 });
