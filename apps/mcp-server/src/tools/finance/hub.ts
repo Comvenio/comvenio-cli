@@ -279,7 +279,8 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "approve_entries", method: "POST", template: "/reports/cash/{report_id}/approve-entries", path: (i) => `/reports/cash/${str(i, "report_id")}/approve-entries`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
     // Die Freigabe schreibt die Buchungen des Zeitraums fest.
     { op: "approve", method: "POST", template: "/reports/cash/{report_id}/approve", path: (i) => `/reports/cash/${str(i, "report_id")}/approve`, risk: "critical", shape: { report_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: reportOwn },
-    { op: "tax_report", method: "GET", template: "/clubs/{club_id}/reports/tax", path: (i) => `${club(i)}/reports/tax`, risk: "read", shape: { year }, query: (i) => optional(i, ["year"]), multiDepartment: true },
+    // Stores a TaxReport on every call — a write, even though it is a GET (16-01 R1-4).
+    { op: "tax_report", method: "GET", template: "/clubs/{club_id}/reports/tax", path: (i) => `${club(i)}/reports/tax`, risk: "write", shape: { year }, query: (i) => optional(i, ["year"]), multiDepartment: true },
   ] },
   "cai.finance.27.department_transfer": { source: "department-transfer", ops: [
     { op: "list", method: "GET", template: "/clubs/{club_id}/department-transfers", path: (i) => `${club(i)}/department-transfers`, risk: "read", shape: { status: z.string().max(20).optional() }, query: (i) => optional(i, ["status"]), multiDepartment: true },
