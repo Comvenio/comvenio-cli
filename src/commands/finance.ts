@@ -5,7 +5,7 @@ import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 import { connector } from "./action.ts";
-import { callFinance, mapClassic, runHub, runPruefung } from "./finance-connector.ts";
+import { callFinance, mapClassic, runBelege, runHub, runPruefung } from "./finance-connector.ts";
 
 // Vereins-Buchhaltung des finance-service: Jahresplan, Budgetposten, Buchungen.
 //
@@ -474,6 +474,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .example("  $ comvenio finance run money-account list")
     .example("  $ comvenio finance run cash-report create --input '{\"data\": {\"period_start\": \"2026-01-01\", \"period_end\": \"2026-01-31\", \"money_account_id\": \"…\"}}'")
     .example("  $ comvenio finance pruefung --year 2025 --out pruefung-2025")
+    .example("  $ comvenio finance belege --year 2025 --out belege-2025")
     .example("  $ comvenio finance plan-list")
     .example("  $ comvenio finance plan-create --year 2026 --capital 500000")
     .example("  $ comvenio finance position-create --year 2026 --name Sommerfest --expense 120000")
@@ -489,6 +490,8 @@ export function registerFinanceCommands(cli: CAC): void {
           ? await runHub(via, id, operation, opts)
           : action === "pruefung"
           ? await runPruefung(via, opts, id)
+          : action === "belege"
+          ? await runBelege(via, opts, id)
           : await (async () => {
             const call = mapClassic(action, id, opts);
             return callFinance(via, call.actionId, call.input, { write: call.write, confirm: opts.confirm !== false });
@@ -496,7 +499,7 @@ export function registerFinanceCommands(cli: CAC): void {
         output(result, opts.json, () => JSON.stringify(result, null, 2));
         return;
       }
-      if (action === "run" || action === "pruefung") {
+      if (action === "run" || action === "pruefung" || action === "belege") {
         throw new Error(`finance ${action} läuft über die OAuth-Anmeldung: comvenio login`);
       }
       const client = createClient(state);
