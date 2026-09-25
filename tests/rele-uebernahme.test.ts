@@ -216,6 +216,12 @@ describe("Übernahme: Gate", () => {
     expect(() => pruefeGate(SVM, fremd, true)).toThrow(/keine Ausnahme/);
   });
 
+  test("eine eigene Schreibausnahme neben der Leseausnahme trägt den Lauf", () => {
+    const zwei = manifest("lesen").replace("  - id: andere-regel",
+      `      - id: sv-motzing-schreiben\n        club_id: ${SVM}\n        allow: [lesen, schreiben]\n  - id: andere-regel`);
+    expect(() => pruefeGate(SVM, zwei, true)).not.toThrow();
+  });
+
   test("der Comvenio-Verein braucht keine Ausnahme", () => {
     expect(() => pruefeGate(DEV, "", true)).not.toThrow();
   });

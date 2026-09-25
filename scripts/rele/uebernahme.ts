@@ -169,9 +169,11 @@ export function pruefeGate(verein: string, manifest: string, schreiben: boolean)
   }) as Array<{ id?: unknown; exceptions?: unknown }>;
   const gate = gates.find((g) => g?.id === "club-restriction");
   const ausnahmen = (Array.isArray(gate?.exceptions) ? gate.exceptions : []) as Array<{ club_id?: unknown; allow?: unknown }>;
-  const eintrag = ausnahmen.find((e) => e?.club_id === verein);
-  if (!eintrag) throw new LaufFehler(`Gate club-restriction: Für den Verein ${verein} steht keine Ausnahme im Gate-Manifest — kein Aufruf.`);
-  const erlaubt = Array.isArray(eintrag.allow) ? eintrag.allow.map(String) : [];
+  // One entry per stage (reading first, writing on its own): what any entry
+  // of the club allows is allowed.
+  const eintraege = ausnahmen.filter((e) => e?.club_id === verein);
+  if (!eintraege.length) throw new LaufFehler(`Gate club-restriction: Für den Verein ${verein} steht keine Ausnahme im Gate-Manifest — kein Aufruf.`);
+  const erlaubt = [...new Set(eintraege.flatMap((e) => (Array.isArray(e.allow) ? e.allow.map(String) : [])))];
   if (schreiben && !erlaubt.includes("schreiben")) {
     throw new LaufFehler(`Gate club-restriction: Die Ausnahme für ${verein} erlaubt nur ${erlaubt.join(", ") || "nichts"} — für den Lauf fehlt „schreiben“ (Stufe 2, eigene Freigabe des Betreibers).`);
   }
