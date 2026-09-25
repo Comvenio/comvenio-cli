@@ -60,6 +60,7 @@
         "title",
         "is_visible",
         "bg_image_url",
+        "spalten_breiten",
         "widgets"
       ],
       "layout_enum": [
@@ -80,7 +81,15 @@
         "gradient",
         "glass",
         "image"
-      ]
+      ],
+      "spalten_breiten": {
+        "type": "array von ganzen Zahlen oder null",
+        "rule": "2–4 Werte, jeder ein Vielfaches von 5 und mindestens 20, Summe 100. Wirkt nur, wenn die Anzahl der Spaltenzahl des Layouts entspricht (two-col 2, three-col 3, four-col 4, sidebar-*/asymmetric-* 2); sonst bleibt sie gespeichert und das Layout gilt wie ohne Breiten.",
+        "example": [
+          65,
+          35
+        ]
+      }
     },
     "widget": {
       "fields": [

@@ -7,6 +7,8 @@
 // The input is sanitized HTML, so a small tokenizer is enough — and unlike a
 // DOM it knows the line of every tag and text.
 
+import { breitenAusText } from "./reihen.ts";
+
 export interface GeruestBefund {
   klasse: string;
   regel: "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "ALT";
@@ -199,6 +201,14 @@ export function pruefeGeruest(
     // 09 §4.2: the service drops any column count but 1–4 silently.
     if ("data-spalten" in e.attrs && !/^[1-4]$/.test((e.attrs["data-spalten"] ?? "").trim())) {
       befunde.push(befund({ klasse: "invalid_spalten", regel: "R4", schwere: "warnung", zeile: e.zeile, text: e.attrs["data-spalten"] ?? "" }));
+    }
+    // 10 §4.2: widths in the 5 % grid, at least 20, sum 100, one per column — else the service drops them.
+    if ("data-breiten" in e.attrs) {
+      const werte = breitenAusText(e.attrs["data-breiten"] ?? "");
+      const spalten = (e.attrs["data-spalten"] ?? "").trim();
+      if (!werte || !/^[1-4]$/.test(spalten) || werte.length !== Number(spalten)) {
+        befunde.push(befund({ klasse: "invalid_breiten", regel: "R4", schwere: "warnung", zeile: e.zeile, text: e.attrs["data-breiten"] ?? "" }));
+      }
     }
   }
 

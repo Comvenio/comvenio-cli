@@ -11,6 +11,7 @@ import {
   pruefeReiter,
   type GeruestBefund,
 } from "./regeln.ts";
+import { breitenAusText, spaltenDesLayouts, wirksameBreiten } from "./reihen.ts";
 
 export * from "./regeln.ts";
 
@@ -63,6 +64,8 @@ export interface SectionRead {
   sort_order?: number;
   layout?: string;
   title?: string | null;
+  /** Column widths of a row section (17-designer-struktur 10 §4.3); effective only when the count fits the layout. */
+  spalten_breiten?: number[] | null;
 }
 
 export interface WidgetRead {
@@ -78,7 +81,7 @@ export interface WidgetRead {
 
 export interface BaumKnoten {
   pfad: string;
-  art: "reiter" | "sektion" | "widget" | "bereich" | "slot" | "alt";
+  art: "reiter" | "sektion" | "widget" | "bereich" | "reihe" | "slot" | "alt";
   name: string;
   beschriftung: string;
   kuerzel?: string;
@@ -125,12 +128,27 @@ const bereicheVon = (body: DomElement) =>
     return true;
   });
 
+/** Rows in document order, never inside a slot (designerModel.reihenIn, 10 §4.2). */
+const reihenVon = (body: DomElement) =>
+  Array.from(body.querySelectorAll("[data-reihe]")).filter((e) => {
+    for (let p = e.parentElement; p && p !== body; p = p.parentElement) {
+      if (p.hasAttribute("data-slot") || p.hasAttribute("data-widget-slot")) return false;
+    }
+    return true;
+  });
+
+/** „Reihe · 2 Spalten · 65/35“ or „… · gleich“ (10 §4.7). */
+export function reihenText(spalten: number, breiten: number[] | null): string {
+  return `Reihe · ${spalten} Spalten · ${breiten ? breiten.join("/") : "gleich"}`;
+}
+
 function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): { knoten: BaumKnoten[]; altformat: boolean } {
   const html = htmlVon(w);
   const body = dokument(html).body;
   const slots = slotsVon(w.config);
   const altformat = !istNeuesFormat(html);
   const bereiche = bereicheVon(body);
+  const reihen = reihenVon(body);
   const alle = Array.from(body.querySelectorAll("[data-widget-slot]"));
   const slug = tab.slug ?? tab.id;
 
@@ -162,6 +180,11 @@ function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): {
         const k = kind.getAttribute("data-widget-slot") ?? "";
         const art = artBeschriftung(k);
         r.push({ pfad: `${tab.id}/${w.id}/alt:${i}`, art: "alt", name: `${art.beschriftung} · Position ${i + 1}`, beschriftung: art.beschriftung, kuerzel: art.kuerzel, kind: k, altformat: true, befunde: [], kinder: [] });
+      } else if (kind.hasAttribute("data-reihe")) {
+        const spalten = Number(kind.getAttribute("data-spalten")) || kind.children.length;
+        const breiten = wirksameBreiten(breitenAusText(kind.getAttribute("data-breiten") ?? ""), spalten);
+        // The node name is the designer's („Reihe · 65 / 35“, TC-CC-17-01); the text output says the columns too (§4.7).
+        r.push({ pfad: `${tab.id}/${w.id}/reihe:${reihen.indexOf(kind)}`, art: "reihe", name: `Reihe · ${breiten ? breiten.join(" / ") : "gleich"}`, beschriftung: reihenText(spalten, breiten), kuerzel: "▥", altformat, befunde: [], kinder: besuche(kind) });
       } else if (label) {
         r.push({ pfad: `${tab.id}/${w.id}/bereich:${bereiche.indexOf(kind)}`, art: "bereich", name: label, beschriftung: "Bereich", altformat, befunde: [], kinder: besuche(kind) });
       } else {
@@ -213,8 +236,11 @@ export function baum(
         unter.push({ pfad: `${tab.id}/${w.id}`, art: "widget", name: w.title || art.beschriftung, beschriftung: art.beschriftung, kuerzel: art.kuerzel, kind: w.kind, befunde: [], kinder: [] });
       }
     }
+    // A section with several columns and no more widgets than columns is a row (10 §4.3).
+    const spalten = spaltenDesLayouts(s.layout ?? "full");
+    const alsReihe = spalten >= 2 && ws.length <= spalten ? reihenText(spalten, wirksameBreiten(s.spalten_breiten, spalten)) : null;
     if (durchsichtig) kinder.push(...unter);
-    else kinder.push({ pfad: `${tab.id}/${s.id}`, art: "sektion", name: s.title || "Sektion", beschriftung: s.layout ?? "", befunde: [], kinder: unter });
+    else kinder.push({ pfad: `${tab.id}/${s.id}`, art: "sektion", name: s.title || "Sektion", beschriftung: alsReihe ?? s.layout ?? "", befunde: [], kinder: unter });
   }
   return {
     pfad: tab.id,
@@ -231,8 +257,8 @@ export function baumAlsText(k: BaumKnoten, tiefe = 0): string {
   const zeile = [
     "  ".repeat(tiefe),
     k.kuerzel ? `[${k.kuerzel}] ` : "",
-    k.art === "slot" ? k.adresse ?? k.name : k.name,
-    k.art === "slot" ? ` · ${k.beschriftung}${k.style ? ` · Stil ${k.style}` : ""}` : k.art === "bereich" ? " (Bereich)" : "",
+    k.art === "slot" ? k.adresse ?? k.name : k.art === "reihe" ? k.beschriftung : k.name,
+    k.art === "slot" ? ` · ${k.beschriftung}${k.style ? ` · Stil ${k.style}` : ""}` : k.art === "bereich" ? " (Bereich)" : k.art === "sektion" && k.beschriftung.startsWith("Reihe") ? ` (${k.beschriftung})` : "",
     k.altformat && k.art !== "reiter" && k.art !== "bereich" ? " · Altformat" : "",
     k.ohneEintrag ? " · OHNE INHALT" : "",
     k.befunde.length && k.art !== "reiter" ? `  ⚠ ${k.befunde.map((b) => b.klasse).join(", ")}` : "",
