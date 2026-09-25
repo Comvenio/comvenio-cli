@@ -313,6 +313,25 @@ async function belegLaden(client: CliConnectorClient, entryId: string): Promise<
   return { bytes, sha256, content_type: String(datei.content_type ?? "application/octet-stream") };
 }
 
+/** Why an entry yields no file. The connector answers 403 and 404 alike
+ *  ("nicht verfügbar"), which hides receipt_not_attached and its reason
+ *  (contract 16-02 DC-3); the entry itself says it. Any other case keeps the
+ *  original error. */
+async function ohneDatei(client: CliConnectorClient, entryId: string, err: unknown): Promise<Error> {
+  const original = err instanceof Error ? err : new Error(String(err));
+  try {
+    const antwort = await callFinance(client, FINANCE_AREAS["detail"]!, { operation: "entry", entry_id: entryId }, { write: false });
+    const detail = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
+    const entry = (isObject(detail.entry) ? detail.entry : {}) as JsonObject;
+    if (entry.receipt_file_id) return original;
+    if (entry.receipt_exemption_reason) return new Error(`Buchung ${entryId} hat keine Belegdatei — Eigenbeleg: ${String(entry.receipt_exemption_reason)}`);
+    if (entry.reversal_of_entry_id) return new Error(`Buchung ${entryId} ist ein Storno und trägt keinen eigenen Beleg (Original ${String(entry.reversal_of_entry_id)}).`);
+    return new Error(`Buchung ${entryId} hat keine Belegdatei.`);
+  } catch {
+    return original;
+  }
+}
+
 const csvZelle = (wert: unknown): string => {
   const text = wert === null || wert === undefined ? "" : String(wert);
   return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -340,7 +359,7 @@ function exklusivSchreiben(pfad: string, daten: Buffer | string): boolean {
 export async function runBelege(client: CliConnectorClient, opts: FinanceCommandOpts, id?: string): Promise<JsonObject> {
   if (!opts.out) throw new Error("finance belege benötigt --out (eine Datei für einen Beleg, ein Verzeichnis für ein Jahr).");
   if (id && !opts.year) {
-    const datei = await belegLaden(client, id);
+    const datei = await belegLaden(client, id).catch(async (err: unknown) => { throw await ohneDatei(client, id, err); });
     if (!exklusivSchreiben(opts.out, datei.bytes)) throw new Error(`${opts.out} gibt es schon — nichts überschrieben.`);
     return { written: opts.out, size_bytes: datei.bytes.byteLength, sha256: datei.sha256, content_type: datei.content_type };
   }

@@ -94,6 +94,18 @@ describe("Finance Hub: Mandant und Vorprüfung", () => {
     expect(calls.map((call) => call.method)).toEqual(["GET"]);
   });
 
+  test("der Beleg einer Buchung eines anderen Vereins wird vor dem Laden abgewiesen (buchhaltung-16-02)", async () => {
+    const { calls, client } = recording(() => ({ id: entryId, club_id: otherClubId }));
+    const finance = createK14ToolSet({ client });
+    await expect(finance.execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_file", entry_id: entryId },
+      context,
+      capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual([`GET /entries/${entryId}`]);
+  });
+
   test("Korrekturschleife: eine Beanstandung wird nur über die Liste ihrer vereinseigenen Buchung zurückgezogen", async () => {
     const objectionId = "cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd";
     const input = { club_id: clubId, operation: "objection_withdraw", entry_id: entryId, objection_id: objectionId, data: { note: "Beleg gefunden" } };

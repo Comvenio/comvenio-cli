@@ -56,6 +56,29 @@ describe("finance belege", () => {
     }
   });
 
+  test("ein Beleg ohne Datei nennt den Grund aus der Buchung, statt „nicht verfügbar“", async () => {
+    const ordner = mkdtempSync(join(tmpdir(), "belege-"));
+    const verborgen = "Diese Comvenio-Ressource ist in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar.";
+    const mit = (entry: JsonLike) => ({
+      async callAction(input: { input: JsonLike }) {
+        if (input.input.operation === "receipt_file") throw new Error(verborgen);
+        if (input.input.operation === "entry") return { result: { entry } };
+        throw new Error(`unerwartet: ${String(input.input.operation)}`);
+      },
+    } as unknown as CliConnectorClient);
+    try {
+      const pfad = join(ordner, "beleg.pdf");
+      await expect(runBelege(mit({ receipt_exemption_reason: "Kassenbon verloren" }), { out: pfad }, "e2"))
+        .rejects.toThrow("Eigenbeleg: Kassenbon verloren");
+      await expect(runBelege(mit({ reversal_of_entry_id: "e1" }), { out: pfad }, "e4")).rejects.toThrow(/Storno/);
+      // An entry with a file keeps the connector's answer — nothing is guessed.
+      await expect(runBelege(mit({ receipt_file_id: "f1" }), { out: pfad }, "e1")).rejects.toThrow(verborgen);
+      expect(existsSync(pfad)).toBe(false);
+    } finally {
+      rmSync(ordner, { recursive: true, force: true });
+    }
+  });
+
   test("ein Jahr: alle Seiten, jede Buchung mit Zustand in belege.csv, nur lesend", async () => {
     const ordner = mkdtempSync(join(tmpdir(), "belege-"));
     const aufrufe: JsonLike[] = [];
