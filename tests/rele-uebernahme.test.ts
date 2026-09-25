@@ -46,14 +46,19 @@ const JAHR_2: Uebernahme = {
   einnahmen_cents: 10000, ausgaben_cents: 0, ergebnis_cents: 10000,
 };
 
-/** A finance service with just what the run needs. */
-function dienst(club = DEV) {
+/**
+ * A finance service with just what the run needs. `absturz` is asked after
+ * every successful call: throwing there is a crash after the service acted
+ * and before the run could note it.
+ */
+function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => boolean; kapitalVersatz?: number } = {}) {
   let n = 0;
   const id = (p: string) => `${p}-${++n}`;
   const plaene: any[] = [];
   const konten: any[] = [];
-  const posten: Record<string, string> = {};
-  const buchungen: Array<{ plan: string; konto: string; rev: number; exp: number; datum: string; text: string }> = [];
+  const posten: Array<{ id: string; plan: string; name: string; position_number: number }> = [];
+  const buchungen: Array<{ id: string; plan: string; konto: string; rev: number; exp: number; datum: string; text: string; position?: string; transfer?: string }> = [];
+  const uebertraege: any[] = [];
   const anfang: Record<string, any> = {};
   const aufrufe: string[][] = [];
   const planVon = (jahr: number) => plaene.find((p) => p.year === jahr)?.id as string;
@@ -67,43 +72,58 @@ function dienst(club = DEV) {
         period_end_balance_cents: k.kind === "IN_KIND" ? null : o.opening_balance_cents + rev - exp };
     }),
   });
-  const cli: Cli = (args) => {
-    aufrufe.push(args);
-    if (args[0] === "whoami") return { clubId: club };
-    const [, , area, op, , roh] = args;
-    const i = JSON.parse(roh ?? "{}");
-    const r = (result: unknown) => ({ status: "completed", result });
+  const antwort = (area: string, op: string, i: any): unknown => {
     switch (`${area} ${op}`) {
-      case "plan-period list": return r(plaene);
-      case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null }; plaene.push(p); return r(p); }
-      case "plan-period update": { const p = plaene.find((x) => x.id === i.plan_id); Object.assign(p, i.data); return r(p); }
+      case "plan-period list": return plaene;
+      case "plan-period positions": return posten.filter((p) => p.plan === i.plan_id);
+      case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null, available_capital_cents: i.data.available_capital_cents }; plaene.push(p); return p; }
+      case "plan-period update": { const p = plaene.find((x) => x.id === i.plan_id); Object.assign(p, i.data); return p; }
       case "plan-lifecycle next_period": {
         const alt = plaene.find((x) => x.id === i.plan_id);
-        const p = { id: id("plan"), year: alt.year + 1, status: "DRAFT", department_id: null };
+        const ende = abgleich(alt.id).accounts.filter((z) => z.account.kind !== "IN_KIND");
+        const p = { id: id("plan"), year: alt.year + 1, status: "DRAFT", department_id: null,
+          available_capital_cents: ende.reduce((s, z) => s + (z.period_end_balance_cents ?? 0), 0) + (optionen.kapitalVersatz ?? 0) };
         plaene.push(p);
         // D20: the new plan starts where the old one ended.
-        for (const z of abgleich(alt.id).accounts) if (z.account.kind !== "IN_KIND") anfang[`${p.id}:${z.account.id}`] = { opening_date: `${p.year}-01-01`, opening_balance_cents: z.period_end_balance_cents };
-        return r(p);
+        for (const z of ende) anfang[`${p.id}:${z.account.id}`] = { opening_date: `${p.year}-01-01`, opening_balance_cents: z.period_end_balance_cents };
+        return p;
       }
-      case "plan-lifecycle close": { const p = plaene.find((x) => x.id === i.plan_id); p.status = "CLOSED"; p.force = i.force; return r(p); }
-      case "plan-period position_create": { const pid = id("pos"); posten[pid] = i.plan_id; return r({ id: pid }); }
-      case "money-account list": return r(konten);
-      case "money-account create": { const k = { id: id("konto"), name: i.data.name, kind: i.data.kind }; konten.push(k); return r(k); }
-      case "money-account opening": anfang[`${i.plan_id}:${i.account_id}`] = i.data; return r(i.data);
-      case "money-account reconciliation": return r(abgleich(i.plan_id));
+      case "plan-lifecycle close": { const p = plaene.find((x) => x.id === i.plan_id); p.status = "CLOSED"; p.force = i.force; return p; }
+      case "plan-period position_create": { const p = { id: id("pos"), plan: i.plan_id, name: i.data.name, position_number: i.data.position_number }; posten.push(p); return p; }
+      case "money-account list": return konten;
+      case "money-account create": { const k = { id: id("konto"), name: i.data.name, kind: i.data.kind }; konten.push(k); return k; }
+      case "money-account opening": anfang[`${i.plan_id}:${i.account_id}`] = i.data; return i.data;
+      case "money-account reconciliation": return abgleich(i.plan_id);
+      case "money-account cash_book": return { days: [{ rows: buchungen.filter((b) => b.plan === i.plan_id && b.konto === i.money_account_id).map((b) => ({
+        entry_id: b.id, position_id: b.position, description: b.text, booking_date: b.datum, revenue_cents: b.rev || null, expense_cents: b.exp || null,
+        transfer_id: b.transfer ?? null, reversal_of_journal_number: null })) }] };
+      case "money-account transfers": return uebertraege.filter((t) => t.plan === i.plan_id);
       case "money-account transfer_create": {
         const plan = planVon(Number(i.data.transfer_date.slice(0, 4)));
-        buchungen.push({ plan, konto: i.data.from_account_id, rev: 0, exp: i.data.amount_cents, datum: i.data.transfer_date, text: i.data.reason });
-        buchungen.push({ plan, konto: i.data.to_account_id, rev: i.data.amount_cents, exp: 0, datum: i.data.transfer_date, text: i.data.reason });
-        return r({ id: id("uebertrag") });
+        const t = { id: id("uebertrag"), plan, status: "BOOKED", ...i.data };
+        uebertraege.push(t);
+        buchungen.push({ id: id("buchung"), plan, konto: i.data.from_account_id, rev: 0, exp: i.data.amount_cents, datum: i.data.transfer_date, text: i.data.reason, transfer: t.id });
+        buchungen.push({ id: id("buchung"), plan, konto: i.data.to_account_id, rev: i.data.amount_cents, exp: 0, datum: i.data.transfer_date, text: i.data.reason, transfer: t.id });
+        return t;
       }
-      case "entry entry_create":
-        buchungen.push({ plan: posten[i.position_id] as string, konto: i.data.money_account_id, rev: i.data.revenue_cents ?? 0, exp: i.data.expense_cents ?? 0, datum: i.data.booking_date, text: i.data.description });
-        return r({ id: id("buchung") });
+      case "entry entry_create": {
+        const plan = posten.find((p) => p.id === i.position_id)?.plan as string;
+        const b = { id: id("buchung"), plan, konto: i.data.money_account_id, rev: i.data.revenue_cents ?? 0, exp: i.data.expense_cents ?? 0, datum: i.data.booking_date, text: i.data.description, position: i.position_id };
+        buchungen.push(b);
+        return b;
+      }
       default: throw new Error(`Unbekannt im Testdienst: ${area} ${op}`);
     }
   };
-  return { cli, plaene, buchungen, aufrufe, konten };
+  const cli: Cli = (args) => {
+    aufrufe.push(args);
+    if (args[0] === "whoami") return { clubId: club };
+    const [, , area = "", op = "", , roh] = args;
+    const ergebnis = antwort(area, op, JSON.parse(roh ?? "{}"));
+    if (optionen.absturz?.(area, op)) throw new Error(`Absturz nach ${area} ${op}`);
+    return { status: "completed", result: ergebnis };
+  };
+  return { cli, plaene, buchungen, aufrufe, konten, posten, uebertraege };
 }
 
 const neu = (verein = DEV) => ({ verein, schritte: {} as Record<string, unknown>, ereignisse: [] as Array<Record<string, unknown>> });
@@ -134,16 +154,30 @@ describe("Übernahme: Vorschau", () => {
 });
 
 describe("Übernahme: Gate", () => {
-  const manifest = `gates:\n  - id: club-restriction\n    exceptions:\n      - id: sv-motzing-finanz-uebernahme-lesen\n        club_id: ${SVM}   # SV Motzing\n        allow: [lesen]\n`;
+  const manifest = (allow: string, extra = "") => [
+    "# Core-Gates — Comvenio", "", "```yaml", "gates:", "  - id: club-restriction", "    rule: nur Comvenio",
+    "    exceptions:", "      - id: sv-motzing-finanz-uebernahme-lesen", `        club_id: ${SVM}   # SV Motzing`, extra,
+    `        allow: [${allow}]`, "        deny: [löschen]", "  - id: andere-regel", "    exceptions:",
+    `      - club_id: ${DEV}`, "        allow: [schreiben]", "```", "",
+  ].join("\n");
 
   test("TC-08 ohne Ausnahme kein Aufruf", () => {
-    expect(() => pruefeGate(SVM, "gates: []", false)).toThrow(/keine Ausnahme/);
+    expect(() => pruefeGate(SVM, "# leer", false)).toThrow(/keine Ausnahme/);
   });
 
   test("TC-08 eine Leseausnahme trägt keinen Buchungslauf", () => {
-    expect(() => pruefeGate(SVM, manifest, false)).not.toThrow();
-    expect(() => pruefeGate(SVM, manifest, true)).toThrow(/fehlt „schreiben“/);
-    expect(() => pruefeGate(SVM, manifest.replace("[lesen]", "[lesen, schreiben]"), true)).not.toThrow();
+    expect(() => pruefeGate(SVM, manifest("lesen"), false)).not.toThrow();
+    expect(() => pruefeGate(SVM, manifest("lesen"), true)).toThrow(/fehlt „schreiben“/);
+    expect(() => pruefeGate(SVM, manifest("lesen, schreiben"), true)).not.toThrow();
+  });
+
+  test("R1-4 ein auskommentiertes „schreiben“ zählt nicht", () => {
+    expect(() => pruefeGate(SVM, manifest("lesen", "        # allow: [schreiben]"), true)).toThrow(/fehlt „schreiben“/);
+  });
+
+  test("R1-4 eine Ausnahme unter einem anderen Gate zählt nicht", () => {
+    const fremd = ["```yaml", "gates:", "  - id: andere-regel", "    exceptions:", `      - club_id: ${SVM}`, "        allow: [schreiben]", "```"].join("\n");
+    expect(() => pruefeGate(SVM, fremd, true)).toThrow(/keine Ausnahme/);
   });
 
   test("der Comvenio-Verein braucht keine Ausnahme", () => {
@@ -207,10 +241,72 @@ describe("Übernahme: Lauf", () => {
     expect(d.aufrufe).toEqual([["whoami", "--json"]]);
   });
 
+  test("R1-1 ein Absturz nach einer Buchung bucht beim Fortsetzen nicht doppelt", () => {
+    let buchungen = 0;
+    const d = dienst(DEV, { absturz: (area, op) => area === "entry" && op === "entry_create" && ++buchungen === 3 });
+    const p = neu();
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {})).toThrow(/Absturz nach entry entry_create/);
+    const nachAbsturz = d.buchungen.length;
+    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {});
+    expect(p.schritte["2032:abschluss"]).toBe("geschlossen");
+    // The third entry exists once and was taken over, not booked again.
+    expect(p.ereignisse.filter((e) => e.uebernommen).length).toBe(1);
+    expect(d.buchungen.filter((b) => b.text === "Rechenschaftsbericht 2031: Sachspenden").length).toBe(1);
+    expect(d.buchungen.length).toBeGreaterThan(nachAbsturz);
+  });
+
+  test("R1-1 zwei sich aufhebende Doppelbuchungen fallen in der Brutto-Probe auf", () => {
+    const d = dienst(DEV, { absturz: (area, op) => {
+      if (area === "money-account" && op === "transfer_create" && d.uebertraege.length === 1) {
+        const giro = d.konten.find((k) => k.name === "Girokonto").id;
+        const plan = d.plaene[0].id;
+        d.buchungen.push({ id: "doppelt-1", plan, konto: giro, rev: 700, exp: 0, datum: "2031-12-31", text: "doppelt" },
+          { id: "doppelt-2", plan, konto: giro, rev: 0, exp: 700, datum: "2031-12-31", text: "doppelt" });
+      }
+      return false;
+    } });
+    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}))
+      .toThrow(/Probe 2031 nicht bestanden .*Girokonto \{"einnahmen":\{"soll":136000,"ist":136700\}/);
+  });
+
+  test("R1-2 ein geänderter Stand setzt ein Protokoll nicht fort", () => {
+    const d = dienst(DEV, { absturz: (area, op) => area === "entry" && op === "entry_create" });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
+    const geaendert = { ...JAHR_1, kategorien: JAHR_1.kategorien.map((k) => (k.zeile === 3 ? { ...k, rubrik: "Beiträge" } : k)) };
+    expect(() => laufen([geaendert], DEV, dienst().cli, p, () => {})).toThrow(/haben sich seit dem ersten Lauf geändert/);
+  });
+
+  test("R1-3 ein Absturz direkt nach dem Anlegen des Haushalts ist fortsetzbar", () => {
+    let einmal = true;
+    const d = dienst(DEV, { absturz: (area, op) => area === "plan-period" && op === "create" && einmal && !(einmal = false) });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz nach plan-period create/);
+    expect(p.schritte["2031:haushalt"]).toBeUndefined();
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    expect(d.plaene.map((x) => [x.year, x.status])).toEqual([[2031, "CLOSED"]]);
+  });
+
+  test("R1-5 ein falsches Startkapital hält vor der ersten Buchung des Folgejahres an", () => {
+    const d = dienst(DEV, { kapitalVersatz: 100 });
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, neu(), () => {})).toThrow(/Startkapital 2032: 343100 ct, erwartet 343000 ct/);
+    expect(d.buchungen.some((b) => b.datum.startsWith("2032"))).toBe(false);
+  });
+
+  test("R1-6 Probenwerte und Fehler stehen vor dem Abbruch im Protokoll", () => {
+    const d = dienst();
+    const p = neu();
+    const falsch = { ...JAHR_1, korrektur: { abweichung: {}, uebertraege: [] } };
+    expect(() => laufen([falsch], DEV, d.cli, p, () => {})).toThrow(/Probe 2031/);
+    const probe = p.ereignisse.find((e) => e.art === "probe") as any;
+    expect(probe.werte.find((w: any) => w.konto === "Barkasse").endbestand).toEqual({ soll: 12000, ist: 15000 });
+    expect(String(p.ereignisse.at(-1)?.fehler)).toMatch(/^Probe 2031 nicht bestanden/);
+  });
+
   test("eine nicht bestandene Probe lässt den Haushalt aktiv", () => {
     const d = dienst();
     const falsch = { ...JAHR_1, korrektur: { abweichung: {}, uebertraege: [] } };
-    expect(() => laufen([falsch], DEV, d.cli, neu(), () => {})).toThrow(/Probe 2031 nicht bestanden .* Barkasse: Endbestand 15000 ct, laut Vermögensübersicht 12000 ct/);
+    expect(() => laufen([falsch], DEV, d.cli, neu(), () => {})).toThrow(/Probe 2031 nicht bestanden .*Barkasse .*"endbestand":\{"soll":12000,"ist":15000\}/);
     expect(d.plaene[0].status).toBe("ACTIVE");
   });
 });

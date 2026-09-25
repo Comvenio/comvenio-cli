@@ -37,6 +37,7 @@ export type Uebernahme = {
 export type Schritt =
   | { art: "konto"; key: string; konto: string; kind: Konto["art"]; standard: boolean }
   | { art: "haushalt"; key: string; jahr: number; startkapital_cents: number | null }
+  | { art: "startkapital_pruefen"; key: string; cents: number }
   | { art: "anfang"; key: string; konto: string; cents: number }
   | { art: "anfang_pruefen"; key: string; konto: string; datei_cents: number; erlaubt_cents: number }
   | { art: "aktivieren"; key: string }
@@ -73,6 +74,11 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
         const erlaubt = j.stichtagsdifferenzen.filter((d) => d.konto === k.name).reduce((s, d) => s + d.betrag_cents, 0);
         schritte.push({ art: "anfang_pruefen", key: `${y}:anfang_pruefen:${k.name}`, konto: k.name, datei_cents: k.anfang_cents, erlaubt_cents: erlaubt });
       }
+    }
+    // Per account first — its message names the account —, then the sum.
+    if (i > 0) {
+      const erlaubt = j.stichtagsdifferenzen.reduce((sum, d) => sum + d.betrag_cents, 0);
+      schritte.push({ art: "startkapital_pruefen", key: `${y}:startkapital`, cents: geld.reduce((sum, k) => sum + k.anfang_cents, 0) - erlaubt });
     }
     schritte.push({ art: "aktivieren", key: `${y}:aktiv` });
 
@@ -121,13 +127,21 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
 /**
  * The gate `club-restriction` (core-gates-comvenio.md): a club other than the
  * Comvenio club needs its exception entry, for a booking run with `schreiben`.
+ * Read as YAML — exactly the gate's own exception list and its `allow`, so a
+ * comment or another gate's entry never counts (review R1-4).
  */
 export function pruefeGate(verein: string, manifest: string, schreiben: boolean): void {
   if (COMVENIO.has(verein)) return;
-  const eintraege = manifest.split(/\n\s*- id:/).slice(1);
-  const eintrag = eintraege.find((e) => new RegExp(`club_id:\\s*${verein}\\b`).test(e));
+  const bloecke = [...manifest.matchAll(/```yaml\r?\n([\s\S]*?)```/g)].map((m) => m[1] ?? "");
+  const gates = bloecke.flatMap((b) => {
+    const doc = Bun.YAML.parse(b) as { gates?: unknown } | null;
+    return Array.isArray(doc?.gates) ? doc.gates : [];
+  }) as Array<{ id?: unknown; exceptions?: unknown }>;
+  const gate = gates.find((g) => g?.id === "club-restriction");
+  const ausnahmen = (Array.isArray(gate?.exceptions) ? gate.exceptions : []) as Array<{ club_id?: unknown; allow?: unknown }>;
+  const eintrag = ausnahmen.find((e) => e?.club_id === verein);
   if (!eintrag) throw new LaufFehler(`Gate club-restriction: Für den Verein ${verein} steht keine Ausnahme im Gate-Manifest — kein Aufruf.`);
-  const erlaubt = (eintrag.match(/allow:\s*\[([^\]]*)\]/)?.[1] ?? "").split(",").map((s) => s.trim());
+  const erlaubt = Array.isArray(eintrag.allow) ? eintrag.allow.map(String) : [];
   if (schreiben && !erlaubt.includes("schreiben")) {
     throw new LaufFehler(`Gate club-restriction: Die Ausnahme für ${verein} erlaubt nur ${erlaubt.join(", ") || "nichts"} — für den Lauf fehlt „schreiben“ (Stufe 2, eigene Freigabe des Betreibers).`);
   }
@@ -146,7 +160,35 @@ export function schrittSchluessel(verein: string, key: string): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variante}${h.slice(18, 20)}-${h.slice(20, 32)}`;
 }
 
-type Protokoll = { verein: string; schritte: Record<string, unknown>; ereignisse: Array<Record<string, unknown>>; vorschau?: Schritt[] };
+/** The fingerprint of the input a protocol belongs to (review R1-2). */
+export function eingabeHash(jahre: Uebernahme[]): string {
+  const sortiert = [...jahre].sort((a, b) => a.jahr - b.jahr);
+  return createHash("sha256").update(JSON.stringify(sortiert)).digest("hex");
+}
+
+export type Protokoll = {
+  verein: string;
+  eingabe_hash?: string;
+  schritte: Record<string, unknown>;
+  ereignisse: Array<Record<string, unknown>>;
+};
+
+/** What a year should show per account: gross income and expenses including transfers. */
+function bruttoSoll(schritte: Schritt[], jahr: number): Record<string, { ein: number; aus: number }> {
+  const soll: Record<string, { ein: number; aus: number }> = {};
+  const auf = (konto: string) => (soll[konto] ??= { ein: 0, aus: 0 });
+  for (const x of schritte) {
+    if (!x.key.startsWith(`${jahr}:`)) continue;
+    if (x.art === "buchung") {
+      if (x.richtung === "revenue") auf(x.konto).ein += x.cents;
+      else auf(x.konto).aus += x.cents;
+    } else if (x.art === "uebertrag") {
+      auf(x.von).aus += x.cents;
+      auf(x.nach).ein += x.cents;
+    }
+  }
+  return soll;
+}
 
 export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll: Protokoll, speichern: () => void): Protokoll {
   const fin = (area: string, op: string, input: object = {}, schritt?: string): any => {
@@ -156,122 +198,219 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
     if (res?.status && res.status !== "completed") throw new LaufFehler(`${area} ${op}: ${JSON.stringify(res).slice(0, 600)}`);
     return res?.result ?? res;
   };
-  const wer = cli(["whoami", "--json"]);
-  if (wer?.clubId !== verein) {
-    throw new LaufFehler(`Die CLI-Anmeldung steht auf ${wer?.clubId ?? "keinem Verein"}, nicht auf ${verein} — mit „comvenio login“ im Verein anmelden.`);
-  }
   const s = protokoll.schritte;
   const merke = (key: string, wert: unknown) => { s[key] = wert; speichern(); return wert; };
-  const schritte = planen(jahre);
+  const vermerke = (eintrag: Record<string, unknown>) => { protokoll.ereignisse.push({ zeit: new Date().toISOString(), ...eintrag }); speichern(); };
 
-  // A plan of one of these years that this protocol did not create stops the run (TC-06).
-  const plaene: any[] = fin("plan-period", "list");
-  for (const j of jahre) {
-    const da = plaene.find((p) => p.year === j.jahr && !p.department_id);
-    if (da && s[`${j.jahr}:haushalt`] !== da.id) {
+  try {
+    const wer = cli(["whoami", "--json"]);
+    if (wer?.clubId !== verein) {
+      throw new LaufFehler(`Die CLI-Anmeldung steht auf ${wer?.clubId ?? "keinem Verein"}, nicht auf ${verein} — mit „comvenio login“ im Verein anmelden.`);
+    }
+    // The protocol belongs to exactly this input: a changed file never
+    // continues a half-booked year (review R1-2).
+    const hash = eingabeHash(jahre);
+    if (protokoll.eingabe_hash === undefined) {
+      if (Object.keys(s).length) throw new LaufFehler("Das Protokoll trägt Schritte, aber keinen Eingabe-Hash — es gehört zu keinem prüfbaren Stand.");
+      protokoll.eingabe_hash = hash;
+      speichern();
+    } else if (protokoll.eingabe_hash !== hash) {
+      throw new LaufFehler(`Die Übernahmedateien haben sich seit dem ersten Lauf geändert (Hash ${hash.slice(0, 12)} statt ${protokoll.eingabe_hash.slice(0, 12)}) — nicht fortsetzen.`);
+    }
+    const schritte = planen(jahre);
+
+    // A plan of one of these years that this protocol did not create stops
+    // the run (TC-06) — unless the protocol noted that it was about to create
+    // it and the plan is still untouched (review R1-3).
+    const plaene: any[] = fin("plan-period", "list");
+    for (const j of jahre) {
+      const da = plaene.find((p) => p.year === j.jahr && !p.department_id);
+      const key = `${j.jahr}:haushalt`;
+      if (!da || s[key] === da.id) continue;
+      if (s[key] === undefined && s[`${key}:begonnen`] && da.status === "DRAFT"
+        && (fin("plan-period", "positions", { plan_id: da.id }) as any[]).length === 0) {
+        merke(key, da.id);
+        vermerke({ key, art: "haushalt", uebernommen: da.id });
+        continue;
+      }
       throw new LaufFehler(`Für ${j.jahr} besteht schon ein Haushalt (${da.id}), den dieses Protokoll nicht angelegt hat — kein zweiter Lauf.`);
     }
-  }
 
-  const konten = (): Record<string, string> => Object.fromEntries(Object.entries(s).filter(([k]) => k.startsWith("konto:")).map(([k, v]) => [k.slice(6), v as string]));
-  const plan = (key: string) => s[`${key.split(":")[0]}:haushalt`] as string;
-  const jahrVon = (key: string) => jahre.find((j) => String(j.jahr) === key.split(":")[0]) as Uebernahme;
+    const konten = (): Record<string, string> => Object.fromEntries(Object.entries(s).filter(([k]) => k.startsWith("konto:")).map(([k, v]) => [k.slice(6), v as string]));
+    const jahrDes = (key: string) => Number(key.split(":")[0]);
+    const plan = (key: string) => s[`${jahrDes(key)}:haushalt`] as string;
+    const jahrVon = (key: string) => jahre.find((j) => j.jahr === jahrDes(key)) as Uebernahme;
 
-  for (const x of schritte) {
-    if (x.key in s) continue;
-    switch (x.art) {
-      case "konto": {
-        const vorhanden = (fin("money-account", "list") as any[]).find((a) => a.name === x.konto && !a.archived_at);
-        merke(x.key, vorhanden?.id ?? fin("money-account", "create", { data: { name: x.konto, kind: x.kind, is_default: x.standard } }, x.key).id);
-        break;
+    // A year that already has its plan is a continuation: what the service
+    // holds is taken over before anything is written again (review R1-1).
+    const bestand = new Map<number, { posten: any[]; buchungen: any[]; uebertraege: any[]; belegt: Set<string> }>();
+    const fortsetzung = new Set(jahre.filter((j) => s[`${j.jahr}:haushalt`] !== undefined).map((j) => j.jahr));
+    const bestandVon = (jahr: number) => {
+      let b = bestand.get(jahr);
+      if (!b) {
+        const planId = s[`${jahr}:haushalt`] as string;
+        const buchungen = Object.values(konten()).flatMap((konto) => {
+          const buch = fin("money-account", "cash_book", { plan_id: planId, money_account_id: konto });
+          return ((buch?.days ?? []) as any[]).flatMap((d) => (d.rows ?? []) as any[]).map((r) => ({ ...r, konto, datum: r.booking_date }));
+        });
+        b = {
+          posten: fin("plan-period", "positions", { plan_id: planId }) as any[],
+          buchungen: buchungen.filter((r) => !r.transfer_id && r.reversal_of_journal_number == null),
+          uebertraege: (fin("money-account", "transfers", { plan_id: planId }) as any[]).filter((t) => t.status !== "REVERSED"),
+          belegt: new Set(),
+        };
+        bestand.set(jahr, b);
       }
-      case "haushalt": {
-        if (x.startkapital_cents !== null) {
-          merke(x.key, fin("plan-period", "create", { data: { year: x.jahr, available_capital_cents: x.startkapital_cents, notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, x.key).id);
-        } else {
-          fin("plan-lifecycle", "next_period", { plan_id: s[`${x.jahr - 1}:haushalt`], data: { include_non_recurring: false } }, x.key);
-          const neu = (fin("plan-period", "list") as any[]).find((p) => p.year === x.jahr && !p.department_id);
-          if (!neu) throw new LaufFehler(`next_period legte keinen Haushalt ${x.jahr} an.`);
-          merke(x.key, neu.id);
-          fin("plan-period", "update", { plan_id: neu.id, data: { notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, `${x.key}:notiz`);
+      return b;
+    };
+    const uebernehmen = (x: Schritt): string | undefined => {
+      const jahr = jahrDes(x.key);
+      if (!fortsetzung.has(jahr) || x.key.startsWith("konto:")) return undefined;
+      const b = bestandVon(jahr);
+      const frei = <T extends { id?: string; entry_id?: string }>(liste: T[], passt: (e: T) => boolean) => {
+        const e = liste.find((e) => !b.belegt.has(String(e.id ?? e.entry_id)) && passt(e));
+        if (e) b.belegt.add(String(e.id ?? e.entry_id));
+        return e ? String(e.id ?? e.entry_id) : undefined;
+      };
+      if (x.art === "posten") return frei(b.posten, (p) => p.name === x.name && p.position_number === x.nummer);
+      if (x.art === "buchung") {
+        return frei(b.buchungen, (r) => r.position_id === s[x.posten] && r.konto === konten()[x.konto] && r.description === x.text
+          && r.datum === x.datum && (x.richtung === "revenue" ? r.revenue_cents : r.expense_cents) === x.cents);
+      }
+      if (x.art === "uebertrag") {
+        return frei(b.uebertraege, (t) => t.from_account_id === konten()[x.von] && t.to_account_id === konten()[x.nach]
+          && t.amount_cents === x.cents && t.reason === x.grund && t.transfer_date === x.datum);
+      }
+      return undefined;
+    };
+
+    for (const x of schritte) {
+      if (x.key in s) continue;
+      const vorhanden = uebernehmen(x);
+      if (vorhanden) {
+        merke(x.key, vorhanden);
+        vermerke({ key: x.key, art: x.art, uebernommen: vorhanden });
+        continue;
+      }
+      switch (x.art) {
+        case "konto": {
+          const da = (fin("money-account", "list") as any[]).find((a) => a.name === x.konto && !a.archived_at);
+          merke(x.key, da?.id ?? fin("money-account", "create", { data: { name: x.konto, kind: x.kind, is_default: x.standard } }, x.key).id);
+          break;
         }
-        break;
-      }
-      case "anfang":
-        fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
-          opening_date: `${x.key.split(":")[0]}-01-01`, opening_balance_cents: x.cents, reason: `Übernahme aus Rechenschaftsbericht ${x.key.split(":")[0]}` } }, x.key);
-        merke(x.key, x.cents);
-        break;
-      case "anfang_pruefen": {
-        const zeile = (fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[]).find((a) => a.account.id === konten()[x.konto]);
-        const abgeleitet = zeile?.opening_balance_cents ?? 0;
-        if (x.datei_cents - abgeleitet !== x.erlaubt_cents) {
-          throw new LaufFehler(`${x.konto}: abgeleiteter Anfangsbestand ${abgeleitet} ct, laut Bericht ${x.datei_cents} ct — die Differenz ${x.datei_cents - abgeleitet} ct steht nicht unter stichtagsdifferenzen.`);
-        }
-        merke(x.key, abgeleitet);
-        break;
-      }
-      case "aktivieren":
-        merke(x.key, fin("plan-period", "update", { plan_id: plan(x.key), data: { status: "ACTIVE" } }, x.key).status);
-        break;
-      case "posten":
-        merke(x.key, fin("plan-period", "position_create", { plan_id: plan(x.key), data: {
-          name: x.name, category: x.rubrik, position_number: x.nummer, recurring: false,
-          revenue_planned_cents: 0, expense_planned_cents: 0, context_type: "GENERAL",
-          ...(x.sphaere ? { tax_sphere: x.sphaere, comment: "Sphäre: Vorschlag aus der Übernahme, vom Verein zu bestätigen" } : {}),
-        } }, x.key).id);
-        break;
-      case "buchung":
-        merke(x.key, fin("entry", "entry_create", { position_id: s[x.posten], data: {
-          description: x.text, booking_date: x.datum, money_account_id: konten()[x.konto],
-          [x.richtung === "revenue" ? "revenue_cents" : "expense_cents"]: x.cents, receipt_exemption_reason: x.grund,
-        } }, x.key).id);
-        break;
-      case "uebertrag":
-        merke(x.key, fin("money-account", "transfer_create", { data: {
-          from_account_id: konten()[x.von], to_account_id: konten()[x.nach], amount_cents: x.cents, transfer_date: x.datum, reason: x.grund } }, x.key).id);
-        break;
-      case "probe": {
-        const j = jahrVon(x.key);
-        const zeilen = fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[];
-        const abweichung: string[] = [];
-        for (const k of j.konten) {
-          const z = zeilen.find((a) => a.account.id === konten()[k.name]);
-          if (k.art === "IN_KIND") {
-            const ein = j.kategorien.filter((c) => c.seite === "E").reduce((sum, c) => sum + (c.betraege[k.name] ?? 0), 0);
-            const aus = j.kategorien.filter((c) => c.seite === "A").reduce((sum, c) => sum + (c.betraege[k.name] ?? 0), 0);
-            if ((z?.revenue_cents ?? 0) !== ein || (z?.expense_cents ?? 0) !== aus) abweichung.push(`${k.name}: Einnahmen ${z?.revenue_cents} / Ausgaben ${z?.expense_cents} ct, laut Bericht ${ein} / ${aus} ct`);
-          } else if (z?.period_end_balance_cents !== k.ende_cents) {
-            abweichung.push(`${k.name}: Endbestand ${z?.period_end_balance_cents} ct, laut Vermögensübersicht ${k.ende_cents} ct`);
+        case "haushalt": {
+          merke(`${x.key}:begonnen`, true);
+          if (x.startkapital_cents !== null) {
+            merke(x.key, fin("plan-period", "create", { data: { year: x.jahr, available_capital_cents: x.startkapital_cents, notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, x.key).id);
+          } else {
+            fin("plan-lifecycle", "next_period", { plan_id: s[`${x.jahr - 1}:haushalt`], data: { include_non_recurring: false } }, x.key);
+            const neu = (fin("plan-period", "list") as any[]).find((p) => p.year === x.jahr && !p.department_id);
+            if (!neu) throw new LaufFehler(`next_period legte keinen Haushalt ${x.jahr} an.`);
+            merke(x.key, neu.id);
           }
+          break;
         }
-        if (abweichung.length) throw new LaufFehler(`Probe ${j.jahr} nicht bestanden — der Haushalt bleibt ACTIVE: ${abweichung.join("; ")}`);
-        merke(x.key, "bestanden");
-        break;
+        case "startkapital_pruefen": {
+          // The capital next_period carries over must be the sum of the
+          // derived openings — before the first booking (review R1-5).
+          const p = (fin("plan-period", "list") as any[]).find((q) => q.id === plan(x.key));
+          if (p?.available_capital_cents !== x.cents) {
+            throw new LaufFehler(`Startkapital ${jahrDes(x.key)}: ${p?.available_capital_cents} ct, erwartet ${x.cents} ct (Summe der abgeleiteten Anfangsbestände).`);
+          }
+          fin("plan-period", "update", { plan_id: plan(x.key), data: { notes: `Übernahme aus Rechenschaftsbericht ${jahrDes(x.key)}` } }, x.key);
+          merke(x.key, x.cents);
+          break;
+        }
+        case "anfang":
+          fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
+            opening_date: `${jahrDes(x.key)}-01-01`, opening_balance_cents: x.cents, reason: `Übernahme aus Rechenschaftsbericht ${jahrDes(x.key)}` } }, x.key);
+          merke(x.key, x.cents);
+          break;
+        case "anfang_pruefen": {
+          const zeile = (fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[]).find((a) => a.account.id === konten()[x.konto]);
+          const abgeleitet = zeile?.opening_balance_cents ?? 0;
+          if (x.datei_cents - abgeleitet !== x.erlaubt_cents) {
+            throw new LaufFehler(`${x.konto}: abgeleiteter Anfangsbestand ${abgeleitet} ct, laut Bericht ${x.datei_cents} ct — die Differenz ${x.datei_cents - abgeleitet} ct steht nicht unter stichtagsdifferenzen.`);
+          }
+          merke(x.key, abgeleitet);
+          break;
+        }
+        case "aktivieren":
+          merke(x.key, fin("plan-period", "update", { plan_id: plan(x.key), data: { status: "ACTIVE" } }, x.key).status);
+          break;
+        case "posten":
+          merke(x.key, fin("plan-period", "position_create", { plan_id: plan(x.key), data: {
+            name: x.name, category: x.rubrik, position_number: x.nummer, recurring: false,
+            revenue_planned_cents: 0, expense_planned_cents: 0, context_type: "GENERAL",
+            ...(x.sphaere ? { tax_sphere: x.sphaere, comment: "Sphäre: Vorschlag aus der Übernahme, vom Verein zu bestätigen" } : {}),
+          } }, x.key).id);
+          break;
+        case "buchung":
+          merke(x.key, fin("entry", "entry_create", { position_id: s[x.posten], data: {
+            description: x.text, booking_date: x.datum, money_account_id: konten()[x.konto],
+            [x.richtung === "revenue" ? "revenue_cents" : "expense_cents"]: x.cents, receipt_exemption_reason: x.grund,
+          } }, x.key).id);
+          break;
+        case "uebertrag":
+          merke(x.key, fin("money-account", "transfer_create", { data: {
+            from_account_id: konten()[x.von], to_account_id: konten()[x.nach], amount_cents: x.cents, transfer_date: x.datum, reason: x.grund } }, x.key).id);
+          break;
+        case "probe": {
+          // End balance AND gross amounts per account: two duplicates that
+          // cancel out still fail here (review R1-1).
+          const j = jahrVon(x.key);
+          const zeilen = fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[];
+          const brutto = bruttoSoll(schritte, j.jahr);
+          const werte: Array<Record<string, unknown>> = [];
+          for (const k of j.konten) {
+            const z = zeilen.find((a) => a.account.id === konten()[k.name]);
+            const soll = brutto[k.name] ?? { ein: 0, aus: 0 };
+            const ein = z?.period_revenue_cents ?? z?.revenue_cents ?? 0;
+            const aus = z?.period_expense_cents ?? z?.expense_cents ?? 0;
+            const ende = k.art === "IN_KIND" ? null : z?.period_end_balance_cents;
+            const ok = ein === soll.ein && aus === soll.aus && (k.art === "IN_KIND" || ende === k.ende_cents);
+            werte.push({ konto: k.name, ok, einnahmen: { soll: soll.ein, ist: ein }, ausgaben: { soll: soll.aus, ist: aus },
+              ...(k.art === "IN_KIND" ? {} : { endbestand: { soll: k.ende_cents, ist: ende } }) });
+          }
+          vermerke({ key: x.key, art: "probe", werte });
+          const falsch = werte.filter((w) => !w.ok);
+          if (falsch.length) {
+            throw new LaufFehler(`Probe ${j.jahr} nicht bestanden — der Haushalt bleibt ACTIVE: ${falsch.map((w) => `${w.konto} ${JSON.stringify({ einnahmen: w.einnahmen, ausgaben: w.ausgaben, endbestand: w.endbestand })}`).join("; ")}`);
+          }
+          merke(x.key, "bestanden");
+          break;
+        }
+        case "auszug": {
+          const y = jahrDes(x.key);
+          const zeile = (fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[]).find((a) => a.account.id === konten()[x.konto]);
+          // The opening goes along unchanged: only the statement is new.
+          fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
+            opening_date: zeile?.opening_date ?? `${y}-01-01`, opening_balance_cents: zeile?.opening_balance_cents ?? 0,
+            statement_balance_cents: x.cents, statement_date: `${y}-12-31`, reason: `Auszug 31.12.${y} laut Vermögensübersicht` } }, x.key);
+          merke(x.key, x.cents);
+          break;
+        }
+        case "abschluss": {
+          const y = jahrDes(x.key);
+          const p = (fin("plan-period", "list") as any[]).find((q) => q.id === plan(x.key));
+          // Collective entries of a report the general meeting discharged: no
+          // second person approves them one by one — hence force, said in the note.
+          if (p?.status !== "CLOSED") {
+            fin("plan-lifecycle", "close", { plan_id: plan(x.key), force: true,
+              note: `Übernahme aus Rechenschaftsbericht ${y}; Sammelbuchungen, von der Hauptversammlung entlastet` }, x.key);
+          }
+          merke(x.key, "geschlossen");
+          break;
+        }
       }
-      case "auszug": {
-        const y = x.key.split(":")[0];
-        const zeile = (fin("money-account", "reconciliation", { plan_id: plan(x.key) }).accounts as any[]).find((a) => a.account.id === konten()[x.konto]);
-        // The opening goes along unchanged: only the statement is new.
-        fin("money-account", "opening", { plan_id: plan(x.key), account_id: konten()[x.konto], data: {
-          opening_date: zeile?.opening_date ?? `${y}-01-01`, opening_balance_cents: zeile?.opening_balance_cents ?? 0,
-          statement_balance_cents: x.cents, statement_date: `${y}-12-31`, reason: `Auszug 31.12.${y} laut Vermögensübersicht` } }, x.key);
-        merke(x.key, x.cents);
-        break;
-      }
-      case "abschluss": {
-        const y = x.key.split(":")[0];
-        // Collective entries of a report the general meeting discharged: no
-        // second person approves them one by one — hence force, said in the note.
-        fin("plan-lifecycle", "close", { plan_id: plan(x.key), force: true,
-          note: `Übernahme aus Rechenschaftsbericht ${y}; Sammelbuchungen, von der Hauptversammlung entlastet` }, x.key);
-        merke(x.key, "geschlossen");
-        break;
-      }
+      vermerke({ key: x.key, art: x.art });
     }
-    protokoll.ereignisse.push({ key: x.key, art: x.art });
+    return protokoll;
+  } catch (fehler) {
+    // Every stop is on record before it propagates (review R1-6).
+    vermerke({ fehler: (fehler as Error).message });
+    throw fehler;
   }
-  return protokoll;
 }
 
 function argumente(argv: string[]): { dateien: string[]; verein?: string; vorschau: boolean; protokoll?: string; gates?: string } {
