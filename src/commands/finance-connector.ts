@@ -189,7 +189,7 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
 
 /** Lesende Teiloperationen des Hubs — alles andere schreibt und bekommt einen Idempotenz-Schlüssel. */
 const READ_OPERATIONS = new Set([
-  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard",
+  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard", "audit_check",
   "opening_versions", "cash_book", "reconciliation", "versions", "account_choices", "result",
   "open_items", "resolutions", "version", "download", "event", "event_reconciliation", "series_comparison",
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
@@ -198,6 +198,75 @@ const READ_OPERATIONS = new Set([
   // buchhaltung-14-02
   "transfers", "transfer_show",
 ]);
+
+// ── buchhaltung-16-03: der Prüfdurchlauf als Bericht ────────────────────
+
+type PruefRegel = { code: string; requirement: string; severity: string; fulfilled: boolean; count: number; detail?: string | null; findings: JsonObject[] };
+
+const REGEL_TITEL: Record<string, string> = {
+  JOURNAL_GAP: "Journalnummern lückenlos",
+  PERIOD_NOT_CLOSED: "Abgelaufener Zeitraum festgeschrieben",
+  DELETED_BEFORE_PROTOCOL: "Vor dem Protokoll gelöschte Buchungen",
+  ENTRY_NOT_APPROVED: "Freigabe durch eine zweite Person",
+  RECEIPT_MISSING: "Beleg oder Begründung je Buchung",
+  SELF_ISSUED: "Eigenbelege",
+  SPHERE_MISSING: "Steuerliche Sphäre je Posten",
+  CASH_NEGATIVE: "Kasse nie unter null",
+  RECONCILIATION_OPEN: "Abgleich mit dem Kontoauszug",
+  PROCEDURE_DOC_MISSING: "Verfahrensdokumentation",
+};
+
+const zelle = (wert: unknown): string => (wert === null || wert === undefined ? "" : String(wert)).replace(/\|/g, "\\|");
+
+/** Der Bericht in Markdown — Kopf, eine Zeile je Regel, je Befund die Fundstellen. */
+export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
+  const regeln = (ergebnis.rules ?? []) as unknown as PruefRegel[];
+  const summe = (ergebnis.summary ?? {}) as JsonObject;
+  const zeilen = [
+    `# Prüfdurchlauf ${jahr}`,
+    "",
+    `- Plan: ${zelle(ergebnis.plan_id)} (${zelle(ergebnis.status)}), Zeitraum ${zelle(ergebnis.period_start)} bis ${zelle(ergebnis.period_end)}`,
+    `- Buchungen im Journal: ${zelle(ergebnis.entry_count)}`,
+    `- Geprüft am ${zelle(ergebnis.checked_at)} von ${zelle(ergebnis.checked_by)}`,
+    `- Ergebnis: ${zelle(summe.errors)} Fehler, ${zelle(summe.notes)} Hinweise, ${zelle(summe.check_failed)} nicht prüfbar`,
+    "",
+    "| Regel | GoBD | Stufe | Ergebnis |",
+    "|---|---|---|---|",
+    ...regeln.map((r) => {
+      const ergebnisText = r.severity === "CHECK_FAILED"
+        ? `nicht prüfbar: ${zelle(r.detail)}`
+        : r.fulfilled ? `erfüllt${r.detail ? ` (${zelle(r.detail)})` : ""}` : `${r.count} Befund(e)`;
+      return `| ${REGEL_TITEL[r.code] ?? r.code} | ${r.requirement} | ${r.severity} | ${ergebnisText} |`;
+    }),
+  ];
+  for (const r of regeln.filter((regel) => regel.findings.length > 0)) {
+    zeilen.push("", `## ${REGEL_TITEL[r.code] ?? r.code} (${r.code})`, "", "| Journal | Datum | Detail |", "|---|---|---|");
+    for (const f of r.findings) zeilen.push(`| ${zelle(f.journal_number)} | ${zelle(f.date)} | ${zelle(f.detail)} |`);
+  }
+  return zeilen.join("\n") + "\n";
+}
+
+/**
+ * `comvenio finance pruefung --year <jahr> [--out <basisname>]` — prüft den
+ * Vereinsplan des Jahres (buchhaltung-16-03). Mit --out entstehen
+ * <basisname>.md und <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln.
+ */
+export async function runPruefung(client: CliConnectorClient, opts: FinanceCommandOpts): Promise<JsonObject> {
+  const jahr = Number(opts.year);
+  if (!opts.year || !Number.isInteger(jahr)) throw new Error("finance pruefung benötigt --year <jahr>.");
+  const liste = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "list" }, { write: false });
+  const plaene = (Array.isArray(liste.result) ? liste.result : []) as JsonObject[];
+  const plan = plaene.find((p) => p.year === jahr && !p.department_id);
+  if (!plan) throw new Error(`Für ${jahr} gibt es keinen Vereinsplan.`);
+  const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_check", plan_id: plan.id as string }, { write: false });
+  const ergebnis = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
+  const summe = (ergebnis.summary ?? {}) as JsonObject;
+  if (Number(summe.errors ?? 0) > 0 || Number(summe.check_failed ?? 0) > 0) process.exitCode = 1;
+  if (!opts.out) return ergebnis;
+  writeFileSync(`${opts.out}.json`, JSON.stringify(ergebnis, null, 2));
+  writeFileSync(`${opts.out}.md`, renderPruefbericht(ergebnis, jahr));
+  return { written: [`${opts.out}.md`, `${opts.out}.json`], summary: summe };
+}
 
 /**
  * `comvenio finance run <bereich> <operation>` — jede Teiloperation des Hubs.

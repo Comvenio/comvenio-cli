@@ -209,6 +209,8 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
       query: (i, c) => journalQuery(i, c), multiDepartment: true },
     { op: "entries_without_receipt", method: "GET", template: `${BY_ID}/entries-without-receipt`, path: (i) => `${byId(i)}/entries-without-receipt`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     { op: "sphere_report", method: "GET", template: `${BY_ID}/sphere-report`, path: (i) => `${byId(i)}/sphere-report`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
+    // buchhaltung-16-03: the audit run of a plan — computed, never stored.
+    { op: "audit_check", method: "GET", template: `${BY_ID}/audit-check`, path: (i) => `${byId(i)}/audit-check`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     { op: "dashboard", method: "GET", template: "/clubs/{club_id}/finance-plans/{year}/dashboard", path: (i) => `${club(i)}/finance-plans/${int(i, "year")}/dashboard`, risk: "read", shape: { year }, multiDepartment: true },
   ] },
   "cai.finance.22.plan_lifecycle": { source: "plan-close|next-period", ops: [
