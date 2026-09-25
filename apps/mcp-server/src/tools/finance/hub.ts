@@ -34,7 +34,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { addK14Handler, assertHerkunft, assertTenant, request } from "./handlers.ts";
-import { periodDefaults, unplannedCheck } from "./preview.ts";
+import { accountTransferShow, periodDefaults, transferAccounts, transferCheck, transferDateDefault, unplannedCheck } from "./preview.ts";
 import { redactFinanceValue } from "./privacy.ts";
 import type { K14ActionDefinition, K14ActionId, K14ActionSchemaContract, K14BackendRoute, K14ExecutionGate, K14OperationDefinition } from "./types.ts";
 
@@ -157,6 +157,21 @@ const PERIOD = "/clubs/{club_id}/budget-periods/{node_kind}/{node_id}";
 // Die Freigabe schreibt an einem Konto, das der Pfad nur mit seiner Kennung
 // nennt: Herkunft vorher über die Kontenliste des Vereins belegen.
 const accountOwn = listed("/clubs/{club_id}/money-accounts", (i) => `${club(i)}/money-accounts`, "account_id", "Geldkonto", undefined, { include_archived: "true" });
+// buchhaltung-14-02: both accounts of a transfer, and a transfer by its
+// accounts — the path names only the club, the body the accounts.
+const transferAccountsOwn = {
+  template: "/clubs/{club_id}/money-accounts",
+  check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
+    const body = (input.data ?? {}) as JsonObject;
+    await transferAccounts(client, context, String(body.from_account_id), String(body.to_account_id));
+  },
+};
+const transferOwn = {
+  template: "/clubs/{club_id}/account-transfers/{transfer_id}",
+  check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
+    await accountTransferShow(client, context, str(input, "transfer_id"));
+  },
+};
 const grantPath = (input: JsonObject) => `/money-accounts/${str(input, "account_id")}/grants/${str(input, "node_kind")}/${str(input, "node_id")}`;
 const grantKind = z.enum(["DEPARTMENT", "TEAM"]);
 // buchhaltung-13-04 DC-3: Knotenart und Knoten gehören zusammen — der Fehler
@@ -217,6 +232,12 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "grants", method: "GET", template: "/money-accounts/{account_id}/grants", path: (i) => `/money-accounts/${str(i, "account_id")}/grants`, risk: "read", shape: { account_id: uuid }, multiDepartment: true },
     { op: "grant_set", method: "PUT", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}", path: grantPath, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
     { op: "grant_revoke", method: "POST", template: "/money-accounts/{account_id}/grants/{node_kind}/{node_id}/revoke", path: (i) => `${grantPath(i)}/revoke`, risk: "critical", shape: { account_id: uuid, node_kind: grantKind, node_id: uuid, data: data.optional() }, body: payload, preflight: accountOwn, multiDepartment: true },
+    // buchhaltung-14-02: Übertrag zwischen zwei Konten des Vereins — zwei
+    // Buchungen auf „Geldtransit“, nur gemeinsam storniert (14-01).
+    { op: "transfers", method: "GET", template: "/clubs/{club_id}/account-transfers", path: (i) => `${club(i)}/account-transfers`, risk: "read", shape: { money_account_id: uuid.optional(), plan_id: uuid.optional() }, query: (i) => optional(i, ["money_account_id", "plan_id"]), multiDepartment: true },
+    { op: "transfer_show", method: "GET", template: "/clubs/{club_id}/account-transfers/{transfer_id}", path: (i) => `${club(i)}/account-transfers/${str(i, "transfer_id")}`, risk: "read", shape: { transfer_id: uuid }, multiDepartment: true },
+    { op: "transfer_create", method: "POST", template: "/clubs/{club_id}/account-transfers", path: (i) => `${club(i)}/account-transfers`, risk: "critical", shape: { data }, body: payload, check: transferCheck, prepare: async (i) => transferDateDefault(i), preflight: transferAccountsOwn, multiDepartment: true },
+    { op: "transfer_reverse", method: "POST", template: "/clubs/{club_id}/account-transfers/{transfer_id}/reverse", path: (i) => `${club(i)}/account-transfers/${str(i, "transfer_id")}/reverse`, risk: "critical", shape: { transfer_id: uuid, data }, body: payload, preflight: transferOwn, multiDepartment: true },
     { op: "booking_accounts", method: "GET", template: `${BY_ID}/booking-accounts`, path: (i) => `${byId(i)}/booking-accounts`, risk: "read", shape: { plan_id: uuid, node_kind: nodeKind.optional(), node_id: nodeId.optional() }, query: (i) => optional(i, ["node_kind", "node_id"]), multiDepartment: true, prepare: (i, c, cl) => periodDefaults(i, c, cl) },
   ] },
   "cai.finance.25.entry_correction": { source: "entry-create|reverse|receipt|tax-sphere|objections", ops: [

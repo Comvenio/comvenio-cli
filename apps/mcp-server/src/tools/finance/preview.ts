@@ -67,6 +67,67 @@ async function transferShow(client: ComvenioApiClient, context: RequestContext, 
   }
 }
 
+// ── buchhaltung-14-02: Übertrag zwischen zwei Konten des Vereins ──────
+
+function refuse(context: RequestContext, message: string): never {
+  throw createConnectorError({ code: "VALIDATION_FAILED", message, request_id: context.request_id, retryable: false });
+}
+
+// TC-02: two different accounts and an amount above zero — before any call,
+// in the preview and in the handler.
+export function transferCheck(input: JsonObject, context: RequestContext): void {
+  const body = record(input.data ?? null);
+  if (typeof body.from_account_id !== "string" || typeof body.to_account_id !== "string") {
+    refuse(context, "transfer_create: from_account_id und to_account_id angeben.");
+  }
+  if (body.from_account_id === body.to_account_id) {
+    refuse(context, "transfer_create: Beide Seiten sind dasselbe Konto — ein Übertrag braucht zwei verschiedene Konten.");
+  }
+  if (typeof body.amount_cents !== "number" || !Number.isInteger(body.amount_cents) || body.amount_cents <= 0) {
+    refuse(context, "transfer_create: amount_cents als ganze Zahl größer 0 angeben.");
+  }
+}
+
+// TC-03: both accounts must stand in the club's own list — otherwise
+// TENANT_MISMATCH and no write. Archived ones count, the service refuses them
+// with its own code.
+export async function transferAccounts(client: ComvenioApiClient, context: RequestContext, fromId: string, toId: string): Promise<[JsonObject, JsonObject]> {
+  const rows = await request(client, context, "GET", `/clubs/${context.club_id}/money-accounts`, { query: { include_archived: "true" } });
+  const items = Array.isArray(rows) ? rows.map(record) : [];
+  const find = (id: string): JsonObject => {
+    const row = items.find((entry) => entry.id === id);
+    if (!row || row.club_id !== context.club_id) {
+      throw createConnectorError({ code: "TENANT_MISMATCH", message: "Geldkonto: Die Kennung gehört nicht zu diesem Verein.", request_id: context.request_id, retryable: false });
+    }
+    // In a department context both accounts belong to that department — the
+    // service would decide by all the person's rights (review K14 R2-B3).
+    if (context.department_id && row.department_id !== context.department_id) {
+      throw createConnectorError({ code: "TENANT_MISMATCH", message: "Geldkonto: Das Konto gehört nicht zur gewählten Abteilung — für Konten mehrerer Abteilungen den vereinsweiten Kontext wählen.", request_id: context.request_id, retryable: false });
+    }
+    return row;
+  };
+  return [find(fromId), find(toId)];
+}
+
+export async function accountTransferShow(client: ComvenioApiClient, context: RequestContext, transferId: string): Promise<JsonObject> {
+  const transfer = record(await request(client, context, "GET", `/clubs/${context.club_id}/account-transfers/${transferId}`));
+  if (transfer.id !== transferId || typeof transfer.from_account_id !== "string" || typeof transfer.to_account_id !== "string") {
+    throw createConnectorError({ code: "TENANT_MISMATCH", message: "Übertrag: Der Finance-Service lieferte keinen prüfbaren Übertrag.", request_id: context.request_id, retryable: false });
+  }
+  await transferAccounts(client, context, transfer.from_account_id, transfer.to_account_id);
+  return transfer;
+}
+
+// The service books without a date on today (Europe/Berlin). The date goes
+// into the input before the preview and the confirmation digest, so the preview
+// shows the day that is booked (review K14 R2-B2).
+export function transferDateDefault(input: JsonObject): void {
+  const body = input.data;
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return;
+  if (typeof body.transfer_date === "string" && body.transfer_date.length > 0) return;
+  body.transfer_date = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
+}
+
 // 04 DC-8: ungeplant ohne Rubrik und ohne Kategorie fällt vor jedem Aufruf auf —
 // in der Vorschau (vor ihren Lesezugriffen) und im Handler (hub.ts).
 export function unplannedCheck(input: JsonObject, context: RequestContext): void {
@@ -303,6 +364,34 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
   if (definition.action_id === "cai.finance.24.money_account" && ["grant_set", "grant_revoke"].includes(operation.operation)) {
     const account = client && typeof data.account_id === "string" ? await accountOf(client, context, data.account_id) : null;
     effects.push({ type: operation.operation === "grant_set" ? "account_grant" : "account_grant_revocation", account_id: data.account_id ?? null, account_name: account?.name ?? null, owner_department_id: account?.department_id ?? null, node_kind: data.node_kind ?? null, node_id: data.node_id ?? null, reason: record(data.data ?? null).reason ?? null });
+  }
+  // buchhaltung-14-02 TC-01: Konten, Betrag, Datum und Grund vor dem Klick.
+  if (definition.action_id === "cai.finance.24.money_account" && operation.operation === "transfer_create") {
+    transferCheck(data, context);
+    transferDateDefault(data);
+    const body = record(data.data ?? null);
+    // Only the first call reads (the confirmed one has no client); a failed
+    // read refuses the preview instead of showing an empty one (review K14 R2-B2).
+    const accounts = client ? await transferAccounts(client, context, String(body.from_account_id), String(body.to_account_id)) : null;
+    effects.push({
+      type: "account_transfer", accounts_read: accounts !== null,
+      from_account_id: body.from_account_id ?? null, from_account_name: accounts?.[0].name ?? null, from_account_kind: accounts?.[0].kind ?? null,
+      to_account_id: body.to_account_id ?? null, to_account_name: accounts?.[1].name ?? null, to_account_kind: accounts?.[1].kind ?? null,
+      amount_cents: body.amount_cents ?? null, transfer_date: body.transfer_date ?? null, reason: body.reason ?? null,
+      entries: 2, position: "Geldtransit",
+    });
+  }
+  // TC-04: the reversal names both entries by their journal numbers.
+  if (definition.action_id === "cai.finance.24.money_account" && operation.operation === "transfer_reverse") {
+    const transferId = typeof data.transfer_id === "string" ? data.transfer_id : null;
+    const transfer = client && transferId ? await accountTransferShow(client, context, transferId) : null;
+    effects.push({
+      type: "account_transfer_reversal", transfer_id: transferId, transfer_read: transfer !== null,
+      status: transfer?.status ?? null, amount_cents: transfer?.amount_cents ?? null, transfer_date: transfer?.transfer_date ?? null,
+      from_account_name: transfer?.from_account_name ?? null, to_account_name: transfer?.to_account_name ?? null,
+      from_journal_number: transfer?.from_journal_number ?? null, to_journal_number: transfer?.to_journal_number ?? null,
+      reason: record(data.data ?? null).reason ?? null,
+    });
   }
   if (definition.action_id === "cai.finance.25.entry_correction" && operation.operation === "entry_create_unplanned") {
     unplannedCheck(data, context);
