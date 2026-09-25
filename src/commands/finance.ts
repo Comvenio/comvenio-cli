@@ -5,7 +5,7 @@ import { output, renderTable } from "../format.ts";
 import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 import { connector } from "./action.ts";
-import { callFinance, mapClassic, runBelege, runHub, runPruefung } from "./finance-connector.ts";
+import { callFinance, checkClubChoice, mapClassic, runBelege, runHub, runPruefung } from "./finance-connector.ts";
 
 // Vereins-Buchhaltung des finance-service: Jahresplan, Budgetposten, Buchungen.
 //
@@ -485,6 +485,7 @@ export function registerFinanceCommands(cli: CAC): void {
       // Standardweg: die OAuth-Anmeldung über den Connector. Der Geräte-Token
       // bleibt der Rückfall für eine Sitzung ohne OAuth-Verbindung.
       if (state.connectorToken) {
+        checkClubChoice(opts.club, state.oauth?.clubId);
         const via = await connector();
         const result = action === "run"
           ? await runHub(via, id, operation, opts)
