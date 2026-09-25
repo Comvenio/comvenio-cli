@@ -76,7 +76,7 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
     switch (`${area} ${op}`) {
       case "plan-period list": return plaene;
       case "plan-period positions": return posten.filter((p) => p.plan === i.plan_id);
-      case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null, available_capital_cents: i.data.available_capital_cents }; plaene.push(p); return p; }
+      case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null, available_capital_cents: i.data.available_capital_cents, notes: i.data.notes }; plaene.push(p); return p; }
       case "plan-period update": { const p = plaene.find((x) => x.id === i.plan_id); Object.assign(p, i.data); return p; }
       case "plan-lifecycle next_period": {
         const alt = plaene.find((x) => x.id === i.plan_id);
@@ -84,6 +84,7 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
         const p = { id: id("plan"), year: alt.year + 1, status: "DRAFT", department_id: null,
           available_capital_cents: ende.reduce((s, z) => s + (z.period_end_balance_cents ?? 0), 0) + (optionen.kapitalVersatz ?? 0) };
         plaene.push(p);
+        posten.push({ id: id("pos"), plan: p.id, name: `Übertrag aus ${alt.year}`, position_number: 0 });
         // D20: the new plan starts where the old one ended.
         for (const z of ende) anfang[`${p.id}:${z.account.id}`] = { opening_date: `${p.year}-01-01`, opening_balance_cents: z.period_end_balance_cents };
         return p;
@@ -135,7 +136,7 @@ describe("Übernahme: Vorschau", () => {
     // 2031: seven entries (one line on two accounts); 2032: one plus the balance-day difference.
     expect(schritte.filter((s) => s.art === "buchung").length).toBe(9);
     expect(schritte.filter((s) => s.art === "uebertrag").map((s) => (s as any).grund)).toEqual([
-      "Geldtransit laut Rechenschaftsbericht 2031", "Übernahmekorrektur 2031: Bestand laut Vermögensübersicht",
+      "Geldtransit laut Rechenschaftsbericht 2031 (1 von 1)", "Übernahmekorrektur 2031 (1 von 1): Bestand laut Vermögensübersicht",
     ]);
     // Income before expenses before transfers, within a year.
     const arten = schritte.filter((s) => s.key.startsWith("2031:") && (s.art === "buchung" || s.art === "uebertrag"))
@@ -251,7 +252,7 @@ describe("Übernahme: Lauf", () => {
     expect(p.schritte["2032:abschluss"]).toBe("geschlossen");
     // The third entry exists once and was taken over, not booked again.
     expect(p.ereignisse.filter((e) => e.uebernommen).length).toBe(1);
-    expect(d.buchungen.filter((b) => b.text === "Rechenschaftsbericht 2031: Sachspenden").length).toBe(1);
+    expect(d.buchungen.filter((b) => b.text === "Rechenschaftsbericht 2031, Zeile 7: Sachspenden").length).toBe(1);
     expect(d.buchungen.length).toBeGreaterThan(nachAbsturz);
   });
 
@@ -285,6 +286,42 @@ describe("Übernahme: Lauf", () => {
     expect(p.schritte["2031:haushalt"]).toBeUndefined();
     laufen([JAHR_1], DEV, d.cli, p, () => {});
     expect(d.plaene.map((x) => [x.year, x.status])).toEqual([[2031, "CLOSED"]]);
+  });
+
+  test("R2-3 ein Absturz direkt nach next_period ist fortsetzbar, obwohl der Haushalt einen Übertragsposten trägt", () => {
+    let einmal = true;
+    const d = dienst(DEV, { absturz: (area, op) => area === "plan-lifecycle" && op === "next_period" && einmal && !(einmal = false) });
+    const p = neu();
+    expect(() => laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {})).toThrow(/Absturz nach plan-lifecycle next_period/);
+    laufen([JAHR_1, JAHR_2], DEV, d.cli, p, () => {});
+    expect(d.plaene.map((x) => [x.year, x.status])).toEqual([[2031, "CLOSED"], [2032, "CLOSED"]]);
+  });
+
+  test("R2-3 ein fremder leerer Entwurf wird nicht übernommen", () => {
+    let einmal = true;
+    const d = dienst(DEV, { absturz: (area, op) => area === "plan-period" && op === "create" && einmal && !(einmal = false) });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
+    d.plaene[0].notes = "Haushalt 2031 (Kassier)";
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/schon ein Haushalt/);
+  });
+
+  test("R2-8 gleiche Überträge bekommen beim Fortsetzen je ihre eigene Kennung", () => {
+    const zwei = { ...JAHR_1, transit: [{ von: "Barkasse", nach: "Girokonto", betrag_cents: 15000 }, { von: "Barkasse", nach: "Girokonto", betrag_cents: 15000 }] };
+    let n = 0;
+    const d = dienst(DEV, { absturz: (area, op) => area === "money-account" && op === "transfer_create" && ++n === 2 });
+    const p = neu();
+    expect(() => laufen([zwei], DEV, d.cli, p, () => {})).toThrow(/Absturz/);
+    laufen([zwei], DEV, d.cli, p, () => {});
+    expect(p.schritte["2031:transit:0"]).not.toBe(p.schritte["2031:transit:1"]);
+    expect(d.uebertraege.length).toBe(3);
+  });
+
+  test("R2-7 das Wechselgeld steht im Laufprotokoll", () => {
+    const d = dienst();
+    const p = neu();
+    laufen([{ ...JAHR_1, wechselgeld: [{ konto: "Barkasse", zeile: 5, betrag_cents: 600000 }] }], DEV, d.cli, p, () => {});
+    expect(p.ereignisse.find((e) => e.art === "wechselgeld")?.eintraege).toEqual([{ konto: "Barkasse", zeile: 5, betrag_cents: 600000 }]);
   });
 
   test("R1-5 ein falsches Startkapital hält vor der ersten Buchung des Folgejahres an", () => {

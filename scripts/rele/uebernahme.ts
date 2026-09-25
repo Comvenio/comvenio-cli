@@ -109,14 +109,19 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
         buchungen.push({
           art: "buchung", key: `${y}:buchung:${k.zeile}:${konto}`, posten: `${y}:posten:${k.zeile}`, konto,
           richtung: einnahme ? "revenue" : "expense", cents: Math.abs(betrag), datum: `${y}-12-31`,
-          text: `Rechenschaftsbericht ${y}: ${k.text}`, grund: SAMMEL(y),
+          // The report line is the entry's durable import id (review R2-1):
+          // the cash book shows it, and an auditor finds the collective receipt by it.
+          text: `Rechenschaftsbericht ${y}, Zeile ${k.zeile}: ${k.text}`, grund: SAMMEL(y),
         });
       }
     }
     schritte.push(...buchungen.filter((b) => b.art === "buchung" && b.richtung === "revenue"));
     schritte.push(...buchungen.filter((b) => b.art === "buchung" && b.richtung === "expense"));
-    j.transit.forEach((u, n) => schritte.push({ art: "uebertrag", key: `${y}:transit:${n}`, von: u.von, nach: u.nach, cents: u.betrag_cents, datum: `${y}-12-31`, grund: `Geldtransit laut Rechenschaftsbericht ${y}` }));
-    j.korrektur.uebertraege.forEach((u, n) => schritte.push({ art: "uebertrag", key: `${y}:korrektur:${n}`, von: u.von, nach: u.nach, cents: u.betrag_cents, datum: `${y}-12-31`, grund: `Übernahmekorrektur ${y}: Bestand laut Vermögensübersicht` }));
+    // Numbered, so two alike transfers never share a reason (review R2-8).
+    j.transit.forEach((u, n) => schritte.push({ art: "uebertrag", key: `${y}:transit:${n}`, von: u.von, nach: u.nach, cents: u.betrag_cents, datum: `${y}-12-31`,
+      grund: `Geldtransit laut Rechenschaftsbericht ${y} (${n + 1} von ${j.transit.length})` }));
+    j.korrektur.uebertraege.forEach((u, n) => schritte.push({ art: "uebertrag", key: `${y}:korrektur:${n}`, von: u.von, nach: u.nach, cents: u.betrag_cents, datum: `${y}-12-31`,
+      grund: `Übernahmekorrektur ${y} (${n + 1} von ${j.korrektur.uebertraege.length}): Bestand laut Vermögensübersicht` }));
     schritte.push({ art: "probe", key: `${y}:probe` });
     for (const k of geld) schritte.push({ art: "auszug", key: `${y}:auszug:${k.name}`, konto: k.name, cents: k.ende_cents as number });
     schritte.push({ art: "abschluss", key: `${y}:abschluss` });
@@ -227,8 +232,13 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
       const da = plaene.find((p) => p.year === j.jahr && !p.department_id);
       const key = `${j.jahr}:haushalt`;
       if (!da || s[key] === da.id) continue;
-      if (s[key] === undefined && s[`${key}:begonnen`] && da.status === "DRAFT"
-        && (fin("plan-period", "positions", { plan_id: da.id }) as any[]).length === 0) {
+      const vorjahr = plaene.find((p) => p.year === j.jahr - 1 && !p.department_id);
+      const herkunft = s[`${j.jahr - 1}:haushalt`] !== undefined
+        ? vorjahr?.id === s[`${j.jahr - 1}:haushalt`] && vorjahr?.status === "CLOSED"
+        : da.notes === `Übernahme aus Rechenschaftsbericht ${j.jahr}`;
+      const ohneBuchung = () => (fin("money-account", "reconciliation", { plan_id: da.id }).accounts as any[])
+        .every((a) => !(a.period_revenue_cents ?? a.revenue_cents) && !(a.period_expense_cents ?? a.expense_cents));
+      if (s[key] === undefined && s[`${key}:begonnen`] && da.status === "DRAFT" && herkunft && ohneBuchung()) {
         merke(key, da.id);
         vermerke({ key, art: "haushalt", uebernommen: da.id });
         continue;
@@ -257,7 +267,7 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           posten: fin("plan-period", "positions", { plan_id: planId }) as any[],
           buchungen: buchungen.filter((r) => !r.transfer_id && r.reversal_of_journal_number == null),
           uebertraege: (fin("money-account", "transfers", { plan_id: planId }) as any[]).filter((t) => t.status !== "REVERSED"),
-          belegt: new Set(),
+          belegt: new Set(Object.values(s).filter((v): v is string => typeof v === "string")),
         };
         bestand.set(jahr, b);
       }
@@ -299,6 +309,8 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           break;
         }
         case "haushalt": {
+          const wechsel = jahrVon(x.key).wechselgeld;
+          if (wechsel.length) vermerke({ key: `${x.jahr}:wechselgeld`, art: "wechselgeld", eintraege: wechsel, hinweis: "zwischen den Teilspalten eines Kontos, nicht gebucht (§4.2b, DC-5)" });
           merke(`${x.key}:begonnen`, true);
           if (x.startkapital_cents !== null) {
             merke(x.key, fin("plan-period", "create", { data: { year: x.jahr, available_capital_cents: x.startkapital_cents, notes: `Übernahme aus Rechenschaftsbericht ${x.jahr}` } }, x.key).id);
@@ -347,7 +359,7 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           break;
         case "buchung":
           merke(x.key, fin("entry", "entry_create", { position_id: s[x.posten], data: {
-            description: x.text, booking_date: x.datum, money_account_id: konten()[x.konto],
+            description: x.text, booking_date: x.datum, money_account_id: konten()[x.konto], notes: `Übernahme ${x.key}`,
             [x.richtung === "revenue" ? "revenue_cents" : "expense_cents"]: x.cents, receipt_exemption_reason: x.grund,
           } }, x.key).id);
           break;
