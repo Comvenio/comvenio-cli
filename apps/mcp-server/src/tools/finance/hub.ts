@@ -260,7 +260,7 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "receipt", method: "PUT", template: "/entries/{entry_id}/receipt", path: (i) => `/entries/${str(i, "entry_id")}/receipt`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
     { op: "versions", method: "GET", template: "/entries/{entry_id}/versions", path: (i) => `/entries/${str(i, "entry_id")}/versions`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
     // buchhaltung-16-02: the receipt of an entry as a file.
-    { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true },
+    { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },
     { op: "tax_sphere", method: "PUT", template: "/positions/{position_id}/tax-sphere", path: (i) => `/positions/${str(i, "position_id")}/tax-sphere`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
     // Korrekturschleife (Tom 2026-09-23): Beanstandung einer Buchung mit Grund.
     // Erledigt wird sie durch Korrektur, Storno, Beleg oder Rückzug.
