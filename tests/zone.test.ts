@@ -146,6 +146,12 @@ describe("Angaben zur Zone (vereinsgebiet-zonen 05)", () => {
       "≈ 142 (Schätzung fehlgeschlagen)",
     );
     expect(gebaeudeText({ building_count: null, building_count_estimate: null, building_count_estimate_status: null })).toBe("noch nicht geschätzt");
+    expect(
+      gebaeudeText({
+        building_count: null, building_count_estimate: null, building_count_estimate_status: "failed",
+        building_count_estimate_error: "Schätzung abgebrochen — neu schätzen",
+      }),
+    ).toBe("Schätzung abgebrochen — neu schätzen");
   });
 
   test("TC-08 --building-count and --notes become the PATCH body, „leer“ clears", () => {

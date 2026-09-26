@@ -46,6 +46,8 @@ export type ZoneRead = {
   building_count_estimate?: number | null;
   building_count_estimated_at?: string | null;
   building_count_estimate_status?: "pending" | "ok" | "failed" | null;
+  /** Reason of a failed or aborted estimate (05 §18b). */
+  building_count_estimate_error?: string | null;
   notes?: string | null;
 };
 export type TaskZoneRead = { zone_id: string; zone_set_id: string; sort_order: number };
@@ -227,11 +229,14 @@ function colorOption(value: string | undefined): string | undefined {
 }
 
 /** Displayed building count (05 §18b): hand-entered wins, else the estimate with „≈“. */
-export function gebaeudeText(z: Pick<ZoneRead, "building_count" | "building_count_estimate" | "building_count_estimate_status">): string {
+export function gebaeudeText(
+  z: Pick<ZoneRead, "building_count" | "building_count_estimate" | "building_count_estimate_status" | "building_count_estimate_error">,
+): string {
   if (z.building_count != null) return String(z.building_count);
   if (z.building_count_estimate_status === "pending") return "wird geschätzt";
   const alt = z.building_count_estimate != null ? `≈ ${z.building_count_estimate}` : null;
-  if (z.building_count_estimate_status === "failed") return alt ? `${alt} (Schätzung fehlgeschlagen)` : "Schätzung fehlgeschlagen";
+  const grund = z.building_count_estimate_error || "Schätzung fehlgeschlagen";
+  if (z.building_count_estimate_status === "failed") return alt ? `${alt} (${grund})` : grund;
   return alt ?? "noch nicht geschätzt";
 }
 
