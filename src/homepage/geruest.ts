@@ -181,7 +181,9 @@ function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): {
         const art = artBeschriftung(k);
         r.push({ pfad: `${tab.id}/${w.id}/alt:${i}`, art: "alt", name: `${art.beschriftung} · Position ${i + 1}`, beschriftung: art.beschriftung, kuerzel: art.kuerzel, kind: k, altformat: true, befunde: [], kinder: [] });
       } else if (kind.hasAttribute("data-reihe")) {
-        const spalten = Number(kind.getAttribute("data-spalten")) || kind.children.length;
+        // Like the browser: 1–4 from data-spalten, else two columns (the service drops other values).
+        const roh = (kind.getAttribute("data-spalten") ?? "").trim();
+        const spalten = /^[1-4]$/.test(roh) ? Number(roh) : 2;
         const breiten = wirksameBreiten(breitenAusText(kind.getAttribute("data-breiten") ?? ""), spalten);
         // The node name is the designer's („Reihe · 65 / 35“, TC-CC-17-01); the text output says the columns too (§4.7).
         r.push({ pfad: `${tab.id}/${w.id}/reihe:${reihen.indexOf(kind)}`, art: "reihe", name: `Reihe · ${breiten ? breiten.join(" / ") : "gleich"}`, beschriftung: reihenText(spalten, breiten), kuerzel: "▥", altformat, befunde: [], kinder: besuche(kind) });

@@ -8,7 +8,7 @@ import { writeFileSync } from "node:fs";
 import { baumAlsText } from "../homepage/geruest.ts";
 import type { SlotEntry } from "../homepage/geruest.ts";
 import type { BulkTab, StyleEntry } from "../homepage/umwandeln.ts";
-import { berichtAlsText, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree } from "../homepage/befehle.ts";
+import { applyBody, berichtAlsText, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree } from "../homepage/befehle.ts";
 
 // Homepage is declarative (D-12): the operating agent composes JSON from the
 // schema, previews it, and applies it directly through club-service.
@@ -299,11 +299,7 @@ export function registerHomepageCommands(cli: CAC): void {
             throw new Error("homepage apply benoetigt --file <home.json> (vom Agenten komponierte Struktur).");
           }
           const struct = readJsonFile<{ tabs?: unknown[] } | unknown[]>(opts.file);
-          const tabs = Array.isArray(struct) ? struct : (struct.tabs ?? []);
-          if (!Array.isArray(tabs) || tabs.length === 0) {
-            throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
-          }
-          const body = { clear_existing: !!opts.clear, tabs };
+          const body = applyBody(struct, !!opts.clear);
           // NO ai-service — direct to the club-service bulk endpoint.
           const res = await client.post<BulkCreateResponse>(
             "club",

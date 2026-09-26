@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
 import { baum, baumAlsText, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
-import { convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
+import { applyBody, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
 import { strukturBefunde } from "../src/verify/geruest-befunde.ts";
@@ -369,5 +369,18 @@ describe("Reihen (10 §4.7)", () => {
     };
     const { tabs } = await liveAlsBulk(client, "c");
     expect(tabs[0].sections.map((s) => s.spalten_breiten)).toEqual([null, [65, 35], [65, 35]]);
+    // TC-23: export → file → apply --clear: the bulk body carries the widths unchanged.
+    const datei = JSON.parse(JSON.stringify({ tabs }));
+    const body = applyBody(datei, true);
+    expect(body.clear_existing).toBe(true);
+    expect((body.tabs as typeof tabs)[0].sections.map((s) => s.spalten_breiten)).toEqual([null, [65, 35], [65, 35]]);
+    expect(() => applyBody({ tabs: [] }, false)).toThrow("mindestens einen Tab");
+  });
+
+  test("a row without valid data-spalten counts two columns, like the browser (Prüfung K10-3 R1)", () => {
+    const b = baum({ id: "t", slug: "start" }, [{ id: "s", sort_order: 0, layout: "full" }], [
+      { id: "w", kind: "custom_html", section_id: "s", config: { html: '<section aria-label="A"><div data-reihe=""><p data-slot="a"></p><p data-slot="b"></p><p data-slot="c"></p></div></section>', slots: { a: { kind: "text", config: {} }, b: { kind: "text", config: {} }, c: { kind: "text", config: {} } } } },
+    ]);
+    expect(baumAlsText(b)).toContain("Reihe · 2 Spalten · gleich");
   });
 });
