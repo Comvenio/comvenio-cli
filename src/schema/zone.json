@@ -1,0 +1,56 @@
+{
+  "domain": "zone",
+  "generated": false,
+  "source": [
+    "Backend/Microservice-Backend/club-service/app/schemas/club_zone.py",
+    "Backend/Microservice-Backend/task-service/app/schemas/task_zone.py"
+  ],
+  "note": "Vereinsgebiet: Einteilungen und Zonen liegen im club-service, die Zuteilung Aufgabe ↔ Zone im task-service. Geometrie als GeoJSON [lng, lat].",
+  "commands": {
+    "zone_sets": [
+      "zone set list",
+      "zone set create --name <name> [--center <lat,lng>] [--zoom <3-21>]",
+      "zone set update <zone-set-id> [--name ...] [--center <lat,lng>] [--zoom ...] [--expected-version <n>]",
+      "zone set delete <zone-set-id>"
+    ],
+    "zones": [
+      "zone list --set <zone-set-id>",
+      "zone create --set <zone-set-id> --name <name> --geojson <datei> [--color #RRGGBB]",
+      "zone update <zone-id> [--name ...] [--color #RRGGBB] [--geojson <datei>] [--expected-version <n>]",
+      "zone delete <zone-id>",
+      "zone import --set <zone-set-id> --geojson <FeatureCollection>",
+      "zone overview --set <zone-set-id> [--status open,in_progress,completed]"
+    ],
+    "task_zones": [
+      "task-zones <task-id>",
+      "task-zones <task-id> add <zone-id>",
+      "task-zones <task-id> remove <zone-id>"
+    ]
+  },
+  "options": ["--club", "--set", "--name", "--center", "--zoom", "--color", "--geojson", "--status", "--expected-version", "--json"],
+  "geometry": {
+    "types": ["Polygon", "MultiPolygon"],
+    "rules": [
+      "jeder Ring geschlossen, mindestens vier Punkte",
+      "Koordinaten [lng, lat] im Bereich -180…180 / -90…90",
+      "höchstens 2000 Punkte je Zone"
+    ],
+    "import": "FeatureCollection; je Feature eine Zone, Name aus properties.name, Farbe wahlweise aus properties.color"
+  },
+  "limits": { "zone_sets_per_club": 50, "zones_per_set": 200, "ids_per_lookup": 100 },
+  "defaults": { "zoom": 16, "color": "#0E847B" },
+  "errors": {
+    "409": ["zone_set_changed", "zone_changed"],
+    "422": ["invalid_geometry", "limit_reached", "zone_set_mismatch", "zone_deleted", "task_is_template"],
+    "404": ["zone_set_not_found", "zone_not_found", "zone_not_assigned"],
+    "409_task": ["zone_already_assigned"],
+    "503": ["club_service_unavailable"]
+  },
+  "overview_states": {
+    "keiner": "keine Aufgabe im Filter oder keine mit Zuständigen",
+    "arbeit": "mindestens eine zugewiesene Aufgabe in Arbeit",
+    "offen": "zugewiesen, offen",
+    "erledigt": "nur mit Filter completed: alle Aufgaben im Filter erledigt"
+  },
+  "exit_codes": { "0": "Erfolg", "1": "Dienstfehler (Code und Grund ausgegeben) oder Import mit übersprungenen Features", "2": "ungültige Eingabe vor dem Aufruf" }
+}

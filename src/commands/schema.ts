@@ -18,6 +18,7 @@ import member from "../schema/member.json" with { type: "json" };
 import booking from "../schema/booking.json" with { type: "json" };
 import task from "../schema/task.json" with { type: "json" };
 import sponsor from "../schema/sponsor.json" with { type: "json" };
+import zone from "../schema/zone.json" with { type: "json" };
 import meeting from "../schema/meeting.json" with { type: "json" };
 import data from "../schema/data.json" with { type: "json" };
 import team from "../schema/team.json" with { type: "json" };
@@ -68,6 +69,7 @@ const SCHEMAS: Record<string, unknown> = {
   booking,
   task,
   sponsor,
+  zone,
   meeting,
   data,
   team,
@@ -88,6 +90,7 @@ const DOMAIN_SUMMARY: Record<string, string> = {
   booking: "reservation_status, object_type + PATCH-Pflichtfelder",
   task: "status, priority, context_type + Create/Assignment-Felder",
   sponsor: "Lokale Sponsoren, Sponsoring-Angebote, Assignments, Logos und Vertragsdateien",
+  zone: "Vereinsgebiet: Einteilungen, Zonen (GeoJSON), Import, Übersicht und Zonen einer Aufgabe",
   meeting: "Sitzungsserien, Protokolle, Agenda, Teilnehmer, Voting, Beschluesse und Eintraege",
   data: "Dateien, Ordner, Rechte, Papers, Area-Sharing und Export",
   team: "Teams, Team-Mitglieder und Ressourcenprioritaeten",
