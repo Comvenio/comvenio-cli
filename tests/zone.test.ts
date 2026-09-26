@@ -5,7 +5,9 @@ import { join } from "node:path";
 
 import { HttpError } from "../src/http.ts";
 import {
+  angabenBody,
   describeServiceError,
+  gebaeudeText,
   geometryProblem,
   overviewRows,
   parseCenter,
@@ -132,5 +134,32 @@ describe("zone schema and docs", () => {
 
   test("TC-08 --json is offered on both commands", () => {
     expect(source.match(/\.option\("--json"/g)?.length).toBe(2);
+  });
+});
+
+describe("Angaben zur Zone (vereinsgebiet-zonen 05)", () => {
+  test("TC-08 displayed building count: hand-entered wins, estimate with ≈, states in words", () => {
+    expect(gebaeudeText({ building_count: 120, building_count_estimate: 142, building_count_estimate_status: "ok" })).toBe("120");
+    expect(gebaeudeText({ building_count: null, building_count_estimate: 142, building_count_estimate_status: "ok" })).toBe("≈ 142");
+    expect(gebaeudeText({ building_count: null, building_count_estimate: null, building_count_estimate_status: "pending" })).toBe("wird geschätzt");
+    expect(gebaeudeText({ building_count: null, building_count_estimate: 142, building_count_estimate_status: "failed" })).toBe(
+      "≈ 142 (Schätzung fehlgeschlagen)",
+    );
+    expect(gebaeudeText({ building_count: null, building_count_estimate: null, building_count_estimate_status: null })).toBe("noch nicht geschätzt");
+    expect(
+      gebaeudeText({
+        building_count: null, building_count_estimate: null, building_count_estimate_status: "failed",
+        building_count_estimate_error: "Schätzung abgebrochen — neu schätzen",
+      }),
+    ).toBe("Schätzung abgebrochen — neu schätzen");
+  });
+
+  test("TC-08 --building-count and --notes become the PATCH body, „leer“ clears", () => {
+    expect(angabenBody({ buildingCount: "120", notes: "Zwei Häuser" })).toEqual({ building_count: 120, notes: "Zwei Häuser" });
+    expect(angabenBody({ buildingCount: "leer", notes: "" })).toEqual({ building_count: null, notes: null });
+    expect(angabenBody({})).toEqual({});
+    expect(() => angabenBody({ buildingCount: "100001" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ buildingCount: "12a" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ notes: "x".repeat(2001) })).toThrow(ZoneInputError);
   });
 });

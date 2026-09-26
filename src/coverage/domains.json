@@ -874,6 +874,7 @@
         "list",
         "create",
         "update",
+        "estimate",
         "delete",
         "import",
         "overview",
