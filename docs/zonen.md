@@ -40,6 +40,8 @@ Gelöschte Zonen bleiben an den Aufgaben und werden dort als gelöscht angezeigt
 comvenio zone update <zone-id> --building-count 120 --notes "Zwei Mehrfamilienhäuser am Ende der Straße"
 comvenio zone update <zone-id> --building-count leer
 comvenio zone estimate <zone-id>
+comvenio zone update <zone-id> --pate <member-id> --treffpunkt "49.05,12.36,Material bei Familie Huber"   --fortbewegung fuss --besonderheiten hunde,zugang
+comvenio zone update <zone-id> --pate leer --treffpunkt leer --fortbewegung leer --besonderheiten leer
 ```
 
 Die Gebäudezahl schätzt der club-service selbst: Nach dem Anlegen einer Zone und nach jeder
@@ -48,6 +50,14 @@ Die Gebäudezahl schätzt der club-service selbst: Nach dem Anlegen einer Zone u
 steht ohne „≈“ und hat Vorrang, `--building-count leer` lässt wieder die Schätzung gelten.
 `zone estimate` startet die Zählung neu, etwa nach „Schätzung fehlgeschlagen“ — das Ergebnis steht
 nach wenigen Sekunden in `zone list`. `--notes ""` löscht die Notiz.
+
+Weitere Angaben (Sub-File 07): `--pate` nimmt die Mitglieds-ID eines Vereinsmitglieds — der
+club-service prüft sie beim member-service und antwortet sonst mit `422 pate_not_member`
+(`503 member_service_unavailable`, wenn der Mitgliederdienst nicht antwortet). `--treffpunkt`
+erwartet `<lat>,<lng>` und wahlweise eine Beschreibung dahinter, die selbst Kommas enthalten
+darf. `--fortbewegung` ist eine aus `fuss`, `rad`, `auto`; `--besonderheiten` eine Liste aus
+`hunde`, `zugang`, `mehrfamilien`, `parken`. „leer“ löscht jeweils. Die Straßenliste der Zone
+schreibt die Schätzung mit; `zone list --json` liefert sie im Feld `strassen`.
 
 ## Import
 
