@@ -34,6 +34,21 @@ abgewiesen (Exit 2).
 
 Gelöschte Zonen bleiben an den Aufgaben und werden dort als gelöscht angezeigt.
 
+## Angaben zur Zone
+
+```bash
+comvenio zone update <zone-id> --building-count 120 --notes "Zwei Mehrfamilienhäuser am Ende der Straße"
+comvenio zone update <zone-id> --building-count leer
+comvenio zone estimate <zone-id>
+```
+
+Die Gebäudezahl schätzt der club-service selbst: Nach dem Anlegen einer Zone und nach jeder
+Änderung ihrer Form zählt er die Adressen (Straße und Hausnummer) im Polygon aus OpenStreetMap.
+`zone list` zeigt sie in der Spalte „Gebäude“ mit „≈“; eine eingetragene Zahl (`--building-count`)
+steht ohne „≈“ und hat Vorrang, `--building-count leer` lässt wieder die Schätzung gelten.
+`zone estimate` startet die Zählung neu, etwa nach „Schätzung fehlgeschlagen“ — das Ergebnis steht
+nach wenigen Sekunden in `zone list`. `--notes ""` löscht die Notiz.
+
 ## Import
 
 ```bash

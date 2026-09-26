@@ -41,6 +41,12 @@ export type ZoneRead = {
   version: number;
   deleted: boolean;
   zone_set_name?: string | null;
+  // Angaben (vereinsgebiet-zonen 05)
+  building_count?: number | null;
+  building_count_estimate?: number | null;
+  building_count_estimated_at?: string | null;
+  building_count_estimate_status?: "pending" | "ok" | "failed" | null;
+  notes?: string | null;
 };
 export type TaskZoneRead = { zone_id: string; zone_set_id: string; sort_order: number };
 export type ZoneTaskItem = {
@@ -64,6 +70,8 @@ export type ZoneCommandOpts = {
   set?: string;
   status?: string;
   expectedVersion?: string;
+  buildingCount?: string;
+  notes?: string;
 };
 
 /** Invalid input found before any call (exit code 2). */
@@ -218,6 +226,37 @@ function colorOption(value: string | undefined): string | undefined {
   return value;
 }
 
+/** Displayed building count (05 §18b): hand-entered wins, else the estimate with „≈“. */
+export function gebaeudeText(z: Pick<ZoneRead, "building_count" | "building_count_estimate" | "building_count_estimate_status">): string {
+  if (z.building_count != null) return String(z.building_count);
+  if (z.building_count_estimate_status === "pending") return "wird geschätzt";
+  const alt = z.building_count_estimate != null ? `≈ ${z.building_count_estimate}` : null;
+  if (z.building_count_estimate_status === "failed") return alt ? `${alt} (Schätzung fehlgeschlagen)` : "Schätzung fehlgeschlagen";
+  return alt ?? "noch nicht geschätzt";
+}
+
+/** building_count / notes for PATCH; "" or "leer" clears (null). Kept apart from prune(), which drops null. */
+export function angabenBody(opts: Pick<ZoneCommandOpts, "buildingCount" | "notes">): { building_count?: number | null; notes?: string | null } {
+  const body: { building_count?: number | null; notes?: string | null } = {};
+  if (opts.buildingCount !== undefined) {
+    const raw = String(opts.buildingCount).trim();
+    if (raw === "" || raw.toLowerCase() === "leer") body.building_count = null;
+    else {
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 0 || n > 100000) {
+        throw new ZoneInputError(`--building-count erwartet 0 bis 100000 oder „leer“, gefunden: ${raw}`);
+      }
+      body.building_count = n;
+    }
+  }
+  if (opts.notes !== undefined) {
+    const text = String(opts.notes);
+    if (text.length > 2000) throw new ZoneInputError(`--notes höchstens 2000 Zeichen (gefunden: ${text.length})`);
+    body.notes = text.trim() === "" ? null : text;
+  }
+  return body;
+}
+
 /** Service error in one line: status, code and reason (DC-3). */
 export function describeServiceError(err: HttpError): string {
   let detail: unknown = null;
@@ -340,6 +379,7 @@ async function runZone(args: string[], opts: ZoneCommandOpts): Promise<void> {
           ? renderTable(zones, [
               { header: "Name", width: 30, get: (z) => z.name },
               { header: "Farbe", width: 8, get: (z) => z.color },
+              { header: "Gebäude", width: 22, get: (z) => gebaeudeText(z) },
               { header: "Version", width: 7, get: (z) => String(z.version) },
               { header: "ID", width: 36, get: (z) => z.id },
             ])
@@ -361,10 +401,17 @@ async function runZone(args: string[], opts: ZoneCommandOpts): Promise<void> {
       if (!id) throw new ZoneInputError("zone update <zone-id> benötigt eine ID");
       const geometry = opts.geojson ? singleGeometry(readGeoJson(opts.geojson), opts.geojson) : undefined;
       const color = colorOption(opts.color);
+      const angaben = angabenBody(opts);
       const version = await versionOfZone(client, clubId, id, intOption(opts.expectedVersion, "--expected-version"));
-      const body = prune({ expected_version: version, name: opts.name, color, geometry });
+      const body = { ...prune({ expected_version: version, name: opts.name, color, geometry }), ...angaben };
       const updated = await client.patch<ZoneRead>("club", `/clubs/${clubId}/zones/${id}`, body);
       output(updated, opts.json, () => `Zone geändert: ${updated.name} (Version ${updated.version})`);
+      return;
+    }
+    case "estimate": {
+      if (!id) throw new ZoneInputError("zone estimate <zone-id> benötigt eine ID");
+      const zone = await client.post<ZoneRead>("club", `/clubs/${clubId}/zones/${id}/estimate-buildings`, {});
+      output(zone, opts.json, () => `Schätzung gestartet: ${zone.name} — das Ergebnis steht nach wenigen Sekunden in „zone list“`);
       return;
     }
     case "delete": {
@@ -430,7 +477,7 @@ async function runZone(args: string[], opts: ZoneCommandOpts): Promise<void> {
       return;
     }
     default:
-      throw new ZoneInputError("zone <set …|list|create|update|delete|import|overview>");
+      throw new ZoneInputError("zone <set …|list|create|update|estimate|delete|import|overview>");
   }
 }
 
@@ -490,7 +537,7 @@ async function guarded(run: () => Promise<void>): Promise<void> {
 
 export function registerZoneCommands(cli: CAC): void {
   cli
-    .command("zone [...args]", "Vereinsgebiet: set list|create|update|delete · list|create|update|delete · import · overview")
+    .command("zone [...args]", "Vereinsgebiet: set list|create|update|delete · list|create|update|estimate|delete · import · overview")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--set <id>", "Einteilung (zone-set-id)")
     .option("--name <v>", "Name der Einteilung bzw. Zone")
@@ -500,6 +547,8 @@ export function registerZoneCommands(cli: CAC): void {
     .option("--geojson <datei>", "Polygon/MultiPolygon, Feature oder FeatureCollection (import)")
     .option("--status <liste>", "overview: open,in_progress,completed (Standard open,in_progress)")
     .option("--expected-version <n>", "update: erwartete Version (sonst aktuell gelesen)")
+    .option("--building-count <n>", "update: Zahl der Gebäude (überschreibt die Schätzung; „leer“ löscht sie)")
+    .option("--notes <text>", "update: Notiz zur Zone (leer löscht sie)")
     .option("--json", "JSON-Ausgabe (Rohantwort)")
     .action((args: string[], opts: ZoneCommandOpts) => guarded(() => runZone(args, opts)));
 

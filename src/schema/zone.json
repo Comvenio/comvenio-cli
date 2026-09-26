@@ -16,7 +16,8 @@
     "zones": [
       "zone list --set <zone-set-id>",
       "zone create --set <zone-set-id> --name <name> --geojson <datei> [--color #RRGGBB]",
-      "zone update <zone-id> [--name ...] [--color #RRGGBB] [--geojson <datei>] [--expected-version <n>]",
+      "zone update <zone-id> [--name ...] [--color #RRGGBB] [--geojson <datei>] [--building-count <n|leer>] [--notes <text>] [--expected-version <n>]",
+      "zone estimate <zone-id>",
       "zone delete <zone-id>",
       "zone import --set <zone-set-id> --geojson <FeatureCollection>",
       "zone overview --set <zone-set-id> [--status open,in_progress,completed]"
@@ -27,7 +28,7 @@
       "task-zones <task-id> remove <zone-id>"
     ]
   },
-  "options": ["--club", "--set", "--name", "--center", "--zoom", "--color", "--geojson", "--status", "--expected-version", "--json"],
+  "options": ["--club", "--set", "--name", "--center", "--zoom", "--color", "--geojson", "--status", "--expected-version", "--building-count", "--notes", "--json"],
   "geometry": {
     "types": ["Polygon", "MultiPolygon"],
     "rules": [
@@ -39,6 +40,11 @@
   },
   "limits": { "zone_sets_per_club": 50, "zones_per_set": 200, "ids_per_lookup": 100 },
   "defaults": { "zoom": 16, "color": "#0E847B" },
+  "angaben": {
+    "building_count": "von Hand, 0–100000, überschreibt die Schätzung; „leer“ löscht",
+    "building_count_estimate": "Adresszählung aus OpenStreetMap, nach Anlegen und Formänderung oder mit „zone estimate“; Status pending|ok|failed",
+    "notes": "Notiz, höchstens 2000 Zeichen"
+  },
   "errors": {
     "409": ["zone_set_changed", "zone_changed"],
     "422": ["invalid_geometry", "limit_reached", "zone_set_mismatch", "zone_deleted", "task_is_template"],
