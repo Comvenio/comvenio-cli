@@ -862,6 +862,35 @@
         "src/commands/weekly-preview.ts"
       ],
       "docs": []
+    },
+    {
+      "id": "zone",
+      "status": "covered",
+      "actions": [
+        "set list",
+        "set create",
+        "set update",
+        "set delete",
+        "list",
+        "create",
+        "update",
+        "delete",
+        "import",
+        "overview",
+        "task-zones",
+        "task-zones add",
+        "task-zones remove"
+      ],
+      "gaps": [],
+      "intentional_exclusions": [
+        "Zeichnen und Eckpunkte ändern geschieht im Gebiets-Editor der Web-App; die CLI arbeitet mit GeoJSON-Dateien."
+      ],
+      "source": [
+        "src/commands/zone.ts"
+      ],
+      "docs": [
+        "docs/zonen.md"
+      ]
     }
   ],
   "uncovered_model": {

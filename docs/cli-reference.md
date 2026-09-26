@@ -52,6 +52,7 @@ comvenio <command> ... --json
 | `plan` | Geländepläne, Zonen, Tische, Marker, Gäste, Illustration | `comvenio plan --help` |
 | `tournament` | Serien, Ausführungen, Teilnehmer, Draw, Spielplan und Ergebnisse | [`turniere.md`](turniere.md) |
 | `sponsor` | lokale Sponsoren, Produkte, Verträge, Zuordnungen, Verantwortliche | [`sponsoring.md`](sponsoring.md) |
+| `zone`, `task-zones` | Vereinsgebiet: Einteilungen, Zonen, GeoJSON-Import, Übersicht, Zonen einer Aufgabe | [`zonen.md`](zonen.md) |
 
 ## Authentifizierung
 

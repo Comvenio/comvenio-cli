@@ -53,6 +53,7 @@ import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
 import { registerFunctionCommands } from "./commands/function.ts";
 import { registerActionCommands } from "./commands/action.ts";
+import { registerZoneCommands } from "./commands/zone.ts";
 import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
 
@@ -374,6 +375,7 @@ registerRoleCommands(cli);
 registerAgentCommands(cli);
 registerFunctionCommands(cli);
 registerActionCommands(cli);
+registerZoneCommands(cli);
 
 cli.help();
 cli.version(pkg.version);
