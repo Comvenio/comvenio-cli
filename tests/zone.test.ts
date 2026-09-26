@@ -163,3 +163,34 @@ describe("Angaben zur Zone (vereinsgebiet-zonen 05)", () => {
     expect(() => angabenBody({ notes: "x".repeat(2001) })).toThrow(ZoneInputError);
   });
 });
+
+describe("Weitere Angaben (vereinsgebiet-zonen 07)", () => {
+  const m = "0b7e9a4c-2f1d-4c3a-9e8b-1a2b3c4d5e6f";
+
+  test("TC-10 --pate --treffpunkt --fortbewegung --besonderheiten build the PATCH body", () => {
+    expect(
+      angabenBody({ pate: m, treffpunkt: "49.05, 12.36, Material bei Huber, Hof", fortbewegung: "Rad", besonderheiten: "hunde, parken,hunde" }),
+    ).toEqual({
+      pate_member_id: m,
+      treffpunkt: { lat: 49.05, lng: 12.36, text: "Material bei Huber, Hof" },
+      fortbewegung: "rad",
+      besonderheiten: ["hunde", "parken"],
+    });
+    expect(angabenBody({ treffpunkt: "49.05,12.36" })).toEqual({ treffpunkt: { lat: 49.05, lng: 12.36, text: null } });
+  });
+
+  test("TC-10 „leer“ clears every field", () => {
+    expect(angabenBody({ pate: "leer", treffpunkt: "leer", fortbewegung: "", besonderheiten: "leer" })).toEqual({
+      pate_member_id: null, treffpunkt: null, fortbewegung: null, besonderheiten: null,
+    });
+  });
+
+  test("TC-10 invalid input stops before any call", () => {
+    expect(() => angabenBody({ pate: "anna" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ treffpunkt: "49.05" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ treffpunkt: "91,12" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ treffpunkt: `49,12,${"x".repeat(201)}` })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ fortbewegung: "boot" })).toThrow(ZoneInputError);
+    expect(() => angabenBody({ besonderheiten: "hunde,drachen" })).toThrow(ZoneInputError);
+  });
+});

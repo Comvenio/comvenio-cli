@@ -49,7 +49,18 @@ export type ZoneRead = {
   /** Reason of a failed or aborted estimate (05 §18b). */
   building_count_estimate_error?: string | null;
   notes?: string | null;
+  // Weitere Angaben (vereinsgebiet-zonen 07)
+  pate_member_id?: string | null;
+  treffpunkt_lat?: number | null;
+  treffpunkt_lng?: number | null;
+  treffpunkt_text?: string | null;
+  fortbewegung?: Fortbewegung | null;
+  besonderheiten?: Besonderheit[] | null;
+  strassen?: ZonenStrasse[] | null;
 };
+export type Fortbewegung = "fuss" | "rad" | "auto";
+export type Besonderheit = "hunde" | "zugang" | "mehrfamilien" | "parken";
+export type ZonenStrasse = { name: string; von: string | null; bis: string | null; adressen: number };
 export type TaskZoneRead = { zone_id: string; zone_set_id: string; sort_order: number };
 export type ZoneTaskItem = {
   id: string;
@@ -74,6 +85,10 @@ export type ZoneCommandOpts = {
   expectedVersion?: string;
   buildingCount?: string;
   notes?: string;
+  pate?: string;
+  treffpunkt?: string;
+  fortbewegung?: string;
+  besonderheiten?: string;
 };
 
 /** Invalid input found before any call (exit code 2). */
@@ -240,9 +255,42 @@ export function gebaeudeText(
   return alt ?? "noch nicht geschätzt";
 }
 
-/** building_count / notes for PATCH; "" or "leer" clears (null). Kept apart from prune(), which drops null. */
-export function angabenBody(opts: Pick<ZoneCommandOpts, "buildingCount" | "notes">): { building_count?: number | null; notes?: string | null } {
-  const body: { building_count?: number | null; notes?: string | null } = {};
+export type AngabenBody = {
+  building_count?: number | null;
+  notes?: string | null;
+  pate_member_id?: string | null;
+  treffpunkt?: { lat: number; lng: number; text: string | null } | null;
+  fortbewegung?: Fortbewegung | null;
+  besonderheiten?: Besonderheit[] | null;
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const FORTBEWEGUNG: readonly Fortbewegung[] = ["fuss", "rad", "auto"];
+const BESONDERHEITEN: readonly Besonderheit[] = ["hunde", "zugang", "mehrfamilien", "parken"];
+
+function leer(raw: string): boolean {
+  return raw.trim() === "" || raw.trim().toLowerCase() === "leer";
+}
+
+/** "<lat>,<lng>[,Text]" — the text may itself contain commas (07 §4.5). */
+export function treffpunktOption(raw: string): AngabenBody["treffpunkt"] {
+  if (leer(raw)) return null;
+  const [latRaw, lngRaw, ...rest] = raw.split(",");
+  const lat = Number(latRaw?.trim());
+  const lng = Number(lngRaw?.trim());
+  if (!latRaw?.trim() || !lngRaw?.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw new ZoneInputError(`--treffpunkt erwartet "<lat>,<lng>[,Text]" oder „leer“, gefunden: ${raw}`);
+  }
+  const text = rest.join(",").trim();
+  if (text.length > 200) throw new ZoneInputError(`--treffpunkt: Beschreibung höchstens 200 Zeichen (gefunden: ${text.length})`);
+  return { lat, lng, text: text || null };
+}
+
+/** Angaben for PATCH; "" or "leer" clears (null). Kept apart from prune(), which drops null. */
+export function angabenBody(
+  opts: Pick<ZoneCommandOpts, "buildingCount" | "notes" | "pate" | "treffpunkt" | "fortbewegung" | "besonderheiten">,
+): AngabenBody {
+  const body: AngabenBody = {};
   if (opts.buildingCount !== undefined) {
     const raw = String(opts.buildingCount).trim();
     if (raw === "" || raw.toLowerCase() === "leer") body.building_count = null;
@@ -258,6 +306,32 @@ export function angabenBody(opts: Pick<ZoneCommandOpts, "buildingCount" | "notes
     const text = String(opts.notes);
     if (text.length > 2000) throw new ZoneInputError(`--notes höchstens 2000 Zeichen (gefunden: ${text.length})`);
     body.notes = text.trim() === "" ? null : text;
+  }
+  if (opts.pate !== undefined) {
+    const raw = String(opts.pate).trim();
+    if (leer(raw)) body.pate_member_id = null;
+    else if (!UUID.test(raw)) throw new ZoneInputError(`--pate erwartet eine Mitglieds-ID oder „leer“, gefunden: ${raw}`);
+    else body.pate_member_id = raw;
+  }
+  if (opts.treffpunkt !== undefined) body.treffpunkt = treffpunktOption(String(opts.treffpunkt));
+  if (opts.fortbewegung !== undefined) {
+    const raw = String(opts.fortbewegung).trim().toLowerCase();
+    if (leer(raw)) body.fortbewegung = null;
+    else if (!FORTBEWEGUNG.includes(raw as Fortbewegung)) {
+      throw new ZoneInputError(`--fortbewegung erwartet ${FORTBEWEGUNG.join("|")} oder „leer“, gefunden: ${raw}`);
+    } else body.fortbewegung = raw as Fortbewegung;
+  }
+  if (opts.besonderheiten !== undefined) {
+    const raw = String(opts.besonderheiten);
+    if (leer(raw)) body.besonderheiten = null;
+    else {
+      const liste = [...new Set(raw.split(",").map((b) => b.trim().toLowerCase()).filter(Boolean))];
+      const falsch = liste.filter((b) => !BESONDERHEITEN.includes(b as Besonderheit));
+      if (falsch.length) {
+        throw new ZoneInputError(`--besonderheiten erlaubt ${BESONDERHEITEN.join(",")}, gefunden: ${falsch.join(",")}`);
+      }
+      body.besonderheiten = liste as Besonderheit[];
+    }
   }
   return body;
 }
@@ -554,6 +628,10 @@ export function registerZoneCommands(cli: CAC): void {
     .option("--expected-version <n>", "update: erwartete Version (sonst aktuell gelesen)")
     .option("--building-count <n>", "update: Zahl der Gebäude (überschreibt die Schätzung; „leer“ löscht sie)")
     .option("--notes <text>", "update: Notiz zur Zone (leer löscht sie)")
+    .option("--pate <member-id>", "update: Zonen-Pate (Mitglied des Vereins; „leer“ löscht)")
+    .option("--treffpunkt <lat,lng[,Text]>", "update: Treffpunkt der Zone („leer“ löscht)")
+    .option("--fortbewegung <art>", "update: fuss|rad|auto („leer“ löscht)")
+    .option("--besonderheiten <liste>", "update: hunde,zugang,mehrfamilien,parken („leer“ löscht)")
     .option("--json", "JSON-Ausgabe (Rohantwort)")
     .action((args: string[], opts: ZoneCommandOpts) => guarded(() => runZone(args, opts)));
 
