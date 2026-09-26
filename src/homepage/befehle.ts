@@ -314,6 +314,17 @@ export async function liveAlsBulk(client: HomepageClient, clubId: string): Promi
   return { tabs, hinweise };
 }
 
+/**
+ * The body of `homepage apply`: the file's tabs as they are, so every section
+ * field — spalten_breiten too (17-designer-struktur 10 §4.7, TC-23) — reaches
+ * the bulk endpoint unchanged.
+ */
+export function applyBody(struct: { tabs?: unknown[] } | unknown[], clear: boolean): { clear_existing: boolean; tabs: unknown[] } {
+  const tabs = Array.isArray(struct) ? struct : (struct.tabs ?? []);
+  if (!Array.isArray(tabs) || tabs.length === 0) throw new Error("home.json braucht mindestens einen Tab (tabs[]).");
+  return { clear_existing: clear, tabs };
+}
+
 export function convert(quelle: { tabs: BulkTab[] }, optionen: { tab?: string; styles?: StyleEntry[] } = {}): ConvertErgebnis {
   const berichte: ConvertErgebnis["berichte"] = [];
   const alleKlassen = new Map<string, Set<string>>();
