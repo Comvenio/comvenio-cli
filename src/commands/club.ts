@@ -3,7 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
-import { describeClubFonts, registerClubFont, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
+import { describeClubFonts, registerClubFont, retargetFontReferences, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -404,7 +404,8 @@ export function registerClubCommands(cli: CAC): void {
           const family = opts.family.trim();
           if (!family || family.length > 64) throw new Error("--family muss 1-64 Zeichen haben.");
           const settings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
-          const liveFonts = (settings.design_settings as Record<string, unknown> | undefined)?.fonts;
+          const liveDesign = (settings.design_settings as Record<string, unknown> | undefined) ?? {};
+          const liveFonts = liveDesign.fonts;
           // Check the limit before uploading, so no orphan file is created.
           registerClubFont(liveFonts, { id: "pending", family, format: "woff2", lizenz: opts.lizenz });
           const uploaded = await uploadClubFont({ client, clubId, path: opts.file, family, lizenz: opts.lizenz });
@@ -414,7 +415,15 @@ export function registerClubCommands(cli: CAC): void {
             format: uploaded.format,
             lizenz: opts.lizenz,
           });
-          await client.put("club", `/clubs/${clubId}/settings`, { design_settings: { fonts } });
+          // Same family replaces the old file: move tokens.type to the new id in the
+          // SAME write, or the club-service refuses the registry change (dangling reference).
+          const replaced = Array.isArray(liveFonts)
+            ? (liveFonts as { id?: string; family?: string }[]).find((f) => f?.family === uploaded.family && f.id !== uploaded.font_id)
+            : undefined;
+          const retargeted = replaced?.id ? retargetFontReferences(liveDesign.tokens, replaced.id, uploaded.font_id) : null;
+          await client.put("club", `/clubs/${clubId}/settings`, {
+            design_settings: retargeted ? { fonts, tokens: { type: retargeted } } : { fonts },
+          });
           output({ ...uploaded, registered: fonts.length }, opts.json, () =>
             `Schrift ${uploaded.family} (${uploaded.format}, ${uploaded.size_bytes} Bytes) hochgeladen und registriert — font_id ${uploaded.font_id}. ` +
               `In tokens.type verwenden: {"family": "${uploaded.family}", "source": "verein", "font_id": "${uploaded.font_id}"}`,
@@ -467,7 +476,17 @@ export function registerClubCommands(cli: CAC): void {
           // Font roles and club fonts (K18): a token that points to a font
           // missing from the registry renders in the fallback family.
           const clubSettings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
-          const fontReport = describeClubFonts(clubSettings.design_settings);
+          // A registered font whose file was deleted renders the fallback (DC-8): ask the content-service.
+          const registered = describeClubFonts(clubSettings.design_settings).fonts;
+          const unavailableIds = new Set<string>();
+          for (const f of registered) {
+            try {
+              await client.get("content", `/files/${f.id}`);
+            } catch {
+              unavailableIds.add(f.id);
+            }
+          }
+          const fontReport = describeClubFonts(clubSettings.design_settings, unavailableIds);
           output({ ...club, design_fonts: fontReport }, opts.json, () => {
             const lines: string[] = [];
             lines.push(`Verein:   ${club.name ?? "—"}`);
@@ -489,6 +508,8 @@ export function registerClubCommands(cli: CAC): void {
             for (const f of fontReport.fonts) lines.push(`Schrift:  ${f.family} (${f.format}, ${f.id})`);
             for (const r of fontReport.roles)
               lines.push(`Schriftrolle ${r.role}: ${r.family} [${r.source}${r.font_id ? `, ${r.font_id}` : ""}]`);
+            for (const u of fontReport.unavailable)
+              lines.push(`WARNUNG: Schriftdatei ${u.family} (${u.id}) ist nicht mehr verfügbar — Web und App zeigen die Rückfallschrift. Neu hochladen: club font-upload.`);
             for (const m of fontReport.missing)
               lines.push(`WARNUNG: tokens.type.${m.role} verweist auf ${m.font_id}, die nicht registriert ist — Web und App zeigen die Rückfallschrift.`);
             return lines.join("\n");

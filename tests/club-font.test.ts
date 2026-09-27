@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ComvenioClient } from "../src/http.ts";
-import { describeClubFonts, MAX_FONT_BYTES, registerClubFont, sniffFontFormat, uploadClubFont } from "../src/util/upload.ts";
+import { describeClubFonts, MAX_FONT_BYTES, retargetFontReferences, registerClubFont, sniffFontFormat, uploadClubFont } from "../src/util/upload.ts";
 
 const WOFF2 = new Uint8Array([0x77, 0x4f, 0x46, 0x32, ...new Array(60).fill(0)]);
 const TTF = new Uint8Array([0x00, 0x01, 0x00, 0x00, ...new Array(60).fill(0)]);
@@ -95,7 +95,27 @@ describe("club info font report", () => {
   });
 
   test("club without tokens or fonts reports nothing", () => {
-    expect(describeClubFonts(undefined)).toEqual({ fonts: [], roles: [], missing: [] });
-    expect(describeClubFonts({ tokens: { palette: {} } })).toEqual({ fonts: [], roles: [], missing: [] });
+    expect(describeClubFonts(undefined)).toEqual({ fonts: [], roles: [], missing: [], unavailable: [] });
+    expect(describeClubFonts({ tokens: { palette: {} } })).toEqual({ fonts: [], roles: [], missing: [], unavailable: [] });
+  });
+});
+
+describe("Fremdprüfung R1", () => {
+  test("R1-1: replacing a font moves every role that used it", () => {
+    const tokens = { type: { heading: { family: "Jaga", source: "verein", font_id: "alt" }, body: { family: "serif", source: "system" } } };
+    expect(retargetFontReferences(tokens, "alt", "neu")).toEqual({
+      heading: { family: "Jaga", source: "verein", font_id: "neu" },
+      body: { family: "serif", source: "system" },
+    });
+    expect(retargetFontReferences(tokens, "andere", "neu")).toBeNull();
+    expect(retargetFontReferences(undefined, "alt", "neu")).toBeNull();
+  });
+
+  test("R1-9: a registered font whose file is gone is reported", () => {
+    const report = describeClubFonts(
+      { fonts: [{ id: "a", family: "Jaga Serif", format: "woff2", lizenz: "OFL" }] },
+      new Set(["a"]),
+    );
+    expect(report.unavailable).toEqual([{ id: "a", family: "Jaga Serif" }]);
   });
 });
