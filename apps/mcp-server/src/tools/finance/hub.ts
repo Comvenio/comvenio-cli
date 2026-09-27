@@ -60,6 +60,8 @@ const confirmation = z.object({ preview_id: uuid, confirmation_token: z.string()
 const base = { club_id: uuid, department_id: uuid.nullable().optional(), confirmation: confirmation.optional() } as const;
 const year = z.number().int().min(1900).max(2200);
 const data = z.record(z.string(), z.json());
+// buchhaltung-10-01/-04: what a budget position can be linked to.
+const linkTarget = z.enum(["EVENT", "BOOKING_OBJECT", "ROOM", "BUILDING"]);
 
 type Risk = "read" | "write" | "critical";
 interface Op {
@@ -265,6 +267,16 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "versions", method: "GET", template: "/entries/{entry_id}/versions", path: (i) => `/entries/${str(i, "entry_id")}/versions`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
     // buchhaltung-16-02: the receipt of an entry as a file.
     { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },
+    // buchhaltung-10-01/-04: link a position to an event (main or presale), an
+    // object, a room or a building — also in a closed plan, with confirm_closed_plan.
+    // Critical: the caller sets confirm_closed_plan itself, so a human confirms
+    // every change of a link after a preview (old and new target).
+    { op: "position_link_set", method: "PUT", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "critical",
+      shape: { position_id: uuid, target_type: linkTarget, target_id: uuid, role: z.enum(["MAIN", "PRESALE"]).optional(), confirm_closed_plan: z.boolean().optional() },
+      body: (i) => ({ target_type: str(i, "target_type"), target_id: str(i, "target_id"), role: typeof i.role === "string" ? i.role : "MAIN", confirm_closed_plan: i.confirm_closed_plan === true }) as JsonValue,
+      preflight: positionOwn },
+    { op: "position_link_remove", method: "DELETE", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "critical",
+      shape: { position_id: uuid, confirm_closed_plan: z.boolean().optional() }, query: (i) => optional(i, ["confirm_closed_plan"]), preflight: positionOwn },
     { op: "tax_sphere", method: "PUT", template: "/positions/{position_id}/tax-sphere", path: (i) => `/positions/${str(i, "position_id")}/tax-sphere`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
     // Korrekturschleife (Tom 2026-09-23): Beanstandung einer Buchung mit Grund.
     // Erledigt wird sie durch Korrektur, Storno, Beleg oder Rückzug.
@@ -330,6 +342,12 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "event_reconciliation", method: "GET", template: "/events/{event_id}/finance/reconciliation", path: (i) => `/events/${str(i, "event_id")}/finance/reconciliation`, risk: "read", shape: { event_id: uuid }, multiDepartment: true },
     { op: "series_comparison", method: "GET", template: "/clubs/{club_id}/finance/series/{series_id}/comparison", path: (i) => `${club(i)}/finance/series/${str(i, "series_id")}/comparison`, risk: "read", shape: { series_id: uuid }, multiDepartment: true },
     { op: "department_history", method: "GET", template: "/clubs/{club_id}/finance/department/{target_department_id}/history", path: (i) => `${club(i)}/finance/department/${str(i, "target_department_id")}/history`, risk: "read", shape: { target_department_id: uuid } },
+    // buchhaltung-10-01/-04: the choice of a link, the club's event links and the
+    // links of one event or place (a place rolls up building ⊃ room ⊃ object).
+    { op: "link_options", method: "GET", template: "/clubs/{club_id}/finance/link-options", path: (i) => `${club(i)}/finance/link-options`, risk: "read", shape: { kind: linkTarget.optional() }, query: (i) => optional(i, ["kind"]), multiDepartment: true },
+    { op: "event_links", method: "GET", template: "/clubs/{club_id}/finance/event-links", path: (i) => `${club(i)}/finance/event-links`, risk: "read", shape: { conflicts_only: z.boolean().optional() }, query: (i) => optional(i, ["conflicts_only"]), multiDepartment: true },
+    { op: "event_link_view", method: "GET", template: "/clubs/{club_id}/finance/event/{event_id}/links", path: (i) => `${club(i)}/finance/event/${str(i, "event_id")}/links`, risk: "read", shape: { event_id: uuid }, multiDepartment: true },
+    { op: "location_links", method: "GET", template: "/clubs/{club_id}/finance/location/{kind}/{location_id}/links", path: (i) => `${club(i)}/finance/location/${str(i, "kind")}/${str(i, "location_id")}/links`, risk: "read", shape: { kind: z.enum(["BOOKING_OBJECT", "ROOM", "BUILDING"]), location_id: uuid }, multiDepartment: true },
     { op: "object", method: "GET", template: "/clubs/{club_id}/finance/object/{object_id}", path: (i) => `${club(i)}/finance/object/${str(i, "object_id")}`, risk: "read", shape: { object_id: uuid }, multiDepartment: true },
   ] },
   "cai.finance.32.investment_plan": { source: "investment-plan", ops: [

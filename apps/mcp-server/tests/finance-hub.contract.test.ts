@@ -1043,3 +1043,103 @@ describe("buchhaltung-14-02: Fremdprüfung Runde 2", () => {
     expect(own.calls.filter((call) => call.method === "POST")).toHaveLength(1);
   });
 });
+
+describe("Finance Hub: Verknüpfung einer Position (buchhaltung-10-01/-04)", () => {
+  const positionId = "abababab-abab-4bab-8bab-abababababab";
+  const eventId = "cdcdcdcd-0000-4000-8000-000000000001";
+  const roomId = "cdcdcdcd-0000-4000-8000-000000000002";
+
+  test("link_set prüft die Position des Vereins und schickt Ziel, Rolle und Bestätigung", async () => {
+    const own = recording((request): JsonValue => request.method === "GET"
+      ? { id: positionId, club_id: clubId }
+      : { id: positionId, club_id: clubId, context_type: "EVENT", context_id: eventId, event_role: "PRESALE" });
+    await createK14ToolSet({ client: own.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "position_link_set", position_id: positionId, target_type: "EVENT", target_id: eventId, role: "PRESALE", confirm_closed_plan: true },
+      context, capability_snapshot: manager,
+    });
+    // Preview and preflight read the position; the one write comes last.
+    expect(own.calls.slice(0, -1).map((call) => `${call.method} ${call.path}`)).toEqual([`GET /positions/${positionId}`, `GET /positions/${positionId}`]);
+    const put = own.calls.at(-1)!;
+    expect(`${put.method} ${put.path}`).toBe(`PUT /positions/${positionId}/link`);
+    expect(put.body).toEqual({ target_type: "EVENT", target_id: eventId, role: "PRESALE", confirm_closed_plan: true });
+
+    const foreign = recording(() => ({ id: positionId, club_id: otherClubId }));
+    await expect(createK14ToolSet({ client: foreign.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "position_link_set", position_id: positionId, target_type: "ROOM", target_id: roomId },
+      context, capability_snapshot: manager,
+    })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(foreign.calls.every((call) => call.method === "GET")).toBe(true);
+  });
+
+  test("die Vorschau nennt von einer Position eines anderen Vereins nichts", async () => {
+    const foreign = recording((): JsonValue => ({ id: positionId, club_id: otherClubId, name: "Fremdes Fest", context_type: "EVENT", context_id: eventId }));
+    const result = await createK14ToolSet({ client: foreign.client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "position_link_remove", position_id: positionId },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "position_link_change")).toMatchObject({ position_read: false, name: null, from: null });
+    expect(JSON.stringify(result.result)).not.toContain("Fremdes Fest");
+  });
+
+  test("Codex CLI-R1: setzen und lösen verlangen eine Bestätigung; die Vorschau nennt altes und neues Ziel", async () => {
+    const gate = (op: string) => HUB_ACTION_DEFINITIONS["cai.finance.25.entry_correction"]!.operations[op]!.execution_gate;
+    expect([gate("position_link_set"), gate("position_link_remove")]).toEqual(["confirmation", "confirmation"]);
+    const own = recording((): JsonValue => ({ id: positionId, club_id: clubId, name: "Maifest", context_type: "GENERAL", context_id: null, event_role: "MAIN" }));
+    const result = await createK14ToolSet({ client: own.client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "position_link_set", position_id: positionId, target_type: "EVENT", target_id: eventId, confirm_closed_plan: true },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    expect(own.calls.every((call) => call.method === "GET")).toBe(true);
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "position_link_change")).toMatchObject({
+      position_id: positionId, position_read: true, name: "Maifest",
+      from: { type: "GENERAL", id: null, role: "MAIN" }, to: { type: "EVENT", id: eventId, role: "MAIN" }, closed_plan_confirmed: true,
+    });
+  });
+
+  test("link_remove trägt die Bestätigung als Abfrage", async () => {
+    const own = recording((): JsonValue => ({ id: positionId, club_id: clubId }));
+    await createK14ToolSet({ client: own.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "position_link_remove", position_id: positionId, confirm_closed_plan: true },
+      context, capability_snapshot: manager,
+    });
+    const removal = own.calls.filter((call) => call.method === "DELETE");
+    expect(removal.map((call) => call.path)).toEqual([`/positions/${positionId}/link`]);
+    expect(removal[0]?.query).toEqual({ confirm_closed_plan: "true" });
+  });
+
+  test("Lesewege: Auswahl, Vereinsübersicht, Event und Ort", async () => {
+    const run = async (input: JsonObjectInput) => {
+      const own = recording((): JsonValue => ({ club_id: clubId }));
+      await createK14ToolSet({ client: own.client }).execute({ action_id: "cai.finance.31.finance_views", input: { club_id: clubId, ...input }, context, capability_snapshot: manager });
+      return own.calls[0]!;
+    };
+    const options = await run({ operation: "link_options", kind: "ROOM" });
+    expect([options.method, options.path, options.query]).toEqual(["GET", `/clubs/${clubId}/finance/link-options`, { kind: "ROOM" }]);
+    const links = await run({ operation: "event_links", conflicts_only: true });
+    expect([links.path, links.query]).toEqual([`/clubs/${clubId}/finance/event-links`, { conflicts_only: "true" }]);
+    expect((await run({ operation: "event_link_view", event_id: eventId })).path).toBe(`/clubs/${clubId}/finance/event/${eventId}/links`);
+    expect((await run({ operation: "location_links", kind: "BUILDING", location_id: roomId })).path)
+      .toBe(`/clubs/${clubId}/finance/location/BUILDING/${roomId}/links`);
+  });
+
+  test("eine unbekannte Ortsart erreicht den Dienst nicht", async () => {
+    const own = recording((): JsonValue => ({}));
+    await expect(createK14ToolSet({ client: own.client }).execute({
+      action_id: "cai.finance.31.finance_views",
+      input: { club_id: clubId, operation: "location_links", kind: "EVENT", location_id: roomId },
+      context, capability_snapshot: manager,
+    })).rejects.toBeDefined();
+    expect(own.calls).toHaveLength(0);
+  });
+});
+
+type JsonObjectInput = Record<string, JsonValue>;

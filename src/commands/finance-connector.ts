@@ -212,6 +212,8 @@ const READ_OPERATIONS = new Set([
   "tree", "frame_versions", "statement", "grants", "booking_accounts",
   // buchhaltung-14-02
   "transfers", "transfer_show",
+  // buchhaltung-10-01/-04
+  "link_options", "event_links", "event_link_view", "location_links",
 ]);
 
 // ── buchhaltung-16-03: der Prüfdurchlauf als Bericht ────────────────────
