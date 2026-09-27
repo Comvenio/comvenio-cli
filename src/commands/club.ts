@@ -1,6 +1,6 @@
 import type { CAC } from "cac";
 import { AuthError, loadState } from "../auth.ts";
-import { createClient } from "../http.ts";
+import { createClient, HttpError } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
 import { describeClubFonts, registerClubFont, retargetFontReferences, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
@@ -478,16 +478,19 @@ export function registerClubCommands(cli: CAC): void {
           const clubSettings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
           // A registered font whose file was deleted renders the fallback (DC-8): ask the content-service.
           const registered = describeClubFonts(clubSettings.design_settings).fonts;
+          // Only a 404 means the file is gone; any other failure is "not checkable" (R2).
           const unavailableIds = new Set<string>();
+          const uncheckedIds: string[] = [];
           for (const f of registered) {
             try {
               await client.get("content", `/files/${f.id}`);
-            } catch {
-              unavailableIds.add(f.id);
+            } catch (err) {
+              if (err instanceof HttpError && err.status === 404) unavailableIds.add(f.id);
+              else uncheckedIds.push(f.id);
             }
           }
           const fontReport = describeClubFonts(clubSettings.design_settings, unavailableIds);
-          output({ ...club, design_fonts: fontReport }, opts.json, () => {
+          output({ ...club, design_fonts: { ...fontReport, unchecked: uncheckedIds } }, opts.json, () => {
             const lines: string[] = [];
             lines.push(`Verein:   ${club.name ?? "—"}`);
             if (club.short_name) lines.push(`Kurzname: ${club.short_name}`);
@@ -508,6 +511,8 @@ export function registerClubCommands(cli: CAC): void {
             for (const f of fontReport.fonts) lines.push(`Schrift:  ${f.family} (${f.format}, ${f.id})`);
             for (const r of fontReport.roles)
               lines.push(`Schriftrolle ${r.role}: ${r.family} [${r.source}${r.font_id ? `, ${r.font_id}` : ""}]`);
+            for (const id of uncheckedIds)
+              lines.push(`HINWEIS: Schriftdatei ${id} ließ sich nicht prüfen (kein 404) — Stand unbekannt.`);
             for (const u of fontReport.unavailable)
               lines.push(`WARNUNG: Schriftdatei ${u.family} (${u.id}) ist nicht mehr verfügbar — Web und App zeigen die Rückfallschrift. Neu hochladen: club font-upload.`);
             for (const m of fontReport.missing)
