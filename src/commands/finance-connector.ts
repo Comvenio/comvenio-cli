@@ -189,6 +189,38 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
       if (einnahme === (data.expense_cents != null)) throw new Error("finance entry-create: Genau eines von --revenue und --expense angeben.");
       return { actionId: "cai.finance.25.entry_correction", input: { operation: "entry_create", position_id: need(id, action, "Positions-ID"), data }, write: true };
     }
+    // belegerfassung-01/-03: the receipt inbox. Uploading a file is
+    // „finance beleg-hochladen“ (finance-beleg.ts), it needs the content-service.
+    case "beleg-liste":
+      return { actionId: "cai.finance.31.finance_views", input: compact({ operation: "receipt_inbox", status: opts.status }), write: false };
+    case "beleg-show":
+      return { actionId: "cai.finance.31.finance_views", input: { operation: "receipt_scan", scan_id: need(id, action, "Beleg-ID") }, write: false };
+    case "beleg-kandidaten":
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_candidates", scan_id: need(id, action, "Beleg-ID") }, write: false };
+    case "beleg-anhaengen":
+      if (!opts.entry) throw new Error("finance beleg-anhaengen: --entry <buchungs-id> angeben.");
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_attach", scan_id: need(id, action, "Beleg-ID"), data: { entry_id: opts.entry } }, write: true };
+    case "beleg-buchen": {
+      const einnahme = cents(opts.revenue, "--revenue");
+      const ausgabe = cents(opts.expense, "--expense");
+      if ((einnahme == null) === (ausgabe == null)) throw new Error("finance beleg-buchen: Genau eines von --revenue und --expense angeben.");
+      if (!opts.position) throw new Error("finance beleg-buchen: --position <positions-id> angeben.");
+      if (!opts.date) throw new Error("finance beleg-buchen: --date <YYYY-MM-DD> angeben.");
+      const data = compact({
+        ...fileInput(opts),
+        position_id: opts.position,
+        money_account_id: opts.account,
+        booking_date: opts.date,
+        amount_cents: einnahme ?? ausgabe,
+        direction: einnahme != null ? "REVENUE" : "EXPENSE",
+        description: opts.description,
+      });
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_book", scan_id: need(id, action, "Beleg-ID"), data }, write: true };
+    }
+    case "beleg-ablehnen":
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_reject", scan_id: need(id, action, "Beleg-ID"), data: compact({ reason: opts.reason }) }, write: true };
+    case "beleg-zurueckziehen":
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_withdraw", scan_id: need(id, action, "Beleg-ID") }, write: true };
     case "entry-show":
       return { actionId: "cai.finance.17.entry_show", input: { entry_id: need(id, action, "Buchungs-ID") }, write: false };
     case "entry-update":
@@ -216,6 +248,8 @@ const READ_OPERATIONS = new Set([
   "link_options", "event_links", "event_link_view", "location_links",
   // buchhaltung-10-05
   "analysis_ranking", "analysis_target",
+  // belegerfassung-01/-03
+  "receipt_inbox", "receipt_scan", "receipt_candidates",
 ]);
 
 // ── buchhaltung-16-03: der Prüfdurchlauf als Bericht ────────────────────

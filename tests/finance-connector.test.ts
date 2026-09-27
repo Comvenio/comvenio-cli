@@ -142,3 +142,32 @@ describe("finance über OAuth: Bestätigung", () => {
     expect(result.confirmation_required).toBe(true);
   });
 });
+
+describe("Beleg-Eingang über das CLI (belegerfassung-01/-03)", () => {
+  const scan = "33333333-3333-4333-8333-333333333333";
+  test("liste, anzeigen und Kandidaten lesen über finance_views", () => {
+    expect(mapClassic("beleg-liste", undefined, { status: "all" })).toEqual({
+      actionId: "cai.finance.31.finance_views", input: { operation: "receipt_inbox", status: "all" }, write: false });
+    expect(mapClassic("beleg-kandidaten", scan, {}).input).toEqual({ operation: "receipt_candidates", scan_id: scan });
+  });
+
+  test("buchen verlangt Posten, Datum und genau einen Betrag", () => {
+    const call = mapClassic("beleg-buchen", scan, {
+      position: "22222222-2222-4222-8222-222222222222", expense: "45900", date: "2026-07-01",
+      account: "99999999-9999-4999-8999-999999999999", description: "Getränke Maifest",
+    });
+    expect(call).toEqual({ actionId: "cai.finance.25.entry_correction", write: true, input: {
+      operation: "receipt_book", scan_id: scan, data: {
+        position_id: "22222222-2222-4222-8222-222222222222", money_account_id: "99999999-9999-4999-8999-999999999999",
+        booking_date: "2026-07-01", amount_cents: 45900, direction: "EXPENSE", description: "Getränke Maifest" } } });
+    expect(() => mapClassic("beleg-buchen", scan, { date: "2026-07-01", expense: "1" })).toThrow("--position");
+    expect(() => mapClassic("beleg-buchen", scan, { position: "p", date: "2026-07-01", expense: "1", revenue: "1" })).toThrow("Genau eines");
+    expect(mapClassic("beleg-buchen", scan, { position: "p", date: "2026-07-01", revenue: "500" }).input.data).toMatchObject({ direction: "REVENUE", amount_cents: 500 });
+  });
+
+  test("anhängen braucht die Buchung, ablehnen trägt den Grund", () => {
+    expect(() => mapClassic("beleg-anhaengen", scan, {})).toThrow("--entry");
+    expect(mapClassic("beleg-anhaengen", scan, { entry: "e" }).input).toEqual({ operation: "receipt_attach", scan_id: scan, data: { entry_id: "e" } });
+    expect(mapClassic("beleg-ablehnen", scan, { reason: "doppelt" }).input).toEqual({ operation: "receipt_reject", scan_id: scan, data: { reason: "doppelt" } });
+  });
+});

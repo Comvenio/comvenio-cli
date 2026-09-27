@@ -6,6 +6,7 @@ import { requireClubId } from "../util/club.ts";
 import { readJsonFile } from "../util/file.ts";
 import { connector } from "./action.ts";
 import { callFinance, checkClubChoice, mapClassic, runBelege, runHub, runPruefung } from "./finance-connector.ts";
+import { runBelegUpload } from "./finance-beleg.ts";
 
 // Vereins-Buchhaltung des finance-service: Jahresplan, Budgetposten, Buchungen.
 //
@@ -60,6 +61,9 @@ export type FinanceCommandOpts = {
   // Über die OAuth-Anmeldung (finance-connector.ts):
   account?: string;
   receiptReason?: string;
+  // belegerfassung-01/-03: beleg-anhaengen, beleg-buchen.
+  entry?: string;
+  position?: string;
   input?: string;
   out?: string;
   confirm?: boolean;
@@ -471,6 +475,8 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--positions <ids>", "plan-copy: nur diese Posten übernehmen (Komma-getrennt)")
     .option("--account <id>", "entry-create: Geldkonto der Buchung (Pflicht, sobald der Verein Geldkonten führt)")
     .option("--receipt-reason <text>", "entry-create: Begründung eines Eigenbelegs (10–500 Zeichen), wenn kein Beleg vorliegt")
+    .option("--entry <id>", "beleg-anhaengen: die Buchung, an die der Beleg kommt")
+    .option("--position <id>", "beleg-buchen: der Posten, auf den der Beleg gebucht wird (etwa der Posten eines Events)")
     .option("--input <json>", "finance run: Eingabe als JSON-Objekt (ohne club_id — der Verein kommt aus der Anmeldung)")
     .option("--out <datei>", "finance run audit-export download: den Prüfexport als Datei schreiben (Prüfsumme wird geprüft); finance pruefung: Basisname für <name>.md und <name>.json")
     .option("--no-confirm", "Kritische Schritte nicht selbst bestätigen, sondern die Vorschau ausgeben")
@@ -486,6 +492,10 @@ export function registerFinanceCommands(cli: CAC): void {
     .example("  $ comvenio finance position-create --year 2026 --name Sommerfest --expense 120000")
     .example("  $ comvenio finance entry-create <positions-id> --description Getränke --expense 4550 --date 2026-07-01")
     .example("  $ comvenio finance entry-approve <buchungs-id>")
+    .example("  $ comvenio finance beleg-hochladen rechnung.pdf")
+    .example("  $ comvenio finance beleg-liste")
+    .example("  $ comvenio finance beleg-buchen <beleg-id> --position <posten-id> --expense 45900 --date 2026-07-01 --account <konto-id> --description \"Getränke Maifest\"")
+    .example("  $ comvenio finance entry-beleg <buchungs-id> quittung.jpg")
     .action(async (action: string, id: string | undefined, operation: string | undefined, opts: FinanceCommandOpts) => {
       const state = await loadState();
       // Standardweg: die OAuth-Anmeldung über den Connector. Der Geräte-Token
@@ -499,6 +509,8 @@ export function registerFinanceCommands(cli: CAC): void {
           ? await runPruefung(via, opts, id)
           : action === "belege"
           ? await runBelege(via, opts, id)
+          : action === "beleg-hochladen" || action === "entry-beleg"
+          ? await runBelegUpload(via, state, action, id, operation, opts)
           : await (async () => {
             const call = mapClassic(action, id, opts);
             return callFinance(via, call.actionId, call.input, { write: call.write, confirm: opts.confirm !== false });
