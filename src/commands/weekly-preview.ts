@@ -129,7 +129,7 @@ export function registerWeeklyPreviewCommands(cli: CAC): void {
       const clubId = requireClubId(state, opts.club);
 
       if (area === "create") {
-        // The function (Tom 2026-09-23): same entry as the web button and the agent tool.
+        // The function (2026-09-23): same entry as the web button and the agent tool.
         const body = buildCreateBody(opts);
         let result: CreateResult;
         try {
