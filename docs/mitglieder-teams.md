@@ -244,11 +244,26 @@ Verhaltensvertrag:
 | Sync-Verlauf | `comvenio teams sync runs <subscription-id> [--limit --offset]` | `GET /event/calendar-subscriptions/{id}/runs` |
 | Klärungsfälle listen | `comvenio teams sync clarifications <season-id>` | `GET /event/team-seasons/{id}/sync-clarifications` |
 | Klärungsfall auflösen | `comvenio teams sync resolve <clarification-id> --file resolution.json --yes` | `POST /event/sync-clarifications/{id}/resolve` |
+| Termine der Saison | `comvenio teams termin list <season-id> [--kind training\|spiel\|ausflug\|sonstiges]` | `GET /event/team-seasons/{id}/events` |
+| Termin anzeigen | `comvenio teams termin show <season-id> <event-id>` | `GET /event/team-seasons/{id}/termine/{event_id}` |
+| Termin eintragen | `comvenio teams termin create <season-id> --kind … --start … [--repeat di,do --until …] --yes` | `POST /event/team-seasons/{id}/termine` |
+| Termin ändern | `comvenio teams termin update <season-id> <event-id> … [--scope this\|following] --yes` | `PATCH /event/team-seasons/{id}/termine/{event_id}` |
+| Termin absagen | `comvenio teams termin cancel <season-id> <event-id> [--reason …] [--scope this\|following] --yes` | `POST /event/team-seasons/{id}/termine/{event_id}/cancel` |
+| Termin löschen | `comvenio teams termin delete <season-id> <event-id> [--scope this\|series] --yes` | `DELETE /event/team-seasons/{id}/termine/{event_id}?scope=…` |
 
 Die Aktivierung folgt immer der Kette `ical create` → `ical preview` (liefert `preview_token`) →
 `ical activate --preview-token`. Ein geändertes Abonnement verwirft den Token; die Vorschau ist dann
 neu abzurufen. `sync resolve` erwartet eine Auflösung mit `type` und `action`, zum Beispiel
 `{"type": "AMBIGUOUS_HOME_ROLE", "action": "CONFIRM_HOME", "trigger_resource_reconcile": true}`.
+
+Mannschaftstermine von Hand (`teams termin`, Lastenheft mannschaftstermine/05): Trainings, Spiele,
+Ausflüge und sonstige Termine einer Saison. Recht ist das Saisonrecht (Mannschaften verwalten oder
+aktiver Trainer/Teammanager der Saison). `--start` und `--end` sind Ortszeit Berlin
+(`2026-10-06T19:00`); `--repeat di,do` legt eine Serie bis `--until` oder bis Saisonende an; ein Spiel
+braucht `--opponent` und `--home` oder `--away`. `--announce [ja|nein]` steuert die allgemeine
+Ankündigung (ohne Angabe nach Art). Fehlercodes des Dienstes erscheinen als Satz mit Code, etwa
+`… (TERMIN_MATCH_NEEDS_OPPONENT)`, mit den Exitcodes oben (Saisonrecht fehlt → `3`, schon begonnen → `4`).
+Termine aus dem Spielplan-Abgleich erscheinen in `list`, lassen sich hier aber nicht ändern.
 
 ## Bewusste Abgrenzung
 
