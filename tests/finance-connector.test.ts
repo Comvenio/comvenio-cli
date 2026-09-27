@@ -165,6 +165,17 @@ describe("Beleg-Eingang über das CLI (belegerfassung-01/-03)", () => {
     expect(mapClassic("beleg-buchen", scan, { position: "p", date: "2026-07-01", revenue: "500" }).input.data).toMatchObject({ direction: "REVENUE", amount_cents: 500 });
   });
 
+  test("Beleg zum Event: setzen, entfernen, auf den Event-Posten buchen (belegerfassung-10)", () => {
+    expect(mapClassic("beleg-event", scan, { event: "e1" })).toEqual({ actionId: "cai.finance.25.entry_correction", write: true,
+      input: { operation: "receipt_event_set", scan_id: scan, data: { event_id: "e1" } } });
+    expect(mapClassic("beleg-event", scan, { none: true }).input.data).toEqual({ event_id: null });
+    expect(() => mapClassic("beleg-event", scan, {})).toThrow("Genau eines");
+    expect(() => mapClassic("beleg-event", scan, { event: "e1", none: true })).toThrow("Genau eines");
+    const call = mapClassic("beleg-buchen", scan, { eventPosten: true, expense: "45900", date: "2026-07-05" });
+    expect(call.input.data).toEqual({ create_event_position: true, booking_date: "2026-07-05", amount_cents: 45900, direction: "EXPENSE" });
+    expect(() => mapClassic("beleg-buchen", scan, { eventPosten: true, position: "p", expense: "1", date: "2026-07-05" })).toThrow("Genau eines");
+  });
+
   test("anhängen braucht die Buchung, ablehnen trägt den Grund", () => {
     expect(() => mapClassic("beleg-anhaengen", scan, {})).toThrow("--entry");
     expect(mapClassic("beleg-anhaengen", scan, { entry: "e" }).input).toEqual({ operation: "receipt_attach", scan_id: scan, data: { entry_id: "e" } });

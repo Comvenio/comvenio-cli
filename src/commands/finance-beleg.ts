@@ -57,8 +57,11 @@ export async function runBelegUpload(
     if (!id) throw new Error("finance beleg-hochladen <datei>: die Datei des Belegs angeben.");
     const datei = await uploadClubFile({ client, clubId, path: id, contextType: "finance_receipt_inbox", contextId: clubId });
     // The analysis starts in the background; `beleg-show <id>` shows its proposal.
+    // belegerfassung-10: --event names the event the receipt belongs to.
+    const data: Record<string, string> = { file_id: datei.file_id, kind: "RECEIPT" };
+    if (opts.event) data.event_id = opts.event;
     return callFinance(via, "cai.finance.25.entry_correction",
-      { operation: "receipt_scan_create", data: { file_id: datei.file_id, kind: "RECEIPT" } }, { write: true, confirm });
+      { operation: "receipt_scan_create", data }, { write: true, confirm });
   }
 
   if (!id || !operation) throw new Error("finance entry-beleg <buchungs-id> <datei>: Buchung und Datei angeben.");
