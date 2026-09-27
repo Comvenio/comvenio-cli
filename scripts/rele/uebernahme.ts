@@ -51,7 +51,8 @@ export type Schritt =
   | { art: "freigabe"; key: string }
   | { art: "pruefung"; key: string }
   | { art: "abschluss"; key: string }
-  | { art: "pruefung_nach"; key: string };
+  | { art: "pruefung_nach"; key: string }
+  | { art: "kennzeichnen"; key: string };
 
 export class LaufFehler extends Error {}
 
@@ -139,9 +140,10 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
       grund: `Übernahmekorrektur ${y} (${n + 1} von ${j.korrektur.uebertraege.length}): Bestand laut Vermögensübersicht` }));
     schritte.push({ art: "probe", key: `${y}:probe` });
     for (const k of geld) schritte.push({ art: "auszug", key: `${y}:auszug:${k.name}`, konto: k.name, cents: k.ende_cents as number });
-    // The cash audit of the year: one report per money account, submitted;
-    // the second person approves its entries (four eyes) — then the audit
-    // gate, the close without force, and the audit of the closed year.
+    // The cash audit of the year: one report per money account, submitted and
+    // approved with its entries (one person may keep the books, buchhaltung-
+    // 16-04 D-16-07) — then the audit gate, the close without force, the audit
+    // of the closed year and the label „Haushaltsjahr geprüft“ (D-16-08).
     for (const k of geld) {
       schritte.push({ art: "bericht", key: `${y}:bericht:${k.name}`, konto: k.name });
       schritte.push({ art: "einreichen", key: `${y}:eingereicht:${k.name}`, konto: k.name });
@@ -150,6 +152,7 @@ export function planen(jahre: Uebernahme[]): Schritt[] {
     schritte.push({ art: "pruefung", key: `${y}:pruefung` });
     schritte.push({ art: "abschluss", key: `${y}:abschluss` });
     schritte.push({ art: "pruefung_nach", key: `${y}:pruefung_nach` });
+    schritte.push({ art: "kennzeichnen", key: `${y}:kennzeichnen` });
   });
   return schritte;
 }
@@ -223,9 +226,9 @@ function bruttoSoll(schritte: Schritt[], jahr: number): Record<string, { ein: nu
 }
 
 /**
- * `freigabe` is the CLI of a second person, signed in under their own
- * profile: it approves the entries of the cash reports (four eyes). Without
- * it the run waits there.
+ * `freigabe` is an optional second sign-in (--freigabe-profil) that approves
+ * the entries of the cash reports; without it the run's own sign-in approves
+ * them (buchhaltung-16-04 D-16-07: self approval).
  */
 export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll: Protokoll, speichern: () => void, freigabe?: Cli): Protokoll {
   const fin = (area: string, op: string, input: object = {}, schritt?: string): any => {
@@ -246,8 +249,8 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
       throw new LaufFehler(`Die CLI-Anmeldung steht auf ${wer?.clubId ?? "keinem Verein"}, nicht auf ${verein} — mit „comvenio login“ im Verein anmelden.`);
     }
     const zweite = freigabe?.(["whoami", "--json"]);
-    if (zweite && (zweite.clubId !== verein || !zweite.userId || zweite.userId === wer?.userId)) {
-      throw new LaufFehler(`Die Freigabe-Anmeldung muss eine andere Person im selben Verein sein (steht auf ${zweite.clubId}, ${zweite.email ?? zweite.userId}).`);
+    if (zweite && (zweite.clubId !== verein || !zweite.userId)) {
+      throw new LaufFehler(`Die Freigabe-Anmeldung muss im selben Verein stehen (steht auf ${zweite.clubId}, ${zweite.email ?? zweite.userId}).`);
     }
     // The protocol belongs to exactly this input: a changed file never
     // continues a half-booked year (review R1-2).
@@ -450,14 +453,15 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           merke(x.key, true);
           break;
         case "freigabe": {
-          // Four eyes: the booking person never approves — a second person
-          // does, per cash report and for the few entries of the goods account.
+          // Per cash report and for the few entries of the goods account —
+          // by the run's own sign-in or, if given, the --freigabe-profil one.
           const y = jahrDes(x.key);
           const offen = () => pruefen(plan(x.key)).rules.find((r) => r.code === "ENTRY_NOT_APPROVED")?.findings ?? [];
           const berichte = jahrVon(x.key).konten.filter((k) => k.art !== "IN_KIND").map((k) => s[`${y}:bericht:${k.name}`] as string);
-          if (offen().length && freigabe) {
+          const freigebend = freigabe ?? cli;
+          if (offen().length) {
             const fin2 = (area: string, op: string, input: object, schritt: string) => {
-              const res = freigabe(["finance", "run", area, op, "--input", JSON.stringify(input), "--idempotency-key", schrittSchluessel(verein, schritt)]);
+              const res = freigebend(["finance", "run", area, op, "--input", JSON.stringify(input), "--idempotency-key", schrittSchluessel(verein, schritt)]);
               if (res?.status && res.status !== "completed") throw new LaufFehler(`Freigabe ${area} ${op}: ${JSON.stringify(res).slice(0, 400)}`);
               return res?.result ?? res;
             };
@@ -466,15 +470,15 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
               fin2("cash-report", "approve", { report_id: bericht, data: {} }, `${x.key}:${bericht}:bericht`);
             }
             for (const rest of offen()) {
-              if (rest.entry_id) freigabe(["finance", "entry-approve", rest.entry_id, "--notes", `Kassenprüfung ${y}`, "--json"]);
+              if (rest.entry_id) freigebend(["finance", "entry-approve", rest.entry_id, "--notes", `Kassenprüfung ${y}`, "--json"]);
             }
           }
           const bleibt = offen();
           if (bleibt.length) {
-            throw new LaufWartet(`${y}: ${bleibt.length} Buchungen warten auf die Freigabe einer zweiten Person (Vier-Augen). `
+            // Objected or outside the sign-in's right: a person has to look.
+            throw new LaufWartet(`${y}: ${bleibt.length} Buchungen sind noch nicht freigegeben (beanstandet oder ohne Recht der Anmeldung). `
               + `Kassenberichte ${berichte.join(", ")}: je „finance run cash-report approve_entries“, dann „approve“; `
-              + `einzeln: ${bleibt.filter((b) => b.entry_id).slice(0, 5).map((b) => b.entry_id).join(", ")}${bleibt.length > 5 ? " …" : ""}. `
-              + "Oder den Lauf mit --freigabe-profil <profil> einer angemeldeten zweiten Person fortsetzen.");
+              + `einzeln: ${bleibt.filter((b) => b.entry_id).slice(0, 5).map((b) => b.entry_id).join(", ")}${bleibt.length > 5 ? " …" : ""}.`);
           }
           merke(x.key, "freigegeben");
           break;
@@ -508,6 +512,16 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           vermerke({ key: x.key, art: "pruefung_nach", summary: bericht.summary, offen: fehler.map((r) => ({ code: r.code, count: r.count })) });
           if (fehler.length) throw new LaufFehler(`Prüfung des geschlossenen Jahres ${jahrDes(x.key)}: ${fehler.map((r) => r.code).join(", ")}`);
           merke(x.key, bericht.summary);
+          break;
+        }
+        case "kennzeichnen": {
+          // „Haushaltsjahr geprüft“ (buchhaltung-16-04): the service runs the
+          // audit again; a label already there (a resumed run) stays.
+          const y = jahrDes(x.key);
+          const liste = fin("plan-period", "audit_labels", { plan_id: plan(x.key) }) as { current?: { id: string } | null };
+          const label = liste?.current ?? fin("plan-period", "audit_label_set",
+            { plan_id: plan(x.key), note: `Übernahme aus Rechenschaftsbericht ${y}` }, x.key);
+          merke(x.key, (label as { id?: string })?.id ?? "gekennzeichnet");
           break;
         }
       }

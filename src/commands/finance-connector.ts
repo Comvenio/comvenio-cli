@@ -221,7 +221,7 @@ type PruefRegel = { code: string; requirement: string; severity: string; fulfill
 const REGEL_TITEL: Record<string, string> = {
   JOURNAL_GAP: "Journalnummern lückenlos",
   PERIOD_NOT_CLOSED: "Abgelaufener Zeitraum festgeschrieben",
-  ENTRY_NOT_APPROVED: "Freigabe durch eine zweite Person",
+  ENTRY_NOT_APPROVED: "Freigabe je Buchung",
   RECEIPT_MISSING: "Beleg oder Begründung je Buchung",
   SELF_ISSUED: "Eigenbelege",
   SPHERE_MISSING: "Steuerliche Sphäre je Posten",
