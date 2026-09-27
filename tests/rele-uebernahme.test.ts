@@ -99,7 +99,14 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
         const plan = planVon(b.jahr);
         return { approved: buchungen.filter((x) => x.plan === plan && x.konto === b.konto && !x.transfer && !x.frei).filter(freigeben).length };
       }
-      case "cash-report approve": { const b = berichte.find((x) => x.id === i.report_id)!; b.status = "APPROVED"; return b; }
+      case "cash-report show": return berichte.find((x) => x.id === i.report_id);
+      case "cash-report approve": {
+        const b = berichte.find((x) => x.id === i.report_id)!;
+        // Like the service: an approved report is approved once.
+        if (b.status !== "SUBMITTED") throw new Error(`A ${b.status} report cannot be approved`);
+        b.status = "APPROVED";
+        return b;
+      }
       case "entry approve_one": { const b = buchungen.find((x) => x.id === i.entry_id)!; if (!freigeben(b)) throw new Error("Four-eyes principle"); return b; }
       case "plan-period list": return plaene;
       case "plan-period audit_labels": return { current: labels[i.plan_id] ?? null, history: labels[i.plan_id] ? [labels[i.plan_id]] : [] };
@@ -304,6 +311,17 @@ describe("Übernahme: Lauf", () => {
     const selbe = dienst(DEV, { zweitePerson: "kassier" });
     laufen([JAHR_1], DEV, selbe.cli, neu(), () => {}, selbe.zweit);
     expect(selbe.plaene[0].status).toBe("CLOSED");
+  });
+
+  test("R1-B3 ein Absturz nach der ersten Berichtsfreigabe: die Fortsetzung gibt nur den offenen Bericht frei", () => {
+    let einmal = true;
+    const d = dienst(DEV, { absturz: (area, op) => area === "cash-report" && op === "approve" && einmal && !(einmal = false) });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz nach cash-report approve/);
+    expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "SUBMITTED"]);
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "APPROVED"]);
+    expect(d.plaene[0].status).toBe("CLOSED");
   });
 
   test("16-04: ein fortgesetzter Lauf setzt kein zweites Label", () => {

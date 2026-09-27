@@ -459,19 +459,23 @@ export function laufen(jahre: Uebernahme[], verein: string, cli: Cli, protokoll:
           const offen = () => pruefen(plan(x.key)).rules.find((r) => r.code === "ENTRY_NOT_APPROVED")?.findings ?? [];
           const berichte = jahrVon(x.key).konten.filter((k) => k.art !== "IN_KIND").map((k) => s[`${y}:bericht:${k.name}`] as string);
           const freigebend = freigabe ?? cli;
-          if (offen().length) {
-            const fin2 = (area: string, op: string, input: object, schritt: string) => {
-              const res = freigebend(["finance", "run", area, op, "--input", JSON.stringify(input), "--idempotency-key", schrittSchluessel(verein, schritt)]);
-              if (res?.status && res.status !== "completed") throw new LaufFehler(`Freigabe ${area} ${op}: ${JSON.stringify(res).slice(0, 400)}`);
-              return res?.result ?? res;
-            };
-            for (const bericht of berichte) {
-              fin2("cash-report", "approve_entries", { report_id: bericht, data: { note: `Kassenprüfung ${y}` } }, `${x.key}:${bericht}:eintraege`);
-              fin2("cash-report", "approve", { report_id: bericht, data: {} }, `${x.key}:${bericht}:bericht`);
-            }
-            for (const rest of offen()) {
-              if (rest.entry_id) freigebend(["finance", "entry-approve", rest.entry_id, "--notes", `Kassenprüfung ${y}`, "--json"]);
-            }
+          const fin2 = (area: string, op: string, input: object, schritt: string) => {
+            const res = freigebend(["finance", "run", area, op, "--input", JSON.stringify(input), "--idempotency-key", schrittSchluessel(verein, schritt)]);
+            if (res?.status && res.status !== "completed") throw new LaufFehler(`Freigabe ${area} ${op}: ${JSON.stringify(res).slice(0, 400)}`);
+            return res?.result ?? res;
+          };
+          // Each report by its own state, not by the open entries: a run that
+          // stopped between the entries and the report approval continues
+          // there, and an approved report is never approved twice (review
+          // K16-04 R1-B3).
+          for (const bericht of berichte) {
+            const stand = fin("cash-report", "show", { report_id: bericht }) as { status?: string };
+            if (stand?.status === "APPROVED") continue;
+            fin2("cash-report", "approve_entries", { report_id: bericht, data: { note: `Kassenprüfung ${y}` } }, `${x.key}:${bericht}:eintraege`);
+            fin2("cash-report", "approve", { report_id: bericht, data: {} }, `${x.key}:${bericht}:bericht`);
+          }
+          for (const rest of offen()) {
+            if (rest.entry_id) freigebend(["finance", "entry-approve", rest.entry_id, "--notes", `Kassenprüfung ${y}`, "--json"]);
           }
           const bleibt = offen();
           if (bleibt.length) {
