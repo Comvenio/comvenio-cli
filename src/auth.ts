@@ -15,7 +15,14 @@ import {
 } from "./oauth/client.ts";
 import { profileSuffix } from "./profile.ts";
 
-export const STATE_FILE = join(homedir(), `.comvenio-cli-state${profileSuffix()}.json`);
+// Bun's os.homedir() ignores a HOME changed at runtime (Node follows it), so a
+// test that redirects HOME still wrote the user's real login file. Read the
+// environment first; homedir() is only the fallback.
+export function stateHome(env: NodeJS.ProcessEnv = process.env): string {
+  return env.HOME || env.USERPROFILE || homedir();
+}
+
+export const STATE_FILE = join(stateHome(), `.comvenio-cli-state${profileSuffix()}.json`);
 const LOGIN_HINT = 'Nicht eingeloggt. Führe "comvenio login" aus.';
 const EXPIRY_SKEW_MS = 30_000;
 

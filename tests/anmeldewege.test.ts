@@ -12,7 +12,7 @@
 // die Unabhängigkeit und die Token-Grenze in BEIDE Richtungen.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createClient } from "../packages/comvenio-client/src/legacy.ts";
@@ -480,5 +480,30 @@ describe("was ein gescheiterter Login aufräumt", () => {
   test("ohne vorherige Verbindung bleibt kein halber Zustand", async () => {
     const { aufraeumenNachFehlschlag } = await modul("x3");
     expect(aufraeumenNachFehlschlag(false, false)).toBe("alles");
+  });
+});
+
+// ── Die Isolation selbst (Bug 7aad5852, 2026-09-27) ─────────────────────────
+// Unter Bun folgt os.homedir() einem umgebogenen HOME nicht. Die Tests oben
+// schrieben dadurch in die ECHTE ~/.comvenio-cli-state.json, der Login des
+// Menschen war danach weg — und die Tests selbst liefen rot, weil sie ihre
+// Datei im Temp-Heim nicht fanden. Dieser Test hält die Voraussetzung fest,
+// auf der alle anderen in dieser Datei stehen.
+
+describe("die Zustandsdatei liegt im umgebogenen Heim", () => {
+  const z = mitEigenemHeim("isolation");
+
+  test("STATE_FILE folgt HOME auch unter Bun", async () => {
+    const { STATE_FILE } = await import(`../src/auth.ts?iso=${encodeURIComponent(z.heim)}`);
+    expect(STATE_FILE).toBe(pfadIn(z.heim));
+  });
+});
+
+describe("stateHome", () => {
+  test("HOME vor USERPROFILE vor homedir()", async () => {
+    const { stateHome } = await import("../src/auth.ts");
+    expect(stateHome({ HOME: "/h", USERPROFILE: "C:\\u" })).toBe("/h");
+    expect(stateHome({ USERPROFILE: "C:\\u" })).toBe("C:\\u");
+    expect(stateHome({})).toBe(homedir());
   });
 });
