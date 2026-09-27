@@ -118,8 +118,12 @@ function slug(s: string): string {
 }
 
 const ART_KURZ: Record<string, string> = { heading: "titel", text: "text", link: "knopf", image: "bild" };
-/** Inline parents take a span wrapper, everything else a div (the image widget renders its own box). */
-const INLINE_ELTERN = new Set(["A", "P", "SPAN", "STRONG", "EM", "SMALL", "LABEL", "BUTTON"]);
+
+/** The element sits inside a link: the link stays outside every slot (R2), so the image is reported. */
+function inLink(el: DomElement): boolean {
+  for (let p = el.parentElement; p; p = p.parentElement) if (p.tagName === "A" && p.hasAttribute("href")) return true;
+  return false;
+}
 
 function naechsterFreierName(vorhanden: Set<string>, basis: string): string {
   const stamm = basis.slice(0, 60);
@@ -197,31 +201,23 @@ export function wandleGeruestUm(
   for (const el of kandidaten) {
     if (erledigt.has(el) || istAusgenommen(el)) continue;
     if (el.tagName === "IMG") {
-      // An image becomes an image slot: a wrapper keeps the image's classes, the
-      // slot carries address and alternative text; frameless, no lightbox, no
-      // hover, natural ratio, so the page looks as before (06 DC-3, K6-Bild).
+      // The <img> itself becomes the image slot, like <a> for a link (TD-1, K6-Bild):
+      // class, style, loading and size stay in the skeleton, address and alternative
+      // text move into the slot — the page looks exactly as before.
       const src = (el.getAttribute("src") ?? "").trim();
       if (!src) {
         offene.push({ grund: "Bild ohne Adresse (img)", text: "" });
         continue;
       }
-      const huelle = doc.createElement(el.parentElement && INLINE_ELTERN.has(el.parentElement.tagName) ? "span" : "div");
-      const cls = (el.getAttribute("class") ?? "").trim();
-      if (cls) huelle.setAttribute("class", cls);
+      if (inLink(el)) {
+        offene.push({ grund: "Bild in einem Link (img in a)", text: src });
+        continue;
+      }
       const name = naechsterFreierName(vorhanden, `${bereichKuerzel(el)}-${ART_KURZ.image}`);
-      huelle.setAttribute("data-slot", name);
-      el.replaceWith(huelle);
-      slots[name] = {
-        kind: "image",
-        config: {
-          url: src,
-          alt: (el.getAttribute("alt") ?? "").trim(),
-          card_style: "none",
-          enable_lightbox: false,
-          hover_effect: "none",
-          aspect_ratio: "auto",
-        },
-      };
+      slots[name] = { kind: "image", config: { url: src, alt: el.getAttribute("alt") ?? "" } };
+      el.removeAttribute("src");
+      el.removeAttribute("alt");
+      el.setAttribute("data-slot", name);
       umgewandelt++;
       continue;
     }
