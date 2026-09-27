@@ -11,3 +11,6 @@ remotion/public/job-*/
 remotion/.params-*.json
 apps/mcp-server/dist/
 .playwright-cli
+
+# verify screenshots can show club pages — never commit them
+.comvenio-verify/

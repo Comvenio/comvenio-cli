@@ -117,7 +117,31 @@ function slug(s: string): string {
     .slice(0, 40);
 }
 
-const ART_KURZ: Record<string, string> = { heading: "titel", text: "text", link: "knopf" };
+const ART_KURZ: Record<string, string> = { heading: "titel", text: "text", link: "knopf", image: "bild" };
+
+/** The element sits inside a link: the link stays outside every slot (R2), so the image is reported. */
+function inLink(el: DomElement): boolean {
+  for (let p = el.parentElement; p; p = p.parentElement) if (p.tagName === "A" && p.hasAttribute("href")) return true;
+  return false;
+}
+
+/**
+ * The renderer's image source rule (web-page slotRenderer `bildquelle`, K6-Bild Codex R2):
+ * https, a site path, blob:, a base64 raster image, or http (lifted to https there). An
+ * address it would drop — relative paths, other schemes, protocol-relative — is reported
+ * instead of converted, otherwise the image would vanish silently.
+ */
+export function bildquelleZulaessig(url: string): boolean {
+  const kompakt = url.trim().replace(/[\u0000- ]/g, "").replace(/\\/g, "/");
+  if (!kompakt || kompakt.startsWith("//")) return false;
+  if (kompakt.startsWith("/")) return true;
+  if (/^data:image\/(png|jpe?g|gif|webp|avif);base64,/i.test(kompakt)) return true;
+  try {
+    return ["https:", "http:", "blob:"].includes(new URL(kompakt).protocol);
+  } catch {
+    return false;
+  }
+}
 
 function naechsterFreierName(vorhanden: Set<string>, basis: string): string {
   const stamm = basis.slice(0, 60);
@@ -195,7 +219,28 @@ export function wandleGeruestUm(
   for (const el of kandidaten) {
     if (erledigt.has(el) || istAusgenommen(el)) continue;
     if (el.tagName === "IMG") {
-      offene.push({ grund: "Bild im Gerüst (img)", text: el.getAttribute("src") ?? "" });
+      // The <img> itself becomes the image slot, like <a> for a link (TD-1, K6-Bild):
+      // class, style, loading and size stay in the skeleton, address and alternative
+      // text move into the slot — the page looks exactly as before.
+      const src = (el.getAttribute("src") ?? "").trim();
+      if (!src) {
+        offene.push({ grund: "Bild ohne Adresse (img)", text: "" });
+        continue;
+      }
+      if (!bildquelleZulaessig(src)) {
+        offene.push({ grund: "Bild mit unzulässiger Adresse (img)", text: src });
+        continue;
+      }
+      if (inLink(el)) {
+        offene.push({ grund: "Bild in einem Link (img in a)", text: src });
+        continue;
+      }
+      const name = naechsterFreierName(vorhanden, `${bereichKuerzel(el)}-${ART_KURZ.image}`);
+      slots[name] = { kind: "image", config: { url: src, alt: el.getAttribute("alt") ?? "" } };
+      el.removeAttribute("src");
+      el.removeAttribute("alt");
+      el.setAttribute("data-slot", name);
+      umgewandelt++;
       continue;
     }
     const text = eigenerText(el);

@@ -1063,6 +1063,11 @@ const SLOTS_CONTRACT = {
     text: { config: { content: "HTML: strong em b i a[href] br p ul ol li; Blöcke werden in Inline-Elementen entfaltet (TD-9)" } },
     link: { config: { label: "string <=120", href: "?tab=… | /… | #… | http(s) | mailto: | tel:", new_tab: "boolean" } },
   },
+  image_slot: {
+    on_img: "Slot der Art image AUF einem <img> (K6-Bild): das img selbst trägt data-slot; Klasse, style, loading, width, height bleiben im Gerüst; der Slot setzt nur src (config.url) und alt (config.alt, leer bleibt leer). Nicht aus dem Gerüst ziehbar.",
+    on_other: "Slot der Art image auf einem anderen Element (div): volles Bild-Widget mit eigener Box (Rahmen, Seitenverhältnis, Lightbox).",
+    url: "https://… | /pfad | blob: | data:image/(png|jpeg|gif|webp|avif);base64 | http (wird zu https angehoben; http://localhost bleibt) — alles andere zeigt kein Bild",
+  },
   element_itself: "Ein Grundbaustein-Slot IST das Element (<h2 class=\"…\" data-slot=\"…\"></h2>), keine Hülle; die Ebene gehört zum Gerüst (TD-1). Live-Widgets behalten ihr div.",
   link_slot: "Ein Slot der Art link ist ein a-Element (R3 link_slot_not_anchor).",
   base_vs_catalog_class: "Klassen eines Katalogeintrags sind Katalogklassen und stehen als style im Slot, nicht im Gerüst; alle anderen Klassen sind Grundklassen (TD-16).",

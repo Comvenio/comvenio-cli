@@ -265,9 +265,44 @@ describe("homepage convert", () => {
     expect(namen).toEqual(["karte-titel", "karte-titel-2"]);
   });
 
-  test("images and tables are reported, the file is written anyway", () => {
-    const r = umwandeln('<section aria-label="Galerie"><img src="https://x/a.png"><table><tr><td>Zelle</td></tr></table></section>');
-    expect(r.offene.map((o) => o.grund)).toEqual(["Bild im Gerüst (img)", "Text in einer Tabelle"]);
+  test("tables are reported, the file is written anyway", () => {
+    const r = umwandeln('<section aria-label="Galerie"><table><tr><td>Zelle</td></tr></table></section>');
+    expect(r.offene.map((o) => o.grund)).toEqual(["Text in einer Tabelle"]);
+  });
+
+  test("K6-Bild the <img> itself becomes the image slot; class, style, loading stay, src and alt move", () => {
+    const r = umwandeln(
+      '<section aria-label="Jugend"><div class="sv-story__media"><img class="sv-photo" style="object-fit:contain" loading="eager" width="80" src="https://x/a.jpg" alt="Jugend beim Training"></div></section>',
+    );
+    expect(r.offene).toEqual([]);
+    const img = /<img[^>]*>/.exec(r.html)![0];
+    expect(img).toContain('class="sv-photo"');
+    expect(img).toContain('style="object-fit:contain"');
+    expect(img).toContain('loading="eager"');
+    expect(img).toContain('width="80"');
+    expect(img).toContain('data-slot="jugend-bild"');
+    expect(img).not.toContain("src=");
+    expect(img).not.toContain("alt=");
+    expect(r.slots["jugend-bild"]).toEqual({ kind: "image", config: { url: "https://x/a.jpg", alt: "Jugend beim Training" } });
+  });
+
+  test("K6-Bild an empty alt stays empty; an image in a link or without address is reported", () => {
+    const r = umwandeln(
+      '<section aria-label="S"><p><img src="https://x/b.jpg" alt=""></p><a href="/ziel"><img src="https://x/c.jpg" alt="c"></a><img alt="leer"></section>',
+    );
+    expect(Object.values(r.slots)).toEqual([{ kind: "image", config: { url: "https://x/b.jpg", alt: "" } }]);
+    expect(r.offene.map((o) => o.grund)).toEqual(["Bild in einem Link (img in a)", "Bild ohne Adresse (img)"]);
+  });
+
+  test("K6-Bild an address the renderer would drop is reported; http converts (lifted there)", () => {
+    const r = umwandeln(
+      '<section aria-label="S"><img src="../bilder/a.jpg" alt="a"><img src="javascript:x"><img src="http://alt.example/c.jpg" alt="c"></section>',
+    );
+    expect(r.offene.map((o) => [o.grund, o.text])).toEqual([
+      ["Bild mit unzulässiger Adresse (img)", "../bilder/a.jpg"],
+      ["Bild mit unzulässiger Adresse (img)", "javascript:x"],
+    ]);
+    expect(Object.values(r.slots)).toEqual([{ kind: "image", config: { url: "http://alt.example/c.jpg", alt: "c" } }]);
   });
 
   test("a tab without skeleton is skipped with a note", () => {
