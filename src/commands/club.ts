@@ -3,7 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
-import { uploadClubLogo } from "../util/upload.ts";
+import { registerClubFont, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -45,6 +45,9 @@ export type Opts = {
   tree?: boolean;
   avatars?: boolean;
   previewId?: string;
+  // font-upload action
+  family?: string;
+  lizenz?: string;
   // contact-requests action
   status?: string;
 };
@@ -289,7 +292,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload), Vereinsschriften (font-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -301,7 +304,9 @@ export function registerClubCommands(cli: CAC): void {
     .option("--public-template <id>", `design: oeffentliches Website-Template (${VALID_PUBLIC_TEMPLATES.join("|")})`)
     .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags); logo-upload: Bilddatei des Vereinslogos (PNG/JPG/SVG)")
     .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
-    .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
+    .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette inkl. header/nav/card/button + on_*, radius, spacing_scale, type_scale, shadow_level, type.heading/body {family, source system|plattform|verein, font_id}; WCAG-Gate serverseitig)")
+    .option("--family <name>", "font-upload: Familienname der Schrift (1-64 Zeichen), so wie tokens.type.*.family sie nennt")
+    .option("--lizenz <text>", "font-upload: Lizenz der Schrift (Pflicht, z. B. \"OFL 1.1\")")
     .option("--header-layout <mode>", `design: Public-Header-Aufbau (${VALID_PUBLIC_HEADER_LAYOUTS.join("|")})`)
     .option("--header-surface <mode>", `design: Public-Header-Oberflaeche (${VALID_PUBLIC_HEADER_SURFACES.join("|")})`)
     .option("--header-density <mode>", `design: Public-Header-Hoehe (${VALID_PUBLIC_HEADER_DENSITIES.join("|")})`)
@@ -384,6 +389,36 @@ export function registerClubCommands(cli: CAC): void {
           if (!id) throw new Error("club contact-request-delete <request-id> benoetigt eine ID.");
           await client.del("club", contactRequestsPath(clubId, { requestId: id }));
           output({ ok: true, id }, opts.json, () => `Kontaktanfrage ${id} geloescht (endgueltig nach 30 Tagen).`);
+          break;
+        }
+
+        case "font-upload": {
+          // Uploads the file (content-service) and registers it in
+          // design_settings.fonts (club-service), which tokens.type.*.font_id
+          // must reference for source "verein" (Lastenheft homepage-generator 18).
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file || !opts.family || !opts.lizenz) {
+            throw new Error("club font-upload benoetigt --file <woff2|ttf>, --family <name> und --lizenz <text>.");
+          }
+          const family = opts.family.trim();
+          if (!family || family.length > 64) throw new Error("--family muss 1-64 Zeichen haben.");
+          const settings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+          const liveFonts = (settings.design_settings as Record<string, unknown> | undefined)?.fonts;
+          // Check the limit before uploading, so no orphan file is created.
+          registerClubFont(liveFonts, { id: "pending", family, format: "woff2", lizenz: opts.lizenz });
+          const uploaded = await uploadClubFont({ client, clubId, path: opts.file, family, lizenz: opts.lizenz });
+          const fonts = registerClubFont(liveFonts, {
+            id: uploaded.font_id,
+            family: uploaded.family,
+            format: uploaded.format,
+            lizenz: opts.lizenz,
+          });
+          await client.put("club", `/clubs/${clubId}/settings`, { design_settings: { fonts } });
+          output({ ...uploaded, registered: fonts.length }, opts.json, () =>
+            `Schrift ${uploaded.family} (${uploaded.format}, ${uploaded.size_bytes} Bytes) hochgeladen und registriert — font_id ${uploaded.font_id}. ` +
+              `In tokens.type verwenden: {"family": "${uploaded.family}", "source": "verein", "font_id": "${uploaded.font_id}"}`,
+          );
           break;
         }
 
@@ -634,7 +669,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, font-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });

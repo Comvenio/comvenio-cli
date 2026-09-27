@@ -177,3 +177,69 @@ export async function uploadClubLogo({
     filename: basename(path),
   };
 }
+
+// ── Club fonts (Lastenheft homepage-generator 18, K18) ──────────────────────
+
+export const MAX_FONT_BYTES = 2 * 1024 * 1024;
+/** At most two club fonts per club (club-service MAX_CLUB_FONTS). */
+export const MAX_CLUB_FONTS = 2;
+
+export type ClubFontEntry = { id: string; family: string; format: string; lizenz: string };
+
+export type UploadClubFontResult = { font_id: string; family: string; format: string; size_bytes: number };
+
+/** Font format from the file's first bytes, the same rule as the content-service. */
+export function sniffFontFormat(bytes: Uint8Array): "woff2" | "ttf" | null {
+  const head = String.fromCharCode(...bytes.slice(0, 4));
+  if (head === "wOF2") return "woff2";
+  if (head === "\x00\x01\x00\x00" || head === "true") return "ttf";
+  return null;
+}
+
+/**
+ * The registry after adding a font: a font with the same family replaces the
+ * old entry, otherwise it is appended; more than MAX_CLUB_FONTS is refused
+ * before anything is written.
+ */
+export function registerClubFont(existing: unknown, font: ClubFontEntry): ClubFontEntry[] {
+  const current = Array.isArray(existing)
+    ? existing.filter((f): f is ClubFontEntry => !!f && typeof f === "object" && typeof (f as ClubFontEntry).id === "string")
+    : [];
+  const others = current.filter((f) => f.family !== font.family);
+  if (others.length >= MAX_CLUB_FONTS) {
+    throw new Error(
+      `Der Verein hat schon ${others.length} Schriften (${others.map((f) => f.family).join(", ")}); erlaubt sind ${MAX_CLUB_FONTS}.`,
+    );
+  }
+  return [...others, font];
+}
+
+export async function uploadClubFont({
+  client,
+  clubId,
+  path,
+  family,
+  lizenz,
+}: {
+  client: ComvenioClient;
+  clubId: string;
+  path: string;
+  family: string;
+  lizenz: string;
+}): Promise<UploadClubFontResult> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${path}`);
+  if (file.size <= 0) throw new Error(`Datei ist leer: ${path}`);
+  if (file.size > MAX_FONT_BYTES) {
+    throw new Error(`Schriftdatei ist zu groß (${Math.ceil(file.size / 1024)} KB, erlaubt ${MAX_FONT_BYTES / 1024 / 1024} MB).`);
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!sniffFontFormat(bytes)) {
+    throw new Error("Schriftdatei muss WOFF2 oder TrueType (TTF) sein; der Dateiinhalt passt zu keinem davon.");
+  }
+  const form = new FormData();
+  form.append("family", family);
+  form.append("lizenz", lizenz);
+  form.append("file", new Blob([bytes]), basename(path));
+  return await client.postForm<UploadClubFontResult>("content", `/fonts/club/${encodeURIComponent(clubId)}/upload`, form);
+}
