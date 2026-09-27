@@ -104,13 +104,17 @@ export function parseTrigger(schedule: string | undefined, rrule: string | undef
     return `BYHOUR=${h};BYMINUTE=${m}`;
   };
   if (weekly) {
-    const day = weekly[1].toUpperCase();
+    const [, rawDay = "", hour = "", minute = ""] = weekly;
+    const day = rawDay.toUpperCase();
     if (!WEEKDAYS.includes(day as (typeof WEEKDAYS)[number])) {
       throw new Error(`Wochentag ungültig — ${WEEKDAYS.join(", ")}.`);
     }
-    return { type: "schedule", rrule: `FREQ=WEEKLY;BYDAY=${day};${time(weekly[2], weekly[3])}`, timezone: tz };
+    return { type: "schedule", rrule: `FREQ=WEEKLY;BYDAY=${day};${time(hour, minute)}`, timezone: tz };
   }
-  if (daily) return { type: "schedule", rrule: `FREQ=DAILY;${time(daily[1], daily[2])}`, timezone: tz };
+  if (daily) {
+    const [, hour = "", minute = ""] = daily;
+    return { type: "schedule", rrule: `FREQ=DAILY;${time(hour, minute)}`, timezone: tz };
+  }
   throw new Error("--schedule kennt weekly:FR:17:00, daily:07:00 oder manual.");
 }
 
