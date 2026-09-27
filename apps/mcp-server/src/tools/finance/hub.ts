@@ -269,11 +269,13 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },
     // buchhaltung-10-01/-04: link a position to an event (main or presale), an
     // object, a room or a building — also in a closed plan, with confirm_closed_plan.
-    { op: "position_link_set", method: "PUT", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "write",
+    // Critical: the caller sets confirm_closed_plan itself, so a human confirms
+    // every change of a link after a preview (old and new target).
+    { op: "position_link_set", method: "PUT", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "critical",
       shape: { position_id: uuid, target_type: linkTarget, target_id: uuid, role: z.enum(["MAIN", "PRESALE"]).optional(), confirm_closed_plan: z.boolean().optional() },
       body: (i) => ({ target_type: str(i, "target_type"), target_id: str(i, "target_id"), role: typeof i.role === "string" ? i.role : "MAIN", confirm_closed_plan: i.confirm_closed_plan === true }) as JsonValue,
       preflight: positionOwn },
-    { op: "position_link_remove", method: "DELETE", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "write",
+    { op: "position_link_remove", method: "DELETE", template: "/positions/{position_id}/link", path: (i) => `/positions/${str(i, "position_id")}/link`, risk: "critical",
       shape: { position_id: uuid, confirm_closed_plan: z.boolean().optional() }, query: (i) => optional(i, ["confirm_closed_plan"]), preflight: positionOwn },
     { op: "tax_sphere", method: "PUT", template: "/positions/{position_id}/tax-sphere", path: (i) => `/positions/${str(i, "position_id")}/tax-sphere`, risk: "write", shape: { position_id: uuid, data }, body: payload, preflight: positionOwn },
     // Korrekturschleife (Tom 2026-09-23): Beanstandung einer Buchung mit Grund.

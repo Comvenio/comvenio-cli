@@ -67,6 +67,17 @@ async function transferShow(client: ComvenioApiClient, context: RequestContext, 
   }
 }
 
+// buchhaltung-10-01/-04: the position as it is, before its link changes.
+async function positionShow(client: ComvenioApiClient, context: RequestContext, positionId: string): Promise<JsonObject | null> {
+  try {
+    const position = record(await request(client, context, "GET", `/positions/${positionId}`));
+    // The preview runs before the preflight: a position of another club shows nothing.
+    return position.id === positionId && context.club_id && position.club_id === context.club_id ? position : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── buchhaltung-14-02: Übertrag zwischen zwei Konten des Vereins ──────
 
 function refuse(context: RequestContext, message: string): never {
@@ -318,6 +329,19 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
     effects.push({ type: "position_removal", position_id: positionId, affects_attached_bookings: true, includes_sub_positions: true, sub_positions_read: unter?.complete === true });
     for (const kind of unter?.rows ?? [])
       effects.push({ type: "position_removal", position_id: kind.id ?? null, name: kind.name ?? null, parent_position_id: positionId, expense_planned_cents: kind.expense_planned_cents ?? null });
+  }
+  // buchhaltung-10-01/-04: a link change names the position, where it points
+  // now and where it will point, and whether a closed plan is touched.
+  if (definition.action_id === "cai.finance.25.entry_correction" && ["position_link_set", "position_link_remove"].includes(operation.operation)) {
+    const positionId = typeof data.position_id === "string" ? data.position_id : null;
+    const position = client && positionId ? await positionShow(client, context, positionId) : null;
+    const setting = operation.operation === "position_link_set";
+    effects.push({
+      type: "position_link_change", position_id: positionId, position_read: position !== null, name: position?.name ?? null,
+      from: position ? { type: position.context_type ?? null, id: position.context_id ?? null, role: position.event_role ?? null } : null,
+      to: setting ? { type: data.target_type ?? null, id: data.target_id ?? null, role: data.role ?? "MAIN" } : null,
+      closed_plan_confirmed: data.confirm_closed_plan === true,
+    });
   }
   // DC-8: a frame change shows the old and the new amount and the reason.
   const rahmen = (definition.action_id === "cai.finance.36.budget_organigram" && operation.operation === "frame_set")
