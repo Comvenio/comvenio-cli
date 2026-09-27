@@ -52,6 +52,8 @@ export type FinanceCommandOpts = {
   // Pflichtfeld. Ohne sie antwortet der Dienst mit 422 statt zu arbeiten.
   reason?: string;
   force?: boolean;
+  // finance pruefung: set „Haushaltsjahr geprüft“ after a clean audit (16-04).
+  kennzeichnen?: boolean;
   overwrite?: boolean;
   includeNonRecurring?: boolean;
   positions?: string;
@@ -463,6 +465,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--source-type <typ>", "entry-list nach Herkunft filtern (manual, supply, sponsoring, …)")
     .option("--reason <text>", "Begründung — PFLICHT bei plan-reopen (mindestens 3 Zeichen); bei entry-update der Grund der Korrektur (Pflicht, solange die Buchung beanstandet ist)")
     .option("--force", "plan-close auch bei offenen Posten erzwingen")
+    .option("--kennzeichnen", "finance pruefung: ein abgeschlossenes, fehlerfreies Jahr als „Haushaltsjahr geprüft“ kennzeichnen (--notes wird die Notiz)")
     .option("--overwrite", "position-import-shopping: vorhandene Schätzung überschreiben")
     .option("--include-non-recurring", "plan-copy: auch einmalige Posten übernehmen")
     .option("--positions <ids>", "plan-copy: nur diese Posten übernehmen (Komma-getrennt)")
@@ -476,6 +479,7 @@ export function registerFinanceCommands(cli: CAC): void {
     .example("  $ comvenio finance run money-account list")
     .example("  $ comvenio finance run cash-report create --input '{\"data\": {\"period_start\": \"2026-01-01\", \"period_end\": \"2026-01-31\", \"money_account_id\": \"…\"}}'")
     .example("  $ comvenio finance pruefung --year 2025 --out pruefung-2025")
+    .example("  $ comvenio finance pruefung --year 2025 --kennzeichnen --notes \"Kassenprüfung 12.03.\"")
     .example("  $ comvenio finance belege --year 2025 --out belege-2025")
     .example("  $ comvenio finance plan-list")
     .example("  $ comvenio finance plan-create --year 2026 --capital 500000")

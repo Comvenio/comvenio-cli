@@ -101,4 +101,68 @@ describe("finance pruefung", () => {
   });
 });
 
+// buchhaltung-16-04: „Haushaltsjahr geprüft“ im Kopf und --kennzeichnen.
+describe("finance pruefung — Haushaltsjahr geprüft", () => {
+  const SAUBER = { ...ERGEBNIS, rules: [], summary: { errors: 0, notes: 2, check_failed: 0 } };
+  const LABEL = { id: "l-1", labeled_at: "2026-09-27T08:00:00Z", labeled_by: "11111111-1111-4111-8111-111111111111", note: "Kassenprüfung" };
+
+  function mit(ergebnis: JsonLike, calls: { input: JsonLike; idempotency_key?: string }[], current: JsonLike | null = null) {
+    return {
+      async callAction(input: { input: JsonLike; idempotency_key?: string }) {
+        calls.push(input);
+        const op = input.input.operation;
+        if (op === "list") return { result: [{ id: PLAN_2025, year: 2025, department_id: null }] };
+        if (op === "audit_labels") return { result: { current, history: current ? [current] : [] } };
+        if (op === "audit_label_set") return { result: LABEL };
+        return { result: ergebnis };
+      },
+    } as unknown as CliConnectorClient;
+  }
+
+  test("der Kopf nennt ein gültiges Label, sonst „nein“", () => {
+    expect(renderPruefbericht({ ...SAUBER, audit_label: LABEL }, 2025))
+      .toContain("- Haushaltsjahr geprüft: ja, am 2026-09-27T08:00:00Z von 11111111-1111-4111-8111-111111111111 (Kassenprüfung)");
+    expect(renderPruefbericht(SAUBER, 2025)).toContain("- Haushaltsjahr geprüft: nein");
+  });
+
+  test("ohne --kennzeichnen wird das Label nur gelesen", async () => {
+    const calls: { input: JsonLike; idempotency_key?: string }[] = [];
+    const ergebnis = await runPruefung(mit(SAUBER, calls, LABEL), { year: "2025" });
+    expect(calls.map((c) => c.input.operation)).toEqual(["list", "audit_check", "audit_labels"]);
+    expect(calls.every((c) => c.idempotency_key === undefined)).toBe(true);
+    expect((ergebnis.audit_label as JsonLike).id).toBe("l-1");
+  });
+
+  test("--kennzeichnen setzt das Label schreibend mit Notiz", async () => {
+    const calls: { input: JsonLike; idempotency_key?: string }[] = [];
+    const ergebnis = await runPruefung(mit(SAUBER, calls), { year: "2025", kennzeichnen: true, notes: "Kassenprüfung", confirm: false });
+    const setzen = calls.find((c) => c.input.operation === "audit_label_set")!;
+    expect(setzen.input).toEqual({ operation: "audit_label_set", plan_id: PLAN_2025, note: "Kassenprüfung" });
+    expect(typeof setzen.idempotency_key).toBe("string");
+    expect((ergebnis.audit_label as JsonLike).id).toBe("l-1");
+  });
+
+  test("--kennzeichnen verweigert ein laufendes oder fehlerhaftes Jahr, ohne zu schreiben", async () => {
+    const calls: { input: JsonLike; idempotency_key?: string }[] = [];
+    const vorher = process.exitCode;
+    await expect(runPruefung(mit({ ...SAUBER, status: "ACTIVE" }, calls), { year: "2025", kennzeichnen: true }))
+      .rejects.toThrow(/abgeschlossenes Jahr/);
+    await expect(runPruefung(mit(ERGEBNIS, calls), { year: "2025", kennzeichnen: true })).rejects.toThrow(/Fehler/);
+    expect(calls.some((c) => c.input.operation === "audit_label_set")).toBe(false);
+    process.exitCode = vorher;
+  });
+
+  test("ein nicht lesbares Label steht im Bericht, der Durchlauf bleibt", async () => {
+    const kaputt = {
+      async callAction(input: { input: JsonLike }) {
+        if (input.input.operation === "list") return { result: [{ id: PLAN_2025, year: 2025, department_id: null }] };
+        if (input.input.operation === "audit_labels") throw new Error("503");
+        return { result: SAUBER };
+      },
+    } as unknown as CliConnectorClient;
+    const ergebnis = await runPruefung(kaputt, { year: "2025" });
+    expect(String(ergebnis.audit_label)).toContain("nicht lesbar (503)");
+  });
+});
+
 type JsonLike = Record<string, unknown>;

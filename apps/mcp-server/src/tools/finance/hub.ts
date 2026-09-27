@@ -211,6 +211,10 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "sphere_report", method: "GET", template: `${BY_ID}/sphere-report`, path: (i) => `${byId(i)}/sphere-report`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
     // buchhaltung-16-03: the audit run of a plan — computed, never stored.
     { op: "audit_check", method: "GET", template: `${BY_ID}/audit-check`, path: (i) => `${byId(i)}/audit-check`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
+    // buchhaltung-16-04: „Haushaltsjahr geprüft“ — the valid label and its history;
+    // setting it runs the audit in the service (closed year, no error).
+    { op: "audit_labels", method: "GET", template: `${BY_ID}/audit-labels`, path: (i) => `${byId(i)}/audit-labels`, risk: "read", shape: { plan_id: uuid }, multiDepartment: true },
+    { op: "audit_label_set", method: "POST", template: `${BY_ID}/audit-labels`, path: (i) => `${byId(i)}/audit-labels`, risk: "write", shape: { plan_id: uuid, note: z.string().max(500).optional() }, body: (i) => (typeof i.note === "string" ? { note: i.note } : {}) as JsonValue, multiDepartment: true },
     { op: "dashboard", method: "GET", template: "/clubs/{club_id}/finance-plans/{year}/dashboard", path: (i) => `${club(i)}/finance-plans/${int(i, "year")}/dashboard`, risk: "read", shape: { year }, multiDepartment: true },
   ] },
   "cai.finance.22.plan_lifecycle": { source: "plan-close|next-period", ops: [

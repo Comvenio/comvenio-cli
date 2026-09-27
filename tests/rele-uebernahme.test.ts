@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { type Cli, LaufWartet, laufen, planen, pruefeGate, schrittSchluessel, type Uebernahme } from "../scripts/rele/uebernahme.ts";
+import { type Cli, laufen, planen, pruefeGate, schrittSchluessel, type Uebernahme } from "../scripts/rele/uebernahme.ts";
 
 // buchhaltung-14-04 §4.2: the run over a finance service kept in memory —
 // synthetic years 2031/2032, no club data.
@@ -64,6 +64,7 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
   const uebertraege: any[] = [];
   const anfang: Record<string, any> = {};
   const aufrufe: string[][] = [];
+  const labels: Record<string, { id: string; labeled_by: string; note?: string }> = {};
   const planVon = (jahr: number) => plaene.find((p) => p.year === jahr)?.id as string;
   const abgleich = (plan: string) => ({
     accounts: konten.map((k) => {
@@ -76,8 +77,8 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
     }),
   });
   const antwort = (area: string, op: string, i: any, wer: string): unknown => {
+    // Self approval (buchhaltung-16-04 D-16-07): the booking person approves too.
     const freigeben = (b: (typeof buchungen)[number]) => {
-      if (b.von === wer) return false;
       if (plaene.find((x) => x.id === b.plan)?.status !== "ACTIVE") return false;
       b.frei = wer;
       return true;
@@ -98,9 +99,23 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
         const plan = planVon(b.jahr);
         return { approved: buchungen.filter((x) => x.plan === plan && x.konto === b.konto && !x.transfer && !x.frei).filter(freigeben).length };
       }
-      case "cash-report approve": { const b = berichte.find((x) => x.id === i.report_id)!; b.status = "APPROVED"; return b; }
+      case "cash-report show": return berichte.find((x) => x.id === i.report_id);
+      case "cash-report approve": {
+        const b = berichte.find((x) => x.id === i.report_id)!;
+        // Like the service: an approved report is approved once.
+        if (b.status !== "SUBMITTED") throw new Error(`A ${b.status} report cannot be approved`);
+        b.status = "APPROVED";
+        return b;
+      }
       case "entry approve_one": { const b = buchungen.find((x) => x.id === i.entry_id)!; if (!freigeben(b)) throw new Error("Four-eyes principle"); return b; }
       case "plan-period list": return plaene;
+      case "plan-period audit_labels": return { current: labels[i.plan_id] ?? null, history: labels[i.plan_id] ? [labels[i.plan_id]] : [] };
+      case "plan-period audit_label_set": {
+        const p = plaene.find((x) => x.id === i.plan_id);
+        if (p?.status !== "CLOSED") throw new Error("plan_not_closed: Only a closed year can be labeled as audited");
+        labels[i.plan_id] = { id: id("label"), labeled_by: wer, note: i.note };
+        return labels[i.plan_id];
+      }
       case "plan-period positions": return posten.filter((p) => p.plan === i.plan_id);
       case "plan-period create": { const p = { id: id("plan"), year: i.data.year, status: "DRAFT", department_id: null, available_capital_cents: i.data.available_capital_cents, notes: i.data.notes }; plaene.push(p); return p; }
       case "plan-period update": { const p = plaene.find((x) => x.id === i.plan_id); Object.assign(p, i.data); return p; }
@@ -159,7 +174,7 @@ function dienst(club = DEV, optionen: { absturz?: (area: string, op: string) => 
     if (optionen.absturz?.(area, op)) throw new Error(`Absturz nach ${area} ${op}`);
     return { status: "completed", result: ergebnis };
   };
-  return { cli: cliFuer("kassier"), zweit: cliFuer(optionen.zweitePerson ?? "pruefer"), plaene, buchungen, aufrufe, konten, posten, uebertraege, berichte };
+  return { cli: cliFuer("kassier"), zweit: cliFuer(optionen.zweitePerson ?? "pruefer"), plaene, buchungen, aufrufe, konten, posten, uebertraege, berichte, labels };
 }
 
 const neu = (verein = DEV) => ({ verein, schritte: {} as Record<string, unknown>, ereignisse: [] as Array<Record<string, unknown>> });
@@ -277,25 +292,47 @@ describe("Übernahme: Lauf", () => {
     expect(d.aufrufe.filter((a) => a[3] === "reconciliation").every((a) => !a.includes("--idempotency-key"))).toBe(true);
   });
 
-  test("Vier Augen: ohne zweite Person wartet der Lauf vor dem Abschluss, und das Protokoll sagt worauf", () => {
+  test("16-04: eine Person gibt frei, schließt ohne force ab und kennzeichnet das Jahr als geprüft", () => {
     const d = dienst();
     const p = neu();
-    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(LaufWartet);
-    expect(d.plaene[0].status).toBe("ACTIVE");
-    expect(String(p.ereignisse.at(-1)?.wartet)).toMatch(/^2031: 7 Buchungen warten auf die Freigabe einer zweiten Person/);
-    // The second person continues the same protocol; nothing is booked twice.
-    const anzahl = d.buchungen.length;
-    laufen([JAHR_1], DEV, d.cli, p, () => {}, d.zweit);
-    expect(d.buchungen.length).toBe(anzahl);
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
     expect(d.plaene[0].status).toBe("CLOSED");
-    expect(d.buchungen.filter((b) => !b.transfer).every((b) => b.frei === "pruefer")).toBe(true);
+    expect(d.plaene[0].force).toBe(false);
+    expect(d.buchungen.filter((b) => !b.transfer).every((b) => b.frei === "kassier")).toBe(true);
     expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "APPROVED"]);
+    expect(d.labels[d.plaene[0].id]).toMatchObject({ labeled_by: "kassier", note: "Übernahme aus Rechenschaftsbericht 2031" });
+    expect(p.schritte["2031:kennzeichnen"]).toBe(d.labels[d.plaene[0].id]!.id);
   });
 
-  test("Vier Augen: die Freigabe-Anmeldung darf nicht dieselbe Person sein", () => {
-    const d = dienst(DEV, { zweitePerson: "kassier" });
-    expect(() => laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit)).toThrow(/andere Person im selben Verein/);
-    expect(d.plaene).toEqual([]);
+  test("16-04: eine Freigabe-Anmeldung gibt statt der eigenen frei — auch dieselbe Person", () => {
+    const d = dienst();
+    laufen([JAHR_1], DEV, d.cli, neu(), () => {}, d.zweit);
+    expect(d.buchungen.filter((b) => !b.transfer).every((b) => b.frei === "pruefer")).toBe(true);
+    const selbe = dienst(DEV, { zweitePerson: "kassier" });
+    laufen([JAHR_1], DEV, selbe.cli, neu(), () => {}, selbe.zweit);
+    expect(selbe.plaene[0].status).toBe("CLOSED");
+  });
+
+  test("R1-B3 ein Absturz nach der ersten Berichtsfreigabe: die Fortsetzung gibt nur den offenen Bericht frei", () => {
+    let einmal = true;
+    const d = dienst(DEV, { absturz: (area, op) => area === "cash-report" && op === "approve" && einmal && !(einmal = false) });
+    const p = neu();
+    expect(() => laufen([JAHR_1], DEV, d.cli, p, () => {})).toThrow(/Absturz nach cash-report approve/);
+    expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "SUBMITTED"]);
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    expect(d.berichte.map((b) => b.status)).toEqual(["APPROVED", "APPROVED"]);
+    expect(d.plaene[0].status).toBe("CLOSED");
+  });
+
+  test("16-04: ein fortgesetzter Lauf setzt kein zweites Label", () => {
+    const d = dienst();
+    const p = neu();
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    const erstes = d.labels[d.plaene[0].id]!.id;
+    delete p.schritte["2031:kennzeichnen"];
+    laufen([JAHR_1], DEV, d.cli, p, () => {});
+    expect(d.labels[d.plaene[0].id]!.id).toBe(erstes);
+    expect(d.aufrufe.filter((a) => a[3] === "audit_label_set").length).toBe(1);
   });
 
   test("Prüftor: ohne Verfahrensdokumentation wird nicht abgeschlossen", () => {

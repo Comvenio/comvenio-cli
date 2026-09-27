@@ -204,7 +204,7 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
 
 /** Lesende Teiloperationen des Hubs — alles andere schreibt und bekommt einen Idempotenz-Schlüssel. */
 const READ_OPERATIONS = new Set([
-  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard", "audit_check", "receipt_file",
+  "list", "show", "positions", "summary", "journal", "entries_without_receipt", "sphere_report", "dashboard", "audit_check", "audit_labels", "receipt_file",
   "opening_versions", "cash_book", "reconciliation", "versions", "account_choices", "result",
   "open_items", "resolutions", "version", "download", "event", "event_reconciliation", "series_comparison",
   "department_history", "object", "feasibility", "funding_summary", "loan_details", "loan_show", "cashflow_list",
@@ -221,7 +221,7 @@ type PruefRegel = { code: string; requirement: string; severity: string; fulfill
 const REGEL_TITEL: Record<string, string> = {
   JOURNAL_GAP: "Journalnummern lückenlos",
   PERIOD_NOT_CLOSED: "Abgelaufener Zeitraum festgeschrieben",
-  ENTRY_NOT_APPROVED: "Freigabe durch eine zweite Person",
+  ENTRY_NOT_APPROVED: "Freigabe je Buchung",
   RECEIPT_MISSING: "Beleg oder Begründung je Buchung",
   SELF_ISSUED: "Eigenbelege",
   SPHERE_MISSING: "Steuerliche Sphäre je Posten",
@@ -246,6 +246,13 @@ function fundstelle(f: JsonObject): string {
     .join(", ");
 }
 
+/** The label line of the report head (buchhaltung-16-04). */
+function labelText(label: unknown): string {
+  if (typeof label === "string") return zelle(label);
+  if (!isObject(label)) return "nein";
+  return `ja, am ${zelle(label.labeled_at)} von ${zelle(label.labeled_by)}${label.note ? ` (${zelle(label.note)})` : ""}`;
+}
+
 /** Der Bericht in Markdown — Kopf, eine Zeile je Regel, je Befund die Fundstellen. */
 export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
   const regeln = (ergebnis.rules ?? []) as unknown as PruefRegel[];
@@ -257,6 +264,7 @@ export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
     `- Buchungen im Journal: ${zelle(ergebnis.entry_count)}`,
     `- Geprüft am ${zelle(ergebnis.checked_at)} von ${zelle(ergebnis.checked_by)}`,
     `- Ergebnis: ${zelle(summe.errors)} Fehler, ${zelle(summe.notes)} Hinweise, ${zelle(summe.check_failed)} nicht prüfbar`,
+    `- Haushaltsjahr geprüft: ${labelText(ergebnis.audit_label)}`,
     "",
     "| Regel | GoBD | Stufe | Ergebnis |",
     "|---|---|---|---|",
@@ -275,10 +283,12 @@ export function renderPruefbericht(ergebnis: JsonObject, jahr: number): string {
 }
 
 /**
- * `comvenio finance pruefung [plan-id] --year <jahr> [--out <basisname>]` —
+ * `comvenio finance pruefung [plan-id] --year <jahr> [--out <basisname>] [--kennzeichnen]` —
  * prüft den Vereinsplan des Jahres, mit Plan-ID genau diesen Plan (auch einen
  * Abteilungsplan; buchhaltung-16-03). Mit --out entstehen <basisname>.md und
- * <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln.
+ * <basisname>.json; Exit 1 bei Fehlern oder nicht prüfbaren Regeln. Mit
+ * --kennzeichnen setzt der Dienst nach fehlerfreiem Durchlauf eines
+ * abgeschlossenen Jahres das Label „Haushaltsjahr geprüft“ (buchhaltung-16-04).
  */
 /** The club plan of a year — never picked silently among several (16-03 R1-8). */
 async function vereinsplanDesJahres(client: CliConnectorClient, befehl: string, opts: FinanceCommandOpts, planId?: string): Promise<string> {
@@ -295,13 +305,38 @@ async function vereinsplanDesJahres(client: CliConnectorClient, befehl: string, 
   return treffer[0]!.id as string;
 }
 
+/** The valid label of a plan, null without one. A failing read is named in
+ *  the report instead of hiding it — the audit itself stays readable. */
+async function gueltigesLabel(client: CliConnectorClient, planId: string): Promise<JsonObject | string | null> {
+  try {
+    const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_labels", plan_id: planId }, { write: false });
+    const liste = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
+    return isObject(liste.current) ? liste.current as JsonObject : null;
+  } catch (err) {
+    return `nicht lesbar (${err instanceof Error ? err.message : String(err)})`;
+  }
+}
+
 export async function runPruefung(client: CliConnectorClient, opts: FinanceCommandOpts, planId?: string): Promise<JsonObject> {
   const jahr = Number(opts.year);
   const id = await vereinsplanDesJahres(client, "pruefung", opts, planId);
   const antwort = await callFinance(client, FINANCE_AREAS["plan-period"]!, { operation: "audit_check", plan_id: id }, { write: false });
   const ergebnis = (isObject(antwort.result) ? antwort.result : antwort) as JsonObject;
   const summe = (ergebnis.summary ?? {}) as JsonObject;
-  if (Number(summe.errors ?? 0) > 0 || Number(summe.check_failed ?? 0) > 0) process.exitCode = 1;
+  const fehlerfrei = Number(summe.errors ?? 0) === 0 && Number(summe.check_failed ?? 0) === 0;
+  if (!fehlerfrei) process.exitCode = 1;
+  if (opts.kennzeichnen) {
+    // The service runs the audit again and decides; the CLI only refuses what
+    // it already knows cannot pass.
+    if (ergebnis.status !== "CLOSED") throw new Error("Nur ein abgeschlossenes Jahr kann als geprüft gekennzeichnet werden — erst finance plan-close.");
+    if (!fehlerfrei) throw new Error("Der Prüfdurchlauf meldet Fehler — erst beheben, dann kennzeichnen.");
+    const gesetzt = await callFinance(client, FINANCE_AREAS["plan-period"]!,
+      { operation: "audit_label_set", plan_id: id, ...(opts.notes ? { note: opts.notes } : {}) },
+      { write: true, confirm: opts.confirm !== false });
+    ergebnis.audit_label = (isObject(gesetzt.result) ? gesetzt.result : gesetzt) as JsonObject;
+  } else {
+    ergebnis.audit_label = await gueltigesLabel(client, id);
+  }
   if (!opts.out) return ergebnis;
   writeFileSync(`${opts.out}.json`, JSON.stringify(ergebnis, null, 2));
   writeFileSync(`${opts.out}.md`, renderPruefbericht(ergebnis, Number(ergebnis.year ?? jahr)));
