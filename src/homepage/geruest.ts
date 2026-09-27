@@ -40,10 +40,12 @@ export interface DomElement extends DomKnoten {
   querySelector(selector: string): DomElement | null;
   querySelectorAll(selector: string): DomListe<DomElement>;
   removeChild(kind: DomKnoten): unknown;
+  replaceWith(...knoten: DomKnoten[]): void;
 }
 
 export interface DomDokument {
   body: DomElement;
+  createElement(tag: string): DomElement;
 }
 
 export interface SlotEntry {

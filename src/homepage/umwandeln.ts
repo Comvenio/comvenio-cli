@@ -117,7 +117,9 @@ function slug(s: string): string {
     .slice(0, 40);
 }
 
-const ART_KURZ: Record<string, string> = { heading: "titel", text: "text", link: "knopf" };
+const ART_KURZ: Record<string, string> = { heading: "titel", text: "text", link: "knopf", image: "bild" };
+/** Inline parents take a span wrapper, everything else a div (the image widget renders its own box). */
+const INLINE_ELTERN = new Set(["A", "P", "SPAN", "STRONG", "EM", "SMALL", "LABEL", "BUTTON"]);
 
 function naechsterFreierName(vorhanden: Set<string>, basis: string): string {
   const stamm = basis.slice(0, 60);
@@ -195,7 +197,32 @@ export function wandleGeruestUm(
   for (const el of kandidaten) {
     if (erledigt.has(el) || istAusgenommen(el)) continue;
     if (el.tagName === "IMG") {
-      offene.push({ grund: "Bild im Gerüst (img)", text: el.getAttribute("src") ?? "" });
+      // An image becomes an image slot: a wrapper keeps the image's classes, the
+      // slot carries address and alternative text; frameless, no lightbox, no
+      // hover, natural ratio, so the page looks as before (06 DC-3, K6-Bild).
+      const src = (el.getAttribute("src") ?? "").trim();
+      if (!src) {
+        offene.push({ grund: "Bild ohne Adresse (img)", text: "" });
+        continue;
+      }
+      const huelle = doc.createElement(el.parentElement && INLINE_ELTERN.has(el.parentElement.tagName) ? "span" : "div");
+      const cls = (el.getAttribute("class") ?? "").trim();
+      if (cls) huelle.setAttribute("class", cls);
+      const name = naechsterFreierName(vorhanden, `${bereichKuerzel(el)}-${ART_KURZ.image}`);
+      huelle.setAttribute("data-slot", name);
+      el.replaceWith(huelle);
+      slots[name] = {
+        kind: "image",
+        config: {
+          url: src,
+          alt: (el.getAttribute("alt") ?? "").trim(),
+          card_style: "none",
+          enable_lightbox: false,
+          hover_effect: "none",
+          aspect_ratio: "auto",
+        },
+      };
+      umgewandelt++;
       continue;
     }
     const text = eigenerText(el);

@@ -265,9 +265,29 @@ describe("homepage convert", () => {
     expect(namen).toEqual(["karte-titel", "karte-titel-2"]);
   });
 
-  test("images and tables are reported, the file is written anyway", () => {
-    const r = umwandeln('<section aria-label="Galerie"><img src="https://x/a.png"><table><tr><td>Zelle</td></tr></table></section>');
-    expect(r.offene.map((o) => o.grund)).toEqual(["Bild im Gerüst (img)", "Text in einer Tabelle"]);
+  test("tables are reported, the file is written anyway", () => {
+    const r = umwandeln('<section aria-label="Galerie"><table><tr><td>Zelle</td></tr></table></section>');
+    expect(r.offene.map((o) => o.grund)).toEqual(["Text in einer Tabelle"]);
+  });
+
+  test("K6-Bild an image becomes a frameless image slot that keeps classes and alt text", () => {
+    const r = umwandeln('<section aria-label="Jugend"><div class="sv-story__media"><img class="sv-photo" src="https://x/a.jpg" alt="Jugend beim Training"></div></section>');
+    expect(r.offene).toEqual([]);
+    expect(r.html).toMatch(/<div (?=[^>]*class="sv-photo")(?=[^>]*data-slot="jugend-bild")[^>]*><\/div>/);
+    expect(r.html).not.toContain("<img");
+    const [name, eintrag] = Object.entries(r.slots)[0];
+    expect(name).toMatch(/-bild$/);
+    expect(eintrag).toEqual({
+      kind: "image",
+      config: { url: "https://x/a.jpg", alt: "Jugend beim Training", card_style: "none", enable_lightbox: false, hover_effect: "none", aspect_ratio: "auto" },
+    });
+  });
+
+  test("K6-Bild an image inside a link or paragraph gets an inline wrapper; one without address stays open", () => {
+    const r = umwandeln('<section aria-label="S"><p><img src="https://x/b.jpg"></p><img alt="leer"></section>');
+    expect(r.html).toContain("<p><span data-slot=");
+    expect(r.offene.map((o) => o.grund)).toEqual(["Bild ohne Adresse (img)"]);
+    expect(Object.keys(r.slots)).toHaveLength(1);
   });
 
   test("a tab without skeleton is skipped with a note", () => {
