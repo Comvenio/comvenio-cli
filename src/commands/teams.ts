@@ -2,7 +2,8 @@
 //
 // Namespace contract (Lastenheft 09-club-agent-cli-mcp §1.1/§1.3/§5b/§6):
 // - Full capability set: teams, seasons, roster, competitions, iCal
-//   subscriptions and sync operations over the same RBAC-guarded backend
+//   subscriptions, hand-made termine (Mannschaftstermine 05) and sync
+//   operations over the same RBAC-guarded backend
 //   routes the web app uses (member-service + event-service).
 // - Every read/write supports --json (machine-readable stdout, errors on
 //   stderr).
@@ -101,9 +102,40 @@ type TeamSeasonEventRead = {
   event_id: string;
   title: string;
   start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
   status: string;
   home_state?: "HOME" | "AWAY" | "UNKNOWN" | null;
   competition_id?: string | null;
+  // Mannschaftstermine 01: hand-made termine share the list with the projection.
+  kind?: string;
+  source?: "SYNC" | "MANUAL" | string;
+  series_id?: string | null;
+  opponent?: string | null;
+  can_edit?: boolean;
+};
+
+type TerminKind = "MATCH" | "TRAINING" | "EXCURSION" | "OTHER";
+
+type TerminRead = {
+  event_id: string;
+  series_id?: string | null;
+  kind: TerminKind;
+  source?: "MANUAL";
+  title: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  note?: string | null;
+  status: string;
+  home_state?: string | null;
+  competition_id?: string | null;
+  opponent?: string | null;
+  visibility: string;
+  announce_general: boolean;
+  repeat?: { weekdays: string[]; until?: string | null } | null;
+  can_edit?: boolean;
+  booking_status?: string | null;
 };
 
 type CalendarSubscriptionRead = {
@@ -182,6 +214,21 @@ export type TeamsCommandOpts = {
   previewToken?: string;
   limit?: string;
   offset?: string;
+  // termin fields (Mannschaftstermine 05)
+  kind?: string;
+  title?: string;
+  start?: string;
+  end?: string;
+  location?: string;
+  note?: string;
+  opponent?: string;
+  home?: boolean;
+  away?: boolean;
+  competitionId?: string;
+  repeat?: string;
+  until?: string;
+  announce?: boolean | string;
+  scope?: string;
 };
 
 // ── Exit-code contract (§1.3) ──────────────────────────────────────────
@@ -308,11 +355,12 @@ const ACTION_OVERVIEW =
   "roster show|add|update|remove|carry-over | " +
   "competition list|create|update|delete | " +
   "ical list|create|update|preview|activate|deactivate | " +
-  "sync now|runs|clarifications|resolve";
+  "sync now|runs|clarifications|resolve | " +
+  "termin list|show|create|update|cancel|delete";
 
 export function registerTeamsCommands(cli: CAC): void {
   cli
-    .command("teams <action> [arg1] [arg2]", ACTION_OVERVIEW)
+    .command("teams <action> [arg1] [arg2] [arg3]", ACTION_OVERVIEW)
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .option("--yes", "Bestätigt eine wichtige Mutation (sonst nur Parameterzusammenfassung)")
@@ -329,8 +377,8 @@ export function registerTeamsCommands(cli: CAC): void {
     .option("--team <id>", "Team-ID (für season show)")
     .option("--starts-on <date>", "Saisonbeginn (YYYY-MM-DD)")
     .option("--ends-on <date>", "Saisonende (YYYY-MM-DD)")
-    .option("--visibility <v>", "PUBLIC|MEMBERS")
-    .option("--reason <text>", "Korrekturgrund (season update, min. 5 Zeichen)")
+    .option("--visibility <v>", "Saison: PUBLIC|MEMBERS · Termin: public|member|department|private|invite_only")
+    .option("--reason <text>", "Korrekturgrund (season update, min. 5 Zeichen) bzw. Absagegrund (termin cancel)")
     .option("--member-id <id>", "Mitglieds-ID (roster add)")
     .option("--role <r>", "PLAYER|CAPTAIN|COACH|ASSISTANT_COACH|MANAGER")
     .option("--status <s>", "Kaderstatus ACTIVE|INACTIVE|LEFT")
@@ -347,15 +395,30 @@ export function registerTeamsCommands(cli: CAC): void {
     .option("--preview-token <t>", "Vorschau-Token aus ical preview (ical activate)")
     .option("--limit <n>", "sync runs: Seitengröße")
     .option("--offset <n>", "sync runs: Offset")
+    .option("--kind <k>", "Termin-Art training|spiel|ausflug|sonstiges (create, Vorgabe training; list-Filter)")
+    .option("--title <text>", "Termin-Titel (ohne Angabe nach Art bzw. Heim/Gegner)")
+    .option("--start <datetime>", "Terminbeginn, z. B. 2026-10-06T19:00 (Ortszeit Berlin)")
+    .option("--end <datetime>", "Terminende (ohne Angabe Dauer nach Art)")
+    .option("--location <text>", "Ort des Termins")
+    .option("--note <text>", "Hinweis zum Termin")
+    .option("--opponent <text>", "Gegner (Spiel)")
+    .option("--home", "Heimspiel")
+    .option("--away", "Auswärtsspiel")
+    .option("--competition-id <id>", "Wettbewerb der Saison (Spiel)")
+    .option("--repeat <tage>", "Serie an Wochentagen, z. B. di,do")
+    .option("--until <date>", "Serienende YYYY-MM-DD (ohne Angabe Saisonende)")
+    .option("--announce [ja|nein]", "Auch allgemein ankündigen (ohne Angabe nach Art)")
+    .option("--scope <s>", "termin update|cancel: this|following · termin delete: this|series")
     .action(
       async (
         action: string,
         arg1: string | undefined,
         arg2: string | undefined,
+        arg3: string | undefined,
         opts: TeamsCommandOpts,
       ) => {
         try {
-          await runTeamsAction(action, arg1, arg2, opts);
+          await runTeamsAction(action, arg1, arg2, opts, arg3);
         } catch (err) {
           // AuthError bubbles to main() (exit 2 there, same as everywhere).
           if (err instanceof AuthError) throw err;
@@ -371,6 +434,7 @@ async function runTeamsAction(
   arg1: string | undefined,
   arg2: string | undefined,
   opts: TeamsCommandOpts,
+  arg3?: string,
 ): Promise<void> {
   const state = await loadState();
   const client = createClient(state);
@@ -397,6 +461,8 @@ async function runTeamsAction(
       return icalAction(client, arg1, arg2, opts);
     case "sync":
       return syncAction(client, arg1, arg2, opts);
+    case "termin":
+      return terminAction(client, arg1, arg2, arg3, opts);
     default:
       throw new TeamsInputError(
         `Unbekannte Aktion "${action}". Verfügbar: list, show, create, update, archive, ` +
@@ -404,7 +470,8 @@ async function runTeamsAction(
         "roster show|add|update|remove|carry-over, " +
         "competition list|create|update|delete, " +
         "ical list|create|update|preview|activate|deactivate, " +
-        "sync now|runs|clarifications|resolve",
+        "sync now|runs|clarifications|resolve, " +
+        "termin list|show|create|update|cancel|delete",
       );
   }
 }
@@ -624,6 +691,284 @@ function renderSeasonTable(seasons: TeamSeasonRead[]): string {
         { header: "Ende", width: 10, get: (s) => fmt(s.ends_on) },
       ])
     : "Keine Saisons.";
+}
+
+// ── termin (Mannschaftstermine von Hand, event-service) ────────────────
+//
+// Mannschaftstermine 05 (3bf8c01d): the same season-scoped routes the web and
+// the app use (Lastenheft mannschaftstermine/01 §11). Rights are the season
+// right (manage_teams or active COACH/MANAGER); the CLI only forwards the
+// user's token. Every write is confirmed via --yes like the other season writes.
+
+const KIND_ALIASES: Record<string, TerminKind> = {
+  training: "TRAINING",
+  spiel: "MATCH",
+  match: "MATCH",
+  ausflug: "EXCURSION",
+  excursion: "EXCURSION",
+  sonstiges: "OTHER",
+  other: "OTHER",
+};
+
+const KIND_LABELS: Record<TerminKind, string> = {
+  TRAINING: "Training",
+  MATCH: "Spiel",
+  EXCURSION: "Ausflug",
+  OTHER: "Sonstiges",
+};
+
+const WEEKDAY_ALIASES: Record<string, string> = {
+  mo: "MO", di: "TU", mi: "WE", do: "TH", fr: "FR", sa: "SA", so: "SU",
+  tu: "TU", we: "WE", th: "TH", su: "SU",
+};
+
+const VISIBILITIES = new Set(["public", "member", "department", "private", "invite_only"]);
+
+/** Sentences for the service's error codes (Lastenheft 05, DC-3). */
+const TERMIN_ERROR_SENTENCES: Record<string, string> = {
+  SEASON_MANAGER_REQUIRED:
+    "Für Termine dieser Saison fehlt dir das Saisonrecht (Trainer, Teammanager oder Mannschaften verwalten).",
+  TEAM_SEASON_COMPLETED: "Die Saison ist abgeschlossen; ihre Termine lassen sich nicht mehr ändern.",
+  TEAM_SEASON_NOT_FOUND: "Diese Saison gibt es nicht.",
+  TEAM_WITHOUT_DEPARTMENT: "Die Mannschaft hat keine Abteilung; ohne sie lässt sich kein Termin anlegen.",
+  TERMIN_NOT_FOUND: "Diesen Termin gibt es in dieser Saison nicht (oder er wurde nicht von Hand angelegt).",
+  TERMIN_ALREADY_STARTED: "Der Termin hat schon begonnen; löschen geht nur vorher, sag ihn stattdessen ab.",
+  TERMIN_MATCH_NEEDS_OPPONENT: "Ein Spiel braucht einen Gegner und Heim oder Auswärts (--opponent … --home|--away).",
+  TERMIN_REPEAT_NOT_FOR_MATCH: "Spiele lassen sich nicht als Serie anlegen.",
+  TERMIN_END_BEFORE_START: "Das Ende liegt vor dem Beginn.",
+  TERMIN_REPEAT_NEEDS_UNTIL: "Die Saison hat kein Ende; gib für die Serie --until an.",
+  TERMIN_REPEAT_AFTER_SEASON: "--until liegt nach dem Saisonende.",
+  TERMIN_REPEAT_EMPTY: "Die Serie ergibt keinen einzigen Termin (Wochentage und Zeitraum prüfen).",
+  TERMIN_SLOT_TAKEN: "Zu dieser Zeit liegt schon ein Termin derselben Serie.",
+  SEASON_CONTEXT_UNAVAILABLE: "Die Saisonangaben sind gerade nicht abrufbar; bitte später erneut versuchen.",
+};
+
+/** HttpError whose message names the service code in a sentence; status keeps the exit code. */
+class TerminHttpError extends HttpError {
+  constructor(source: HttpError, public code: string, sentence: string) {
+    super(source.status, source.body, source.url);
+    this.message = `${sentence} (${code})`;
+  }
+}
+
+/** Map a service error to its sentence; anything unknown passes unchanged. */
+export function explainTerminError(err: unknown): unknown {
+  if (!(err instanceof HttpError)) return err;
+  let code: unknown;
+  try {
+    code = (JSON.parse(err.body) as { detail?: unknown }).detail;
+  } catch {
+    return err;
+  }
+  if (typeof code !== "string") return err;
+  const sentence = TERMIN_ERROR_SENTENCES[code];
+  return sentence ? new TerminHttpError(err, code, sentence) : err;
+}
+
+export function parseTerminKind(value: string | undefined): TerminKind | undefined {
+  if (value == null) return undefined;
+  const kind = KIND_ALIASES[value.trim().toLowerCase()];
+  if (!kind) throw new TeamsInputError(`--kind kennt training, spiel, ausflug, sonstiges, nicht "${value}".`);
+  return kind;
+}
+
+export function parseWeekdays(value: string): string[] {
+  const days = value.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
+  const mapped = days.map((d) => {
+    const day = WEEKDAY_ALIASES[d];
+    if (!day) throw new TeamsInputError(`--repeat kennt mo, di, mi, do, fr, sa, so, nicht "${d}".`);
+    return day;
+  });
+  if (!mapped.length) throw new TeamsInputError("--repeat braucht mindestens einen Wochentag (z. B. di,do).");
+  return [...new Set(mapped)];
+}
+
+function parseAnnounce(value: TeamsCommandOpts["announce"]): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value === true) return true;
+  const text = String(value).trim().toLowerCase();
+  if (["ja", "true", "1", "yes"].includes(text)) return true;
+  if (["nein", "false", "0", "no"].includes(text)) return false;
+  throw new TeamsInputError(`--announce erwartet ja oder nein, nicht "${value}".`);
+}
+
+function homeState(opts: TeamsCommandOpts): "HOME" | "AWAY" | undefined {
+  if (opts.home && opts.away) throw new TeamsInputError("--home und --away schließen sich aus.");
+  return opts.home ? "HOME" : opts.away ? "AWAY" : undefined;
+}
+
+function terminVisibility(value: string | undefined): string | undefined {
+  if (value == null) return undefined;
+  const lowered = value.trim().toLowerCase();
+  if (!VISIBILITIES.has(lowered)) {
+    throw new TeamsInputError("--visibility kennt für Termine public, member, department, private, invite_only.");
+  }
+  return lowered;
+}
+
+/** Fields shared by create and update; undefined values are pruned. */
+function terminFields(opts: TeamsCommandOpts): Record<string, unknown> {
+  return prune({
+    title: opts.title,
+    opponent: opts.opponent,
+    home_state: homeState(opts),
+    competition_id: opts.competitionId,
+    start_time: opts.start,
+    end_time: opts.end,
+    location: opts.location,
+    note: opts.note,
+    visibility: terminVisibility(opts.visibility),
+    announce_general: parseAnnounce(opts.announce),
+  });
+}
+
+export function buildTerminCreateBody(opts: TeamsCommandOpts): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    ...filePayload(opts.file, "teams termin create"),
+    kind: parseTerminKind(opts.kind) ?? "TRAINING",
+    ...terminFields(opts),
+  };
+  if (!body.start_time) throw new TeamsInputError("teams termin create benötigt --start (z. B. 2026-10-06T19:00).");
+  if (opts.repeat) {
+    body.repeat = prune({ weekdays: parseWeekdays(opts.repeat), until: opts.until });
+  } else if (opts.until) {
+    throw new TeamsInputError("--until gehört zu --repeat.");
+  }
+  return body;
+}
+
+function terminScope(value: string | undefined, allowed: string[], fallback: string): string {
+  const scope = (value ?? fallback).trim().toUpperCase();
+  if (!allowed.includes(scope)) {
+    throw new TeamsInputError(`--scope kennt hier ${allowed.map((s) => s.toLowerCase()).join(", ")}.`);
+  }
+  return scope;
+}
+
+function renderTermin(t: TerminRead): string {
+  return [
+    `Termin:       ${fmt(t.title)}`,
+    `ID:           ${fmt(t.event_id)}`,
+    `Art:          ${KIND_LABELS[t.kind] ?? fmt(t.kind)}`,
+    `Beginn:       ${fmt(t.start_time)}`,
+    `Ende:         ${fmt(t.end_time)}`,
+    `Ort:          ${fmt(t.location)}`,
+    `Status:       ${fmt(t.status)}`,
+    `Sichtbar:     ${fmt(t.visibility)}`,
+    `Allgemein:    ${t.announce_general ? "angekündigt" : "nur Kader"}`,
+    ...(t.series_id ? [`Serie:        ${t.series_id}`] : []),
+    ...(t.kind === "MATCH" ? [`Gegner:       ${fmt(t.opponent)} (${fmt(t.home_state)})`] : []),
+    ...(t.booking_status ? [`Platzbuchung: ${t.booking_status}`] : []),
+  ].join("\n");
+}
+
+export async function terminAction(
+  client: ComvenioClient,
+  sub: string | undefined,
+  seasonArg: string | undefined,
+  eventArg: string | undefined,
+  opts: TeamsCommandOpts,
+): Promise<void> {
+  try {
+    await runTerminAction(client, sub, seasonArg, eventArg, opts);
+  } catch (err) {
+    throw explainTerminError(err);
+  }
+}
+
+async function runTerminAction(
+  client: ComvenioClient,
+  sub: string | undefined,
+  seasonArg: string | undefined,
+  eventArg: string | undefined,
+  opts: TeamsCommandOpts,
+): Promise<void> {
+  const seasonId = requireId(seasonArg, `teams termin ${sub ?? ""} benötigt eine <season-id>.`);
+  const base = `/team-seasons/${seasonId}/termine`;
+  switch (sub) {
+    case "list": {
+      const kind = parseTerminKind(opts.kind);
+      const all = await client.get<TeamSeasonEventRead[]>("event", `/team-seasons/${seasonId}/events`);
+      const rows = kind ? all.filter((e) => (e.kind ?? "MATCH") === kind) : all;
+      output(rows, opts.json, () =>
+        rows.length
+          ? renderTable(rows, [
+              { header: "Beginn", width: 20, get: (e) => fmt(e.start_time) },
+              { header: "Art", width: 10, get: (e) => KIND_LABELS[(e.kind ?? "MATCH") as TerminKind] ?? fmt(e.kind) },
+              { header: "Herkunft", width: 8, get: (e) => (e.source === "MANUAL" ? "Hand" : "Abgleich") },
+              { header: "Status", width: 10, get: (e) => fmt(e.status) },
+              { header: "Titel", width: 44, get: (e) => fmt(e.title) },
+              { header: "ID", width: 36, get: (e) => fmt(e.event_id) },
+            ])
+          : "Keine Termine in dieser Saison.",
+      );
+      return;
+    }
+    case "show": {
+      const eventId = requireId(eventArg, "teams termin show benötigt <season-id> <event-id>.");
+      const termin = await client.get<TerminRead>("event", `${base}/${eventId}`);
+      output(termin, opts.json, () => renderTermin(termin));
+      return;
+    }
+    case "create": {
+      const body = buildTerminCreateBody(opts);
+      if (!confirmMutation(opts, "Mannschaftstermin anlegen", { team_season_id: seasonId, ...body })) return;
+      const termin = await client.post<TerminRead>("event", base, body);
+      output(termin, opts.json, () =>
+        `Termin angelegt: ${fmt(termin.title)} am ${fmt(termin.start_time)} (${fmt(termin.event_id)})` +
+        (termin.series_id ? `, Serie ${termin.series_id}` : ""),
+      );
+      return;
+    }
+    case "update": {
+      const eventId = requireId(eventArg, "teams termin update benötigt <season-id> <event-id>.");
+      if (opts.kind || opts.repeat || opts.until) {
+        throw new TeamsInputError("Art und Wiederholung lassen sich nicht ändern; Termin absagen und neu anlegen.");
+      }
+      const fields = { ...filePayload(opts.file, "teams termin update"), ...terminFields(opts) };
+      if (!Object.keys(fields).length) {
+        throw new TeamsInputError("teams termin update benötigt mindestens ein Änderungsfeld.");
+      }
+      const body = { ...fields, scope: terminScope(opts.scope, ["THIS", "FOLLOWING"], "THIS") };
+      if (!confirmMutation(opts, "Mannschaftstermin ändern", { team_season_id: seasonId, event_id: eventId, ...body })) {
+        return;
+      }
+      const termin = await client.patch<TerminRead>("event", `${base}/${eventId}`, body);
+      output(termin, opts.json, () =>
+        `Termin geändert: ${fmt(termin.title)} am ${fmt(termin.start_time)} (${fmt(termin.event_id)})`,
+      );
+      return;
+    }
+    case "cancel": {
+      const eventId = requireId(eventArg, "teams termin cancel benötigt <season-id> <event-id>.");
+      const body = prune({
+        scope: terminScope(opts.scope, ["THIS", "FOLLOWING"], "THIS"),
+        reason: opts.reason,
+      });
+      if (!confirmMutation(opts, "Mannschaftstermin absagen", { team_season_id: seasonId, event_id: eventId, ...body })) {
+        return;
+      }
+      const termin = await client.post<TerminRead>("event", `${base}/${eventId}/cancel`, body);
+      output(termin, opts.json, () => `Termin abgesagt: ${fmt(termin.title)} (${fmt(termin.event_id)})`);
+      return;
+    }
+    case "delete": {
+      const eventId = requireId(eventArg, "teams termin delete benötigt <season-id> <event-id>.");
+      const scope = terminScope(opts.scope, ["THIS", "SERIES"], "THIS");
+      if (!confirmMutation(opts, "Mannschaftstermin löschen", { team_season_id: seasonId, event_id: eventId, scope })) {
+        return;
+      }
+      await client.del("event", `${base}/${eventId}?scope=${scope}`);
+      output({ deleted: eventId, scope }, opts.json, () =>
+        scope === "SERIES" ? `Alle künftigen Termine der Serie gelöscht (Termin ${eventId}).` : `Termin gelöscht: ${eventId}`,
+      );
+      return;
+    }
+    default:
+      throw new TeamsInputError(
+        `Unbekannte termin-Aktion "${sub ?? ""}". Verfügbar: list, show, create, update, cancel, delete`,
+      );
+  }
 }
 
 // ── roster (Kader, member-service) ─────────────────────────────────────
