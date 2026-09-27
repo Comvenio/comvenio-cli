@@ -68,6 +68,16 @@ async function transferShow(client: ComvenioApiClient, context: RequestContext, 
 }
 
 // buchhaltung-10-01/-04: the position as it is, before its link changes.
+async function entryShow(client: ComvenioApiClient, context: RequestContext, entryId: string): Promise<JsonObject | null> {
+  try {
+    const entry = record(await request(client, context, "GET", `/entries/${entryId}`));
+    // Before the preflight: an entry of another club shows nothing.
+    return entry.id === entryId && context.club_id && entry.club_id === context.club_id ? entry : null;
+  } catch {
+    return null;
+  }
+}
+
 async function positionShow(client: ComvenioApiClient, context: RequestContext, positionId: string): Promise<JsonObject | null> {
   try {
     const position = record(await request(client, context, "GET", `/positions/${positionId}`));
@@ -329,6 +339,17 @@ export async function buildK14Preview(definition: K14ActionDefinition, operation
     effects.push({ type: "position_removal", position_id: positionId, affects_attached_bookings: true, includes_sub_positions: true, sub_positions_read: unter?.complete === true });
     for (const kind of unter?.rows ?? [])
       effects.push({ type: "position_removal", position_id: kind.id ?? null, name: kind.name ?? null, parent_position_id: positionId, expense_planned_cents: kind.expense_planned_cents ?? null });
+  }
+  // belegerfassung-03: the receipt goes to this entry for good — never replaced.
+  if (definition.action_id === "cai.finance.25.entry_correction" && operation.operation === "receipt_attach") {
+    const eingabe = record(data.data as JsonValue);
+    const entryId = typeof eingabe.entry_id === "string" ? eingabe.entry_id : null;
+    const buchung = client && entryId ? await entryShow(client, context, entryId) : null;
+    effects.push({
+      type: "receipt_attach", scan_id: data.scan_id ?? null, entry_id: entryId, entry_read: buchung !== null,
+      entry_number: buchung?.entry_number ?? null, description: buchung?.description ?? null, booking_date: buchung?.booking_date ?? null,
+      revenue_cents: buchung?.revenue_cents ?? null, expense_cents: buchung?.expense_cents ?? null, permanent: true,
+    });
   }
   // buchhaltung-10-01/-04: a link change names the position, where it points
   // now and where it will point, and whether a closed plan is touched.

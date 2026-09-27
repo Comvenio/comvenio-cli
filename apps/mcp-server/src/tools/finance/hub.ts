@@ -126,6 +126,19 @@ const listed = (template: string, list: (input: JsonObject) => string, idKey: st
 const entryOwn = own("/entries/{entry_id}", (i) => `/entries/${str(i, "entry_id")}`, "Buchung");
 const positionOwn = own("/positions/{position_id}", (i) => `/positions/${str(i, "position_id")}`, "Position");
 const reportOwn = own("/reports/cash/{report_id}", (i) => `/reports/cash/${str(i, "report_id")}`, "Kassenbericht");
+// belegerfassung-01/-03: a receipt of the club's inbox.
+const scanOwn = own("/receipt-scans/{scan_id}", (i) => `/receipt-scans/${str(i, "scan_id")}`, "Eingangsbeleg");
+// The target too: the service moves the file into the target plan before it
+// compares the clubs — a foreign target would leave the receipt bound there.
+const scanAnd = (ziel: ReturnType<typeof own>, key: string) => ({
+  template: "/receipt-scans/{scan_id}",
+  check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
+    await scanOwn.check(input, context, client);
+    const data = input.data;
+    const id = data !== null && typeof data === "object" && !Array.isArray(data) ? (data as JsonObject)[key] : undefined;
+    if (typeof id === "string") await ziel.check({ ...input, [key]: id }, context, client);
+  },
+});
 // GET /investment-plans/{id} answers the dashboard view {plan, items, …};
 // the club is on `plan`, not on the top level.
 function investmentPlanRecord(value: JsonValue): JsonValue {
@@ -269,6 +282,16 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "receipt", method: "PUT", template: "/entries/{entry_id}/receipt", path: (i) => `/entries/${str(i, "entry_id")}/receipt`, risk: "write", shape: { entry_id: uuid, data }, body: payload, preflight: entryOwn },
     { op: "versions", method: "GET", template: "/entries/{entry_id}/versions", path: (i) => `/entries/${str(i, "entry_id")}/versions`, risk: "read", shape: { entry_id: uuid }, preflight: entryOwn },
     // buchhaltung-16-02: the receipt of an entry as a file.
+    // belegerfassung-01/-03: the receipt inbox of the club — create a receipt
+    // from an uploaded file (context finance_receipt_inbox), attach it to an
+    // entry, book it onto a position, reject or withdraw it.
+    { op: "receipt_scan_create", method: "POST", template: "/clubs/{club_id}/receipt-scans", path: (i) => `${club(i)}/receipt-scans`, risk: "write", shape: { data }, body: payload },
+    { op: "receipt_candidates", method: "GET", template: "/receipt-scans/{scan_id}/candidates", path: (i) => `/receipt-scans/${str(i, "scan_id")}/candidates`, risk: "read", shape: { scan_id: uuid }, preflight: scanOwn, multiDepartment: true },
+    // Critical: a receipt once attached is never replaced — the preview names the entry.
+    { op: "receipt_attach", method: "POST", template: "/receipt-scans/{scan_id}/attach", path: (i) => `/receipt-scans/${str(i, "scan_id")}/attach`, risk: "critical", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(entryOwn, "entry_id") },
+    { op: "receipt_book", method: "POST", template: "/receipt-scans/{scan_id}/book", path: (i) => `/receipt-scans/${str(i, "scan_id")}/book`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(positionOwn, "position_id") },
+    { op: "receipt_reject", method: "POST", template: "/receipt-scans/{scan_id}/reject", path: (i) => `/receipt-scans/${str(i, "scan_id")}/reject`, risk: "write", shape: { scan_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: scanOwn },
+    { op: "receipt_withdraw", method: "POST", template: "/receipt-scans/{scan_id}/withdraw", path: (i) => `/receipt-scans/${str(i, "scan_id")}/withdraw`, risk: "write", shape: { scan_id: uuid }, body: () => ({}), preflight: scanOwn },
     { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },
     // buchhaltung-10-01/-04: link a position to an event (main or presale), an
     // object, a room or a building — also in a closed plan, with confirm_closed_plan.
@@ -341,6 +364,11 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "download", method: "GET", template: `${BY_ID}/audit-exports/{export_id}/download`, path: (i) => `${byId(i)}/audit-exports/${str(i, "export_id")}/download`, risk: "read", shape: { plan_id: uuid, export_id: uuid }, binary: true },
   ] },
   "cai.finance.31.finance_views": { source: "event-finance|views", ops: [
+    // belegerfassung-01/-03: the club's receipt inbox and one receipt (its
+    // candidates need the club check first — cai.finance.25).
+    { op: "receipt_inbox", method: "GET", template: "/clubs/{club_id}/receipt-scans", path: (i) => `${club(i)}/receipt-scans`, risk: "read", shape: { status: z.string().max(200).optional() }, query: (i) => optional(i, ["status"]), multiDepartment: true },
+    { op: "receipt_scan", method: "GET", template: "/receipt-scans/{scan_id}", path: (i) => `/receipt-scans/${str(i, "scan_id")}`, risk: "read", shape: { scan_id: uuid }, multiDepartment: true },
+
     { op: "event", method: "GET", template: "/clubs/{club_id}/finance/event/{event_id}", path: (i) => `${club(i)}/finance/event/${str(i, "event_id")}`, risk: "read", shape: { event_id: uuid }, multiDepartment: true },
     { op: "event_reconciliation", method: "GET", template: "/events/{event_id}/finance/reconciliation", path: (i) => `/events/${str(i, "event_id")}/finance/reconciliation`, risk: "read", shape: { event_id: uuid }, multiDepartment: true },
     { op: "series_comparison", method: "GET", template: "/clubs/{club_id}/finance/series/{series_id}/comparison", path: (i) => `${club(i)}/finance/series/${str(i, "series_id")}/comparison`, risk: "read", shape: { series_id: uuid }, multiDepartment: true },
