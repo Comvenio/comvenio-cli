@@ -52,6 +52,7 @@ import { registerShoppingCommands } from "./commands/shopping.ts";
 import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
 import { registerFunctionCommands } from "./commands/function.ts";
+import { registerAutomationCommands } from "./commands/automation.ts";
 import { registerActionCommands } from "./commands/action.ts";
 import { registerZoneCommands } from "./commands/zone.ts";
 import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
@@ -374,6 +375,7 @@ registerShoppingCommands(cli);
 registerRoleCommands(cli);
 registerAgentCommands(cli);
 registerFunctionCommands(cli);
+registerAutomationCommands(cli);
 registerActionCommands(cli);
 registerZoneCommands(cli);
 
