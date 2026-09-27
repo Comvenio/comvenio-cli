@@ -1131,6 +1131,28 @@ describe("Finance Hub: Verknüpfung einer Position (buchhaltung-10-01/-04)", () 
       .toBe(`/clubs/${clubId}/finance/location/BUILDING/${roomId}/links`);
   });
 
+  test("Analyse über Jahre: Rangliste und Ziel (buchhaltung-10-05)", async () => {
+    const run = async (input: JsonObjectInput) => {
+      const own = recording((): JsonValue => ({ kind: "ROOM", rows: [] }));
+      await createK14ToolSet({ client: own.client }).execute({ action_id: "cai.finance.31.finance_views", input: { club_id: clubId, ...input }, context, capability_snapshot: manager });
+      return own.calls[0]!;
+    };
+    const ranking = await run({ operation: "analysis_ranking", kind: "DEPARTMENT" });
+    expect([ranking.method, ranking.path, ranking.query]).toEqual(["GET", `/clubs/${clubId}/finance/analysis/ranking`, { kind: "DEPARTMENT" }]);
+    expect((await run({ operation: "analysis_target", kind: "EVENT", target_id: eventId })).path)
+      .toBe(`/clubs/${clubId}/finance/analysis/EVENT/${eventId}`);
+  });
+
+  test("eine unbekannte Analyseart erreicht den Dienst nicht", async () => {
+    const own = recording((): JsonValue => ({}));
+    await expect(createK14ToolSet({ client: own.client }).execute({
+      action_id: "cai.finance.31.finance_views",
+      input: { club_id: clubId, operation: "analysis_target", kind: "TEAM", target_id: roomId },
+      context, capability_snapshot: manager,
+    })).rejects.toBeDefined();
+    expect(own.calls).toHaveLength(0);
+  });
+
   test("eine unbekannte Ortsart erreicht den Dienst nicht", async () => {
     const own = recording((): JsonValue => ({}));
     await expect(createK14ToolSet({ client: own.client }).execute({

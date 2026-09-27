@@ -62,6 +62,8 @@ const year = z.number().int().min(1900).max(2200);
 const data = z.record(z.string(), z.json());
 // buchhaltung-10-01/-04: what a budget position can be linked to.
 const linkTarget = z.enum(["EVENT", "BOOKING_OBJECT", "ROOM", "BUILDING"]);
+// buchhaltung-10-05: the kinds of the analysis over the years.
+const analysisKind = z.enum(["EVENT", "BOOKING_OBJECT", "ROOM", "BUILDING", "DEPARTMENT"]);
 
 type Risk = "read" | "write" | "critical";
 interface Op {
@@ -348,6 +350,10 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "event_links", method: "GET", template: "/clubs/{club_id}/finance/event-links", path: (i) => `${club(i)}/finance/event-links`, risk: "read", shape: { conflicts_only: z.boolean().optional() }, query: (i) => optional(i, ["conflicts_only"]), multiDepartment: true },
     { op: "event_link_view", method: "GET", template: "/clubs/{club_id}/finance/event/{event_id}/links", path: (i) => `${club(i)}/finance/event/${str(i, "event_id")}/links`, risk: "read", shape: { event_id: uuid }, multiDepartment: true },
     { op: "location_links", method: "GET", template: "/clubs/{club_id}/finance/location/{kind}/{location_id}/links", path: (i) => `${club(i)}/finance/location/${str(i, "kind")}/${str(i, "location_id")}/links`, risk: "read", shape: { kind: z.enum(["BOOKING_OBJECT", "ROOM", "BUILDING"]), location_id: uuid }, multiDepartment: true },
+    // buchhaltung-10-05: the analysis over the years — ranking of a kind and one target
+    // (an event is analysed over its series).
+    { op: "analysis_ranking", method: "GET", template: "/clubs/{club_id}/finance/analysis/ranking", path: (i) => `${club(i)}/finance/analysis/ranking`, risk: "read", shape: { kind: analysisKind.optional() }, query: (i) => optional(i, ["kind"]), multiDepartment: true },
+    { op: "analysis_target", method: "GET", template: "/clubs/{club_id}/finance/analysis/{kind}/{target_id}", path: (i) => `${club(i)}/finance/analysis/${str(i, "kind")}/${str(i, "target_id")}`, risk: "read", shape: { kind: analysisKind, target_id: uuid }, multiDepartment: true },
     { op: "object", method: "GET", template: "/clubs/{club_id}/finance/object/{object_id}", path: (i) => `${club(i)}/finance/object/${str(i, "object_id")}`, risk: "read", shape: { object_id: uuid }, multiDepartment: true },
   ] },
   "cai.finance.32.investment_plan": { source: "investment-plan", ops: [
