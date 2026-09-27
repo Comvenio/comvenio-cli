@@ -61,7 +61,8 @@ const base = { club_id: uuid, department_id: uuid.nullable().optional(), confirm
 const year = z.number().int().min(1900).max(2200);
 const data = z.record(z.string(), z.json());
 // buchhaltung-10-01/-04: what a budget position can be linked to.
-const linkTarget = z.enum(["EVENT", "BOOKING_OBJECT", "ROOM", "BUILDING"]);
+// EVENT_SERIES (buchhaltung-10 TD-10-28): a year without its own date hangs at the series.
+const linkTarget = z.enum(["EVENT", "EVENT_SERIES", "BOOKING_OBJECT", "ROOM", "BUILDING"]);
 // buchhaltung-10-05: the kinds of the analysis over the years.
 const analysisKind = z.enum(["EVENT", "BOOKING_OBJECT", "ROOM", "BUILDING", "DEPARTMENT"]);
 

@@ -1143,6 +1143,16 @@ describe("Finance Hub: Verknüpfung einer Position (buchhaltung-10-01/-04)", () 
       .toBe(`/clubs/${clubId}/finance/analysis/EVENT/${eventId}`);
   });
 
+  test("Serie als Ziel: Auswahl und Verknüpfung (TD-10-28)", async () => {
+    const own = recording((): JsonValue => ([]));
+    await createK14ToolSet({ client: own.client }).execute({
+      action_id: "cai.finance.31.finance_views",
+      input: { club_id: clubId, operation: "link_options", kind: "EVENT_SERIES" },
+      context, capability_snapshot: manager,
+    });
+    expect([own.calls[0]!.path, own.calls[0]!.query]).toEqual([`/clubs/${clubId}/finance/link-options`, { kind: "EVENT_SERIES" }]);
+  });
+
   test("eine unbekannte Analyseart erreicht den Dienst nicht", async () => {
     const own = recording((): JsonValue => ({}));
     await expect(createK14ToolSet({ client: own.client }).execute({
