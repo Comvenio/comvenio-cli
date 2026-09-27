@@ -285,6 +285,17 @@ comvenio agent chat "<frage>" --club <id> --json              # response + run_r
 comvenio agent approval list --club <id> --json               # lesen ja, entscheiden nur in Web/App
 ```
 
+**Automatisierungen** (eine Funktion läuft nach Zeitplan oder per Knopf, ohne Agent; vereinsweit
+postet sie als Verein und liest nur Öffentliches, persönlich läuft sie mit deinen Rechten):
+
+```bash
+comvenio automation list --club <id> --json                   # --kind club|personal, --function <kennung>
+comvenio automation create --club <id> --function weekly_preview.create --name "Wochenvorschau Fußball"   --department <abteilung> --args '{"department_id":"<abteilung>"}' --schedule weekly:FR:17:00   --approval objection_window --objection-hours 4 --json      # --kind personal für „nur für mich“
+comvenio automation show <id> --runs --club <id> --json       # Stand und Verlauf
+comvenio automation run <id> --club <id> --json               # jetzt ausführen (Lauf-ID)
+comvenio automation pause|resume|delete <id> --club <id>      # Version holt der Befehl selbst
+```
+
 Vollständiger Ablauf (Zustände, was du meldest, Grenzen): Skill `club-agent-lokal` in
 `comvenio-tools/workspace-config/skills/club-agent-lokal/SKILL.md`.
 
