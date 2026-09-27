@@ -64,6 +64,10 @@ export type FinanceCommandOpts = {
   // belegerfassung-01/-03: beleg-anhaengen, beleg-buchen.
   entry?: string;
   position?: string;
+  // belegerfassung-10: beleg-hochladen and beleg-event --event, beleg-event --none, beleg-buchen --event-posten.
+  event?: string;
+  none?: boolean;
+  eventPosten?: boolean;
   input?: string;
   out?: string;
   confirm?: boolean;
@@ -477,6 +481,9 @@ export function registerFinanceCommands(cli: CAC): void {
     .option("--receipt-reason <text>", "entry-create: Begründung eines Eigenbelegs (10–500 Zeichen), wenn kein Beleg vorliegt")
     .option("--entry <id>", "beleg-anhaengen: die Buchung, an die der Beleg kommt")
     .option("--position <id>", "beleg-buchen: der Posten, auf den der Beleg gebucht wird (etwa der Posten eines Events)")
+    .option("--event <id>", "beleg-hochladen, beleg-event: das Event, zu dem der Beleg gehört")
+    .option("--none", "beleg-event: das Event des Belegs entfernen")
+    .option("--event-posten", "beleg-buchen: statt --position auf den Hauptposten des Events buchen — fehlt er, wird er im Vereinsplan des Eventjahrs angelegt")
     .option("--input <json>", "finance run: Eingabe als JSON-Objekt (ohne club_id — der Verein kommt aus der Anmeldung)")
     .option("--out <datei>", "finance run audit-export download: den Prüfexport als Datei schreiben (Prüfsumme wird geprüft); finance pruefung: Basisname für <name>.md und <name>.json")
     .option("--no-confirm", "Kritische Schritte nicht selbst bestätigen, sondern die Vorschau ausgeben")
@@ -493,6 +500,9 @@ export function registerFinanceCommands(cli: CAC): void {
     .example("  $ comvenio finance entry-create <positions-id> --description Getränke --expense 4550 --date 2026-07-01")
     .example("  $ comvenio finance entry-approve <buchungs-id>")
     .example("  $ comvenio finance beleg-hochladen rechnung.pdf")
+    .example("  $ comvenio finance beleg-hochladen rechnung.pdf --event <event-id>")
+    .example("  $ comvenio finance beleg-event <beleg-id> --event <event-id>")
+    .example("  $ comvenio finance beleg-buchen <beleg-id> --event-posten --expense 45900 --date 2026-07-05 --account <konto-id> --description \"Getränke Sommerfest\"")
     .example("  $ comvenio finance beleg-liste")
     .example("  $ comvenio finance beleg-buchen <beleg-id> --position <posten-id> --expense 45900 --date 2026-07-01 --account <konto-id> --description \"Getränke Maifest\"")
     .example("  $ comvenio finance entry-beleg <buchungs-id> quittung.jpg")

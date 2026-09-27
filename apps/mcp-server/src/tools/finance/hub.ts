@@ -291,6 +291,8 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     { op: "receipt_attach", method: "POST", template: "/receipt-scans/{scan_id}/attach", path: (i) => `/receipt-scans/${str(i, "scan_id")}/attach`, risk: "critical", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(entryOwn, "entry_id") },
     { op: "receipt_book", method: "POST", template: "/receipt-scans/{scan_id}/book", path: (i) => `/receipt-scans/${str(i, "scan_id")}/book`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(positionOwn, "position_id") },
     { op: "receipt_reject", method: "POST", template: "/receipt-scans/{scan_id}/reject", path: (i) => `/receipt-scans/${str(i, "scan_id")}/reject`, risk: "write", shape: { scan_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: scanOwn },
+    // belegerfassung-10 D-26: set, change or remove the event of an open receipt.
+    { op: "receipt_event_set", method: "PUT", template: "/receipt-scans/{scan_id}/event", path: (i) => `/receipt-scans/${str(i, "scan_id")}/event`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanOwn },
     { op: "receipt_withdraw", method: "POST", template: "/receipt-scans/{scan_id}/withdraw", path: (i) => `/receipt-scans/${str(i, "scan_id")}/withdraw`, risk: "write", shape: { scan_id: uuid }, body: () => ({}), preflight: scanOwn },
     { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },
     // buchhaltung-10-01/-04: link a position to an event (main or presale), an

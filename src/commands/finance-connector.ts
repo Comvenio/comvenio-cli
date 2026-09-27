@@ -200,15 +200,22 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
     case "beleg-anhaengen":
       if (!opts.entry) throw new Error("finance beleg-anhaengen: --entry <buchungs-id> angeben.");
       return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_attach", scan_id: need(id, action, "Beleg-ID"), data: { entry_id: opts.entry } }, write: true };
+    case "beleg-event": {
+      // belegerfassung-10: --event <id> sets or changes, --none removes.
+      if (Boolean(opts.event) === Boolean(opts.none)) throw new Error("finance beleg-event: Genau eines von --event <event-id> und --none angeben.");
+      return { actionId: "cai.finance.25.entry_correction", input: { operation: "receipt_event_set", scan_id: need(id, action, "Beleg-ID"), data: { event_id: opts.none ? null : opts.event ?? null } }, write: true };
+    }
     case "beleg-buchen": {
       const einnahme = cents(opts.revenue, "--revenue");
       const ausgabe = cents(opts.expense, "--expense");
       if ((einnahme == null) === (ausgabe == null)) throw new Error("finance beleg-buchen: Genau eines von --revenue und --expense angeben.");
-      if (!opts.position) throw new Error("finance beleg-buchen: --position <positions-id> angeben.");
+      // belegerfassung-10 TD-15: --event-posten books on the event's main position, created when missing.
+      if (Boolean(opts.position) === Boolean(opts.eventPosten)) throw new Error("finance beleg-buchen: Genau eines von --position <positions-id> und --event-posten angeben.");
       if (!opts.date) throw new Error("finance beleg-buchen: --date <YYYY-MM-DD> angeben.");
       const data = compact({
         ...fileInput(opts),
         position_id: opts.position,
+        create_event_position: opts.eventPosten ? true : undefined,
         money_account_id: opts.account,
         booking_date: opts.date,
         amount_cents: einnahme ?? ausgabe,

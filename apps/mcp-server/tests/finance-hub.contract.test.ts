@@ -1177,6 +1177,36 @@ describe("Finance Hub: Verknüpfung einer Position (buchhaltung-10-01/-04)", () 
     expect(post?.path).toBe(`/receipt-scans/${scanId}/book`);
   });
 
+  test("Beleg zum Event: Event setzen und auf den Event-Posten buchen (belegerfassung-10)", async () => {
+    const scanId = "33333333-3333-4333-8333-333333333333";
+    const eigen = recording((): JsonValue => ({ id: scanId, club_id: clubId }));
+    await createK14ToolSet({ client: eigen.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_event_set", scan_id: scanId, data: { event_id: eventId } },
+      context, capability_snapshot: manager,
+    });
+    const put = eigen.calls.find((call) => call.method === "PUT");
+    expect([put?.path, put?.body]).toEqual([`/receipt-scans/${scanId}/event`, { event_id: eventId }]);
+
+    const fremd = recording((): JsonValue => ({ id: scanId, club_id: "44444444-4444-4444-8444-444444444444" }));
+    await expect(createK14ToolSet({ client: fremd.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_event_set", scan_id: scanId, data: { event_id: null } },
+      context, capability_snapshot: manager,
+    })).rejects.toBeDefined();
+    expect(fremd.calls.every((call) => call.method === "GET")).toBe(true);
+
+    // Without position_id only the receipt is checked; the service chooses the position.
+    const buchen = recording((): JsonValue => ({ id: scanId, club_id: clubId }));
+    await createK14ToolSet({ client: buchen.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_book", scan_id: scanId, data: { create_event_position: true, amount_cents: 100, booking_date: "2026-07-01", description: "x" } },
+      context, capability_snapshot: manager,
+    });
+    const post = buchen.calls.find((call) => call.method === "POST");
+    expect([post?.path, (post?.body as { create_event_position?: boolean })?.create_event_position]).toEqual([`/receipt-scans/${scanId}/book`, true]);
+  });
+
   test("Beleg-Eingang: ein Ziel eines fremden Vereins erreicht den Dienst nicht (Codex R1)", async () => {
     const scanId = "33333333-3333-4333-8333-333333333333";
     const fremdesZiel = recording((request): JsonValue => ({
