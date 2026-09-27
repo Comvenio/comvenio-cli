@@ -291,6 +291,12 @@ export function maskIcalUrl(raw: string): string {
   }
 }
 
+/** AK-N-02: drop the full iCal URL the backend returns to managers — the CLI only ever prints masked_url. */
+function withoutFullUrl<T extends { url?: unknown }>(subscription: T): T {
+  const { url: _url, ...rest } = subscription;
+  return rest as T;
+}
+
 const fmt = (value: unknown): string =>
   value === null || value === undefined || value === "" ? "—" : String(value);
 
@@ -857,10 +863,10 @@ export async function icalAction(
   switch (sub) {
     case "list": {
       const seasonId = requireId(id, "teams ical list benötigt eine <season-id>.");
-      const rows = await client.get<CalendarSubscriptionRead[]>(
+      const rows = (await client.get<CalendarSubscriptionRead[]>(
         "event",
         `/team-seasons/${seasonId}/calendar-subscriptions`,
-      );
+      )).map(withoutFullUrl);
       output(rows, opts.json, () =>
         rows.length
           ? renderTable(rows, [
@@ -883,11 +889,11 @@ export async function icalAction(
         team_season_id: seasonId,
         url: maskIcalUrl(url),
       })) return;
-      const subscription = await client.post<CalendarSubscriptionRead>(
+      const subscription = withoutFullUrl(await client.post<CalendarSubscriptionRead>(
         "event",
         `/team-seasons/${seasonId}/calendar-subscriptions`,
         { url },
-      );
+      ));
       output(subscription, opts.json, () =>
         `iCal-Quelle gespeichert: ${fmt(subscription.masked_url)} (${fmt(subscription.id)}) — Status ${fmt(subscription.status)}. ` +
         "Nächster Schritt: teams ical preview <subscription-id>",
@@ -904,11 +910,11 @@ export async function icalAction(
         subscription_id: subscriptionId,
         url: maskIcalUrl(url),
       })) return;
-      const subscription = await client.patch<CalendarSubscriptionRead>(
+      const subscription = withoutFullUrl(await client.patch<CalendarSubscriptionRead>(
         "event",
         `/calendar-subscriptions/${subscriptionId}`,
         { url },
-      );
+      ));
       output(subscription, opts.json, () =>
         `iCal-Link geändert: ${fmt(subscription.masked_url)} — Status ${fmt(subscription.status)}. ` +
         "Nächster Schritt: teams ical preview <subscription-id>, danach activate",
@@ -941,11 +947,11 @@ export async function icalAction(
       const mappings = (filePayload(opts.file, "teams ical activate").mappings ?? {}) as Record<string, string>;
       const body = { preview_token: opts.previewToken, mappings };
       if (!confirmMutation(opts, "iCal-Abonnement aktivieren", { subscription_id: subscriptionId, ...body })) return;
-      const subscription = await client.post<CalendarSubscriptionRead>(
+      const subscription = withoutFullUrl(await client.post<CalendarSubscriptionRead>(
         "event",
         `/calendar-subscriptions/${subscriptionId}/activate`,
         body,
-      );
+      ));
       output(subscription, opts.json, () =>
         `Abonnement aktiviert: ${fmt(subscription.masked_url)} — Status ${fmt(subscription.status)}, nächster Sync ${fmt(subscription.next_sync_at)}`,
       );
@@ -954,10 +960,10 @@ export async function icalAction(
     case "deactivate": {
       const subscriptionId = requireId(id, "teams ical deactivate benötigt eine <subscription-id>.");
       if (!confirmMutation(opts, "iCal-Abonnement deaktivieren", { subscription_id: subscriptionId })) return;
-      const subscription = await client.post<CalendarSubscriptionRead>(
+      const subscription = withoutFullUrl(await client.post<CalendarSubscriptionRead>(
         "event",
         `/calendar-subscriptions/${subscriptionId}/deactivate`,
-      );
+      ));
       output(subscription, opts.json, () =>
         `Abonnement deaktiviert: ${fmt(subscription.masked_url)} — Status ${fmt(subscription.status)}. Bestehende Termine bleiben erhalten.`,
       );

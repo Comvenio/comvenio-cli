@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { icalAction } from "../src/commands/teams.ts";
 import type { ComvenioClient } from "../src/http.ts";
@@ -41,5 +41,31 @@ describe("teams ical update (Bug 00ca7f53)", () => {
   test("needs --url", async () => {
     const { client } = recordingClient();
     await expect(icalAction(client, "update", "sub-1", { yes: true })).rejects.toThrow("--url");
+  });
+});
+
+describe("iCal URL stays masked in --json output (AK-N-02)", () => {
+  const full = "https://neu.example.org/team.ics?token=geheim";
+  const withUrl = { id: "sub-1", masked_url: "https://neu.example.org/…", url: full, status: "INACTIVE" };
+  let printed = "";
+  const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+    printed += args.map(String).join(" ");
+  });
+  afterEach(() => {
+    printed = "";
+  });
+
+  test("update does not print the full URL", async () => {
+    const { client } = recordingClient(withUrl);
+    await icalAction(client, "update", "sub-1", { url: full, yes: true, json: true });
+    expect(spy).toHaveBeenCalled();
+    expect(printed).not.toContain("geheim");
+    expect(printed).toContain("masked_url");
+  });
+
+  test("list does not print the full URL", async () => {
+    const { client } = recordingClient([withUrl]);
+    await icalAction(client, "list", "season-1", { json: true });
+    expect(printed).not.toContain("geheim");
   });
 });
