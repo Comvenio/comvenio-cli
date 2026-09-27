@@ -46,7 +46,7 @@ describe("finance pruefung", () => {
     expect(calls[1]!.input).toEqual({ operation: "audit_check", plan_id: PLAN_2025 });
     expect(calls.every((call) => call.idempotency_key === undefined)).toBe(true);
     expect(process.exitCode).toBe(1);  // one error, one rule not checkable
-    process.exitCode = vorher;
+    process.exitCode = vorher ?? 0;  // Bun keeps the code on undefined
   });
 
   test("schreibt Markdown und JSON mit Fundstellen", async () => {
@@ -65,7 +65,7 @@ describe("finance pruefung", () => {
       expect(JSON.parse(readFileSync(`${basis}.json`, "utf-8")).summary.errors).toBe(1);
     } finally {
       rmSync(ordner, { recursive: true, force: true });
-      process.exitCode = vorher;
+      process.exitCode = vorher ?? 0;  // Bun keeps the code on undefined
     }
   });
 
@@ -86,7 +86,7 @@ describe("finance pruefung", () => {
     await expect(runPruefung(zwei, { year: "2025" })).rejects.toThrow(/2 Vereinspläne.*a \(2025-01-01/);
     const vorher = process.exitCode;
     expect((await runPruefung(zwei, {}, "b")).plan_id).toBe("b");
-    process.exitCode = vorher;
+    process.exitCode = vorher ?? 0;  // Bun keeps the code on undefined
   });
 
   test("Fundstellen und Zeilenumbrüche im Bericht", () => {
@@ -149,7 +149,7 @@ describe("finance pruefung — Haushaltsjahr geprüft", () => {
       .rejects.toThrow(/abgeschlossenes Jahr/);
     await expect(runPruefung(mit(ERGEBNIS, calls), { year: "2025", kennzeichnen: true })).rejects.toThrow(/Fehler/);
     expect(calls.some((c) => c.input.operation === "audit_label_set")).toBe(false);
-    process.exitCode = vorher;
+    process.exitCode = vorher ?? 0;  // Bun keeps the code on undefined
   });
 
   test("ein nicht lesbares Label steht im Bericht, der Durchlauf bleibt", async () => {

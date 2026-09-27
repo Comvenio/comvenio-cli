@@ -111,7 +111,7 @@ describe("finance belege", () => {
       expect(process.exitCode).toBe(1);
     } finally {
       rmSync(ordner, { recursive: true, force: true });
-      process.exitCode = vorher;
+      process.exitCode = vorher ?? 0;  // Bun keeps the code on undefined
     }
   });
 
