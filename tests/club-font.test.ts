@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ComvenioClient } from "../src/http.ts";
-import { MAX_FONT_BYTES, registerClubFont, sniffFontFormat, uploadClubFont } from "../src/util/upload.ts";
+import { describeClubFonts, MAX_FONT_BYTES, registerClubFont, sniffFontFormat, uploadClubFont } from "../src/util/upload.ts";
 
 const WOFF2 = new Uint8Array([0x77, 0x4f, 0x46, 0x32, ...new Array(60).fill(0)]);
 const TTF = new Uint8Array([0x00, 0x01, 0x00, 0x00, ...new Array(60).fill(0)]);
@@ -75,5 +75,27 @@ describe("font upload", () => {
     const big = tempFile("big.woff2", new Uint8Array(MAX_FONT_BYTES + 1));
     await expect(uploadClubFont({ client, clubId: "c", path: big, family: "X", lizenz: "OFL" })).rejects.toThrow("zu groß");
     expect(calls).toEqual([]);
+  });
+});
+
+describe("club info font report", () => {
+  test("lists fonts and roles, flags font_id missing from the registry", () => {
+    const report = describeClubFonts({
+      fonts: [{ id: "a", family: "Jaga Serif", format: "woff2", lizenz: "OFL 1.1" }],
+      tokens: {
+        type: {
+          heading: { family: "Jaga Serif", source: "verein", font_id: "a" },
+          body: { family: "Jaga Sans", source: "verein", font_id: "geloescht" },
+        },
+      },
+    });
+    expect(report.fonts).toEqual([{ id: "a", family: "Jaga Serif", format: "woff2" }]);
+    expect(report.roles.map((r) => r.role)).toEqual(["heading", "body"]);
+    expect(report.missing).toEqual([{ role: "body", font_id: "geloescht" }]);
+  });
+
+  test("club without tokens or fonts reports nothing", () => {
+    expect(describeClubFonts(undefined)).toEqual({ fonts: [], roles: [], missing: [] });
+    expect(describeClubFonts({ tokens: { palette: {} } })).toEqual({ fonts: [], roles: [], missing: [] });
   });
 });

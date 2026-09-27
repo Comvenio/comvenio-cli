@@ -214,6 +214,35 @@ export function registerClubFont(existing: unknown, font: ClubFontEntry): ClubFo
   return [...others, font];
 }
 
+export type ClubFontReport = {
+  fonts: { id: string; family: string; format: string }[];
+  roles: { role: string; family: string; source: string; font_id?: string }[];
+  /** Roles whose font_id is not in the registry: web and app fall back to the default family. */
+  missing: { role: string; font_id: string }[];
+};
+
+/** Registered fonts, font roles from tokens.type and dangling font_id references. */
+export function describeClubFonts(designSettings: unknown): ClubFontReport {
+  const ds = designSettings && typeof designSettings === "object" ? (designSettings as Record<string, unknown>) : {};
+  const fonts = (Array.isArray(ds.fonts) ? ds.fonts : [])
+    .filter((f): f is ClubFontEntry => !!f && typeof f === "object" && typeof (f as ClubFontEntry).id === "string")
+    .map(({ id, family, format }) => ({ id, family, format }));
+  const tokens = ds.tokens && typeof ds.tokens === "object" ? (ds.tokens as Record<string, unknown>) : {};
+  const type = tokens.type && typeof tokens.type === "object" ? (tokens.type as Record<string, unknown>) : {};
+  const roles: ClubFontReport["roles"] = [];
+  const missing: ClubFontReport["missing"] = [];
+  const known = new Set(fonts.map((f) => f.id));
+  for (const role of ["heading", "body"]) {
+    const spec = type[role];
+    if (!spec || typeof spec !== "object") continue;
+    const { family, source, font_id } = spec as Record<string, unknown>;
+    const entry = { role, family: String(family ?? ""), source: String(source ?? "") };
+    roles.push(typeof font_id === "string" ? { ...entry, font_id } : entry);
+    if (source === "verein" && typeof font_id === "string" && !known.has(font_id)) missing.push({ role, font_id });
+  }
+  return { fonts, roles, missing };
+}
+
 export async function uploadClubFont({
   client,
   clubId,

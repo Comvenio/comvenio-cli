@@ -3,7 +3,7 @@ import { AuthError, loadState } from "../auth.ts";
 import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
-import { registerClubFont, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
+import { describeClubFonts, registerClubFont, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -464,7 +464,11 @@ export function registerClubCommands(cli: CAC): void {
             "club",
             `/clubs/${clubId}`,
           );
-          output(club, opts.json, () => {
+          // Font roles and club fonts (K18): a token that points to a font
+          // missing from the registry renders in the fallback family.
+          const clubSettings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+          const fontReport = describeClubFonts(clubSettings.design_settings);
+          output({ ...club, design_fonts: fontReport }, opts.json, () => {
             const lines: string[] = [];
             lines.push(`Verein:   ${club.name ?? "—"}`);
             if (club.short_name) lines.push(`Kurzname: ${club.short_name}`);
@@ -482,6 +486,11 @@ export function registerClubCommands(cli: CAC): void {
             if (club.website_url) lines.push(`Website:  ${club.website_url}`);
             if (club.founded_date)
               lines.push(`Gegruendet: ${club.founded_date}`);
+            for (const f of fontReport.fonts) lines.push(`Schrift:  ${f.family} (${f.format}, ${f.id})`);
+            for (const r of fontReport.roles)
+              lines.push(`Schriftrolle ${r.role}: ${r.family} [${r.source}${r.font_id ? `, ${r.font_id}` : ""}]`);
+            for (const m of fontReport.missing)
+              lines.push(`WARNUNG: tokens.type.${m.role} verweist auf ${m.font_id}, die nicht registriert ist — Web und App zeigen die Rückfallschrift.`);
             return lines.join("\n");
           });
           break;
