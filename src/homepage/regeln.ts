@@ -140,6 +140,29 @@ function katalogKlassen(styles: Katalog): Map<string, string[]> {
 }
 
 /** TD-14: at least one data-slot and no data-widget-slot. */
+/** The CLI command that moves a page into the new format (06 §4.3). */
+export const ALTFORMAT_BEFEHL = "comvenio homepage convert";
+/** Help centre article on the club website and the old format. */
+export const ALTFORMAT_HILFE = "https://www.comvenio.app/hilfe/website";
+
+/**
+ * An old-format skeleton (TD-14) as ONE finding instead of every rule hit — same rule as
+ * the designer (web-page geruestRegeln.ts, K11-Altformat): none of the hits is fixable
+ * before `homepage convert`, and all of them disappear with it.
+ */
+export function altformatBefund(befunde: GeruestBefund[], widgetId?: string): GeruestBefund {
+  const stellen = befunde.filter((b) => b.klasse !== "legacy_inline_slot");
+  const zeilen = befunde.map((b) => b.zeile).filter((z): z is number => z !== undefined);
+  return {
+    klasse: "legacy_format",
+    regel: "ALT",
+    schwere: "warnung",
+    zeile: zeilen.length ? Math.min(...zeilen) : undefined,
+    text: stellen.length === 1 ? "1 Stelle" : `${stellen.length} Stellen`,
+    widget_id: widgetId,
+  };
+}
+
 export function istNeuesFormat(html: string): boolean {
   const { elements } = parse(html);
   return elements.some((e) => "data-slot" in e.attrs) && !elements.some((e) => "data-widget-slot" in e.attrs);

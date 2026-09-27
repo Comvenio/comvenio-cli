@@ -8,7 +8,7 @@ import { baum, baumAlsText, dokument, pruefeGeruest, pruefeReiter, type BaumKnot
 import { applyBody, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
 import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
-import { strukturBefunde } from "../src/verify/geruest-befunde.ts";
+import { strukturBefunde, strukturBefundeAlsText } from "../src/verify/geruest-befunde.ts";
 
 const FIXTURES = join(import.meta.dir, "fixtures");
 
@@ -334,6 +334,39 @@ describe("verify homepage structure", () => {
       { slug: "start", sections: [{ widgets: [{ kind: "custom_html", config: { html: '<div><h1 data-slot="t"></h1><p>fest</p></div>', slots: { t: { kind: "heading", config: {} } } } }] }] },
     ]);
     expect(befunde.some((b) => b.klasse === "fixed_text_in_skeleton" && b.schwere === "fehler" && b.tab === "start")).toBe(true);
+  });
+
+  test("K11-Altformat an old-format skeleton is ONE finding with the convert command", () => {
+    const alt = '<section><h2>Fest</h2><p>Text</p><a href="/x">Link</a><div data-widget-slot="news"></div></section>';
+    const befunde = strukturBefunde([{ slug: "start", sections: [{ widgets: [{ kind: "custom_html", config: { html: alt } }] }] }]);
+    const legacy = befunde.filter((b) => b.klasse === "legacy_format");
+    expect(legacy).toHaveLength(1);
+    expect(legacy[0]).toMatchObject({ regel: "ALT", schwere: "warnung", tab: "start" });
+    expect(befunde.some((b) => b.klasse === "fixed_text_in_skeleton" || b.klasse === "content_in_skeleton")).toBe(false);
+    expect(strukturBefundeAlsText(befunde)).toContain("start Gerüst im alten Format — ");
+    expect(strukturBefundeAlsText(befunde)).toContain("umstellen: comvenio homepage convert --tab start --out home.json");
+  });
+});
+
+describe("K11-Altformat homepage tree names the format per tab", () => {
+  test("old format: one summary finding on the skeleton and a format line with the way out", () => {
+    const b = baum({ id: "t", slug: "alt" }, [{ id: "s", sort_order: 0 }], [
+      { id: "w", kind: "custom_html", section_id: "s", config: { html: '<section><h2>fest</h2><p>auch fest</p><div data-widget-slot="news"></div></section>' } },
+    ]);
+    expect(b.kinder[0].kinder[0].befunde.map((x) => x.klasse)).toEqual(["legacy_format"]);
+    expect(b.altformatStellen).toEqual({ gerueste: 1, stellen: expect.any(Number) });
+    const text = baumAlsText(b);
+    expect(text).toContain("Format: alt — 1 Gerüst, ");
+    expect(text).toContain("Umstellen: comvenio homepage convert --tab alt --out home.json");
+    expect(text).toContain("https://www.comvenio.app/hilfe/website");
+  });
+
+  test("new format: the tab says so", () => {
+    const b = baum({ id: "t", slug: "neu" }, [{ id: "s", sort_order: 0 }], [
+      { id: "w", kind: "custom_html", section_id: "s", config: { html: '<section aria-label="S"><h1 data-slot="t"></h1></section>', slots: { t: { kind: "heading", config: { text: "T" } } } } },
+    ]);
+    expect(b.altformatStellen).toBeUndefined();
+    expect(baumAlsText(b)).toContain("Format: neu (Gerüst mit benannten Slots)");
   });
 });
 

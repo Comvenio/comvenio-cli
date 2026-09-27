@@ -6,6 +6,9 @@
 // same tree (shared fixture tests/fixtures/baum/).
 import { DOMParser } from "linkedom";
 import {
+  ALTFORMAT_BEFEHL,
+  ALTFORMAT_HILFE,
+  altformatBefund,
   istNeuesFormat,
   pruefeGeruest,
   pruefeReiter,
@@ -90,6 +93,8 @@ export interface BaumKnoten {
   kind?: string;
   style?: string;
   altformat?: boolean;
+  /** Tab only: skeletons in the old format and their rule hits (K11-Altformat). */
+  altformatStellen?: { gerueste: number; stellen: number };
   ohneEintrag?: boolean;
   befunde: GeruestBefund[];
   kinder: BaumKnoten[];
@@ -198,6 +203,15 @@ function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): {
   return { knoten: besuche(body), altformat };
 }
 
+/**
+ * Findings as shown (designer, tree, verify): an old-format skeleton carries one
+ * `legacy_format` finding instead of every rule hit (K11-Altformat, 04 §4.2).
+ */
+export function angezeigteBefunde(widgets: WidgetRead[], befunde: Map<string, GeruestBefund[]>): Map<string, GeruestBefund[]> {
+  const alt = new Set(widgets.filter((w) => w.kind === "custom_html" && !istNeuesFormat(htmlVon(w))).map((w) => w.id));
+  return new Map([...befunde.entries()].map(([k, bs]) => [k, alt.has(k) ? [altformatBefund(bs, k)] : bs]));
+}
+
 /** Findings of every skeleton of a tab (R1–R6), keyed by widget id. */
 export function befundeDesReiters(widgets: WidgetRead[], styles?: readonly { id?: unknown; class?: unknown }[] | null): Map<string, GeruestBefund[]> {
   const gerueste = widgets.filter((w) => w.kind === "custom_html");
@@ -228,7 +242,7 @@ export function baum(
         const { knoten, altformat } = geruestKnoten(tab, w, befunde.get(w.id) ?? []);
         if (altformat) {
           durchsichtig = false;
-          unter.push({ pfad: `${tab.id}/${w.id}`, art: "widget", name: w.title || "HTML-Gerüst", beschriftung: "Altformat", kuerzel: "</>", kind: w.kind, altformat: true, befunde: befunde.get(w.id) ?? [], kinder: knoten });
+          unter.push({ pfad: `${tab.id}/${w.id}`, art: "widget", name: w.title || "HTML-Gerüst", beschriftung: "Altformat", kuerzel: "</>", kind: w.kind, altformat: true, befunde: [altformatBefund(befunde.get(w.id) ?? [], w.id)], kinder: knoten });
         } else {
           unter.push(...knoten);
         }
@@ -244,12 +258,16 @@ export function baum(
     if (durchsichtig) kinder.push(...unter);
     else kinder.push({ pfad: `${tab.id}/${s.id}`, art: "sektion", name: s.title || "Sektion", beschriftung: alsReihe ?? s.layout ?? "", befunde: [], kinder: unter });
   }
+  const alt = widgets.filter((w) => w.kind === "custom_html" && !istNeuesFormat(htmlVon(w)));
+  const stellen = alt.reduce((n, w) => n + (befunde.get(w.id) ?? []).filter((b) => b.klasse !== "legacy_inline_slot").length, 0);
   return {
     pfad: tab.id,
     art: "reiter",
     name: tab.label ?? tab.slug ?? tab.id,
     beschriftung: tab.visibility_scope ?? "",
-    befunde: [...befunde.values()].flat(),
+    adresse: tab.slug ?? undefined,
+    altformatStellen: alt.length ? { gerueste: alt.length, stellen } : undefined,
+    befunde: [...angezeigteBefunde(widgets, befunde).values()].flat(),
     kinder,
   };
 }
@@ -265,7 +283,15 @@ export function baumAlsText(k: BaumKnoten, tiefe = 0): string {
     k.ohneEintrag ? " · OHNE INHALT" : "",
     k.befunde.length && k.art !== "reiter" ? `  ⚠ ${k.befunde.map((b) => b.klasse).join(", ")}` : "",
   ].join("");
-  return [zeile, ...k.kinder.map((c) => baumAlsText(c, tiefe + 1))].join("\n");
+  // One line per tab that says which format it is in and the way out (K11-Altformat).
+  const format = k.art !== "reiter"
+    ? []
+    : k.altformatStellen
+      ? [`${"  ".repeat(tiefe + 1)}Format: alt — ${k.altformatStellen.gerueste === 1 ? "1 Gerüst" : `${k.altformatStellen.gerueste} Gerüste`}, ${k.altformatStellen.stellen} Stellen mit festem Text, Links oder Bildern. Umstellen: ${ALTFORMAT_BEFEHL}${k.adresse ? ` --tab ${k.adresse}` : ""} --out home.json (Hilfe: ${ALTFORMAT_HILFE})`]
+      : k.kinder.some((c) => c.art !== "sektion" && c.art !== "widget") || k.kinder.some((c) => c.kinder.some((d) => d.art === "slot" || d.art === "bereich"))
+        ? [`${"  ".repeat(tiefe + 1)}Format: neu (Gerüst mit benannten Slots)`]
+        : [];
+  return [zeile, ...format, ...k.kinder.map((c) => baumAlsText(c, tiefe + 1))].join("\n");
 }
 
 /** Slot address `<slug>/<name>` → the skeleton that holds it (names are unique per tab, TD-17). */

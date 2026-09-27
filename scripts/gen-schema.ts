@@ -1080,6 +1080,7 @@ const SLOTS_CONTRACT = {
     { rule: "R5", class: ["unknown_style", "unused_catalog_style", "catalog_class_in_skeleton"], severity: "fehler / warnung / warnung", check: "Stil im Katalog; Katalogklasse im CSS definiert; Katalogklasse nicht im Gerüst" },
     { rule: "R6", class: "heading_outline", severity: "warnung", check: "genau eine h1 je Reiter" },
     { rule: "ALT", class: "legacy_inline_slot", severity: "warnung", check: "data-widget-slot (Altformat)" },
+    { rule: "ALT", class: "legacy_format", severity: "warnung", check: "Anzeige: ein Altformat-Gerüst erscheint in tree, verify und Designer als EIN Befund mit Zahl der Stellen statt jedes R1–R6-Treffers; Weg: homepage convert --tab <slug> (K11-Altformat)" },
   ],
   enforced: "club-service prüft auf jedem Schreibweg (bulk, Widget POST/PUT, slot set, publish): Fehler im neuen Format -> 422 skeleton_rules mit befunde.",
   cli: ["homepage tree [--tab <slug>]", "homepage slot get <slug>/<slot>", "homepage slot set <slug>/<slot> --file entry.json [--expected-version n] [--dry-run]", "homepage convert --out home.json [--tab <slug>] [--styles styles.json] [--styles-out vorschlag.json]", "verify homepage --file home.json (R1-R6 vor dem Browserlauf)"],
