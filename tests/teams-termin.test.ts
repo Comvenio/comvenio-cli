@@ -98,7 +98,7 @@ describe("teams termin list (TC-01, DC-8)", () => {
   test("reads the season list and filters by kind", async () => {
     const { client, calls } = recordingClient(rows);
     await terminAction(client, "list", "s-1", undefined, { kind: "training", json: true });
-    expect(calls).toEqual([{ method: "GET", service: "event", path: "/team-seasons/s-1/events", body: undefined }]);
+    expect(calls).toEqual([{ method: "GET", service: "event", path: "/team-seasons/s-1/events?limit=500", body: undefined }]);
     expect(JSON.parse(printed)).toEqual([rows[1]]);
   });
 

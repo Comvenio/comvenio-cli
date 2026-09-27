@@ -888,7 +888,8 @@ async function runTerminAction(
   switch (sub) {
     case "list": {
       const kind = parseTerminKind(opts.kind);
-      const all = await client.get<TeamSeasonEventRead[]>("event", `/team-seasons/${seasonId}/events`);
+      // The route caps at 200 by default; 500 is its maximum.
+      const all = await client.get<TeamSeasonEventRead[]>("event", `/team-seasons/${seasonId}/events?limit=500`);
       const rows = kind ? all.filter((e) => (e.kind ?? "MATCH") === kind) : all;
       output(rows, opts.json, () =>
         rows.length
