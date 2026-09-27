@@ -294,6 +294,17 @@ describe("homepage convert", () => {
     expect(r.offene.map((o) => o.grund)).toEqual(["Bild in einem Link (img in a)", "Bild ohne Adresse (img)"]);
   });
 
+  test("K6-Bild an address the renderer would drop is reported; http converts (lifted there)", () => {
+    const r = umwandeln(
+      '<section aria-label="S"><img src="../bilder/a.jpg" alt="a"><img src="javascript:x"><img src="http://alt.example/c.jpg" alt="c"></section>',
+    );
+    expect(r.offene.map((o) => [o.grund, o.text])).toEqual([
+      ["Bild mit unzulässiger Adresse (img)", "../bilder/a.jpg"],
+      ["Bild mit unzulässiger Adresse (img)", "javascript:x"],
+    ]);
+    expect(Object.values(r.slots)).toEqual([{ kind: "image", config: { url: "http://alt.example/c.jpg", alt: "c" } }]);
+  });
+
   test("a tab without skeleton is skipped with a note", () => {
     const e = convert({ tabs: [{ label: "L", slug: "l", sections: [{ widgets: [{ kind: "news", config: {} }] }] }] });
     expect(e.berichte).toEqual([{ tab: "l", uebersprungen: "kein custom_html-Gerüst" }]);

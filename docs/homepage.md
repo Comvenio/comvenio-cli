@@ -480,6 +480,15 @@ Absatz und jeden Knopf im Formular ändern.
   `<h2 class="jaga-title" data-slot="verein-titel"></h2>`. Die Ebene (h1–h6)
   gehört zum Gerüst. Ein `link`-Slot ist ein `a`-Element. Live-Widgets stehen in
   einem `div`.
+- **Bilder gibt es in zwei Formen.** Ein `image`-Slot **auf einem `img`**
+  (`<img class="sv-photo" loading="lazy" data-slot="jugend-bild">`) füllt nur
+  `src` aus `config.url` und `alt` aus `config.alt` (leer bleibt leer); Klasse,
+  `style`, `loading` und Maße bleiben im Gerüst, und der Designer lässt ihn nicht
+  aus dem Gerüst ziehen. Ein `image`-Slot auf einem `div` ist das volle
+  Bild-Widget mit eigener Box. Zulässige Adressen: `https://…`, `/pfad`, `blob:`,
+  `data:image/…;base64`; `http` wird zu `https` angehoben (`http://localhost`
+  bleibt), alles andere zeigt kein Bild. `convert` meldet solche Bilder als offene
+  Stelle, ebenso ein `img` ohne `src` oder in einem Link.
 - **Namen** `^[a-z0-9][a-z0-9-]{0,62}$`, **je Reiter eindeutig** über alle
   Gerüste. Die Adresse `<reiter-slug>/<slot>` nutzen Designer und CLI gleich:
   `comvenio homepage slot get start/hero-titel`,

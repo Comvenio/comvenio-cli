@@ -125,6 +125,24 @@ function inLink(el: DomElement): boolean {
   return false;
 }
 
+/**
+ * The renderer's image source rule (web-page slotRenderer `bildquelle`, K6-Bild Codex R2):
+ * https, a site path, blob:, a base64 raster image, or http (lifted to https there). An
+ * address it would drop — relative paths, other schemes, protocol-relative — is reported
+ * instead of converted, otherwise the image would vanish silently.
+ */
+export function bildquelleZulaessig(url: string): boolean {
+  const kompakt = url.trim().replace(/[\u0000- ]/g, "").replace(/\\/g, "/");
+  if (!kompakt || kompakt.startsWith("//")) return false;
+  if (kompakt.startsWith("/")) return true;
+  if (/^data:image\/(png|jpe?g|gif|webp|avif);base64,/i.test(kompakt)) return true;
+  try {
+    return ["https:", "http:", "blob:"].includes(new URL(kompakt).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function naechsterFreierName(vorhanden: Set<string>, basis: string): string {
   const stamm = basis.slice(0, 60);
   let name = stamm;
@@ -207,6 +225,10 @@ export function wandleGeruestUm(
       const src = (el.getAttribute("src") ?? "").trim();
       if (!src) {
         offene.push({ grund: "Bild ohne Adresse (img)", text: "" });
+        continue;
+      }
+      if (!bildquelleZulaessig(src)) {
+        offene.push({ grund: "Bild mit unzulässiger Adresse (img)", text: src });
         continue;
       }
       if (inLink(el)) {
