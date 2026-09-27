@@ -64,6 +64,9 @@ export async function runBelegUpload(
   if (!id || !operation) throw new Error("finance entry-beleg <buchungs-id> <datei>: Buchung und Datei angeben.");
   // The plan comes from the position: an entry's own finance_plan_id may be empty.
   const buchung = ergebnis(await callFinance(via, "cai.finance.17.entry_show", { entry_id: id }, { write: false }));
+  // The service never replaces a receipt: check first, upload after — a file
+  // in finance_receipt is kept and never tidied away.
+  if (buchung.receipt_file_id) throw new Error(`Buchung ${id} hat schon einen Beleg — ein Beleg wird nie ersetzt. Nichts hochgeladen.`);
   const positionId = typeof buchung.position_id === "string" ? buchung.position_id : null;
   if (!positionId) throw new Error(`Buchung ${id}: Der Posten der Buchung ist nicht bekannt — nichts hochgeladen.`);
   const posten = ergebnis(await callFinance(via, "cai.finance.10.position_show", { position_id: positionId }, { write: false }));

@@ -128,6 +128,17 @@ const positionOwn = own("/positions/{position_id}", (i) => `/positions/${str(i, 
 const reportOwn = own("/reports/cash/{report_id}", (i) => `/reports/cash/${str(i, "report_id")}`, "Kassenbericht");
 // belegerfassung-01/-03: a receipt of the club's inbox.
 const scanOwn = own("/receipt-scans/{scan_id}", (i) => `/receipt-scans/${str(i, "scan_id")}`, "Eingangsbeleg");
+// The target too: the service moves the file into the target plan before it
+// compares the clubs — a foreign target would leave the receipt bound there.
+const scanAnd = (ziel: ReturnType<typeof own>, key: string) => ({
+  template: "/receipt-scans/{scan_id}",
+  check: async (input: JsonObject, context: RequestContext, client: ComvenioApiClient) => {
+    await scanOwn.check(input, context, client);
+    const data = input.data;
+    const id = data !== null && typeof data === "object" && !Array.isArray(data) ? (data as JsonObject)[key] : undefined;
+    if (typeof id === "string") await ziel.check({ ...input, [key]: id }, context, client);
+  },
+});
 // GET /investment-plans/{id} answers the dashboard view {plan, items, …};
 // the club is on `plan`, not on the top level.
 function investmentPlanRecord(value: JsonValue): JsonValue {
@@ -276,8 +287,9 @@ const ACTIONS: Record<string, { source: string; ops: Op[] }> = {
     // entry, book it onto a position, reject or withdraw it.
     { op: "receipt_scan_create", method: "POST", template: "/clubs/{club_id}/receipt-scans", path: (i) => `${club(i)}/receipt-scans`, risk: "write", shape: { data }, body: payload },
     { op: "receipt_candidates", method: "GET", template: "/receipt-scans/{scan_id}/candidates", path: (i) => `/receipt-scans/${str(i, "scan_id")}/candidates`, risk: "read", shape: { scan_id: uuid }, preflight: scanOwn, multiDepartment: true },
-    { op: "receipt_attach", method: "POST", template: "/receipt-scans/{scan_id}/attach", path: (i) => `/receipt-scans/${str(i, "scan_id")}/attach`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanOwn },
-    { op: "receipt_book", method: "POST", template: "/receipt-scans/{scan_id}/book", path: (i) => `/receipt-scans/${str(i, "scan_id")}/book`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanOwn },
+    // Critical: a receipt once attached is never replaced — the preview names the entry.
+    { op: "receipt_attach", method: "POST", template: "/receipt-scans/{scan_id}/attach", path: (i) => `/receipt-scans/${str(i, "scan_id")}/attach`, risk: "critical", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(entryOwn, "entry_id") },
+    { op: "receipt_book", method: "POST", template: "/receipt-scans/{scan_id}/book", path: (i) => `/receipt-scans/${str(i, "scan_id")}/book`, risk: "write", shape: { scan_id: uuid, data }, body: payload, preflight: scanAnd(positionOwn, "position_id") },
     { op: "receipt_reject", method: "POST", template: "/receipt-scans/{scan_id}/reject", path: (i) => `/receipt-scans/${str(i, "scan_id")}/reject`, risk: "write", shape: { scan_id: uuid, data: data.optional() }, body: (i) => (i.data ?? {}) as JsonValue, preflight: scanOwn },
     { op: "receipt_withdraw", method: "POST", template: "/receipt-scans/{scan_id}/withdraw", path: (i) => `/receipt-scans/${str(i, "scan_id")}/withdraw`, risk: "write", shape: { scan_id: uuid }, body: () => ({}), preflight: scanOwn },
     { op: "receipt_file", method: "GET", template: "/entries/{entry_id}/receipt/file", path: (i) => `/entries/${str(i, "entry_id")}/receipt/file`, risk: "read", shape: { entry_id: uuid }, binary: true, preflight: entryOwn },

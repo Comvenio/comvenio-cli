@@ -1177,6 +1177,38 @@ describe("Finance Hub: Verknüpfung einer Position (buchhaltung-10-01/-04)", () 
     expect(post?.path).toBe(`/receipt-scans/${scanId}/book`);
   });
 
+  test("Beleg-Eingang: ein Ziel eines fremden Vereins erreicht den Dienst nicht (Codex R1)", async () => {
+    const scanId = "33333333-3333-4333-8333-333333333333";
+    const fremdesZiel = recording((request): JsonValue => ({
+      id: request.path.startsWith("/receipt-scans") ? scanId : positionId,
+      club_id: request.path.startsWith("/receipt-scans") ? clubId : "44444444-4444-4444-8444-444444444444",
+    }));
+    await expect(createK14ToolSet({ client: fremdesZiel.client, write_safety: allowWrites, confirmation: confirmAll }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_book", scan_id: scanId, data: { position_id: positionId, amount_cents: 100, booking_date: "2026-07-01", description: "x" } },
+      context, capability_snapshot: manager,
+    })).rejects.toBeDefined();
+    expect(fremdesZiel.calls.every((call) => call.method === "GET")).toBe(true);
+  });
+
+  test("Beleg anhängen ist endgültig: Bestätigung mit Vorschau der Buchung (Codex R1)", async () => {
+    const scanId = "33333333-3333-4333-8333-333333333333";
+    const entryId = "55555555-5555-4555-8555-555555555555";
+    expect(HUB_ACTION_DEFINITIONS["cai.finance.25.entry_correction"]!.operations["receipt_attach"]!.execution_gate).toBe("confirmation");
+    const own = recording((request): JsonValue => (request.path.startsWith("/entries")
+      ? { id: entryId, club_id: clubId, entry_number: 42, description: "Getränke Maifest", booking_date: "2026-05-01", expense_cents: 45900 }
+      : { id: scanId, club_id: clubId }));
+    const result = await createK14ToolSet({ client: own.client, write_safety: allowWrites }).execute({
+      action_id: "cai.finance.25.entry_correction",
+      input: { club_id: clubId, operation: "receipt_attach", scan_id: scanId, data: { entry_id: entryId } },
+      context, capability_snapshot: manager,
+    });
+    expect(result.status).toBe("confirmation_required");
+    expect(own.calls.every((call) => call.method === "GET")).toBe(true);
+    const effects = (result.result as { preview: { effects: Record<string, unknown>[] } }).preview.effects;
+    expect(effects.find((effect) => effect.type === "receipt_attach")).toMatchObject({ entry_id: entryId, entry_number: 42, permanent: true });
+  });
+
   test("eine unbekannte Analyseart erreicht den Dienst nicht", async () => {
     const own = recording((): JsonValue => ({}));
     await expect(createK14ToolSet({ client: own.client }).execute({
