@@ -177,3 +177,126 @@ export async function uploadClubLogo({
     filename: basename(path),
   };
 }
+
+// ── Club fonts (Lastenheft homepage-generator 18, K18) ──────────────────────
+
+export const MAX_FONT_BYTES = 2 * 1024 * 1024;
+/** At most two club fonts per club (club-service MAX_CLUB_FONTS). */
+export const MAX_CLUB_FONTS = 2;
+
+export type ClubFontEntry = { id: string; family: string; format: string; lizenz: string };
+
+export type UploadClubFontResult = { font_id: string; family: string; format: string; size_bytes: number };
+
+/** Font format from the file's first bytes, the same rule as the content-service. */
+export function sniffFontFormat(bytes: Uint8Array): "woff2" | "ttf" | null {
+  const head = String.fromCharCode(...bytes.slice(0, 4));
+  if (head === "wOF2") return "woff2";
+  if (head === "\x00\x01\x00\x00" || head === "true") return "ttf";
+  return null;
+}
+
+/**
+ * The registry after adding a font: a font with the same family replaces the
+ * old entry, otherwise it is appended; more than MAX_CLUB_FONTS is refused
+ * before anything is written.
+ */
+export function registerClubFont(existing: unknown, font: ClubFontEntry): ClubFontEntry[] {
+  const current = Array.isArray(existing)
+    ? existing.filter((f): f is ClubFontEntry => !!f && typeof f === "object" && typeof (f as ClubFontEntry).id === "string")
+    : [];
+  const others = current.filter((f) => f.family !== font.family);
+  if (others.length >= MAX_CLUB_FONTS) {
+    throw new Error(
+      `Der Verein hat schon ${others.length} Schriften (${others.map((f) => f.family).join(", ")}); erlaubt sind ${MAX_CLUB_FONTS}.`,
+    );
+  }
+  return [...others, font];
+}
+
+/**
+ * tokens.type after replacing a font: every role that pointed to the old id
+ * points to the new one. Written together with the registry, so the club-service
+ * never sees a reference to a font that is no longer registered. null when no
+ * role referenced the old font.
+ */
+export function retargetFontReferences(tokens: unknown, oldId: string, newId: string): Record<string, unknown> | null {
+  const type = tokens && typeof tokens === "object" ? (tokens as Record<string, unknown>).type : null;
+  if (!type || typeof type !== "object") return null;
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [role, spec] of Object.entries(type as Record<string, unknown>)) {
+    if (spec && typeof spec === "object" && (spec as Record<string, unknown>).font_id === oldId) {
+      next[role] = { ...(spec as Record<string, unknown>), font_id: newId };
+      changed = true;
+    } else {
+      next[role] = spec;
+    }
+  }
+  return changed ? next : null;
+}
+
+export type ClubFontReport = {
+  fonts: { id: string; family: string; format: string }[];
+  roles: { role: string; family: string; source: string; font_id?: string }[];
+  /** Roles whose font_id is not in the registry: web and app fall back to the default family. */
+  missing: { role: string; font_id: string }[];
+  /** Registered fonts whose file is gone (deleted in the file manager): same fallback. */
+  unavailable: { id: string; family: string }[];
+};
+
+/**
+ * Registered fonts, font roles from tokens.type, dangling font_id references
+ * and registered fonts whose file is no longer available.
+ */
+export function describeClubFonts(designSettings: unknown, unavailableFileIds: ReadonlySet<string> = new Set()): ClubFontReport {
+  const ds = designSettings && typeof designSettings === "object" ? (designSettings as Record<string, unknown>) : {};
+  const fonts = (Array.isArray(ds.fonts) ? ds.fonts : [])
+    .filter((f): f is ClubFontEntry => !!f && typeof f === "object" && typeof (f as ClubFontEntry).id === "string")
+    .map(({ id, family, format }) => ({ id, family, format }));
+  const tokens = ds.tokens && typeof ds.tokens === "object" ? (ds.tokens as Record<string, unknown>) : {};
+  const type = tokens.type && typeof tokens.type === "object" ? (tokens.type as Record<string, unknown>) : {};
+  const roles: ClubFontReport["roles"] = [];
+  const missing: ClubFontReport["missing"] = [];
+  const known = new Set(fonts.map((f) => f.id));
+  for (const role of ["heading", "body"]) {
+    const spec = type[role];
+    if (!spec || typeof spec !== "object") continue;
+    const { family, source, font_id } = spec as Record<string, unknown>;
+    const entry = { role, family: String(family ?? ""), source: String(source ?? "") };
+    roles.push(typeof font_id === "string" ? { ...entry, font_id } : entry);
+    if (source === "verein" && typeof font_id === "string" && !known.has(font_id)) missing.push({ role, font_id });
+  }
+  const unavailable = fonts.filter((f) => unavailableFileIds.has(f.id)).map(({ id, family }) => ({ id, family }));
+  return { fonts, roles, missing, unavailable };
+}
+
+export async function uploadClubFont({
+  client,
+  clubId,
+  path,
+  family,
+  lizenz,
+}: {
+  client: ComvenioClient;
+  clubId: string;
+  path: string;
+  family: string;
+  lizenz: string;
+}): Promise<UploadClubFontResult> {
+  const file = Bun.file(path);
+  if (!(await file.exists())) throw new Error(`Datei nicht gefunden: ${path}`);
+  if (file.size <= 0) throw new Error(`Datei ist leer: ${path}`);
+  if (file.size > MAX_FONT_BYTES) {
+    throw new Error(`Schriftdatei ist zu groß (${Math.ceil(file.size / 1024)} KB, erlaubt ${MAX_FONT_BYTES / 1024 / 1024} MB).`);
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!sniffFontFormat(bytes)) {
+    throw new Error("Schriftdatei muss WOFF2 oder TrueType (TTF) sein; der Dateiinhalt passt zu keinem davon.");
+  }
+  const form = new FormData();
+  form.append("family", family);
+  form.append("lizenz", lizenz);
+  form.append("file", new Blob([bytes]), basename(path));
+  return await client.postForm<UploadClubFontResult>("content", `/fonts/club/${encodeURIComponent(clubId)}/upload`, form);
+}

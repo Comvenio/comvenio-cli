@@ -1,9 +1,9 @@
 import type { CAC } from "cac";
 import { AuthError, loadState } from "../auth.ts";
-import { createClient } from "../http.ts";
+import { createClient, HttpError } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
-import { uploadClubLogo } from "../util/upload.ts";
+import { describeClubFonts, registerClubFont, retargetFontReferences, uploadClubFont, uploadClubLogo } from "../util/upload.ts";
 import { readFileSync } from "node:fs";
 
 type ClubResponse = {
@@ -45,6 +45,9 @@ export type Opts = {
   tree?: boolean;
   avatars?: boolean;
   previewId?: string;
+  // font-upload action
+  family?: string;
+  lizenz?: string;
   // contact-requests action
   status?: string;
 };
@@ -289,7 +292,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  */
 export function registerClubCommands(cli: CAC): void {
   cli
-    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
+    .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload), Vereinsschriften (font-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option("--search <text>", "list: Vereine nach Name oder Beschreibung suchen")
     .option("--template <name>", `design: Hub-Template (${VALID_TEMPLATES.join("|")})`)
@@ -301,7 +304,9 @@ export function registerClubCommands(cli: CAC): void {
     .option("--public-template <id>", `design: oeffentliches Website-Template (${VALID_PUBLIC_TEMPLATES.join("|")})`)
     .option("--file <path>", "design: vollstaendiges design_settings-JSON (statt Flags); logo-upload: Bilddatei des Vereinslogos (PNG/JPG/SVG)")
     .option("--css-file <path>", "design: Agent-CSS (scoped auf .pub-site-root; Server-Gate lehnt url()/@import/position:fixed/z-index>50 ab)")
-    .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette/radius/spacing_scale/type_scale/shadow_level; WCAG-Gate serverseitig)")
+    .option("--tokens-file <path>", "design: Design-Tokens-JSON (palette inkl. header/nav/card/button + on_*, radius, spacing_scale, type_scale, shadow_level, type.heading/body {family, source system|plattform|verein, font_id}; WCAG-Gate serverseitig)")
+    .option("--family <name>", "font-upload: Familienname der Schrift (1-64 Zeichen), so wie tokens.type.*.family sie nennt")
+    .option("--lizenz <text>", "font-upload: Lizenz der Schrift (Pflicht, z. B. \"OFL 1.1\")")
     .option("--header-layout <mode>", `design: Public-Header-Aufbau (${VALID_PUBLIC_HEADER_LAYOUTS.join("|")})`)
     .option("--header-surface <mode>", `design: Public-Header-Oberflaeche (${VALID_PUBLIC_HEADER_SURFACES.join("|")})`)
     .option("--header-density <mode>", `design: Public-Header-Hoehe (${VALID_PUBLIC_HEADER_DENSITIES.join("|")})`)
@@ -387,6 +392,45 @@ export function registerClubCommands(cli: CAC): void {
           break;
         }
 
+        case "font-upload": {
+          // Uploads the file (content-service) and registers it in
+          // design_settings.fonts (club-service), which tokens.type.*.font_id
+          // must reference for source "verein" (Lastenheft homepage-generator 18).
+          const clubId = opts.club ?? state.clubId;
+          if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
+          if (!opts.file || !opts.family || !opts.lizenz) {
+            throw new Error("club font-upload benoetigt --file <woff2|ttf>, --family <name> und --lizenz <text>.");
+          }
+          const family = opts.family.trim();
+          if (!family || family.length > 64) throw new Error("--family muss 1-64 Zeichen haben.");
+          const settings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+          const liveDesign = (settings.design_settings as Record<string, unknown> | undefined) ?? {};
+          const liveFonts = liveDesign.fonts;
+          // Check the limit before uploading, so no orphan file is created.
+          registerClubFont(liveFonts, { id: "pending", family, format: "woff2", lizenz: opts.lizenz });
+          const uploaded = await uploadClubFont({ client, clubId, path: opts.file, family, lizenz: opts.lizenz });
+          const fonts = registerClubFont(liveFonts, {
+            id: uploaded.font_id,
+            family: uploaded.family,
+            format: uploaded.format,
+            lizenz: opts.lizenz,
+          });
+          // Same family replaces the old file: move tokens.type to the new id in the
+          // SAME write, or the club-service refuses the registry change (dangling reference).
+          const replaced = Array.isArray(liveFonts)
+            ? (liveFonts as { id?: string; family?: string }[]).find((f) => f?.family === uploaded.family && f.id !== uploaded.font_id)
+            : undefined;
+          const retargeted = replaced?.id ? retargetFontReferences(liveDesign.tokens, replaced.id, uploaded.font_id) : null;
+          await client.put("club", `/clubs/${clubId}/settings`, {
+            design_settings: retargeted ? { fonts, tokens: { type: retargeted } } : { fonts },
+          });
+          output({ ...uploaded, registered: fonts.length }, opts.json, () =>
+            `Schrift ${uploaded.family} (${uploaded.format}, ${uploaded.size_bytes} Bytes) hochgeladen und registriert — font_id ${uploaded.font_id}. ` +
+              `In tokens.type verwenden: {"family": "${uploaded.family}", "source": "verein", "font_id": "${uploaded.font_id}"}`,
+          );
+          break;
+        }
+
         case "logo-upload": {
           const clubId = opts.club ?? state.clubId;
           if (!clubId) throw new AuthError("Keine Club-ID im State oder via --club gesetzt.");
@@ -429,7 +473,24 @@ export function registerClubCommands(cli: CAC): void {
             "club",
             `/clubs/${clubId}`,
           );
-          output(club, opts.json, () => {
+          // Font roles and club fonts (K18): a token that points to a font
+          // missing from the registry renders in the fallback family.
+          const clubSettings = await client.get<Record<string, unknown>>("club", `/clubs/${clubId}/settings`);
+          // A registered font whose file was deleted renders the fallback (DC-8): ask the content-service.
+          const registered = describeClubFonts(clubSettings.design_settings).fonts;
+          // Only a 404 means the file is gone; any other failure is "not checkable" (R2).
+          const unavailableIds = new Set<string>();
+          const uncheckedIds: string[] = [];
+          for (const f of registered) {
+            try {
+              await client.get("content", `/files/${f.id}`);
+            } catch (err) {
+              if (err instanceof HttpError && err.status === 404) unavailableIds.add(f.id);
+              else uncheckedIds.push(f.id);
+            }
+          }
+          const fontReport = describeClubFonts(clubSettings.design_settings, unavailableIds);
+          output({ ...club, design_fonts: { ...fontReport, unchecked: uncheckedIds } }, opts.json, () => {
             const lines: string[] = [];
             lines.push(`Verein:   ${club.name ?? "—"}`);
             if (club.short_name) lines.push(`Kurzname: ${club.short_name}`);
@@ -447,6 +508,15 @@ export function registerClubCommands(cli: CAC): void {
             if (club.website_url) lines.push(`Website:  ${club.website_url}`);
             if (club.founded_date)
               lines.push(`Gegruendet: ${club.founded_date}`);
+            for (const f of fontReport.fonts) lines.push(`Schrift:  ${f.family} (${f.format}, ${f.id})`);
+            for (const r of fontReport.roles)
+              lines.push(`Schriftrolle ${r.role}: ${r.family} [${r.source}${r.font_id ? `, ${r.font_id}` : ""}]`);
+            for (const id of uncheckedIds)
+              lines.push(`HINWEIS: Schriftdatei ${id} ließ sich nicht prüfen (kein 404) — Stand unbekannt.`);
+            for (const u of fontReport.unavailable)
+              lines.push(`WARNUNG: Schriftdatei ${u.family} (${u.id}) ist nicht mehr verfügbar — Web und App zeigen die Rückfallschrift. Neu hochladen: club font-upload.`);
+            for (const m of fontReport.missing)
+              lines.push(`WARNUNG: tokens.type.${m.role} verweist auf ${m.font_id}, die nicht registriert ist — Web und App zeigen die Rückfallschrift.`);
             return lines.join("\n");
           });
           break;
@@ -634,7 +704,7 @@ export function registerClubCommands(cli: CAC): void {
 
         default:
           throw new Error(
-            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
+            `Unbekannte Aktion "${action}". Verfügbar: info, update, settings, settings-update, logo, logo-upload, font-upload, contact-requests, contact-request-done, contact-request-reopen, contact-request-delete, group-list, position-list, public-organ, public-legal, department-list, department-show, department-add, department-update, department-delete, design`,
           );
       }
     });

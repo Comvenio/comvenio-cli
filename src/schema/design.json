@@ -76,11 +76,25 @@
   },
   "design_settings_fields": {
     "tokens": {
-      "palette": "Record<string,#RRGGBB>",
+      "palette": "Record<string,#RRGGBB> — Rollen u. a. surface, ink, ink_muted, accent, on_accent; Flächenrollen für Web UND App: header/on_header, nav/on_nav (Vereinsmenü), card/on_card, button/on_button. WCAG-Gate je Paar (4.5:1, ink_muted 3:1)",
       "radius": "Record<string,number>",
       "spacing_scale": "number",
       "type_scale": "number",
-      "shadow_level": "number"
+      "shadow_level": "number",
+      "type": {
+        "roles": ["heading", "body"],
+        "entry": { "family": "1–64 Zeichen", "source": "system | plattform | verein", "font_id": "nur bei verein: id aus design_settings.fonts", "weight": "100..900 in Hunderterschritten, optional" },
+        "system": ["serif", "sans-serif", "system-ui"],
+        "plattform": ["Merriweather", "Lato", "Oswald", "Open Sans", "Nunito", "Montserrat", "Source Sans 3"],
+        "verein": "eigene Schrift: zuerst `comvenio club font-upload --file <woff2|ttf> --family <name> --lizenz <text>`, dann font_id hier eintragen; eine Plattform-Familie als verein wird abgelehnt",
+        "note": "Lastenheft homepage-generator 18: Was hier steht, gilt für Web-Hub, öffentliche Seite und die App gleich. Ohne type gilt custom_template_config.font_pair."
+      }
+    },
+    "fonts": {
+      "type": "ClubFont[]",
+      "max": 2,
+      "entry": { "id": "font_id aus dem Upload", "family": "1–64 Zeichen", "format": "woff2 | ttf", "lizenz": "1–200 Zeichen" },
+      "note": "Register der Vereinsschriften; `club font-upload` pflegt es selbst. Öffentlich ohne lizenz. Datei: content-service GET /fonts/club/{club_id}/{font_id}"
     },
     "custom_css": {
       "scope": ".pub-site-root",
