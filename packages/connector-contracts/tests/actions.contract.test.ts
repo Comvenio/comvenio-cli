@@ -1084,6 +1084,54 @@ describe("K10 booking, object and task adapter contract", () => {
     expect(serialized).not.toMatch(/local_path|file_path|credential|secret/iu);
   });
 
+  test("participants never name a club; the sign-in decides it", () => {
+    const participants = K10_ACTION_SCHEMAS["cai.booking.10.participant_list_show_add_add_groups_update_remove"].input;
+    expect(participants.parse({
+      club_id: k7ClubId, operation: "add", reservation_id: k10ReservationId, participant: { member_id: k7MemberId },
+    })).toMatchObject({ participant: { member_id: k7MemberId, status: "invited" } });
+    expect(() => participants.parse({
+      club_id: k7ClubId, operation: "add", reservation_id: k10ReservationId, participant: { club_id: k7ClubId, member_id: k7MemberId },
+    })).toThrow();
+    expect(() => K10_ACTION_SCHEMAS["cai.booking.03.create"].input.parse({
+      club_id: k7ClubId, object_id: k10ObjectId, start_time: "2026-07-21T10:00:00+02:00", end_time: "2026-07-21T12:00:00+02:00",
+      timezone: "Europe/Berlin", participants: [{ club_id: k7ClubId, member_id: k7MemberId }],
+    })).toThrow();
+  });
+
+  test("a booking with participants sends the signed-in club on each participant", async () => {
+    let body: JsonValue | undefined;
+    const client = k7Client(async (request): Promise<JsonValue> => {
+      if (request.method === "POST") {
+        body = request.body;
+        return { id: k10ReservationId, club_id: k7ClubId, object_id: k10ObjectId };
+      }
+      if (request.path === `/objects/${k10ObjectId}`) return {
+        id: k10ObjectId, club_id: k7ClubId, name: "Vereinsheim", is_active: true, booking_granularity: "30min", min_duration_minutes: 30, max_duration_minutes: 480,
+      };
+      if (request.path === `/object-reservations/object/${k10ObjectId}`) return [];
+      if (request.path === `/object-booking-rules/object/${k10ObjectId}`) return [];
+      return null;
+    });
+    const booking = createK10ToolSets(k10Dependencies(client)).booking;
+    const request = {
+      action_id: "cai.booking.03.create" as const,
+      input: {
+        club_id: k7ClubId, object_id: k10ObjectId, start_time: "2026-07-21T10:00:00+02:00", end_time: "2026-07-21T12:00:00+02:00",
+        timezone: "Europe/Berlin", title: "Training", participants: [{ member_id: k7MemberId }],
+      },
+      context: k8Context(["booking.write", "object.read"]),
+      capability_snapshot: k8Capability({}),
+    };
+    const preview = ((await booking.execute(request)).result as Record<string, JsonValue>).preview as Record<string, JsonValue>;
+    await booking.execute({
+      ...request,
+      input: { ...request.input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } },
+    });
+    expect((body as Record<string, JsonValue>).participants).toEqual([
+      { member_id: k7MemberId, status: "invited", is_guest: false, club_id: k7ClubId },
+    ]);
+  });
+
   test("guest statistics are aggregate-only and omit guest/member identifiers", () => {
     const result = minimizeGuestStatistics({
       club_id: k7ClubId, total_guests: 2, total_fee: 10,

@@ -288,32 +288,32 @@ comvenio action call cai.booking.12.stats_object_guests \
 
 **booking**
 
-- `cai.booking.01.list` — list, list_object (read)
-- `cai.booking.02.show` — show (read)
-- `cai.booking.03.create` — create (change with confirmation)
-- `cai.booking.04.update` — update (change with confirmation)
-- `cai.booking.05.approve` — approve (change with confirmation)
-- `cai.booking.06.reject` — reject (change with confirmation)
-- `cai.booking.07.cancel` — cancel (change with confirmation)
-- `cai.booking.08.delete` — delete (change with confirmation)
-- `cai.booking.09.bulk` — create (change with confirmation)
-- `cai.booking.10.participant_list_show_add_add_groups_update_remove` — list, show, add, add_groups, update, remove (read, change, change with confirmation)
-- `cai.booking.11.link_list_club_add_remove` — list, club, add, remove (read, change, change with confirmation)
-- `cai.booking.12.stats_object_guests` — object, guests (read)
-- Fields and values: `comvenio schema booking --json`
+- `cai.booking.01.list` — list, list_object (read) · Scopes: `booking.read`
+- `cai.booking.02.show` — show (read) · Scopes: `booking.read`
+- `cai.booking.03.create` — create (change with confirmation) · Scopes: `booking.write`, `object.read`
+- `cai.booking.04.update` — update (change with confirmation) · Scopes: `booking.write`, `object.read`
+- `cai.booking.05.approve` — approve (change with confirmation) · Scopes: `booking.write`
+- `cai.booking.06.reject` — reject (change with confirmation) · Scopes: `booking.write`
+- `cai.booking.07.cancel` — cancel (change with confirmation) · Scopes: `booking.write`
+- `cai.booking.08.delete` — delete (change with confirmation) · Scopes: `booking.write`
+- `cai.booking.09.bulk` — create (change with confirmation) · Scopes: `booking.write`, `object.read`
+- `cai.booking.10.participant_list_show_add_add_groups_update_remove` — list, show, add, add_groups, update, remove (read, change, change with confirmation) · Scopes: `booking.read`, `booking.write`
+- `cai.booking.11.link_list_club_add_remove` — list, club, add, remove (read, change, change with confirmation) · Scopes: `booking.read`, `booking.write`
+- `cai.booking.12.stats_object_guests` — object, guests (read) · Scopes: `booking.read`
+- Fields and values: `comvenio schema booking --json` (the sign-in sets `club_id` — never in `--input`)
 
 **object**
 
-- `cai.object.01.list` — list (read)
-- `cai.object.02.show` — show (read)
-- `cai.object.03.create` — create (change)
-- `cai.object.04.update` — update (change)
-- `cai.object.05.delete` — delete (change with confirmation)
-- `cai.object.06.building_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation)
-- `cai.object.07.room_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation)
-- `cai.object.08.booking_rule_list_show_create_bulk_update_delete` — list, list_object, show, create, bulk, update, delete (read, change, change with confirmation)
-- `cai.object.09.task_rule_list_show_create_update_delete` — list, list_object, show, create, update, delete (read, change, change with confirmation)
-- Fields and values: `comvenio schema object --json`
+- `cai.object.01.list` — list (read) · Scopes: `object.read`
+- `cai.object.02.show` — show (read) · Scopes: `object.read`
+- `cai.object.03.create` — create (change) · Scopes: `object.write`
+- `cai.object.04.update` — update (change) · Scopes: `object.write`
+- `cai.object.05.delete` — delete (change with confirmation) · Scopes: `object.write`
+- `cai.object.06.building_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
+- `cai.object.07.room_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
+- `cai.object.08.booking_rule_list_show_create_bulk_update_delete` — list, list_object, show, create, bulk, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
+- `cai.object.09.task_rule_list_show_create_update_delete` — list, list_object, show, create, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
+- Fields and values: `comvenio schema object --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

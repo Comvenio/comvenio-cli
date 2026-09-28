@@ -64,8 +64,8 @@ comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-
 
 **weekly-preview**
 
-- `cai.club.11.weekly_preview_create` — weekly-preview-create (change with confirmation)
-- `cai.club.12.weekly_preview_list` — weekly-preview-list (read)
+- `cai.club.11.weekly_preview_create` — weekly-preview-create (change with confirmation) · Scopes: `club.write`
+- `cai.club.12.weekly_preview_list` — weekly-preview-list (read) · Scopes: `club.read`
 <!-- /gen:docs -->
 
 ## Errors

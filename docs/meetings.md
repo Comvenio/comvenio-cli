@@ -316,18 +316,18 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 **meeting**
 
-- `cai.meeting.01.series_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat` — list, show, create, update, delete, advance, revert, updates, validation, publish (lesen, ändern, ändern mit Bestätigung)
-- `cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr` — list, show, create, update, delete, reorder, start, complete, skip, approve (lesen, ändern mit Bestätigung)
-- `cai.meeting.04.note_list_list_protocol_create_update_delete` — list, list_protocol, create, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.meeting.05.participant_list_add_update_remove_validate_unvalidate` — list, add, update, remove, validate, unvalidate (lesen, ändern, ändern mit Bestätigung)
-- `cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote` — create, agenda, update, cancel, option_add, options_add, promote (ändern mit Bestätigung, lesen)
-- `cai.meeting.07.voting_open_close_results_eligible_tally` — open, close, results, eligible, tally (ändern mit Bestätigung, lesen)
-- `cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract` — cast, cast_bulk, proxy, proxy_bulk, option_retract, retract (ändern mit Bestätigung)
-- `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (lesen, ändern mit Bestätigung)
-- `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.meeting.11.attachment_list_add_remove` — list, add, remove (lesen, ändern mit Bestätigung)
-- Felder und Werte: `comvenio schema meeting --json`
+- `cai.meeting.01.series_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat` — list, show, create, update, delete, advance, revert, updates, validation, publish (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr` — list, show, create, update, delete, reorder, start, complete, skip, approve (lesen, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.04.note_list_list_protocol_create_update_delete` — list, list_protocol, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.05.participant_list_add_update_remove_validate_unvalidate` — list, add, update, remove, validate, unvalidate (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote` — create, agenda, update, cancel, option_add, options_add, promote (ändern mit Bestätigung, lesen) · Scopes: `meeting.write`, `meeting.read`
+- `cai.meeting.07.voting_open_close_results_eligible_tally` — open, close, results, eligible, tally (ändern mit Bestätigung, lesen) · Scopes: `meeting.write`, `meeting.read`
+- `cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract` — cast, cast_bulk, proxy, proxy_bulk, option_retract, retract (ändern mit Bestätigung) · Scopes: `meeting.write`
+- `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (lesen, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
+- `cai.meeting.11.attachment_list_add_remove` — list, add, remove (lesen, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`, `files.write`
+- Felder und Werte: `comvenio schema meeting --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler

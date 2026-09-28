@@ -95,9 +95,14 @@ nur noch aus Gründen der Rückwärtskompatibilität.
 Eine Homepage besteht aus Tabs (Reitern), jeder Tab aus Sections, jede Section
 aus Widgets. Die vollständige Struktur wird als `tabs`-Array in der Eingabe
 von `cai.homepage.01.preview` beziehungsweise `cai.homepage.02.apply`
-übergeben (siehe Beispiele). Das Pflichtfeld `clear_existing` steuert dabei
-ausdrücklich, ob bestehende Tabs, Sections und Widgets ersetzt werden — es
-hat keinen stillen Standardwert und muss bei jedem Aufruf gesetzt werden.
+übergeben (siehe Beispiele). `clear_existing` (ohne Angabe `false`) steuert,
+was mit dem Bestand geschieht: `false` legt die übergebenen Tabs nur
+**zusätzlich** an (ein schon vorhandener Slug bekommt `-2`), bestehende Tabs,
+Sections und Widgets bleiben unverändert. Einen vorhandenen Text ändern —
+etwa den Begrüßungstext der Startseite — heißt deshalb: Bestand mit
+`cai.homepage.03.show` lesen, die Stelle in der vollständigen Struktur ändern
+und alles mit `clear_existing: true` über Vorschau und Bestätigung
+veröffentlichen.
 
 ### Inhalte gestalten
 
@@ -243,11 +248,11 @@ comvenio action call cai.homepage.01.preview \
 # Antwort enthält preview_id
 
 comvenio action call cai.homepage.04.screenshot \
-  --input '{"preview_id":"<preview-id>","viewports":["390x844","1440x900"]}' \
+  --input '{"preview_id":"<preview-id>","viewports":["mobile","desktop"]}' \
   --json
 
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"preview","tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"preview","tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -260,8 +265,7 @@ Subdomain des Vereins; andere technische Kennungen sind keine
 Homepage-Adresse und werden nicht ersatzweise verwendet.
 
 Geprüft werden jeder öffentliche Tab, die getrennte Impressum-Seite und die
-angegebenen `viewports` — üblich sind Mobilgerät, Tablet, Querformat und
-Desktop, etwa 390, 768, 1024 und 1440 Pixel Breite —, dazu horizontales
+angegebenen `viewports` — `mobile` und `desktop`, ohne Angabe beide —, dazu horizontales
 Überlaufen und leere Hauptbereiche, unsichtbarer Text und Kontrast,
 Konsolen- und Netzwerkfehler, der unveränderbare Rechtsfußzeile mit allen
 festen Zielen, die Bedienbarkeit aller Pflichtlinks sowie die
@@ -301,7 +305,7 @@ comvenio action confirm \
 
 comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"live","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -456,11 +460,11 @@ erledigen.
 
 **homepage**
 
-- `cai.homepage.01.preview` — preview (lesen)
-- `cai.homepage.02.apply` — apply (ändern mit Bestätigung)
-- `cai.homepage.03.show` — private, public (lesen)
-- `cai.homepage.04.screenshot` — screenshot (lesen)
-- Felder und Werte: `comvenio schema homepage --json`
+- `cai.homepage.01.preview` — preview (lesen) · Scopes: `club.write`
+- `cai.homepage.02.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.homepage.03.show` — private, public (lesen) · Scopes: `club.read`, `public.read`
+- `cai.homepage.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
+- Felder und Werte: `comvenio schema homepage --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler

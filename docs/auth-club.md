@@ -27,17 +27,42 @@ brauchen das Recht, Vereinseinstellungen zu verwalten.
 
 ## Abläufe
 
+### CLI installieren
+
+Die CLI ist Source-Available und wird aus dem öffentlichen Repository gebaut;
+es gibt kein npm-Paket. Voraussetzung sind `git` und [Bun](https://bun.sh).
+
+```bash
+git clone https://github.com/Comvenio/comvenio-cli.git
+cd comvenio-cli
+bun install
+bun run build
+mkdir -p ~/.local/bin && mv comvenio ~/.local/bin/
+comvenio help
+```
+
+`bun run build` erzeugt eine eigenständige Datei `comvenio` (unter Windows
+`comvenio.exe`), die ohne Bun läuft; der Ordner muss im Suchpfad (`PATH`)
+liegen. Aktualisieren: im Ordner `git pull`, dann `bun install` und
+`bun run build` wiederholen und die Datei ersetzen. Zeigt `comvenio help`
+keine Themenliste, ist eine veraltete Fassung installiert.
+
 ### Anmelden
 
 ```bash
 comvenio login
 comvenio login --scopes club.read,event.read --json
+comvenio login --scopes club.read,role.read.self,member.read.basic,team.read,event.read,task.read --json
 ```
 
 `login` öffnet den Systembrowser und meldet über eine offene,
 PKCE-gesicherte OAuth-Anmeldung an. Ohne `--scopes` fordert `login` alle
 Scopes an; was tatsächlich erlaubt ist, entscheiden weiterhin die Rollen im
-Verein. `--scopes` schränkt die Anmeldung bewusst ein, etwa auf reines Lesen.
+Verein. `--scopes` schränkt die Anmeldung bewusst ein, etwa auf reines Lesen:
+Nur-Lese-Scopes enden auf `.read` (das dritte Beispiel oben). Welche Scopes
+eine Action braucht, steht im Abschnitt „Befehle und Actions“ jedes Themas.
+
+Alle Scopes: `public.read`, `club.read`, `club.write`, `member.read.basic`, `member.read.details`, `member.write`, `team.read`, `team.write`, `role.read.self`, `role.write`, `event.read`, `event.write`, `booking.read`, `booking.write`, `object.read`, `object.write`, `content.read`, `content.write`, `task.read`, `task.write`, `supply.read`, `supply.write`, `meeting.read`, `meeting.write`, `sponsor.read`, `sponsor.write`, `finance.read`, `finance.write`, `files.read`, `files.write`, `files.export`, `files.import`, `admin.write`, `connector.grants`.
 
 Zugangsdaten werden nicht offen im CLI-Zustand gespeichert: Unter Windows
 schützt der Betriebssystem-Zugangsdatenspeicher den Eintrag für den aktuellen
@@ -72,6 +97,18 @@ Action. Schreibende Actions erhalten einen Wiederholungsschutz; kritische
 Änderungen brauchen zusätzlich `action confirm` mit einer kurzlebigen
 Vorschau. Verein, Nutzeridentität und Scopes lassen sich dabei nicht über die
 Eingabe überschreiben — `club_id` gehört deshalb nie in `--input`.
+
+### KI-Assistenten verbinden (Connector)
+
+Claude, ChatGPT und andere Assistenten mit MCP-Unterstützung arbeiten ohne
+CLI direkt mit Comvenio. Im Assistenten einen eigenen Connector
+(„Custom Connector“ bzw. „Connector hinzufügen“) mit der Adresse
+`https://mcp.comvenio.app/mcp` anlegen; der Assistent öffnet danach die
+Comvenio-Anmeldung im Browser, dort Verein wählen und die angefragten Scopes
+bestätigen. Der Connector nutzt dieselben Actions, Scopes und Bestätigungen
+wie die CLI; Verein und Rechte kommen aus dieser Anmeldung und der Rolle im
+Verein. Die Kundenhilfe (`comvenio_hilfe`) steht dort auch ohne Anmeldung
+bereit. Trennen: den Connector im Assistenten entfernen.
 
 ### Identität prüfen
 
@@ -113,7 +150,7 @@ comvenio action call cai.club.02.update \
   --input '{"changes":{"name":"Neuer Vereinsname"}}' \
   --json
 comvenio action call cai.club.04.settings_update \
-  --input '{"settings":{"notifications":{"weekly_digest":true}}}' \
+  --input '{"settings":{"notification_settings":{"notification_frequency":"weekly"}}}' \
   --json
 ```
 
@@ -122,10 +159,10 @@ Gültige Felder sind unter anderem Name, Beschreibung, Adresse, Ort,
 Postleitzahl, Land, Region, Telefonnummer, E-Mail, Website, Gründungsdatum,
 Adressen zu sozialen Netzwerken, Standardsprache, Standard-Zeitzone und die
 verantwortliche Person. `cai.club.04.settings_update` führt mit `settings`
-eine Feld-für-Feld-Zusammenführung durch für Bereiche wie Funktionen,
-Datenschutzeinstellungen, Kontaktangaben, Sucheinstellungen,
-Benachrichtigungen, Spracheinstellungen, Zahlungseinstellungen und eigene
-Einstellungen.
+eine Feld-für-Feld-Zusammenführung durch für diese Bereiche:
+`organization_type`, `design_settings`, `features`, `homepage_config`,
+`privacy_settings`, `contact_info`, `seo_settings`, `notification_settings`
+und `locale_settings`.
 
 ### Abteilungen verwalten
 
@@ -224,7 +261,7 @@ comvenio action call cai.club.08.department_add \
 
 **whoami**
 
-- `cai.whoami.01.whoami` — whoami (lesen)
+- `cai.whoami.01.whoami` — whoami (lesen) · Scopes: `club.read`
 
 **action**
 
@@ -232,15 +269,15 @@ comvenio action call cai.club.08.department_add \
 
 **club**
 
-- `cai.club.02.update` — update (ändern)
-- `cai.club.03.settings` — settings (lesen)
-- `cai.club.04.settings_update` — settings-update (ändern)
-- `cai.club.05.design` — design (ändern)
-- `cai.club.06.department_list` — department-list (lesen)
-- `cai.club.07.department_show` — department-show (lesen)
-- `cai.club.08.department_add` — department-add (ändern)
-- `cai.club.09.department_update` — department-update (ändern)
-- `cai.club.10.department_delete` — department-delete (ändern mit Bestätigung)
+- `cai.club.02.update` — update (ändern) · Scopes: `admin.write`
+- `cai.club.03.settings` — settings (lesen) · Scopes: `club.read`
+- `cai.club.04.settings_update` — settings-update (ändern) · Scopes: `admin.write`
+- `cai.club.05.design` — design (ändern) · Scopes: `admin.write`
+- `cai.club.06.department_list` — department-list (lesen) · Scopes: `club.read`
+- `cai.club.07.department_show` — department-show (lesen) · Scopes: `club.read`
+- `cai.club.08.department_add` — department-add (ändern) · Scopes: `admin.write`
+- `cai.club.09.department_update` — department-update (ändern) · Scopes: `admin.write`
+- `cai.club.10.department_delete` — department-delete (ändern mit Bestätigung) · Scopes: `admin.write`
 <!-- /gen:docs -->
 
 ## Fehler

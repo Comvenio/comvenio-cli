@@ -175,31 +175,31 @@ comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id
 
 **sponsor**
 
-- `cai.sponsor.01.list` — list (lesen)
-- `cai.sponsor.02.show` — show (lesen)
-- `cai.sponsor.03.add` — add (ändern)
-- `cai.sponsor.04.update` — update, move_department (ändern mit Bestätigung)
-- `cai.sponsor.05.delete` — delete (ändern mit Bestätigung)
-- `cai.sponsor.06.logo` — set (ändern mit Bestätigung)
-- `cai.sponsor.07.product_list` — list (lesen)
-- `cai.sponsor.08.product_add` — add (ändern)
-- `cai.sponsor.09.product_update` — update, move_department (ändern, ändern mit Bestätigung)
-- `cai.sponsor.10.product_delete` — delete (ändern mit Bestätigung)
-- `cai.sponsor.11.contract_list` — list (lesen)
-- `cai.sponsor.12.contract_add` — add (ändern)
-- `cai.sponsor.13.contract_update` — update, replace_file (ändern)
-- `cai.sponsor.14.contract_delete` — delete (ändern mit Bestätigung)
-- `cai.sponsor.15.assignment_list` — list (lesen)
-- `cai.sponsor.16.assign` — assign (ändern mit Bestätigung)
-- `cai.sponsor.17.assignment_update` — update (ändern mit Bestätigung)
-- `cai.sponsor.18.cancel` — cancel (ändern mit Bestätigung)
-- `cai.sponsor.19.doc_list` — list (lesen)
-- `cai.sponsor.20.doc_upload` — upload (ändern)
-- `cai.sponsor.21.responsible_list` — list (lesen)
-- `cai.sponsor.22.responsible_add` — add (ändern)
-- `cai.sponsor.23.responsible_update` — update (ändern)
-- `cai.sponsor.24.responsible_remove` — remove (ändern mit Bestätigung)
-- Felder und Werte: `comvenio schema sponsor --json`
+- `cai.sponsor.01.list` — list (lesen) · Scopes: `sponsor.read`
+- `cai.sponsor.02.show` — show (lesen) · Scopes: `sponsor.read`
+- `cai.sponsor.03.add` — add (ändern) · Scopes: `sponsor.write`
+- `cai.sponsor.04.update` — update, move_department (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.05.delete` — delete (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.06.logo` — set (ändern mit Bestätigung) · Scopes: `sponsor.write`, `files.read`
+- `cai.sponsor.07.product_list` — list (lesen) · Scopes: `sponsor.read`
+- `cai.sponsor.08.product_add` — add (ändern) · Scopes: `sponsor.write`
+- `cai.sponsor.09.product_update` — update, move_department (ändern, ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.10.product_delete` — delete (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.11.contract_list` — list (lesen) · Scopes: `sponsor.read`
+- `cai.sponsor.12.contract_add` — add (ändern) · Scopes: `sponsor.write`, `files.read`
+- `cai.sponsor.13.contract_update` — update, replace_file (ändern) · Scopes: `sponsor.write`, `files.read`
+- `cai.sponsor.14.contract_delete` — delete (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.15.assignment_list` — list (lesen) · Scopes: `sponsor.read`
+- `cai.sponsor.16.assign` — assign (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.17.assignment_update` — update (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.18.cancel` — cancel (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- `cai.sponsor.19.doc_list` — list (lesen) · Scopes: `sponsor.read`, `files.read`
+- `cai.sponsor.20.doc_upload` — upload (ändern) · Scopes: `sponsor.write`, `files.import`, `files.write`
+- `cai.sponsor.21.responsible_list` — list (lesen) · Scopes: `sponsor.read`, `member.read.basic`
+- `cai.sponsor.22.responsible_add` — add (ändern) · Scopes: `sponsor.write`
+- `cai.sponsor.23.responsible_update` — update (ändern) · Scopes: `sponsor.write`
+- `cai.sponsor.24.responsible_remove` — remove (ändern mit Bestätigung) · Scopes: `sponsor.write`
+- Felder und Werte: `comvenio schema sponsor --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler

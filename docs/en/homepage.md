@@ -92,9 +92,13 @@ compatibility.
 A homepage consists of tabs, each tab of sections, each section of widgets.
 The full structure is submitted as the `tabs` array in the input of
 `cai.homepage.01.preview` and `cai.homepage.02.apply` (see Examples). The
-required `clear_existing` field explicitly controls whether existing tabs,
-sections and widgets are replaced — it has no silent default and must be
-set on every call.
+`clear_existing` (default `false`) controls what happens to the existing
+content: `false` only **adds** the given tabs (a slug that already exists
+gets `-2`); existing tabs, sections and widgets stay unchanged. Changing an
+existing text — such as the welcome text of the start page — therefore
+means: read the current content with `cai.homepage.03.show`, change the spot
+in the complete structure and publish everything with
+`clear_existing: true` through preview and confirmation.
 
 ### Designing content
 
@@ -230,11 +234,11 @@ comvenio action call cai.homepage.01.preview \
 # the response contains preview_id
 
 comvenio action call cai.homepage.04.screenshot \
-  --input '{"preview_id":"<preview-id>","viewports":["390x844","1440x900"]}' \
+  --input '{"preview_id":"<preview-id>","viewports":["mobile","desktop"]}' \
   --json
 
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"preview","tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"preview","tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -247,8 +251,7 @@ subdomain; other technical identifiers are not a homepage address and are
 never used as a fallback.
 
 The check covers every public tab, the separate legal notice page and the
-given `viewports` — commonly mobile, tablet, landscape and desktop, for
-example 390, 768, 1024 and 1440 pixels width —, plus horizontal overflow and
+given `viewports` — `mobile` and `desktop`, both when omitted —, plus horizontal overflow and
 empty main regions, invisible text and contrast, console and network errors,
 the fixed legal footer with all its targets, operability of every mandatory
 link, and the club's stated responsibility plus at least one public contact
@@ -286,7 +289,7 @@ comvenio action confirm \
 
 comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"live","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -440,11 +443,11 @@ app.
 
 **homepage**
 
-- `cai.homepage.01.preview` — preview (read)
-- `cai.homepage.02.apply` — apply (change with confirmation)
-- `cai.homepage.03.show` — private, public (read)
-- `cai.homepage.04.screenshot` — screenshot (read)
-- Fields and values: `comvenio schema homepage --json`
+- `cai.homepage.01.preview` — preview (read) · Scopes: `club.write`
+- `cai.homepage.02.apply` — apply (change with confirmation) · Scopes: `club.write`
+- `cai.homepage.03.show` — private, public (read) · Scopes: `club.read`, `public.read`
+- `cai.homepage.04.screenshot` — screenshot (read) · Scopes: `club.write`
+- Fields and values: `comvenio schema homepage --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

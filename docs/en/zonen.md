@@ -46,10 +46,12 @@ exclusively in the web app's territory editor.
 **zone**
 
 - No action yet — this area works through the web app.
-- Fields and values: `comvenio schema zone --json`
+- Fields and values: `comvenio schema zone --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
 
 There are no `comvenio` commands for this area and therefore no CLI error codes of its own; errors
-while drawing or assigning are shown directly by the web app's territory editor.
+while drawing or assigning are shown directly by the web app's territory editor. The older zone
+commands that `--help` still lists (`zone …`, `task-zones …`) do not run through the sign-in and
+end with `OAUTH_ONLY`. More: `comvenio help fehler OAUTH_ONLY`

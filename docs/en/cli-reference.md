@@ -124,7 +124,7 @@ comvenio action call cai.homepage.01.preview \
   --input '{"tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":false}' \
   --json
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"live","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -135,10 +135,10 @@ run only after a factual or visual check.
 
 ```bash
 comvenio action call cai.verify.01.url \
-  --input '{"target_url":"https://club.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"target_url":"https://club.web.comvenio.app","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 comvenio action call cai.verify.04.homepage \
-  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"operation":"live","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -172,7 +172,7 @@ Check a public address visually:
 
 ```bash
 comvenio action call cai.verify.01.url \
-  --input '{"target_url":"https://club.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --input '{"target_url":"https://club.web.comvenio.app","viewports":["mobile","desktop"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
@@ -182,8 +182,8 @@ comvenio action call cai.verify.01.url \
 
 **schema**
 
-- `cai.schema.01.list_domains` — list (read)
-- `cai.schema.02.show_domain_schema` — show (read)
+- `cai.schema.01.list_domains` — list (read) · Scopes: `club.read`
+- `cai.schema.02.show_domain_schema` — show (read) · Scopes: `club.read`
 
 **help**
 
@@ -191,28 +191,28 @@ comvenio action call cai.verify.01.url \
 
 **verify**
 
-- `cai.verify.01.url` — verify (read)
-- `cai.verify.02.event` — verify (read)
-- `cai.verify.03.menu` — verify (read)
-- `cai.verify.04.homepage` — live, preview (read)
-- `cai.verify.05.news` — verify (read)
-- `cai.verify.06.certificate` — verify (read)
+- `cai.verify.01.url` — verify (read) · Scopes: `club.read`, `files.export`
+- `cai.verify.02.event` — verify (read) · Scopes: `event.read`, `files.export`
+- `cai.verify.03.menu` — verify (read) · Scopes: `supply.read`, `files.export`
+- `cai.verify.04.homepage` — live, preview (read) · Scopes: `club.read`, `files.export`, `club.write`
+- `cai.verify.05.news` — verify (read) · Scopes: `content.read`, `files.export`
+- `cai.verify.06.certificate` — verify (read) · Scopes: `member.read.details`, `files.export`
 
 **plan**
 
-- `cai.plan.01.list` — list (read)
-- `cai.plan.02.show` — show (read)
-- `cai.plan.03.create` — create (change)
-- `cai.plan.04.update` — update (change)
-- `cai.plan.05.delete` — delete (change with confirmation)
-- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (read, change, change with confirmation)
-- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (change, change with confirmation)
-- `cai.plan.08.marker_create_update_delete` — create, update, delete (change, change with confirmation)
-- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (read, change, change with confirmation)
-- `cai.plan.10.detail` — create (change)
-- `cai.plan.11.export` — export (change with confirmation)
-- `cai.plan.12.illustrate` — illustrate (change with confirmation)
-- `cai.plan.13.compose` — compose (change with confirmation)
+- `cai.plan.01.list` — list (read) · Scopes: `event.read`
+- `cai.plan.02.show` — show (read) · Scopes: `event.read`
+- `cai.plan.03.create` — create (change) · Scopes: `event.write`
+- `cai.plan.04.update` — update (change) · Scopes: `event.write`
+- `cai.plan.05.delete` — delete (change with confirmation) · Scopes: `event.write`
+- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (read, change, change with confirmation) · Scopes: `event.read`, `event.write`
+- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (change, change with confirmation) · Scopes: `event.write`
+- `cai.plan.08.marker_create_update_delete` — create, update, delete (change, change with confirmation) · Scopes: `event.write`
+- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (read, change, change with confirmation) · Scopes: `event.read`, `event.write`
+- `cai.plan.10.detail` — create (change) · Scopes: `event.write`
+- `cai.plan.11.export` — export (change with confirmation) · Scopes: `files.export`, `event.read`
+- `cai.plan.12.illustrate` — illustrate (change with confirmation) · Scopes: `files.export`, `event.read`
+- `cai.plan.13.compose` — compose (change with confirmation) · Scopes: `files.write`, `event.write`
 <!-- /gen:docs -->
 
 ## Errors

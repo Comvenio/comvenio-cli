@@ -32,8 +32,8 @@ const taskPhase = z.enum(["preparation", "execution", "followup"]);
 const systemTaskType = z.enum(["none", "create_event", "manage_event", "assign_shift", "create_news", "create_object", "manage_object", "create_meeting", "manage_meeting", "create_protocol", "create_supply", "manage_supply", "manage_shopping"]);
 const taskContextType = z.enum(["club", "event", "object", "meeting", "supply"]);
 
+// The club comes from the sign-in; the handlers set it on every participant.
 const participantCreate = z.object({
-  club_id: uuid,
   member_id: uuid.optional(),
   status: participantStatus.default("invited"),
   is_guest: z.boolean().default(false),

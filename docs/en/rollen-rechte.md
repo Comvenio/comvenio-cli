@@ -122,21 +122,21 @@ comvenio action call cai.role.13.position_unlink --input '{"assignment_id":"<ass
 
 **role**
 
-- `cai.role.01.list` — list (read)
-- `cai.role.02.show` — show (read)
-- `cai.role.03.create` — create (change)
-- `cai.role.04.update` — update (change)
-- `cai.role.05.delete` — delete (change with confirmation)
-- `cai.role.06.permission_defs` — permission-defs (read)
-- `cai.role.07.permission_set` — permission set (change)
-- `cai.role.08.permissions_show_apply` — permissions show|apply (change with confirmation)
-- `cai.role.09.assign` — assign (change)
-- `cai.role.10.unassign` — unassign (change with confirmation)
-- `cai.role.11.assignments` — assignments (read)
-- `cai.role.12.position_link` — position-link (change)
-- `cai.role.13.position_unlink` — position-unlink (change with confirmation)
-- `cai.role.14.position_list` — position-list (read)
-- Fields and values: `comvenio schema role --json`
+- `cai.role.01.list` — list (read) · Scopes: `club.read`
+- `cai.role.02.show` — show (read) · Scopes: `club.read`
+- `cai.role.03.create` — create (change) · Scopes: `admin.write`
+- `cai.role.04.update` — update (change) · Scopes: `admin.write`
+- `cai.role.05.delete` — delete (change with confirmation) · Scopes: `admin.write`
+- `cai.role.06.permission_defs` — permission-defs (read) · Scopes: `club.read`
+- `cai.role.07.permission_set` — permission set (change) · Scopes: `admin.write`
+- `cai.role.08.permissions_show_apply` — permissions show|apply (change with confirmation) · Scopes: `admin.write`
+- `cai.role.09.assign` — assign (change) · Scopes: `admin.write`
+- `cai.role.10.unassign` — unassign (change with confirmation) · Scopes: `admin.write`
+- `cai.role.11.assignments` — assignments (read) · Scopes: `club.read`
+- `cai.role.12.position_link` — position-link (change) · Scopes: `admin.write`
+- `cai.role.13.position_unlink` — position-unlink (change with confirmation) · Scopes: `admin.write`
+- `cai.role.14.position_list` — position-list (read) · Scopes: `club.read`
+- Fields and values: `comvenio schema role --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

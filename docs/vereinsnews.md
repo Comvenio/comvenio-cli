@@ -158,15 +158,15 @@ comvenio action call cai.news.09.video_slideshow_result_teaser --input '{
 
 **news**
 
-- `cai.news.01.list` — private, public (lesen)
-- `cai.news.02.show` — private, public (lesen)
-- `cai.news.03.create` — draft, publish (ändern, ändern mit Bestätigung)
-- `cai.news.04.update` — update (ändern mit Bestätigung)
-- `cai.news.05.delete` — delete (ändern mit Bestätigung)
-- `cai.news.06.apply` — draft, publish (ändern, ändern mit Bestätigung)
-- `cai.news.07.preview` — preview (lesen)
-- `cai.news.08.publish` — publish (ändern mit Bestätigung)
-- `cai.news.09.video_slideshow_result_teaser` — render, render_and_upload (lesen, ändern)
+- `cai.news.01.list` — private, public (lesen) · Scopes: `content.read`, `public.read`
+- `cai.news.02.show` — private, public (lesen) · Scopes: `content.read`, `public.read`
+- `cai.news.03.create` — draft, publish (ändern, ändern mit Bestätigung) · Scopes: `content.write`
+- `cai.news.04.update` — update (ändern mit Bestätigung) · Scopes: `content.write`
+- `cai.news.05.delete` — delete (ändern mit Bestätigung) · Scopes: `content.write`
+- `cai.news.06.apply` — draft, publish (ändern, ändern mit Bestätigung) · Scopes: `content.write`
+- `cai.news.07.preview` — preview (lesen) · Scopes: `content.write`
+- `cai.news.08.publish` — publish (ändern mit Bestätigung) · Scopes: `content.write`
+- `cai.news.09.video_slideshow_result_teaser` — render, render_and_upload (lesen, ändern) · Scopes: `content.read`, `files.export`, `content.write`, `files.import`
 <!-- /gen:docs -->
 
 ## Fehler
