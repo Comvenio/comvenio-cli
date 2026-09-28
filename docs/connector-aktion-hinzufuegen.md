@@ -44,8 +44,7 @@ for s in typecheck test:cli test:mcp test:contracts gen:coverage:check \
 
 ## 5. Ausliefern und prüfen
 
-PR auf `main` → Merge → Railway rollt `comvenio-cli` aus (`railway deployment list --service comvenio-cli`).
-Danach `comvenio action list | rg <action>`; die erste Minute nach dem Deploy kann eine Action
+PR auf `main` → Merge → der Connector wird ausgerollt. Danach `comvenio action list | rg <action>`; die erste Minute nach dem Deploy kann eine Action
 noch als „nicht freigegeben“ erscheinen.
 
 ## Häufige Rotstellen
