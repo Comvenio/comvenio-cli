@@ -651,6 +651,36 @@ const positionRoleOutput = z.object({
 
 const contract = (input: z.ZodType, output: z.ZodType): K7ActionSchemaContract => ({ input, output });
 
+// Weekly preview (ai-service): a run starts a draft; the share token of a snapshot stays out.
+const weeklyPreviewRunOutput = z.object({
+  run_id: uuid,
+  plan_id: uuid,
+  status: z.string().max(40),
+  error: z.string().max(2_000).nullable(),
+  function_run_id: uuid,
+}).strip();
+const weeklyPreviewEntry = z.object({
+  event_id: z.string().max(80),
+  title: z.string().max(500),
+  start_time: z.string().max(40),
+  end_time: z.string().max(40).nullable().optional(),
+  location: z.string().max(500).nullable().optional(),
+  reason: z.string().max(40).optional(),
+}).strip();
+const weeklyPreviewSnapshotOutput = z.object({
+  id: uuid,
+  plan_id: uuid.nullable(),
+  plan_run_id: uuid.nullable(),
+  department_id: uuid,
+  range_start: z.string().max(40),
+  range_end: z.string().max(40),
+  events: z.array(weeklyPreviewEntry),
+  hidden: z.array(weeklyPreviewEntry),
+  publish_at: z.string().max(40).nullable(),
+  published_at: z.string().max(40).nullable(),
+  created_at: z.string().max(40).nullable(),
+}).strip();
+
 export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContract>> = Object.freeze({
   "cai.whoami.01.whoami": contract(clubContext, z.object({ subject_id: uuid, club_id: uuid, display_name: z.string().nullable(), email: z.string().email().nullable() }).strict()),
   "cai.club.01.info": contract(clubContext, clubOutput),
@@ -663,6 +693,23 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.club.08.department_add": contract(z.object({ club_id: uuid, department: departmentCreate }).strict(), departmentOutput),
   "cai.club.09.department_update": contract(z.object({ club_id: uuid, department_id: uuid, changes: departmentPatch.refine((value) => Object.keys(value).length > 0) }).strict(), departmentOutput),
   "cai.club.10.department_delete": contract(entityContext("department_id"), deleted),
+  "cai.club.11.weekly_preview_create": contract(
+    z.object({
+      club_id: uuid,
+      department_id: uuid,
+      department_name: shortText.optional(),
+      team_ids: z.array(uuid).max(100).optional(),
+      event_ids: z.array(uuid).max(100).optional(),
+      range: z.enum(["next_week", "next_7_days"]).default("next_week"),
+      telegram: z.boolean().default(false),
+      idempotency_key: z.string().trim().min(1).max(120).optional(),
+    }).strict(),
+    weeklyPreviewRunOutput,
+  ),
+  "cai.club.12.weekly_preview_list": contract(
+    z.object({ club_id: uuid, plan_id: uuid, limit: z.number().int().min(1).max(100).default(20) }).strict(),
+    z.array(weeklyPreviewSnapshotOutput),
+  ),
 
   "cai.member.01.list": contract(z.object({ club_id: uuid, limit: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).default(0) }).strict(), z.object({ items: z.array(memberListItem), limit: z.number().int(), offset: z.number().int(), total: z.number().int().nullable() }).strict()),
   "cai.member.02.show": contract(entityContext("member_id"), memberDetail),
