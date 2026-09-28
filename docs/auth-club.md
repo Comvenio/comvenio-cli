@@ -10,6 +10,9 @@ comvenio login --env dev --json
 comvenio login --scopes club.read,event.read --json
 ```
 
+> Ohne `--scopes` fordert `login` nur `club.read` und `role.read.self` an — genug zum Lesen,
+> nicht zum Schreiben. Fehlerbilder und Lösungen: [fehlerbilder.md](fehlerbilder.md).
+
 `login` öffnet den Systembrowser und verwendet OAuth 2.1 Authorization Code
 mit PKCE. Der native Public Client
 `{issuer}/oauth/clients/comvenio-cli` akzeptiert ausschließlich einen
