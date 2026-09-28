@@ -1,7 +1,7 @@
 ---
 id: cli-reference
 kategorie: thema
-domaenen: [schema, verify, plan]
+domaenen: [schema, help, verify, plan]
 stichwoerter: [cli, referenz, befehle, schema, verify]
 ---
 
@@ -18,7 +18,7 @@ mit bekannten Lücken und bewussten Ausschlüssen je Befehl steht in
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Außer `login`, `logout`, `whoami`, `action`, `finance` und `schema` sind alle Befehle klassische Befehle. Sie laufen mit einer
+> **Anmeldung:** Außer `login`, `logout`, `whoami`, `action`, `finance`, `schema` und `help` sind alle Befehle klassische Befehle. Sie laufen mit einer
 > Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
 > allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
 > erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
@@ -74,6 +74,21 @@ Jeder Top-Level-Befehl gehört zu einem Thema mit eigenem Artikel:
 | `zone`, `task-zones` | Vereinsgebiet: Einteilungen, Zonen, Übersicht | [`zonen.md`](zonen.md) |
 | `agent` | Club-Agent: Chat, Funktionen, Freigaben | [`club-agent.md`](club-agent.md) |
 | `weekly-preview` | Wochenvorschau: Flyer und Vorlagen | [`wochenvorschau.md`](wochenvorschau.md) |
+
+### Hilfe im Programm
+
+```bash
+comvenio help
+comvenio help zonen
+comvenio help fehler SCOPE_REQUIRED
+comvenio help suche buchung
+```
+
+`comvenio help` zeigt dieselben Artikel wie diese Dokumentation — offline, ohne Anmeldung und in der
+Fassung, die zum installierten Programm gehört. Ein Thema lässt sich über seinen Namen oder einen
+seiner Befehle aufrufen (`comvenio help zone`). `--lang en` oder eine englische Umgebung wählen die
+englische Fassung, `--json` liefert `{ id, title, lang, markdown, related }`. Jede Fehlermeldung
+verweist mit `comvenio help fehler <CODE>` auf ihren Artikel.
 
 ### Schemas abfragen
 
@@ -167,6 +182,14 @@ comvenio verify url https://verein.web.comvenio.app --json
 
 - `comvenio schema`
 - `comvenio schema <domain>`
+
+**help** — vollständig
+
+- `comvenio help`
+- `comvenio help <thema>`
+- `comvenio help fehler`
+- `comvenio help fehler <code>`
+- `comvenio help suche <text>`
 
 **verify** — vollständig
 

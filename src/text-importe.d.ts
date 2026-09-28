@@ -24,3 +24,10 @@ declare module "*/verify/audit-dom.js" {
   const text: string;
   export default text;
 }
+
+// Customer articles, embedded by src/help/artikel.generated.ts (03-programm-hilfe).
+// Markdown is never a module, so the wildcard cannot hide a wrong import.
+declare module "*.md" {
+  const text: string;
+  export default text;
+}
