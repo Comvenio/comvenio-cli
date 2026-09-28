@@ -1,0 +1,11 @@
+{
+  "name": "@comvenio/kundendoku",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The customer documentation of docs/, embedded at build time: index, articles, search. Read by `comvenio help` and the connector tool comvenio_hilfe.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  }
+}

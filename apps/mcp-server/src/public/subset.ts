@@ -64,6 +64,12 @@ export class PublicToolSubset implements McpRequestAccessPolicy {
   constructor(input: {
     public_tools?: readonly PublicToolCandidate[];
     protected_tools?: readonly ProtectedToolDescriptor[];
+    /**
+     * Public tools that call no backend at all (the embedded customer help,
+     * 05-ki-zugang). They are allowed anonymously by name; a name that is also
+     * a protected tool is refused, so this list can never open a private tool.
+     */
+    static_public_tools?: readonly string[];
   } = {}) {
     const publicTools = input.public_tools
       ?? Object.values(PUBLIC_READ_CONTRACTS)
@@ -83,7 +89,16 @@ export class PublicToolSubset implements McpRequestAccessPolicy {
         throw new Error(`${tool.tool_name}: Tool ist nicht als öffentlicher Read-Vertrag freigegeben.`);
       }
     }
-    this.#publicToolNames = new Set(publicTools.map((tool) => tool.tool_name));
+    const protectedNames = new Set((input.protected_tools ?? []).map((tool) => tool.tool_name));
+    for (const name of input.static_public_tools ?? []) {
+      if (!/^[a-z][a-z0-9_]{2,63}$/u.test(name) || protectedNames.has(name)) {
+        throw new Error(`${name}: Tool kann nicht als öffentliches Tool ohne Backend freigegeben werden.`);
+      }
+    }
+    this.#publicToolNames = new Set([
+      ...publicTools.map((tool) => tool.tool_name),
+      ...(input.static_public_tools ?? []),
+    ]);
     this.#publicAliases = new Set(publicTools.map((tool) => tool.resolver_alias!));
     this.#protectedScopes = new Map<string, readonly OAuthScope[]>((input.protected_tools ?? []).map((tool) => [
       tool.tool_name,

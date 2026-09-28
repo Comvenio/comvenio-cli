@@ -310,14 +310,14 @@ describe("production MCP process bootstrap", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "resources/list", params: {} }),
     });
     expect(resources.status).toBe(200);
-    expect(await resources.json()).toMatchObject({
-      result: {
-        resources: [
-          { uri: "ui://comvenio/event-calendar" },
-          { uri: "ui://comvenio/news" },
-        ],
-      },
-    });
+    const listed = (await resources.json() as { result: { resources: Array<{ uri: string }> } }).result.resources
+      .map((resource) => resource.uri);
+    // The two widgets plus the public help articles (05-ki-zugang), nothing else.
+    expect(listed.filter((uri) => !uri.startsWith("comvenio://hilfe/"))).toEqual([
+      "ui://comvenio/event-calendar",
+      "ui://comvenio/news",
+    ]);
+    expect(listed).toContain("comvenio://hilfe/de/fehler/scope-required");
 
     const widget = await fetch(`${base}/mcp`, {
       method: "POST",

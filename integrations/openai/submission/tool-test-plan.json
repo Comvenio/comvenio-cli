@@ -1,11 +1,26 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "1d5ef755bdcdb4c80f6ed71c018c0df875fbdf5a7fe94606fead7c0ec4f41f06",
+  "catalog_source_hash_sha256": "0ccfa678e72c9ff708f078587d6b9ef59cf3e0ec0fb19f5818fcffaa4ec5c93e",
   "coverage": "every_published_tool",
   "cases": [
     {
       "tool_name": "action_confirm",
       "prompt": "Prüfe „Comvenio: Kritische Aktion bestätigen“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "comvenio_hilfe",
+      "prompt": "Prüfe „Comvenio: Hilfe und Fehlercodes“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

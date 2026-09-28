@@ -13,6 +13,7 @@
       "devDependencies": {
         "@comvenio/comvenio-client": "workspace:*",
         "@comvenio/connector-contracts": "workspace:*",
+        "@comvenio/kundendoku": "workspace:*",
         "@comvenio/tool-catalog": "workspace:*",
         "@types/bun": "^1.1.0",
         "openapi-typescript": "^7.13.0",
@@ -33,6 +34,7 @@
         "@comvenio/auth": "workspace:*",
         "@comvenio/comvenio-client": "workspace:*",
         "@comvenio/connector-contracts": "workspace:*",
+        "@comvenio/kundendoku": "workspace:*",
         "@comvenio/tool-catalog": "workspace:*",
         "@modelcontextprotocol/ext-apps": "1.7.4",
         "@modelcontextprotocol/sdk": "1.29.0",
@@ -78,6 +80,10 @@
         "zod": "^4.4.3",
       },
     },
+    "packages/kundendoku": {
+      "name": "@comvenio/kundendoku",
+      "version": "0.1.0",
+    },
     "packages/tool-catalog": {
       "name": "@comvenio/tool-catalog",
       "version": "0.1.0",
@@ -104,6 +110,8 @@
     "@comvenio/connector-contracts": ["@comvenio/connector-contracts@workspace:packages/connector-contracts"],
 
     "@comvenio/connector-release": ["@comvenio/connector-release@workspace:integrations/release"],
+
+    "@comvenio/kundendoku": ["@comvenio/kundendoku@workspace:packages/kundendoku"],
 
     "@comvenio/mcp-server": ["@comvenio/mcp-server@workspace:apps/mcp-server"],
 

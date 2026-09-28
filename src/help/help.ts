@@ -1,30 +1,23 @@
 // `comvenio help` (03-programm-hilfe): the customer documentation of docs/,
-// embedded at build time, readable offline in German and English.
-import index from "../../docs/index.json" with { type: "json" };
-import { ARTIKEL } from "./artikel.generated.ts";
-import { articleBody, renderArticle, wrap } from "./render.ts";
+// embedded at build time (@comvenio/kundendoku), readable offline in German and English.
+import {
+  article as docArticle,
+  errorCodeOf,
+  findError,
+  findTopic,
+  INDEX,
+  type DocArticle,
+  type DocLang,
+  type IndexEntry,
+  rawArticle,
+  search,
+} from "@comvenio/kundendoku";
 
-export type HelpLang = "de" | "en";
+import { renderArticle, wrap } from "./render.ts";
 
-export interface IndexEntry {
-  id: string;
-  kategorie: string;
-  title: Record<HelpLang, string>;
-  stichwoerter: Record<HelpLang, string[]>;
-  domaenen: string[];
-  pfad: Record<HelpLang, string>;
-}
-
-export const INDEX = (index as { artikel: IndexEntry[] }).artikel;
-
-/** `--json` of one article (DC-5). */
-export interface HelpArticle {
-  id: string;
-  title: string;
-  lang: HelpLang;
-  markdown: string;
-  related: string[];
-}
+export { INDEX, search };
+export type HelpLang = DocLang;
+export type HelpArticle = DocArticle;
 
 export interface HelpResult {
   /** Text for the terminal; `json` for --json. */
@@ -63,86 +56,24 @@ const LABELS = {
   },
 } as const;
 
-function errorSlug(code: string): string {
-  return code.toLowerCase().replaceAll("_", "-");
-}
 
-function codeOf(entry: IndexEntry): string {
-  return entry.id.replace(/^fehler\//u, "").replaceAll("-", "_").toUpperCase();
-}
 
-function raw(entry: IndexEntry, lang: HelpLang): string {
-  return ARTIKEL[entry.pfad[lang]] ?? ARTIKEL[entry.pfad.de] ?? "";
-}
 
-/** Topics sharing a domain, and the error codes an article mentions (or topics naming a code). */
-export function related(entry: IndexEntry): string[] {
-  const ids = new Set<string>();
-  if (entry.kategorie === "fehler") {
-    const code = codeOf(entry);
-    for (const other of INDEX) {
-      if (other.kategorie === "thema" && raw(other, "de").includes(`\`${code}\``)) ids.add(other.id);
-    }
-  } else {
-    for (const other of INDEX) {
-      if (other.id === entry.id) continue;
-      if (other.kategorie === "thema" && other.domaenen.some((domain) => entry.domaenen.includes(domain))) ids.add(other.id);
-      if (other.kategorie === "fehler" && raw(entry, "de").includes(`\`${codeOf(other)}\``)) ids.add(other.id);
-    }
-  }
-  return [...ids].sort();
-}
 
 function article(entry: IndexEntry, lang: HelpLang, width: number): HelpResult {
-  const markdown = articleBody(raw(entry, lang)).trim();
-  const links = related(entry);
-  const json: HelpArticle = { id: entry.id, title: entry.title[lang], lang, markdown, related: links };
+  const json = docArticle(entry, lang);
+  const links = json.related;
   const seeAlso = links.length > 0
     ? `\n\n${wrap(`${LABELS[lang].related}: ${links.map((id) => `comvenio help ${helpArgument(id)}`).join(", ")}`, Math.max(40, width)).join("\n")}`
     : "";
-  return { text: renderArticle(raw(entry, lang), width) + seeAlso, json, exitCode: 0 };
+  return { text: renderArticle(rawArticle(entry, lang), width) + seeAlso, json, exitCode: 0 };
 }
 
 function helpArgument(id: string): string {
   return id.startsWith("fehler/") ? `fehler ${id.slice("fehler/".length).replaceAll("-", "_").toUpperCase()}` : id;
 }
 
-function distance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, index) => index);
-  for (let i = 1; i <= a.length; i += 1) {
-    let previous = row[0]!;
-    row[0] = i;
-    for (let j = 1; j <= b.length; j += 1) {
-      const current = row[j]!;
-      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1));
-      previous = current;
-    }
-  }
-  return row[b.length]!;
-}
 
-/** Index hits for a text: id, title and keywords of both languages (DC-2). */
-export function search(text: string, lang: HelpLang): IndexEntry[] {
-  const words = text.toLowerCase().split(/\s+/u).filter(Boolean);
-  if (words.length === 0) return [];
-  const scored = INDEX.map((entry) => {
-    const haystack = [
-      entry.id,
-      entry.title.de, entry.title.en,
-      ...entry.stichwoerter.de, ...entry.stichwoerter.en,
-      ...entry.domaenen,
-    ].map((value) => value.toLowerCase());
-    let score = 0;
-    for (const word of words) {
-      if (haystack.some((value) => value === word)) score += 3;
-      else if (haystack.some((value) => value.includes(word))) score += 2;
-      else if (haystack.some((value) => value.split(/[\s/-]+/u).some((part) => part.length > 3 && distance(part, word) <= 2))) score += 1;
-    }
-    return { entry, score };
-  }).filter((hit) => hit.score > 0);
-  scored.sort((a, b) => b.score - a.score || a.entry.title[lang].localeCompare(b.entry.title[lang]));
-  return scored.map((hit) => hit.entry);
-}
 
 function listing(entries: IndexEntry[], lang: HelpLang, width: number): string[] {
   return entries.flatMap((entry) =>
@@ -192,11 +123,11 @@ export function help(topic: string | undefined, argument: string | undefined, la
   if (key === "fehler" || key === "errors") {
     const errors = INDEX.filter((entry) => entry.kategorie === "fehler");
     if (!argument) {
-      const text = errors.map((entry) => wrap(`${codeOf(entry)} — ${entry.title[lang].replace(/^[A-Z_]+ — /u, "")}`,
+      const text = errors.map((entry) => wrap(`${errorCodeOf(entry)} — ${entry.title[lang].replace(/^[A-Z_]+ — /u, "")}`,
         Math.max(40, width), "    ", "  ").join("\n")).join("\n");
-      return { text, json: errors.map((entry) => ({ code: codeOf(entry), title: entry.title[lang] })), exitCode: 0 };
+      return { text, json: errors.map((entry) => ({ code: errorCodeOf(entry), title: entry.title[lang] })), exitCode: 0 };
     }
-    const entry = errors.find((candidate) => candidate.id === `fehler/${errorSlug(argument)}`);
+    const entry = findError(argument);
     if (entry) return article(entry, lang, width);
     return notFound(LABELS[lang].unknownCode(argument), [], lang, width);
   }
@@ -212,9 +143,7 @@ export function help(topic: string | undefined, argument: string | undefined, la
     };
   }
 
-  // A topic by its id, or by a command it documents ("zone" → zonen).
-  const entry = INDEX.find((candidate) => candidate.id === key && candidate.kategorie !== "fehler")
-    ?? INDEX.find((candidate) => candidate.kategorie === "thema" && candidate.domaenen.includes(key));
+  const entry = findTopic(key);
   if (entry) return article(entry, lang, width);
   return notFound(LABELS[lang].unknownTopic(topic), search(topic, lang), lang, width);
 }

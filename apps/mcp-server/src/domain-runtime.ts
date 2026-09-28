@@ -25,6 +25,7 @@ import {
   confirmationMatchHash,
   type DomainStateStore,
 } from "./domain-state-store.ts";
+import { HELP_TOOL_HINT } from "./help-tool.ts";
 import { publicToolError } from "./public-tool-error.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
@@ -592,6 +593,7 @@ function actionCopy(definition: DomainDefinition, operationNames: string[]): {
       `${title}. Übergib die strikt typisierten Fachparameter unter „input“.`
       + " Der Verein wird aus OAuth abgeleitet; frage niemals nach club_id, Vereinsdomain oder einer manuellen Vereinsauswahl."
       + operations
+      + ` ${HELP_TOOL_HINT}`
     ).slice(0, 1_000),
   };
 }

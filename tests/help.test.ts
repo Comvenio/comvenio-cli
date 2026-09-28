@@ -7,7 +7,7 @@ import { PUBLIC_ERROR_CATALOG } from "@comvenio/connector-contracts";
 
 import { help, INDEX, type HelpArticle } from "../src/help/help.ts";
 import { renderArticle } from "../src/help/render.ts";
-import { ARTIKEL } from "../src/help/artikel.generated.ts";
+import { ARTIKEL } from "../packages/kundendoku/src/artikel.generated.ts";
 
 const repositoryRoot = resolve(import.meta.dir, "..");
 const buildDir = mkdtempSync(join(tmpdir(), "comvenio-help-"));

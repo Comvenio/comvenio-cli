@@ -49,6 +49,7 @@
   "devDependencies": {
     "@comvenio/comvenio-client": "workspace:*",
     "@comvenio/connector-contracts": "workspace:*",
+    "@comvenio/kundendoku": "workspace:*",
     "@comvenio/tool-catalog": "workspace:*",
     "@types/bun": "^1.1.0",
     "openapi-typescript": "^7.13.0",

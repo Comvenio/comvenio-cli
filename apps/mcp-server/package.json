@@ -15,6 +15,7 @@
     "@comvenio/auth": "workspace:*",
     "@comvenio/comvenio-client": "workspace:*",
     "@comvenio/connector-contracts": "workspace:*",
+    "@comvenio/kundendoku": "workspace:*",
     "@comvenio/tool-catalog": "workspace:*",
     "@modelcontextprotocol/ext-apps": "1.7.4",
     "@modelcontextprotocol/sdk": "1.29.0",
