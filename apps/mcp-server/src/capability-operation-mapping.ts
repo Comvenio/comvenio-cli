@@ -81,9 +81,14 @@ export function auditOperationMapping(input: {
           || decision.agent_policy_hash !== projection.fingerprint.policy_hash) fail("agent_contract_drift");
         // Use the actual cv_fn registration rule, not an audit-only scope map.
         if (!sameStrings(operation.required_scopes, [agentFunctionScope(projection.risk_level)])) fail("oauth_scope_mismatch");
-        const policy = operation.permission_policy as { all_of?: string[]; any_of?: string[]; owner_or_self_allowed?: boolean } | null;
-        if (!policy || !sameStrings(policy.all_of ?? [], projection.permission ? [projection.permission] : [])
-          || (policy.any_of?.length ?? 0) > 0 || policy.owner_or_self_allowed
+        const policy = operation.permission_policy as { all_of?: string[]; any_of?: string[]; owner_or_self_allowed?: boolean; department_scope?: string } | null;
+        // Visibility's owner/self flag only applies with empty all_of/any_of,
+        // which already pass both predicates. It does not bypass a named right.
+        // Non-optional department policies need a separate, explicit adapter
+        // proof; the agent export does not currently model that restriction.
+        if (!policy || !Array.isArray(policy.all_of) || !Array.isArray(policy.any_of)
+          || !sameStrings(policy.all_of, projection.permission ? [projection.permission] : [])
+          || policy.any_of.length > 0 || policy.department_scope !== "optional"
           || !["permission", "club_member"].includes(projection.actor_scope)) fail("actor_permission_mismatch");
         if ((operation.risk_class === "critical_write") !== projection.approval_required) fail("approval_mismatch");
       }

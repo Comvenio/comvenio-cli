@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { ToolVisibilityPolicy, type CapabilitySnapshot } from "../../../packages/auth/src/index.ts";
+import type { RequestContext } from "@comvenio/connector-contracts";
 import { fullDomainOperationContracts } from "../src/domain-runtime.ts";
 import { auditOperationMapping, type AgentContractProjection, type MappingDecision } from "../src/capability-operation-mapping.ts";
 
@@ -28,6 +30,33 @@ const audit = (overrides: Partial<Parameters<typeof auditOperationMapping>[0]> =
 describe("offline capability mapping gate", () => {
   test("accepts explicit parity without attesting a release", () => {
     expect(audit()).toMatchObject({ complete: true, mapped_count: 1, release_verified: false });
+  });
+  test("empty owner/self policy agrees with actual visibility without bypassing named rights", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    const context: RequestContext = {
+      request_id: id, subject_id: id, club_id: id, oauth_grant_id: id,
+      surface: "mcp", provider: "anthropic", department_id: null,
+      scopes: ["club.read"], capability_version: "A".repeat(43), locale: "de-DE", timezone: "Europe/Berlin",
+    };
+    const snapshot: CapabilitySnapshot = {
+      subject_id: id, member_id: id, club_id: id, department_ids: [], permissions: {}, sources: [],
+      capability_version: context.capability_version!, generated_at: "2026-01-01T00:00:00Z",
+      observed_at: "2026-01-01T00:00:00Z", expires_at: "2026-01-01T01:00:00Z",
+    };
+    const policy = { all_of: [] as string[], any_of: [] as string[], owner_or_self_allowed: true, department_scope: "optional" as const };
+    const visibility = new ToolVisibilityPolicy(() => new Date("2026-01-01T00:30:00Z"));
+    const evaluate = (all_of: string[]) => visibility.evaluate({
+      tool: { tool_name: "synthetic", is_public: false, required_scopes: ["club.read"], permission_policy: { ...policy, all_of } },
+      context, snapshot, catalog_contains_tool: true, provider_tool_updates: "dynamic",
+    });
+    expect(evaluate([]).authorized).toBe(true);
+    expect(evaluate(["manage_members"]).authorized).toBe(false);
+    expect(audit({ operations: [{ ...operation, permission_policy: policy }],
+      capabilities: [{ ...projection, permission: null, actor_scope: "club_member" }],
+    }).complete).toBe(true);
+    expect(audit({ operations: [{ ...operation, permission_policy: { ...policy, all_of: ["manage_members"] } }],
+      capabilities: [{ ...projection, permission: null, actor_scope: "club_member" }],
+    }).complete).toBe(false);
   });
   test("requires one decision for every actual operation", () => {
     expect(audit({ decisions: [] }).errors.some((s) => s.startsWith("unreviewed_operation:"))).toBe(true);
