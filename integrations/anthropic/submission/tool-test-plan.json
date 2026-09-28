@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "db047efdd37c97fca0942fb8d62155a4a754d81a76883fb438871222e3566c53",
+  "tool_sync_version": "341e31a254e8f418f775dd5e6df9985ce416dd46415aa1f22f5fa211b1414dc9",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -5137,6 +5137,36 @@
       "tool_name": "cv_teams_29_clarification_resolve",
       "happy_path_prompt": "Führe „Comvenio: teams – sync resolve“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: teams – sync resolve“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_teams_30_termin_list",
+      "happy_path_prompt": "Führe „Comvenio: teams – termin list“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: teams – termin list“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_teams_31_termin_create",
+      "happy_path_prompt": "Führe „Comvenio: teams – termin create“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: teams – termin create“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

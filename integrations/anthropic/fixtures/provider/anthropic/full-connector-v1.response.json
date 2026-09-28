@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "db047efdd37c97fca0942fb8d62155a4a754d81a76883fb438871222e3566c53",
+  "runtime_tool_catalog_sha256": "341e31a254e8f418f775dd5e6df9985ce416dd46415aa1f22f5fa211b1414dc9",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -6593,6 +6593,44 @@
     },
     {
       "tool_name": "cv_teams_29_clarification_resolve",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "admin.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_teams_30_termin_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_teams_31_termin_create",
       "risk_class": "critical_write",
       "required_scopes": [
         "admin.write"

@@ -85,6 +85,8 @@ export const K7_ACTION_IDS = [
   "cai.teams.27.sync_runs",
   "cai.teams.28.clarification_list",
   "cai.teams.29.clarification_resolve",
+  "cai.teams.30.termin_list",
+  "cai.teams.31.termin_create",
   "cai.role.01.list",
   "cai.role.02.show",
   "cai.role.03.create",
