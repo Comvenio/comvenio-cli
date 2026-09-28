@@ -134,6 +134,17 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     permission: policy(["manage_club_areas"]), risk: "critical_write",
     routes: [route("route.029", "DELETE", "club", "/departments/{department_id}")],
   }),
+  // The service checks department rights (manage_club_settings or manage_events); the draft
+  // then waits in the caller's agent DM for approval in web or app.
+  "cai.club.11.weekly_preview_create": definition({
+    action_id: "cai.club.11.weekly_preview_create", domain: "club", source_action: "weekly-preview-create", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "ai", "/club-agents/{club_id}/weekly-previews/create")],
+  }),
+  "cai.club.12.weekly_preview_list": definition({
+    action_id: "cai.club.12.weekly_preview_list", domain: "club", source_action: "weekly-preview-list", scopes: CLUB_READ,
+    routes: [route(null, "GET", "ai", "/club-agents/{club_id}/weekly-previews")],
+  }),
 
   "cai.member.01.list": definition({
     action_id: "cai.member.01.list", domain: "member", source_action: "list", scopes: MEMBER_BASIC,

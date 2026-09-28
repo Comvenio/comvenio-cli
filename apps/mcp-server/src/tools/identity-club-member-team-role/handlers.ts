@@ -161,6 +161,19 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
     await request(client, context, "DELETE", "club", `/departments/${id}`);
     return { deleted: true, id };
   },
+  async "cai.club.11.weekly_preview_create"(input, context, client) {
+    return request(client, context, "POST", "ai",
+      `/club-agents/${string(input, "club_id")}/weekly-previews/create`, {
+        body: without(record(input), ["club_id"]),
+      });
+  },
+  async "cai.club.12.weekly_preview_list"(input, context, client) {
+    const query: Record<string, string> = { plan_id: string(input, "plan_id") };
+    const limit = record(input).limit;
+    if (typeof limit === "number") query.limit = String(limit);
+    return request(client, context, "GET", "ai",
+      `/club-agents/${string(input, "club_id")}/weekly-previews`, { query });
+  },
 
   async "cai.member.01.list"(input, context, client) {
     const data = record(input);
