@@ -92,6 +92,15 @@ import {
   createK14ToolSet,
 } from "./tools/finance/index.ts";
 
+import { K7_ACTION_HANDLERS } from "./tools/identity-club-member-team-role/handlers.ts";
+import { hasK8OperationHandler } from "./tools/event-plan/handlers.ts";
+import { hasK9OperationHandler } from "./tools/meeting-tournament/handlers.ts";
+import { hasK10OperationHandler } from "./tools/booking-object-task/handlers.ts";
+import { hasK11OperationHandler } from "./tools/supply-menu-shopping/handlers.ts";
+import { hasK12OperationHandler } from "./tools/content-homepage-news-data/handlers.ts";
+import { hasK13OperationHandler } from "./tools/sponsor-marketing/handlers.ts";
+import { hasK14OperationHandler } from "./tools/finance/handlers.ts";
+
 type ActionRisk = "read" | "reversible_write" | "critical_write";
 
 interface DomainOperation {
@@ -100,12 +109,17 @@ interface DomainOperation {
   risk_class: ActionRisk;
   execution_gate: string;
   external_effect?: "none" | "comvenio_private" | "comvenio_public" | "third_party";
+  permission_policy?: unknown;
+  backend_routes?: readonly unknown[];
 }
 
 interface DomainDefinition {
   action_id: string;
   domain: string;
   source_action: string;
+  source_path?: string;
+  permission_policy?: unknown;
+  backend_routes?: readonly unknown[];
   publication_state: "implemented" | "blocked";
   blocker: string | null;
   required_scopes?: readonly OAuthScope[];
@@ -1009,16 +1023,25 @@ function schemaMap(
   return schemas as Readonly<Record<string, DomainSchemaContract>>;
 }
 
-const ALL_DEFINITION_MAPS = [
-  definitionMap(K7_ACTION_DEFINITIONS),
-  definitionMap(K8_ACTION_DEFINITIONS),
-  definitionMap(K9_ACTION_DEFINITIONS),
-  definitionMap(K10_ACTION_DEFINITIONS),
-  definitionMap(K11_ACTION_DEFINITIONS),
-  definitionMap(K12_ACTION_DEFINITIONS),
-  definitionMap(K13_ACTION_DEFINITIONS),
-  definitionMap(K14_ACTION_DEFINITIONS),
+const DOMAIN_CONTRACT_GROUPS = [
+  { family: "identity-club-member-team-role", definitions: definitionMap(K7_ACTION_DEFINITIONS), schemas: schemaMap(K7_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => Object.hasOwn(K7_ACTION_HANDLERS, id) },
+  { family: "event-plan", definitions: definitionMap(K8_ACTION_DEFINITIONS), schemas: schemaMap(K8_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK8OperationHandler(id as Parameters<typeof hasK8OperationHandler>[0], operation) },
+  { family: "meeting-tournament", definitions: definitionMap(K9_ACTION_DEFINITIONS), schemas: schemaMap(K9_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK9OperationHandler(id as Parameters<typeof hasK9OperationHandler>[0], operation) },
+  { family: "booking-object-task", definitions: definitionMap(K10_ACTION_DEFINITIONS), schemas: schemaMap(K10_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK10OperationHandler(id as Parameters<typeof hasK10OperationHandler>[0], operation) },
+  { family: "supply-menu-shopping", definitions: definitionMap(K11_ACTION_DEFINITIONS), schemas: schemaMap(K11_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK11OperationHandler(id as Parameters<typeof hasK11OperationHandler>[0], operation) },
+  { family: "content-homepage-news-data", definitions: definitionMap(K12_ACTION_DEFINITIONS), schemas: schemaMap(K12_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK12OperationHandler(id as Parameters<typeof hasK12OperationHandler>[0], operation) },
+  { family: "sponsor-marketing", definitions: definitionMap(K13_ACTION_DEFINITIONS), schemas: schemaMap(K13_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK13OperationHandler(id as Parameters<typeof hasK13OperationHandler>[0], operation) },
+  { family: "finance", definitions: definitionMap(K14_ACTION_DEFINITIONS), schemas: schemaMap(K14_ACTION_SCHEMAS),
+    hasHandler: (id: string, operation: string) => hasK14OperationHandler(id as Parameters<typeof hasK14OperationHandler>[0], operation) }
 ] as const;
+const ALL_DEFINITION_MAPS = DOMAIN_CONTRACT_GROUPS.map((group) => group.definitions);
 
 function highestRisk(operations: DomainOperation[]): ActionRisk {
   if (operations.some((operation) => operation.risk_class === "critical_write")) {
@@ -1052,6 +1075,100 @@ export function fullDomainReviewToolSummaries(): DomainToolSummary[] {
     });
   return [...summaries, structuredClone(ACTION_CONFIRM_TOOL_SUMMARY)]
     .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export interface DomainOperationContract {
+  action_id: string;
+  operation: string;
+  source_action: string;
+  source_path: string | null;
+  handler: string;
+  handler_present: boolean;
+  dispatch_kind: "direct_handler" | "job_port" | "missing";
+  dispatch_source: string;
+  publication_state: string;
+  blocker: string | null;
+  required_scopes: readonly OAuthScope[];
+  permission_policy: unknown;
+  execution_gate: string;
+  risk_class: ActionRisk;
+  external_effect: string;
+  backend_routes: readonly unknown[];
+  input_schema: unknown;
+  output_schema: unknown;
+  input_schema_hash: string | null;
+  output_schema_hash: string | null;
+  schema_error: string | null;
+}
+
+function canonicalContractValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalContractValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, item]) => [key, canonicalContractValue(item)]));
+  }
+  return value;
+}
+
+function contractHash(value: unknown): string {
+  return createHash("sha256").update(JSON.stringify(canonicalContractValue(value))).digest("hex");
+}
+
+/** Offline inventory from the same definitions and handlers used by registration.
+ * Does not grant access, register tools or call services. A schema conversion
+ * failure remains explicit rather than hashing an invented permissive schema.
+ */
+export function fullDomainOperationContracts(): DomainOperationContract[] {
+  const rows: DomainOperationContract[] = [];
+  for (const group of DOMAIN_CONTRACT_GROUPS) {
+    for (const definition of Object.values(group.definitions)) {
+      const schema = group.schemas[definition.action_id];
+      let inputSchema: unknown = null;
+      let outputSchema: unknown = null;
+      let schemaError: string | null = null;
+      try {
+        if (!schema) throw new Error("missing_schema");
+        inputSchema = z.toJSONSchema(schema.input);
+        outputSchema = z.toJSONSchema(schema.output);
+      } catch {
+        schemaError = "schema_not_representable";
+      }
+      for (const operation of definitionOperations(definition)) {
+        const hasHandler = group.hasHandler(definition.action_id, operation.operation);
+        const usesJobPort = ["job", "confirmed_job"].includes(operation.execution_gate);
+        const handler = `apps/mcp-server/src/tools/${group.family}/handlers.ts#${definition.action_id}/${operation.operation}`;
+        rows.push({
+          action_id: definition.action_id,
+          operation: operation.operation,
+          source_action: definition.source_action,
+          source_path: definition.source_path ?? null,
+          handler,
+          handler_present: hasHandler,
+          // A declared job port is not evidence of an injected worker.
+          dispatch_kind: usesJobPort ? "job_port" : hasHandler ? "direct_handler" : "missing",
+          dispatch_source: usesJobPort
+            ? `apps/mcp-server/src/tools/${group.family}/${group.family === "sponsor-marketing" ? "tool-set" : "tool-sets"}.ts#job_starter.start`
+            : handler,
+          publication_state: definition.publication_state,
+          blocker: definition.blocker,
+          required_scopes: [...operation.required_scopes],
+          permission_policy: structuredClone(operation.permission_policy ?? definition.permission_policy ?? null),
+          execution_gate: operation.execution_gate,
+          risk_class: operation.risk_class,
+          external_effect: operation.external_effect ?? "none",
+          backend_routes: structuredClone(operation.backend_routes ?? definition.backend_routes ?? []),
+          input_schema: structuredClone(inputSchema),
+          output_schema: structuredClone(outputSchema),
+          // Hash the operation discriminator together with the complete action
+          // schema: unions are preserved, never approximated by a branch guess.
+          input_schema_hash: inputSchema === null ? null : contractHash({ operation: operation.operation, schema: inputSchema }),
+          output_schema_hash: outputSchema === null ? null : contractHash({ operation: operation.operation, schema: outputSchema }),
+          schema_error: schemaError,
+        });
+      }
+    }
+  }
+  return rows.sort((a, b) => `${a.action_id}/${a.operation}`.localeCompare(`${b.action_id}/${b.operation}`));
 }
 
 export function fullDomainCatalogSummary(): {
