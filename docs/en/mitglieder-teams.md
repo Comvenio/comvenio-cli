@@ -221,6 +221,13 @@ changes data is critical and goes through a preview and `comvenio action confirm
    `cai.teams.06.season_list` (status `AKTIV`); its `id` is the `team_season_id`.
 
 ```bash
+comvenio action call cai.teams.06.season_list --input '{"team_id":"<team-id>"}' --json
+
+comvenio action call cai.teams.12.roster_add \
+  --input '{"team_season_id":"<season-id>","member_id":"<member-id>","role":"CAPTAIN","jersey_number":7}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+
 comvenio action call cai.teams.07.season_create \
   --input '{"team_id":"<team-id>","season":{"name":"Season 2026/27","starts_on":"2026-08-01","ends_on":"2027-06-30"}}' --json
 comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
