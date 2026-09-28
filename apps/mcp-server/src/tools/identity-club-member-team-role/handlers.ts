@@ -491,7 +491,7 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
   },
   async "cai.teams.30.termin_list"(input, context, client) {
     return request(client, context, "GET", "event",
-      `/team-seasons/${string(input, "team_season_id")}/events`);
+      `/team-seasons/${string(input, "team_season_id")}/events?limit=500`);
   },
   async "cai.teams.31.termin_create"(input, context, client) {
     return request(client, context, "POST", "event",

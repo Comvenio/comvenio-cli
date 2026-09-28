@@ -37,3 +37,17 @@ describe("Mannschaftstermine over OAuth (cai.teams.30/31)", () => {
     expect(rows.map((r) => r.kind)).toEqual(["BYE", "MATCH"]);
   });
 });
+
+
+test("termin list uses the same explicit 500-row window as the agent", async () => {
+  const { K7_ACTION_HANDLERS } = await import("../src/tools/identity-club-member-team-role/handlers.ts");
+  const handler = K7_ACTION_HANDLERS["cai.teams.30.termin_list"];
+  if (!handler) throw new Error("Missing termin list handler");
+  type Args = Parameters<typeof handler>;
+  const context = { club_id: clubId } as unknown as Args[1];
+  const calls: unknown[] = [];
+  const client = { request: async (request: unknown) => { calls.push(request); return []; } } as unknown as Args[2];
+  const input = K7_ACTION_SCHEMAS["cai.teams.30.termin_list"].input.parse({ club_id: clubId, team_season_id: seasonId });
+  await handler(input as Args[0], context, client);
+  expect(calls).toEqual([{ method: "GET", service: "event", path: `/team-seasons/${seasonId}/events?limit=500`, context }]);
+});
