@@ -176,7 +176,9 @@ const RISK_LABEL: Record<string, Record<Lang, string>> = {
 
 /** The topic an action belongs to; the weekly preview actions sit in the club domain. */
 export function actionTopic(action: InventoryAction): string {
-  return action.action_id.includes("weekly_preview") ? "weekly-preview" : action.domain;
+  if (action.action_id.includes("weekly_preview")) return "weekly-preview";
+  // Seasonal teams extend the team master data and are documented with it.
+  return action.domain === "teams" ? "team" : action.domain;
 }
 
 /** The generated block of "Befehle und Actions": the connector actions of the article's domains. */
@@ -369,6 +371,13 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
       if (!commands.has(head)) {
         findings.push({ file: "src/coverage/domains.json", reason: `Befehl nicht registriert: comvenio ${head} (${domain.id})` });
       }
+    }
+  }
+  // Every connector action must show up in some article's generated block.
+  const claimed = new Set(topics.flatMap((article) => article.frontmatter!.domaenen));
+  for (const topic of new Set(inventory.map(actionTopic))) {
+    if (!claimed.has(topic)) {
+      findings.push({ file: "scripts/docs-lib.ts", reason: `Actions ohne Artikel: ${topic}` });
     }
   }
   const byId = new Map(registry.map((domain) => [domain.id, domain]));

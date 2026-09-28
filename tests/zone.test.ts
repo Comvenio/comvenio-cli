@@ -122,11 +122,14 @@ describe("zone schema and docs", () => {
   const docs = readFileSync(join(root, "docs", "zonen.md"), "utf8");
   const reference = readFileSync(join(root, "docs", "cli-reference.md"), "utf8");
 
-  test("TC-09 every command is documented, and every schema option is a real option", () => {
+  // Customer docs describe only the sign-in and actions (Tom 2026-09-28); the
+  // classic zone commands need a device token, so the article must not name them.
+  test("TC-09 the article names no classic zone command, and every schema option is a real option", () => {
     const commands: string[] = Object.values(schema.commands as Record<string, string[]>).flat();
+    expect(commands.length).toBeGreaterThan(0);
     for (const c of commands) {
       const head = c.split(" <")[0]!.split(" [")[0]!.split(" --")[0]!;
-      expect(docs).toContain(`comvenio ${head}`);
+      expect(docs).not.toContain(`comvenio ${head}`);
     }
     for (const option of schema.options as string[]) expect(source).toContain(`.option("${option}`);
     expect(reference).toContain("[`zonen.md`](zonen.md)");

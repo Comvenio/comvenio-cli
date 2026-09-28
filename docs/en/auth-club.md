@@ -208,6 +208,34 @@ comvenio action call cai.club.08.department_add \
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**login**
+
+- No action yet — this area works through the web app.
+
+**logout**
+
+- No action yet — this area works through the web app.
+
+**whoami**
+
+- `cai.whoami.01.whoami` — whoami (read)
+
+**action**
+
+- No action yet — this area works through the web app.
+
+**club**
+
+- `cai.club.02.update` — update (change)
+- `cai.club.03.settings` — settings (read)
+- `cai.club.04.settings_update` — settings-update (change)
+- `cai.club.05.design` — design (change)
+- `cai.club.06.department_list` — department-list (read)
+- `cai.club.07.department_show` — department-show (read)
+- `cai.club.08.department_add` — department-add (change)
+- `cai.club.09.department_update` — department-update (change)
+- `cai.club.10.department_delete` — department-delete (change with confirmation)
 <!-- /gen:docs -->
 
 ## Errors

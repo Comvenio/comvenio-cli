@@ -153,6 +153,24 @@ Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Not
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**task**
+
+- `cai.task.01.list` — list, mine (lesen)
+- `cai.task.02.show` — show (lesen)
+- `cai.task.03.show_subtasks` — show (lesen)
+- `cai.task.04.show_chain` — show (lesen)
+- `cai.task.05.create` — create (ändern)
+- `cai.task.06.bulk` — create (ändern mit Bestätigung)
+- `cai.task.07.update` — update (ändern)
+- `cai.task.08.assign` — assign (ändern)
+- `cai.task.09.done` — complete (ändern)
+- `cai.task.10.delete` — delete (ändern mit Bestätigung)
+- `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema task --json`
 <!-- /gen:docs -->
 
 ## Fehler

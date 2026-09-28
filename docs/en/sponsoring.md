@@ -144,7 +144,7 @@ comvenio action call cai.sponsor.18.cancel --input '{"assignment_id":"<assignmen
 comvenio action call cai.sponsor.20.doc_upload --input '{
   "assignment_id": "<assignment-id>",
   "asset": {
-    "source_file_id": "<staged-file-id>",
+    "source_file_id": "<file-id>",
     "filename": "unterschrieben.pdf",
     "content_type": "application/pdf",
     "expected_size": 512000
@@ -172,6 +172,34 @@ comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**sponsor**
+
+- `cai.sponsor.01.list` — list (read)
+- `cai.sponsor.02.show` — show (read)
+- `cai.sponsor.03.add` — add (change)
+- `cai.sponsor.04.update` — update, move_department (change with confirmation)
+- `cai.sponsor.05.delete` — delete (change with confirmation)
+- `cai.sponsor.06.logo` — set (change with confirmation)
+- `cai.sponsor.07.product_list` — list (read)
+- `cai.sponsor.08.product_add` — add (change)
+- `cai.sponsor.09.product_update` — update, move_department (change, change with confirmation)
+- `cai.sponsor.10.product_delete` — delete (change with confirmation)
+- `cai.sponsor.11.contract_list` — list (read)
+- `cai.sponsor.12.contract_add` — add (change)
+- `cai.sponsor.13.contract_update` — update, replace_file (change)
+- `cai.sponsor.14.contract_delete` — delete (change with confirmation)
+- `cai.sponsor.15.assignment_list` — list (read)
+- `cai.sponsor.16.assign` — assign (change with confirmation)
+- `cai.sponsor.17.assignment_update` — update (change with confirmation)
+- `cai.sponsor.18.cancel` — cancel (change with confirmation)
+- `cai.sponsor.19.doc_list` — list (read)
+- `cai.sponsor.20.doc_upload` — upload (change)
+- `cai.sponsor.21.responsible_list` — list (read)
+- `cai.sponsor.22.responsible_add` — add (change)
+- `cai.sponsor.23.responsible_update` — update (change)
+- `cai.sponsor.24.responsible_remove` — remove (change with confirmation)
+- Fields and values: `comvenio schema sponsor --json`
 <!-- /gen:docs -->
 
 ## Errors

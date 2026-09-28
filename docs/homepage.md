@@ -453,6 +453,14 @@ erledigen.
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**homepage**
+
+- `cai.homepage.01.preview` — preview (lesen)
+- `cai.homepage.02.apply` — apply (ändern mit Bestätigung)
+- `cai.homepage.03.show` — private, public (lesen)
+- `cai.homepage.04.screenshot` — screenshot (lesen)
+- Felder und Werte: `comvenio schema homepage --json`
 <!-- /gen:docs -->
 
 ## Fehler

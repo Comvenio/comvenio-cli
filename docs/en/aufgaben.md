@@ -153,6 +153,24 @@ Deleting or reordering checklist calls, deleting a context, note or assignment, 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**task**
+
+- `cai.task.01.list` — list, mine (read)
+- `cai.task.02.show` — show (read)
+- `cai.task.03.show_subtasks` — show (read)
+- `cai.task.04.show_chain` — show (read)
+- `cai.task.05.create` — create (change)
+- `cai.task.06.bulk` — create (change with confirmation)
+- `cai.task.07.update` — update (change)
+- `cai.task.08.assign` — assign (change)
+- `cai.task.09.done` — complete (change)
+- `cai.task.10.delete` — delete (change with confirmation)
+- `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation)
+- `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (read, change, change with confirmation)
+- `cai.task.13.note_list_add_update_delete` — list, add, update, delete (read, change, change with confirmation)
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (read, change, change with confirmation)
+- Fields and values: `comvenio schema task --json`
 <!-- /gen:docs -->
 
 ## Errors

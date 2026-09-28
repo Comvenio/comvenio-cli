@@ -67,6 +67,10 @@ tasks, events, members).
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**agent**
+
+- No action yet — this area works through the web app.
 <!-- /gen:docs -->
 
 ## Errors

@@ -181,6 +181,40 @@ comvenio action call cai.verify.01.url \
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**schema**
+
+- `cai.schema.01.list_domains` — list (lesen)
+- `cai.schema.02.show_domain_schema` — show (lesen)
+
+**help**
+
+- Noch keine Action — dieser Bereich läuft über die Web-App.
+
+**verify**
+
+- `cai.verify.01.url` — verify (lesen)
+- `cai.verify.02.event` — verify (lesen)
+- `cai.verify.03.menu` — verify (lesen)
+- `cai.verify.04.homepage` — live, preview (lesen)
+- `cai.verify.05.news` — verify (lesen)
+- `cai.verify.06.certificate` — verify (lesen)
+
+**plan**
+
+- `cai.plan.01.list` — list (lesen)
+- `cai.plan.02.show` — show (lesen)
+- `cai.plan.03.create` — create (ändern)
+- `cai.plan.04.update` — update (ändern)
+- `cai.plan.05.delete` — delete (ändern mit Bestätigung)
+- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.08.marker_create_update_delete` — create, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.10.detail` — create (ändern)
+- `cai.plan.11.export` — export (ändern mit Bestätigung)
+- `cai.plan.12.illustrate` — illustrate (ändern mit Bestätigung)
+- `cai.plan.13.compose` — compose (ändern mit Bestätigung)
 <!-- /gen:docs -->
 
 ## Fehler

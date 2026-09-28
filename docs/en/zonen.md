@@ -42,6 +42,11 @@ exclusively in the web app's territory editor.
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**zone**
+
+- No action yet — this area works through the web app.
+- Fields and values: `comvenio schema zone --json`
 <!-- /gen:docs -->
 
 ## Errors

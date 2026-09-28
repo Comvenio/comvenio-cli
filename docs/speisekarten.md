@@ -217,6 +217,85 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**recipe**
+
+- `cai.recipe.01.create` — create (ändern mit Bestätigung)
+- `cai.recipe.02.from_template` — create (ändern mit Bestätigung)
+- `cai.recipe.03.list` — list (lesen)
+- `cai.recipe.04.show` — show (lesen)
+- `cai.recipe.05.update` — update (ändern)
+- `cai.recipe.06.delete` — delete (ändern mit Bestätigung)
+
+**ingredient**
+
+- `cai.ingredient.01.list` — list (lesen)
+- `cai.ingredient.02.show` — show (lesen)
+- `cai.ingredient.03.create` — create (ändern)
+- `cai.ingredient.04.update` — update (ändern)
+- `cai.ingredient.05.delete` — delete (ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema ingredient --json`
+
+**ingredient-category**
+
+- `cai.ingredient-category.01.list` — list (lesen)
+- `cai.ingredient-category.02.roots` — roots (lesen)
+- `cai.ingredient-category.03.tree` — tree (lesen)
+- `cai.ingredient-category.04.by_ingredient` — list (lesen)
+- `cai.ingredient-category.05.show` — show (lesen)
+- `cai.ingredient-category.06.create` — create (ändern)
+- `cai.ingredient-category.07.update` — update (ändern)
+- `cai.ingredient-category.08.delete` — delete (ändern mit Bestätigung)
+- `cai.ingredient-category.09.assign` — assign (ändern)
+- `cai.ingredient-category.10.unassign` — unassign (ändern mit Bestätigung)
+- `cai.ingredient-category.11.init` — initialize (ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema ingredient-category --json`
+
+**shopping**
+
+- `cai.shopping.01.list` — list (lesen)
+- `cai.shopping.02.active` — list (lesen)
+- `cai.shopping.03.completed` — list (lesen)
+- `cai.shopping.04.by_context` — list (lesen)
+- `cai.shopping.05.by_context_type` — list (lesen)
+- `cai.shopping.06.show` — show, export (lesen, ändern)
+- `cai.shopping.07.create` — create (ändern)
+- `cai.shopping.08.update` — update (ändern)
+- `cai.shopping.09.delete` — delete (ändern mit Bestätigung)
+- `cai.shopping.10.item_add` — add (ändern)
+- `cai.shopping.11.item_update` — update (ändern)
+- `cai.shopping.12.item_delete` — delete (ändern mit Bestätigung)
+- `cai.shopping.13.purchased` — set (ändern)
+- `cai.shopping.14.generate_from_recipe` — generate (ändern)
+- `cai.shopping.15.generate_from_menu` — generate (ändern)
+- `cai.shopping.procurement.activate` — activate (ändern)
+- `cai.shopping.procurement.add` — add (ändern)
+- `cai.shopping.procurement.list` — list (lesen)
+- `cai.shopping.procurement.purchase` — purchase (ändern mit Bestätigung)
+- `cai.shopping.procurement.template_create` — create (ändern)
+- `cai.shopping.procurement.template_deactivate` — deactivate (ändern)
+- `cai.shopping.procurement.template_update` — update (ändern)
+- `cai.shopping.procurement.templates` — list (lesen)
+- Felder und Werte: `comvenio schema shopping --json`
+
+**template**
+
+- `cai.template.01.dish` — list, show (lesen)
+- `cai.template.02.ingredient` — list, show (lesen)
+
+**menu**
+
+- `cai.menu.01.create` — create (ändern)
+- `cai.menu.02.list` — list (lesen)
+- `cai.menu.03.show` — show (lesen)
+- `cai.menu.04.add_item` — add (ändern)
+- `cai.menu.05.update_item` — update (ändern)
+- `cai.menu.06.delete_item` — delete (ändern mit Bestätigung)
+- `cai.menu.07.delete` — delete (ändern mit Bestätigung)
+- `cai.menu.08.style` — style (ändern)
+- `cai.menu.09.apply` — apply (ändern mit Bestätigung)
+- `cai.menu.10.export` — export (ändern)
+- Felder und Werte: `comvenio schema menu --json`
 <!-- /gen:docs -->
 
 ## Fehler

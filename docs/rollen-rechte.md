@@ -119,6 +119,24 @@ comvenio action call cai.role.13.position_unlink --input '{"assignment_id":"<ass
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**role**
+
+- `cai.role.01.list` — list (lesen)
+- `cai.role.02.show` — show (lesen)
+- `cai.role.03.create` — create (ändern)
+- `cai.role.04.update` — update (ändern)
+- `cai.role.05.delete` — delete (ändern mit Bestätigung)
+- `cai.role.06.permission_defs` — permission-defs (lesen)
+- `cai.role.07.permission_set` — permission set (ändern)
+- `cai.role.08.permissions_show_apply` — permissions show|apply (ändern mit Bestätigung)
+- `cai.role.09.assign` — assign (ändern)
+- `cai.role.10.unassign` — unassign (ändern mit Bestätigung)
+- `cai.role.11.assignments` — assignments (lesen)
+- `cai.role.12.position_link` — position-link (ändern)
+- `cai.role.13.position_unlink` — position-unlink (ändern mit Bestätigung)
+- `cai.role.14.position_list` — position-list (lesen)
+- Felder und Werte: `comvenio schema role --json`
 <!-- /gen:docs -->
 
 ## Fehler

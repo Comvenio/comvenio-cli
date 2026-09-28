@@ -437,6 +437,14 @@ app.
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**homepage**
+
+- `cai.homepage.01.preview` — preview (read)
+- `cai.homepage.02.apply` — apply (change with confirmation)
+- `cai.homepage.03.show` — private, public (read)
+- `cai.homepage.04.screenshot` — screenshot (read)
+- Fields and values: `comvenio schema homepage --json`
 <!-- /gen:docs -->
 
 ## Errors

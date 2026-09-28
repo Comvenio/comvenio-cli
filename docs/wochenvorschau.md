@@ -63,6 +63,11 @@ comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**weekly-preview**
+
+- `cai.club.11.weekly_preview_create` — weekly-preview-create (ändern mit Bestätigung)
+- `cai.club.12.weekly_preview_list` — weekly-preview-list (lesen)
 <!-- /gen:docs -->
 
 ## Fehler

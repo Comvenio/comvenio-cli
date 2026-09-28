@@ -9,10 +9,10 @@ stichwoerter: [mitglieder, teams, mannschaften, kader, familien, mitgliedsstatus
 
 ## Wozu
 
-Über die Actions der Domänen `member` und `team` verwaltet ein Verein seine Mitglieder, Familien,
+Über die Actions der Domänen `member`, `team` und `teams` verwaltet ein Verein seine Mitglieder, Familien,
 Mitgliedsstatus und Mitgliedschaftszeiträume sowie die dauerhaften Team-Stammdaten samt Kader und
-Ressourcen-Prioritäten. Die saisonale Mannschaftsverwaltung — Saisons, Saison-Kader, Wettbewerbe,
-iCal-Synchronisation und Mannschaftstermine — ist noch nicht als Action verfügbar.
+Ressourcen-Prioritäten, dazu die saisonale Mannschaftsverwaltung — Saisons, Saison-Kader, Wettbewerbe,
+iCal-Synchronisation und Mannschaftstermine.
 
 ## Voraussetzungen und Rechte
 
@@ -189,10 +189,47 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 Die saisonale Mannschaftsverwaltung ergänzt die dauerhaften Team-Stammdaten um Saisons mit Lebenszyklus
 Entwurf → Aktiv → Abgeschlossen, Saison-Kader, Wettbewerbe, iCal-Abonnements,
-Spielplan-Synchronisation und Mannschaftstermine — sie ersetzt die Stammdaten nicht. Dieser Bereich ist
-noch nicht als Action verfügbar — die Verwaltung erfolgt in der Web-App. Der maschinenlesbare Vertrag
-ist unabhängig davon per `comvenio schema team --json` abrufbar, sobald die Domäne im zentralen
-Schema-Index freigeschaltet ist.
+Spielplan-Synchronisation und Mannschaftstermine — sie ersetzt die Stammdaten nicht. Lesen ist ohne
+Bestätigung möglich; alles, was ändert, ist kritisch und läuft über Vorschau und
+`comvenio action confirm`.
+
+1. Mannschaften auflisten (`cai.teams.01.list`, optional mit `department_id`), eine ansehen
+   (`cai.teams.02.show`), anlegen (`cai.teams.03.create` mit `department_id`, `name`, `sport_type`),
+   ändern (`cai.teams.04.update`, nur geänderte Felder unter `changes`) oder archivieren
+   (`cai.teams.05.archive`).
+2. Saisons einer Mannschaft auflisten (`cai.teams.06.season_list`), anlegen (`cai.teams.07.season_create`
+   mit `name`, optional `starts_on`, `ends_on`, `default_visibility` `PUBLIC` oder `MEMBERS`), korrigieren
+   (`cai.teams.08.season_correct`), aktivieren (`cai.teams.09.season_activate`) und abschließen
+   (`cai.teams.10.season_complete`).
+3. Saison-Kader pflegen: auflisten (`cai.teams.11.roster_list`), Mitglied aufnehmen
+   (`cai.teams.12.roster_add` mit `member_id`, optional `role` `PLAYER`, `CAPTAIN`, `COACH`,
+   `ASSISTANT_COACH`, `MANAGER`, `jersey_number`, `position`), ändern (`cai.teams.13.roster_update`),
+   entfernen (`cai.teams.14.roster_remove`). Kader aus einer Vorsaison übernehmen: erst
+   `cai.teams.15.roster_carry_over_preview` mit `source_season_id` ansehen, dann
+   `cai.teams.16.roster_carry_over` mit den gewählten `member_ids`.
+4. Wettbewerbe der Saison: auflisten (`cai.teams.17.competition_list`), anlegen
+   (`cai.teams.18.competition_create`, `type` `LEAGUE`, `CUP`, `FRIENDLY`, `TOURNAMENT`, `OTHER`),
+   ändern (`cai.teams.19.competition_update`), löschen (`cai.teams.20.competition_delete`).
+5. Spielplan per iCal abonnieren: Abonnements auflisten (`cai.teams.21.ical_list`), mit `url` anlegen
+   (`cai.teams.22.ical_create`), Vorschau erzeugen (`cai.teams.23.ical_preview`) und mit deren
+   `preview_token` aktivieren (`cai.teams.24.ical_activate`); abschalten mit `cai.teams.25.ical_deactivate`.
+6. Synchronisation sofort anstoßen (`cai.teams.26.sync_now`), Läufe ansehen (`cai.teams.27.sync_runs`
+   mit `limit`, `offset`), offene Klärungen auflisten (`cai.teams.28.clarification_list`) und entscheiden
+   (`cai.teams.29.clarification_resolve` mit `resolution`, etwa
+   `{"type":"POSSIBLE_DUPLICATE","action":"KEEP_EXISTING"}`).
+7. Mannschaftstermine auflisten (`cai.teams.30.termin_list`) und anlegen (`cai.teams.31.termin_create`,
+   `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, dazu `start_time`; ein Spiel braucht `opponent`;
+   Wiederholung über `repeat` mit Wochentagen).
+
+```bash
+comvenio action call cai.teams.07.season_create \
+  --input '{"team_id":"<team-id>","season":{"name":"Saison 2026/27","starts_on":"2026-08-01","ends_on":"2027-06-30"}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.teams.31.termin_create \
+  --input '{"team_season_id":"<saison-id>","termin":{"kind":"MATCH","opponent":"SV Beispiel","home_state":"HOME","start_time":"2026-09-12T15:00:00Z"}}' --json
+```
 
 ## Beispiele
 
@@ -247,6 +284,73 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**member**
+
+- `cai.member.01.list` — list (lesen)
+- `cai.member.02.show` — show (lesen)
+- `cai.member.03.add` — add (ändern)
+- `cai.member.04.update` — update (ändern)
+- `cai.member.05.remove` — remove (ändern mit Bestätigung)
+- `cai.member.06.import` — import (ändern mit Bestätigung)
+- `cai.member.07.family_list` — family-list (lesen)
+- `cai.member.08.family_show` — family-show (lesen)
+- `cai.member.09.family_add` — family-add (ändern)
+- `cai.member.10.family_update` — family-update (ändern)
+- `cai.member.11.family_delete` — family-delete (ändern mit Bestätigung)
+- `cai.member.12.status_list` — status-list (lesen)
+- `cai.member.13.status_show` — status-show (lesen)
+- `cai.member.14.status_add` — status-add (ändern)
+- `cai.member.15.status_update` — status-update (ändern)
+- `cai.member.16.status_delete` — status-delete (ändern mit Bestätigung)
+- `cai.member.17.period_list` — period-list (lesen)
+- `cai.member.18.period_show` — period-show (lesen)
+- `cai.member.19.period_add` — period-add (ändern)
+- `cai.member.20.period_update` — period-update (ändern)
+- `cai.member.21.period_delete` — period-delete (ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema member --json`
+
+**team**
+
+- `cai.team.01.list` — list (lesen)
+- `cai.team.02.show` — show (lesen)
+- `cai.team.03.create` — create (ändern)
+- `cai.team.04.update` — update (ändern)
+- `cai.team.05.delete` — delete (ändern mit Bestätigung)
+- `cai.team.06.member_list_add_update_remove` — member list|add|update|remove (ändern mit Bestätigung)
+- `cai.team.07.resource_list_add_update_remove` — resource list|add|update|remove (ändern mit Bestätigung)
+- `cai.teams.01.list` — list (lesen)
+- `cai.teams.02.show` — show (lesen)
+- `cai.teams.03.create` — create (ändern mit Bestätigung)
+- `cai.teams.04.update` — update (ändern mit Bestätigung)
+- `cai.teams.05.archive` — archive (ändern mit Bestätigung)
+- `cai.teams.06.season_list` — season list (lesen)
+- `cai.teams.07.season_create` — season create (ändern mit Bestätigung)
+- `cai.teams.08.season_correct` — season update (ändern mit Bestätigung)
+- `cai.teams.09.season_activate` — season activate (ändern mit Bestätigung)
+- `cai.teams.10.season_complete` — season complete (ändern mit Bestätigung)
+- `cai.teams.11.roster_list` — roster show (lesen)
+- `cai.teams.12.roster_add` — roster add (ändern mit Bestätigung)
+- `cai.teams.13.roster_update` — roster update (ändern mit Bestätigung)
+- `cai.teams.14.roster_remove` — roster remove (ändern mit Bestätigung)
+- `cai.teams.15.roster_carry_over_preview` — roster carry-over --preview (lesen)
+- `cai.teams.16.roster_carry_over` — roster carry-over (ändern mit Bestätigung)
+- `cai.teams.17.competition_list` — competition list (lesen)
+- `cai.teams.18.competition_create` — competition create (ändern mit Bestätigung)
+- `cai.teams.19.competition_update` — competition update (ändern mit Bestätigung)
+- `cai.teams.20.competition_delete` — competition delete (ändern mit Bestätigung)
+- `cai.teams.21.ical_list` — ical list (lesen)
+- `cai.teams.22.ical_create` — ical create (ändern mit Bestätigung)
+- `cai.teams.23.ical_preview` — ical preview (ändern)
+- `cai.teams.24.ical_activate` — ical activate (ändern mit Bestätigung)
+- `cai.teams.25.ical_deactivate` — ical deactivate (ändern mit Bestätigung)
+- `cai.teams.26.sync_now` — sync now (ändern mit Bestätigung)
+- `cai.teams.27.sync_runs` — sync runs (lesen)
+- `cai.teams.28.clarification_list` — sync clarifications (lesen)
+- `cai.teams.29.clarification_resolve` — sync resolve (ändern mit Bestätigung)
+- `cai.teams.30.termin_list` — termin list (lesen)
+- `cai.teams.31.termin_create` — termin create (ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema team --json`
 <!-- /gen:docs -->
 
 ## Fehler

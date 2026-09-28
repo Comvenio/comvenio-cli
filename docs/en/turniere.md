@@ -308,6 +308,41 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**tournament**
+
+- `cai.tournament.01.series_list` — list (read)
+- `cai.tournament.02.series_show` — show (read)
+- `cai.tournament.03.series_create` — create (change)
+- `cai.tournament.04.series_update` — update (change)
+- `cai.tournament.05.series_delete` — delete (change with confirmation)
+- `cai.tournament.06.execution_create` — create (change)
+- `cai.tournament.07.execution_link` — link (change)
+- `cai.tournament.08.list` — list (read)
+- `cai.tournament.09.show` — show (read)
+- `cai.tournament.10.update` — update (change)
+- `cai.tournament.11.delete` — delete (change with confirmation)
+- `cai.tournament.12.status` — set (change with confirmation)
+- `cai.tournament.13.participants` — list (read)
+- `cai.tournament.14.mannschaft` — create (change)
+- `cai.tournament.15.participant` — create (change)
+- `cai.tournament.16.participant_withdraw` — withdraw (change with confirmation)
+- `cai.tournament.17.participant_reinstate` — reinstate (change)
+- `cai.tournament.18.participant_remove` — remove (change with confirmation)
+- `cai.tournament.19.start` — start (change with confirmation)
+- `cai.tournament.20.matches` — list (change)
+- `cai.tournament.21.matches_clear` — clear (change with confirmation)
+- `cai.tournament.22.reset` — reset (change with confirmation)
+- `cai.tournament.23.redraw` — redraw (change with confirmation)
+- `cai.tournament.24.standings` — show (read)
+- `cai.tournament.25.preview` — export (change with confirmation)
+- `cai.tournament.26.draw` — create (change)
+- `cai.tournament.27.draw_confirm` — confirm (change with confirmation)
+- `cai.tournament.28.schedule_generate` — generate (change with confirmation)
+- `cai.tournament.29.match_schedule` — set (change)
+- `cai.tournament.30.match_delete` — delete (change with confirmation)
+- `cai.tournament.31.match_result` — set (change)
+- `cai.tournament.32.deadline` — show, set_deadline, set_policy (read, change)
 <!-- /gen:docs -->
 
 ## Errors

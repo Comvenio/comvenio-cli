@@ -300,6 +300,21 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**meeting**
+
+- `cai.meeting.01.series_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation)
+- `cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat` — list, show, create, update, delete, advance, revert, updates, validation, publish (read, change, change with confirmation)
+- `cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr` — list, show, create, update, delete, reorder, start, complete, skip, approve (read, change with confirmation)
+- `cai.meeting.04.note_list_list_protocol_create_update_delete` — list, list_protocol, create, update, delete (read, change, change with confirmation)
+- `cai.meeting.05.participant_list_add_update_remove_validate_unvalidate` — list, add, update, remove, validate, unvalidate (read, change, change with confirmation)
+- `cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote` — create, agenda, update, cancel, option_add, options_add, promote (change with confirmation, read)
+- `cai.meeting.07.voting_open_close_results_eligible_tally` — open, close, results, eligible, tally (change with confirmation, read)
+- `cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract` — cast, cast_bulk, proxy, proxy_bulk, option_retract, retract (change with confirmation)
+- `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (read, change with confirmation)
+- `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (read, change, change with confirmation)
+- `cai.meeting.11.attachment_list_add_remove` — list, add, remove (read, change with confirmation)
+- Fields and values: `comvenio schema meeting --json`
 <!-- /gen:docs -->
 
 ## Errors

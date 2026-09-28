@@ -136,6 +136,18 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     expect(generateDocs(root, []).get("docs/teams.md")).toContain("Noch keine Action");
   });
 
+  test("an action domain that no article claims fails; seasonal teams belong to team", () => {
+    const root = fixture();
+    const orphan: InventoryAction[] = [...INVENTORY,
+      { action_id: "cai.ghost.01.list", domain: "ghost", operations: [{ operation: "list", risk: "read", scopes: ["club.read"] }] }];
+    expect(checkDocs(root, orphan)).toContainEqual({ file: "scripts/docs-lib.ts", reason: "Actions ohne Artikel: ghost" });
+    const seasonal: InventoryAction[] = [...INVENTORY,
+      { action_id: "cai.teams.01.list", domain: "teams", operations: [{ operation: "list", risk: "read", scopes: ["club.read"] }] }];
+    for (const [path, content] of generateDocs(root, seasonal)) write(root, path, content);
+    expect(checkDocs(root, seasonal)).toEqual([]);
+    expect(readFileSync(join(root, "docs/teams.md"), "utf8")).toContain("`cai.teams.01.list`");
+  });
+
   test("device tokens are forbidden in customer texts (Tom 2026-09-28)", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de", " Anmeldung mit Geräte-Token."));

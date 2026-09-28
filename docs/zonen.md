@@ -43,6 +43,11 @@ werden ausschließlich im Gebiets-Editor der Web-App bearbeitet.
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**zone**
+
+- Noch keine Action — dieser Bereich läuft über die Web-App.
+- Felder und Werte: `comvenio schema zone --json`
 <!-- /gen:docs -->
 
 ## Fehler

@@ -68,6 +68,10 @@ Aufgaben, Termine, Mitglieder).
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**agent**
+
+- Noch keine Action — dieser Bereich läuft über die Web-App.
 <!-- /gen:docs -->
 
 ## Fehler

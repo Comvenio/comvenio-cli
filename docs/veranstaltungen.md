@@ -339,6 +339,53 @@ Geländeplan-Zone:
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**event**
+
+- `cai.event.01.list` — list (lesen)
+- `cai.event.02.show` — show (lesen)
+- `cai.event.03.create` — create (ändern)
+- `cai.event.04.update` — update (ändern)
+- `cai.event.05.publish` — publish (ändern mit Bestätigung)
+- `cai.event.06.delete` — delete (ändern mit Bestätigung)
+- `cai.event.07.template_list_create_clone_instantiate` — list, create, clone, instantiate (lesen, ändern)
+- `cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n` — list, show, create, update, delete, materialize, materialize_next, promote_recurring, promote_yearly (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.09.area_list_add_show_update_delete_bulk_copy` — list, add, show, update, delete, bulk, copy (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.10.assignment_list_add_remove_clear` — list, add, remove, clear (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.11.lead_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.12.area_note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.13.program_list_add_update_delete_reorder` — list, add, update, delete, reorder (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.14.contact_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.15.resource_list_add_set_remove_link_show_link_update_link_delete_usage_u` — list, add, set, remove, link_show, link_update, link_delete, usage, usage_batch (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.16.attachment_list_show_add_update_delete` — list, show, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.17.tag_category_and_assignment_workflows` — category_list, category_show, category_add, category_update, category_delete, tag_list, tag_show, tag_add, tag_update, tag_delete, assigned, assignment_list, assign, unassign, clear (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.18.sponsor_and_sponsor_program_workflows` — link_list, link_add, link_delete, tier_list, tier_add, tier_update, tier_delete, tier_sync, program_by_sponsor, program_by_item, program_add, program_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.19.invitation_and_club_invitation_workflows` — member_mine, member_list, member_show, member_add, member_add_groups, member_add_departments, member_add_org_groups, member_update, member_status, member_delete, member_notified, club_list, club_attending, club_incoming, club_accepted, club_show, club_add, club_external, club_self_join, club_update, club_respond, club_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate` — list, add, stats, show, update, adjust, delete, aggregate (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.22.design_theme_and_asset_workflows` — theme_show, theme_set, theme_delete, asset_list, asset_upload, asset_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.23.copy_set_reset` — set, reset (ändern, ändern mit Bestätigung)
+- `cai.event.24.dj_settings_and_request_workflows` — settings, requests, settings_set, request_status, reset (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.25.external_sync_workflows` — list, add, show, update, delete, matches, run, stats, provider_run (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.26.instance_previous_next_compare_clone_next` — previous, next, compare, clone_next (lesen, ändern)
+- `cai.event.27.child_list_create_invitation_summary` — list, create, invitation_summary (lesen, ändern)
+- `cai.event.28.menu_list_assign_unassign` — list, assign, unassign (lesen, ändern, ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema event --json`
+
+**plan**
+
+- `cai.plan.01.list` — list (lesen)
+- `cai.plan.02.show` — show (lesen)
+- `cai.plan.03.create` — create (ändern)
+- `cai.plan.04.update` — update (ändern)
+- `cai.plan.05.delete` — delete (ändern mit Bestätigung)
+- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.08.marker_create_update_delete` — create, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.10.detail` — create (ändern)
+- `cai.plan.11.export` — export (ändern mit Bestätigung)
+- `cai.plan.12.illustrate` — illustrate (ändern mit Bestätigung)
+- `cai.plan.13.compose` — compose (ändern mit Bestätigung)
 <!-- /gen:docs -->
 
 ## Fehler

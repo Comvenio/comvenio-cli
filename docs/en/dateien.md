@@ -31,7 +31,7 @@ Every file can be assigned to a business context: `none`, `club`, `department`, 
 
 1. Determine the target context and, if needed, the sub-context (see above).
 2. For the contexts `club`, `none` and `department`, optionally choose a department via `department_id` — without it, the file lands in the club's **default department** and appears there in DataShare. Other contexts (`event`, `news`, `certificate`, …) follow their own server-side rules.
-3. The actual file bytes are transferred separately from the action; `source_file_id`, `filename`, `content_type` and `expected_size` in the input must match that transfer. The limit is 200 MB.
+3. The action does not transfer a file from your computer. `source_file_id` is the ID of a file that already sits in the club's file storage (uploaded in the web app; `cai.data.01.list` shows the ID). `filename`, `content_type` and `expected_size` must match that file. The limit is 200 MB. Uploading a file straight from your own computer: Not yet available as an action — do this in the web app.
 
 ### Optimizing video for mobile autoplay
 
@@ -91,7 +91,7 @@ comvenio action call cai.data.05.download --input '{"file_id":"<file-id>","prefe
 
 ```bash
 comvenio action call cai.data.06.upload --input '{
-  "source_file_id": "<staged-file-id>",
+  "source_file_id": "<file-id>",
   "filename": "bild.jpg",
   "content_type": "image/jpeg",
   "expected_size": 245000,
@@ -206,6 +206,45 @@ comvenio action call cai.data.35.export_members_bookings --input '{"operation":"
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**data**
+
+- `cai.data.01.list` — list (read)
+- `cai.data.02.show` — show (read)
+- `cai.data.03.update` — update (change)
+- `cai.data.04.url` — reference (read)
+- `cai.data.05.download` — download (read)
+- `cai.data.06.upload` — upload (change)
+- `cai.data.07.delete` — soft_delete, hard_delete (change, change with confirmation)
+- `cai.data.08.restore` — restore (change)
+- `cai.data.09.move` — move (change)
+- `cai.data.10.visibility` — private, public (change, change with confirmation)
+- `cai.data.11.stats` — stats (read)
+- `cai.data.12.empty_trash` — empty (change with confirmation)
+- `cai.data.13.area_media` — list (read)
+- `cai.data.14.area_shares` — list (read)
+- `cai.data.15.area_share_add` — add (change)
+- `cai.data.16.area_share_remove` — remove (change with confirmation)
+- `cai.data.17.children` — list (read)
+- `cai.data.18.search` — search (read)
+- `cai.data.19.breadcrumb` — show (read)
+- `cai.data.20.folder_create` — create (change)
+- `cai.data.21.folder_rename` — rename (change)
+- `cai.data.22.folder_move` — move (change)
+- `cai.data.23.folder_protect` — protect (change)
+- `cai.data.24.folder_delete` — delete (change with confirmation)
+- `cai.data.25.folder_restore` — restore (change)
+- `cai.data.26.folder_rights` — list (read)
+- `cai.data.27.folder_right_add` — add (change)
+- `cai.data.28.folder_right_bulk` — bulk (change with confirmation)
+- `cai.data.29.folder_right_delete` — delete (change with confirmation)
+- `cai.data.30.papers` — list (read)
+- `cai.data.31.paper_show` — show (read)
+- `cai.data.32.paper_add` — create (change)
+- `cai.data.33.paper_update` — update (change)
+- `cai.data.34.paper_delete` — delete (change with confirmation)
+- `cai.data.35.export_members_bookings` — members, bookings (change with confirmation)
+- Fields and values: `comvenio schema data --json`
 <!-- /gen:docs -->
 
 ## Errors

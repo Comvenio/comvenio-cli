@@ -124,6 +124,47 @@ comvenio finance summary --year 2026 --department <department-id>
 ## Commands and actions
 
 <!-- gen:docs befehle -->
+
+**finance**
+
+- `cai.finance.01.plan_list` — list (read)
+- `cai.finance.02.plan_show` — show (read)
+- `cai.finance.03.plan_create` — create (change)
+- `cai.finance.04.plan_update` — update (change)
+- `cai.finance.05.plan_close` — close (change with confirmation)
+- `cai.finance.07.plan_copy` — copy (change with confirmation)
+- `cai.finance.08.position_list` — list (read)
+- `cai.finance.09.position_create` — create (change)
+- `cai.finance.10.position_show` — show (read)
+- `cai.finance.11.position_update` — update (change)
+- `cai.finance.12.position_delete` — delete (change with confirmation)
+- `cai.finance.13.position_import_shopping` — import (change)
+- `cai.finance.14.summary` — total, by_department (read)
+- `cai.finance.15.entry_list` — list (read)
+- `cai.finance.16.entry_create` — create (change)
+- `cai.finance.17.entry_show` — show (read)
+- `cai.finance.18.entry_update` — update (change with confirmation)
+- `cai.finance.19.entry_delete` — delete (change with confirmation)
+- `cai.finance.20.entry_approve` — approve (change with confirmation)
+- `cai.finance.21.plan_period` — list, create, show, update, positions, position_create, summary, journal, entries_without_receipt, sphere_report, audit_check, audit_labels, audit_label_set, dashboard (read, change)
+- `cai.finance.22.plan_lifecycle` — close, next_period (change with confirmation)
+- `cai.finance.23.settings` — show, update (read, change)
+- `cai.finance.24.money_account` — list, create, update, opening, opening_versions, cash_book, reconciliation, grants, grant_set, grant_revoke, transfers, transfer_show, transfer_create, transfer_reverse, booking_accounts (read, change, change with confirmation)
+- `cai.finance.25.entry_correction` — entry_create, entry_create_unplanned, reverse, receipt, versions, receipt_scan_create, receipt_candidates, receipt_attach, receipt_book, receipt_reject, receipt_event_set, receipt_withdraw, receipt_file, position_link_set, position_link_remove, tax_sphere, objection_create, objections, objection_withdraw (change, change with confirmation, read)
+- `cai.finance.26.cash_report` — list, create, show, submit, reject, entries, approve_entries, approve, tax_report (read, change, change with confirmation)
+- `cai.finance.27.department_transfer` — list, account_choices, show, create, confirm, reject, withdraw, reverse (read, change, change with confirmation)
+- `cai.finance.28.plan_result` — result, open_items, open_item_create, open_item_update, open_item_delete, resolutions, resolution_create, resolution_update, resolution_delete (read, change, change with confirmation)
+- `cai.finance.29.procedure_doc` — show, version, save (read, change)
+- `cai.finance.30.audit_export` — list, create, download (read, change with confirmation)
+- `cai.finance.31.finance_views` — receipt_inbox, receipt_scan, event, event_reconciliation, series_comparison, department_history, link_options, event_links, event_link_view, location_links, analysis_ranking, analysis_target, object (read)
+- `cai.finance.32.investment_plan` — list, create, show, update, delete, dashboard, feasibility, funding_summary, loan_details (read, change, change with confirmation)
+- `cai.finance.33.investment_item` — list, create, update, delete (read, change, change with confirmation)
+- `cai.finance.34.investment_funding` — list, create, update, delete, loan_show, loan_create, loan_update (read, change, change with confirmation)
+- `cai.finance.35.investment_scenario` — list, create, from_template, show, update, delete, auto_generate, cashflow_list, cashflow_create, cashflow_update, cashflow_delete (read, change, change with confirmation)
+- `cai.finance.36.budget_organigram` — tree, frame_set, frame_versions, statement, rubrics, rubric_create, rubric_update, rubric_delete, position_split (read, change with confirmation, change)
+- `cai.finance.37.budget_season` — seasons, season_tree, season_frame_set, season_frame_versions, frame_proposal (read, change with confirmation)
+- `cai.finance.38.entry_detail` — entry, open_items (read)
+- `cai.finance.39.budget_period` — show, set, tree, frame_set, frame_versions, statement, window_position_create, window_position_update (read, change with confirmation)
 <!-- /gen:docs -->
 
 ## Errors

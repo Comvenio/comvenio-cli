@@ -144,7 +144,7 @@ comvenio action call cai.sponsor.18.cancel --input '{"assignment_id":"<assignmen
 comvenio action call cai.sponsor.20.doc_upload --input '{
   "assignment_id": "<assignment-id>",
   "asset": {
-    "source_file_id": "<staged-file-id>",
+    "source_file_id": "<file-id>",
     "filename": "unterschrieben.pdf",
     "content_type": "application/pdf",
     "expected_size": 512000
@@ -172,6 +172,34 @@ comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
+
+**sponsor**
+
+- `cai.sponsor.01.list` — list (lesen)
+- `cai.sponsor.02.show` — show (lesen)
+- `cai.sponsor.03.add` — add (ändern)
+- `cai.sponsor.04.update` — update, move_department (ändern mit Bestätigung)
+- `cai.sponsor.05.delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.06.logo` — set (ändern mit Bestätigung)
+- `cai.sponsor.07.product_list` — list (lesen)
+- `cai.sponsor.08.product_add` — add (ändern)
+- `cai.sponsor.09.product_update` — update, move_department (ändern, ändern mit Bestätigung)
+- `cai.sponsor.10.product_delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.11.contract_list` — list (lesen)
+- `cai.sponsor.12.contract_add` — add (ändern)
+- `cai.sponsor.13.contract_update` — update, replace_file (ändern)
+- `cai.sponsor.14.contract_delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.15.assignment_list` — list (lesen)
+- `cai.sponsor.16.assign` — assign (ändern mit Bestätigung)
+- `cai.sponsor.17.assignment_update` — update (ändern mit Bestätigung)
+- `cai.sponsor.18.cancel` — cancel (ändern mit Bestätigung)
+- `cai.sponsor.19.doc_list` — list (lesen)
+- `cai.sponsor.20.doc_upload` — upload (ändern)
+- `cai.sponsor.21.responsible_list` — list (lesen)
+- `cai.sponsor.22.responsible_add` — add (ändern)
+- `cai.sponsor.23.responsible_update` — update (ändern)
+- `cai.sponsor.24.responsible_remove` — remove (ändern mit Bestätigung)
+- Felder und Werte: `comvenio schema sponsor --json`
 <!-- /gen:docs -->
 
 ## Fehler
