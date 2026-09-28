@@ -13,7 +13,7 @@ describe("Wochenvorschau over OAuth (cai.club.11/12)", () => {
     expect(definition.backend_routes[0]).toMatchObject({ method: "POST", service: "ai", normalized_path_template: "/club-agents/{club_id}/weekly-previews/create" });
     expect(definition.risk_class).toBe("critical_write");
     expect(definition.confirmation).toBe("required");
-    expect(definition.required_scopes).toEqual(["admin.write"]);
+    expect(definition.required_scopes).toEqual(["club.write"]);
     const input = K7_ACTION_SCHEMAS["cai.club.11.weekly_preview_create"].input.parse({ club_id: clubId, department_id: departmentId }) as Record<string, unknown>;
     expect(input.range).toBe("next_week");
     expect(input.telegram).toBe(false);
