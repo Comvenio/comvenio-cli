@@ -549,6 +549,15 @@ Absatz und jeden Knopf im Formular ändern.
   folgt“), nicht mit einem Fantasiewert.
 - Navigation zwischen Tabs als `link`-Slot mit `href: "?tab=<slug>"`.
 
+**Altformat erkennen.** `comvenio homepage tree` nennt je Reiter das Format in
+einer Zeile — `Format: neu (Gerüst mit benannten Slots)` oder
+`Format: alt — 1 Gerüst, 42 Stellen … Umstellen: comvenio homepage convert --tab <slug> --out home.json`.
+`verify homepage` fasst ein Altformat-Gerüst zu **einem** Befund `legacy_format`
+(Warnung) zusammen statt jeden R1–R6-Treffer einzeln zu melden, und der Designer
+zeigt dasselbe („Gerüst im alten Format · n Stellen“ mit Hilfe-Link). Die Treffer
+sind im Altformat keine Fehler und blockieren nichts; behebbar sind sie nur durch
+die Umstellung. Erklärung für Vereine: https://www.comvenio.app/hilfe/website.
+
 **Bestehende Seiten im Altformat** (`data-widget-slot`, fester Text im HTML)
 bleiben lesbar, der Designer bearbeitet dort aber nur die Slot-Inhalte. Umstellen:
 `comvenio homepage convert --out home.json [--styles styles.json]` → offene

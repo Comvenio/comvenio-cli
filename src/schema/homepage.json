@@ -3357,6 +3357,12 @@
         "class": "legacy_inline_slot",
         "severity": "warnung",
         "check": "data-widget-slot (Altformat)"
+      },
+      {
+        "rule": "ALT",
+        "class": "legacy_format",
+        "severity": "warnung",
+        "check": "Anzeige: ein Altformat-Gerüst erscheint in tree, verify und Designer als EIN Befund mit Zahl der Stellen statt jedes R1–R6-Treffers; Weg: homepage convert --tab <slug> (K11-Altformat)"
       }
     ],
     "enforced": "club-service prüft auf jedem Schreibweg (bulk, Widget POST/PUT, slot set, publish): Fehler im neuen Format -> 422 skeleton_rules mit befunde.",

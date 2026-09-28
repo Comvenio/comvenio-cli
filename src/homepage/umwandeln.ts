@@ -7,6 +7,7 @@
 // wrapped: loose text next to elements stays and is reported, so the DOM keeps
 // its shape and the club CSS keeps working (D6: the page must look the same).
 import {
+  angezeigteBefunde,
   befundeDesReiters,
   dokument,
   htmlVon,
@@ -327,7 +328,9 @@ export function wandleUm(tab: BulkTab, optionen: { styles?: StyleEntry[] } = {})
   }));
   const neu = { ...tab, sections };
   const widgets: WidgetRead[] = sections.flatMap((s, i) => s.widgets.map((w, j) => ({ id: `w-${i}-${j}`, kind: w.kind, config: w.config })));
-  const befunde = [...befundeDesReiters(widgets, optionen.styles).values()].flat();
+  // A skeleton that stayed in the old format (open places) is one finding, like tree,
+  // verify and the designer; errors of converted skeletons stay single (Codex R1).
+  const befunde = [...angezeigteBefunde(widgets, befundeDesReiters(widgets, optionen.styles)).values()].flat();
   return {
     tab: neu,
     bericht: { tab: tab.slug, umgewandelt, offene_stellen: offene, katalogklassen_verschoben: verschoben, befunde },
