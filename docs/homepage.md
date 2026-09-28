@@ -13,31 +13,28 @@ Mit dem CLI wird die öffentliche Vereins-Homepage aufgebaut und gepflegt:
 Struktur, Inhalte und Design werden als deklaratives JSON beschrieben, in
 einer Vorschau geprüft und erst nach ausdrücklicher Freigabe veröffentlicht.
 Es gibt keinen automatischen Text- oder Design-Generator im Hintergrund — wer
-die Seite gestaltet, komponiert sie über die hier beschriebenen Befehle
+die Seite gestaltet, komponiert sie über die hier beschriebenen Actions
 selbst.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und
+welche Scopes sie brauchen, zeigt `comvenio action list --json`.
 
 ```bash
 comvenio login
 comvenio whoami --json
-comvenio club info --json
 ```
 
-Der Verein kommt normalerweise aus dem angemeldeten Kontext. Für bewusste
-Arbeit an einem anderen Verein wird `--club <club-id>` gesetzt; Kennungen
-werden dabei nie geraten, sondern vorher nachgeschlagen.
+Der Verein kommt aus dem angemeldeten Kontext — er wird nicht über die
+Eingabe gesetzt, das CLI lehnt eine mitgegebene Vereinskennung ab.
 
-Design- und Veröffentlichungsschritte (`club design`, `homepage apply`)
-brauchen das Recht, Vereinseinstellungen zu verwalten. Fehlt es, meldet
-Comvenio `PERMISSION_DENIED` — das Recht vergibt ein Administrator des
-Vereins. Fehlt der Anmeldung der nötige Scope, meldet Comvenio
-`SCOPE_REQUIRED` mit dem passenden `comvenio login --scopes …`-Befehl.
+Design- und Veröffentlichungsschritte (`cai.club.05.design`,
+`cai.homepage.02.apply`) brauchen das Recht, Vereinseinstellungen zu
+verwalten (Scope `club.write`). Fehlt es, meldet Comvenio
+`PERMISSION_DENIED` — das Recht vergibt ein Administrator des Vereins. Fehlt
+der Anmeldung der nötige Scope, meldet Comvenio `SCOPE_REQUIRED` mit dem
+passenden `comvenio login --scopes …`-Befehl.
 
 ## Abläufe
 
@@ -45,15 +42,16 @@ Vereins. Fehlt der Anmeldung der nötige Scope, meldet Comvenio
 
 Jede Änderung folgt derselben Reihenfolge: Verträge lesen → Bestand lesen →
 Struktur und Design komponieren → Vorschau erzeugen → Prüfung laufen lassen →
-Freigabe einholen → anwenden. Kein Schritt wird übersprungen, und
-`homepage apply --clear` läuft nie ohne ausdrückliche Freigabe.
+Freigabe einholen → anwenden und bestätigen. Kein Schritt wird übersprungen,
+und `cai.homepage.02.apply` mit `clear_existing: true` läuft nie ohne
+ausdrückliche Freigabe.
 
 ### Verträge und Bestand lesen
 
 ```bash
 comvenio schema homepage --json > homepage-schema.json
 comvenio schema design --json > design-schema.json
-comvenio homepage show --public --json
+comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 ```
 
 Das Homepage-Schema ist maßgeblich für die verfügbaren Widget-Arten und ihre
@@ -66,7 +64,7 @@ nachgeschlagen.
 ### Unveränderbare Bereiche der Seite
 
 Konfiguriert werden nur die eigentlichen Homepage-Inhalte. Unabhängig vom
-Homepage-JSON zeigt jede Vereinsseite immer:
+`tabs`-Inhalt zeigt jede Vereinsseite immer:
 
 | Element | Festes Ziel |
 |---|---|
@@ -95,10 +93,11 @@ nur noch aus Gründen der Rückwärtskompatibilität.
 ### Struktur der Seite aufbauen
 
 Eine Homepage besteht aus Tabs (Reitern), jeder Tab aus Sections, jede Section
-aus Widgets. Die vollständige Struktur wird als eine Datei geschrieben (siehe
-Beispiele). Das Feld `clear_existing` in dieser Datei ist keine Freigabe für
-einen löschenden Write — gesteuert wird das ausschließlich über das bewusste
-CLI-Flag `--clear` beim Anwenden.
+aus Widgets. Die vollständige Struktur wird als `tabs`-Array in der Eingabe
+von `cai.homepage.01.preview` beziehungsweise `cai.homepage.02.apply`
+übergeben (siehe Beispiele). Das Pflichtfeld `clear_existing` steuert dabei
+ausdrücklich, ob bestehende Tabs, Sections und Widgets ersetzt werden — es
+hat keinen stillen Standardwert und muss bei jedem Aufruf gesetzt werden.
 
 ### Inhalte gestalten
 
@@ -122,14 +121,13 @@ CLI-Flag `--clear` beim Anwenden.
   unterschiedlich langen Inhalten konstant.
 - **Kontaktformular** (`contact_form`): Name, E-Mail, Nachricht, Einwilligung
   und Spam-Schutz. Anfragen werden gespeichert, der Vorstand benachrichtigt,
-  der Verein bearbeitet sie im Verein-Bereich oder über
-  `comvenio club contact-requests`. In der Vorschau versendet das Formular
-  nichts. Ein älteres, rein informatives Beitrittsformular bestätigt keinen
-  erfolgreichen Antrag und darf dafür auch nicht gehalten werden; für Kontakt
-  und Mitgliedsinteresse ist ausschließlich `contact_form` vorgesehen. Ein
-  Formular selbst aus freiem HTML nachzubauen ist nicht vorgesehen. Gespeicherte
-  Anfragen werden 30 Tage nach dem Löschen endgültig entfernt, spätestens aber
-  365 Tage nach Eingang.
+  der Verein bearbeitet sie im Verein-Bereich der Web-App. In der Vorschau
+  versendet das Formular nichts. Ein älteres, rein informatives
+  Beitrittsformular bestätigt keinen erfolgreichen Antrag und darf dafür auch
+  nicht gehalten werden; für Kontakt und Mitgliedsinteresse ist ausschließlich
+  `contact_form` vorgesehen. Ein Formular selbst aus freiem HTML nachzubauen
+  ist nicht vorgesehen. Gespeicherte Anfragen werden 30 Tage nach dem Löschen
+  endgültig entfernt, spätestens aber 365 Tage nach Eingang.
 - **Vereinsorgan** (`team` mit `group_id`): zeigt die Positionen eines
   Vereinsorgans mit aktuellen Namen; Standardpositionen werden dabei
   ausgeschlossen. Vorher mit dem Verein klären, denn ein gespeichertes,
@@ -181,8 +179,7 @@ CLI-Flag `--clear` beim Anwenden.
 
 Für freies HTML (`custom_html`) gilt die feste Bauform: Das HTML ist nur
 Gerüst, jeder veränderliche Inhalt ist ein benannter Slot. Nur so lässt sich
-die Seite als Baum von Überschrift, Text, Bild und Knopf bearbeiten, ohne HTML
-zu schreiben.
+die Seite als Baum von Überschrift, Text, Bild und Knopf komponieren.
 
 - Je Tab genau eine volle Section mit genau einem `custom_html`-Widget als
   Gerüst. Es trägt nur Layout — Elemente, Klassen, und je Bereich ein
@@ -200,13 +197,10 @@ zu schreiben.
   Bild-Slot auf einem umschließenden Element ist dagegen das vollständige
   Bild-Widget mit eigener Box. Zulässig sind gesicherte Adressen, hochgeladene
   Dateien und eingebettete Bilddaten; alles andere zeigt kein Bild.
-- Ein Slot lässt sich einzeln adressieren und setzen (Details in den
-  Beispielen); ein bestehendes Gerüst lässt sich austauschen, ohne die Seite
-  neu anzulegen — dabei bleiben die vorhandenen Slot-Inhalte erhalten, und ein
-  inzwischen geänderter Slot wird nicht überschrieben, sondern mit Exit-Code
-  `4` gemeldet. Die dafür nötige Widget-Kennung liefert `comvenio homepage
-  slot get <reiter>/<slot> --json` (Feld `widget_id`) oder `comvenio homepage
-  tree --json` (zweites Pfadglied).
+- Ein einzelner Slot lässt sich noch nicht gezielt ansprechen und setzen —
+  noch nicht als Action verfügbar, in der Web-App erledigen. Über die
+  Actions wird stattdessen die vollständige `tabs`-Struktur mit
+  `cai.homepage.02.apply` neu gesendet.
 - Stile, die im Nachhinein umgeschaltet werden sollen, werden als Katalog
   angemeldet und dann als `style` am Slot statt als feste Klasse im Gerüst
   vergeben. Farben und Spaltenzahlen, die veränderbar sein sollen, werden
@@ -221,12 +215,9 @@ zu schreiben.
   nicht vorgesehen. Eine Section mit mehrspaltigem Layout und passender
   Breitenangabe wirkt gleichwertig als Reihe.
 - Ein bestehendes Gerüst im älteren Format — festem Text und Bildern direkt im
-  HTML statt in Slots — bleibt lesbar, lässt sich im Baum aber nur noch an den
-  Slot-Inhalten bearbeiten. `comvenio homepage tree` nennt je Reiter das
-  erkannte Format in einer Zeile. Es lässt sich mit
-  `comvenio homepage convert --tab <slug> --out home.json` in das neue Format
-  umstellen; danach offen gebliebene Stellen werden von Hand nachgetragen, in
-  der Vorschau geprüft und erst dann angewendet.
+  HTML statt in Slots — bleibt lesbar. Das erkannte Format je Reiter und eine
+  Umstellung ins neue Format sind noch nicht als Action verfügbar — in der
+  Web-App erledigen.
 - Ein Gerüst mit festem Text oder Bild außerhalb eines Slots, ohne
   eindeutigen Slot-Namen, ohne Bereichsbeschriftung, mit unbekanntem Stil oder
   mit mehr als einer Hauptüberschrift wird beim Schreiben abgelehnt.
@@ -235,7 +226,7 @@ zu schreiben.
 
 | Bild | Ursache | Abhilfe |
 |---|---|---|
-| Live fehlen Kopfzeile und Navigation, die Vorschau zeigte sie noch | ein älterer Landing-Modus ist in der Design-Datei erhalten geblieben | `"landing": false` ausdrücklich in die Design-Datei schreiben und erneut anwenden |
+| Live fehlen Kopfzeile und Navigation, die Vorschau zeigte sie noch | ein älterer Landing-Modus ist in den Design-Einstellungen erhalten geblieben | `"landing": false` ausdrücklich in `design_settings` schreiben und erneut anwenden |
 | Dunkler Rahmen oder Schatten um ein freigestelltes Logo | das Bild-Widget zeichnet standardmäßig eine Karte | am Bild-Slot die Kartendarstellung ausdrücklich abschalten (Feld `card_style` auf `none`) |
 | Ein hochformatiges Wappen wirkt in der runden Kopfzeile beschnitten | ältere Version der Anzeige | aktuelle Version verwenden; Logo möglichst quadratisch oder transparent hochladen |
 | „Kein Bild konfiguriert" nur bei einer Person im Organ | ein alter Stand liegt im Browser-Zwischenspeicher | Seite mit vollständigem Neuladen aktualisieren |
@@ -246,71 +237,81 @@ zu schreiben.
 ### Vorschau und Prüfung
 
 ```bash
-comvenio homepage preview \
-  --file home.json \
-  --design-file design-settings.json \
-  --ttl-hours 24 \
-  --open \
+comvenio action call cai.homepage.01.preview \
+  --input '{"tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":false}' \
+  --json
+# Antwort enthält preview_id
+
+comvenio action call cai.homepage.04.screenshot \
+  --input '{"preview_id":"<preview-id>","viewports":["390x844","1440x900"]}' \
   --json
 
-comvenio verify homepage \
-  --file home.json \
-  --design-file design-settings.json \
-  --audit \
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"preview","tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
-Die Vorschau gilt standardmäßig 30 Minuten; mit `--ttl-hours` (1–24) lässt
-sich eine längere, serverseitig begrenzte Laufzeit setzen, etwa für eine
-ganztägige Abnahme. Die Vorschau verändert die veröffentlichte Seite nicht.
+`cai.homepage.01.preview` verändert die veröffentlichte Seite nicht.
 
-Ohne `--file` prüft die Prüfung die veröffentlichte Adresse des Vereins.
-Diese ergibt sich ausschließlich aus der hinterlegten Subdomain des Vereins;
-andere technische Kennungen sind keine Homepage-Adresse und werden nicht
-ersatzweise verwendet. Fehlt die Subdomain, weist das CLI auf die
-Vereinseinstellungen oder auf die Entwurfsprüfung mit `--file` hin.
+Mit `"operation":"live"` statt `"operation":"preview"` prüft
+`cai.verify.04.homepage` stattdessen die veröffentlichte Adresse des Vereins
+— ohne `tabs`. Diese ergibt sich ausschließlich aus der hinterlegten
+Subdomain des Vereins; andere technische Kennungen sind keine
+Homepage-Adresse und werden nicht ersatzweise verwendet.
 
-Geprüft werden jeder öffentliche Tab, die getrennte Impressum-Seite, die
-Darstellung auf Mobilgerät, Tablet, Querformat und Desktop — konkret bei
-390, 768, 1024 und 1440 Pixel Breite —, horizontales Überlaufen und leere
-Hauptbereiche, unsichtbarer Text und Kontrast,
+Geprüft werden jeder öffentliche Tab, die getrennte Impressum-Seite und die
+angegebenen `viewports` — üblich sind Mobilgerät, Tablet, Querformat und
+Desktop, etwa 390, 768, 1024 und 1440 Pixel Breite —, dazu horizontales
+Überlaufen und leere Hauptbereiche, unsichtbarer Text und Kontrast,
 Konsolen- und Netzwerkfehler, der unveränderbare Rechtsfußzeile mit allen
 festen Zielen, die Bedienbarkeit aller Pflichtlinks sowie die
 Vereinsverantwortlichkeit und mindestens eine öffentliche Kontaktangabe auf
 der Impressum-Seite. Text auf Bild-, Video- oder Verlaufsflächen ist dabei
 grundsätzlich nicht messbar und wird deshalb nicht als Befund gezählt.
 
-Exit-Codes: `0` vollständig geprüft, keine behebbaren Befunde; `2` Prüfung
-unvollständig, etwa wegen eines technischen Fehlers während der Prüfung; `4`
-vollständig geprüft, aber mit einem behebbaren Qualitäts- oder
-Rechtsseitenfehler. Screenshots und Bericht gehören immer vor die
-menschliche Freigabe — ein Exit-Code `0` ersetzt diese Freigabe nicht.
+Die Antwort meldet Befunde statt nur einer bestandenen/nicht bestandenen
+Aussage. Screenshots und Bericht gehören immer vor die menschliche Freigabe.
 
 ### Veröffentlichen
 
 Erst nach ausdrücklicher Freigabe, und erst nachdem der bisherige Stand
-gesichert wurde — `--clear` ersetzt alle bestehenden Tabs, Sections und
-Widgets:
+gesichert wurde — `clear_existing: true` ersetzt alle bestehenden Tabs,
+Sections und Widgets. `cai.homepage.02.apply` ist eine kritische Änderung:
+Der Aufruf liefert zunächst eine Vorschau mit `preview_id` und
+`confirmation_token`, erst `action confirm` veröffentlicht die Seite
+wirklich.
 
 ```bash
-comvenio homepage show --public --json > sicherung-home.json
-comvenio club info --json > sicherung-club.json
+comvenio action call cai.homepage.03.show \
+  --input '{"operation":"public"}' \
+  --json > sicherung-home.json
 
-comvenio club design --file design-settings.json --dry-run --json   # Warnungen lesen
-comvenio club design --file design-settings.json --json
-comvenio homepage apply --file home.json --clear --json
-comvenio homepage show --public --json
-comvenio verify homepage --audit --json
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"homepage_theme":"modern","homepage_template":"flex","primary_color":"#006846"}}' \
+  --json
+
+comvenio action call cai.homepage.02.apply \
+  --input '{"tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":true}' \
+  --json
+# Antwort enthält preview_id und confirmation_token
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <token> \
+  --idempotency-key <key>
+
+comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
-`club design` führt zusammen, statt zu ersetzen: Ein live gesetzter
-Schlüssel, der in der Datei fehlt, bleibt erhalten — auch wenn die Vorschau
-ihn nicht zeigt, weil sie nur die Datei rendert. Das CLI weist auf solche
-erhaltenen Schlüssel ausdrücklich hin, insbesondere wenn ein alter
-Vollbild-Landing-Modus überlebt: Dann fehlen auf der veröffentlichten Seite
-Kopfzeile und Navigation, obwohl die Vorschau richtig aussah. Für eine normale
-Seite wird deshalb `"landing": false` immer ausdrücklich in die Design-Datei
-geschrieben.
+`cai.club.05.design` führt zusammen, statt zu ersetzen: Ein live gesetzter
+Schlüssel, der in der Eingabe fehlt, bleibt erhalten — auch wenn die Vorschau
+ihn nicht zeigt, weil sie nur die übergebenen `tabs` rendert. Das gilt
+insbesondere für einen alten Vollbild-Landing-Modus: Dann fehlen auf der
+veröffentlichten Seite Kopfzeile und Navigation, obwohl die Vorschau richtig
+aussah. Für eine normale Seite wird deshalb `"landing": false` immer
+ausdrücklich in `design_settings` übergeben.
 
 Nach dem Anwenden wird die veröffentlichte Seite im Bild geprüft (Kopfzeile,
 Navigation, Hero, Mobilansicht). Wer die Seite vorher schon offen hatte, sieht
@@ -327,7 +328,8 @@ kein horizontales Überlaufen entstehen.
 
 ## Beispiele
 
-Grundstruktur mit einem Tab, einer Section und einem Hero-Widget:
+Grundstruktur mit einem Tab, einer Section und einem Hero-Widget (als
+`tabs`-Wert von `cai.homepage.01.preview` bzw. `cai.homepage.02.apply`):
 
 ```json
 {
@@ -392,7 +394,7 @@ dabei Pflicht, `title`, `includeSrc`, `hrefUrl`, `hrefLabel`, `height` und
 ]
 ```
 
-Vollständige Design-Datei:
+Vollständiges `design_settings`-Objekt (für `cai.club.05.design`):
 
 ```json
 {
@@ -444,31 +446,13 @@ Eine Reihe mit zwei ungleich breiten Spalten im Gerüst:
 </div>
 ```
 
-Ein Slot einzeln lesen und setzen:
-
-```bash
-comvenio homepage slot get start/hero-titel --json
-comvenio homepage slot set start/hero-titel --file entry.json
-```
-
-Nur das Gerüst eines bestehenden Widgets austauschen, Slot-Inhalte bleiben
-erhalten:
-
-```bash
-comvenio homepage geruest set start --widget <widget-id> --file geruest.html --dry-run
-comvenio homepage geruest set start --widget <widget-id> --file geruest.html
-```
+Einen einzelnen Slot lesen und setzen sowie nur das Gerüst eines bestehenden
+Widgets austauschen sind noch nicht als Action verfügbar — in der Web-App
+erledigen.
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-
-**homepage** — vollständig
-
-- `comvenio homepage preview`
-- `comvenio homepage apply`
-- `comvenio homepage show`
-- Felder und Werte: `comvenio schema homepage --json`
 <!-- /gen:docs -->
 
 ## Fehler
@@ -477,9 +461,15 @@ comvenio homepage geruest set start --widget <widget-id> --file geruest.html
   Design oder Veröffentlichung. `comvenio help fehler SCOPE_REQUIRED`.
 - `PERMISSION_DENIED` — die Anmeldung reicht, aber die Vereinsrolle erlaubt
   Design oder Veröffentlichung nicht. `comvenio help fehler PERMISSION_DENIED`.
-- `VALIDATION_FAILED` — die Struktur- oder Design-Datei passt nicht zum
-  Schema, etwa ein fehlendes oder falsch formatiertes Feld.
+- `VALIDATION_FAILED` — die `tabs`- oder `design_settings`-Eingabe passt
+  nicht zum Schema, etwa ein fehlendes oder falsch formatiertes Feld.
   `comvenio help fehler VALIDATION_FAILED`.
-- `CONFLICT` — ein Gerüst oder Widget wurde zwischen Lesen und Schreiben
-  bereits geändert; aktuellen Stand erneut lesen und neu entscheiden.
+- `OUTCOME_UNKNOWN` — `action confirm` nach `cai.homepage.02.apply` endete
+  mit Zeitüberschreitung oder Serverfehler; nicht wiederholen, erst den
+  veröffentlichten Stand mit `cai.homepage.03.show` prüfen.
+  `comvenio help fehler OUTCOME_UNKNOWN`.
+- `CONFLICT` — die Seite wurde zwischen Lesen und Schreiben bereits
+  geändert; aktuellen Stand erneut lesen und neu entscheiden.
   `comvenio help fehler CONFLICT`.
+- `OAUTH_ONLY` — ein alter Befehl (etwa `homepage slot`, `homepage tree`)
+  läuft nicht über die aktuelle Anmeldung. `comvenio help fehler OAUTH_ONLY`.

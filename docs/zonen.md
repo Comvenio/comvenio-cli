@@ -15,128 +15,37 @@ zugewiesen ist, ist damit ihren Zonen zugeteilt.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung per `comvenio login`; welche Scopes ein einzelner Befehl braucht, zeigt
-`comvenio action list --json`. Gezeichnet wird ausschließlich im Gebiets-Editor der Web-App — die
-CLI liest und schreibt Zonen als GeoJSON-Dateien, ändert aber keine Eckpunkte interaktiv.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie
+brauchen, zeigt `comvenio action list --json`. Gezeichnet wird ausschließlich im Gebiets-Editor
+der Web-App — dort entstehen und ändern sich Einteilungen, Zonen und ihre Zuteilung zu Aufgaben.
 
 ## Abläufe
 
-### Einteilung anlegen und pflegen
+### Einteilungen, Zonen und ihre Zuteilung
 
-1. Vorhandene Einteilungen ansehen: `comvenio zone set list --json`.
-2. Neue Einteilung anlegen: `comvenio zone set create --name "<Name>" --center <lat>,<lng> --zoom <n>`.
-3. Namen ändern: `comvenio zone set update <zone-set-id> --name "<neuer Name>"`.
-   `update` liest den aktuellen Stand selbst; mit `--expected-version <n>` wird gegen einen
-   bekannten Stand geschrieben — passt er nicht, antwortet der Dienst mit `409` und nennt
-   `live_version`.
-4. Einteilung löschen: `comvenio zone set delete <zone-set-id>`.
+Ein Verein legt seine Einteilungen und Zonen im Gebiets-Editor der Web-App an und ändert dort ihre
+Form, Farbe, Notiz, Paten, Treffpunkt, Fortbewegung und Besonderheiten. Die Gebäudezahl je Zone
+schätzt der Dienst automatisch: Nach dem Anlegen einer Zone und nach jeder Änderung ihrer Form
+werden die Adressen (Straße und Hausnummer) im Polygon aus OpenStreetMap gezählt; eine von Hand
+eingetragene Zahl hat Vorrang vor der Schätzung.
 
-### Zonen anlegen und pflegen
-
-1. Zonen einer Einteilung ansehen: `comvenio zone list --set <zone-set-id>`.
-2. Zone aus einer GeoJSON-Datei anlegen:
-   `comvenio zone create --set <zone-set-id> --name "<Name>" --geojson <datei>.geojson --color "#e0842b"`.
-   `--geojson` nimmt ein `Polygon` oder `MultiPolygon`, ein `Feature` oder eine
-   `FeatureCollection` mit genau einem Feature; Koordinaten stehen als `[lng, lat]`, jeder Ring ist
-   geschlossen und hat mindestens vier Punkte, höchstens 2000 Punkte je Zone. Eine ungültige Datei
-   wird vor dem Aufruf abgewiesen.
-3. Form aktualisieren: `comvenio zone update <zone-id> --geojson <datei-neu>.geojson`.
-4. Zone löschen: `comvenio zone delete <zone-id>`. Gelöschte Zonen bleiben an ihren Aufgaben und
-   werden dort als gelöscht angezeigt.
-
-### Angaben zur Zone pflegen
-
-1. Gebäudezahl von Hand eintragen: `comvenio zone update <zone-id> --building-count 120`; wieder
-   der Schätzung überlassen mit `--building-count leer`. Die Schätzung selbst entsteht automatisch:
-   nach dem Anlegen einer Zone und nach jeder Änderung ihrer Form werden die Adressen (Straße und
-   Hausnummer) im Polygon aus OpenStreetMap gezählt. `zone list` zeigt die geschätzte Zahl in der
-   Spalte „Gebäude“ mit „≈“; eine eingetragene Zahl steht ohne „≈“ und hat Vorrang.
-2. Notiz setzen oder löschen: `comvenio zone update <zone-id> --notes "<Text>"` bzw. `--notes ""`.
-3. Schätzung neu anstoßen (etwa nach „Schätzung fehlgeschlagen“): `comvenio zone estimate <zone-id>`
-   — das Ergebnis steht nach wenigen Sekunden in `zone list`. Dabei wird auch die Straßenliste der
-   Zone neu geschrieben; `zone list --json` liefert sie im Feld `strassen`.
-4. Paten, Treffpunkt, Fortbewegung und Besonderheiten setzen:
-   `comvenio zone update <zone-id> --pate <member-id> --treffpunkt "<lat>,<lng>,<Beschreibung>" --fortbewegung fuss --besonderheiten hunde,zugang`.
-   Jedes dieser Felder löscht `leer` einzeln wieder.
-
-### Zonen importieren
-
-1. `comvenio zone import --set <zone-set-id> --geojson <datei>.geojson`. Je Feature der
-   `FeatureCollection` entsteht eine Zone; der Name kommt aus `properties.name`, die Farbe
-   wahlweise aus `properties.color`. Ungültige Features werden übersprungen und mit Index und
-   Grund gelistet; die gültigen Zonen sind trotzdem angelegt. Der Befehl endet dann mit **Exit 1**
-   — den Import in diesem Fall nicht einfach wiederholen, sonst entstehen für die bereits
-   angelegten Zonen doppelte Einträge; stattdessen die gelisteten Features einzeln korrigieren.
-
-### Übersicht und Zuteilung
-
-1. Übersicht je Zone: `comvenio zone overview --set <zone-set-id>` — zeigt **nicht zugeteilt**,
-   **in Arbeit**, **zugeteilt, offen** und mit `--status completed` auch **erledigt**;
-   abgebrochene Aufgaben zählen nie.
-2. Zonen einer Aufgabe ansehen: `comvenio task-zones <task-id>`.
-3. Zone zuordnen oder entfernen: `comvenio task-zones <task-id> add <zone-id>` bzw.
-   `comvenio task-zones <task-id> remove <zone-id>`. Eine Aufgabe trägt Zonen immer nur einer
-   Einteilung; Vorlagen bekommen keine Zonen.
-
-Das Offline-Schema für Zonen steht unter `comvenio schema zone --json`.
+Aufgaben werden im Gebiets-Editor einer oder mehreren Zonen einer Einteilung zugeteilt — eine
+Aufgabe trägt dabei immer nur Zonen einer einzigen Einteilung, Vorlagen bekommen keine Zonen. Wer
+einer Aufgabe zugewiesen ist, ist damit ihren Zonen zugeteilt. Eine Übersicht je Zone zeigt, was
+nicht zugeteilt, in Arbeit, zugeteilt-offen oder — auf Wunsch — erledigt ist; abgebrochene
+Aufgaben zählen dabei nie.
 
 ## Beispiele
 
-```bash
-comvenio zone set create --name "Flyer (Straßenzüge)" --center 48.8950,12.3790 --zoom 16
-comvenio zone create --set <zone-set-id> --name "Kastnerstraße" --geojson kastner.geojson --color "#e0842b"
-comvenio zone update <zone-id> --pate <member-id> --treffpunkt "49.05,12.36,Material bei Familie Huber" --fortbewegung fuss --besonderheiten hunde,zugang
-comvenio zone estimate <zone-id>
-comvenio zone overview --set <zone-set-id> --status open,in_progress,completed --json
-comvenio task-zones <task-id> add <zone-id>
-```
+Für diesen Bereich gibt es keine `comvenio`-Befehle — Einteilungen, Zonen und ihre Zuteilung
+werden ausschließlich im Gebiets-Editor der Web-App bearbeitet.
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-
-**zone** — vollständig
-
-- `comvenio zone set list`
-- `comvenio zone set create`
-- `comvenio zone set update`
-- `comvenio zone set delete`
-- `comvenio zone list`
-- `comvenio zone create`
-- `comvenio zone update`
-- `comvenio zone estimate`
-- `comvenio zone delete`
-- `comvenio zone import`
-- `comvenio zone overview`
-- `comvenio task-zones`
-- `comvenio task-zones add`
-- `comvenio task-zones remove`
-- Felder und Werte: `comvenio schema zone --json`
 <!-- /gen:docs -->
 
 ## Fehler
 
-- `VALIDATION_FAILED` — die GeoJSON-Geometrie oder ein Feld wie `--pate` ist ungültig, etwa ein
-  nicht geschlossener Ring oder eine unbekannte Mitglieds-ID. Mehr:
-  `comvenio help fehler VALIDATION_FAILED`.
-- `CONFLICT` — die Zone oder Einteilung wurde seit dem gelesenen Stand geändert
-  (`--expected-version` passt nicht mehr). Mehr: `comvenio help fehler CONFLICT`.
-- `NOT_FOUND` — Einteilung, Zone oder Aufgabe sind unter der angegebenen Kennung nicht bekannt.
-  Mehr: `comvenio help fehler NOT_FOUND`.
-- `PERMISSION_DENIED` — die Vereinsrolle erlaubt das Anlegen, Ändern oder Löschen nicht. Mehr:
-  `comvenio help fehler PERMISSION_DENIED`.
-- `UPSTREAM_UNAVAILABLE` — ein für die Prüfung nötiger Dienst (etwa für `--pate`) antwortet
-  gerade nicht. Mehr: `comvenio help fehler UPSTREAM_UNAVAILABLE`.
-
-### Exit-Codes
-
-| Exit | Bedeutung |
-|---|---|
-| 0 | Erfolg |
-| 1 | Fehler laut Code oben — oder ein Import, bei dem Features übersprungen wurden |
-| 2 | ungültige Eingabe vor dem Aufruf (Datei, Geometrie, `--center`, `--color`) |
+Für diesen Bereich gibt es keine `comvenio`-Befehle und damit keine eigenen CLI-Fehlercodes;
+Fehler beim Zeichnen oder Zuteilen zeigt der Gebiets-Editor der Web-App direkt an.

@@ -13,12 +13,7 @@ DataShare verwaltet die Dateien, Ordner und den Papierkorb eines Vereins, ordnet
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Zum Hochladen in eine bestimmte Abteilung ist dort das Dateirecht nötig — ohne dieses Recht schlägt der Upload in diese Abteilung fehl.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Zum Hochladen in eine bestimmte Abteilung ist dort das Dateirecht nötig — ohne dieses Recht schlägt der Upload in diese Abteilung fehl.
 
 ## Abläufe
 
@@ -30,57 +25,52 @@ Jede Datei kann einem fachlichen Kontext zugeordnet werden: `none`, `club`, `dep
 - `sub_context_id` verfeinert den Kontext, zum Beispiel auf einen Event-Bereich.
 - `context_label` gruppiert Dateien innerhalb eines Kontexts, zum Beispiel `gallery`, `title_picture`, `flyer` oder `contract`.
 - Die Sichtbarkeit ist `private` (Standard) oder `public`.
+- `department_id` grenzt eine Abfrage oder eine Änderung zusätzlich auf eine Abteilung ein; ohne Angabe gilt der gesamte Club-Kontext.
 
-### Datei hochladen
+### Datei hochladen (`cai.data.06.upload`)
 
 1. Zielkontext und, falls nötig, Unterkontext bestimmen (siehe oben).
-2. Für die Kontexte `club`, `none` und `department` optional eine Abteilung wählen — ohne `--department` landet die Datei in der **Standard-Abteilung** des Vereins und erscheint dort im DataShare. `--department none` lädt bewusst ohne Abteilung hoch; die Datei ist dann **nicht** im DataShare sichtbar. Andere Kontexte (`event`, `news`, `certificate`, …) folgen eigenen Regeln des Servers.
-3. Hochladen — das CLI führt reservieren, direkt hochladen und finalisieren in einem Schritt aus. Das Limit beträgt 200 MB.
-
-Der Upload funktioniert auch aus der eigenständigen Programmversion; Dateiinhalte werden dabei als stabiler Byte-Body übertragen.
+2. Für die Kontexte `club`, `none` und `department` optional eine Abteilung über `department_id` wählen — ohne Angabe landet die Datei in der **Standard-Abteilung** des Vereins und erscheint dort im DataShare. Andere Kontexte (`event`, `news`, `certificate`, …) folgen eigenen Regeln des Servers.
+3. Die eigentlichen Datei-Bytes werden getrennt von der Action übertragen; `source_file_id`, `filename`, `content_type` und `expected_size` in der Eingabe müssen zu dieser Übertragung passen. Das Limit beträgt 200 MB.
 
 ### Video für mobiles Autoplay optimieren
 
-Mobile Browser starten große Videos oft nicht automatisch — eine kleine, tonlose MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig automatisch und stumm an. Mit `--optimize-video` re-encodiert der Upload das Video automatisch, bevor es hochgeladen wird:
+Noch nicht als Action verfügbar — in der Web-App erledigen.
 
-1. `ffmpeg` muss verfügbar sein (unter Windows zum Beispiel per `winget install Gyan.FFmpeg`) — ohne `ffmpeg` bricht der Befehl vor jedem Upload mit einer klaren Fehlermeldung ab.
-2. Nur Video-Dateien (`.mp4`, `.mov`, `.webm`, `.mkv`) lassen sich optimieren; andere Endungen brechen den Befehl vorher ab.
-3. Das Original bleibt unverändert auf der Festplatte; die optimierte Kopie entsteht temporär unter demselben Dateinamen und wird nach dem Upload automatisch gelöscht.
+### Kontext nachträglich ändern (`cai.data.03.update`)
 
-Die Optimierung erzeugt H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** und mit vorangestelltem moov-Atom. Die Konsole zeigt die Größenänderung als „Video optimiert: X MB -> Y MB" an; bei `--json` steht dieselbe Information zusätzlich strukturiert unter `optimized.inputSizeBytes` und `optimized.outputSizeBytes` in der Antwort.
-
-### Kontext nachträglich ändern
-
-Nur angegebene Felder werden geändert. Der Wert `none` setzt ein Feld ausdrücklich auf leer und entfernt so eine bestehende Zuordnung.
+`changes` überträgt nur die tatsächlich zu ändernden Felder (`context_type`, `context_id`, `sub_context_id`, `context_label`); mindestens ein Feld ist Pflicht. Der Wert `null` setzt ein Feld ausdrücklich auf leer und entfernt so eine bestehende Zuordnung.
 
 ### Datei-Lifecycle
 
-- Löschen verschiebt eine Datei standardmäßig in den Papierkorb.
-- Wiederherstellen holt eine weich gelöschte Datei zurück.
-- Endgültiges Löschen ist nicht rückgängig zu machen.
-- Speicherverbrauch und Papierkorb lassen sich je Verein oder je Abteilung abfragen; der Papierkorb einer Abteilung kann gezielt geleert werden.
+- `cai.data.09.move` verschiebt eine Datei in einen anderen Ordner; `target_folder_id: null` verschiebt sie auf die oberste Ebene.
+- `cai.data.10.visibility` setzt die Sichtbarkeit über `operation`: `private` ist ein normaler Schreibzugriff, `public` gilt als `critical_write`.
+- `cai.data.07.delete` verschiebt eine Datei standardmäßig in den Papierkorb (`operation: soft_delete`); endgültiges Löschen (`operation: hard_delete`) ist `critical_write` und nicht rückgängig zu machen — der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Löschung aus.
+- `cai.data.08.restore` holt eine weich gelöschte Datei zurück.
+- `cai.data.11.stats` liefert Speicherverbrauch je Verein oder je Abteilung.
+- `cai.data.12.empty_trash` (`critical_write`) leert den Papierkorb einer Abteilung gezielt und läuft über dieselbe Vorschau-/Bestätigungsfolge.
 
 ### Ordner lesen, suchen und verwalten
 
-Ordner lassen sich nach Unterordnern und Dateien auflisten, per Stichwort durchsuchen und über ihren Pfad (Breadcrumb) einordnen. `root` und der Wert `none` stehen bei Ordner-Angaben für die oberste Ebene.
+`cai.data.17.children` listet Unterordner und Dateien, `cai.data.18.search` durchsucht einen Ordner per Stichwort, `cai.data.19.breadcrumb` liefert den Pfad. `root` und der Wert `null` stehen bei Ordner-Angaben für die oberste Ebene.
 
-Ordner können angelegt, umbenannt, verschoben, geschützt und gelöscht werden; Löschen und Wiederherstellen wirken standardmäßig rekursiv auf den gesamten Unterbaum.
+Ordner lassen sich anlegen (`cai.data.20.folder_create`), umbenennen (`cai.data.21.folder_rename`), verschieben (`cai.data.22.folder_move`) und schützen (`cai.data.23.folder_protect`) — alles `reversible_write`. Löschen (`cai.data.24.folder_delete`) ist `critical_write` und wirkt standardmäßig rekursiv auf den gesamten Unterbaum; Wiederherstellen (`cai.data.25.folder_restore`) ist wieder `reversible_write`.
 
 ### Ordnerrechte setzen
 
-Rechte werden einem Ordner als Objekt mit `subject_type`, `subject_id`, `can_read` und `can_write` zugeordnet; aktuell ist ausschließlich `subject_type=user` produktiv, `group` ist für später reserviert. Sobald ein Ordner oder einer seiner Vorfahren explizite Rechte trägt, ist der geschützte Bereich nur für passende Subjekte lesbar oder schreibbar. Unterordner können eigene, abweichende Rechte definieren. Rechte lassen sich auch gesammelt als Liste anlegen.
+Rechte werden einem Ordner als Objekt mit `subject_type`, `subject_id`, `can_read` und `can_write` zugeordnet; aktuell ist ausschließlich `subject_type=user` produktiv, `group` ist für später reserviert. Sobald ein Ordner oder einer seiner Vorfahren explizite Rechte trägt, ist der geschützte Bereich nur für passende Subjekte lesbar oder schreibbar. `cai.data.26.folder_rights` liest die Rechte eines Ordners, `cai.data.27.folder_right_add` fügt eines hinzu (`reversible_write`). Ein gesammeltes Anlegen als Liste (`cai.data.28.folder_right_bulk`) und das Entfernen eines einzelnen Rechts (`cai.data.29.folder_right_delete`) sind jeweils `critical_write` und laufen über die Vorschau-/Bestätigungsfolge.
 
 ### Dateien zwischen Event-Bereichen teilen
 
-Ein Titelbild oder ein Flyer kann zusätzlich in mehreren Event-Bereichen erscheinen, ohne dafür mehrfach hochgeladen zu werden. Für mehrere Bereiche gemeinsam liefert eine eigene Abfrage die passende Bild-/Datei-Zuordnung je Bereich; ohne Einschränkung auf bestimmte Bereiche bezieht sich die Abfrage auf den gesamten Club-Kontext.
+Ein Titelbild oder ein Flyer kann zusätzlich in mehreren Event-Bereichen erscheinen, ohne dafür mehrfach hochgeladen zu werden. `cai.data.13.area_media` liefert für mehrere Bereiche gemeinsam die passende Bild-/Datei-Zuordnung je Bereich. `cai.data.14.area_shares` zeigt die Bereiche einer Datei, `cai.data.15.area_share_add` ergänzt welche (`reversible_write`), `cai.data.16.area_share_remove` entfernt eines (`critical_write`).
 
 ### Papers veröffentlichen
 
-Ein Paper verknüpft eine vorhandene Datei mit einem veröffentlichbaren Dokument-Datensatz. Dokumenttypen sind `protokoll`, `flyer`, `anleitung`, `zeitung`, `bericht`, `speisekarte` und `sonstiges`; der fachliche Kontext eines Papers ist `event`, `object`, `task`, `supply` oder `custom`. Ein vollständiges Update ersetzt alle Felder — es erwartet dieselben Angaben wie beim Anlegen.
+Ein Paper verknüpft eine vorhandene Datei mit einem veröffentlichbaren Dokument-Datensatz. Dokumenttypen sind `protokoll`, `flyer`, `anleitung`, `zeitung`, `bericht`, `speisekarte` und `sonstiges`; der fachliche Kontext eines Papers ist `event`, `object`, `task`, `supply` oder `custom`. `cai.data.30.papers` listet, `cai.data.31.paper_show` zeigt ein Paper, `cai.data.32.paper_add` legt eines an (`reversible_write`), `cai.data.33.paper_update` ersetzt es vollständig — es erwartet dieselben Angaben wie beim Anlegen. `cai.data.34.paper_delete` ist `critical_write`.
 
 ### Mitglieder- und Buchungsdaten exportieren
 
-Nur die Bereiche `members` und `bookings` sowie die Formate `csv` und `xlsx` sind zulässig; andere Werte brechen schon vor der Anfrage mit einem Eingabefehler ab.
+`cai.data.35.export_members_bookings` liefert über `operation` entweder `members` oder `bookings`, jeweils im Format `csv` oder `xlsx`; beide Ausprägungen sind `critical_write` und laufen über die Vorschau-/Bestätigungsfolge.
 
 ### Abgrenzung
 
@@ -91,173 +81,132 @@ dahinter.
 ## Beispiele
 
 ```bash
-comvenio data list --context event --context-id <event-id> --json
-comvenio data show <file-id> --json
-comvenio data url <file-id> --json
-comvenio data download <file-id> --out ./bild.jpg --json
-```
+comvenio action list --json
 
-`list` benötigt immer `--context` und `--context-id`. `url` liefert eine kurzlebige, signierte Adresse; `download` schreibt die Bytes auf den lokalen Pfad.
-
-```bash
-comvenio data upload ./bild.jpg \
-  --context event \
-  --context-id <event-id> \
-  --sub-context-id <event-area-id> \
-  --department <department-id> \
-  --label gallery \
-  --public \
-  --json
+comvenio action call cai.data.01.list \
+  --input '{"context_type":"event","context_id":"<event-id>","include_deleted":false,"limit":50,"offset":0}'
+comvenio action call cai.data.02.show --input '{"file_id":"<file-id>"}'
+comvenio action call cai.data.04.url --input '{"file_id":"<file-id>"}'
+comvenio action call cai.data.05.download --input '{"file_id":"<file-id>","preferred_name":"bild.jpg"}'
 ```
 
 ```bash
-comvenio data upload ./festumzug.mp4 \
-  --context event \
-  --context-id <event-id> \
-  --public \
-  --optimize-video \
-  --json
-```
-
-```bash
-comvenio data update <file-id> \
-  --context news \
-  --context-id <news-id> \
-  --label gallery \
-  --json
-
-comvenio data update <file-id> --sub-context-id none --label none --json
-```
-
-```bash
-comvenio data move <file-id> --folder <folder-id> --json
-comvenio data move <file-id> --folder root --json
-comvenio data visibility <file-id> --visibility public --json
-comvenio data delete <file-id> --json
-comvenio data restore <file-id> --json
-comvenio data delete <file-id> --hard --json
-
-comvenio data stats --json
-comvenio data stats --department <department-id> --json
-comvenio data empty-trash --department <department-id> --folder root --json
-```
-
-```bash
-comvenio data children --parent root --json
-comvenio data children --parent <folder-id> --include-deleted --json
-comvenio data search --query "Vertrag" --folder root --json
-comvenio data search --query "Protokoll" --folder <folder-id> --no-recursive --json
-comvenio data breadcrumb <folder-id> --json
-
-comvenio data folder-create --name "Vorstand" --parent root --protected true --json
-comvenio data folder-rename <folder-id> --name "Vorstand 2027" --json
-comvenio data folder-move <folder-id> --parent <new-parent-id> --json
-comvenio data folder-protect <folder-id> --protected false --json
-comvenio data folder-delete <folder-id> --json
-comvenio data folder-restore <folder-id> --json
-```
-
-Ordnerrecht als JSON:
-
-```json
-{
-  "folder_id": "<folder-id>",
-  "subject_type": "user",
-  "subject_id": "<user-id>",
-  "can_read": true,
-  "can_write": true
-}
-```
-
-```bash
-comvenio data folder-right-add --file right.json --json
-comvenio data folder-rights <folder-id> --json
-comvenio data folder-right-delete <right-id> --json
-comvenio data folder-right-bulk --file rights.json --json
-```
-
-```bash
-comvenio data area-share-add <file-id> --area-ids <area-id-1>,<area-id-2> --json
-comvenio data area-shares <file-id> --json
-comvenio data area-share-remove <file-id> --area-id <area-id-1> --json
-
-comvenio data area-media \
-  --area-ids <area-id-1>,<area-id-2> \
-  --label title_picture \
-  --json
-```
-
-Paper-Datensatz als JSON:
-
-```json
-{
-  "title": "Protokoll der Jahreshauptversammlung",
-  "description": "Beschlüsse vom 10. Juli 2026",
-  "document_type": "protokoll",
+comvenio action call cai.data.06.upload --input '{
+  "source_file_id": "<staged-file-id>",
+  "filename": "bild.jpg",
+  "content_type": "image/jpeg",
+  "expected_size": 245000,
   "context_type": "event",
   "context_id": "<event-id>",
+  "sub_context_id": "<event-area-id>",
+  "context_label": "gallery",
+  "visibility": "public",
+  "department_id": "<department-id>"
+}'
+```
+
+```bash
+comvenio action call cai.data.03.update --input '{
   "file_id": "<file-id>",
-  "published_at": "2026-07-13T12:00:00+02:00"
-}
+  "changes": { "context_type": "news", "context_id": "<news-id>", "context_label": "gallery" }
+}'
+
+comvenio action call cai.data.03.update --input '{
+  "file_id": "<file-id>",
+  "changes": { "sub_context_id": null, "context_label": null }
+}'
 ```
 
 ```bash
-comvenio data paper-add --file paper.json --json
-comvenio data papers --json
-comvenio data papers --context event --context-id <event-id> --type protokoll --json
-comvenio data paper-show <paper-id> --json
-comvenio data paper-update <paper-id> --file paper.json --json
-comvenio data paper-delete <paper-id> --json
+comvenio action call cai.data.09.move --input '{"file_id":"<file-id>","target_folder_id":"<folder-id>"}'
+comvenio action call cai.data.09.move --input '{"file_id":"<file-id>","target_folder_id":null}'
+comvenio action call cai.data.10.visibility --input '{"operation":"public","file_id":"<file-id>"}'
+comvenio action call cai.data.07.delete --input '{"operation":"soft_delete","file_id":"<file-id>"}'
+comvenio action call cai.data.08.restore --input '{"file_id":"<file-id>"}'
+
+comvenio action call cai.data.07.delete --input '{"operation":"hard_delete","file_id":"<file-id>"}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
+
+comvenio action call cai.data.11.stats --input '{}'
+comvenio action call cai.data.11.stats --input '{"department_id":"<department-id>"}'
+comvenio action call cai.data.12.empty_trash --input '{"department_id":"<department-id>","folder_id":null}'
 ```
 
 ```bash
-comvenio data export members --format csv --out ./mitglieder.csv --json
-comvenio data export members --format xlsx --out ./mitglieder.xlsx --json
-comvenio data export bookings --format csv --out ./buchungen.csv --json
+comvenio action call cai.data.17.children --input '{"parent_id":null,"include_deleted":false,"limit":50,"offset":0}'
+comvenio action call cai.data.18.search --input '{"folder_id":null,"query":"Vertrag","recursive":true,"limit":50,"offset":0}'
+comvenio action call cai.data.19.breadcrumb --input '{"folder_id":"<folder-id>"}'
+
+comvenio action call cai.data.20.folder_create --input '{"parent_id":null,"name":"Vorstand","is_protected":true}'
+comvenio action call cai.data.21.folder_rename --input '{"folder_id":"<folder-id>","new_name":"Vorstand 2027"}'
+comvenio action call cai.data.22.folder_move --input '{"folder_id":"<folder-id>","new_parent_id":"<new-parent-id>"}'
+comvenio action call cai.data.23.folder_protect --input '{"folder_id":"<folder-id>","protect":false}'
+comvenio action call cai.data.24.folder_delete --input '{"folder_id":"<folder-id>","recursive":true}'
+comvenio action call cai.data.25.folder_restore --input '{"folder_id":"<folder-id>","recursive":true}'
+```
+
+Ordnerrecht als Eingabe:
+
+```bash
+comvenio action call cai.data.27.folder_right_add --input '{
+  "right": {
+    "folder_id": "<folder-id>",
+    "subject_type": "user",
+    "subject_id": "<user-id>",
+    "can_read": true,
+    "can_write": true
+  }
+}'
+
+comvenio action call cai.data.26.folder_rights --input '{"folder_id":"<folder-id>"}'
+comvenio action call cai.data.29.folder_right_delete --input '{"right_id":"<right-id>"}'
+comvenio action call cai.data.28.folder_right_bulk --input '{
+  "rights": [
+    { "folder_id": "<folder-id>", "subject_type": "user", "subject_id": "<user-id>", "can_read": true, "can_write": false }
+  ]
+}'
+```
+
+```bash
+comvenio action call cai.data.15.area_share_add --input '{"file_id":"<file-id>","area_ids":["<area-id-1>","<area-id-2>"]}'
+comvenio action call cai.data.14.area_shares --input '{"file_id":"<file-id>"}'
+comvenio action call cai.data.16.area_share_remove --input '{"file_id":"<file-id>","area_id":"<area-id-1>"}'
+
+comvenio action call cai.data.13.area_media --input '{"area_ids":["<area-id-1>","<area-id-2>"],"label":"title_picture"}'
+```
+
+Paper-Datensatz als Eingabe:
+
+```bash
+comvenio action call cai.data.32.paper_add --input '{
+  "paper": {
+    "title": "Protokoll der Jahreshauptversammlung",
+    "description": "Beschlüsse vom 10. Juli 2026",
+    "document_type": "protokoll",
+    "context_type": "event",
+    "context_id": "<event-id>",
+    "file_id": "<file-id>",
+    "published_at": "2026-07-13T12:00:00+02:00"
+  }
+}'
+
+comvenio action call cai.data.30.papers --input '{"context_type":"event","context_id":"<event-id>","document_type":"protokoll","limit":50,"offset":0}'
+comvenio action call cai.data.31.paper_show --input '{"paper_id":"<paper-id>"}'
+comvenio action call cai.data.34.paper_delete --input '{"paper_id":"<paper-id>"}'
+```
+
+```bash
+comvenio action call cai.data.35.export_members_bookings --input '{"operation":"members","format":"csv"}'
+comvenio action call cai.data.35.export_members_bookings --input '{"operation":"bookings","format":"xlsx"}'
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-
-**data** — vollständig
-
-- `comvenio data list`
-- `comvenio data show`
-- `comvenio data update`
-- `comvenio data url`
-- `comvenio data download`
-- `comvenio data upload`
-- `comvenio data delete`
-- `comvenio data restore`
-- `comvenio data move`
-- `comvenio data visibility`
-- `comvenio data stats`
-- `comvenio data empty-trash`
-- `comvenio data area-media`
-- `comvenio data area-shares`
-- `comvenio data area-share-add`
-- `comvenio data area-share-remove`
-- `comvenio data children`
-- `comvenio data search`
-- `comvenio data breadcrumb`
-- `comvenio data folder-create`
-- `comvenio data folder-rename`
-- `comvenio data folder-move`
-- `comvenio data folder-protect`
-- `comvenio data folder-delete`
-- `comvenio data folder-restore`
-- `comvenio data folder-rights`
-- `comvenio data folder-right-add`
-- `comvenio data folder-right-bulk`
-- `comvenio data folder-right-delete`
-- `comvenio data papers`
-- `comvenio data paper-show`
-- `comvenio data paper-add`
-- `comvenio data paper-update`
-- `comvenio data paper-delete`
-- `comvenio data export members|bookings`
-- Felder und Werte: `comvenio schema data --json`
 <!-- /gen:docs -->
 
 ## Fehler
@@ -268,3 +217,4 @@ comvenio data export bookings --format csv --out ./buchungen.csv --json
 - `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope für Lesen oder Schreiben von Dateien. Mehr: `comvenio help fehler SCOPE_REQUIRED`
 - `TENANT_MISMATCH` — die angefragte Datei oder der Ordner stammt aus einem anderen Verein als dem verbundenen. Mehr: `comvenio help fehler TENANT_MISMATCH`
 - `CONFLICT` — die Datei oder der Ordner wurde inzwischen geändert, gelöscht oder erlaubt die Aktion in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`
+- `OUTCOME_UNKNOWN` — bei einer ändernden Action blieb die Serverantwort aus; vor einer Wiederholung mit einer lesenden Action prüfen, ob die Änderung schon angekommen ist. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`

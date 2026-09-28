@@ -13,148 +13,112 @@ Mit Rollen legt ein Verein eigene Rollen mit einer Berechtigungsmatrix an und we
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Schreibende Rollen-Aktionen verlangen serverseitig das Recht `manage_roles`. Geschützte Standardrollen des Vereins lassen sich lesen, aber nicht ändern — dafür gibt es bewusst keinen erzwingenden Sonderweg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Schreibende Rollen-Actions verlangen serverseitig das Recht `manage_roles`. Geschützte Standardrollen des Vereins lassen sich lesen, aber nicht ändern — dafür gibt es bewusst keinen erzwingenden Sonderweg.
 
 ## Abläufe
 
 ### Rolle anlegen und pflegen
 
-Rollennamen sind innerhalb eines Vereins nach Entfernen äußerer Leerzeichen und unabhängig von Groß-/Kleinschreibung eindeutig. Ein Namenskonflikt liefert einen Konfliktfehler; vorhandene Dubletten werden dabei nicht automatisch zusammengeführt. Eine gelöschte Rolle lässt sich wiederherstellen.
+`cai.role.03.create` legt eine Rolle mit `name` und `description` an. Rollennamen sind innerhalb eines Vereins nach Entfernen äußerer Leerzeichen und unabhängig von Groß-/Kleinschreibung eindeutig; ein Namenskonflikt liefert einen Konfliktfehler, vorhandene Dubletten werden dabei nicht automatisch zusammengeführt. `cai.role.04.update` ändert `name` und/oder `description` (mindestens ein Feld). `cai.role.05.delete` ist `critical_write`. Eine gelöschte Rolle wiederherzustellen: Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ### Berechtigungsmatrix setzen
 
-1. Verfügbare Berechtigungs-Schlüssel und die aktuelle Matrix einer Rolle abrufen.
-2. Entweder genau einen Wert gezielt ändern oder eine ganze Matrix-Datei anwenden.
-3. Eine Matrix-Datei ist standardmäßig additiv: Nur gelieferte Schlüssel werden geändert. Ein vollständiger Ersatz setzt alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt".
-4. Ohne ausdrückliche Bestätigung zeigt das CLI nur den vollständigen Vorher-/Nachher-Unterschied und führt keine Änderung aus. Mit Bestätigung liest es denselben Stand im selben Lauf erneut und sichert die Änderung gegen zwischenzeitliche parallele Änderungen ab.
+1. `cai.role.06.permission_defs` liefert die verfügbaren Berechtigungs-Schlüssel; `cai.role.08.permissions_show_apply` mit `operation: show` die aktuelle Matrix einer Rolle.
+2. `cai.role.07.permission_set` ändert genau einen Wert gezielt (`permission_key`, `allowed`) — `reversible_write`.
+3. `cai.role.08.permissions_show_apply` mit `operation: apply` wendet eine ganze Matrix (`values`) an; ohne `replace` ist das additiv, nur gelieferte Schlüssel werden geändert, mit `replace: true` setzt es alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt". Beide Ausprägungen dieser Action sind laut Freigabeliste `critical_write`: Der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Änderung aus und sichert sie gegen zwischenzeitliche parallele Änderungen ab.
 
-Eine Matrix-Datei ist ein JSON-Objekt mit wahr/falsch-Werten je Berechtigungs-Schlüssel; alternativ ist eine Hülle mit dem Feld `values` zulässig. Eine Hülle mit dem Feld `permissions` bleibt zum Lesen kompatibel, gilt aber als veraltet.
+### Rolle direkt zuweisen (`cai.role.09.assign`)
 
-### Rolle direkt zuweisen
-
-Eine Zuweisung akzeptiert ausschließlich eine stabile Mitglieds-ID und einen ausdrücklichen Geltungsbereich: entweder den gesamten Verein oder eine bestimmte Abteilung. Der Vereins-Geltungsbereich verbietet eine Abteilungsangabe, der Abteilungs-Geltungsbereich verlangt sie; Fehler dabei werden schon vor dem eigentlichen Schreiben erkannt. Eine Zuweisung, ein Entfernen und ein Entkoppeln von einer Position sind jeweils Soft-Deletes — die Wiederherstellung ist ein eigener, ausdrücklicher Schritt.
+Eine Zuweisung akzeptiert ausschließlich eine stabile Mitglieds-ID (`member_id`) und einen ausdrücklichen Geltungsbereich (`scope`): `club` oder `department`. Der Club-Geltungsbereich verbietet eine Abteilungsangabe, der Abteilungs-Geltungsbereich verlangt `department_id`; Fehler dabei werden schon vor dem eigentlichen Schreiben erkannt. `cai.role.10.unassign` ist `critical_write`. Eine entfernte Zuweisung wiederherzustellen: Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ### Rolle an eine Position koppeln
 
-Die Kopplung an eine Position beschreibt die fachliche Zuordnung: Wer diese Position innehat, erhält die verknüpfte Rolle automatisch. Effektive Rechte, die daraus entstehen, tragen die Quelle „Position" statt „direkt".
+`cai.role.12.position_link` beschreibt die fachliche Zuordnung: Wer diese Position innehat, erhält die verknüpfte Rolle automatisch. `cai.role.14.position_list` listet die Kopplungen einer Position. `cai.role.13.position_unlink` ist `critical_write`. Eine entkoppelte Position wiederherzustellen: Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ### Effektive Rechte nachvollziehen
 
-Die effektiven Rechte eines Mitglieds werden serverseitig zusammengeführt: Ohne Abteilungsangabe zählen nur Vereins-Zuweisungen, mit Abteilungsangabe zusätzlich die Zuweisungen genau dieser Abteilung. Für jede beteiligte Rolle zeigt die Antwort den Berechtigungs-Schlüssel, das Ergebnis, die Rolle, den Geltungsbereich und ob das Recht direkt oder über eine Position zustande kam.
+Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ### Sicherheitsgrenzen
 
 - Geschützte Standardrollen und ihre Matrix lassen sich nicht ändern.
 - Es gibt kein öffentliches erzwungenes Löschen und keine vereinsweiten Aufräum-Aktionen.
-- Löschen, Entfernen und Entkoppeln sind Soft-Deletes; Wiederherstellen bleibt jeweils ein eigener Zustand.
-- Kritische Änderungen liefern maschinenlesbar Ziel, Ist-Stand, Unterschied, Risiko und eine Vorgangs-Kennung.
 - Eine Zuweisung läuft ausschließlich über die Mitglieds-ID, nie über Namen oder E-Mail-Adresse.
 - Schreibende Aufrufe werden nicht automatisch wiederholt.
-- Jeder vollständige Matrix-Ersatz verlangt eine sichtbare Vorschau und eine ausdrückliche Bestätigung.
+- Kritische Actions liefern maschinenlesbar Ziel, Ist-Stand, Unterschied, Risiko und eine Vorschau-Kennung; erst `action confirm` mit dieser Kennung und einem stabilen `--idempotency-key` führt die Änderung aus.
 
 ## Beispiele
 
 ```bash
-comvenio role list --json
-comvenio role show <role-id> --json
-comvenio role create --name "Kassenwart" --description "Darf Vereinsfinanzen verwalten" --json
-comvenio role update <role-id> --description "Aktualisierte Beschreibung" --json
-comvenio role delete <role-id> --json
-comvenio role restore <role-id> --json
+comvenio action call cai.role.01.list --input '{}'
+comvenio action call cai.role.02.show --input '{"role_id":"<role-id>"}'
+comvenio action call cai.role.03.create --input '{"role":{"name":"Kassenwart","description":"Darf Vereinsfinanzen verwalten"}}'
+comvenio action call cai.role.04.update --input '{"role_id":"<role-id>","changes":{"description":"Aktualisierte Beschreibung"}}'
+comvenio action call cai.role.05.delete --input '{"role_id":"<role-id>"}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 ```
 
 ```bash
-comvenio role permission-defs --json
-comvenio role permissions show --role-id <role-id> --json
+comvenio action call cai.role.06.permission_defs --input '{}'
+comvenio action call cai.role.08.permissions_show_apply --input '{"operation":"show","role_id":"<role-id>"}'
 
-comvenio role permission set \
-  --role-id <role-id> \
-  --permission-key manage_events \
-  --allowed true \
-  --json
+comvenio action call cai.role.07.permission_set --input '{"role_id":"<role-id>","permission_key":"manage_events","allowed":true}'
 ```
 
-Matrix-Datei:
+Matrix als Eingabe:
 
-```json
-{
-  "manage_events": true,
-  "manage_finances": false
-}
+```bash
+comvenio action call cai.role.08.permissions_show_apply --input '{
+  "operation": "apply",
+  "role_id": "<role-id>",
+  "values": [
+    { "permission_key": "manage_events", "allowed": true },
+    { "permission_key": "manage_finances", "allowed": false }
+  ],
+  "replace": false
+}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 ```
 
 ```bash
-comvenio role permissions apply --role-id <role-id> --file matrix.json --json
-comvenio role permissions apply --role-id <role-id> --file matrix.json --replace --json
-comvenio role permissions apply --role-id <role-id> --file matrix.json --replace --yes --json
+comvenio action call cai.role.09.assign --input '{"member_id":"<member-id>","role_id":"<role-id>","scope":"club"}'
+
+comvenio action call cai.role.09.assign --input '{
+  "member_id": "<member-id>",
+  "role_id": "<role-id>",
+  "scope": "department",
+  "department_id": "<department-id>"
+}'
+
+comvenio action call cai.role.11.assignments --input '{"selector":{"type":"club"}}'
+comvenio action call cai.role.11.assignments --input '{"selector":{"type":"member","member_id":"<member-id>"}}'
+comvenio action call cai.role.11.assignments --input '{"selector":{"type":"role","role_id":"<role-id>"}}'
+comvenio action call cai.role.11.assignments --input '{"selector":{"type":"department","department_id":"<department-id>"}}'
+comvenio action call cai.role.10.unassign --input '{"assignment_id":"<assignment-id>"}'
 ```
 
 ```bash
-comvenio role assign \
-  --member-id <member-id> \
-  --role-id <role-id> \
-  --scope club \
-  --json
+comvenio action call cai.role.12.position_link --input '{
+  "position_id": "<position-id>",
+  "role_id": "<role-id>",
+  "department_id": "<department-id>"
+}'
 
-comvenio role assign \
-  --member-id <member-id> \
-  --role-id <role-id> \
-  --scope department \
-  --department-id <department-id> \
-  --json
-
-comvenio role assignments --json
-comvenio role assignments --member-id <member-id> --json
-comvenio role assignments --role-id <role-id> --json
-comvenio role assignments --department-id <department-id> --json
-comvenio role unassign <assignment-id> --json
-comvenio role assignment-restore <assignment-id> --json
-```
-
-```bash
-comvenio role position-link \
-  --position-id <position-id> \
-  --role-id <role-id> \
-  --department-id <department-id> \
-  --json
-
-comvenio role position-list --position-id <position-id> --json
-comvenio role position-unlink <assignment-id> --json
-comvenio role position-restore <assignment-id> --json
-```
-
-```bash
-comvenio role effective --member-id <member-id> --json
-comvenio role effective --member-id <member-id> --department-id <department-id> --json
+comvenio action call cai.role.14.position_list --input '{"position_id":"<position-id>"}'
+comvenio action call cai.role.13.position_unlink --input '{"assignment_id":"<assignment-id>"}'
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-
-**role** — vollständig
-
-- `comvenio role list`
-- `comvenio role show`
-- `comvenio role create`
-- `comvenio role update`
-- `comvenio role delete`
-- `comvenio role permission-defs`
-- `comvenio role permission set`
-- `comvenio role permissions show|apply`
-- `comvenio role assign`
-- `comvenio role unassign`
-- `comvenio role assignments`
-- `comvenio role position-link`
-- `comvenio role position-unlink`
-- `comvenio role position-list`
-- `comvenio role effective`
-- Felder und Werte: `comvenio schema role --json`
 <!-- /gen:docs -->
 
 ## Fehler
@@ -164,3 +128,4 @@ comvenio role effective --member-id <member-id> --department-id <department-id> 
 - `NOT_FOUND` — Rolle, Zuweisung oder Positionskopplung existiert nicht oder ist nicht sichtbar. Mehr: `comvenio help fehler NOT_FOUND`
 - `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt das Verwalten von Rollen nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
 - `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope zum Verwalten von Rollen. Mehr: `comvenio help fehler SCOPE_REQUIRED`
+- `OUTCOME_UNKNOWN` — bei einer ändernden Action blieb die Serverantwort aus; vor einer Wiederholung mit einer lesenden Action prüfen, ob die Änderung schon angekommen ist. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`

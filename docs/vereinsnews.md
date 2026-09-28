@@ -13,45 +13,36 @@ Mit Vereinsnews veröffentlicht ein Verein Neuigkeiten als Rich-HTML-Beiträge, 
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Ein Entwurf (`is_draft=true`) ist nur für berechtigte Redakteure sichtbar; erst mit der Veröffentlichung wird eine News für ihre Sichtbarkeitsgruppe sichtbar.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Ein Entwurf (`is_draft=true`) ist nur für berechtigte Redakteure sichtbar; erst mit der Veröffentlichung wird eine News für ihre Sichtbarkeitsgruppe sichtbar.
 
 ## Abläufe
 
 ### Status und Sichtbarkeit
 
-| Feld/Flag | Bedeutung |
+| Feld | Bedeutung |
 |---|---|
-| `is_draft=true` / `--draft` | nur für berechtigte Redakteure sichtbar |
-| `is_draft=false` / `--publish` | veröffentlicht; der Veröffentlichungszeitpunkt wird gesetzt |
+| `operation: draft` (bei `create`/`apply`) | nur für berechtigte Redakteure sichtbar; `reversible_write` |
+| `operation: publish` (bei `create`/`apply`) | veröffentlicht; der Veröffentlichungszeitpunkt wird gesetzt; `critical_write` |
 | `visibility_scope` | `public`, `member` oder `department`; Standard `member` |
-| `design_source` | wird beim Anwenden aus einer Datei auf `cli` erzwungen |
-| `is_pinned` / `--pinned` | News anpinnen |
-
-Ohne `--publish` bleibt eine neu angelegte News standardmäßig ein Entwurf.
+| `design_source` | Standard `cli` |
+| `is_pinned` | News anpinnen |
 
 ### Standard-Workflow: Bilder finden → News komponieren → prüfen → veröffentlichen
 
-1. Bilder in DataShare finden oder zuerst dorthin hochladen (siehe [dateien.md](dateien.md)).
-2. Die News deklarativ als Datei komponieren: Titel, Teaser, Sichtbarkeit, Titelbild und Rich-HTML-Inhalt.
-3. Die Vorschau im echten Layout prüfen, bevor irgendetwas gespeichert wird.
-4. Als Entwurf anlegen oder direkt veröffentlichen.
+1. Bilder in DataShare finden oder zuerst dorthin hochladen (siehe [dateien.md](dateien.md)); ihre Datei-IDs (`cover_image_file_id`, Bilder im HTML) stammen aus diesem Schritt.
+2. Die News als Objekt komponieren (`cai.news.03.create` oder `cai.news.06.apply`): Titel, Inhalt, Teaser, Sichtbarkeit, Titelbild.
+3. Die Layout-Vorschau prüfen, bevor irgendetwas gespeichert wird — `cai.news.07.preview` rendert im echten Layout und schreibt nichts.
+4. Mit `operation: draft` anlegen oder mit `operation: publish` direkt veröffentlichen. `publish` ist `critical_write`: Der Aufruf liefert zunächst nur eine Bestätigungs-Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Veröffentlichung aus.
 
-Reine Vorschau-Felder wie eine kurzlebige Bild-Adresse, Vereinsname, Autorenname und Vorschaudatum werden vor dem dauerhaften Speichern entfernt. Bilder im HTML brauchen zusätzlich zur Adresse eine stabile Datei-Kennung, damit die Anwendung eine abgelaufene Adresse automatisch neu signieren kann.
+Reine Vorschau-Felder wie eine kurzlebige Bild-Adresse, Vereinsname und Autorenname sind Teil der Eingabe von `cai.news.07.preview`, nicht der dauerhaften News selbst. Bilder im HTML brauchen zusätzlich zur Adresse eine stabile Datei-Kennung, damit die Anwendung eine abgelaufene Adresse automatisch neu signieren kann.
 
-Für eine einfache News ohne aufwendiges Layout genügt das direkte Anlegen mit Titel und Inhalt als Flags — beide sind dabei Pflicht; für aufwendiges Rich-HTML ist der Weg über eine Datei übersichtlicher.
+### Bestehende News aktualisieren (`cai.news.04.update`)
 
-### Aktualisieren, ohne den Status zu verlieren
-
-Das serverseitige Update ist ein Vollersatz aller Felder. Das CLI liest deshalb zuerst die vorhandene News und führt die angegebenen Änderungen mit dem bestehenden Stand zusammen — so wird eine bereits live geschaltete News beim Aktualisieren nicht versehentlich wieder zum Entwurf.
+`changes` überträgt nur die tatsächlich zu ändernden Felder — alle anderen bleiben unverändert, eine bereits live geschaltete News wird dabei nicht zum Entwurf zurückgesetzt. `update` ist `critical_write` und läuft über dieselbe Bestätigungs-Vorschau wie oben beschrieben. Eine bereits angelegte News lässt sich mit `cai.news.08.publish` separat veröffentlichen (ebenfalls `critical_write`); `cai.news.05.delete` löscht sie (`critical_write`).
 
 ### Bilder aus DataShare zuordnen
 
-Eine Datei, die schon vor der News-Erstellung hochgeladen wurde, lässt sich der News nachträglich zuordnen.
+Eine Datei, die schon vor der News-Erstellung hochgeladen wurde, lässt sich der News nachträglich über `cover_image_file_id` oder im HTML-Inhalt zuordnen.
 
 ### Rich-HTML-Regeln
 
@@ -61,132 +52,109 @@ Eine Datei, die schon vor der News-Erstellung hochgeladen wurde, lässt sich der
 - Für YouTube ausschließlich die datenschutzfreundliche Einbettungsadresse `https://www.youtube-nocookie.com/embed/...` verwenden.
 - Keine Skripte, Ereignis-Handler oder unbekannte eingebettete Adressen einbetten.
 
-### Lokale Videos erzeugen
+### Lokale Videos erzeugen (`cai.news.09.video_slideshow_result_teaser`)
 
-Für Vereinsnews lassen sich kurze Videos aus Vorlagen lokal rendern: eine Bilder-Diashow, ein Spielergebnis, ein Ankündigungs-Teaser oder ein generischer Highlight-Auftakt. Jede Vorlage verlangt bestimmte Pflichtfelder und erlaubt weitere optionale Felder wie Untertitel, Overlays, Markenfarbe oder Logo.
+Kurze Videos für Vereinsnews werden aus vier Vorlagen gerendert; die Bilder kommen dabei als bereits in DataShare hochgeladene Datei-IDs. Jede Vorlage verlangt eine Markenfarbe (`brandColor`, Hex-Wert) und weitere Pflichtfelder:
 
-Die Highlight-Vorlage ist bewusst allgemein gehalten (ein loopfähiger Auftakt-Clip ohne vereinsspezifischen Code) und kann optional eine Partner- oder Gastro-Szene zeigen: bis zu zwei Partnerkarten mit Name, Untertitel und Logo sowie ein dezentes Hintergrundmotiv. Diese Szene erscheint nur, wenn Partner angegeben sind, und liegt zwischen der Programmliste und einem abschließenden Hinweistext; das Video wird dadurch automatisch rund 4,3 Sekunden länger, ohne dass die Dauer manuell angepasst werden muss.
+| Vorlage | Pflichtfelder | Optionale Felder |
+|---|---|---|
+| `slideshow` | Titel, mindestens zwei Bild-Datei-IDs, Markenfarbe | Untertitel, Overlays, Dauer je Bild (`duration_per_image`), Logo-Datei-ID |
+| `result` | Heim- und Gastteam, Heim- und Gastergebnis, Markenfarbe | Wettbewerb, Torschützen, Datum, Logo-Datei-ID |
+| `teaser` | Titel, Datum, Markenfarbe | Ort, Aktionstext, Hintergrundbild-Datei-ID, Logo-Datei-ID |
+| `highlight` | Titel, Markenfarbe | Untertitel, Held-Datei-ID, Sponsoren-Datei-IDs, Hinweistext, Logo-Datei-ID |
 
-Mit einer zusätzlichen Option lädt das CLI das gerenderte Video direkt hoch und liefert ein fertiges HTML-Einbettungsschnipsel für die News. Das Video-Upload-Limit beträgt 200 MB. Das Rendern läuft lokal; fehlende Abhängigkeiten werden nicht automatisch nachinstalliert.
+Der Aufruf mit `operation: render` liefert eine `render_request_id`. Mit dieser Kennung lädt `operation: render_and_upload` das gerenderte Video direkt in einen Kontext (Standard `news`) hoch — das Video-Upload-Limit beträgt 200 MB. `render` ist `read`, `render_and_upload` ist `reversible_write`.
 
 ## Beispiele
 
 ```bash
-comvenio news list --json
-comvenio news show <news-id> --json
+comvenio action call cai.news.01.list --input '{"operation":"private","limit":50,"offset":0}'
+comvenio action call cai.news.01.list --input '{"operation":"public","limit":50,"offset":0}'
+comvenio action call cai.news.02.show --input '{"operation":"private","news_id":"<news-id>"}'
 ```
-
-`list` zeigt unter anderem Titel, Entwurf/Live, Design-Quelle, Sichtbarkeit und ID.
 
 ```bash
-comvenio news create \
-  --title "Sommerfest 2026" \
-  --teaser "Drei Tage voller Sport und Musik" \
-  --content "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p>" \
-  --visibility public \
-  --cover <file-id> \
-  --draft \
-  --json
-```
-
-Deklaratives `news.json`:
-
-```json
-{
+comvenio action call cai.news.07.preview --input '{
   "title": "Sommerfest 2026",
+  "content": "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p><figure><img src=\"<signierte-adresse>\" data-comvenio-file-id=\"<file-id>\" alt=\"Festplatz\"></figure>",
   "teaser": "Drei Tage voller Sport und Musik",
-  "visibility_scope": "public",
-  "cover_image_file_id": "<file-id>",
-  "cover_url": "<kurzlebige-signierte-adresse-nur-zur-vorschau>",
-  "content": "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p><figure><img src=\"<signierte-adresse>\" data-comvenio-file-id=\"<file-id>\" alt=\"Festplatz\"></figure>"
-}
+  "cover_file_id": "<file-id>"
+}'
 ```
 
 ```bash
-comvenio news preview --file news.json --json
-comvenio news preview --file news.json --open
-comvenio news preview --file news.json --local --out ./news-preview.html --json
-
-comvenio news apply --file news.json --draft --json
-comvenio news apply --file news.json --publish --json
-```
-
-Die Standard-Vorschau erzeugt eine kurzlebige Adresse im echten Layout und verändert keine News; `--local` schreibt eine Offline-Näherung, die für das Live-Layout nicht maßgeblich ist.
-
-```bash
-comvenio news update <news-id> --title "Neuer Titel" --json
-comvenio news update <news-id> --file news.json --json
-comvenio news publish <news-id> --json
-comvenio news delete <news-id> --json
+comvenio action call cai.news.03.create --input '{
+  "operation": "draft",
+  "news": {
+    "title": "Sommerfest 2026",
+    "teaser": "Drei Tage voller Sport und Musik",
+    "visibility_scope": "public",
+    "cover_image_file_id": "<file-id>",
+    "content": "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p><figure><img src=\"<signierte-adresse>\" data-comvenio-file-id=\"<file-id>\" alt=\"Festplatz\"></figure>"
+  }
+}'
 ```
 
 ```bash
-comvenio data list --context event --context-id <event-id> --json
-comvenio data url <file-id> --json
-comvenio data download <file-id> --out ./foto.jpg --json
-
-comvenio data update <file-id> --context news --context-id <news-id> --label gallery --json
+comvenio action call cai.news.06.apply --input '{"operation":"publish","news":{"title":"Sommerfest 2026","content":"<p>…</p>","visibility_scope":"public"}}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 ```
 
 ```bash
-comvenio news video slideshow --params slideshow.json --out fest.mp4 --json
-comvenio news video result --params result.json --out ergebnis.mp4 --json
-comvenio news video teaser --params teaser.json --out teaser.mp4 --json
-comvenio news video highlight --params highlight.json --out highlight.mp4 --json
+comvenio action call cai.news.04.update --input '{"news_id":"<news-id>","changes":{"title":"Neuer Titel"}}'
+comvenio action call cai.news.08.publish --input '{"news_id":"<news-id>"}'
+comvenio action call cai.news.05.delete --input '{"news_id":"<news-id>"}'
 ```
 
-Vorlagen:
+`update`, `publish` und `delete` sind `critical_write` und laufen über dieselbe Bestätigungs-Vorschau wie oben gezeigt.
 
-| Vorlage | Pflichtfelder | Häufige optionale Felder |
-|---|---|---|
-| `slideshow` | Titel, mindestens zwei Bilder, Markenfarbe | Untertitel, Overlays, Dauer je Bild, Logo |
-| `result` | Heim- und Gastteam, Heim- und Gastergebnis, Markenfarbe | Wettbewerb, Torschützen, Datum, Logo |
-| `teaser` | Titel, Datum, Markenfarbe | Ort, Aktionstext, Hintergrundbild, Logo |
-| `highlight` | Titel, Markenfarbe | Untertitel, Vereinsname, Datumsspanne, Kicker-Text, Überschrift der Programmliste, Programmpunkte (max. 3), Partner (max. 2), Hintergrundmotiv, Hinweistext, Abschlusstext, Hintergrundbild, Logo, Heldenbild, Sponsoren-Logos, eigene Farbgebung |
-
-```json
-{
-  "title": "Sommerfest",
-  "images": ["C:/bilder/1.jpg", "C:/bilder/2.jpg"],
-  "brandColor": "#174a7e",
-  "durationPerImage": 4
-}
-```
-
-Highlight mit optionaler Partner-Szene:
-
-```json
-{
-  "title": "Sommerfest",
-  "brandColor": "#174a7e",
-  "items": [{ "label": "Samstag", "text": "Fassanstich um 18 Uhr" }],
-  "partners": [
-    { "name": "Partnername", "subtitle": "Kurzbeschreibung", "logo": "C:/bilder/partner-logo.png" }
-  ],
-  "partnersBackdrop": "C:/bilder/partner-backdrop.png"
-}
+```bash
+comvenio action call cai.data.01.list --input '{"context_type":"event","context_id":"<event-id>","limit":50,"offset":0}'
+comvenio action call cai.data.04.url --input '{"file_id":"<file-id>"}'
+comvenio action call cai.data.03.update --input '{"file_id":"<file-id>","changes":{"context_type":"news","context_id":"<news-id>","context_label":"gallery"}}'
 ```
 
 ```bash
-comvenio news video slideshow --params slideshow.json \
-  --upload --context news --context-id <news-id> --json
+comvenio action call cai.news.09.video_slideshow_result_teaser --input '{
+  "operation": "render",
+  "template": "slideshow",
+  "params": {
+    "title": "Sommerfest",
+    "brandColor": "#174a7e",
+    "image_file_ids": ["<file-id-1>", "<file-id-2>"],
+    "duration_per_image": 4
+  }
+}'
+```
+
+```bash
+comvenio action call cai.news.09.video_slideshow_result_teaser --input '{
+  "operation": "render",
+  "template": "highlight",
+  "params": {
+    "title": "Sommerfest",
+    "brandColor": "#174a7e",
+    "note_text": "Bis Samstag!"
+  }
+}'
+
+comvenio action call cai.news.09.video_slideshow_result_teaser --input '{
+  "operation": "render_and_upload",
+  "template": "slideshow",
+  "render_request_id": "<render-request-id>",
+  "context_type": "news",
+  "context_id": "<news-id>",
+  "visibility": "private"
+}'
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-
-**news** — vollständig
-
-- `comvenio news list`
-- `comvenio news show`
-- `comvenio news create`
-- `comvenio news update`
-- `comvenio news delete`
-- `comvenio news apply`
-- `comvenio news preview`
-- `comvenio news publish`
-- `comvenio news video slideshow|result|teaser`
 <!-- /gen:docs -->
 
 ## Fehler
@@ -196,3 +164,4 @@ comvenio news video slideshow --params slideshow.json \
 - `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt das Anlegen, Bearbeiten oder Veröffentlichen von News nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
 - `SCOPE_REQUIRED` — der Anmeldung fehlt der Schreib-Scope für News. Mehr: `comvenio help fehler SCOPE_REQUIRED`
 - `CONFLICT` — die News wurde inzwischen geändert, zum Beispiel bereits veröffentlicht oder gelöscht. Mehr: `comvenio help fehler CONFLICT`
+- `OUTCOME_UNKNOWN` — bei einer ändernden Action (etwa `publish` oder `delete`) blieb die Serverantwort aus; vor einer Wiederholung mit einer lesenden Action prüfen, ob die Änderung schon angekommen ist. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`

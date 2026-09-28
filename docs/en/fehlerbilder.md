@@ -14,10 +14,9 @@ stichwoerter: [error, errors, error-codes, cause]
 
 The path is `comvenio login` (browser, OAuth) followed by
 `comvenio action list|call|confirm`. Older, classic commands do **not** run
-under this sign-in — that is by design, not a bug: they run only with a
-device token (`comvenio login --device-token <token>`), the older path; the intended way is the
-browser sign-in with actions. If a function is
-missing as an action, it is reported through the issue form.
+under this sign-in — that is by design, not a bug: the intended way is
+exclusively the browser sign-in with actions. If a function is missing as an
+action, it is reported through the issue form.
 
 **The default sign-in requests all scopes.** What is actually allowed
 continues to be decided by the roles in the club. Anyone who wants to
@@ -64,7 +63,7 @@ article under `fehler/` with meaning, typical causes and solution.
 | `Error ACTION_NOT_LISTED` | The action is not in this connection's tool list. Can also be temporary **right after a new release**. | Check `comvenio action list`; after a new release, wait a minute and retry. |
 | "The service did not return an approved response shape." | The response does not match the action's published contract — an error on Comvenio's side, not yours. | Do not work around it; report it as a bug (issue form) with the action id and time. |
 | `Error AUTH_REQUIRED` with the note that the connection no longer holds | The OAuth sign-in has expired or was revoked. | `comvenio login` (with the same `--scopes`). |
-| Asked for a device token during login / value missing | Old path. | Do not use it; run `comvenio login` without a token. |
-| `--club is not allowed with OAuth` | `--club` was given to `comvenio login` together with the browser sign-in — a usage error, not an expired sign-in. | Run `comvenio login` without `--club`; the club is chosen in the Comvenio consent screen and bound server-side. |
+| Asked for a token during login / value missing | Not needed. | Run `comvenio login` without a token. |
+| `--club is not allowed with OAuth` | `--club` was given to `comvenio login` — a usage error, not an expired sign-in. | Run `comvenio login` without `--club`; the club is chosen in the Comvenio consent screen and bound server-side. |
 | `Error OUTCOME_UNKNOWN` | A write action (for example `action confirm`) ended with a timeout (15-second limit) or server error — possibly after Comvenio had already carried it out. | **Do not retry**, or the entry may be created twice. Check the current state with the matching read action first. |
 | `Error UNKNOWN_ERROR` | A case without a description. | Report it as a bug (issue form) with the request id and time. |

@@ -13,30 +13,27 @@ The CLI builds and maintains the public club homepage: structure, content
 and design are described as declarative JSON, checked in a preview and
 published only after explicit approval. There is no automatic text or
 design generator running in the background — whoever designs the page
-composes it themselves through the commands described here.
+composes it themselves through the actions described here.
 
 ## Requirements and permissions
 
-> **Sign-in:** The commands in this article are classic commands. They run with a device-token
-> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
-> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
-> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+Sign in with `comvenio login`; which actions your club has enabled and which
+scopes they need is shown by `comvenio action list --json`.
 
 ```bash
 comvenio login
 comvenio whoami --json
-comvenio club info --json
 ```
 
-The club normally comes from the signed-in context. For deliberate work on
-another club, `--club <club-id>` is set; identifiers are never guessed, they
-are looked up first.
+The club comes from the signed-in context — it is not set through the
+input, the CLI rejects a supplied club id.
 
-Design and publishing steps (`club design`, `homepage apply`) need the
-permission to manage club settings. Without it, Comvenio reports
-`PERMISSION_DENIED` — an administrator of the club grants that permission.
-If the sign-in is missing the required scope, Comvenio reports
-`SCOPE_REQUIRED` with the matching `comvenio login --scopes …` command.
+Design and publishing steps (`cai.club.05.design`, `cai.homepage.02.apply`)
+need the permission to manage club settings (scope `club.write`). Without
+it, Comvenio reports `PERMISSION_DENIED` — an administrator of the club
+grants that permission. If the sign-in is missing the required scope,
+Comvenio reports `SCOPE_REQUIRED` with the matching
+`comvenio login --scopes …` command.
 
 ## Workflows
 
@@ -44,15 +41,16 @@ If the sign-in is missing the required scope, Comvenio reports
 
 Every change follows the same order: read the contracts → read the current
 state → compose structure and design → generate a preview → run the check →
-get approval → apply. No step is skipped, and `homepage apply --clear` never
-runs without explicit approval.
+get approval → apply and confirm. No step is skipped, and
+`cai.homepage.02.apply` with `clear_existing: true` never runs without
+explicit approval.
 
 ### Reading contracts and current state
 
 ```bash
 comvenio schema homepage --json > homepage-schema.json
 comvenio schema design --json > design-schema.json
-comvenio homepage show --public --json
+comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 ```
 
 The homepage schema is authoritative for the available widget kinds and
@@ -63,8 +61,8 @@ kinds or values are never invented — they are looked up in the schema.
 
 ### Unchangeable areas of the page
 
-Only the actual homepage content is configured. Independent of the homepage
-JSON, every club page always shows:
+Only the actual homepage content is configured. Independent of the `tabs`
+content, every club page always shows:
 
 | Element | Fixed target |
 |---|---|
@@ -92,10 +90,11 @@ compatibility.
 ### Building the page structure
 
 A homepage consists of tabs, each tab of sections, each section of widgets.
-The full structure is written as one file (see Examples). The
-`clear_existing` field inside that file is not the approval for a
-destructive write — that is controlled exclusively by the deliberate
-`--clear` flag when applying.
+The full structure is submitted as the `tabs` array in the input of
+`cai.homepage.01.preview` and `cai.homepage.02.apply` (see Examples). The
+required `clear_existing` field explicitly controls whether existing tabs,
+sections and widgets are replaced — it has no silent default and must be
+set on every call.
 
 ### Designing content
 
@@ -117,13 +116,13 @@ destructive write — that is controlled exclusively by the deliberate
   speed is around 55) and stays constant regardless of content length.
 - **Contact form** (`contact_form`): name, email, message, consent and spam
   protection. Requests are stored, the board is notified, the club handles
-  them in the club area or via `comvenio club contact-requests`. The preview
-  does not send anything. An older, purely informational membership form
-  does not confirm a successful application and must not be treated as one;
-  `contact_form` is the only widget intended for contact and membership
-  interest. Rebuilding a form from free-form HTML is not supported. Stored
-  requests are permanently removed 30 days after deletion, and at the latest
-  365 days after they were received.
+  them in the club area of the web app. The preview does not send anything.
+  An older, purely informational membership form does not confirm a
+  successful application and must not be treated as one; `contact_form` is
+  the only widget intended for contact and membership interest. Rebuilding a
+  form from free-form HTML is not supported. Stored requests are permanently
+  removed 30 days after deletion, and at the latest 365 days after they were
+  received.
 - **Club body** (`team` with `group_id`): shows the positions of a club body
   with current names; default positions are excluded. Clarify with the club
   first, because a saved, public body widget makes the body's names public.
@@ -170,8 +169,7 @@ destructive write — that is controlled exclusively by the deliberate
 
 For free-form HTML (`custom_html`) a fixed pattern applies: the HTML is only
 a skeleton, every changeable piece of content is a named slot. Only this way
-can the page be edited as a tree of headings, text, images and buttons
-without writing HTML.
+can the page be composed as a tree of headings, text, images and buttons.
 
 - Exactly one full-width section with exactly one `custom_html` widget per
   tab, acting as the skeleton. It carries only layout — elements, classes,
@@ -188,12 +186,9 @@ without writing HTML.
   slot on a wrapping element is instead the full image widget with its own
   box. Accepted are secure addresses, uploaded files and embedded image
   data; anything else shows no image.
-- A slot can be addressed and set individually (details in Examples); an
-  existing skeleton can be swapped without recreating the page — existing
-  slot content is preserved, and a slot changed in the meantime is never
-  overwritten, only reported with exit code `4`. The widget id needed for
-  that comes from `comvenio homepage slot get <tab>/<slot> --json` (field
-  `widget_id`) or `comvenio homepage tree --json` (second path segment).
+- Addressing and setting a single slot is not yet available as an action —
+  do this in the web app. Through actions, the full `tabs` structure is
+  instead resent with `cai.homepage.02.apply`.
 - Styles meant to be switched later are registered as a catalog and then
   assigned as a `style` on the slot instead of a fixed class in the
   skeleton. Colors and column counts meant to be adjustable are likewise
@@ -207,12 +202,9 @@ without writing HTML.
   section with a multi-column layout and matching width values acts
   equivalently as a row.
 - An existing skeleton in the older format — fixed text and images directly
-  in the HTML instead of in slots — stays readable but can only be edited at
-  the slot level in the tree. `comvenio homepage tree` states the detected
-  format for each tab in one line. It can be converted to the new format with
-  `comvenio homepage convert --tab <slug> --out home.json`; any spots left
-  open afterward are filled in by hand, checked in the preview, and only then
-  applied.
+  in the HTML instead of in slots — stays readable. The detected format per
+  tab and converting it to the new format are not yet available as an
+  action — do this in the web app.
 - A skeleton with fixed text or an image outside a slot, without a unique
   slot name, without an area label, with an unknown style, or with more than
   one main heading is rejected when written.
@@ -221,7 +213,7 @@ without writing HTML.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Header and navigation are missing live, the preview still showed them | an older landing mode survived in the design file | write `"landing": false` explicitly into the design file and apply again |
+| Header and navigation are missing live, the preview still showed them | an older landing mode survived in the design settings | write `"landing": false` explicitly into `design_settings` and apply again |
 | Dark border or shadow around a cut-out logo | the image widget draws a card by default | explicitly turn off the card style on the image slot (`card_style` field set to `none`) |
 | A portrait crest looks cropped in the round header | older version of the display | use the current version; upload the logo square or transparent |
 | "No image configured" for only one person | an old state sits in the browser cache | fully reload the page |
@@ -232,68 +224,79 @@ without writing HTML.
 ### Preview and checking
 
 ```bash
-comvenio homepage preview \
-  --file home.json \
-  --design-file design-settings.json \
-  --ttl-hours 24 \
-  --open \
+comvenio action call cai.homepage.01.preview \
+  --input '{"tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":false}' \
+  --json
+# the response contains preview_id
+
+comvenio action call cai.homepage.04.screenshot \
+  --input '{"preview_id":"<preview-id>","viewports":["390x844","1440x900"]}' \
   --json
 
-comvenio verify homepage \
-  --file home.json \
-  --design-file design-settings.json \
-  --audit \
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"preview","tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
   --json
 ```
 
-The preview is valid for 30 minutes by default; `--ttl-hours` (1–24) sets a
-longer, server-limited lifetime, for example for a full-day approval. The
-preview never changes the published page.
+`cai.homepage.01.preview` never changes the published page.
 
-Without `--file`, the check runs against the club's published address. That
-address is derived exclusively from the club's stored subdomain; other
-technical identifiers are not a homepage address and are never used as a
-fallback. If the subdomain is missing, the CLI points to the club settings
-or to the draft check with `--file`.
+With `"operation":"live"` instead of `"operation":"preview"`,
+`cai.verify.04.homepage` instead checks the club's published address —
+without `tabs`. That address is derived exclusively from the club's stored
+subdomain; other technical identifiers are not a homepage address and are
+never used as a fallback.
 
-The check covers every public tab, the separate legal notice page, display
-on mobile, tablet, landscape and desktop — concretely at 390, 768, 1024 and
-1440 pixels width —, horizontal overflow and empty main
-regions, invisible text and contrast, console and network errors, the fixed
-legal footer with all its targets, operability of every mandatory link, and
-the club's stated responsibility plus at least one public contact detail on
-the legal notice page. Text over image, video or gradient surfaces is not
-measurable by nature and is therefore never counted as a finding.
+The check covers every public tab, the separate legal notice page and the
+given `viewports` — commonly mobile, tablet, landscape and desktop, for
+example 390, 768, 1024 and 1440 pixels width —, plus horizontal overflow and
+empty main regions, invisible text and contrast, console and network errors,
+the fixed legal footer with all its targets, operability of every mandatory
+link, and the club's stated responsibility plus at least one public contact
+detail on the legal notice page. Text over image, video or gradient surfaces
+is not measurable by nature and is therefore never counted as a finding.
 
-Exit codes: `0` fully checked, no fixable findings; `2` check incomplete, for
-example due to a technical error during the check; `4` fully checked, but
-with a fixable quality or legal-page issue. Screenshots and the report
-always come before human approval — an exit code of `0` does not replace
-that approval.
+The response reports findings instead of a plain pass/fail. Screenshots and
+the report always come before human approval.
 
 ### Publishing
 
 Only after explicit approval, and only after backing up the current state —
-`--clear` replaces every existing tab, section and widget:
+`clear_existing: true` replaces every existing tab, section and widget.
+`cai.homepage.02.apply` is a critical change: the call first returns a
+preview with `preview_id` and `confirmation_token`; only `action confirm`
+actually publishes the page.
 
 ```bash
-comvenio homepage show --public --json > backup-home.json
-comvenio club info --json > backup-club.json
+comvenio action call cai.homepage.03.show \
+  --input '{"operation":"public"}' \
+  --json > backup-home.json
 
-comvenio club design --file design-settings.json --dry-run --json   # read the warnings
-comvenio club design --file design-settings.json --json
-comvenio homepage apply --file home.json --clear --json
-comvenio homepage show --public --json
-comvenio verify homepage --audit --json
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"homepage_theme":"modern","homepage_template":"flex","primary_color":"#006846"}}' \
+  --json
+
+comvenio action call cai.homepage.02.apply \
+  --input '{"tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":true}' \
+  --json
+# the response contains preview_id and confirmation_token
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <token> \
+  --idempotency-key <key>
+
+comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
-`club design` merges instead of replacing: a key that is set live and
-missing from the file is kept — even though the preview does not show it,
-because it only renders the file. The CLI explicitly points out such
-retained keys, especially when an old full-screen landing mode survives: the
-published page then loses its header and navigation even though the preview
-looked correct. For a normal page, `"landing": false` is therefore always
-written explicitly into the design file.
+`cai.club.05.design` merges instead of replacing: a key that is set live and
+missing from the input is kept — even though the preview does not show it,
+because it only renders the given `tabs`. That applies in particular to an
+old full-screen landing mode: the published page then loses its header and
+navigation even though the preview looked correct. For a normal page,
+`"landing": false` is therefore always passed explicitly in
+`design_settings`.
 
 After applying, the published page is checked visually (header, navigation,
 hero, mobile view). Anyone who already had the page open beforehand may
@@ -309,7 +312,8 @@ headline. At 390 pixels width, no horizontal overflow may occur.
 
 ## Examples
 
-Basic structure with one tab, one section and one hero widget:
+Basic structure with one tab, one section and one hero widget (as the
+`tabs` value of `cai.homepage.01.preview` or `cai.homepage.02.apply`):
 
 ```json
 {
@@ -374,7 +378,7 @@ optional):
 ]
 ```
 
-Complete design file:
+Complete `design_settings` object (for `cai.club.05.design`):
 
 ```json
 {
@@ -426,30 +430,13 @@ A row with two unevenly sized columns in the skeleton:
 </div>
 ```
 
-Reading and setting one slot:
-
-```bash
-comvenio homepage slot get start/hero-titel --json
-comvenio homepage slot set start/hero-titel --file entry.json
-```
-
-Swapping only the skeleton of an existing widget, slot content is kept:
-
-```bash
-comvenio homepage geruest set start --widget <widget-id> --file geruest.html --dry-run
-comvenio homepage geruest set start --widget <widget-id> --file geruest.html
-```
+Reading and setting a single slot, and swapping only the skeleton of an
+existing widget, are not yet available as an action — do this in the web
+app.
 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-
-**homepage** — complete
-
-- `comvenio homepage preview`
-- `comvenio homepage apply`
-- `comvenio homepage show`
-- Fields and values: `comvenio schema homepage --json`
 <!-- /gen:docs -->
 
 ## Errors
@@ -458,9 +445,15 @@ comvenio homepage geruest set start --widget <widget-id> --file geruest.html
   or publishing. `comvenio help fehler SCOPE_REQUIRED`.
 - `PERMISSION_DENIED` — the sign-in is sufficient, but the club role does not
   allow design or publishing. `comvenio help fehler PERMISSION_DENIED`.
-- `VALIDATION_FAILED` — the structure or design file does not match the
-  schema, for example a missing or wrongly formatted field.
+- `VALIDATION_FAILED` — the `tabs` or `design_settings` input does not match
+  the schema, for example a missing or wrongly formatted field.
   `comvenio help fehler VALIDATION_FAILED`.
-- `CONFLICT` — a skeleton or widget was already changed between reading and
-  writing; read the current state again and decide anew.
+- `OUTCOME_UNKNOWN` — `action confirm` after `cai.homepage.02.apply` ended
+  with a timeout or server error; do not retry, check the published state
+  with `cai.homepage.03.show` first. `comvenio help fehler OUTCOME_UNKNOWN`.
+- `CONFLICT` — the page was already changed between reading and writing;
+  read the current state again and decide anew.
   `comvenio help fehler CONFLICT`.
+- `OAUTH_ONLY` — an old command (for example `homepage slot`,
+  `homepage tree`) does not run with the current sign-in.
+  `comvenio help fehler OAUTH_ONLY`.

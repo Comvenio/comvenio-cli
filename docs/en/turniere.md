@@ -9,33 +9,47 @@ stichwoerter: [tournaments, draw, schedule, results, standings, competition]
 
 ## Purpose
 
-`comvenio tournament` manages tournaments through tournament series and their concrete executions:
-register participants, run the draw, generate a schedule, record results and view the standings. A
-match pairs participants — a team, an individual, or a doubles pair — not necessarily a fixed Comvenio
-team.
+The actions of the `tournament` domain manage tournaments through tournament series and their
+concrete executions: register participants, run the draw, generate a schedule, record results and
+view the standings. A match pairs participants — a team, an individual, or a doubles pair — not
+necessarily a fixed Comvenio team.
 
 ## Requirements and permissions
 
-> **Sign-in:** The commands in this article are classic commands. They run with a device-token
-> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
-> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
-> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+Sign in with `comvenio login`; which actions your club enables and which scopes they need is shown by
+`comvenio action list --json`.
 
 - Creating, updating or deleting tournaments, and editing participants, the draw, the schedule or
-  results, is a club administration task and requires a sign-in with the matching write permissions.
+  results, is a club administration task and requires a sign-in with the matching write scopes.
 - Public registration and spectator viewing run through the web interface, not through this CLI.
-- `--json` returns the machine-readable output for scripts and agents.
-- Larger inputs are passed as a JSON file with `--file <path>`.
+- `--json` returns the machine-readable output for scripts and agents; instead of `--input '<json>'`,
+  larger inputs can also be passed with `--file <path>`.
+
+A critical (`critical_write`) action first returns a preview with a `preview_id` and
+`confirmation_token`; only `comvenio action confirm --preview-id … --confirmation-token …
+--idempotency-key …` executes it.
 
 ## Workflows
 
 ### Creating a tournament series
 
 1. Create a series with a title, sport, format family, template, participation mode, eligible scope
-   and rules configuration.
-2. List series, view a single one, update or delete it.
+   and rules configuration — not critical.
+2. List series, view a single one — not critical; update it — not critical; delete it — critical.
 
-The club is filled in automatically by the CLI.
+```bash
+comvenio action call cai.tournament.03.series_create \
+  --input '{"series":{"title":"Club darts championship","description":"Annual club tournament","sport_key":"darts","format_family":"group_knockout","template_key":"darts_group_knockout","participation_mode":"internal","eligible_scope":"club","eligible_department_ids":[],"rules_config":{},"default_phase_pipeline":[],"is_public":true}}' --json
+
+comvenio action call cai.tournament.01.series_list --input '{"limit":20,"offset":0}' --json
+comvenio action call cai.tournament.02.series_show --input '{"series_id":"<series-id>"}' --json
+comvenio action call cai.tournament.04.series_update \
+  --input '{"series_id":"<series-id>","changes":{"is_public":false}}' --json
+
+comvenio action call cai.tournament.05.series_delete --input '{"series_id":"<series-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
 
 ### Creating an execution from a series
 
@@ -43,36 +57,97 @@ A tournament is always created as a concrete execution of a series — there is 
 series-less way to create a tournament.
 
 1. Create an execution from a series with a title, tournament mode, start and end time, registration
-   deadline, and minimum and maximum number of participants.
-2. Optionally link the execution to an event, or remove that link again.
+   deadline, and minimum and maximum number of participants — not critical.
+2. Optionally link the execution to an event, or remove that link again (`event_id` set to `null`) —
+   not critical.
+
+```bash
+comvenio action call cai.tournament.06.execution_create \
+  --input '{"series_id":"<series-id>","execution":{"title":"Club darts championship 2026","tournament_mode":"group_knockout","start_date":"2026-09-05T10:00:00+02:00","end_date":"2026-09-05T20:00:00+02:00","registration_deadline":"2026-08-31T23:59:59+02:00","min_teams":4,"max_teams":32,"team_size":1}}' --json
+
+comvenio action call cai.tournament.07.execution_link \
+  --input '{"tournament_id":"<tournament-id>","event_id":"<event-id>"}' --json
+```
 
 ### Controlling a tournament
 
-1. List tournaments, view a single one, update or delete it.
-2. Set the status: draft, registration, draw, scheduled, active, completed, cancelled, archived.
-3. Start or reset a tournament, or generate a local preview.
+1. List tournaments, view a single one — not critical.
+2. Update it — not critical; delete it — critical.
+3. Set the status (draft, registration, draw, scheduled, active, completed, cancelled, archived) —
+   critical.
+4. Start or reset a tournament — critical.
+
+```bash
+comvenio action call cai.tournament.08.list --input '{"limit":20,"offset":0}' --json
+comvenio action call cai.tournament.09.show \
+  --input '{"tournament_id":"<tournament-id>","timezone":"Europe/Berlin"}' --json
+comvenio action call cai.tournament.10.update \
+  --input '{"tournament_id":"<tournament-id>","changes":{"title":"Club darts championship 2026 — final day"}}' --json
+
+comvenio action call cai.tournament.12.status \
+  --input '{"tournament_id":"<tournament-id>","status":"registration"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+
+comvenio action call cai.tournament.19.start --input '{"tournament_id":"<tournament-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
 
 ### Managing participants
 
-1. List a tournament's participants.
-2. Register a team, individual or pair; the registration status defaults to confirmed and can be
-   overridden when registering. Registering a team is its own command with the participant kind fixed
-   to team.
-3. Withdraw a participant — annulling, ahead of a redraw, or scored in the opponent's favor — or
-   reinstate one.
-4. Fully remove a participant (a stronger, soft deletion).
+1. List a tournament's participants — not critical.
+2. Register a team (`cai.tournament.14.mannschaft`, participant kind fixed to `team`) or an
+   individual/pair (`cai.tournament.15.participant`) — not critical; the registration status defaults
+   to `confirmed` and can be overridden when registering.
+3. Withdraw a participant (`mode: cancel` — annulling, ahead of a redraw — or `mode: walkover` —
+   scored in the opponent's favor) — critical — or reinstate one — not critical.
+4. Fully remove a participant (a stronger, soft deletion) — critical.
+
+```bash
+comvenio action call cai.tournament.13.participants --input '{"tournament_id":"<tournament-id>","limit":100}' --json
+
+comvenio action call cai.tournament.14.mannschaft \
+  --input '{"tournament_id":"<tournament-id>","name":"SV Motzing AH","participant_kind":"team","registration_status":"confirmed","seed":1}' --json
+comvenio action call cai.tournament.15.participant \
+  --input '{"tournament_id":"<tournament-id>","name":"Max Muster","participant_kind":"individual","registration_status":"confirmed"}' --json
+
+comvenio action call cai.tournament.16.participant_withdraw \
+  --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>","mode":"walkover"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+
+comvenio action call cai.tournament.17.participant_reinstate \
+  --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>"}' --json
+comvenio action call cai.tournament.18.participant_remove \
+  --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
 
 Without an explicit withdrawal mode, the current tournament state decides the approach.
 
 ### Running the draw
 
-1. Create a draw with a strategy, speed, public visibility, fixed assignments, a return-leg option,
-   automatic separation of participants from the same club, and knockout configuration (qualified
-   participants per group, third-place match, full placement matches, placement mode); this first
-   creates a draw session.
-2. Confirm the draw — this materializes the matches. A confirmation is additive.
-3. For a completely new draw, use the combined workflow: it resets, deletes all existing matches,
-   creates a new draw session and confirms it in one step.
+1. Create a draw with a strategy, fixed assignments and knockout configuration — not critical; this
+   first creates a draw session.
+2. Confirm the draw — critical, materializes the matches. A confirmation is additive.
+3. For a completely new draw: `redraw` — critical, resets, deletes all existing matches, creates a new
+   draw session and confirms it in one step.
+
+```bash
+comvenio action call cai.tournament.26.draw \
+  --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual","fixed_assignments":[{"participant_id":"<id-1>","group_key":"A"},{"participant_id":"<id-2>","group_key":"B"}],"knockout_config":{"qualified_per_group":2,"third_place_match":true,"play_all_placements":false,"placement_mode":"direct"}}}' --json
+
+comvenio action call cai.tournament.27.draw_confirm --input '{"tournament_id":"<tournament-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+
+comvenio action call cai.tournament.23.redraw \
+  --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual"}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
 
 Withdrawn participants are not drawn again in any of the three variants.
 
@@ -80,230 +155,159 @@ Withdrawn participants are not drawn again in any of the three variants.
 
 1. List a tournament's matches.
 2. Generate a schedule automatically — with match and break duration, number of fields/lanes and the
-   first kickoff time; first as a dry run, then committed. Automatic object bookings can be turned
-   off.
+   first kickoff time; first with `dry_run: true`, then committed — critical. Automatic object
+   bookings can be turned off with `auto_book: false`.
 3. Schedule an individual match specifically — with start and end time, location, status and match
-   number.
-4. As needed, delete individual matches, clear all matches for a phase (group stage, finals, or all),
-   or reset the whole tournament.
+   number — not critical.
+4. As needed, delete individual matches (critical), clear all matches for a phase (critical), or reset
+   the whole tournament (critical).
+
+```bash
+comvenio action call cai.tournament.20.matches \
+  --input '{"tournament_id":"<tournament-id>","timezone":"Europe/Berlin","limit":100}' --json
+
+comvenio action call cai.tournament.28.schedule_generate \
+  --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":true}' --json
+
+comvenio action call cai.tournament.28.schedule_generate \
+  --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":false}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+
+comvenio action call cai.tournament.29.match_schedule \
+  --input '{"match_id":"<match-id>","starts_at":"2026-09-05T10:00:00+02:00","ends_at":"2026-09-05T10:15:00+02:00","location":"Board 1","match_number":1,"schedule_status":"proposed"}' --json
+
+comvenio action call cai.tournament.30.match_delete --input '{"match_id":"<match-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+comvenio action call cai.tournament.21.matches_clear \
+  --input '{"tournament_id":"<tournament-id>","phase":"group"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
 
 ### Recording results
 
+`match_result` is not critical (results can be corrected in draft before the schedule is finally
+confirmed).
+
 1. Record a football-style or goal-based result with home and away goals.
-2. Record a tennis-style or set-based result with a set sequence, including tiebreak and
-   match-tiebreak notation.
-3. Record a special outcome — walkover, no-show, retirement with a partial score, or a no-contest for
-   both sides. Only one special outcome is allowed per call; walkover, no-show and retirement
-   additionally require stating the winner.
+2. Record a tennis-style or set-based result through `score` with a set sequence, including tiebreak
+   and match-tiebreak notation.
+3. Record a special outcome — walkover (`walkover`), no-show (`no_show`), retirement (`retired`) with
+   a partial score, or a no-contest for both sides (`no_contest`). Only one special outcome is allowed
+   per call; walkover, no-show and retirement additionally require `winner_side_id`.
+
+```bash
+comvenio action call cai.tournament.31.match_result \
+  --input '{"match_id":"<match-id>","result_type":"played","score_home":3,"score_away":1}' --json
+
+comvenio action call cai.tournament.31.match_result \
+  --input '{"match_id":"<match-id>","result_type":"walkover","winner_side_id":"home"}' --json
+
+comvenio action call cai.tournament.31.match_result \
+  --input '{"match_id":"<match-id>","result_type":"retired","winner_side_id":"away","score":{"sets":"6:3,2:1"}}' --json
+```
 
 ### Setting a result deadline
 
-1. Set a deadline for a phase with a specific time, or set the policy — manual or automatic
-   no-contest.
-2. View the current configuration and overdue open matches.
+1. View the current configuration (`show`, not critical).
+2. Set a deadline for a phase with a specific time (`set_deadline`, not critical), or set the policy —
+   manual or automatic no-contest (`set_policy`, not critical).
+
+```bash
+comvenio action call cai.tournament.32.deadline \
+  --input '{"operation":"show","tournament_id":"<tournament-id>","phase":"group"}' --json
+comvenio action call cai.tournament.32.deadline \
+  --input '{"operation":"set_deadline","tournament_id":"<tournament-id>","phase":"group","deadline_at":"2026-09-05T18:00:00+02:00"}' --json
+comvenio action call cai.tournament.32.deadline \
+  --input '{"operation":"set_policy","tournament_id":"<tournament-id>","policy":"auto_no_contest"}' --json
+```
 
 ### Standings and preview
 
-1. Retrieve the current standings.
-2. Generate a local preview and optionally open it directly — it is created as a standalone HTML file
-   and does not change the tournament.
+1. Retrieve the current standings — not critical.
+2. Generate a local preview as HTML — critical; it does not change the tournament but counts as an
+   export.
 
-### Scope
+```bash
+comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tournament-id>"}' --json
 
-Public registration and spectator viewing belong to the web interface, not to this CLI area.
+comvenio action call cai.tournament.25.preview \
+  --input '{"tournament_id":"<tournament-id>","output_format":"html"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
+```
+
+### Not yet available as an action / scope
+
+Public registration and spectator viewing belong to the web interface, not to this actions area.
 
 ## Examples
 
-Create a tournament series (`series.json`):
-
-```json
-{
-  "title": "Club darts championship",
-  "description": "Annual club tournament",
-  "sport_key": "darts",
-  "format_family": "group_knockout",
-  "template_key": "darts_group_knockout",
-  "participation_mode": "internal",
-  "eligible_scope": "club",
-  "eligible_department_ids": [],
-  "rules_config": {},
-  "default_phase_pipeline": [],
-  "is_public": true
-}
-```
+Create a tournament series and an execution:
 
 ```bash
-comvenio tournament series-create --file series.json --json
-comvenio tournament series-list --json
-comvenio tournament series-show <series-id> --json
-comvenio tournament series-update <series-id> --file series-update.json --json
-comvenio tournament series-delete <series-id> --json
+comvenio action call cai.tournament.03.series_create \
+  --input '{"series":{"title":"Club darts championship","description":"Annual club tournament","sport_key":"darts","format_family":"group_knockout","template_key":"darts_group_knockout","participation_mode":"internal","eligible_scope":"club","eligible_department_ids":[],"rules_config":{},"default_phase_pipeline":[],"is_public":true}}' --json
+
+comvenio action call cai.tournament.06.execution_create \
+  --input '{"series_id":"<series-id>","execution":{"title":"Club darts championship 2026","tournament_mode":"group_knockout","start_date":"2026-09-05T10:00:00+02:00","end_date":"2026-09-05T20:00:00+02:00","registration_deadline":"2026-08-31T23:59:59+02:00","min_teams":4,"max_teams":32,"team_size":1}}' --json
 ```
 
-Create an execution from a series (`execution.json`):
-
-```json
-{
-  "title": "Club darts championship 2026",
-  "tournament_mode": "group_knockout",
-  "start_date": "2026-09-05T10:00:00+02:00",
-  "end_date": "2026-09-05T20:00:00+02:00",
-  "registration_deadline": "2026-08-31T23:59:59+02:00",
-  "min_teams": 4,
-  "max_teams": 32,
-  "team_size": 1
-}
-```
+Register and withdraw a participant:
 
 ```bash
-comvenio tournament execution-create <series-id> --file execution.json --json
-comvenio tournament execution-link <tournament-id> --event <event-id> --json
+comvenio action call cai.tournament.14.mannschaft \
+  --input '{"tournament_id":"<tournament-id>","name":"SV Motzing AH","participant_kind":"team","registration_status":"confirmed","seed":1}' --json
+
+comvenio action call cai.tournament.16.participant_withdraw \
+  --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>","mode":"walkover"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
 ```
 
-Control a tournament:
+Run and confirm the draw:
 
 ```bash
-comvenio tournament list --json
-comvenio tournament show <tournament-id> --json
-comvenio tournament update <tournament-id> --file tournament-update.json --json
-comvenio tournament delete <tournament-id> --json
-comvenio tournament status <tournament-id> --status registration --json
+comvenio action call cai.tournament.26.draw \
+  --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual","fixed_assignments":[{"participant_id":"<id-1>","group_key":"A"},{"participant_id":"<id-2>","group_key":"B"}],"knockout_config":{"qualified_per_group":2,"third_place_match":true,"play_all_placements":false,"placement_mode":"direct"}}}' --json
+comvenio action call cai.tournament.27.draw_confirm --input '{"tournament_id":"<tournament-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
 ```
 
-Register participants:
+Generate a schedule (dry run, then committed):
 
 ```bash
-comvenio tournament participants <tournament-id> --json
-comvenio tournament mannschaft <tournament-id> --name "SV Motzing AH" --seed 1 --json
-comvenio tournament participant <tournament-id> --name "Max Muster" --kind individual --json
-comvenio tournament participant <tournament-id> --name "Pair A" --kind pair --json
-```
-
-Withdraw a participant:
-
-```bash
-comvenio tournament participant-withdraw <tournament-id> --participant <participant-id> --mode cancel --json
-comvenio tournament participant-withdraw <tournament-id> --participant <participant-id> --mode walkover --json
-comvenio tournament participant-reinstate <tournament-id> --participant <participant-id> --json
-comvenio tournament participant-remove <tournament-id> --participant <participant-id> --json
-```
-
-Run the draw (`draw.json`):
-
-```json
-{
-  "strategy": "manual",
-  "speed": "normal",
-  "public_show_enabled": false,
-  "fixed_assignments": [
-    { "participant_id": "<id-1>", "group_key": "A" },
-    { "participant_id": "<id-2>", "group_key": "B" }
-  ],
-  "double_round": false,
-  "auto_separate_same_club": true,
-  "knockout_config": {
-    "qualified_per_group": 2,
-    "third_place_match": true,
-    "play_all_placements": false,
-    "placement_mode": "direct"
-  }
-}
-```
-
-```bash
-comvenio tournament draw <tournament-id> --file draw.json --json
-comvenio tournament draw-confirm <tournament-id> --json
-comvenio tournament redraw <tournament-id> --file draw.json --json
-```
-
-Generate a schedule:
-
-```bash
-comvenio tournament matches <tournament-id> --json
-comvenio tournament schedule-generate <tournament-id> \
-  --match-minutes 15 --break-minutes 3 --field-count 2 \
-  --first-kickoff 2026-09-05T10:00:00+02:00 --dry-run --json
-
-comvenio tournament schedule-generate <tournament-id> \
-  --match-minutes 15 --break-minutes 3 --field-count 2 \
-  --first-kickoff 2026-09-05T10:00:00+02:00 --json
-```
-
-Schedule an individual match and clean up:
-
-```bash
-comvenio tournament match-schedule <match-id> \
-  --start 2026-09-05T10:00:00+02:00 \
-  --end 2026-09-05T10:15:00+02:00 \
-  --location "Board 1" --status proposed --match-number 1 --json
-
-comvenio tournament match-delete <match-id> --json
-comvenio tournament matches-clear <tournament-id> --phase group --json
-comvenio tournament reset <tournament-id> --json
+comvenio action call cai.tournament.28.schedule_generate \
+  --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":true}' --json
+comvenio action call cai.tournament.28.schedule_generate \
+  --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":false}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <key> --json
 ```
 
 Record results:
 
 ```bash
-comvenio tournament match-result <match-id> --home 3 --away 1 --json
-comvenio tournament match-result <match-id> --sets "6:2,7:6(9:7)" --json
-comvenio tournament match-result <match-id> --walkover --winner home --json
-comvenio tournament match-result <match-id> --retired --winner away --sets "6:3,2:1" --json
+comvenio action call cai.tournament.31.match_result \
+  --input '{"match_id":"<match-id>","result_type":"played","score_home":3,"score_away":1}' --json
+comvenio action call cai.tournament.31.match_result \
+  --input '{"match_id":"<match-id>","result_type":"walkover","winner_side_id":"home"}' --json
 ```
 
-Set a deadline:
+Set a deadline and retrieve the standings:
 
 ```bash
-comvenio tournament deadline <tournament-id> --phase group --at 2026-09-05T18:00:00+02:00 --json
-comvenio tournament deadline <tournament-id> --policy auto_no_contest --json
-comvenio tournament deadline <tournament-id> --show --json
-```
-
-Standings and preview:
-
-```bash
-comvenio tournament standings <tournament-id> --json
-comvenio tournament preview <tournament-id> --open
+comvenio action call cai.tournament.32.deadline \
+  --input '{"operation":"set_deadline","tournament_id":"<tournament-id>","phase":"group","deadline_at":"2026-09-05T18:00:00+02:00"}' --json
+comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tournament-id>"}' --json
 ```
 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-
-**tournament** — complete
-
-- `comvenio tournament series-list`
-- `comvenio tournament series-show`
-- `comvenio tournament series-create`
-- `comvenio tournament series-update`
-- `comvenio tournament series-delete`
-- `comvenio tournament execution-create`
-- `comvenio tournament execution-link`
-- `comvenio tournament list`
-- `comvenio tournament show`
-- `comvenio tournament update`
-- `comvenio tournament delete`
-- `comvenio tournament status`
-- `comvenio tournament participants`
-- `comvenio tournament mannschaft`
-- `comvenio tournament participant`
-- `comvenio tournament participant-withdraw`
-- `comvenio tournament participant-reinstate`
-- `comvenio tournament participant-remove`
-- `comvenio tournament start`
-- `comvenio tournament matches`
-- `comvenio tournament matches-clear`
-- `comvenio tournament reset`
-- `comvenio tournament redraw`
-- `comvenio tournament standings`
-- `comvenio tournament preview`
-- `comvenio tournament draw`
-- `comvenio tournament draw-confirm`
-- `comvenio tournament schedule-generate`
-- `comvenio tournament match-schedule`
-- `comvenio tournament match-delete`
-- `comvenio tournament match-result`
-- `comvenio tournament deadline`
 <!-- /gen:docs -->
 
 ## Errors
@@ -320,3 +324,8 @@ comvenio tournament preview <tournament-id> --open
   `comvenio help fehler CONFLICT`.
 - `SCOPE_REQUIRED` — the sign-in was granted without the scope required for a tournament write action.
   See `comvenio help fehler SCOPE_REQUIRED`.
+- `OUTCOME_UNKNOWN` — a critical action (set status, start, reset, delete, confirm draw, commit
+  schedule) was not clearly confirmed after `action confirm`; check the current state with a read
+  before retrying. See `comvenio help fehler OUTCOME_UNKNOWN`.
+- `OAUTH_ONLY` — an old, classic command (`comvenio tournament …`) no longer works; use the matching
+  action instead. See `comvenio help fehler OAUTH_ONLY`.

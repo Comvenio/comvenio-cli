@@ -10,18 +10,16 @@ stichwoerter: [cli, reference, commands, schema, verify]
 ## Purpose
 
 This article is the entry point to the comvenio CLI: the ground rules for
-every call, an overview of the top-level commands with a pointer to their
-own article, and the topic commands `schema` and `verify`, which don't form
-a topic of their own but accompany every other command. The full workflow
-coverage with known gaps and deliberate exclusions per command is in
+every call, an overview of the areas with a pointer to their own article,
+and the topic commands `schema` and `verify`, which don't form a topic of
+their own but accompany every other area. The full workflow coverage with
+known gaps and deliberate exclusions per area is in
 [`coverage.md`](coverage.md).
 
 ## Requirements and permissions
 
-> **Sign-in:** Except `login`, `logout`, `whoami`, `action`, `finance`, `schema` and `help`, all commands are classic commands. They run with a device-token
-> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
-> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
-> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+Sign in with `comvenio login`; which actions your club has enabled and which
+scopes they need is shown by `comvenio action list --json`.
 
 Every command needs a valid sign-in; exceptions and details are in the
 article on sign-in and club context. What is allowed beyond that follows
@@ -39,40 +37,42 @@ comvenio <command> ... --json
 
 - For automated calls, always use `--json`. Successful responses land on
   standard output, errors on standard error.
-- The default is the browser sign-in with secure storage in the respective
-  operating system; an opaque device token is the older path for the
-  classic commands and is never decoded.
+- The sign-in runs through the browser with secure storage in the
+  respective operating system.
 - Permissions are checked on the server: `401` usually means an invalid or
   expired sign-in, `403` a missing permission, `404` an unknown resource.
-- If there is no matching command for a task, that is a gap in the CLI — it
-  gets closed there, not worked around.
+- If there is no matching action for a task, that is a gap in the connector
+  — it gets closed there, not worked around.
 - Changes are never retried automatically; only read requests have a limited
   retry on transient errors.
 
-### Topics and their commands
+### Areas and their actions
 
-Every top-level command belongs to a topic with its own article:
+Every area has its own article. The path to its actions is always the same:
+`comvenio action list` shows what is enabled for the current sign-in
+(`--json` additionally shows inputs and scopes), and
+`comvenio action call <action-id> --input '<json>'` runs them.
 
-| Command | Area | Article |
-|---|---|---|
-| `login`, `logout`, `whoami`, `action`, `club` | sign-in, club context, available actions, club profile and design | [`auth-club.md`](auth-club.md) |
-| `homepage` | public club homepage: preview, apply, show | [`homepage.md`](homepage.md) |
-| `member`, `team` | members, families, membership periods, teams | [`mitglieder-teams.md`](mitglieder-teams.md) |
-| `role` | custom roles, permission matrix, assignments, effective rights | [`rollen-rechte.md`](rollen-rechte.md) |
-| `event` | events, templates, series | [`veranstaltungen.md`](veranstaltungen.md) |
-| `booking`, `object` | bookings, objects, buildings, rooms, booking rules | [`buchungen-objekte.md`](buchungen-objekte.md) |
-| `task` | tasks, contexts, assignments, notes, checklists | [`aufgaben.md`](aufgaben.md) |
-| `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template`, `menu` | menus, ingredients, shopping lists | [`speisekarten.md`](speisekarten.md) |
-| `meeting` | meeting series, minutes, agenda, votes, resolutions | [`meetings.md`](meetings.md) |
-| `finance` | annual plan, budget items, bookings | [`finanzen.md`](finanzen.md) |
-| `data` | files, folders, structured exports | [`dateien.md`](dateien.md) |
-| `news` | rich news, preview, publishing, videos | [`vereinsnews.md`](vereinsnews.md) |
-| `plan` | site plans, zones, tables, markers, guests | [`veranstaltungen.md`](veranstaltungen.md) |
-| `tournament` | series, runs, participants, schedule, results | [`turniere.md`](turniere.md) |
-| `sponsor` | local sponsors, products, contracts, assignments | [`sponsoring.md`](sponsoring.md) |
-| `zone`, `task-zones` | club area: divisions, zones, overview | [`zonen.md`](zonen.md) |
-| `agent` | club agent: chat, functions, approvals | [`club-agent.md`](club-agent.md) |
-| `weekly-preview` | weekly preview: flyers and templates | [`wochenvorschau.md`](wochenvorschau.md) |
+| Area | Article |
+|---|---|
+| sign-in, club context, available actions, club profile and design | [`auth-club.md`](auth-club.md) |
+| public club homepage: preview, apply, show | [`homepage.md`](homepage.md) |
+| members, families, membership periods, teams | [`mitglieder-teams.md`](mitglieder-teams.md) |
+| custom roles, permission matrix, assignments, effective rights | [`rollen-rechte.md`](rollen-rechte.md) |
+| events, templates, series | [`veranstaltungen.md`](veranstaltungen.md) |
+| bookings, objects, buildings, rooms, booking rules | [`buchungen-objekte.md`](buchungen-objekte.md) |
+| tasks, contexts, assignments, notes, checklists | [`aufgaben.md`](aufgaben.md) |
+| menus, ingredients, shopping lists | [`speisekarten.md`](speisekarten.md) |
+| meeting series, minutes, agenda, votes, resolutions | [`meetings.md`](meetings.md) |
+| annual plan, budget items, bookings | [`finanzen.md`](finanzen.md) |
+| files, folders, structured exports | [`dateien.md`](dateien.md) |
+| rich news, preview, publishing, videos | [`vereinsnews.md`](vereinsnews.md) |
+| site plans, zones, tables, markers, guests | [`veranstaltungen.md`](veranstaltungen.md) |
+| series, runs, participants, schedule, results | [`turniere.md`](turniere.md) |
+| local sponsors, products, contracts, assignments | [`sponsoring.md`](sponsoring.md) |
+| club area: divisions, zones, overview | [`zonen.md`](zonen.md) |
+| club agent: chat, functions, approvals | [`club-agent.md`](club-agent.md) |
+| weekly preview: flyers and templates | [`wochenvorschau.md`](wochenvorschau.md) |
 
 ### Help in the program
 
@@ -97,34 +97,35 @@ comvenio schema event --json
 ```
 
 `schema` answers the question "which fields and values may I send?" for a
-given area. Sending undocumented fields based on a guess is not supported —
-when in doubt, the matching schema is checked first.
+given area — offline, without sign-in. Sending undocumented fields based on
+a guess is not supported — when in doubt, the matching schema is checked
+first.
 
 ### Read first, then change
 
 ```bash
-comvenio event show <event-id> --json
-comvenio news show <news-id> --json
-comvenio task show <task-id> --json
+comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
-For full-replace changes, the CLI reads the existing data and merges in the
-given fields. Even so, the current state should be checked before every
-change.
+For full-replace changes, the service reads the existing data and merges in
+the given fields. Even so, the current state should be checked with the
+matching read action before every change.
 
-### Complex input as a file
+### Complex input as JSON
 
-Multi-part structures are submitted through a file. The matching topic
-article describes the expected JSON; undocumented fields based on guesses
-are never used.
+Multi-part structures are submitted as JSON in `--input '<json>'`. The
+matching topic article describes the expected JSON; undocumented fields
+based on guesses are never used.
 
 ### Preview before publishing
 
 ```bash
-comvenio news preview --file news.json --json
-comvenio homepage preview --file homepage.json --ttl-hours 24 --json
-comvenio tournament preview <id> --json
-comvenio verify event <event-id> --json
+comvenio action call cai.homepage.01.preview \
+  --input '{"tabs":[{"label":"Home","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":false}' \
+  --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
 Preview and checking never replace approval. Publishing or changing steps
@@ -133,97 +134,72 @@ run only after a factual or visual check.
 ### Checking with `verify`
 
 ```bash
-comvenio verify --help
-comvenio verify url <address> --json
-comvenio verify homepage --audit --json
+comvenio action call cai.verify.01.url \
+  --input '{"target_url":"https://club.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
-`verify` visually checks an address, an event, a menu, the homepage, a news
-item or a certificate, and reports findings with a clear exit code instead
-of a plain pass/fail. Details per area are in the respective topic article.
+The `verify` actions visually check an address, an event, a menu, the
+homepage, a news item or a certificate, and report findings instead of a
+plain pass/fail. Details per area are in the respective topic article.
 
 ### Deliberately removed generators
 
-`menu generate`, `menu design`, `homepage generate` and `homepage design`
-never generate content automatically — these calls deliberately abort with
-an explanation. Content and design are instead deliberately composed and
-stored declaratively:
+Content is never generated automatically — Comvenio composes content and
+design deliberately instead and stores them declaratively:
 
 - Menu: create the menu and its entries or apply from a file, design through
   its own style command.
-- Homepage: generate a preview from a file, then apply it; the theme is set
-  through the club design.
+- Homepage: generate a preview through an action, then apply it (see
+  [`homepage.md`](homepage.md)); the theme is set through the club design
+  (`cai.club.05.design`, see [`auth-club.md`](auth-club.md)).
 
 There is no additional background call that invents content.
 
 ## Examples
 
-Query the schema of an area and read the structure before checking it:
+Query the schema of an area, then read a task:
 
 ```bash
-comvenio schema event --json
-comvenio event show <event-id> --json
-comvenio verify event <event-id> --json
+comvenio schema task --json
+comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
 Check a public address visually:
 
 ```bash
-comvenio verify url https://club.web.comvenio.app --json
+comvenio action call cai.verify.01.url \
+  --input '{"target_url":"https://club.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-
-**schema** — core available, some workflows missing
-
-- `comvenio schema`
-- `comvenio schema <domain>`
-
-**help** — complete
-
-- `comvenio help`
-- `comvenio help <thema>`
-- `comvenio help fehler`
-- `comvenio help fehler <code>`
-- `comvenio help suche <text>`
-
-**verify** — complete
-
-- `comvenio verify url`
-- `comvenio verify event`
-- `comvenio verify menu`
-- `comvenio verify homepage`
-- `comvenio verify news`
-- `comvenio verify certificate`
-
-**plan** — complete
-
-- `comvenio plan list`
-- `comvenio plan show`
-- `comvenio plan create`
-- `comvenio plan update`
-- `comvenio plan delete`
-- `comvenio plan zone list|create|update|delete|link|unlink`
-- `comvenio plan table create|duplicate|update|delete`
-- `comvenio plan marker create|update|delete`
-- `comvenio plan guest list|add|update|delete`
-- `comvenio plan detail`
-- `comvenio plan export`
-- `comvenio plan illustrate`
-- `comvenio plan compose`
 <!-- /gen:docs -->
 
 ## Errors
 
 - `AUTH_REQUIRED` — the sign-in has expired, was revoked, or is missing; sign
   in again. `comvenio help fehler AUTH_REQUIRED`.
-- `PERMISSION_DENIED` — the club role does not allow the command.
+- `SCOPE_REQUIRED` — the sign-in is missing the scope for this action; the
+  displayed `comvenio login --scopes …` command fixes it.
+  `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — the club role does not allow the action.
   `comvenio help fehler PERMISSION_DENIED`.
 - `NOT_FOUND` — the given identifier does not belong to any visible or
   existing entry. `comvenio help fehler NOT_FOUND`.
-- `VALIDATION_FAILED` — an input file does not match the area's schema.
+- `VALIDATION_FAILED` — the input does not match the action's schema.
   `comvenio help fehler VALIDATION_FAILED`.
+- `OUTCOME_UNKNOWN` — a write action (for example `action confirm` on
+  `homepage apply` or a `plan` deletion) ended with a timeout or server
+  error; do not retry, check the current state first.
+  `comvenio help fehler OUTCOME_UNKNOWN`.
 - `USAGE_ERROR` — an argument or option is missing, does not fit together,
   or has the wrong format. `comvenio help fehler USAGE_ERROR`.
+- `OAUTH_ONLY` — an old command does not run with the current sign-in; find
+  the matching action with `comvenio action list`.
+  `comvenio help fehler OAUTH_ONLY`.
