@@ -2757,7 +2757,7 @@ describe("K7 adapter tenant and RBAC isolation", () => {
     const scopedSnapshot: CapabilitySnapshot = {
       ...capabilitySnapshot,
       department_ids: [departmentId],
-      permissions: { manage_members: true },
+      permissions: { manage_teams: true },
     };
     const team = createK7ToolSets({
       client: adapterClient(async () => { calls += 1; return null; }),
@@ -2776,6 +2776,31 @@ describe("K7 adapter tenant and RBAC isolation", () => {
       context: scopedContext,
       capability_snapshot: scopedSnapshot,
     })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+    expect(calls).toBe(0);
+  });
+
+  test("team writes require manage_teams rather than member administration", async () => {
+    let calls = 0;
+    const team = createK7ToolSets({
+      client: adapterClient(async () => { calls += 1; return {}; }),
+      write_safety: { async execute(_request, mutation) { return mutation(); } },
+    }).team;
+    const writeContext = { ...context, scopes: ["admin.write"] } as RequestContext;
+    const memberAdmin = { ...capabilitySnapshot, permissions: { manage_members: true } };
+    const teamAdmin = { ...capabilitySnapshot, permissions: { manage_teams: true } };
+    const writes = ["cai.team.03.create", "cai.team.04.update", "cai.team.05.delete"] as const;
+    const visible = (snapshot: CapabilitySnapshot) => team.listVisible({
+      context: writeContext, capability_snapshot: snapshot,
+    }).map((definition) => definition.action_id);
+    for (const action of writes) {
+      expect(visible(memberAdmin)).not.toContain(action);
+      expect(visible(teamAdmin)).toContain(action);
+    }
+    await expect(team.execute({
+      action_id: "cai.team.03.create",
+      input: { club_id: clubId, team: { department_id: departmentId, name: "Team", sport_type: "FOOTBALL" } },
+      context: writeContext, capability_snapshot: memberAdmin,
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
     expect(calls).toBe(0);
   });
 });

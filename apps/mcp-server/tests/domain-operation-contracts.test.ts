@@ -2,6 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { fullDomainCatalogSummary, fullDomainOperationContracts } from "../src/domain-runtime.ts";
 
 describe("runtime operation inventory", () => {
+  test("duplicate team projections retain identical authorization and confirmation gates", () => {
+    const rows = fullDomainOperationContracts();
+    for (const suffix of ["03.create", "04.update"]) {
+      const legacy = rows.find((row) => row.action_id === `cai.team.${suffix}`)!;
+      const current = rows.find((row) => row.action_id === `cai.teams.${suffix}`)!;
+      expect(legacy.required_scopes).toEqual(current.required_scopes);
+      expect(legacy.permission_policy).toEqual(current.permission_policy);
+      expect(legacy.execution_gate).toBe(current.execution_gate);
+      expect(legacy.risk_class).toBe("critical_write");
+      expect(legacy.risk_class).toBe(current.risk_class);
+    }
+  });
   test("covers every registered action and uniquely addresses its operations", () => {
     const rows = fullDomainOperationContracts();
     expect(new Set(rows.map((row) => row.action_id)).size).toBe(fullDomainCatalogSummary().discovered_actions);

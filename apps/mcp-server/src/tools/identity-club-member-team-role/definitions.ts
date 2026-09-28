@@ -247,15 +247,15 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
   }),
   "cai.team.03.create": definition({
     action_id: "cai.team.03.create", domain: "team", source_action: "create", scopes: ADMIN_WRITE,
-    permission: policy(["manage_members"]), risk: "reversible_write", routes: [route("route.496", "POST", "member", "/teams/")],
+    permission: policy(["manage_teams"]), risk: "critical_write", routes: [route("route.496", "POST", "member", "/teams/")],
   }),
   "cai.team.04.update": definition({
     action_id: "cai.team.04.update", domain: "team", source_action: "update", scopes: ADMIN_WRITE,
-    permission: policy(["manage_members"]), risk: "reversible_write", routes: [route("route.497", "PATCH", "member", "/teams/{team_id}")],
+    permission: policy(["manage_teams"]), risk: "critical_write", routes: [route("route.497", "PATCH", "member", "/teams/{team_id}")],
   }),
   "cai.team.05.delete": definition({
     action_id: "cai.team.05.delete", domain: "team", source_action: "delete", scopes: ADMIN_WRITE,
-    permission: policy(["manage_members"]), risk: "critical_write", routes: [route("route.498", "DELETE", "member", "/teams/{team_id}")],
+    permission: policy(["manage_teams"]), risk: "critical_write", routes: [route("route.498", "DELETE", "member", "/teams/{team_id}")],
   }),
   "cai.team.06.member_list_add_update_remove": definition({
     action_id: "cai.team.06.member_list_add_update_remove", domain: "team", source_action: "member list|add|update|remove", scopes: ADMIN_WRITE,

@@ -6023,14 +6023,14 @@
     },
     {
       "tool_name": "cv_team_03_create",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
         "admin.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -6042,14 +6042,14 @@
     },
     {
       "tool_name": "cv_team_04_update",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
         "admin.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
