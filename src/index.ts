@@ -3,6 +3,7 @@ import { cac } from "cac";
 import type { OAuthScope } from "@comvenio/connector-contracts";
 import {
   AuthError,
+  LoginOptionError,
   aufraeumenNachFehlschlag,
   clearAllAuthState,
   clearConnectorState,
@@ -23,7 +24,8 @@ import {
   revokeOAuthCredentials,
 } from "./oauth/client.ts";
 import { CliConnectorClient } from "./mcp/client.ts";
-import { createClient, HttpError } from "./http.ts";
+import { exitCodeFor, formatCliError, resolveCliLang, toPublicError } from "./errors.ts";
+import { createClient } from "./http.ts";
 import { registerWhoamiCommand } from "./commands/whoami.ts";
 import { registerClubCommands } from "./commands/club.ts";
 import { registerMemberCommands } from "./commands/member.ts";
@@ -127,10 +129,10 @@ cli
   .option("--json", "JSON-Ausgabe (maschinenlesbar)")
   .action(async (o: LoginOpts) => {
     if (!(o.env in GATEWAY_BY_ENV)) {
-      throw new AuthError('Ungültige Umgebung. --env muss "prod", "dev" oder "local" sein.');
+      throw new LoginOptionError('Ungültige Umgebung. --env muss "prod", "dev" oder "local" sein.');
     }
     if (o.token && o.deviceToken && o.token !== o.deviceToken) {
-      throw new AuthError("--token und --device-token dürfen nicht unterschiedliche Werte enthalten.");
+      throw new LoginOptionError("--token und --device-token dürfen nicht unterschiedliche Werte enthalten.");
     }
 
     const gatewayBaseUrl = (
@@ -147,10 +149,10 @@ cli
 
     if (deviceToken) {
       if (!deviceToken.startsWith("cvn_")) {
-        throw new AuthError('Ungültiges Device-Token: Es muss mit "cvn_" beginnen.');
+        throw new LoginOptionError('Ungültiges Device-Token: Es muss mit "cvn_" beginnen.');
       }
       if (o.connector || o.scopes) {
-        throw new AuthError("--connector und --scopes gelten nur für OAuth.");
+        throw new LoginOptionError("--connector und --scopes gelten nur für OAuth.");
       }
       authMode = "device_token";
       const probe = createClient({
@@ -193,12 +195,12 @@ cli
       }
     } else {
       if (o.env === "local" || gatewayBaseUrl.startsWith("http://")) {
-        throw new AuthError(
+        throw new LoginOptionError(
           "OAuth benötigt ein öffentliches HTTPS-Gateway. Verwende lokal ausschließlich --device-token.",
         );
       }
       if (o.club) {
-        throw new AuthError(
+        throw new LoginOptionError(
           "--club ist bei OAuth nicht zulässig. Der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden.",
         );
       }
@@ -379,6 +381,7 @@ registerAutomationCommands(cli);
 registerActionCommands(cli);
 registerZoneCommands(cli);
 
+cli.option("--lang <lang>", "Sprache der Fehlermeldungen: de oder en (sonst LANG, sonst de)");
 cli.help();
 cli.version(pkg.version);
 
@@ -388,24 +391,22 @@ async function main() {
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.
-    if (err instanceof AuthError) {
-      console.error(`\nAuth-Fehler: ${err.message}\n`);
-      process.exit(2);
+    const argv = process.argv.slice(2);
+    let grantedScopes: string[] = [];
+    try {
+      grantedScopes = readStoredState().connector?.scopes ?? [];
+    } catch {
+      // Without a stored sign-in the login hint simply requests all scopes.
     }
-    if (err instanceof HttpError) {
-      const hint =
-        err.status === 401
-          ? '  Anmeldung ungültig oder abgelaufen. Führe "comvenio login" erneut aus.'
-          : err.status === 403
-            ? "  Kein Zugriff in diesem Club (serverseitige RBAC)."
-            : err.status === 404
-              ? "  Ressource nicht gefunden."
-              : "";
-      console.error(`\nAPI-Fehler: ${err.message}\n${hint}\n`);
-      process.exit(3);
-    }
-    console.error(`\nFehler: ${(err as Error).message}\n`);
-    process.exit(1);
+    const rendered = toPublicError(err, {
+      lang: resolveCliLang(argv, process.env),
+      granted_scopes: grantedScopes,
+    });
+    if (process.env.COMVENIO_DEBUG === "1" && err instanceof Error && err.stack) console.error(err.stack);
+    console.error(argv.includes("--json")
+      ? JSON.stringify(rendered, null, 2)
+      : `\n${formatCliError(rendered)}\n`);
+    process.exit(exitCodeFor(err));
   }
 }
 

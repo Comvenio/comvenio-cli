@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { CAC } from "cac";
 
 import { AuthError, loadState } from "../auth.ts";
+import { PublicCliError } from "../errors.ts";
 import { output, renderTable } from "../format.ts";
 import {
   CliConnectorClient,
@@ -49,7 +50,7 @@ export async function connector(): Promise<CliConnectorClient> {
   const state = await loadState();
   if (state.authMode !== "oauth" || !state.oauth?.resource) {
     throw new AuthError(
-      "Der typisierte Connector benötigt eine OAuth-Anmeldung. "
+      "Actions brauchen eine OAuth-Anmeldung. "
       + 'Führe "comvenio login" ohne --device-token aus.',
     );
   }
@@ -62,7 +63,7 @@ export async function connector(): Promise<CliConnectorClient> {
   // Fremdvalidierung Runde 2 (2026-09-21), Befund 1.
   if (!state.connectorToken) {
     throw new AuthError(
-      "Die Connector-Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
+      "Die Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
       + 'Melde dich mit "comvenio login" neu an; dein Geräte-Token bleibt dabei bestehen.',
     );
   }
@@ -119,7 +120,8 @@ export function registerActionCommands(cli: CAC): void {
         const toolName = connectorActionToolName(actionId);
         const tool = tools.find((entry) => entry.name === toolName);
         if (!tool) {
-          throw new Error(
+          throw new PublicCliError(
+            "ACTION_NOT_LISTED",
             "Diese Action ist im aktuellen OAuth-, Vereins- und Rechtekontext nicht freigegeben.",
           );
         }

@@ -12,7 +12,6 @@ import {
   NEWS_WIDGET_SCHEMA,
   createConnectorError,
   createProviderNeutralResult,
-  isConnectorError,
   type JsonValue,
   type OAuthScope,
   type RequestContext,
@@ -27,7 +26,7 @@ import {
   domainToolName,
   type DomainToolSummary,
 } from "./domain-runtime.ts";
-import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
+import { publicToolError } from "./public-tool-error.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
   AvailabilityContract,
@@ -259,33 +258,8 @@ function widgetError(
   publicOrigin: string,
   error: unknown,
 ): CallToolResult {
-  const connectorError = isConnectorError(error) ? error : null;
-  if (connectorError?.code === "SCOPE_REQUIRED" && connectorError.required_scope) {
-    return insufficientScopeToolResult({
-      public_origin: publicOrigin,
-      required_scopes: [connectorError.required_scope],
-      context,
-    });
-  }
-  const hidden = connectorError?.code === "PERMISSION_DENIED"
-    || connectorError?.code === "NOT_FOUND"
-    || connectorError?.code === "TENANT_MISMATCH";
-  return {
-    content: [{
-      type: "text",
-      text: hidden
-        ? "Diese Ansicht ist in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar."
-        : "Die Comvenio-Ansicht konnte nicht sicher geladen werden.",
-    }],
-    structuredContent: {
-      error: connectorError?.code.toLowerCase() ?? "upstream_unavailable",
-      ...(connectorError?.required_scope
-        ? { required_scope: connectorError.required_scope }
-        : {}),
-    },
-    _meta: { request_id: context.request_id },
-    isError: true,
-  };
+  // Every widget tool is read-only (readOnlyHint: true).
+  return publicToolError(context, publicOrigin, error, "read");
 }
 
 function filterMembers(

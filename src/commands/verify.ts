@@ -853,7 +853,7 @@ export function registerVerifyCommands(cli: CAC): void {
               `/home-config/${clubId}/preview`,
               body,
             );
-            if (!res.preview_url) throw new Error("Keine preview_url vom club-service erhalten.");
+            if (!res.preview_url) throw new Error("Comvenio hat keine Vorschau-URL geliefert.");
             // Die preview_url zeigt immer auf den gehosteten Renderer. Ohne diese
             // Zeile lief --frontend-base ins Leere: Der Lauf rendert dann die
             // DEPLOYTE App, waehrend man glaubt, den lokalen Stand zu pruefen —
@@ -909,7 +909,7 @@ export function registerVerifyCommands(cli: CAC): void {
             {},
           );
           if (!res.certificate_html) {
-            throw new Error("Keine certificate_html vom member-service erhalten.");
+            throw new Error("Comvenio hat kein Zertifikat geliefert.");
           }
           const outDir = opts.out ?? OUT_DIR;
           mkdirSync(outDir, { recursive: true });
