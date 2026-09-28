@@ -6025,7 +6025,7 @@
       "tool_name": "cv_team_03_create",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6044,7 +6044,7 @@
       "tool_name": "cv_team_04_update",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6158,7 +6158,7 @@
       "tool_name": "cv_teams_03_create",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6177,7 +6177,7 @@
       "tool_name": "cv_teams_04_update",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6196,7 +6196,7 @@
       "tool_name": "cv_teams_05_archive",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6234,7 +6234,7 @@
       "tool_name": "cv_teams_07_season_create",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6253,7 +6253,7 @@
       "tool_name": "cv_teams_08_season_correct",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6272,7 +6272,7 @@
       "tool_name": "cv_teams_09_season_activate",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6291,7 +6291,7 @@
       "tool_name": "cv_teams_10_season_complete",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6329,7 +6329,7 @@
       "tool_name": "cv_teams_12_roster_add",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6348,7 +6348,7 @@
       "tool_name": "cv_teams_13_roster_update",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6367,7 +6367,7 @@
       "tool_name": "cv_teams_14_roster_remove",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6405,7 +6405,7 @@
       "tool_name": "cv_teams_16_roster_carry_over",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -6690,7 +6690,7 @@
       "tool_name": "cv_teams_31_termin_create",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,

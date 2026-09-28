@@ -2752,7 +2752,7 @@ describe("K7 adapter tenant and RBAC isolation", () => {
     const scopedContext: RequestContext = {
       ...context,
       department_id: departmentId,
-      scopes: ["admin.write"],
+      scopes: ["club.write"],
     };
     const scopedSnapshot: CapabilitySnapshot = {
       ...capabilitySnapshot,
@@ -2782,10 +2782,10 @@ describe("K7 adapter tenant and RBAC isolation", () => {
   test("team writes require manage_teams rather than member administration", async () => {
     let calls = 0;
     const team = createK7ToolSets({
-      client: adapterClient(async () => { calls += 1; return {}; }),
+      client: adapterClient(async (request) => { calls += 1; throw createConnectorError({ code: "PERMISSION_DENIED", message: "upstream private denial", request_id: request.context.request_id, retryable: false }); }),
       write_safety: { async execute(_request, mutation) { return mutation(); } },
     }).team;
-    const writeContext = { ...context, scopes: ["admin.write"] } as RequestContext;
+    const writeContext = { ...context, scopes: ["club.write"] } as RequestContext;
     const memberAdmin = { ...capabilitySnapshot, permissions: { manage_members: true } };
     const teamAdmin = { ...capabilitySnapshot, permissions: { manage_teams: true } };
     const writes = ["cai.team.03.create", "cai.team.04.update", "cai.team.05.delete"] as const;
@@ -2802,6 +2802,15 @@ describe("K7 adapter tenant and RBAC isolation", () => {
       context: writeContext, capability_snapshot: memberAdmin,
     })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
     expect(calls).toBe(0);
+    const request = {
+      action_id: "cai.team.03.create" as const,
+      input: { club_id: clubId, team: { department_id: departmentId, name: "Team", sport_type: "FOOTBALL" } },
+      context: writeContext, capability_snapshot: teamAdmin,
+    };
+    await expect(team.execute({ ...request, context: { ...writeContext, scopes: ["club.read"] } })).rejects.toMatchObject({ code: "SCOPE_REQUIRED" });
+    await expect(team.execute(request)).rejects.toMatchObject({ code: "PERMISSION_DENIED", message: "Der Fachservice hat die Aktion im aktuellen Kontext abgelehnt." });
+    expect(calls).toBe(1);
+
   });
 });
 

@@ -2,6 +2,22 @@ import { describe, expect, test } from "bun:test";
 import { fullDomainCatalogSummary, fullDomainOperationContracts } from "../src/domain-runtime.ts";
 
 describe("runtime operation inventory", () => {
+  test("available team writes share the canonical club.write scope and retain confirmation", () => {
+    const rows = fullDomainOperationContracts();
+    const ids = ["cai.team.03.create", "cai.team.04.update", ...[
+      "03.create", "04.update", "05.archive", "07.season_create", "08.season_correct",
+      "09.season_activate", "10.season_complete", "12.roster_add", "13.roster_update",
+      "14.roster_remove", "16.roster_carry_over", "31.termin_create",
+    ].map((suffix) => `cai.teams.${suffix}`)];
+    for (const id of ids) {
+      const row = rows.find((row) => row.action_id === id)!;
+      expect(row.required_scopes).toEqual(["club.write"]);
+      expect(row.risk_class).toBe("critical_write");
+      // K7 confirmations wrap the tool set in domain-runtime.executeAction.
+      expect(row.execution_gate).toBe("write_safety");
+    }
+  });
+
   test("duplicate team projections retain identical authorization and confirmation gates", () => {
     const rows = fullDomainOperationContracts();
     for (const suffix of ["03.create", "04.update"]) {
