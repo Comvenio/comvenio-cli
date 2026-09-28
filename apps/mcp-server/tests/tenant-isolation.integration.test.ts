@@ -3107,7 +3107,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     const actor = {
       context: {
         ...context,
-        scopes: ["supply.read", "supply.write"] as RequestContext["scopes"],
+        scopes: ["club.read", "club.write"] as RequestContext["scopes"],
       },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     };
@@ -3118,6 +3118,16 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     expect(visible).toContain("cai.shopping.procurement.activate");
     expect(visible).toContain("cai.shopping.procurement.template_deactivate");
     expect(visible).not.toContain("cai.shopping.07.create");
+    for (const definition of definitions.filter((row) => row.action_id.startsWith("cai.shopping.procurement."))) {
+      for (const operation of Object.values(definition.operations)) {
+        const read = ["cai.shopping.procurement.list", "cai.shopping.procurement.templates"].includes(definition.action_id);
+        expect(operation.required_scopes).toEqual([read ? "club.read" : "club.write"]);
+        expect(operation.execution_gate).toBe(read ? "inline" : "confirmation");
+        expect(operation.permission_policy.all_of).toEqual([]);
+        expect(operation.permission_policy.any_of).toEqual([]);
+      }
+    }
+
     expect(
       definitions.find(
         (definition) =>
@@ -3157,7 +3167,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         building_id: clubId,
         room_id: roomId,
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     expect(calls).toHaveLength(0);
@@ -3170,7 +3180,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         quantity: 4,
         unit: "pc",
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     expect(calls).toHaveLength(0);
@@ -3183,13 +3193,13 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         unit: "pc",
         room_id: roomId,
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     })).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
     expect(calls).toHaveLength(0);
 
-    const result = await shopping.execute({
-      action_id: "cai.shopping.procurement.add",
+    const request = {
+      action_id: "cai.shopping.procurement.add" as const,
       input: {
         club_id: clubId,
         name: "Klopapier",
@@ -3198,9 +3208,18 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         unit: "pc",
         room_id: roomId,
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] as RequestContext["scopes"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
-    });
+    };
+    await expect(shopping.execute({ ...request, context: { ...request.context, scopes: ["club.read"] } })).rejects.toMatchObject({ code: "SCOPE_REQUIRED" });
+    expect(calls).toHaveLength(0);
+    const preview = await shopping.execute(request);
+    expect(preview.status).toBe("confirmation_required");
+    expect(calls).toHaveLength(0);
+    const confirmation = (preview.result as { preview: { preview_id: string; confirmation_token: string } }).preview;
+    await expect(shopping.execute({ ...request, input: { ...request.input, quantity: 5, confirmation: { preview_id: confirmation.preview_id, confirmation_token: confirmation.confirmation_token } } })).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+    expect(calls).toHaveLength(0);
+    const result = await shopping.execute({ ...request, input: { ...request.input, confirmation: { preview_id: confirmation.preview_id, confirmation_token: confirmation.confirmation_token } } });
 
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({
@@ -3218,6 +3237,9 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
     });
     expect(JSON.stringify(result.result)).not.toContain("private-actor-id");
     expect(JSON.stringify(result.result)).not.toContain("private-purchaser-id");
+    await expect(shopping.execute({ ...request, input: { ...request.input, confirmation: { preview_id: confirmation.preview_id, confirmation_token: confirmation.confirmation_token } } })).rejects.toMatchObject({ code: "CONFIRMATION_MISMATCH" });
+    expect(calls).toHaveLength(1);
+
   });
 
   test("returns the structured non-retryable duplicate activation conflict", async () => {
@@ -3231,6 +3253,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         });
       }),
       write_safety: { async execute(_request, mutation) { return mutation(); } },
+      confirmation: { async confirmOrPreview(_request, mutation) { return mutation(); } },
     }).shopping;
 
     await expect(shopping.execute({
@@ -3239,7 +3262,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         club_id: clubId,
         template_id: "27272727-2727-4727-8727-272727272727",
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     })).rejects.toMatchObject({
       code: "CONFLICT",
@@ -3274,7 +3297,7 @@ describe("K11 supply, menu and shopping tenant/RBAC isolation", () => {
         club_id: clubId,
         item_id: "28282828-2828-4828-8828-282828282828",
       },
-      context: { ...context, scopes: ["supply.write"] },
+      context: { ...context, scopes: ["club.write"] },
       capability_snapshot: { ...capabilitySnapshot, permissions: {} },
     })).rejects.toMatchObject({
       code: "PERMISSION_DENIED",

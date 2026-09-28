@@ -5100,14 +5100,14 @@
     },
     {
       "tool_name": "cv_shopping_procurement_activate",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -5119,14 +5119,14 @@
     },
     {
       "tool_name": "cv_shopping_procurement_add",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -5140,7 +5140,7 @@
       "tool_name": "cv_shopping_procurement_list",
       "risk_class": "read",
       "required_scopes": [
-        "supply.read"
+        "club.read"
       ],
       "expected_outcome": "grounded_success_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -5159,7 +5159,7 @@
       "tool_name": "cv_shopping_procurement_purchase",
       "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
@@ -5176,14 +5176,14 @@
     },
     {
       "tool_name": "cv_shopping_procurement_template_create",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -5195,14 +5195,14 @@
     },
     {
       "tool_name": "cv_shopping_procurement_template_deactivate",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -5214,14 +5214,14 @@
     },
     {
       "tool_name": "cv_shopping_procurement_template_update",
-      "risk_class": "reversible_write",
+      "risk_class": "critical_write",
       "required_scopes": [
-        "supply.write"
+        "club.write"
       ],
-      "expected_outcome": "idempotent_success_or_actionable_denial",
+      "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,
       "backend_rbac_recheck_required": true,
-      "confirmation_contract": false,
+      "confirmation_contract": true,
       "response_contract": {
         "structured_content_required": true,
         "safe_text_summary_required": true,
@@ -5235,7 +5235,7 @@
       "tool_name": "cv_shopping_procurement_templates",
       "risk_class": "read",
       "required_scopes": [
-        "supply.read"
+        "club.read"
       ],
       "expected_outcome": "grounded_success_or_actionable_denial",
       "oauth_bound_club_context": true,
