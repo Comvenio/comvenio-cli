@@ -32,6 +32,9 @@ import { mountEventCalendarWidgetAssets } from "../widgets/event-calendar/assets
 import { mountMemberManagementWidgetAssets } from "../widgets/member-management/assets.ts";
 import { mountNewsWidgetAssets } from "../widgets/news/assets.ts";
 
+/** Most JSON-RPC messages an anonymous request may batch. */
+const MAX_ANONYMOUS_BATCH = 10;
+
 const MCP_ROUTE = "/mcp" as const;
 const CLI_ROUTE = "/cli" as const;
 const HEALTH_ROUTE = "/health" as const;
@@ -445,6 +448,17 @@ export class McpHttpServer {
           request_id: context.request.request_id,
           retryable: false,
           required_scope: authChallenge.required_scopes[0]!,
+        });
+      }
+      // Anonymous bodies may only carry a small batch: every public call costs work
+      // on the shared thread, and nobody is accountable for it (05-ki-zugang review).
+      if (!context.provider_request.authenticated && Array.isArray(body)
+        && body.length > MAX_ANONYMOUS_BATCH) {
+        throw runtimeError({
+          code: "RATE_LIMITED",
+          message: `Ohne Anmeldung sind höchstens ${MAX_ANONYMOUS_BATCH} Aufrufe je Anfrage erlaubt.`,
+          request_id: context.request.request_id,
+          retryable: false,
         });
       }
       response.setHeader("x-request-id", context.request.request_id);
