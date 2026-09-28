@@ -57,6 +57,7 @@ import { registerFunctionCommands } from "./commands/function.ts";
 import { registerAutomationCommands } from "./commands/automation.ts";
 import { registerActionCommands } from "./commands/action.ts";
 import { registerZoneCommands } from "./commands/zone.ts";
+import { registerHelpCommand } from "./commands/help.ts";
 import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
 
@@ -380,6 +381,7 @@ registerFunctionCommands(cli);
 registerAutomationCommands(cli);
 registerActionCommands(cli);
 registerZoneCommands(cli);
+registerHelpCommand(cli);
 
 cli.option("--lang <lang>", "Sprache der Fehlermeldungen: de oder en (sonst LANG, sonst de)");
 cli.help();

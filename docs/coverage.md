@@ -4,7 +4,7 @@ Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-09-20.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
-> Workflow-Registry für die 31 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
+> Workflow-Registry für die 32 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
 
 ## Statusmodell
 
@@ -37,6 +37,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `meeting` | `covered` | series list|show|create|update|delete<br>protocol list|show|create|update|delete|advance|revert|updates|validation|publish<br>agenda list|show|create|update|delete|reorder|start|complete|skip|approve<br>note list|list-protocol|create|update|delete<br>participant list|add|update|remove|validate|unvalidate<br>decision create|agenda|update|cancel|option-add|options-add|promote<br>voting open|close|results|eligible|tally<br>vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract<br>resolution list|list-protocol|show|history|create|update|approve|decline|delete<br>entry list|show|show-agenda|create|update|delete<br>attachment list|add|remove | Keine bekannte Kernlücke. |
 | `homepage` | `covered` | preview<br>apply<br>show | Keine bekannte Kernlücke. |
 | `schema` | `core-partial` | schema<br>schema <domain> | Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback. |
+| `help` | `covered` | help<br>help <thema><br>help fehler<br>help fehler <code><br>help suche <text> | Keine bekannte Kernlücke. |
 | `verify` | `covered` | url<br>event<br>menu<br>homepage<br>news<br>certificate | Keine bekannte Kernlücke. |
 | `data` | `covered` | list<br>show<br>update<br>url<br>download<br>upload<br>delete<br>restore<br>move<br>visibility<br>stats<br>empty-trash<br>area-media<br>area-shares<br>area-share-add<br>area-share-remove<br>children<br>search<br>breadcrumb<br>folder-create<br>folder-rename<br>folder-move<br>folder-protect<br>folder-delete<br>folder-restore<br>folder-rights<br>folder-right-add<br>folder-right-bulk<br>folder-right-delete<br>papers<br>paper-show<br>paper-add<br>paper-update<br>paper-delete<br>export members|bookings | Keine bekannte Kernlücke. |
 | `news` | `covered` | list<br>show<br>create<br>update<br>delete<br>apply<br>preview<br>publish<br>video slideshow|result|teaser | Keine bekannte Kernlücke. |
@@ -58,7 +59,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## Nicht erschlossene Themengebiete
 
-> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "31 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
+> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "32 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
 
 - `gap`: Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.
 - `partial-gap`: Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.
@@ -345,6 +346,17 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
   - coverage.json ist eine getrennte Workflow-Coverage-Registry und offline lesbar.
 - Geprüfte Quellen: `src/commands/schema.ts`, `src/schema/coverage.json`
 - Weiterführende Doku: `docs/coverage.md`, `docs/cli-reference.md`
+
+## help
+
+- Status: `covered`
+- Actions: `help`, `help <thema>`, `help fehler`, `help fehler <code>`, `help suche <text>`
+- Wichtige Lücken:
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
+- Bewusste Ausschlüsse:
+  - Kein Online-Abruf neuerer Artikel: Die Hilfe gehört zur installierten Version.
+- Geprüfte Quellen: `src/commands/help.ts`, `src/help/`
+- Weiterführende Doku: `docs/cli-reference.md`
 
 ## verify
 

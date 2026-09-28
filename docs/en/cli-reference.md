@@ -1,7 +1,7 @@
 ---
 id: cli-reference
 kategorie: thema
-domaenen: [schema, verify, plan]
+domaenen: [schema, help, verify, plan]
 stichwoerter: [cli, reference, commands, schema, verify]
 ---
 
@@ -18,7 +18,7 @@ coverage with known gaps and deliberate exclusions per command is in
 
 ## Requirements and permissions
 
-> **Sign-in:** Except `login`, `logout`, `whoami`, `action`, `finance` and `schema`, all commands are classic commands. They run with a device-token
+> **Sign-in:** Except `login`, `logout`, `whoami`, `action`, `finance`, `schema` and `help`, all commands are classic commands. They run with a device-token
 > sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
 > `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
 > shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
@@ -73,6 +73,21 @@ Every top-level command belongs to a topic with its own article:
 | `zone`, `task-zones` | club area: divisions, zones, overview | [`zonen.md`](zonen.md) |
 | `agent` | club agent: chat, functions, approvals | [`club-agent.md`](club-agent.md) |
 | `weekly-preview` | weekly preview: flyers and templates | [`wochenvorschau.md`](wochenvorschau.md) |
+
+### Help in the program
+
+```bash
+comvenio help
+comvenio help zonen
+comvenio help fehler SCOPE_REQUIRED
+comvenio help suche booking
+```
+
+`comvenio help` shows the same articles as this documentation — offline, without sign-in and in the
+version that belongs to the installed program. A topic can be opened by its name or by one of its
+commands (`comvenio help zone`). `--lang en` or an English environment choose the English version,
+`--json` returns `{ id, title, lang, markdown, related }`. Every error message points to its article
+with `comvenio help fehler <CODE>`.
 
 ### Querying schemas
 
@@ -165,6 +180,14 @@ comvenio verify url https://club.web.comvenio.app --json
 
 - `comvenio schema`
 - `comvenio schema <domain>`
+
+**help** — complete
+
+- `comvenio help`
+- `comvenio help <thema>`
+- `comvenio help fehler`
+- `comvenio help fehler <code>`
+- `comvenio help suche <text>`
 
 **verify** — complete
 
