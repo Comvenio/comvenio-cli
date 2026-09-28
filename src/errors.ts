@@ -39,9 +39,11 @@ export type CliPublicError = PublicError & {
   detail?: string;
 };
 
-/** Removes what the customer should not see in a detail line: home path and URLs. */
+/** Removes what the customer should not see in a detail line: home path, URLs, service names. */
 export function cleanDetail(text: string, home: string = homedir()): string {
   let cleaned = text.replace(/https?:\/\/\S+/gu, "<URL>");
+  // Internal service names ("content-service") are not the customer's business.
+  cleaned = cleaned.replace(/\b(?:vom |von |im |der |dem )?[a-z][a-z0-9]*(?:-[a-z0-9]+)*-service\b/gu, "von Comvenio");
   if (home && home !== "/") cleaned = cleaned.split(home).join("~");
   return cleaned.trim();
 }

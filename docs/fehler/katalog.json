@@ -205,12 +205,12 @@
   },
   "OUTCOME_UNKNOWN": {
     "de": {
-      "message": "Die Antwort kam nicht rechtzeitig — die Aktion kann trotzdem ausgeführt worden sein.",
-      "cause": "Eine schreibende Aktion hat die Zeitgrenze überschritten, während Comvenio sie noch bearbeitet hat. Stand prüfen statt wiederholen, sonst entsteht sie womöglich doppelt."
+      "message": "Die Aktion wurde nicht bestätigt — sie kann trotzdem ausgeführt worden sein.",
+      "cause": "Eine schreibende Aktion endete mit Zeitüberschreitung oder Serverfehler, womöglich nachdem Comvenio sie schon ausgeführt hatte. Stand prüfen statt wiederholen, sonst entsteht sie womöglich doppelt."
     },
     "en": {
-      "message": "The answer did not arrive in time — the action may still have been carried out.",
-      "cause": "A writing action exceeded the time limit while Comvenio was still processing it. Check the current state instead of repeating, otherwise it may be created twice."
+      "message": "The action was not confirmed — it may still have been carried out.",
+      "cause": "A writing action ended with a timeout or server error, possibly after Comvenio had already carried it out. Check the current state instead of repeating, otherwise it may be created twice."
     },
     "next_command": "comvenio action list",
     "help": "fehler/outcome-unknown"

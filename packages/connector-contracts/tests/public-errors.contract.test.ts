@@ -87,7 +87,9 @@ describe("public error catalog (01-fehlermodell)", () => {
     expect(publicErrorCode({ code: "UPSTREAM_TIMEOUT", retryable: false, effect: "read" })).toBe("UPSTREAM_TIMEOUT");
     expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: false, effect: "write" })).toBe("OUTCOME_UNKNOWN");
     expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: false })).toBe("UPSTREAM_UNAVAILABLE");
-    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: true, effect: "write" })).toBe("UPSTREAM_UNAVAILABLE");
+    // A server error after a write may come after the write ran (review round 2).
+    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: true, effect: "write" })).toBe("OUTCOME_UNKNOWN");
+    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: true, effect: "read" })).toBe("UPSTREAM_UNAVAILABLE");
     expect(publicErrorCode({ code: "UPSTREAM_TIMEOUT", retryable: true })).toBe("UPSTREAM_TIMEOUT");
     const rendered = renderPublicError({ code: "OUTCOME_UNKNOWN", lang: "de" });
     expect(rendered.cause).toContain("Stand prüfen statt wiederholen");

@@ -235,7 +235,7 @@ export function registerDataCommands(cli: CAC): void {
           const res = await client.post<DownloadURLOut>("content", `/files/download-url`, {
             file_id: arg,
           });
-          if (!res.url) throw new Error("Keine Download-URL vom content-service erhalten.");
+          if (!res.url) throw new Error("Comvenio hat keine Download-URL geliefert.");
           output({ file_id: arg, url: res.url, expires_in: res.expires_in }, opts.json, () =>
             `${res.url}${res.expires_in ? `  (gueltig ~${res.expires_in}s)` : ""}`,
           );
@@ -248,7 +248,7 @@ export function registerDataCommands(cli: CAC): void {
           const res = await client.post<DownloadURLOut>("content", `/files/download-url`, {
             file_id: arg,
           });
-          if (!res.url) throw new Error("Keine Download-URL vom content-service erhalten.");
+          if (!res.url) throw new Error("Comvenio hat keine Download-URL geliefert.");
           const bytes = await fetch(res.url).then((r) => {
             if (!r.ok) throw new Error(`S3-Download fehlgeschlagen: HTTP ${r.status}`);
             return r.arrayBuffer();

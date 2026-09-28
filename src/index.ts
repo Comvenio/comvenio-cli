@@ -195,12 +195,12 @@ cli
       }
     } else {
       if (o.env === "local" || gatewayBaseUrl.startsWith("http://")) {
-        throw new AuthError(
+        throw new LoginOptionError(
           "OAuth benötigt ein öffentliches HTTPS-Gateway. Verwende lokal ausschließlich --device-token.",
         );
       }
       if (o.club) {
-        throw new AuthError(
+        throw new LoginOptionError(
           "--club ist bei OAuth nicht zulässig. Der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden.",
         );
       }
@@ -402,7 +402,7 @@ async function main() {
       lang: resolveCliLang(argv, process.env),
       granted_scopes: grantedScopes,
     });
-    if (process.env.COMVENIO_DEBUG && err instanceof Error && err.stack) console.error(err.stack);
+    if (process.env.COMVENIO_DEBUG === "1" && err instanceof Error && err.stack) console.error(err.stack);
     console.error(argv.includes("--json")
       ? JSON.stringify(rendered, null, 2)
       : `\n${formatCliError(rendered)}\n`);

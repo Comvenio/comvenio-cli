@@ -55,9 +55,10 @@ export function publicErrorCode(input: {
   effect?: "read" | "write";
 }): PublicErrorCode {
   const unanswered = input.code === "UPSTREAM_TIMEOUT" || input.code === "UPSTREAM_UNAVAILABLE";
-  if (unanswered && input.retryable === false) {
-    if (input.effect === "write") return "OUTCOME_UNKNOWN";
-    if (input.effect === undefined && input.code === "UPSTREAM_TIMEOUT") return "OUTCOME_UNKNOWN";
+  // A write whose answer is missing or a server error may have run anyway.
+  if (unanswered && input.effect === "write") return "OUTCOME_UNKNOWN";
+  if (input.effect === undefined && input.code === "UPSTREAM_TIMEOUT" && input.retryable === false) {
+    return "OUTCOME_UNKNOWN";
   }
   return isPublicErrorCode(input.code) ? input.code : "UNKNOWN_ERROR";
 }

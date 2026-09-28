@@ -92,6 +92,8 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(cleanDetail("State-File nicht gefunden: /Users/kim/.comvenio-cli-state.json", "/Users/kim"))
       .toBe("State-File nicht gefunden: ~/.comvenio-cli-state.json");
     expect(cleanDetail("siehe https://api.comvenio.app/club-service/x jetzt", "/Users/kim")).toBe("siehe <URL> jetzt");
+    expect(cleanDetail("Keine Download-URL vom content-service erhalten.", "/Users/kim"))
+      .toBe("Keine Download-URL von Comvenio erhalten.");
   });
 
   test("argument errors are USAGE_ERROR; only wrong login options, not every sign-in problem", () => {
