@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile comvenio",
+    "build": "bun run scripts/build-cli.ts",
     "start:mcp": "bun run --cwd apps/mcp-server start",
     "build:mcp": "bun run --cwd apps/mcp-server build",
     "typecheck": "tsc --noEmit",
