@@ -89,36 +89,67 @@ export function findById(id: string): IndexEntry | null {
   return INDEX.find((entry) => entry.id === id) ?? null;
 }
 
-function distance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, position) => position);
+// Search is public and anonymous (05-ki-zugang), so its cost per call is bounded:
+// at most MAX_WORDS words of MAX_WORD_LENGTH characters, the index prepared once,
+// and a banded edit distance that stops as soon as it exceeds 2.
+const MAX_WORDS = 8;
+const MAX_WORD_LENGTH = 40;
+const MAX_DISTANCE = 2;
+
+interface Prepared {
+  entry: IndexEntry;
+  values: string[];
+  parts: string[];
+}
+
+const PREPARED: readonly Prepared[] = INDEX.map((entry) => {
+  const values = [
+    entry.id,
+    entry.title.de, entry.title.en,
+    ...entry.stichwoerter.de, ...entry.stichwoerter.en,
+    ...entry.domaenen,
+  ].map((value) => value.toLowerCase());
+  const parts = [...new Set(values.flatMap((value) => value.split(/[\s/-]+/u)))].filter((part) => part.length > 3);
+  return { entry, values, parts };
+});
+
+/** True when the edit distance of a and b is at most 2 — O(length), not O(length²). */
+export function withinTwoEdits(a: string, b: string): boolean {
+  if (Math.abs(a.length - b.length) > MAX_DISTANCE) return false;
+  const width = MAX_DISTANCE;
+  let previous = new Map<number, number>();
+  for (let j = 0; j <= Math.min(b.length, width); j += 1) previous.set(j, j);
   for (let i = 1; i <= a.length; i += 1) {
-    let previous = row[0]!;
-    row[0] = i;
-    for (let j = 1; j <= b.length; j += 1) {
-      const current = row[j]!;
-      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1));
-      previous = current;
+    const current = new Map<number, number>();
+    let best = Infinity;
+    for (let j = Math.max(0, i - width); j <= Math.min(b.length, i + width); j += 1) {
+      const value = j === 0
+        ? i
+        : Math.min(
+          (previous.get(j) ?? Infinity) + 1,
+          (current.get(j - 1) ?? Infinity) + 1,
+          (previous.get(j - 1) ?? Infinity) + (a[i - 1] === b[j - 1] ? 0 : 1),
+        );
+      current.set(j, value);
+      best = Math.min(best, value);
     }
+    if (best > MAX_DISTANCE) return false;
+    previous = current;
   }
-  return row[b.length]!;
+  return (previous.get(b.length) ?? Infinity) <= MAX_DISTANCE;
 }
 
 /** Index hits for a text: id, titles, keywords and domains of both languages, best first. */
 export function search(text: string, lang: DocLang): IndexEntry[] {
-  const words = text.toLowerCase().split(/\s+/u).filter(Boolean);
+  const words = text.toLowerCase().split(/\s+/u).filter(Boolean)
+    .slice(0, MAX_WORDS).map((word) => word.slice(0, MAX_WORD_LENGTH));
   if (words.length === 0) return [];
-  const scored = INDEX.map((entry) => {
-    const haystack = [
-      entry.id,
-      entry.title.de, entry.title.en,
-      ...entry.stichwoerter.de, ...entry.stichwoerter.en,
-      ...entry.domaenen,
-    ].map((value) => value.toLowerCase());
+  const scored = PREPARED.map(({ entry, values, parts }) => {
     let score = 0;
     for (const word of words) {
-      if (haystack.some((value) => value === word)) score += 3;
-      else if (haystack.some((value) => value.includes(word))) score += 2;
-      else if (haystack.some((value) => value.split(/[\s/-]+/u).some((part) => part.length > 3 && distance(part, word) <= 2))) score += 1;
+      if (values.some((value) => value === word)) score += 3;
+      else if (values.some((value) => value.includes(word))) score += 2;
+      else if (word.length > 3 && parts.some((part) => withinTwoEdits(part, word))) score += 1;
     }
     return { entry, score };
   }).filter((hit) => hit.score > 0);

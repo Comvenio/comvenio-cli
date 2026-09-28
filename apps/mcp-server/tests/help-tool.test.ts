@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { INDEX } from "@comvenio/kundendoku";
+import { INDEX, search, withinTwoEdits } from "@comvenio/kundendoku";
 import type { RequestContext } from "@comvenio/connector-contracts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -92,6 +92,21 @@ describe("comvenio_hilfe (05-ki-zugang)", () => {
   test("an empty search returns the overview of all articles", () => {
     const result = answerHelp(anonymous, { operation: "suche" });
     expect((result.structuredContent as { results: unknown[] }).results).toHaveLength(INDEX.length);
+  });
+
+  test("fuzzy search stays correct and cheap for anonymous callers", () => {
+    expect(withinTwoEdits("zonen", "zonne")).toBe(true);
+    expect(withinTwoEdits("zonen", "zonen")).toBe(true);
+    expect(withinTwoEdits("zonen", "zxxxn")).toBe(false);
+    expect(withinTwoEdits("buchung", "buchungsregeln")).toBe(false);
+    expect(search("zonne", "de").map((entry) => entry.id)).toContain("zonen");
+    // The review's worst case: 300 calls with 200 characters, plus many short words.
+    const started = performance.now();
+    for (let call = 0; call < 300; call += 1) {
+      search("x".repeat(200), "de");
+      search(Array.from({ length: 50 }, (_, word) => `w${word}zq`).join(" "), "de");
+    }
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 
   test("the static public list can never open a protected tool", () => {

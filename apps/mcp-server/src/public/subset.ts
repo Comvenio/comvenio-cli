@@ -66,8 +66,10 @@ export class PublicToolSubset implements McpRequestAccessPolicy {
     protected_tools?: readonly ProtectedToolDescriptor[];
     /**
      * Public tools that call no backend at all (the embedded customer help,
-     * 05-ki-zugang). They are allowed anonymously by name; a name that is also
-     * a protected tool is refused, so this list can never open a private tool.
+     * 05-ki-zugang). They are allowed anonymously by name. Checked here: the
+     * name format and that no protected tool carries the name. Not checked here:
+     * that the handler behind the name stays backend-free — that is the
+     * registering module's contract (help-tool.ts).
      */
     static_public_tools?: readonly string[];
   } = {}) {

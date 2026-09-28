@@ -2611,6 +2611,34 @@ describe("Remote MCP runtime", () => {
     }
   });
 
+  test("refuses an anonymous batch above the limit before a server is created", async () => {
+    let factoryCalls = 0;
+    const server = new McpHttpServer(runtimeOptions({
+      // As in production: the public help tool is allowed without sign-in.
+      access_policy: new PublicToolSubset({ public_tools: [], static_public_tools: ["comvenio_hilfe"] }),
+      server_factory(contextInput) {
+        factoryCalls += 1;
+        return runtimeOptions().server_factory(contextInput);
+      },
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    try {
+      const call = (id: number) => ({
+        jsonrpc: "2.0",
+        id,
+        method: "tools/call",
+        params: { name: "comvenio_hilfe", arguments: { operation: "suche", text: "x".repeat(200) } },
+      });
+      const tooMany = await postMcp(`http://127.0.0.1:${address.port}`, Array.from({ length: 11 }, (_, i) => call(i + 1)));
+      expect(tooMany.status).toBe(429);
+      expect(factoryCalls).toBe(0);
+      const allowed = await postMcp(`http://127.0.0.1:${address.port}`, call(1));
+      expect(allowed.status).toBe(200);
+    } finally {
+      expect(await server.drain()).toBe(true);
+    }
+  });
+
   test("returns an HTTP OAuth challenge before an anonymous private tool reaches the SDK", async () => {
     let factoryCalls = 0;
     const server = new McpHttpServer(runtimeOptions({
