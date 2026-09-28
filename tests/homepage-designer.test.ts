@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { HttpError } from "../src/http.ts";
 import { baum, baumAlsText, dokument, pruefeGeruest, pruefeReiter, type BaumKnoten, type GeruestBefund } from "../src/homepage/geruest.ts";
 import { applyBody, convert, geruestAusDatei, geruestSet, HomepageAbbruch, liveAlsBulk, slotGet, slotSet, tree, type HomepageClient } from "../src/homepage/befehle.ts";
-import { wandleGeruestUm, type BulkTab } from "../src/homepage/umwandeln.ts";
+import { wandleGeruestUm, wandleUm, type BulkTab } from "../src/homepage/umwandeln.ts";
 import { katalogAenderung } from "../src/commands/club.ts";
 import { strukturBefunde, strukturBefundeAlsText } from "../src/verify/geruest-befunde.ts";
 
@@ -359,6 +359,24 @@ describe("K11-Altformat homepage tree names the format per tab", () => {
     expect(text).toContain("Format: alt — 1 Gerüst, ");
     expect(text).toContain("Umstellen: comvenio homepage convert --tab alt --out home.json");
     expect(text).toContain("https://www.comvenio.app/hilfe/website");
+  });
+
+  test("Codex R1: a skeleton that stays old after convert is ONE finding in the report", () => {
+    const tab: BulkTab = { slug: "t", label: "T", sections: [{ widgets: [{ kind: "custom_html", config: { html: "<section><table><tr><td>Eins</td><td>Zwei</td></tr></table></section>" } }] }] } as unknown as BulkTab;
+    const { bericht } = wandleUm(tab);
+    expect(bericht.offene_stellen.map((o) => o.grund)).toContain("Text in einer Tabelle");
+    expect(bericht.befunde.map((b) => b.klasse)).toContain("legacy_format");
+    expect(bericht.befunde.some((b) => b.klasse === "fixed_text_in_skeleton")).toBe(false);
+  });
+
+  test("Codex R1: children of a mixed skeleton carry no single findings, the count names what it counts", () => {
+    const b = baum({ id: "t", slug: "gemischt" }, [{ id: "s", sort_order: 0 }], [
+      { id: "w", kind: "custom_html", section_id: "s", config: { html: '<section aria-label="S"><h2 data-slot="leer"></h2><div data-widget-slot="news"></div></section>', slots: {} } },
+    ]);
+    const geruest = b.kinder[0].kinder[0];
+    expect(geruest.befunde.map((x) => [x.klasse, x.text])).toEqual([["legacy_format", "1 weiterer Regeltreffer"]]);
+    const alleKinder = (k: BaumKnoten): BaumKnoten[] => k.kinder.flatMap((c) => [c, ...alleKinder(c)]);
+    expect(alleKinder(geruest).every((k) => k.befunde.length === 0)).toBe(true);
   });
 
   test("new format: the tab says so", () => {

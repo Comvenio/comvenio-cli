@@ -28,7 +28,7 @@ export function strukturBefundeAlsText(befunde: StrukturBefund[]): string {
     `Gerüstregeln R1–R6: ${befunde.filter((b) => b.schwere === "fehler").length} Fehler, ${befunde.filter((b) => b.schwere === "warnung").length} Warnungen`,
     ...befunde.map((b) =>
       b.klasse === "legacy_format"
-        ? `  ${b.schwere.padEnd(7)} ${b.tab} Gerüst im alten Format — ${b.text} mit festem Text, Links oder Bildern; umstellen: ${ALTFORMAT_BEFEHL} --tab ${b.tab} --out home.json`
+        ? `  ${b.schwere.padEnd(7)} ${b.tab} Gerüst im alten Format — ${b.text}; umstellen: ${ALTFORMAT_BEFEHL} --tab ${b.tab} --out home.json`
         : `  ${b.schwere.padEnd(7)} ${b.tab} ${b.regel} ${b.klasse}${b.slot ? ` (${b.slot})` : ""}${b.zeile ? ` Zeile ${b.zeile}` : ""}${b.text ? ` — ${b.text}` : ""}`,
     ),
   ].join("\n");

@@ -151,14 +151,20 @@ export const ALTFORMAT_HILFE = "https://www.comvenio.app/hilfe/website";
  * before `homepage convert`, and all of them disappear with it.
  */
 export function altformatBefund(befunde: GeruestBefund[], widgetId?: string): GeruestBefund {
-  const stellen = befunde.filter((b) => b.klasse !== "legacy_inline_slot");
+  // "Stellen" are fixed text, links and images (R1/R2); other rule hits are named apart (Codex R1).
+  const stellen = befunde.filter((b) => b.klasse === "fixed_text_in_skeleton" || b.klasse === "content_in_skeleton").length;
+  const weitere = befunde.filter((b) => b.klasse !== "legacy_inline_slot" && b.klasse !== "fixed_text_in_skeleton" && b.klasse !== "content_in_skeleton").length;
   const zeilen = befunde.map((b) => b.zeile).filter((z): z is number => z !== undefined);
+  const teile = [
+    stellen ? `${stellen} ${stellen === 1 ? "Stelle" : "Stellen"} mit festem Text, Links oder Bildern` : "",
+    weitere ? `${weitere} ${weitere === 1 ? "weiterer Regeltreffer" : "weitere Regeltreffer"}` : "",
+  ].filter(Boolean);
   return {
     klasse: "legacy_format",
     regel: "ALT",
     schwere: "warnung",
     zeile: zeilen.length ? Math.min(...zeilen) : undefined,
-    text: stellen.length === 1 ? "1 Stelle" : `${stellen.length} Stellen`,
+    text: teile.length ? teile.join(", ") : "keine Einzelstellen",
     widget_id: widgetId,
   };
 }

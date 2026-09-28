@@ -177,7 +177,8 @@ function geruestKnoten(tab: TabRead, w: WidgetRead, befunde: GeruestBefund[]): {
           style: eintrag?.style,
           ohneEintrag: !eintrag,
           altformat,
-          befunde: befunde.filter((b) => b.slot === name),
+          // Old format: the skeleton carries one summary, its children none (Codex R1).
+          befunde: altformat ? [] : befunde.filter((b) => b.slot === name),
           kinder: [],
         });
       } else if (kind.hasAttribute("data-widget-slot")) {
@@ -259,7 +260,7 @@ export function baum(
     else kinder.push({ pfad: `${tab.id}/${s.id}`, art: "sektion", name: s.title || "Sektion", beschriftung: alsReihe ?? s.layout ?? "", befunde: [], kinder: unter });
   }
   const alt = widgets.filter((w) => w.kind === "custom_html" && !istNeuesFormat(htmlVon(w)));
-  const stellen = alt.reduce((n, w) => n + (befunde.get(w.id) ?? []).filter((b) => b.klasse !== "legacy_inline_slot").length, 0);
+  const stellen = alt.reduce((n, w) => n + (befunde.get(w.id) ?? []).filter((b) => b.klasse === "fixed_text_in_skeleton" || b.klasse === "content_in_skeleton").length, 0);
   return {
     pfad: tab.id,
     art: "reiter",
