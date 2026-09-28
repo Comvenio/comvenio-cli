@@ -1,0 +1,254 @@
+{
+  "SCOPE_REQUIRED": {
+    "de": {
+      "message": "Deiner Anmeldung fehlt eine Berechtigung für diese Aktion.",
+      "cause": "Die Anmeldung wurde ohne den Scope {required_scopes} erteilt; ohne ihn lehnt Comvenio die Aktion ab."
+    },
+    "en": {
+      "message": "Your sign-in is missing a permission for this action.",
+      "cause": "The sign-in was granted without the scope {required_scopes}; without it Comvenio rejects the action."
+    },
+    "next_command": "comvenio login --scopes {login_scopes}",
+    "help": "fehler/scope-required"
+  },
+  "PERMISSION_DENIED": {
+    "de": {
+      "message": "Dir fehlt im Verein das Recht für diese Aktion.",
+      "cause": "Deine Anmeldung trägt die nötigen Scopes, aber deine Rolle im Verein erlaubt die Aktion nicht. Das Recht vergibt ein Administrator deines Vereins."
+    },
+    "en": {
+      "message": "You lack the club permission for this action.",
+      "cause": "Your sign-in has the required scopes, but your role in the club does not allow the action. An administrator of your club grants this permission."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/permission-denied"
+  },
+  "NOT_FOUND": {
+    "de": {
+      "message": "Der angefragte Eintrag wurde nicht gefunden.",
+      "cause": "Die Kennung gehört zu keinem Eintrag, den du im verbundenen Verein sehen darfst, oder der Eintrag wurde entfernt."
+    },
+    "en": {
+      "message": "The requested entry was not found.",
+      "cause": "The identifier does not belong to an entry you may see in the connected club, or the entry was removed."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/not-found"
+  },
+  "ACTION_NOT_LISTED": {
+    "de": {
+      "message": "Diese Action steht für deine Verbindung gerade nicht zur Verfügung.",
+      "cause": "Sie fehlt in der Liste der freigegebenen Actions. Direkt nach einer neuen Version kann das bis zu einer Minute so bleiben."
+    },
+    "en": {
+      "message": "This action is currently not available for your connection.",
+      "cause": "It is missing from the list of enabled actions. Right after a new release this can last up to a minute."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/action-not-listed"
+  },
+  "OAUTH_ONLY": {
+    "de": {
+      "message": "Dieser Befehl läuft nicht über die OAuth-Anmeldung.",
+      "cause": "Klassische Befehle brauchen einen Geräte-Token; mit OAuth führst du dieselben Aufgaben über Actions aus."
+    },
+    "en": {
+      "message": "This command does not run with the OAuth sign-in.",
+      "cause": "Classic commands need a device token; with OAuth you run the same tasks through actions."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/oauth-only"
+  },
+  "AUTH_REQUIRED": {
+    "de": {
+      "message": "Deine Anmeldung ist nicht mehr gültig.",
+      "cause": "Die Verbindung ist abgelaufen, wurde widerrufen oder fehlt."
+    },
+    "en": {
+      "message": "Your sign-in is no longer valid.",
+      "cause": "The connection has expired, was revoked or is missing."
+    },
+    "next_command": "comvenio login",
+    "help": "fehler/auth-required"
+  },
+  "AUTH_TEMPORARILY_UNAVAILABLE": {
+    "de": {
+      "message": "Die Anmeldung konnte gerade nicht geprüft werden.",
+      "cause": "Die Prüfung der Anmeldung war kurzzeitig nicht erreichbar; in einem Moment denselben Befehl wiederholen."
+    },
+    "en": {
+      "message": "The sign-in could not be verified right now.",
+      "cause": "Verifying the sign-in was briefly unavailable; repeat the same command in a moment."
+    },
+    "next_command": null,
+    "help": "fehler/auth-temporarily-unavailable"
+  },
+  "CLUB_SELECTION_REQUIRED": {
+    "de": {
+      "message": "Für diese Aktion ist kein Verein gewählt.",
+      "cause": "Die Verbindung ist keinem Verein zugeordnet."
+    },
+    "en": {
+      "message": "No club is selected for this action.",
+      "cause": "The connection is not assigned to a club."
+    },
+    "next_command": "comvenio login",
+    "help": "fehler/club-selection-required"
+  },
+  "TENANT_MISMATCH": {
+    "de": {
+      "message": "Die Anfrage gehört zu einem anderen Verein.",
+      "cause": "Der angefragte Eintrag oder die Vorschau stammt nicht aus dem Verein, mit dem du verbunden bist."
+    },
+    "en": {
+      "message": "The request belongs to a different club.",
+      "cause": "The requested entry or preview does not come from the club you are connected to."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/tenant-mismatch"
+  },
+  "VALIDATION_FAILED": {
+    "de": {
+      "message": "Die Eingabe passt nicht zur Action.",
+      "cause": "Ein Feld fehlt, ist zu viel oder hat das falsche Format."
+    },
+    "en": {
+      "message": "The input does not match the action.",
+      "cause": "A field is missing, not allowed or has the wrong format."
+    },
+    "next_command": "comvenio action list --json",
+    "help": "fehler/validation-failed"
+  },
+  "CONFIRMATION_REQUIRED": {
+    "de": {
+      "message": "Diese Aktion muss zuerst bestätigt werden.",
+      "cause": "Kritische Aktionen laufen nur nach einer Vorschau und deiner ausdrücklichen Bestätigung."
+    },
+    "en": {
+      "message": "This action must be confirmed first.",
+      "cause": "Critical actions only run after a preview and your explicit confirmation."
+    },
+    "next_command": "comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>",
+    "help": "fehler/confirmation-required"
+  },
+  "CONFIRMATION_EXPIRED": {
+    "de": {
+      "message": "Die Vorschau ist abgelaufen.",
+      "cause": "Eine Vorschau gilt nur kurz; danach ist sie nicht mehr bestätigbar."
+    },
+    "en": {
+      "message": "The preview has expired.",
+      "cause": "A preview is only valid for a short time; after that it can no longer be confirmed."
+    },
+    "next_command": "comvenio action call <action-id> --input '<json>'",
+    "help": "fehler/confirmation-expired"
+  },
+  "CONFIRMATION_MISMATCH": {
+    "de": {
+      "message": "Die Bestätigung passt nicht mehr zur Vorschau.",
+      "cause": "Vorschau, Bestätigungstoken oder Schlüssel gehören nicht zusammen, oder die Action hat sich seit der Vorschau geändert."
+    },
+    "en": {
+      "message": "The confirmation no longer matches the preview.",
+      "cause": "Preview, confirmation token or key do not belong together, or the action changed since the preview."
+    },
+    "next_command": "comvenio action call <action-id> --input '<json>'",
+    "help": "fehler/confirmation-mismatch"
+  },
+  "CONFLICT": {
+    "de": {
+      "message": "Die Aktion widerspricht dem aktuellen Stand.",
+      "cause": "Der Eintrag wurde inzwischen geändert, existiert schon oder lässt die Aktion in seinem Zustand nicht zu; aktuellen Stand abrufen und neu entscheiden."
+    },
+    "en": {
+      "message": "The action conflicts with the current state.",
+      "cause": "The entry was changed in the meantime, already exists or its state does not allow the action; fetch the current state and decide again."
+    },
+    "next_command": null,
+    "help": "fehler/conflict"
+  },
+  "RATE_LIMITED": {
+    "de": {
+      "message": "Zu viele Anfragen in kurzer Zeit.",
+      "cause": "Comvenio begrenzt, wie oft eine Verbindung in kurzer Folge anfragen darf; nach einer Minute denselben Befehl wiederholen."
+    },
+    "en": {
+      "message": "Too many requests in a short time.",
+      "cause": "Comvenio limits how often a connection may send requests in quick succession; repeat the same command after a minute."
+    },
+    "next_command": null,
+    "help": "fehler/rate-limited"
+  },
+  "UPSTREAM_TIMEOUT": {
+    "de": {
+      "message": "Comvenio hat nicht rechtzeitig geantwortet.",
+      "cause": "Die Leseanfrage hat die Zeitgrenze überschritten und nichts geändert; denselben Befehl gefahrlos wiederholen."
+    },
+    "en": {
+      "message": "Comvenio did not answer in time.",
+      "cause": "The read request exceeded the time limit and changed nothing; repeat the same command safely."
+    },
+    "next_command": null,
+    "help": "fehler/upstream-timeout"
+  },
+  "OUTCOME_UNKNOWN": {
+    "de": {
+      "message": "Die Antwort kam nicht rechtzeitig — die Aktion kann trotzdem ausgeführt worden sein.",
+      "cause": "Eine schreibende Aktion hat die Zeitgrenze überschritten, während Comvenio sie noch bearbeitet hat. Stand prüfen statt wiederholen, sonst entsteht sie womöglich doppelt."
+    },
+    "en": {
+      "message": "The answer did not arrive in time — the action may still have been carried out.",
+      "cause": "A writing action exceeded the time limit while Comvenio was still processing it. Check the current state instead of repeating, otherwise it may be created twice."
+    },
+    "next_command": "comvenio action list",
+    "help": "fehler/outcome-unknown"
+  },
+  "UPSTREAM_UNAVAILABLE": {
+    "de": {
+      "message": "Comvenio ist gerade nicht erreichbar.",
+      "cause": "Der zuständige Teil von Comvenio hat keine gültige Antwort geliefert; in einigen Minuten denselben Befehl wiederholen."
+    },
+    "en": {
+      "message": "Comvenio is currently unavailable.",
+      "cause": "The responsible part of Comvenio did not return a valid answer; repeat the same command in a few minutes."
+    },
+    "next_command": null,
+    "help": "fehler/upstream-unavailable"
+  },
+  "CONFIG_INVALID": {
+    "de": {
+      "message": "Die Anfrage konnte nicht zugeordnet werden.",
+      "cause": "Angaben zur Verbindung sind unvollständig oder ungültig."
+    },
+    "en": {
+      "message": "The request could not be assigned.",
+      "cause": "Connection details are incomplete or invalid."
+    },
+    "next_command": "comvenio login",
+    "help": "fehler/config-invalid"
+  },
+  "USAGE_ERROR": {
+    "de": {
+      "message": "Der Befehl ist so nicht ausführbar.",
+      "cause": "Ein Argument oder eine Option fehlt, passt nicht zusammen oder hat das falsche Format."
+    },
+    "en": {
+      "message": "The command cannot run like this.",
+      "cause": "An argument or option is missing, does not fit together or has the wrong format."
+    },
+    "next_command": "comvenio --help",
+    "help": "fehler/usage-error"
+  },
+  "UNKNOWN_ERROR": {
+    "de": {
+      "message": "Ein unerwarteter Fehler ist aufgetreten.",
+      "cause": "Für diesen Fall gibt es noch keine Beschreibung. Bitte als Fehlerbericht melden und die Anfrage-ID angeben."
+    },
+    "en": {
+      "message": "An unexpected error occurred.",
+      "cause": "There is no description for this case yet. Please report it as a bug and include the request ID."
+    },
+    "next_command": null,
+    "help": "fehler/unknown-error"
+  }
+}

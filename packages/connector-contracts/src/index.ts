@@ -119,23 +119,26 @@ export interface ProviderNeutralResult<T extends JsonValue> {
   isError?: boolean;
 }
 
-export type ConnectorErrorCode =
-  | "CONFIG_INVALID"
-  | "AUTH_REQUIRED"
-  | "AUTH_TEMPORARILY_UNAVAILABLE"
-  | "SCOPE_REQUIRED"
-  | "CLUB_SELECTION_REQUIRED"
-  | "PERMISSION_DENIED"
-  | "TENANT_MISMATCH"
-  | "VALIDATION_FAILED"
-  | "CONFIRMATION_REQUIRED"
-  | "CONFIRMATION_EXPIRED"
-  | "CONFIRMATION_MISMATCH"
-  | "CONFLICT"
-  | "RATE_LIMITED"
-  | "UPSTREAM_TIMEOUT"
-  | "UPSTREAM_UNAVAILABLE"
-  | "NOT_FOUND";
+export const CONNECTOR_ERROR_CODES = [
+  "CONFIG_INVALID",
+  "AUTH_REQUIRED",
+  "AUTH_TEMPORARILY_UNAVAILABLE",
+  "SCOPE_REQUIRED",
+  "CLUB_SELECTION_REQUIRED",
+  "PERMISSION_DENIED",
+  "TENANT_MISMATCH",
+  "VALIDATION_FAILED",
+  "CONFIRMATION_REQUIRED",
+  "CONFIRMATION_EXPIRED",
+  "CONFIRMATION_MISMATCH",
+  "CONFLICT",
+  "RATE_LIMITED",
+  "UPSTREAM_TIMEOUT",
+  "UPSTREAM_UNAVAILABLE",
+  "NOT_FOUND",
+] as const;
+
+export type ConnectorErrorCode = (typeof CONNECTOR_ERROR_CODES)[number];
 
 export interface ConnectorError {
   code: ConnectorErrorCode;
@@ -144,6 +147,8 @@ export interface ConnectorError {
   retryable: boolean;
   retry_after_seconds?: number;
   required_scope?: OAuthScope;
+  /** All missing scopes when more than one is needed; wins over required_scope. */
+  required_scopes?: OAuthScope[];
 }
 
 const INVALID_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
@@ -194,6 +199,9 @@ export function createConnectorError(input: ConnectorError): Error & ConnectorEr
   }
   if (input.required_scope !== undefined) {
     error.required_scope = input.required_scope;
+  }
+  if (input.required_scopes !== undefined) {
+    error.required_scopes = [...input.required_scopes];
   }
   CONNECTOR_ERRORS.add(error);
   return error;
@@ -269,3 +277,4 @@ export * from "./safety/index.ts";
 export * from "./jobs/index.ts";
 export * from "./uploads/index.ts";
 export * from "./widgets/index.ts";
+export * from "./public-errors.ts";

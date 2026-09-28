@@ -1435,8 +1435,9 @@ describe("Remote MCP runtime", () => {
       expect(hiddenBookingWidget.status).toBe(200);
       const hiddenBookingResult = await hiddenBookingWidget.json() as any;
       expect(hiddenBookingResult.result.isError).toBe(true);
-      expect(hiddenBookingResult.result.structuredContent).toEqual({
+      expect(hiddenBookingResult.result.structuredContent).toMatchObject({
         error: "not_found",
+        code: "NOT_FOUND",
       });
 
       const criticalToolsResponse = await postMcp(baseUrl, {

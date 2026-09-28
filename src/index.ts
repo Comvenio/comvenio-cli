@@ -23,7 +23,8 @@ import {
   revokeOAuthCredentials,
 } from "./oauth/client.ts";
 import { CliConnectorClient } from "./mcp/client.ts";
-import { createClient, HttpError } from "./http.ts";
+import { exitCodeFor, formatCliError, resolveCliLang, toPublicError } from "./errors.ts";
+import { createClient } from "./http.ts";
 import { registerWhoamiCommand } from "./commands/whoami.ts";
 import { registerClubCommands } from "./commands/club.ts";
 import { registerMemberCommands } from "./commands/member.ts";
@@ -379,6 +380,7 @@ registerAutomationCommands(cli);
 registerActionCommands(cli);
 registerZoneCommands(cli);
 
+cli.option("--lang <lang>", "Sprache der Fehlermeldungen: de oder en (sonst LANG, sonst de)");
 cli.help();
 cli.version(pkg.version);
 
@@ -388,24 +390,22 @@ async function main() {
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.
-    if (err instanceof AuthError) {
-      console.error(`\nAuth-Fehler: ${err.message}\n`);
-      process.exit(2);
+    const argv = process.argv.slice(2);
+    let grantedScopes: string[] = [];
+    try {
+      grantedScopes = readStoredState().connector?.scopes ?? [];
+    } catch {
+      // Without a stored sign-in the login hint simply requests all scopes.
     }
-    if (err instanceof HttpError) {
-      const hint =
-        err.status === 401
-          ? '  Anmeldung ungültig oder abgelaufen. Führe "comvenio login" erneut aus.'
-          : err.status === 403
-            ? "  Kein Zugriff in diesem Club (serverseitige RBAC)."
-            : err.status === 404
-              ? "  Ressource nicht gefunden."
-              : "";
-      console.error(`\nAPI-Fehler: ${err.message}\n${hint}\n`);
-      process.exit(3);
-    }
-    console.error(`\nFehler: ${(err as Error).message}\n`);
-    process.exit(1);
+    const rendered = toPublicError(err, {
+      lang: resolveCliLang(argv, process.env),
+      granted_scopes: grantedScopes,
+      command: cli.matchedCommandName ?? null,
+    });
+    console.error(argv.includes("--json")
+      ? JSON.stringify(rendered, null, 2)
+      : `\n${formatCliError(rendered)}\n`);
+    process.exit(exitCodeFor(err));
   }
 }
 

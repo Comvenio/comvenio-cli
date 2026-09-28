@@ -2,7 +2,9 @@ import {
   createConnectorError,
   isConnectorError,
   normalizeRequestContext,
+  OAUTH_SCOPE_VALUES,
   type ConnectorErrorCode,
+  type OAuthScope,
   type JsonValue,
   type RequestContext,
 } from "@comvenio/connector-contracts";
@@ -155,11 +157,24 @@ function isJsonValue(value: unknown, seen = new WeakSet<object>()): value is Jso
  * which names the way forward, never reached the person (finance CLI,
  * 2026-09-23). A validation error (a list) gives its first message.
  */
-async function upstreamDetail(response: Response): Promise<string | null> {
+interface UpstreamBody {
+  detail: string | null;
+  /** Set when the service rejected the token for a missing OAuth scope. */
+  required_scope: OAuthScope | null;
+}
+
+async function upstreamBody(response: Response): Promise<UpstreamBody> {
   try {
     const text = (await response.text()).slice(0, 4000);
     const parsed: unknown = JSON.parse(text);
-    const detail = parsed !== null && typeof parsed === "object" ? (parsed as { detail?: unknown }).detail : undefined;
+    const body = parsed !== null && typeof parsed === "object" ? parsed as { detail?: unknown; required_scope?: unknown } : {};
+    const detail = body.detail;
+    // A service answers a token without the needed scope with
+    // {"detail": "insufficient_scope", "required_scope": "<scope>"}.
+    const requiredScope = detail === "insufficient_scope"
+      && (OAUTH_SCOPE_VALUES as readonly unknown[]).includes(body.required_scope)
+      ? body.required_scope as OAuthScope
+      : null;
     let line: string | null = null;
     if (typeof detail === "string") line = detail;
     else if (Array.isArray(detail) && detail.length > 0) {
@@ -167,12 +182,22 @@ async function upstreamDetail(response: Response): Promise<string | null> {
       const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
       line = typeof first.msg === "string" ? (where ? `${where}: ${first.msg}` : first.msg) : null;
     }
-    if (!line) return null;
+    if (!line) return { detail: null, required_scope: requiredScope };
     const clean = line.replace(/\s+/gu, " ").trim();
-    return clean.length > 300 ? `${clean.slice(0, 297)}...` : clean;
+    return { detail: clean.length > 300 ? `${clean.slice(0, 297)}...` : clean, required_scope: requiredScope };
   } catch {
-    return null;
+    return { detail: null, required_scope: null };
   }
+}
+
+function upstreamError(
+  status: number,
+  body: UpstreamBody,
+): { code: ConnectorErrorCode; retryable: boolean; required_scope?: OAuthScope } {
+  if (status === 403 && body.required_scope) {
+    return { code: "SCOPE_REQUIRED", retryable: false, required_scope: body.required_scope };
+  }
+  return errorForStatus(status);
 }
 
 async function discardResponseBody(response: Response): Promise<void> {
@@ -263,15 +288,16 @@ export function createComvenioApiClient(
       try {
         const response = await fetchImpl(url, { method: request.method, headers, signal: controller.signal });
         if (!response.ok) {
-          const detail = await upstreamDetail(response);
-          const mapped = errorForStatus(response.status);
+          const body = await upstreamBody(response);
+          const mapped = upstreamError(response.status, body);
           throw createConnectorError({
             code: mapped.code,
-            message: detail
-              ? `Der Comvenio-Dienst hat die Anfrage abgelehnt: ${detail}`
+            message: body.detail
+              ? `Der Comvenio-Dienst hat die Anfrage abgelehnt: ${body.detail}`
               : "Der Comvenio-Dienst hat die Anfrage abgelehnt.",
             request_id: context.request_id,
             retryable: mapped.retryable,
+            ...(mapped.required_scope ? { required_scope: mapped.required_scope } : {}),
           });
         }
         return {
@@ -323,7 +349,8 @@ export function createComvenioApiClient(
 
           if (!response.ok) {
             const willRetry = canRetry && RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS;
-            const detail = willRetry ? null : await upstreamDetail(response);
+            const body = willRetry ? null : await upstreamBody(response);
+            const detail = body?.detail ?? null;
             if (willRetry) await discardResponseBody(response);
             if (willRetry) {
               emit({
@@ -341,7 +368,7 @@ export function createComvenioApiClient(
               continue;
             }
 
-            const mapped = errorForStatus(response.status);
+            const mapped = upstreamError(response.status, body ?? { detail: null, required_scope: null });
             const retryAfter = retryAfterSeconds(response);
             emit({
               request_id: context.request_id,
@@ -363,6 +390,7 @@ export function createComvenioApiClient(
               request_id: context.request_id,
               retryable: mapped.retryable,
               ...(retryAfter === undefined ? {} : { retry_after_seconds: retryAfter }),
+              ...(mapped.required_scope ? { required_scope: mapped.required_scope } : {}),
             });
           }
 

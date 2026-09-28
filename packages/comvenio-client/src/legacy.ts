@@ -28,6 +28,14 @@ export class HttpError extends Error {
   }
 }
 
+/** A classic command was started with an OAuth sign-in only (public code OAUTH_ONLY). */
+export class OAuthOnlyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OAuthOnlyError";
+  }
+}
+
 export type LegacyClientState = {
   token: string;
   gatewayBaseUrl: string;
@@ -44,7 +52,7 @@ export function createClient(state: LegacyClientState): ComvenioClient {
   // Connector und wird nie an die Fachdienste gereicht
   // (`03-oauth-connection-lifecycle.md` §11).
   if (state.authMode === "oauth" && state.hasDeviceToken !== true) {
-    throw new Error(
+    throw new OAuthOnlyError(
       "Dieser klassische Befehl läuft nicht über die OAuth-Anmeldung. "
       + "Der Weg ist „comvenio action …“: „comvenio action list“ zeigt, was der verbundene Verein freigibt, "
       + "etwa „comvenio action call cai.club.03.settings --input '{}'“ für die Vereinseinstellungen.",

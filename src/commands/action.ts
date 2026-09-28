@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { CAC } from "cac";
 
 import { AuthError, loadState } from "../auth.ts";
+import { PublicCliError } from "../errors.ts";
 import { output, renderTable } from "../format.ts";
 import {
   CliConnectorClient,
@@ -119,7 +120,8 @@ export function registerActionCommands(cli: CAC): void {
         const toolName = connectorActionToolName(actionId);
         const tool = tools.find((entry) => entry.name === toolName);
         if (!tool) {
-          throw new Error(
+          throw new PublicCliError(
+            "ACTION_NOT_LISTED",
             "Diese Action ist im aktuellen OAuth-, Vereins- und Rechtekontext nicht freigegeben.",
           );
         }

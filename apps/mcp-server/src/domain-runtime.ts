@@ -12,7 +12,6 @@ import {
   createConnectorError,
   createProviderNeutralResult,
   type ImageContent,
-  isConnectorError,
   type JsonValue,
   type OAuthScope,
   type RequestContext,
@@ -26,10 +25,11 @@ import {
   confirmationMatchHash,
   type DomainStateStore,
 } from "./domain-state-store.ts";
-import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
+import { publicToolError } from "./public-tool-error.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
   ConfirmationWidgetCapabilityPolicy,
+  hasWriteAuthority,
 } from "./widgets/confirmation/policy.ts";
 import {
   ConfirmationWidgetProjector,
@@ -661,6 +661,22 @@ function confirmationWidgetResult(input: {
   idempotency_key: string;
   environment: OAuthEnvironment;
 }): CallToolResult {
+  // Without a writing scope the preview could never be confirmed. Name the
+  // missing scopes instead of a generic "not available" (incident 2026-09-28).
+  if (!hasWriteAuthority(input.context.scopes)) {
+    const missing = input.operation.required_scopes.filter((scope) =>
+      !input.context.scopes.includes(scope));
+    if (missing.length > 0) {
+      throw createConnectorError({
+        code: "SCOPE_REQUIRED",
+        message: "Für diese Aktion fehlt der Anmeldung ein Schreib-Scope.",
+        request_id: input.context.request_id,
+        retryable: false,
+        required_scope: missing[0],
+        required_scopes: [...missing],
+      });
+    }
+  }
   const copy = actionCopy(input.definition, [input.operation.operation]);
   const challenge = {
     preview: {
@@ -960,38 +976,7 @@ function executionError(
   publicOrigin: string,
   error: unknown,
 ): CallToolResult {
-  if (isConnectorError(error)) {
-    if (error.code === "SCOPE_REQUIRED" && error.required_scope) {
-      return insufficientScopeToolResult({
-        public_origin: publicOrigin,
-        required_scopes: [error.required_scope],
-        context,
-      });
-    }
-    return {
-      content: [{
-        type: "text",
-        text: error.code === "PERMISSION_DENIED" || error.code === "NOT_FOUND"
-          ? "Diese Comvenio-Ressource ist in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar."
-          : error.message,
-      }],
-      structuredContent: {
-        error: error.code.toLowerCase(),
-        ...(error.required_scope ? { required_scope: error.required_scope } : {}),
-      },
-      _meta: { request_id: context.request_id },
-      isError: true,
-    };
-  }
-  return {
-    content: [{
-      type: "text",
-      text: "Die Comvenio-Aktion konnte nicht sicher abgeschlossen werden.",
-    }],
-    structuredContent: { error: "upstream_unavailable" },
-    _meta: { request_id: context.request_id },
-    isError: true,
-  };
+  return publicToolError(context, publicOrigin, error);
 }
 
 function asToolSet(value: unknown): DomainToolSet {
