@@ -476,6 +476,16 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
         body: nested(input, "resolution"),
       });
   },
+  async "cai.teams.30.termin_list"(input, context, client) {
+    return request(client, context, "GET", "event",
+      `/team-seasons/${string(input, "team_season_id")}/events`);
+  },
+  async "cai.teams.31.termin_create"(input, context, client) {
+    return request(client, context, "POST", "event",
+      `/team-seasons/${string(input, "team_season_id")}/termine`, {
+        body: nested(input, "termin"),
+      });
+  },
 
   async "cai.role.01.list"(input, context, client) {
     return request(client, context, "GET", "role", `/roles/by-club/${string(input, "club_id")}`);

@@ -409,6 +409,17 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     permission: policy([], "optional", true), risk: "critical_write",
     routes: [route(null, "POST", "event", "/sync-clarifications/{clarification_id}/resolve")],
   }),
+  // Mannschaftstermine 05 over OAuth: the season's list and a hand-made termin
+  // (POST /team-seasons/{id}/termine); the service checks the season right.
+  "cai.teams.30.termin_list": definition({
+    action_id: "cai.teams.30.termin_list", domain: "teams", source_action: "termin list", scopes: CLUB_READ,
+    permission: policy(["view_members"]), routes: [route(null, "GET", "event", "/team-seasons/{team_season_id}/events")],
+  }),
+  "cai.teams.31.termin_create": definition({
+    action_id: "cai.teams.31.termin_create", domain: "teams", source_action: "termin create", scopes: ADMIN_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "event", "/team-seasons/{team_season_id}/termine")],
+  }),
 
   "cai.role.01.list": definition({
     action_id: "cai.role.01.list", domain: "role", source_action: "list", scopes: CLUB_READ,

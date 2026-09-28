@@ -193,9 +193,10 @@ describe("Comvenio connector inventory contract", () => {
       .sort();
 
     // +1 budget-organigramm-04 (cai.finance.36.budget_organigram), +1 budget-saison-03 (cai.finance.37.budget_season), +1 buchhaltung-13-04 (cai.finance.38.entry_detail),
-    // +1 bereich-als-sicht-04 (cai.finance.39.budget_period).
-    expect(directActionIds).toHaveLength(376);
-    expect(new Set(directActionIds).size).toBe(376);
+    // +1 bereich-als-sicht-04 (cai.finance.39.budget_period),
+    // +2 mannschaftstermine-05 over OAuth (cai.teams.30.termin_list, cai.teams.31.termin_create).
+    expect(directActionIds).toHaveLength(378);
+    expect(new Set(directActionIds).size).toBe(378);
     expect(additiveActionIds).toEqual([
       // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
       // Vereinsbuchhaltung nicht. Die 19 Aktionen decken Jahresplan, Posten und
@@ -288,6 +289,9 @@ describe("Comvenio connector inventory contract", () => {
       "cai.teams.27.sync_runs",
       "cai.teams.28.clarification_list",
       "cai.teams.29.clarification_resolve",
+      // Mannschaftstermine 05: the season's termine over the OAuth grant.
+      "cai.teams.30.termin_list",
+      "cai.teams.31.termin_create",
     ]);
     expect(candidateActionIds
       .filter((actionId) => !RETIRED_LEGACY_ACTION_IDS.has(actionId))
@@ -299,8 +303,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 376,
-      published_domain_actions: 374,
+      discovered_actions: 378,
+      published_domain_actions: 376,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -470,10 +474,10 @@ function k7Dependencies(client: ComvenioApiClient): K7ExecutionDependencies {
 }
 
 describe("K7 identity, club, member, team and role contract", () => {
-  test("TC-01/TC-02: maps all six domains and exactly 83 inventoried actions", () => {
-    expect(K7_ACTION_IDS).toHaveLength(83);
-    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(83);
-    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(83);
+  test("TC-01/TC-02: maps all six domains and exactly 85 inventoried actions", () => {
+    expect(K7_ACTION_IDS).toHaveLength(85);
+    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(85);
+    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(85);
 
     const sets = createK7ToolSets(k7Dependencies(k7Client(async () => null)));
     expect({
@@ -483,7 +487,7 @@ describe("K7 identity, club, member, team and role contract", () => {
       team: sets.team.listDefinitions().length,
       teams: sets.teams.listDefinitions().length,
       role: sets.role.listDefinitions().length,
-    }).toEqual({ identity: 1, club: 10, member: 21, team: 7, teams: 29, role: 15 });
+    }).toEqual({ identity: 1, club: 10, member: 21, team: 7, teams: 31, role: 15 });
     expect(K7_ACTION_IDS.some((id) => /login|logout|log_service|master.?admin/iu.test(id))).toBe(false);
   });
 

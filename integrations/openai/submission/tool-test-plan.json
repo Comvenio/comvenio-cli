@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "db047efdd37c97fca0942fb8d62155a4a754d81a76883fb438871222e3566c53",
+  "catalog_source_hash_sha256": "341e31a254e8f418f775dd5e6df9985ce416dd46415aa1f22f5fa211b1414dc9",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -5136,6 +5136,36 @@
     {
       "tool_name": "cv_teams_29_clarification_resolve",
       "prompt": "Prüfe „Comvenio: teams – sync resolve“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_teams_30_termin_list",
+      "prompt": "Prüfe „Comvenio: teams – termin list“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_teams_31_termin_create",
+      "prompt": "Prüfe „Comvenio: teams – termin create“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

@@ -539,6 +539,58 @@ const activationPreviewOutput = z.object({
   }).strip()),
   warnings: z.array(z.string()),
 }).strip();
+// Mannschaftstermine: GET /team-seasons/{id}/events and POST …/termine (event-service).
+const terminKind = z.enum(["MATCH", "TRAINING", "EXCURSION", "OTHER"]);
+const seasonEventOutput = z.object({
+  event_id: uuid,
+  title: z.string(),
+  start_time: isoDateTime.nullable().optional(),
+  end_time: isoDateTime.nullable().optional(),
+  location: z.string().nullable().optional(),
+  status: z.string(),
+  home_state: z.string().nullable().optional(),
+  competition_id: uuid.nullable().optional(),
+  kind: z.string().optional(),
+  source: z.string().optional(),
+  series_id: uuid.nullable().optional(),
+  opponent: z.string().nullable().optional(),
+  can_edit: z.boolean().optional(),
+  all_day: z.boolean().optional(),
+}).strip();
+const terminInput = z.object({
+  kind: terminKind,
+  title: z.string().trim().min(1).max(200).optional(),
+  opponent: z.string().trim().min(1).max(200).optional(),
+  home_state: z.enum(["HOME", "AWAY"]).optional(),
+  competition_id: uuid.optional(),
+  start_time: isoDateTime,
+  end_time: isoDateTime.optional(),
+  location: z.string().trim().max(500).optional(),
+  note: z.string().trim().max(2_000).optional(),
+  visibility: z.enum(["public", "member", "department", "private"]).optional(),
+  announce_general: z.boolean().optional(),
+  repeat: z.object({
+    weekdays: z.array(z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"])).min(1).max(7),
+    until: date.optional(),
+  }).strict().optional(),
+}).strict().refine((t) => t.kind !== "MATCH" || Boolean(t.opponent), { message: "Ein Spiel braucht einen Gegner." });
+const terminOutput = z.object({
+  event_id: uuid,
+  series_id: uuid.nullable().optional(),
+  kind: terminKind,
+  title: z.string(),
+  start_time: isoDateTime.nullable().optional(),
+  end_time: isoDateTime.nullable().optional(),
+  location: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  status: z.string(),
+  home_state: z.string().nullable().optional(),
+  opponent: z.string().nullable().optional(),
+  visibility: z.string(),
+  announce_general: z.boolean(),
+  booking_status: z.string().nullable().optional(),
+}).strip();
+
 const clarificationOutput = z.object({
   id: uuid,
   team_season_id: uuid,
@@ -725,6 +777,11 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.teams.29.clarification_resolve": contract(
     z.object({ club_id: uuid, clarification_id: uuid, resolution: clarificationResolution }).strict(),
     clarificationResolveOutput,
+  ),
+  "cai.teams.30.termin_list": contract(entityContext("team_season_id"), z.array(seasonEventOutput)),
+  "cai.teams.31.termin_create": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, termin: terminInput }).strict(),
+    terminOutput,
   ),
 
   "cai.role.01.list": contract(clubContext, z.array(roleOutput)),

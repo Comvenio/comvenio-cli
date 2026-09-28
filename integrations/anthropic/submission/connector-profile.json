@@ -43,7 +43,7 @@
     "ui://comvenio/news",
     "ui://comvenio/action-confirmation"
   ],
-  "tool_sync_version": "db047efdd37c97fca0942fb8d62155a4a754d81a76883fb438871222e3566c53",
+  "tool_sync_version": "341e31a254e8f418f775dd5e6df9985ce416dd46415aa1f22f5fa211b1414dc9",
   "assets": {
     "icon": "./assets/icon.svg",
     "logo": "./assets/logo.png"
