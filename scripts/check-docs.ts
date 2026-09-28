@@ -7,10 +7,11 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadActionInventory } from "./action-inventory.ts";
 import { checkDocs } from "./docs-lib.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const findings = checkDocs(root);
+const findings = checkDocs(root, await loadActionInventory(root));
 if (findings.length > 0) {
   console.error(`check:docs: ${findings.length} Befund(e)`);
   for (const finding of findings) console.error(`  ${finding.file} — ${finding.reason}`);

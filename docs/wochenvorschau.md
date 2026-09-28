@@ -15,85 +15,76 @@ Design des Entwurfs.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Gleiche Endpunkte und Rechte wie der Knopf in der Web-App: die Vereinsrolle braucht das Recht,
-Vereinseinstellungen zu verwalten, oder das Recht, Veranstaltungen der jeweiligen Abteilung zu
-verwalten. Anmeldung per `comvenio login`; welche Scopes im Einzelnen nötig sind, zeigt
-`comvenio action list --json`.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie
+brauchen, zeigt `comvenio action list --json`. Gleiche Rechte wie der Knopf in der Web-App: die
+Vereinsrolle braucht das Recht, Vereinseinstellungen zu verwalten, oder das Recht, Veranstaltungen
+der jeweiligen Abteilung zu verwalten.
 
 ## Abläufe
 
 ### Wochenvorschau erstellen
 
-1. `comvenio weekly-preview create --department <department-id>` erstellt eine Vorschau für die
-   kommende Woche (Standard `--range next_week`, wahlweise `--range next_7_days`).
-2. Ohne `--teams` fließen alle Mannschaften der Abteilung ein; mit `--teams <id-a>,<id-b>` nur die
-   genannten.
-3. Mit `--telegram` geht der Entwurf nach der Freigabe zusätzlich an die verknüpften
-   Telegram-Chats.
-4. Die Antwort nennt Lauf- und Plan-ID; der Entwurf selbst liegt im Agent-Messenger zur Freigabe.
-5. Der Aufruf setzt immer einen Idempotenzschlüssel — von Hand mit `--idempotency-key <schlüssel>`
-   oder sonst automatisch erzeugt. Bricht der Aufruf durch Zeitüberschreitung ab, hat der Dienst
-   eventuell trotzdem weitergearbeitet: mit demselben Schlüssel erneut aufrufen liefert den
-   ursprünglichen Lauf statt einen zweiten.
+1. `comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","range":"next_week","telegram":false}'`
+   erstellt eine Vorschau für die kommende Woche.
+2. Ohne `"team_ids"` fließen alle Mannschaften der Abteilung ein; mit
+   `"team_ids":["<team-id-a>","<team-id-b>"]` nur die genannten. `"event_ids"` wählt statt eines
+   Zeitraums einzelne Termine aus.
+3. `"range"` ist `next_week` oder `next_7_days`; mit `"telegram": true` geht der Entwurf nach der
+   Freigabe zusätzlich an die verknüpften Telegram-Chats.
+4. Die Action ist `critical_write`: Der Aufruf liefert zunächst eine Vorschau mit `preview_id` und
+   `confirmation_token`, dazu Lauf- und Plan-ID; der Entwurf selbst entsteht erst mit der
+   Bestätigung und liegt danach im Agent-Messenger zur Freigabe.
+5. Vorschau prüfen, dann bestätigen:
+   `comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <schlüssel>`.
+   Der Idempotenzschlüssel macht eine Wiederholung sicher: Bricht die Bestätigung durch
+   Zeitüberschreitung ab, hat der Dienst eventuell trotzdem weitergearbeitet — derselbe Schlüssel
+   liefert dann denselben Lauf statt einen zweiten.
 
 ### Wochenvorschauen eines Plans ansehen
 
-1. `comvenio weekly-preview list --plan <plan-id>` (die Plan-ID stammt aus `create`).
-2. Je Zeile stehen Datum, Terminzahl und Stand: „wartet auf Freigabe“, „veröffentlicht: <Link>“
+1. `comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-id>","limit":20}'`
+   (die Plan-ID stammt aus der Antwort von `weekly_preview_create`, `limit` ist Pflicht).
+2. Je Eintrag stehen Datum, Terminzahl und Stand: „wartet auf Freigabe“, „veröffentlicht: <Link>“
    oder — wenn der Freigabelink abgelaufen ist — „veröffentlicht (Link abgelaufen)“.
 
-### Vorlagen verwalten
+### Vorlagen
 
-1. Vorlagen ansehen: `comvenio weekly-preview template list`, wahlweise gefiltert mit
-   `--department <department-id>`. Ohne Vorlagen gilt die Systemvorlage.
-2. Einzelne Vorlage ansehen: `comvenio weekly-preview template show <id>`.
-3. Vorlage anlegen: `comvenio weekly-preview template set --name "<Name>" --department <department-id> --file design.json`
-   (`--name` ist beim Anlegen Pflicht).
-4. Vorlage ändern: `comvenio weekly-preview template set <id> --name "<neuer Name>"` bzw. mit
-   `--file design.json`. `--department` gilt nur beim Anlegen — eine Vorlage wechselt ihre
-   Abteilung nicht. Ohne `--name` und ohne `--file` gibt es nichts zu ändern.
-5. Vorlage löschen: `comvenio weekly-preview template delete <id>`.
-
-Ein lokales Vorschaubild der Vorlage (`template preview`) gibt es hier noch nicht — das folgt mit
-dem Bild-Teil dieser Funktion.
+Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ## Beispiele
 
 ```bash
-comvenio weekly-preview create --department <department-id>
-comvenio weekly-preview create --department <department-id> --teams <team-id-a>,<team-id-b> --range next_7_days --telegram
-comvenio weekly-preview list --plan <plan-id>
-comvenio weekly-preview template list --department <department-id>
-comvenio weekly-preview template set --name "Sommerdesign" --department <department-id> --file design.json
-comvenio weekly-preview template delete <template-id>
+comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","range":"next_week","telegram":false}'
+comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <schlüssel>
+comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","team_ids":["<team-id-a>","<team-id-b>"],"range":"next_7_days","telegram":true}'
+comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-id>","limit":20}'
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**weekly-preview** — Kern vorhanden, einzelne Abläufe fehlen
+**weekly-preview**
 
-- `comvenio weekly-preview create`
-- `comvenio weekly-preview list`
-- `comvenio weekly-preview template list`
-- `comvenio weekly-preview template show`
-- `comvenio weekly-preview template set`
-- `comvenio weekly-preview template delete`
+- `cai.club.11.weekly_preview_create` — weekly-preview-create (ändern mit Bestätigung)
+- `cai.club.12.weekly_preview_list` — weekly-preview-list (lesen)
 <!-- /gen:docs -->
 
 ## Fehler
 
-- `OUTCOME_UNKNOWN` — `create` hat die Zeitgrenze überschritten; die Wochenvorschau kann trotzdem
-  entstanden sein. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`.
-- `VALIDATION_FAILED` — `--department` fehlt, `--range` ist ungültig, oder `template set` bekommt
-  beim Anlegen keinen `--name`. Mehr: `comvenio help fehler VALIDATION_FAILED`.
-- `NOT_FOUND` — Plan oder Vorlage sind unter der angegebenen Kennung nicht bekannt. Mehr:
+- `CONFIRMATION_REQUIRED` — `weekly_preview_create` ist `critical_write` und legt ohne
+  Bestätigung nur eine Vorschau an; erst `comvenio action confirm` löst sie aus. Mehr:
+  `comvenio help fehler CONFIRMATION_REQUIRED`.
+- `CONFIRMATION_EXPIRED` — die Vorschau ist abgelaufen, bevor sie bestätigt wurde; `create` erneut
+  aufrufen. Mehr: `comvenio help fehler CONFIRMATION_EXPIRED`.
+- `OUTCOME_UNKNOWN` — `action confirm` hat die Zeitgrenze überschritten oder endete mit einem
+  Serverfehler; die Wochenvorschau kann trotzdem entstanden sein — nicht einfach wiederholen, erst
+  mit `weekly_preview_list` prüfen. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`.
+- `VALIDATION_FAILED` — `department_id` fehlt, `range` ist ungültig, oder ein Feld passt nicht zum
+  Eingabeschema. Mehr: `comvenio help fehler VALIDATION_FAILED`.
+- `NOT_FOUND` — der Plan ist unter der angegebenen Kennung nicht bekannt. Mehr:
   `comvenio help fehler NOT_FOUND`.
-- `PERMISSION_DENIED` — die Vereinsrolle erlaubt das Erstellen oder Verwalten von Vorlagen nicht.
-  Mehr: `comvenio help fehler PERMISSION_DENIED`.
+- `SCOPE_REQUIRED` — der Anmeldung fehlt `club.write` (zum Erstellen) oder `club.read` (zum
+  Ansehen). Mehr: `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — die Vereinsrolle erlaubt das Erstellen oder Ansehen nicht. Mehr:
+  `comvenio help fehler PERMISSION_DENIED`.

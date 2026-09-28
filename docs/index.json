@@ -496,12 +496,12 @@
         "de": [
           "oauth",
           "klassischer befehl",
-          "geräte-token"
+          "action"
         ],
         "en": [
           "oauth",
           "classic command",
-          "device token"
+          "action"
         ]
       },
       "domaenen": [],

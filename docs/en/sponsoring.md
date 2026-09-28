@@ -13,12 +13,7 @@ The sponsoring area lets a club manage its local sponsors, their offers (sponsor
 
 ## Requirements and permissions
 
-> **Sign-in:** The commands in this article are classic commands. They run with a device-token
-> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
-> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
-> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
-
-Sign in with `comvenio login`; which scopes a given action needs is shown by `comvenio action list --json`. Sponsors, products and assignments always belong to a club and mostly to a department.
+Sign in with `comvenio login`; which actions your club enables and which scopes they need is shown by `comvenio action list --json`. Sponsors, products and assignments always belong to a club and to a department (`department_id`).
 
 ## Workflows
 
@@ -26,31 +21,29 @@ Sign in with `comvenio login`; which scopes a given action needs is shown by `co
 
 The sponsoring model has four levels: a **sponsor** (advertiser) with a logo and responsible club members is assigned to a **sponsorship product**; the **assignment** carries price, term and status; a product can have several **contract versions** with their own terms, and each assignment can carry its own private contract documents.
 
-### Creating a sponsor
+### Creating a sponsor (`cai.sponsor.03.add`)
 
-1. Required fields are department, name and email address.
-2. If a file is also given when creating a sponsor, the CLI uploads it as a public sponsor logo and links the file ID directly to the sponsor.
-3. Logo, contact person and other fields can be updated at any time afterwards.
+Required fields are department (`department_id`), name and email address. A logo is not passed when creating a sponsor, but set afterward, separately: upload the file first (see [dateien.md](dateien.md)), then link its file ID with `cai.sponsor.06.logo` — setting the logo is `critical_write`. Contact person and other fields can be updated at any time with `cai.sponsor.04.update` (`operation: update`); moving to another department goes through `operation: move_department` and is `critical_write`.
 
-### Creating a sponsorship product
+### Creating a sponsorship product (`cai.sponsor.08.product_add`)
 
-A product describes an offer from the club, for example "jersey sponsor", "billboard advertising" or a "gold package". Prices are given in cents; without explicit values, creating a product defaults to the currency `EUR`, the billing interval `year` and a term of twelve months. A product can later be marked inactive without losing its existing assignments.
+A product describes an offer from the club, for example "jersey sponsor", "billboard advertising" or a "gold package", and also belongs to a department (`department_id`). Prices are given in cents; without explicit values, creating a product defaults to the currency `EUR`, the billing interval `year` and a term of twelve months. A product can later be marked inactive with `cai.sponsor.09.product_update` (`operation: update`, field `is_active`) without losing its existing assignments; a department change again goes through `operation: move_department` (`critical_write`).
 
 ### Contract version of a product
 
-A new contract version reflects changed terms without overwriting older contracts — older versions remain as history. A new version can explicitly supersede a previous one and limit its validity; an internal note can be stored alongside it. Contract files are always private. Changing or deleting a version always needs the specific version ID in addition to the product ID; changing only sets the given fields, and a new contract file can be uploaded in the same action. Deleting removes a version as a soft delete; other versions are unaffected.
+A new contract version (`cai.sponsor.12.contract_add`) reflects changed terms without overwriting older contracts — older versions remain as history. The contract file is uploaded first (see [dateien.md](dateien.md)); its file ID is required as `contract_file_id`. A new version can explicitly supersede a previous one and limit its validity; an internal note can be stored alongside it. Changing (`cai.sponsor.13.contract_update`, `operation: update`) or replacing the file (`operation: replace_file`) always needs the specific version ID in addition to the product ID. Deleting (`cai.sponsor.14.contract_delete`) removes a version as a soft delete and is `critical_write`; other versions are unaffected.
 
-### Assigning a sponsor to a product
+### Assigning a sponsor to a product (`cai.sponsor.16.assign`)
 
-An assignment connects a sponsor to a product for a period and optionally a quantity; a price or total price can override the product's default. An assignment can be adjusted later, or ended with a note and an end date. Deleted assignments can optionally be included in the listing.
+An assignment connects a sponsor to a product for a period and optionally a quantity; a price or total price can override the product's default. Creating it is `critical_write`: the call first returns only a preview with `preview_id` and `confirmation_token`, and only `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` carries out the assignment. An assignment can be adjusted later through `cai.sponsor.17.assignment_update`, or ended with a note and an end date through `cai.sponsor.18.cancel` — both also `critical_write`. `cai.sponsor.15.assignment_list` can optionally include deleted assignments.
 
-### Uploading an assignment's contract document
+### Uploading an assignment's contract document (`cai.sponsor.20.doc_upload`)
 
-Signed contract documents are attached to a single assignment, are stored privately, and carry the sponsor ID as a sub-context.
+Signed contract documents are passed directly to a single assignment as a file transfer (`asset`: `source_file_id`, `filename`, `content_type`, `expected_size`), are stored privately, and carry a label. `cai.sponsor.19.doc_list` lists an assignment's documents.
 
 ### Responsible club members
 
-Responsible members with a role can be assigned to a sponsor; one of them can be marked as the primary contact. This expects a member ID specifically, not a user ID.
+Responsible members with a role can be assigned to a sponsor with `cai.sponsor.22.responsible_add` (department, sponsor, member ID, role, `is_primary`); one of them can be marked as the primary contact. This expects a member ID specifically, not a user ID. `cai.sponsor.23.responsible_update` changes an assignment, `cai.sponsor.24.responsible_remove` removes it (`critical_write`); `cai.sponsor.21.responsible_list` filters by sponsor or member.
 
 ### File visibility
 
@@ -63,135 +56,149 @@ A global ad marketplace or platform-wide billing are deliberately not part of lo
 ## Examples
 
 ```bash
-comvenio sponsor add \
-  --department-id <department-id> \
-  --name "Muster GmbH" \
-  --email sponsor@example.org \
-  --website https://example.org \
-  --contact-person "<contact-person>" \
-  --contact-phone "+49 123 456789" \
-  --organization-type crafts \
-  --file ./logo.png \
-  --json
+comvenio action call cai.sponsor.03.add --input '{
+  "department_id": "<department-id>",
+  "company_name": "Muster GmbH",
+  "contact_email": "sponsor@example.org",
+  "website_url": "https://example.org",
+  "contact_person": "<contact-person>",
+  "contact_phone": "+49 123 456789",
+  "organization_type": "crafts"
+}'
 
-comvenio sponsor list --json
-comvenio sponsor list --department-id <department-id> --json
-comvenio sponsor show <sponsor-id> --json
-comvenio sponsor update <sponsor-id> --contact-person "<contact-person>" --json
-comvenio sponsor logo <sponsor-id> --file ./neues-logo.svg --json
-comvenio sponsor delete <sponsor-id> --json
+comvenio action call cai.sponsor.01.list --input '{"limit":50}'
+comvenio action call cai.sponsor.02.show --input '{"sponsor_id":"<sponsor-id>"}'
+comvenio action call cai.sponsor.04.update --input '{"operation":"update","sponsor_id":"<sponsor-id>","changes":{"contact_person":"<contact-person>"}}'
+comvenio action call cai.sponsor.06.logo --input '{"sponsor_id":"<sponsor-id>","logo_file_id":"<file-id>"}'
+comvenio action call cai.sponsor.05.delete --input '{"sponsor_id":"<sponsor-id>"}'
 ```
 
 ```bash
-comvenio sponsor product-add \
-  --department-id <department-id> \
-  --name "Gold-Paket" \
-  --description "Logo auf Website, Plakat und Bande" \
-  --conditions "Laufzeit mindestens zwölf Monate" \
-  --price-cents 150000 \
-  --currency EUR \
-  --billing-interval year \
-  --duration-months 12 \
-  --sort-order 10 \
-  --json
+comvenio action call cai.sponsor.08.product_add --input '{
+  "department_id": "<department-id>",
+  "name": "Gold-Paket",
+  "description": "Logo auf Website, Plakat und Bande",
+  "conditions": "Laufzeit mindestens zwölf Monate",
+  "default_unit_price_cents": 150000,
+  "currency": "EUR",
+  "billing_interval": "year",
+  "default_duration_months": 12,
+  "sort_order": 10
+}'
 
-comvenio sponsor product-list --json
-comvenio sponsor product-list --include-inactive --json
-comvenio sponsor product-update <product-id> --price-cents 175000 --json
-comvenio sponsor product-update <product-id> --inactive --json
-comvenio sponsor product-delete <product-id> --json
+comvenio action call cai.sponsor.07.product_list --input '{"include_inactive":false,"limit":50}'
+comvenio action call cai.sponsor.09.product_update --input '{"operation":"update","product_id":"<product-id>","changes":{"default_unit_price_cents":175000}}'
+comvenio action call cai.sponsor.09.product_update --input '{"operation":"update","product_id":"<product-id>","changes":{"is_active":false}}'
+comvenio action call cai.sponsor.10.product_delete --input '{"product_id":"<product-id>"}'
 ```
 
 ```bash
-comvenio sponsor contract-add <product-id> \
-  --file ./gold-paket-2027.pdf \
-  --label "Konditionen 2027" \
-  --valid-from 2027-01-01T00:00:00+01:00 \
-  --price-cents 175000 \
-  --currency EUR \
-  --billing-interval year \
-  --duration-months 12 \
-  --json
+comvenio action call cai.sponsor.12.contract_add --input '{
+  "product_id": "<product-id>",
+  "contract_file_id": "<file-id>",
+  "label": "Konditionen 2027",
+  "valid_from": "2027-01-01T00:00:00+01:00",
+  "unit_price_cents": 175000,
+  "currency": "EUR",
+  "billing_interval": "year",
+  "duration_months": 12
+}'
 
-comvenio sponsor contract-list <product-id> --json
+comvenio action call cai.sponsor.11.contract_list --input '{"product_id":"<product-id>","limit":50}'
 
-comvenio sponsor contract-update <product-id> \
-  --contract-version <version-id> \
-  --price-cents 185000 \
-  --valid-until 2027-12-31T23:59:59+01:00 \
-  --json
+comvenio action call cai.sponsor.13.contract_update --input '{
+  "operation": "update",
+  "product_id": "<product-id>",
+  "contract_version_id": "<version-id>",
+  "changes": { "unit_price_cents": 185000, "valid_until": "2027-12-31T23:59:59+01:00" }
+}'
 
-comvenio sponsor contract-delete <product-id> --contract-version <version-id> --json
+comvenio action call cai.sponsor.14.contract_delete --input '{"product_id":"<product-id>","contract_version_id":"<version-id>"}'
 ```
 
-Optional version chaining: `--supersedes-version <id>` names the superseded version, `--superseded-valid-until <iso>` limits it, `--valid-until <iso>` limits the new version, `--note <text>` stores an internal note.
+Optional version chaining in `contract_add`: `supersedes_version_id` names the superseded version, `superseded_valid_until` limits it, `valid_until` limits the new version, `note` stores an internal note.
 
 ```bash
-comvenio sponsor assign \
-  --department-id <department-id> \
-  --sponsor <sponsor-id> \
-  --product <product-id> \
-  --quantity 1 \
-  --starts-at 2027-01-01T00:00:00+01:00 \
-  --ends-at 2027-12-31T23:59:59+01:00 \
-  --json
+comvenio action call cai.sponsor.16.assign --input '{
+  "department_id": "<department-id>",
+  "sponsor_id": "<sponsor-id>",
+  "product_id": "<product-id>",
+  "quantity": 1,
+  "starts_at": "2027-01-01T00:00:00+01:00",
+  "ends_at": "2027-12-31T23:59:59+01:00"
+}'
+# response returns preview_id, confirmation_token, target, current state, diff and risk
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 
-comvenio sponsor assignment-list --json
-comvenio sponsor assignment-list --sponsor <sponsor-id> --status active --json
-comvenio sponsor assignment-update <assignment-id> --quantity 2 --json
-comvenio sponsor cancel <assignment-id> --note "Vertrag beendet" --ends-at <iso> --json
+comvenio action call cai.sponsor.15.assignment_list --input '{"sponsor_id":"<sponsor-id>","status":"active","include_deleted":false,"limit":50}'
+comvenio action call cai.sponsor.17.assignment_update --input '{"assignment_id":"<assignment-id>","changes":{"quantity":2}}'
+comvenio action call cai.sponsor.18.cancel --input '{"assignment_id":"<assignment-id>","cancellation_note":"Vertrag beendet","ends_at":"2027-06-30T23:59:59+02:00"}'
 ```
 
-`--include-deleted` extends `assignment-list` with deleted assignments.
+`assignment_update` and `cancel` are also `critical_write` and run through the same preview/confirm sequence.
 
 ```bash
-comvenio sponsor doc-upload <assignment-id> --file ./unterschrieben.pdf --json
-comvenio sponsor doc-list <assignment-id> --json
+comvenio action call cai.sponsor.20.doc_upload --input '{
+  "assignment_id": "<assignment-id>",
+  "asset": {
+    "source_file_id": "<file-id>",
+    "filename": "unterschrieben.pdf",
+    "content_type": "application/pdf",
+    "expected_size": 512000
+  },
+  "label": "Unterschriebener Vertrag"
+}'
+
+comvenio action call cai.sponsor.19.doc_list --input '{"assignment_id":"<assignment-id>","limit":50}'
 ```
 
 ```bash
-comvenio sponsor responsible-add <sponsor-id> \
-  --department-id <department-id> \
-  --member <member-id> \
-  --role responsible \
-  --primary \
-  --json
+comvenio action call cai.sponsor.22.responsible_add --input '{
+  "department_id": "<department-id>",
+  "sponsor_id": "<sponsor-id>",
+  "member_id": "<member-id>",
+  "role": "responsible",
+  "is_primary": true
+}'
 
-comvenio sponsor responsible-list --sponsor <sponsor-id> --json
-comvenio sponsor responsible-update <responsible-assignment-id> --role contact --json
-comvenio sponsor responsible-remove <responsible-assignment-id> --json
+comvenio action call cai.sponsor.21.responsible_list --input '{"sponsor_id":"<sponsor-id>","limit":50}'
+comvenio action call cai.sponsor.23.responsible_update --input '{"responsible_id":"<responsible-assignment-id>","changes":{"role":"contact"}}'
+comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id":"<responsible-assignment-id>"}'
 ```
 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
 
-**sponsor** — complete
+**sponsor**
 
-- `comvenio sponsor list`
-- `comvenio sponsor show`
-- `comvenio sponsor add`
-- `comvenio sponsor update`
-- `comvenio sponsor delete`
-- `comvenio sponsor logo`
-- `comvenio sponsor product-list`
-- `comvenio sponsor product-add`
-- `comvenio sponsor product-update`
-- `comvenio sponsor product-delete`
-- `comvenio sponsor contract-list`
-- `comvenio sponsor contract-add`
-- `comvenio sponsor contract-update`
-- `comvenio sponsor contract-delete`
-- `comvenio sponsor assignment-list`
-- `comvenio sponsor assign`
-- `comvenio sponsor assignment-update`
-- `comvenio sponsor cancel`
-- `comvenio sponsor doc-list`
-- `comvenio sponsor doc-upload`
-- `comvenio sponsor responsible-list`
-- `comvenio sponsor responsible-add`
-- `comvenio sponsor responsible-update`
-- `comvenio sponsor responsible-remove`
+- `cai.sponsor.01.list` — list (read)
+- `cai.sponsor.02.show` — show (read)
+- `cai.sponsor.03.add` — add (change)
+- `cai.sponsor.04.update` — update, move_department (change with confirmation)
+- `cai.sponsor.05.delete` — delete (change with confirmation)
+- `cai.sponsor.06.logo` — set (change with confirmation)
+- `cai.sponsor.07.product_list` — list (read)
+- `cai.sponsor.08.product_add` — add (change)
+- `cai.sponsor.09.product_update` — update, move_department (change, change with confirmation)
+- `cai.sponsor.10.product_delete` — delete (change with confirmation)
+- `cai.sponsor.11.contract_list` — list (read)
+- `cai.sponsor.12.contract_add` — add (change)
+- `cai.sponsor.13.contract_update` — update, replace_file (change)
+- `cai.sponsor.14.contract_delete` — delete (change with confirmation)
+- `cai.sponsor.15.assignment_list` — list (read)
+- `cai.sponsor.16.assign` — assign (change with confirmation)
+- `cai.sponsor.17.assignment_update` — update (change with confirmation)
+- `cai.sponsor.18.cancel` — cancel (change with confirmation)
+- `cai.sponsor.19.doc_list` — list (read)
+- `cai.sponsor.20.doc_upload` — upload (change)
+- `cai.sponsor.21.responsible_list` — list (read)
+- `cai.sponsor.22.responsible_add` — add (change)
+- `cai.sponsor.23.responsible_update` — update (change)
+- `cai.sponsor.24.responsible_remove` — remove (change with confirmation)
 - Fields and values: `comvenio schema sponsor --json`
 <!-- /gen:docs -->
 
@@ -202,3 +209,4 @@ comvenio sponsor responsible-remove <responsible-assignment-id> --json
 - `PERMISSION_DENIED` — the scopes are correct, but the club role does not allow sponsoring management in this department. More: `comvenio help fehler PERMISSION_DENIED`
 - `SCOPE_REQUIRED` — the sign-in is missing the scope for sponsoring actions. More: `comvenio help fehler SCOPE_REQUIRED`
 - `CONFLICT` — the product, contract version or assignment was changed in the meantime, or does not allow the action in its current state. More: `comvenio help fehler CONFLICT`
+- `OUTCOME_UNKNOWN` — for a write action (for example `assign`, `cancel` or `delete`), the server response was missing; before retrying, use a read action to check whether the change already landed. More: `comvenio help fehler OUTCOME_UNKNOWN`

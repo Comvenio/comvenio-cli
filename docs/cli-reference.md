@@ -10,18 +10,16 @@ stichwoerter: [cli, referenz, befehle, schema, verify]
 ## Wozu
 
 Dieser Artikel ist der Einstieg in das comvenio CLI: die Grundregeln jedes
-Aufrufs, die Top-Level-Befehle im Überblick mit Verweis auf ihren eigenen
-Artikel, sowie die Themenbefehle `schema` und `verify`, die kein eigenes
-Thema, sondern jeden anderen Befehl begleiten. Die vollständige Workflow-Coverage
-mit bekannten Lücken und bewussten Ausschlüssen je Befehl steht in
+Aufrufs, die Bereiche im Überblick mit Verweis auf ihren eigenen Artikel,
+sowie die Themenbefehle `schema` und `verify`, die kein eigenes Thema,
+sondern jeden anderen Bereich begleiten. Die vollständige Workflow-Coverage
+mit bekannten Lücken und bewussten Ausschlüssen je Bereich steht in
 [`coverage.md`](coverage.md).
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Außer `login`, `logout`, `whoami`, `action`, `finance`, `schema` und `help` sind alle Befehle klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und
+welche Scopes sie brauchen, zeigt `comvenio action list --json`.
 
 Jeder Befehl braucht eine gültige Anmeldung; Ausnahmen und Details stehen im
 Artikel zu Anmeldung und Vereinskontext. Welche Befehle darüber hinaus
@@ -39,41 +37,43 @@ comvenio <command> ... --json
 
 - Für automatisierte Aufrufe immer `--json` verwenden. Erfolgreiche
   Antworten landen auf der Standardausgabe, Fehler auf der Fehlerausgabe.
-- Standard ist die Browser-Anmeldung mit sicherer Speicherung im jeweiligen
-  Betriebssystem; ein opakes Geräte-Token ist der ältere Weg für die
-  klassischen Befehle und wird nie inhaltlich ausgewertet.
+- Die Anmeldung läuft über den Browser mit sicherer Speicherung im
+  jeweiligen Betriebssystem.
 - Rechte werden serverseitig geprüft: `401` bedeutet in der Regel eine
   ungültige oder abgelaufene Anmeldung, `403` ein fehlendes Recht, `404` eine
   unbekannte Ressource.
-- Gibt es für eine Aufgabe keinen passenden Befehl, ist das eine Lücke im
-  CLI — sie wird dort geschlossen, nicht umgangen.
+- Gibt es für eine Aufgabe keine passende Action, ist das eine Lücke im
+  Connector — sie wird dort geschlossen, nicht umgangen.
 - Änderungen werden nicht automatisch wiederholt; nur lesende Abfragen haben
   einen begrenzten Wiederholungsversuch bei vorübergehenden Fehlern.
 
-### Themen und ihre Befehle
+### Bereiche und ihre Actions
 
-Jeder Top-Level-Befehl gehört zu einem Thema mit eigenem Artikel:
+Jeder Bereich hat einen eigenen Artikel. Der Weg zu seinen Actions ist immer
+derselbe: `comvenio action list` zeigt, was für die aktuelle Anmeldung
+freigegeben ist (`--json` zeigt zusätzlich Eingaben und Scopes), und
+`comvenio action call <action-id> --input '<json>'` führt sie aus.
 
-| Befehl | Bereich | Artikel |
-|---|---|---|
-| `login`, `logout`, `whoami`, `action`, `club` | Anmeldung, Vereinskontext, freigegebene Actions, Vereinsprofil und -design | [`auth-club.md`](auth-club.md) |
-| `homepage` | öffentliche Vereins-Homepage: Vorschau, Anwenden, Anzeigen | [`homepage.md`](homepage.md) |
-| `member`, `team` | Mitglieder, Familien, Mitgliedschaftszeiten, Teams | [`mitglieder-teams.md`](mitglieder-teams.md) |
-| `role` | eigene Rollen, Berechtigungsmatrix, Zuweisungen, effektive Rechte | [`rollen-rechte.md`](rollen-rechte.md) |
-| `event` | Veranstaltungen, Vorlagen, Serien | [`veranstaltungen.md`](veranstaltungen.md) |
-| `booking`, `object` | Reservierungen, Objekte, Gebäude, Räume, Buchungsregeln | [`buchungen-objekte.md`](buchungen-objekte.md) |
-| `task` | Aufgaben, Kontexte, Zuweisungen, Notizen, Checklisten | [`aufgaben.md`](aufgaben.md) |
-| `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template`, `menu` | Speisekarten, Zutaten, Einkaufslisten | [`speisekarten.md`](speisekarten.md) |
-| `meeting` | Sitzungsserien, Protokolle, Agenda, Abstimmungen, Beschlüsse | [`meetings.md`](meetings.md) |
-| `finance` | Jahresplan, Budgetposten, Buchungen | [`finanzen.md`](finanzen.md) |
-| `data` | Dateien, Ordner, strukturierte Exporte | [`dateien.md`](dateien.md) |
-| `news` | Rich-News, Vorschau, Veröffentlichung, Videos | [`vereinsnews.md`](vereinsnews.md) |
-| `plan` | Geländepläne, Zonen, Tische, Marker, Gäste | [`veranstaltungen.md`](veranstaltungen.md) |
-| `tournament` | Serien, Ausführungen, Teilnehmer, Spielplan, Ergebnisse | [`turniere.md`](turniere.md) |
-| `sponsor` | lokale Sponsoren, Produkte, Verträge, Zuordnungen | [`sponsoring.md`](sponsoring.md) |
-| `zone`, `task-zones` | Vereinsgebiet: Einteilungen, Zonen, Übersicht | [`zonen.md`](zonen.md) |
-| `agent` | Club-Agent: Chat, Funktionen, Freigaben | [`club-agent.md`](club-agent.md) |
-| `weekly-preview` | Wochenvorschau: Flyer und Vorlagen | [`wochenvorschau.md`](wochenvorschau.md) |
+| Bereich | Artikel |
+|---|---|
+| Anmeldung, Vereinskontext, freigegebene Actions, Vereinsprofil und -design | [`auth-club.md`](auth-club.md) |
+| öffentliche Vereins-Homepage: Vorschau, Anwenden, Anzeigen | [`homepage.md`](homepage.md) |
+| Mitglieder, Familien, Mitgliedschaftszeiten, Teams | [`mitglieder-teams.md`](mitglieder-teams.md) |
+| eigene Rollen, Berechtigungsmatrix, Zuweisungen, effektive Rechte | [`rollen-rechte.md`](rollen-rechte.md) |
+| Veranstaltungen, Vorlagen, Serien | [`veranstaltungen.md`](veranstaltungen.md) |
+| Reservierungen, Objekte, Gebäude, Räume, Buchungsregeln | [`buchungen-objekte.md`](buchungen-objekte.md) |
+| Aufgaben, Kontexte, Zuweisungen, Notizen, Checklisten | [`aufgaben.md`](aufgaben.md) |
+| Speisekarten, Zutaten, Einkaufslisten | [`speisekarten.md`](speisekarten.md) |
+| Sitzungsserien, Protokolle, Agenda, Abstimmungen, Beschlüsse | [`meetings.md`](meetings.md) |
+| Jahresplan, Budgetposten, Buchungen | [`finanzen.md`](finanzen.md) |
+| Dateien, Ordner, strukturierte Exporte | [`dateien.md`](dateien.md) |
+| Rich-News, Vorschau, Veröffentlichung, Videos | [`vereinsnews.md`](vereinsnews.md) |
+| Geländepläne, Zonen, Tische, Marker, Gäste | [`veranstaltungen.md`](veranstaltungen.md) |
+| Serien, Ausführungen, Teilnehmer, Spielplan, Ergebnisse | [`turniere.md`](turniere.md) |
+| lokale Sponsoren, Produkte, Verträge, Zuordnungen | [`sponsoring.md`](sponsoring.md) |
+| Vereinsgebiet: Einteilungen, Zonen, Übersicht | [`zonen.md`](zonen.md) |
+| Club-Agent: Chat, Funktionen, Freigaben | [`club-agent.md`](club-agent.md) |
+| Wochenvorschau: Flyer und Vorlagen | [`wochenvorschau.md`](wochenvorschau.md) |
 
 ### Hilfe im Programm
 
@@ -98,34 +98,35 @@ comvenio schema event --json
 ```
 
 `schema` beantwortet die Frage „Welche Felder und Werte darf ich senden?" für
-einen Bereich. Undokumentierte Felder aus Vermutung zu senden ist nicht
-vorgesehen — bei Unsicherheit wird zuerst das passende Schema geprüft.
+einen Bereich — offline, ohne Anmeldung. Undokumentierte Felder aus
+Vermutung zu senden ist nicht vorgesehen — bei Unsicherheit wird zuerst das
+passende Schema geprüft.
 
 ### Erst lesen, dann ändern
 
 ```bash
-comvenio event show <event-id> --json
-comvenio news show <news-id> --json
-comvenio task show <task-id> --json
+comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
-Bei Vollersatz-Änderungen liest das CLI vorhandene Daten und führt die
-angegebenen Felder zusammen. Trotzdem sollte vor jeder Änderung der
-aktuelle Stand geprüft werden.
+Bei Vollersatz-Änderungen liest der Fachservice vorhandene Daten und führt
+die angegebenen Felder zusammen. Trotzdem sollte vor jeder Änderung der
+aktuelle Stand mit der passenden Lese-Action geprüft werden.
 
-### Komplexe Eingaben als Datei
+### Komplexe Eingaben als JSON
 
-Mehrteilige Strukturen werden über eine Datei übergeben. Der jeweilige
-Themenartikel beschreibt das erwartete JSON; undokumentierte Felder aus
-Vermutungen werden nicht verwendet.
+Mehrteilige Strukturen werden als JSON in `--input '<json>'` übergeben. Der
+jeweilige Themenartikel beschreibt das erwartete JSON; undokumentierte
+Felder aus Vermutungen werden nicht verwendet.
 
 ### Vorschau vor Veröffentlichung
 
 ```bash
-comvenio news preview --file news.json --json
-comvenio homepage preview --file homepage.json --ttl-hours 24 --json
-comvenio tournament preview <id> --json
-comvenio verify event <event-id> --json
+comvenio action call cai.homepage.01.preview \
+  --input '{"tabs":[{"label":"Start","slug":"start","position":0,"visibility_scope":"public","sections":[]}],"clear_existing":false}' \
+  --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
 Vorschau und Prüfung ersetzen keine Freigabe. Veröffentlichende oder
@@ -134,98 +135,107 @@ verändernde Schritte laufen erst nach fachlicher oder visueller Prüfung.
 ### Prüfen mit `verify`
 
 ```bash
-comvenio verify --help
-comvenio verify url <adresse> --json
-comvenio verify homepage --audit --json
+comvenio action call cai.verify.01.url \
+  --input '{"target_url":"https://verein.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
+comvenio action call cai.verify.04.homepage \
+  --input '{"operation":"live","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
-`verify` prüft eine Adresse, eine Veranstaltung, eine Speisekarte, die
-Homepage, eine News oder eine Urkunde visuell und meldet Befunde mit einem
-klaren Exit-Code statt nur einer bestandenen/nicht bestandenen Aussage.
-Details je Bereich stehen im jeweiligen Themenartikel.
+Die `verify`-Actions prüfen eine Adresse, eine Veranstaltung, eine
+Speisekarte, die Homepage, eine News oder eine Urkunde visuell und melden
+Befunde statt nur einer bestandenen/nicht bestandenen Aussage. Details je
+Bereich stehen im jeweiligen Themenartikel.
 
 ### Bewusst entfernte Generatoren
 
-`menu generate`, `menu design`, `homepage generate` und `homepage design`
-erzeugen keinen Inhalt automatisch — diese Aufrufe brechen absichtlich mit
-einer Erklärung ab. Inhalt und Design werden stattdessen bewusst komponiert
-und deklarativ gespeichert:
+Inhalte werden nicht automatisch erzeugt — Comvenio komponiert Inhalt und
+Design stattdessen bewusst und speichert sie deklarativ:
 
 - Speisekarte: Karte und Einträge anlegen oder aus einer Datei anwenden,
   Design über den eigenen Stil-Befehl.
-- Homepage: Vorschau aus einer Datei erzeugen, dann anwenden; das Thema über
-  das Vereinsdesign setzen.
+- Homepage: Vorschau per Action erzeugen, dann anwenden (siehe
+  [`homepage.md`](homepage.md)); das Thema über das Vereinsdesign setzen
+  (`cai.club.05.design`, siehe [`auth-club.md`](auth-club.md)).
 
 Es gibt dabei keinen zusätzlichen Hintergrund-Aufruf, der Inhalte erfindet.
 
 ## Beispiele
 
-Schema eines Bereichs abrufen und Struktur erst lesen, dann prüfen:
+Schema eines Bereichs abrufen, dann eine Aufgabe lesen:
 
 ```bash
-comvenio schema event --json
-comvenio event show <event-id> --json
-comvenio verify event <event-id> --json
+comvenio schema task --json
+comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
 Öffentliche Adresse visuell prüfen:
 
 ```bash
-comvenio verify url https://verein.web.comvenio.app --json
+comvenio action call cai.verify.01.url \
+  --input '{"target_url":"https://verein.web.comvenio.app","viewports":["390x844","1440x900"],"audit":true,"wait_ms":500}' \
+  --json
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**schema** — Kern vorhanden, einzelne Abläufe fehlen
+**schema**
 
-- `comvenio schema`
-- `comvenio schema <domain>`
+- `cai.schema.01.list_domains` — list (lesen)
+- `cai.schema.02.show_domain_schema` — show (lesen)
 
-**help** — vollständig
+**help**
 
-- `comvenio help`
-- `comvenio help <thema>`
-- `comvenio help fehler`
-- `comvenio help fehler <code>`
-- `comvenio help suche <text>`
+- Noch keine Action — dieser Bereich läuft über die Web-App.
 
-**verify** — vollständig
+**verify**
 
-- `comvenio verify url`
-- `comvenio verify event`
-- `comvenio verify menu`
-- `comvenio verify homepage`
-- `comvenio verify news`
-- `comvenio verify certificate`
+- `cai.verify.01.url` — verify (lesen)
+- `cai.verify.02.event` — verify (lesen)
+- `cai.verify.03.menu` — verify (lesen)
+- `cai.verify.04.homepage` — live, preview (lesen)
+- `cai.verify.05.news` — verify (lesen)
+- `cai.verify.06.certificate` — verify (lesen)
 
-**plan** — vollständig
+**plan**
 
-- `comvenio plan list`
-- `comvenio plan show`
-- `comvenio plan create`
-- `comvenio plan update`
-- `comvenio plan delete`
-- `comvenio plan zone list|create|update|delete|link|unlink`
-- `comvenio plan table create|duplicate|update|delete`
-- `comvenio plan marker create|update|delete`
-- `comvenio plan guest list|add|update|delete`
-- `comvenio plan detail`
-- `comvenio plan export`
-- `comvenio plan illustrate`
-- `comvenio plan compose`
+- `cai.plan.01.list` — list (lesen)
+- `cai.plan.02.show` — show (lesen)
+- `cai.plan.03.create` — create (ändern)
+- `cai.plan.04.update` — update (ändern)
+- `cai.plan.05.delete` — delete (ändern mit Bestätigung)
+- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.08.marker_create_update_delete` — create, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.10.detail` — create (ändern)
+- `cai.plan.11.export` — export (ändern mit Bestätigung)
+- `cai.plan.12.illustrate` — illustrate (ändern mit Bestätigung)
+- `cai.plan.13.compose` — compose (ändern mit Bestätigung)
 <!-- /gen:docs -->
 
 ## Fehler
 
 - `AUTH_REQUIRED` — die Anmeldung ist abgelaufen, wurde widerrufen oder
   fehlt; erneut anmelden. `comvenio help fehler AUTH_REQUIRED`.
-- `PERMISSION_DENIED` — die Vereinsrolle erlaubt den Befehl nicht.
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope für diese Action; der
+  angezeigte `comvenio login --scopes …`-Befehl behebt es.
+  `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — die Vereinsrolle erlaubt die Action nicht.
   `comvenio help fehler PERMISSION_DENIED`.
 - `NOT_FOUND` — die angegebene Kennung gehört zu keinem sichtbaren oder
   vorhandenen Eintrag. `comvenio help fehler NOT_FOUND`.
-- `VALIDATION_FAILED` — eine Eingabedatei passt nicht zum Schema des
-  Bereichs. `comvenio help fehler VALIDATION_FAILED`.
+- `VALIDATION_FAILED` — die Eingabe passt nicht zum Schema der Action.
+  `comvenio help fehler VALIDATION_FAILED`.
+- `OUTCOME_UNKNOWN` — eine ändernde Action (etwa `action confirm` bei
+  `homepage apply` oder `plan`-Löschungen) endete mit Zeitüberschreitung
+  oder Serverfehler; nicht wiederholen, erst den Stand prüfen.
+  `comvenio help fehler OUTCOME_UNKNOWN`.
 - `USAGE_ERROR` — ein Argument oder eine Option fehlt, passt nicht zusammen
   oder hat das falsche Format. `comvenio help fehler USAGE_ERROR`.
+- `OAUTH_ONLY` — ein alter Befehl läuft nicht über die aktuelle Anmeldung;
+  mit `comvenio action list` die passende Action suchen.
+  `comvenio help fehler OAUTH_ONLY`.

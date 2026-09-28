@@ -9,51 +9,87 @@ stichwoerter: [meetings, protokolle, tagesordnung, beschlüsse, abstimmungen, te
 
 ## Wozu
 
-`comvenio meeting` deckt die fachlichen Abläufe rund um Vereinssitzungen ab: Meeting-Serien anlegen,
-für einen konkreten Termin ein Protokoll führen, die Tagesordnung steuern, Notizen und Teilnehmer
-erfassen, Entscheidungen und Abstimmungen durchführen, Beschlüsse verwalten und am Ende die
-offizielle Reinschrift veröffentlichen.
+Die Actions der Domäne `meeting` decken die fachlichen Abläufe rund um Vereinssitzungen ab:
+Meeting-Serien anlegen, für einen konkreten Termin ein Protokoll führen, die Tagesordnung steuern,
+Notizen und Teilnehmer erfassen, Entscheidungen und Abstimmungen durchführen, Beschlüsse verwalten und
+am Ende die offizielle Reinschrift veröffentlichen.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen,
+zeigt `comvenio action list --json`.
 
-- Schreibende Aktionen (Serien, Protokolle, Tagesordnung, Notizen, Teilnehmer, Entscheidungen,
+- Schreibende Actions (Serien, Protokolle, Tagesordnung, Notizen, Teilnehmer, Entscheidungen,
   Abstimmungen, Beschlüsse, Reinschrift) erfordern das Recht `manage_meetings` beziehungsweise die
   jeweilige granulare Meeting-Berechtigung.
 - Stimmberechtigt bei einer Abstimmung sind nur Teilnehmer, die als anwesend erfasst sind.
-- `--club <club-id>` überschreibt den Verein aus dem lokalen Anmeldestatus.
 - `--json` ist für Skripte und Agenten die verbindliche Ausgabeform.
-- Umfangreiche Eingaben werden als JSON-Datei mit `--file <payload.json>` übergeben; die Felder
-  gehen unverändert an den Vertrag der jeweiligen Aktion.
+- Umfangreiche Eingaben lassen sich statt `--input '<json>'` auch mit `--file <pfad>` (JSON)
+  übergeben.
 - Ein Fehler ist kein leeres Ergebnis: Die CLI gibt einen Fehler des Dienstes mit einem Exit-Code
   ungleich null zurück.
+
+Jede Teilaktion einer mehrteiligen Action wird über `"operation": "<name>"` in `--input` gewählt. Eine
+kritische (`critical_write`) Teilaktion liefert zuerst eine Vorschau mit `preview_id` und
+`confirmation_token`; erst `comvenio action confirm --preview-id … --confirmation-token …
+--idempotency-key …` führt sie aus.
 
 ## Abläufe
 
 ### Meeting-Serie anlegen
 
-1. Serie mit Verein, Abteilung, Titel und Standardwerten für Protokolltyp, Genehmigungspflicht und
-   Protokollstil anlegen.
-2. Serien auflisten oder eine einzelne ansehen, bei Bedarf ändern oder löschen.
+1. Serie mit Abteilung, Titel und Standardwerten für Protokolltyp, Genehmigungspflicht und
+   Protokollstil anlegen (`create`, unkritisch).
+2. Serien auflisten oder eine einzelne ansehen (`list`, `show`, unkritisch), ändern (`update`,
+   unkritisch) oder löschen (`delete`, kritisch).
+
+```bash
+comvenio action call cai.meeting.01.series_list_show_create_update_delete \
+  --input '{"operation":"create","series":{"department_id":"<department-id>","title":"Monatliche Vorstandssitzung","description":"Regeltermin des Vorstands","meeting_type":"Vorstandssitzung","default_protocol_type":"formal","default_requires_approval":true,"default_protocol_summary_style":"results"}}' --json
+
+comvenio action call cai.meeting.01.series_list_show_create_update_delete \
+  --input '{"operation":"list","limit":20,"offset":0}' --json
+```
+
+Zulässige Werte für den Protokollstil: `results`, `detailed`, `decision`, `short`, `action`, `custom`.
 
 ### Protokoll für einen Termin anlegen
 
-1. Zu einem konkreten Veranstaltungstermin ein Protokoll mit Meeting-Serie, Termin, Verein, Abteilung
-   und Titel anlegen.
-2. Protokoll auflisten oder ansehen.
+1. Zu einem konkreten Veranstaltungstermin ein Protokoll mit Meeting-Serie, Termin, Abteilung und Titel
+   anlegen (`create`, unkritisch).
+2. Protokoll auflisten oder ansehen (`list`, `show`, unkritisch).
+
+```bash
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"create","protocol":{"meeting_id":"<meeting-series-id>","event_id":"<event-id>","department_id":"<department-id>","title":"Vorstandssitzung Juli 2026","protocol_type":"formal","requires_approval":true,"allow_public_join":false}}' --json
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"show","protocol_id":"<protocol-id>"}' --json
+```
 
 Der Lebenszyklus eines Protokolls verläuft: Vorbereitung offen → Vorbereitung durch die Verwaltung →
 Tagesordnung fertig → in Sitzung → abgeschlossen → Reinschrift wird erstellt → wartet auf Freigabe →
 veröffentlicht. Beim Wechsel in den Sitzungsstatus setzt Comvenio den Beginnzeitpunkt, beim Abschluss
 den Endzeitpunkt.
 
-3. Protokoll zur nächsten Phase weiterschalten oder eine Phase zurücknehmen.
-4. Änderungen seit einem Zeitpunkt abfragen.
-5. Vor der Veröffentlichung den Validierungsstatus prüfen und veröffentlichen.
+3. Protokoll zur nächsten Phase weiterschalten (`advance`, kritisch) oder eine Phase zurücknehmen
+   (`revert`, kritisch).
+4. Änderungen seit einem Zeitpunkt abfragen (`updates`, unkritisch).
+5. Vor der Veröffentlichung den Validierungsstatus prüfen (`validation`, unkritisch) und
+   veröffentlichen (`publish`, kritisch).
+
+```bash
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"advance","protocol_id":"<protocol-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"validation","protocol_id":"<protocol-id>"}' --json
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"publish","protocol_id":"<protocol-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 Wichtige Bedingungen: Der Wechsel von „Reinschrift wird erstellt" zu „wartet auf Freigabe" verlangt,
 dass zu jedem behandelten Tagesordnungspunkt ein Reinschrift-Eintrag existiert. Die Veröffentlichung
@@ -61,18 +97,46 @@ verlangt, dass alle Prüfer bestätigt haben. Eine Phase zurückzunehmen ist nic
 
 ### Tagesordnung und Live-Status
 
+Bei dieser Action ist jede Teilaktion kritisch — auch das Auflisten und Ansehen zeigt zuerst eine
+Vorschau und verlangt eine Bestätigung.
+
 1. Tagesordnungspunkt mit Titel, Beschreibung und geschätzter Dauer anlegen.
 2. Tagesordnung auflisten, einen Punkt ansehen, ändern, löschen oder neu sortieren.
 3. Punkt starten, abschließen oder überspringen; einen Übernahme-Punkt aus einer Vorserie dabei mit
-   dem passenden Protokoll verknüpfen, weil ein Tagesordnungspunkt mehreren Protokollen zugeordnet
-   sein kann.
-4. Punkt freigeben.
+   `protocol_id` dem passenden Protokoll zuordnen, weil ein Tagesordnungspunkt mehreren Protokollen
+   zugeordnet sein kann.
+4. Punkt freigeben (`approve`).
+
+```bash
+comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
+  --input '{"operation":"create","protocol_id":"<protocol-id>","agenda_item":{"title":"Kassenbericht","description":"Auswertung des zweiten Quartals","estimated_duration_minutes":20,"is_hidden":false}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
+  --input '{"operation":"reorder","protocol_id":"<protocol-id>","agenda_item_ids":["<top-id-1>","<top-id-2>"]}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
+  --input '{"operation":"start","protocol_id":"<protocol-id>","agenda_item_id":"<top-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 ### Notizen
 
-1. Notizen eines Tagesordnungspunkts oder eines gesamten Protokolls auflisten.
-2. Notiz mit Protokoll, Tagesordnungspunkt, Verein, Inhalt und Notiztyp anlegen.
-3. Notiz ändern oder löschen.
+1. Notizen eines Tagesordnungspunkts (`list`) oder eines gesamten Protokolls (`list_protocol`)
+   auflisten — unkritisch.
+2. Notiz mit Protokoll, Tagesordnungspunkt, Inhalt und Notiztyp anlegen (`create`, unkritisch); ändern
+   (`update`, unkritisch) oder löschen (`delete`, kritisch).
+
+```bash
+comvenio action call cai.meeting.04.note_list_list_protocol_create_update_delete \
+  --input '{"operation":"create","note":{"protocol_id":"<protocol-id>","agenda_item_id":"<top-id>","content":"Kassenbericht liegt vor","note_type":"summary"}}' --json
+comvenio action call cai.meeting.04.note_list_list_protocol_create_update_delete \
+  --input '{"operation":"list_protocol","protocol_id":"<protocol-id>"}' --json
+```
 
 Fachliche Notiztypen: Verwaltung, Diskussion, Notiz, Zusammenfassung. Der Typ „Aufgaben-Update"
 entsteht ausschließlich automatisch aus dem Aufgaben-Workflow und ist nicht für manuelle Notizen
@@ -80,37 +144,87 @@ vorgesehen.
 
 ### Teilnehmer und Validierung
 
-1. Teilnehmer eines Protokolls auflisten.
-2. Teilnehmer hinzufügen — mit Benutzer, Mitglied oder mindestens einem Namen als Identität.
-3. Rolle oder Anwesenheit eines Teilnehmers ändern — mehr lässt sich an einem bestehenden Teilnehmer
-   nicht anpassen; Teilnehmer entfernen.
-4. Teilnehmer validieren oder die Validierung zurücknehmen.
+1. Teilnehmer eines Protokolls auflisten (`list`, unkritisch).
+2. Teilnehmer hinzufügen (`add`, unkritisch) — mit Benutzer, Mitglied oder mindestens einem Namen als
+   Identität.
+3. Rolle oder Anwesenheit eines Teilnehmers ändern (`update`, unkritisch) — mehr lässt sich an einem
+   bestehenden Teilnehmer nicht anpassen; Teilnehmer entfernen (`remove`, kritisch).
+4. Teilnehmer validieren (`validate`, unkritisch) oder die Validierung zurücknehmen (`unvalidate`,
+   kritisch).
+
+```bash
+comvenio action call cai.meeting.05.participant_list_add_update_remove_validate_unvalidate \
+  --input '{"operation":"add","protocol_id":"<protocol-id>","participant":{"member_id":"<member-id>","role":"member"}}' --json
+comvenio action call cai.meeting.05.participant_list_add_update_remove_validate_unvalidate \
+  --input '{"operation":"validate","participant_id":"<participant-id>"}' --json
+```
 
 ### Entscheidungen und Abstimmungen
 
-Eine Entscheidung entsteht immer an einem Tagesordnungspunkt und darf nur für einen gerade
-behandelten Punkt angelegt werden. Die vollständigen Entscheidungsdaten eines Tagesordnungspunkts
-liefert der Tagesordnungspunkt selbst — eine eigene Liste oder Detailansicht einzelner
-Entscheidungen gibt es nicht.
+Eine Entscheidung entsteht immer an einem Tagesordnungspunkt und darf nur für einen gerade behandelten
+Punkt angelegt werden. Die vollständigen Entscheidungsdaten eines Tagesordnungspunkts liefert die
+Teilaktion `agenda` — eine eigene Liste oder Detailansicht einzelner Entscheidungen gibt es nicht. Jede
+Teilaktion außer `agenda` ist kritisch.
 
-1. Entscheidung mit Protokoll, Tagesordnungspunkt, Abteilung, Verein, Titel, Art und Gültigkeitsbeginn
-   anlegen.
-2. Bei Bedarf Abstimmungsoptionen einzeln oder als Sammlung ergänzen.
-3. Abstimmung öffnen, Stimmen abgeben — direkt, in Sammlung oder per Vollmacht —, Abstimmung
-   schließen, Ergebnisse und stimmberechtigte Teilnehmer einsehen.
-4. Entscheidung ändern, absagen oder zu einem Beschluss mit Beschlussnummer erheben.
+1. Entscheidung mit Tagesordnungspunkt, Titel, Art und Gültigkeitsbeginn anlegen (`create`).
+2. Bei Bedarf Abstimmungsoptionen einzeln (`option_add`) oder als Sammlung (`options_add`) ergänzen.
+3. Abstimmung öffnen, Stimmen abgeben — direkt, in Sammlung oder per Vollmacht —, Abstimmung schließen,
+   Ergebnisse (`results`, unkritisch) und stimmberechtigte Teilnehmer (`eligible`, unkritisch)
+   einsehen.
+4. Entscheidung ändern (`update`), absagen (`cancel`, verlangt `cancel_reason`) oder zu einem Beschluss
+   mit Beschlussnummer erheben (`promote`).
 
-Offline-Auszählungen laufen über eine eigene Aktion: Ohne Inkrement setzt die Angabe den absoluten
-Zählerstand, mit Inkrement wird ein Delta addiert, auch negativ. Bei einer Mehrfachauswahl entfernt
-das Zurückziehen einer einzelnen Option nur die eigene Stimme für diese Option; das vollständige
-Zurückziehen entfernt alle eigenen Stimmen dieser Entscheidung.
+```bash
+comvenio action call cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote \
+  --input '{"operation":"create","agenda_item_id":"<top-id>","decision":{"title":"Budget 2027 freigeben","decision_type":"voting","voting_visibility":"public","valid_from":"2026-07-13T19:30:00+02:00","voting_eligibility":"all_participants","allow_proxy_voting":true,"is_offline_voting":false,"allow_multiple_choice":false}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
+  --input '{"operation":"open","decision_id":"<decision-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract \
+  --input '{"operation":"cast","decision_id":"<decision-id>","vote":{"option_id":"<option-id>"}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
+  --input '{"operation":"close","decision_id":"<decision-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
+  --input '{"operation":"results","decision_id":"<decision-id>"}' --json
+```
+
+Offline-Auszählungen laufen über `voting_tally`: Ohne `increment` setzt `count` den absoluten
+Zählerstand, mit `increment: true` wird ein Delta addiert. Bei einer Mehrfachauswahl entfernt das
+Zurückziehen einer einzelnen Option (`option_retract`) nur die eigene Stimme für diese Option; das
+vollständige Zurückziehen (`retract`) entfernt alle eigenen Stimmen dieser Entscheidung.
 
 ### Beschlüsse
 
 1. Beschlüsse eines Vereins auflisten, optional gefiltert nach Abteilung, Kategorie oder mit
-   abgelaufenen Beschlüssen; Beschlüsse eines Protokolls auflisten.
-2. Einzelnen Beschluss und seine Historie ansehen.
-3. Beschluss anlegen, ändern, genehmigen oder ablehnen, löschen.
+   abgelaufenen Beschlüssen (`list`); Beschlüsse eines Protokolls auflisten (`list_protocol`) —
+   unkritisch.
+2. Einzelnen Beschluss (`show`) und seine Historie (`history`) ansehen — unkritisch.
+3. Beschluss anlegen, ändern, genehmigen oder ablehnen, löschen — jeweils kritisch.
+
+```bash
+comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
+  --input '{"operation":"list","category":"satzung","valid_only":true,"limit":20,"offset":0}' --json
+
+comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
+  --input '{"operation":"approve","resolution_id":"<resolution-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
+  --input '{"operation":"decline","resolution_id":"<resolution-id>","reason":"Formfehler in der Beschlussvorlage"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 Beschlussstatus: neu, angenommen, abgelehnt, abgelaufen. Eine Ablehnung verlangt eine Begründung; bei
 einer Genehmigung ist die Begründung optional.
@@ -120,192 +234,119 @@ einer Genehmigung ist die Begründung optional.
 Reinschrift-Einträge sind die offizielle Fassung eines Protokolls in der Phase „Reinschrift wird
 erstellt".
 
-1. Einträge eines Protokolls oder zu einem Tagesordnungspunkt auflisten, einzelnen Eintrag ansehen.
-2. Eintrag mit Protokoll und Inhalt anlegen, optional als KI-unterstützt markiert.
-3. Eintrag ändern oder löschen.
-4. Anhänge eines Eintrags auflisten, eine bereits vorhandene Datei verknüpfen oder einen Anhang
-   entfernen.
+1. Einträge eines Protokolls (`list`) oder zu einem Tagesordnungspunkt (`show_agenda`) auflisten,
+   einzelnen Eintrag ansehen (`show`) — unkritisch.
+2. Eintrag mit Tagesordnungspunkt und Inhalt anlegen (`create`, unkritisch), optional als
+   KI-unterstützt markiert; ändern (`update`, unkritisch) oder löschen (`delete`, kritisch).
+3. Anhänge eines Eintrags auflisten (`list`, unkritisch), eine bereits vorhandene Datei über ihre
+   Datei-Kennung verknüpfen (`add`, kritisch) oder einen Anhang entfernen (`remove`, kritisch).
 
-Ein Anhang verknüpft eine bereits hochgeladene Datei über ihre Datei-Kennung; der Upload selbst
-läuft nicht über diese Aktionen.
+```bash
+comvenio action call cai.meeting.10.entry_list_show_show_agenda_create_update_delete \
+  --input '{"operation":"create","agenda_item_id":"<top-id>","entry":{"protocol_id":"<protocol-id>","content":"Kassenbericht einstimmig zur Kenntnis genommen.","is_ai_generated":false}}' --json
 
-### Bewusst ausgeschlossene Abläufe
+comvenio action call cai.meeting.11.attachment_list_add_remove \
+  --input '{"operation":"add","entry_id":"<entry-id>","file_id":"<file-id>","title":"Kassenbericht Q2"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
-Folgende Bereiche sind bewusst kein Bestandteil dieser Club-Admin-Abläufe: interne
-System-zu-System-Wartung mit eigenem Authentifizierungsvertrag, der Browser- und Einladungszugang für
-Teilnehmende (öffentliche und persönliche Zugangslinks), private KI-Assistenz-Entwürfe mit eigenem
-Bestätigungs- und Berechtigungskontext, sowie automatisch erzeugte Aufgaben-Update-Notizen.
+Der Upload der Anhangsdatei selbst läuft nicht über diese Action — sie muss zuvor hochgeladen sein
+(siehe Artikel „DataShare — Dateien, Ordner und Papers").
+
+### Noch nicht als Action verfügbar
+
+Interne System-zu-System-Wartung mit eigenem Authentifizierungsvertrag, der Browser- und
+Einladungszugang für Teilnehmende (öffentliche und persönliche Zugangslinks) sowie private
+KI-Assistenz-Entwürfe mit eigenem Bestätigungs- und Berechtigungskontext sind bewusst kein Bestandteil
+dieser Actions — sie laufen in der Web-App.
 
 ## Beispiele
 
-Meeting-Serie anlegen (`meeting-series.json`):
-
-```json
-{
-  "club_id": "<club-id>",
-  "department_id": "<department-id>",
-  "title": "Monatliche Vorstandssitzung",
-  "description": "Regeltermin des Vorstands",
-  "meeting_type": "Vorstandssitzung",
-  "default_protocol_type": "formal",
-  "default_requires_approval": true,
-  "default_protocol_summary_style": "results"
-}
-```
+Meeting-Serie anlegen:
 
 ```bash
-comvenio meeting series-create --file meeting-series.json --json
-comvenio meeting series-list --json
+comvenio action call cai.meeting.01.series_list_show_create_update_delete \
+  --input '{"operation":"create","series":{"department_id":"<department-id>","title":"Monatliche Vorstandssitzung","description":"Regeltermin des Vorstands","meeting_type":"Vorstandssitzung","default_protocol_type":"formal","default_requires_approval":true,"default_protocol_summary_style":"results"}}' --json
 ```
 
-Zulässige Werte für den Protokollstil: `results`, `detailed`, `decision`, `short`, `action`, `custom`.
-
-Protokoll für einen Termin anlegen:
-
-```json
-{
-  "meeting_id": "<meeting-series-id>",
-  "event_id": "<event-id>",
-  "club_id": "<club-id>",
-  "department_id": "<department-id>",
-  "title": "Vorstandssitzung Juli 2026",
-  "protocol_type": "formal",
-  "requires_approval": true,
-  "allow_public_join": false
-}
-```
+Protokoll anlegen und veröffentlichen:
 
 ```bash
-comvenio meeting protocol-create --file protocol.json --json
-comvenio meeting protocol-show <protocol-id> --json
-comvenio meeting protocol-advance <protocol-id> --json
-comvenio meeting protocol-validation <protocol-id> --json
-comvenio meeting protocol-publish <protocol-id> --json
-```
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"create","protocol":{"meeting_id":"<meeting-series-id>","event_id":"<event-id>","department_id":"<department-id>","title":"Vorstandssitzung Juli 2026","protocol_type":"formal","requires_approval":true,"allow_public_join":false}}' --json
 
-Tagesordnungspunkt anlegen und steuern:
-
-```json
-{
-  "title": "Kassenbericht",
-  "description": "Auswertung des zweiten Quartals",
-  "estimated_duration_minutes": 20,
-  "is_hidden": false
-}
-```
-
-```bash
-comvenio meeting agenda-create <protocol-id> --file top.json --json
-```
-
-```json
-{
-  "item_positions": {
-    "<top-id-1>": 0,
-    "<top-id-2>": 1
-  }
-}
-```
-
-```bash
-comvenio meeting agenda-reorder <protocol-id> --file order.json --json
-comvenio meeting agenda-start <top-id> --protocol <protocol-id> --json
-comvenio meeting agenda-complete <top-id> --protocol <protocol-id> --json
-```
-
-`--protocol` ist bei einem Übernahme-Tagesordnungspunkt wichtig, weil dieser mehreren Protokollen
-zugeordnet sein kann.
-
-Notiz anlegen:
-
-```bash
-comvenio meeting note-create --file note.json --json
-comvenio meeting note-list <top-id> --json
-```
-
-Teilnehmer hinzufügen und validieren:
-
-```bash
-comvenio meeting participant-add <protocol-id> --file participant.json --json
-comvenio meeting participant-validate <participant-id> --json
+comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
+  --input '{"operation":"publish","protocol_id":"<protocol-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
 Entscheidung anlegen und Abstimmung durchführen:
 
-```json
-{
-  "agenda_item_id": "<top-id>",
-  "protocol_id": "<protocol-id>",
-  "department_id": "<department-id>",
-  "club_id": "<club-id>",
-  "title": "Budget 2027 freigeben",
-  "decision_type": "voting",
-  "voting_visibility": "public",
-  "valid_from": "2026-07-13T19:30:00+02:00",
-  "voting_eligibility": "all_participants",
-  "allow_proxy_voting": true,
-  "is_offline_voting": false,
-  "allow_multiple_choice": false
-}
+```bash
+comvenio action call cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote \
+  --input '{"operation":"create","agenda_item_id":"<top-id>","decision":{"title":"Budget 2027 freigeben","decision_type":"voting","voting_visibility":"public","valid_from":"2026-07-13T19:30:00+02:00","voting_eligibility":"all_participants","allow_proxy_voting":true,"is_offline_voting":false,"allow_multiple_choice":false}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
+  --input '{"operation":"open","decision_id":"<decision-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract \
+  --input '{"operation":"cast","decision_id":"<decision-id>","vote":{"option_id":"<option-id>"}}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
-```bash
-comvenio meeting decision-create <top-id> --file decision.json --json
-comvenio meeting voting-open <decision-id> --json
-comvenio meeting vote-cast <decision-id> --file vote.json --json
-comvenio meeting voting-close <decision-id> --json
-comvenio meeting voting-results <decision-id> --json
-comvenio meeting voting-tally <decision-id> --option <option-id> --count -1 --increment --json
-comvenio meeting decision-promote <decision-id> --number 12 --json
-```
-
-Beschluss genehmigen oder ablehnen:
+Beschluss ablehnen:
 
 ```bash
-comvenio meeting resolution-list --department <department-id> --category satzung --json
-comvenio meeting resolution-approve <resolution-id> --json
-comvenio meeting resolution-decline <resolution-id> --file decline.json --json
-```
-
-Reinschrift-Eintrag mit Anhang anlegen:
-
-```bash
-comvenio meeting entry-create <top-id> --file entry.json --json
-comvenio meeting attachment-add <entry-id> --file attachment.json --json
+comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
+  --input '{"operation":"decline","resolution_id":"<resolution-id>","reason":"Formfehler in der Beschlussvorlage"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**meeting** — vollständig
+**meeting**
 
-- `comvenio meeting series list|show|create|update|delete`
-- `comvenio meeting protocol list|show|create|update|delete|advance|revert|updates|validation|publish`
-- `comvenio meeting agenda list|show|create|update|delete|reorder|start|complete|skip|approve`
-- `comvenio meeting note list|list-protocol|create|update|delete`
-- `comvenio meeting participant list|add|update|remove|validate|unvalidate`
-- `comvenio meeting decision create|agenda|update|cancel|option-add|options-add|promote`
-- `comvenio meeting voting open|close|results|eligible|tally`
-- `comvenio meeting vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract`
-- `comvenio meeting resolution list|list-protocol|show|history|create|update|approve|decline|delete`
-- `comvenio meeting entry list|show|show-agenda|create|update|delete`
-- `comvenio meeting attachment list|add|remove`
+- `cai.meeting.01.series_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat` — list, show, create, update, delete, advance, revert, updates, validation, publish (lesen, ändern, ändern mit Bestätigung)
+- `cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr` — list, show, create, update, delete, reorder, start, complete, skip, approve (lesen, ändern mit Bestätigung)
+- `cai.meeting.04.note_list_list_protocol_create_update_delete` — list, list_protocol, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.meeting.05.participant_list_add_update_remove_validate_unvalidate` — list, add, update, remove, validate, unvalidate (lesen, ändern, ändern mit Bestätigung)
+- `cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote` — create, agenda, update, cancel, option_add, options_add, promote (ändern mit Bestätigung, lesen)
+- `cai.meeting.07.voting_open_close_results_eligible_tally` — open, close, results, eligible, tally (ändern mit Bestätigung, lesen)
+- `cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract` — cast, cast_bulk, proxy, proxy_bulk, option_retract, retract (ändern mit Bestätigung)
+- `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (lesen, ändern mit Bestätigung)
+- `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.meeting.11.attachment_list_add_remove` — list, add, remove (lesen, ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema meeting --json`
 <!-- /gen:docs -->
 
 ## Fehler
 
 - `PERMISSION_DENIED` — die Vereinsrolle trägt nicht das Recht `manage_meetings` oder die passende
-  granulare Meeting-Berechtigung für die versuchte Aktion. Siehe
+  granulare Meeting-Berechtigung für die versuchte Action. Siehe
   `comvenio help fehler PERMISSION_DENIED`.
 - `VALIDATION_FAILED` — ein Pflichtfeld fehlt oder hat das falsche Format, etwa beim Anlegen einer
   Serie, eines Protokolls, einer Entscheidung oder eines Beschlusses. Siehe
   `comvenio help fehler VALIDATION_FAILED`.
 - `NOT_FOUND` — die angegebene Serien-, Protokoll-, Tagesordnungs-, Entscheidungs- oder Beschluss-ID
   gehört zu keinem sichtbaren Eintrag. Siehe `comvenio help fehler NOT_FOUND`.
-- `CONFLICT` — eine Aktion widerspricht dem aktuellen Zustand, etwa ein Phasenwechsel, der die
-  nötigen Voraussetzungen noch nicht erfüllt, oder eine Abstimmung, die bereits geschlossen ist.
-  Siehe `comvenio help fehler CONFLICT`.
-- `SCOPE_REQUIRED` — die Anmeldung wurde ohne den für eine Meeting-Schreibaktion nötigen Scope
-  erteilt. Siehe `comvenio help fehler SCOPE_REQUIRED`.
+- `CONFLICT` — eine Action widerspricht dem aktuellen Zustand, etwa ein Phasenwechsel, der die nötigen
+  Voraussetzungen noch nicht erfüllt, oder eine Abstimmung, die bereits geschlossen ist. Siehe
+  `comvenio help fehler CONFLICT`.
+- `SCOPE_REQUIRED` — die Anmeldung wurde ohne den für eine Meeting-Schreibaction nötigen Scope erteilt.
+  Siehe `comvenio help fehler SCOPE_REQUIRED`.
+- `OUTCOME_UNKNOWN` — eine kritische Action (Löschen, Phasenwechsel, Abstimmung, Beschluss) wurde nach
+  `action confirm` nicht eindeutig bestätigt; vor einer Wiederholung erst mit einem Lesebefehl den
+  Stand prüfen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
+- `OAUTH_ONLY` — ein alter, klassischer Befehl (`comvenio meeting …`) läuft nicht mehr; die
+  entsprechende Action verwenden. Siehe `comvenio help fehler OAUTH_ONLY`.

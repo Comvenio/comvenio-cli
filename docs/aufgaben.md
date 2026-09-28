@@ -13,12 +13,7 @@ Mit Aufgaben lassen sich Arbeiten im Verein planen, Mitgliedern zuweisen, mit Ch
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Für die eigene, persönliche Aufgaben-Erinnerung genügt bereits der Lese-Scope `task.read` — ein Schreib-Scope ist dafür ausdrücklich nicht nötig, weil dabei keine gemeinsame Aufgabe geändert wird, sondern nur die eigene Präferenz.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`.
 
 ## Abläufe
 
@@ -30,164 +25,151 @@ Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeig
 | `priority` | `low`, `medium`, `high` |
 | `context_type` | `club`, `event`, `object`, `meeting`, `supply` |
 
-### Aufgabe anlegen
+### Aufgabe anlegen (`cai.task.05.create`)
 
-1. Zuerst einen Context finden oder anlegen: Der Context beschreibt, worauf sich die Aufgabe bezieht; die referenzierte Entität steht dabei in der Context-eigenen Referenz (`--ref-id`), nicht in der ID, die `task create` später braucht.
-2. Die `id` aus der Context-Antwort als `--context-id` für die Aufgabe verwenden.
-3. Aufgabe mit Titel und Kontext-ID anlegen; beides ist Pflicht. Ein Fälligkeitsdatum wird als ISO-Zeitpunkt angegeben.
+1. Zuerst einen Context finden (`cai.task.11.context_list_show_create_update_delete`, `operation: list`) oder anlegen (`operation: create`): Der Context beschreibt, worauf sich die Aufgabe bezieht.
+2. Die `id` aus der Context-Antwort als `task_context_id` für die Aufgabe verwenden.
+3. Aufgabe mit `title` und `task_context_id` anlegen; beides ist Pflicht. Ein Fälligkeitsdatum (`due_date`) wird als ISO-Zeitpunkt angegeben.
 4. Optional ein Mitglied zuweisen (siehe unten).
 
-Mehrere Aufgaben lassen sich inklusive Checklisten und Zuweisungen in einem Aufruf gemeinsam anlegen.
+Mehrere Aufgaben lassen sich inklusive Checklisten und Zuweisungen in einem Aufruf gemeinsam anlegen (`cai.task.06.bulk`); das ist `critical_write` und läuft über die Vorschau-/Bestätigungsfolge.
 
 ### Aufgabe ändern, abbrechen oder abschließen
 
-Das Ändern ersetzt nur die tatsächlich gesetzten Felder. `completed` und `cancelled` dürfen nicht wieder auf `open` zurückgesetzt werden. Zum Abschließen ist ein eigener Befehl bequemer als ein Statuswechsel per Update: Er setzt den Status zugleich auf `completed` und den Abschlusszeitpunkt auf den aktuellen Zeitpunkt.
+`cai.task.07.update` ersetzt nur die tatsächlich gesetzten Felder in `changes`. `completed` und `cancelled` dürfen nicht wieder auf `open` zurückgesetzt werden. Zum Abschließen ist `cai.task.09.done` bequemer als ein Statuswechsel per Update: Er setzt den Status auf `completed`; der Abschlusszeitpunkt (`completed_at`) wird dabei ausdrücklich mitgegeben. `cai.task.10.delete` ist `critical_write`.
 
-### Mitglied zuweisen
+### Mitglied zuweisen (`cai.task.08.assign`)
 
-Eine Zuweisung erwartet ausdrücklich eine Mitglieds-ID, keine Benutzer-ID. Eine Zuweisung kann als hauptverantwortlich markiert werden. Zuweisungen lassen sich vollständig lesen, aktualisieren und wieder entfernen.
+Eine Zuweisung erwartet ausdrücklich eine Mitglieds-ID (`member_id`), keine Benutzer-ID, sowie optional `is_responsible`. Zuweisungen lassen sich über `cai.task.12.assignment_list_show_update_delete` vollständig lesen und aktualisieren (`reversible_write`); das Entfernen (`operation: delete`) ist `critical_write`.
 
 ### Contexts, Notizen und Checklisten pflegen
 
-Contexts, Notizen und Checklisten-Einträge werden über eine Datei übergeben, damit sich der jeweils aktuelle Datenkörper ohne verlustreiche Einzelfeld-Abbildung setzen lässt. Checklisten-Einträge lassen sich zusätzlich umschalten (erledigt/offen) und neu sortieren.
+- `cai.task.11.context_list_show_create_update_delete` verwaltet Contexts; Löschen ist `critical_write`.
+- `cai.task.13.note_list_add_update_delete` verwaltet Notizen (`content`); Löschen ist `critical_write`.
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` verwaltet Checklisten-Einträge, inklusive Umschalten (`toggle`, erledigt/offen); Löschen und Neusortieren (`reorder`) sind `critical_write`.
 
 ### Eigene Aufgaben-Erinnerung setzen
 
-Jeder angemeldete Nutzer kann für eine für ihn sichtbare Aufgabe genau eine eigene, frei gewählte Erinnerung setzen, anzeigen und löschen:
-
-1. Erinnerungszeitpunkt als gültigen, zukünftigen Zeitstempel im RFC-3339-Format angeben.
-2. Optional einen eigenen Kommentar mitgeben.
-3. Ein erneutes Setzen für dieselbe Aufgabe ersetzt die bestehende persönliche Erinnerung idempotent.
-
-Unmittelbar vor dem Versand prüft Comvenio Aufgabenexistenz und aktive Mitgliedschaft erneut und übernimmt den Vereinskontext automatisch aus der Aufgabe. Eine ersetzte, gelöschte oder nach einem Vereinsaustritt nicht mehr zulässige Erinnerung wird nicht zugestellt; zugestellt wird sie ausschließlich dem eigenen Konto. Eine Club-, Mitglieds-, Benutzer- oder Empfänger-ID ist für diese Befehle nicht nötig und wird auch nicht gesendet.
+Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ### Abgrenzung
 
-Interne Automatisierungsrouten, spezielle Abstimmungs- und Planungsmatrix-Modelle sowie übergreifende Aufräum-Endpunkte sind keine allgemeinen Vereins-Actions. Der übliche Aufgaben-, Context-, Zuweisungs-, Notiz- und Checklisten-Workflow ist vollständig über das CLI erreichbar.
+Interne Automatisierungsrouten, spezielle Abstimmungs- und Planungsmatrix-Modelle sowie übergreifende Aufräum-Endpunkte sind keine allgemeinen Vereins-Actions. Der übliche Aufgaben-, Context-, Zuweisungs-, Notiz- und Checklisten-Workflow ist vollständig über die hier beschriebenen Actions erreichbar.
 
 ## Beispiele
 
 ```bash
-comvenio task context list --json
+comvenio action call cai.task.11.context_list_show_create_update_delete \
+  --input '{"operation":"list","limit":50,"offset":0}'
 
-comvenio task context create \
-  --context-type event \
-  --ref-id <event-id> \
-  --json
+comvenio action call cai.task.11.context_list_show_create_update_delete \
+  --input '{"operation":"create","context":{"context_type":"event","context_id":"<event-id>","is_default":false}}'
 ```
 
 ```bash
-comvenio task list --json
-comvenio task list --mine --json
-comvenio task show <task-id> --json
-comvenio task show <task-id> --subtasks --json
-comvenio task show <task-id> --chain --json
+comvenio action call cai.task.01.list --input '{"operation":"list","limit":50,"offset":0}'
+comvenio action call cai.task.01.list --input '{"operation":"mine","limit":50,"offset":0}'
+comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}'
+comvenio action call cai.task.03.show_subtasks --input '{"task_id":"<task-id>"}'
+comvenio action call cai.task.04.show_chain --input '{"task_id":"<task-id>"}'
 ```
 
-`--mine` liefert die dem aktuellen Benutzer zugewiesenen Aufgaben. `--subtasks` lädt die Unteraufgaben, `--chain` die Aufgabenkette anstelle des normalen Details; `--subtasks` hat Vorrang, wenn beide gesetzt sind.
+`operation: mine` liefert die dem aktuellen Benutzer zugewiesenen Aufgaben.
 
 ```bash
-comvenio task create \
-  --title "Getränkestand besetzen" \
-  --context-id <task-context-id> \
-  --description "Zwei Schichten einteilen" \
-  --priority high \
-  --status open \
-  --department-id <department-id> \
-  --due-date 2026-07-20T18:00:00+02:00 \
-  --json
+comvenio action call cai.task.05.create --input '{
+  "task": {
+    "title": "Getränkestand besetzen",
+    "task_context_id": "<task-context-id>",
+    "description": "Zwei Schichten einteilen",
+    "priority": "high",
+    "status": "open",
+    "department_id": "<department-id>",
+    "due_date": "2026-07-20T18:00:00+02:00"
+  }
+}'
 ```
 
-```json
-{
+```bash
+comvenio action call cai.task.06.bulk --input '{
   "items": [
     {
-      "task": {
-        "club_id": "<club-id>",
-        "task_context_id": "<task-context-id>",
-        "title": "Dartboards aufbauen",
-        "priority": "high"
-      },
+      "task": { "title": "Dartboards aufbauen", "task_context_id": "<task-context-id>", "priority": "high" },
       "checklist_items": [{ "title": "Werkzeug prüfen", "order_index": 0 }],
       "assignments": [{ "member_id": "<member-id>", "is_responsible": true }]
     }
   ]
-}
+}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 ```
 
 ```bash
-comvenio task bulk --file tasks.json --json
+comvenio action call cai.task.07.update --input '{"task_id":"<task-id>","changes":{"title":"Neuer Titel","priority":"medium"}}'
+comvenio action call cai.task.07.update --input '{"task_id":"<task-id>","changes":{"status":"in_progress"}}'
+comvenio action call cai.task.07.update --input '{"task_id":"<task-id>","changes":{"status":"cancelled"}}'
+comvenio action call cai.task.09.done --input '{"task_id":"<task-id>","completed_at":"2026-07-20T19:00:00+02:00"}'
+
+comvenio action call cai.task.10.delete --input '{"task_id":"<task-id>"}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 ```
 
 ```bash
-comvenio task update <task-id> --title "Neuer Titel" --priority medium --json
-comvenio task update <task-id> --status in_progress --json
-comvenio task update <task-id> --status cancelled --json
-comvenio task update <task-id> --file task-update.json --json
-comvenio task delete <task-id> --json
-comvenio task done <task-id> --json
+comvenio action call cai.task.08.assign --input '{"task_id":"<task-id>","assignment":{"member_id":"<member-id>","is_responsible":true}}'
+
+comvenio action call cai.task.12.assignment_list_show_update_delete --input '{"operation":"list","task_id":"<task-id>"}'
+comvenio action call cai.task.12.assignment_list_show_update_delete --input '{"operation":"show","assignment_id":"<assignment-id>"}'
+comvenio action call cai.task.12.assignment_list_show_update_delete --input '{"operation":"update","assignment_id":"<assignment-id>","is_responsible":false}'
+comvenio action call cai.task.12.assignment_list_show_update_delete --input '{"operation":"delete","assignment_id":"<assignment-id>"}'
 ```
 
 ```bash
-comvenio task assign <task-id> --member-id <member-id> --responsible --json
+comvenio action call cai.task.11.context_list_show_create_update_delete --input '{"operation":"show","context_id":"<context-id>"}'
+comvenio action call cai.task.11.context_list_show_create_update_delete --input '{"operation":"update","context_id":"<context-id>","is_default":true}'
+comvenio action call cai.task.11.context_list_show_create_update_delete --input '{"operation":"delete","context_id":"<context-id>"}'
 
-comvenio task assignment list <task-id> --json
-comvenio task assignment show <assignment-id> --json
-comvenio task assignment update <assignment-id> --file assignment-update.json --json
-comvenio task assignment delete <assignment-id> --json
+comvenio action call cai.task.13.note_list_add_update_delete --input '{"operation":"list","task_id":"<task-id>"}'
+comvenio action call cai.task.13.note_list_add_update_delete --input '{"operation":"add","task_id":"<task-id>","content":"Getränkebestellung geprüft"}'
+comvenio action call cai.task.13.note_list_add_update_delete --input '{"operation":"update","note_id":"<note-id>","content":"Aktualisierter Text"}'
+comvenio action call cai.task.13.note_list_add_update_delete --input '{"operation":"delete","note_id":"<note-id>"}'
+
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"list","task_id":"<task-id>"}'
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"add","task_id":"<task-id>","item":{"title":"Getränke bestellen","order_index":0}}'
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"update","item_id":"<item-id>","changes":{"title":"Getränke bestellen (60 Kästen)"}}'
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"toggle","item_id":"<item-id>"}'
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"delete","item_id":"<item-id>"}'
+comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"reorder","task_id":"<task-id>","ordered_ids":["<item-id-1>","<item-id-2>"]}'
 ```
 
-```bash
-comvenio task context show <context-id> --json
-comvenio task context update <context-id> --file context-update.json --json
-comvenio task context delete <context-id> --json
-
-comvenio task note list <task-id> --json
-comvenio task note add <task-id> --file note.json --json
-comvenio task note update <note-id> --file note-update.json --json
-comvenio task note delete <note-id> --json
-
-comvenio task checklist list <task-id> --json
-comvenio task checklist add <task-id> --file checklist-item.json --json
-comvenio task checklist update <item-id> --file checklist-item-update.json --json
-comvenio task checklist toggle <item-id> --json
-comvenio task checklist reorder <task-id> --file reorder.json --json
-comvenio task checklist delete <item-id> --json
-```
-
-Die geprüften Felder je Route zeigt zusätzlich `comvenio schema task --json`.
-
-```bash
-comvenio task reminder set <task-id> \
-  --remind-at 2026-07-25T18:00:00+02:00 \
-  --comment "Getränkebestellung prüfen" \
-  --json
-
-comvenio task reminder list <task-id> --json
-comvenio task reminder delete <task-id> --json
-```
+Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Notiz oder Zuweisung und `bulk` sind `critical_write` und laufen über dieselbe Vorschau-/Bestätigungsfolge wie oben bei `cai.task.10.delete` gezeigt. Die geprüften Felder je Action zeigt zusätzlich `comvenio schema task --json`.
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**task** — vollständig
+**task**
 
-- `comvenio task list`
-- `comvenio task show`
-- `comvenio task show --subtasks`
-- `comvenio task show --chain`
-- `comvenio task create`
-- `comvenio task bulk`
-- `comvenio task update`
-- `comvenio task assign`
-- `comvenio task done`
-- `comvenio task delete`
-- `comvenio task reminder set|list|delete`
-- `comvenio task context list|show|create|update|delete`
-- `comvenio task assignment list|show|update|delete`
-- `comvenio task note list|add|update|delete`
-- `comvenio task checklist list|add|update|toggle|delete|reorder`
+- `cai.task.01.list` — list, mine (lesen)
+- `cai.task.02.show` — show (lesen)
+- `cai.task.03.show_subtasks` — show (lesen)
+- `cai.task.04.show_chain` — show (lesen)
+- `cai.task.05.create` — create (ändern)
+- `cai.task.06.bulk` — create (ändern mit Bestätigung)
+- `cai.task.07.update` — update (ändern)
+- `cai.task.08.assign` — assign (ändern)
+- `cai.task.09.done` — complete (ändern)
+- `cai.task.10.delete` — delete (ändern mit Bestätigung)
+- `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema task --json`
 <!-- /gen:docs -->
 
@@ -198,3 +180,4 @@ comvenio task reminder delete <task-id> --json
 - `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt diese Aufgaben-Aktion nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
 - `SCOPE_REQUIRED` — der Anmeldung fehlt der nötige Aufgaben-Scope, etwa zum Schreiben. Mehr: `comvenio help fehler SCOPE_REQUIRED`
 - `CONFLICT` — die Aufgabe wurde inzwischen geändert oder erlaubt den gewünschten Statuswechsel in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`
+- `OUTCOME_UNKNOWN` — bei einer ändernden Action blieb die Serverantwort aus; vor einer Wiederholung mit einer lesenden Action prüfen, ob die Änderung schon angekommen ist. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`

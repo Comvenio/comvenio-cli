@@ -9,29 +9,33 @@ stichwoerter: [buchungen, objekte, gebäude, räume, reservierungen, buchungsreg
 
 ## Wozu
 
-Über `comvenio object` verwaltet ein Verein seine Gebäude, Räume und buchbaren Objekte samt
-Buchungs- und Wartungsregeln. Über `comvenio booking` legt er Reservierungen für diese Objekte an,
-genehmigt oder lehnt sie ab, verknüpft zusammengehörige Buchungen und wertet Auslastung und
+Über die Actions der Domäne `object` verwaltet ein Verein seine Gebäude, Räume und buchbaren Objekte
+samt Buchungs- und Task-Regeln. Über die Actions der Domäne `booking` legt er Reservierungen für diese
+Objekte an, genehmigt oder lehnt sie ab, verknüpft zusammengehörige Buchungen und wertet Auslastung und
 Gastgebühren aus.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen,
+zeigt `comvenio action list --json`.
 
 - Lesezugriffe auf Gebäude, Räume, Objekte und Buchungen verlangen Vereinsmitgliedschaft.
 - Gebäude, Räume, Objekte, Buchungs- und Task-Regeln zu ändern erfordert `manage_objects` im
   passenden Verein- oder Abteilungs-Scope.
-- Buchungen zu genehmigen oder abzulehnen erfordert `confirm_object_bookings`; die eigene Buchung
-  darf dabei nicht im Vorbeigehen selbst genehmigt werden.
+- Buchungen zu genehmigen oder abzulehnen erfordert `confirm_object_bookings`; die eigene Buchung darf
+  dabei nicht im Vorbeigehen selbst genehmigt werden.
 - Eine Buchung zu ändern, zu stornieren oder zu löschen darf der Buchende selbst oder ein Admin mit
   `confirm_object_bookings`.
 - Rückwirkende Buchungen und Buchungen im Namen eines anderen Mitglieds erfordern ebenfalls
   `confirm_object_bookings`.
 - Statistiken zu Gastgebühren erfordern `confirm_object_bookings` oder `manage_objects`.
-- `--file` erwartet UTF-8-JSON, `--json` gibt die Antwort unverändert aus.
+- `--json` gibt die Antwort unverändert aus; umfangreiche Eingaben lassen sich statt `--input '<json>'`
+  auch mit `--file <pfad>` (UTF-8-JSON) übergeben.
+
+Jede Teilaktion einer mehrteiligen Action wird über `"operation": "<name>"` in `--input` gewählt. Eine
+kritische (`critical_write`) Teilaktion liefert zuerst eine Vorschau mit `preview_id` und
+`confirmation_token`; erst `comvenio action confirm --preview-id … --confirmation-token …
+--idempotency-key …` führt sie aus.
 
 ## Abläufe
 
@@ -39,370 +43,279 @@ Gastgebühren aus.
 
 Ein Gebäude enthält Räume, ein Raum enthält Objekte, ein Objekt trägt Buchungsregeln, Task-Regeln und
 Buchungen; eine Buchung wiederum kann Teilnehmer und Verknüpfungen zu weiteren Buchungen haben. Ein
-Objekt besitzt optional einen Raum, aber kein direktes Gebäude. Ein Raum mit aktivierter Buchbarkeit
-erzeugt beim Anlegen automatisch ein Standardobjekt vom Typ „Veranstaltung".
+Objekt besitzt optional einen Raum, aber kein direktes Gebäude.
 
 ### Gebäude verwalten
 
-1. Gebäude auflisten (optional mit Räumen) oder ein einzelnes ansehen.
-2. Gebäude mit Abteilung, Name, Beschreibung und Adresse anlegen.
-3. Gebäude ändern oder entfernen.
+1. Gebäude auflisten oder ein einzelnes ansehen — unkritisch.
+2. Gebäude mit Abteilung, Name, Beschreibung und Adresse anlegen oder ändern — unkritisch.
+3. Gebäude löschen — kritisch, verlangt `force: true`.
 
-Beim Ändern liest das CLI zuerst das bestehende Gebäude und ergänzt Kennung, Verein und Abteilung
-automatisch — diese Angaben müssen nicht von Hand mitgegeben werden.
+```bash
+comvenio action call cai.object.06.building_list_show_create_update_delete \
+  --input '{"operation":"create","building":{"department_id":"<department-id>","name":"Vereinsheim","description":"Hauptstandort","address":"Musterweg 1, 12345 Musterstadt"}}' --json
 
-| Zweck | Befehl |
-|---|---|
-| Liste | `comvenio object building list [--with-rooms]` |
-| Detail | `comvenio object building show <id> [--with-rooms]` |
-| Anlegen | `comvenio object building create --file building.json` |
-| Ändern | `comvenio object building update <id> --file patch.json` |
-| Entfernen | `comvenio object building delete <id> [--force]` |
+comvenio action call cai.object.06.building_list_show_create_update_delete \
+  --input '{"operation":"list","with_rooms":true}' --json
+
+comvenio action call cai.object.06.building_list_show_create_update_delete \
+  --input '{"operation":"delete","building_id":"<building-id>","force":true}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 ### Räume verwalten
 
-1. Räume auflisten oder einen einzelnen ansehen.
-2. Raum mit Gebäude, Name, Kapazität und Buchbarkeit anlegen.
-3. Raum ändern oder entfernen.
+1. Räume auflisten oder einen einzelnen ansehen — unkritisch.
+2. Raum mit Gebäude, Name, Kapazität und Buchbarkeit anlegen oder ändern — unkritisch.
+3. Raum löschen — kritisch, verlangt `force: true`.
 
-Beim Ändern ergänzt das CLI die Kennung automatisch aus der angegebenen Raum-ID.
+```bash
+comvenio action call cai.object.07.room_list_show_create_update_delete \
+  --input '{"operation":"create","room":{"building_id":"<building-id>","name":"Dart-Raum","capacity":24,"booking":true}}' --json
 
-| Zweck | Befehl |
-|---|---|
-| Liste | `comvenio object room list` |
-| Detail | `comvenio object room show <id>` |
-| Anlegen | `comvenio object room create --file room.json` |
-| Ändern | `comvenio object room update <id> --file patch.json` |
-| Entfernen | `comvenio object room delete <id> [--force]` |
+comvenio action call cai.object.07.room_list_show_create_update_delete \
+  --input '{"operation":"delete","room_id":"<room-id>","force":true}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 ### Buchbare Objekte verwalten
 
-1. Objekte auflisten — optional gefiltert nach Typ (fest, portabel, Veranstaltung) — oder ein
-   einzelnes mit allen Details ansehen.
+1. Objekte auflisten — optional gefiltert nach Typ (`static`, `portable`, `event`) — oder ein einzelnes
+   ansehen — unkritisch.
 2. Objekt mit Abteilung, optionalem Raum, Name, Beschreibung, Typ, Buchungsraster, Dauergrenzen,
-   Genehmigungspflicht und maximaler Teilnehmerzahl anlegen.
-3. Objekt ändern oder entfernen.
+   Genehmigungspflicht und maximaler Teilnehmerzahl anlegen oder ändern — unkritisch.
+3. Objekt löschen — kritisch, verlangt `force: true`.
 
-Buchungsraster: 15 Minuten, 30 Minuten, stündlich, frei nach Datum/Uhrzeit. Bei den drei
-zeitrasterbasierten Varianten sind Mindest- und Höchstdauer Pflicht; beim freien Raster werden beide
-automatisch verworfen.
+```bash
+comvenio action call cai.object.01.list --input '{"type":"static","limit":20,"offset":0}' --json
+comvenio action call cai.object.02.show --input '{"object_id":"<object-id>"}' --json
 
-Ein Löschen mit erzwungener Kaskade entfernt auch abhängige Einträge (Regeln, Buchungen); ohne diese
-Bestätigung lehnt Comvenio das Löschen bei bestehenden Abhängigkeiten ab.
+comvenio action call cai.object.03.create \
+  --input '{"department_id":"<department-id>","room_id":"<room-id>","is_default":false,"object":{"name":"Dartboard 1","description":"Board an Bahn 1","type":"static","booking_granularity":"30min","min_duration_minutes":30,"max_duration_minutes":180,"approval_required":false,"max_participants":8}}' --json
 
-| Zweck | Befehl |
-|---|---|
-| Liste | `comvenio object list [--type static\|portable\|event] [--with-all]` |
-| Detail | `comvenio object show <id> [--with-all]` |
-| Anlegen | `comvenio object create --file object.json` |
-| Ändern | `comvenio object update <id> --file patch.json` |
-| Entfernen | `comvenio object delete <id> [--force]` |
+comvenio action call cai.object.05.delete --input '{"object_id":"<object-id>","force":true}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
+
+Buchungsraster: `15min`, `30min`, `hourly`, `timedate` (frei nach Datum/Uhrzeit). Bei den drei
+zeitrasterbasierten Varianten sind Mindest- und Höchstdauer sinnvoll anzugeben; beim freien Raster
+bleiben sie leer. `force: true` löscht ein Objekt auch mit abhängigen Einträgen (Regeln, Buchungen)
+mit.
 
 ### Buchungs- und Task-Regeln pflegen
 
-1. Buchungsregeln eines Objekts auflisten, einzeln ansehen, anlegen, im Sammellauf anlegen, ändern
-   oder löschen.
-2. Task-Regeln eines Objekts auflisten, ansehen, anlegen, ändern oder löschen.
+1. Buchungsregeln eines Objekts auflisten, einzeln ansehen — unkritisch; anlegen oder im Sammellauf
+   anlegen — unkritisch; ändern — unkritisch; löschen — kritisch.
+2. Task-Regeln eines Objekts auflisten, ansehen, anlegen, ändern — unkritisch; löschen — kritisch.
 
-```powershell
-comvenio object booking-rule list [--object-id <id>]
-comvenio object booking-rule show <rule-id>
-comvenio object booking-rule create --file rule.json
-comvenio object booking-rule bulk --file rules.json
-comvenio object booking-rule update <rule-id> --file rule.json
-comvenio object booking-rule delete <rule-id>
+```bash
+comvenio action call cai.object.08.booking_rule_list_show_create_bulk_update_delete \
+  --input '{"operation":"create","rule":{"object_id":"<object-id>","weekday":"tuesday","start_time":"18:00","end_time":"22:00"}}' --json
 
-comvenio object task-rule list [--object-id <id>]
-comvenio object task-rule show <rule-id>
-comvenio object task-rule create --file task-rule.json
-comvenio object task-rule update <rule-id> --file task-rule.json
-comvenio object task-rule delete <rule-id>
+comvenio action call cai.object.08.booking_rule_list_show_create_bulk_update_delete \
+  --input '{"operation":"delete","rule_id":"<rule-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.object.09.task_rule_list_show_create_update_delete \
+  --input '{"operation":"create","rule":{"object_id":"<object-id>","title":"Board prüfen","description":"Spitzen und Beleuchtung prüfen","priority":"medium","due_offset_days":0}}' --json
 ```
 
 Eine Buchungsregel legt Objekt, Wochentag, Start- und Endzeit sowie optionale saisonale Gültigkeit
-(Monat/Tag von, Monat/Tag bis) fest. Beim Sammellauf ergänzt das CLI den Verein je Eintrag; beim
-Ändern müssen Start- und Endzeit sowie alle saisonalen Felder mitgegeben werden, ungenutzte
-saisonale Felder bleiben leer.
-
-Eine Task-Regel legt Objekt, Titel, Beschreibung, Priorität und einen Fälligkeits-Versatz in Tagen
-nach Buchungsende fest — kein Wiederholungsintervall, sondern eine einmalige Fälligkeit je Buchung.
+(Monat/Tag von, Monat/Tag bis) fest. Eine Task-Regel legt Objekt, Titel, Beschreibung, Priorität und
+einen Fälligkeits-Versatz in Tagen nach Buchungsende fest — kein Wiederholungsintervall, sondern eine
+einmalige Fälligkeit je Buchung.
 
 ### Buchungen verwalten
 
-1. Buchungen des Vereins auflisten — optional nur offene oder nach Status gefiltert — oder Buchungen
-   eines bestimmten Objekts auflisten; einzelne Buchung ansehen.
-2. Buchung mit Objekt, Titel, Start- und Endzeit sowie optionalem Kommentar anlegen; der Verein wird
-   automatisch ergänzt.
-3. Buchung genehmigen, ablehnen oder stornieren; dafür liest das CLI vorher die aktuelle Buchung,
-   damit die geforderten Vereins- und Objektangaben vollständig mitgeschickt werden.
-4. Buchung ändern — Titel, Kommentar, Zeiten oder Status; die Objekt-Zuordnung bleibt dabei bewusst
-   bestehen. Auch dafür liest das CLI zuerst die aktuelle Buchung und ergänzt Verein und Objekt
-   automatisch.
-5. Buchung mit Soft-Delete entfernen.
-6. Mehrere zusammengehörige Buchungen — etwa eine Hauptbuchung mit portablen Objekten — in einem
-   Sammellauf anlegen.
+1. Buchungen des Vereins (`list`, mit Zeitraum `from`/`to`/`timezone`) oder eines bestimmten Objekts
+   (`list_object`) auflisten; einzelne Buchung ansehen (`show`) — unkritisch.
+2. Buchung mit Objekt, Titel, Start- und Endzeit, Zeitzone und Status anlegen — kritisch.
+3. Buchung ändern, genehmigen, ablehnen, stornieren oder löschen — jeweils kritisch.
 
-| Zweck | Befehl |
-|---|---|
-| Club-Liste | `comvenio booking list [--pending\|--status <v>]` |
-| Objekt-Liste | `comvenio booking list --object-id <id>` |
-| Detail | `comvenio booking show <id>` |
-| Anlegen | `comvenio booking create --file booking.json` |
-| Ändern | `comvenio booking update <id> --file patch.json` |
-| Genehmigen | `comvenio booking approve <id>` |
-| Ablehnen | `comvenio booking reject <id>` |
-| Stornieren | `comvenio booking cancel <id>` |
-| Soft-Delete | `comvenio booking delete <id>` |
-| Sammelbuchung | `comvenio booking bulk --file bulk.json` |
+```bash
+comvenio action call cai.booking.01.list \
+  --input '{"operation":"list","from":"2026-07-01T00:00:00+02:00","to":"2026-07-31T23:59:59+02:00","timezone":"Europe/Berlin","limit":20,"offset":0}' --json
 
-Für eine Admin-Buchung im Namen eines anderen Mitglieds wird das verantwortliche Mitglied explizit
-mitgegeben; das erfordert wie rückwirkende Buchungen die entsprechende Berechtigung.
+comvenio action call cai.booking.02.show --input '{"reservation_id":"<reservation-id>","timezone":"Europe/Berlin"}' --json
+
+comvenio action call cai.booking.03.create \
+  --input '{"object_id":"<object-id>","title":"Darttraining","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","comment":"Ligavorbereitung"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.booking.05.approve --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.booking.07.cancel \
+  --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>","reason":"Platz gesperrt"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
+
+Für eine Admin-Buchung im Namen eines anderen Mitglieds wird `resp_member_id` explizit mitgegeben; das
+erfordert wie rückwirkende Buchungen die entsprechende Berechtigung.
+
+### Mehrere Buchungen im Sammellauf anlegen
+
+Mehrere zusammengehörige Buchungen — etwa eine Hauptbuchung mit portablen Objekten — lassen sich in
+einem Sammellauf anlegen — kritisch.
+
+```bash
+comvenio action call cai.booking.09.bulk \
+  --input '{"object_id":"<haupt-objekt-id>","title":"Darttraining","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","group_ids":["<gruppen-id>"],"portable_reservations":[{"object_id":"<portables-objekt-id>","start_time":"2026-07-21T17:45:00+02:00","end_time":"2026-07-21T20:15:00+02:00","title":"Mobiles Oche"}]}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+```
 
 ### Teilnehmer einer Buchung
 
-1. Teilnehmer einer Buchung auflisten oder einzeln ansehen.
-2. Teilnehmer mit Mitglieds-Kennung oder als Gast mit Name und E-Mail-Adresse hinzufügen; alternativ
-   mehrere Mitgliedergruppen auf einmal hinzufügen.
-3. Teilnehmerstatus ändern (eingeladen, angenommen, abgelehnt) oder Teilnehmer entfernen.
+1. Teilnehmer einer Buchung auflisten oder einzeln ansehen — unkritisch.
+2. Teilnehmer mit Mitglieds-Kennung oder als Gast mit Name und E-Mail-Adresse hinzufügen — unkritisch;
+   alternativ mehrere Mitgliedergruppen auf einmal hinzufügen — kritisch.
+3. Teilnehmerstatus ändern (eingeladen, angenommen, abgelehnt, storniert) — unkritisch; Teilnehmer
+   entfernen — kritisch.
 
-```powershell
-comvenio booking participant list <reservation-id>
-comvenio booking participant show <participant-id>
-comvenio booking participant add <reservation-id> --member-id <id>
-comvenio booking participant add <reservation-id> --guest --guest-name "Max Muster" --guest-email "max@example.org"
-comvenio booking participant add-groups <reservation-id> --file groups.json
-comvenio booking participant update <participant-id> --status accepted
-comvenio booking participant remove <participant-id>
+```bash
+comvenio action call cai.booking.10.participant_list_show_add_add_groups_update_remove \
+  --input '{"operation":"add","reservation_id":"<reservation-id>","participant":{"member_id":"<member-id>"}}' --json
+
+comvenio action call cai.booking.10.participant_list_show_add_add_groups_update_remove \
+  --input '{"operation":"add","reservation_id":"<reservation-id>","participant":{"is_guest":true,"guest_name":"Max Muster","guest_email":"max@example.org"}}' --json
+
+comvenio action call cai.booking.10.participant_list_show_add_add_groups_update_remove \
+  --input '{"operation":"update","participant_id":"<participant-id>","status":"accepted"}' --json
 ```
 
 ### Buchungen verknüpfen
 
-1. Verknüpfungen einer Buchung auflisten oder alle Verknüpfungen des Vereins ansehen.
-2. Hauptbuchung mit einer weiteren Buchung verknüpfen.
-3. Verknüpfung entfernen.
+1. Verknüpfungen einer Buchung auflisten oder alle Verknüpfungen des Vereins ansehen — unkritisch.
+2. Hauptbuchung mit einer weiteren Buchung verknüpfen — unkritisch.
+3. Verknüpfung entfernen — kritisch.
 
-```powershell
-comvenio booking link list <reservation-id>
-comvenio booking link club
-comvenio booking link add --file link.json
-comvenio booking link remove <link-id>
+```bash
+comvenio action call cai.booking.11.link_list_club_add_remove \
+  --input '{"operation":"add","primary_reservation_id":"<haupt-buchung-id>","linked_reservation_id":"<verknüpfte-buchung-id>"}' --json
+
+comvenio action call cai.booking.11.link_list_club_add_remove \
+  --input '{"operation":"list","reservation_id":"<reservation-id>"}' --json
 ```
 
 Wird die Hauptbuchung storniert, kann Comvenio verknüpfte portable Buchungen automatisch mit
-stornieren. Der Verein wird bei allen Verknüpfungs-Aktionen automatisch ergänzt.
+stornieren.
 
 ### Statistiken auswerten
 
-1. Objektstatistik für ein Jahr oder einen Monat abrufen — Gesamtzahl, Jahresvergleich, Monatswerte
-   und Teilnehmerkennzahlen.
-2. Gaststatistik über einen Zeitraum abrufen — aggregierte Gastgebühren je verantwortlichem Mitglied.
+1. Objektstatistik für ein Jahr oder einen Monat abrufen — unkritisch.
+2. Gaststatistik über einen Zeitraum abrufen — aggregierte Gastgebühren je verantwortlichem Mitglied —
+   unkritisch.
 
-### Bewusste Abgrenzung
+```bash
+comvenio action call cai.booking.12.stats_object_guests \
+  --input '{"operation":"object","object_id":"<object-id>","year":2026,"month":7}' --json
+comvenio action call cai.booking.12.stats_object_guests \
+  --input '{"operation":"guests","from_date":"2026-01-01T00:00:00+02:00","to_date":"2026-12-31T23:59:59+01:00","limit":50}' --json
+```
 
-Nicht Teil dieses Bereichs sind interne System-zu-System-Routen mit eigenem Authentifizierungsvertrag,
-ein anonymer öffentlicher Ausschnitt einzelner hervorgehobener Objekte sowie technische
-Sammelabfragen und Datei-Exporte — das sind keine regulären Verwaltungsaktionen. Tags für Objekte
-sind ein eigener, hier nicht behandelter Teilbereich.
+### Noch nicht als Action verfügbar
 
-Der maschinenlesbare Vertrag für Buchungen ist per `comvenio schema booking --json` abrufbar; für
-Objekte folgt das, sobald die Domäne im zentralen Schema-Index freigeschaltet ist.
+Interne System-zu-System-Routen mit eigenem Authentifizierungsvertrag, ein anonymer öffentlicher
+Ausschnitt einzelner hervorgehobener Objekte sowie technische Sammelabfragen und Datei-Exporte sind
+bewusst kein Bestandteil dieser Actions. Tags für Objekte sind ein eigener, hier nicht behandelter
+Teilbereich.
 
 ## Beispiele
 
-Gebäude anlegen (`building.json`):
-
-```json
-{
-  "department_id": "<department-id>",
-  "name": "Vereinsheim",
-  "description": "Hauptstandort",
-  "address": "Musterweg 1, 12345 Musterstadt"
-}
-```
+Gebäude und Raum anlegen:
 
 ```bash
-comvenio object building create --file building.json --json
-comvenio object building list --with-rooms --json
+comvenio action call cai.object.06.building_list_show_create_update_delete \
+  --input '{"operation":"create","building":{"department_id":"<department-id>","name":"Vereinsheim","description":"Hauptstandort","address":"Musterweg 1, 12345 Musterstadt"}}' --json
+comvenio action call cai.object.07.room_list_show_create_update_delete \
+  --input '{"operation":"create","room":{"building_id":"<building-id>","name":"Dart-Raum","capacity":24,"booking":true}}' --json
 ```
 
-Raum anlegen (`room.json`):
-
-```json
-{
-  "building_id": "<building-id>",
-  "name": "Dart-Raum",
-  "capacity": 24,
-  "booking": true
-}
-```
+Objekt anlegen und mit erzwungener Kaskade löschen:
 
 ```bash
-comvenio object room create --file room.json --json
+comvenio action call cai.object.03.create \
+  --input '{"department_id":"<department-id>","room_id":"<room-id>","is_default":false,"object":{"name":"Dartboard 1","description":"Board an Bahn 1","type":"static","booking_granularity":"30min","min_duration_minutes":30,"max_duration_minutes":180,"approval_required":false,"max_participants":8}}' --json
+comvenio action call cai.object.05.delete --input '{"object_id":"<object-id>","force":true}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
-Objekt anlegen (`object.json`):
-
-```json
-{
-  "department_id": "<department-id>",
-  "room_id": "<room-id>",
-  "name": "Dartboard 1",
-  "description": "Board an Bahn 1",
-  "type": "static",
-  "booking_granularity": "30min",
-  "min_duration_minutes": 30,
-  "max_duration_minutes": 180,
-  "approval_required": false,
-  "max_participants": 8
-}
-```
+Buchungsregel anlegen:
 
 ```bash
-comvenio object create --file object.json --json
-comvenio object list --type static --with-all --json
-comvenio object delete <object-id> --force --json
+comvenio action call cai.object.08.booking_rule_list_show_create_bulk_update_delete \
+  --input '{"operation":"create","rule":{"object_id":"<object-id>","weekday":"tuesday","start_time":"18:00","end_time":"22:00"}}' --json
 ```
 
-Buchungsregel anlegen (`rule.json`):
-
-```json
-{
-  "object_id": "<object-id>",
-  "weekday": "tuesday",
-  "start_time": "18:00",
-  "end_time": "22:00",
-  "valid_from_month": null,
-  "valid_from_day": null,
-  "valid_until_month": null,
-  "valid_until_day": null
-}
-```
+Buchung anlegen, genehmigen und stornieren:
 
 ```bash
-comvenio object booking-rule create --file rule.json --json
-comvenio object booking-rule bulk --file rules.json --json
+comvenio action call cai.booking.03.create \
+  --input '{"object_id":"<object-id>","title":"Darttraining","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","comment":"Ligavorbereitung"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
+comvenio action call cai.booking.05.approve --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
-Task-Regel anlegen (`task-rule.json`):
-
-```json
-{
-  "object_id": "<object-id>",
-  "title": "Board prüfen",
-  "description": "Spitzen und Beleuchtung prüfen",
-  "priority": "medium",
-  "due_offset_days": 0
-}
-```
+Sammelbuchung mit portablem Objekt:
 
 ```bash
-comvenio object task-rule create --file task-rule.json --json
-```
-
-Buchung anlegen (`booking.json`):
-
-```json
-{
-  "object_id": "<object-id>",
-  "title": "Darttraining",
-  "start_time": "2026-07-21T18:00:00+02:00",
-  "end_time": "2026-07-21T20:00:00+02:00",
-  "comment": "Ligavorbereitung",
-  "status": "requested"
-}
-```
-
-```bash
-comvenio booking create --file booking.json --json
-comvenio booking list --pending --json
-comvenio booking approve <booking-id> --json
-comvenio booking cancel <booking-id> --json
-```
-
-Sammelbuchung mit portablem Objekt (`bulk.json`):
-
-```json
-{
-  "object_id": "<haupt-objekt-id>",
-  "start_time": "2026-07-21T18:00:00+02:00",
-  "end_time": "2026-07-21T20:00:00+02:00",
-  "title": "Darttraining",
-  "group_ids": ["<gruppen-id>"],
-  "portable_reservations": [
-    {
-      "object_id": "<portables-objekt-id>",
-      "start_time": "2026-07-21T17:45:00+02:00",
-      "end_time": "2026-07-21T20:15:00+02:00",
-      "title": "Mobiles Oche"
-    }
-  ]
-}
-```
-
-```bash
-comvenio booking bulk --file bulk.json --json
-```
-
-Teilnehmer verwalten:
-
-```bash
-comvenio booking participant add <reservation-id> --member-id <member-id> --json
-comvenio booking participant add <reservation-id> --guest --guest-name "Max Muster" --guest-email "max@example.org" --json
-comvenio booking participant update <participant-id> --status accepted --json
-```
-
-Buchungen verknüpfen (`link.json`):
-
-```json
-{
-  "primary_reservation_id": "<haupt-buchung-id>",
-  "linked_reservation_id": "<verknüpfte-buchung-id>"
-}
-```
-
-```bash
-comvenio booking link add --file link.json --json
-comvenio booking link list <reservation-id> --json
+comvenio action call cai.booking.09.bulk \
+  --input '{"object_id":"<haupt-objekt-id>","title":"Darttraining","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","group_ids":["<gruppen-id>"],"portable_reservations":[{"object_id":"<portables-objekt-id>","start_time":"2026-07-21T17:45:00+02:00","end_time":"2026-07-21T20:15:00+02:00","title":"Mobiles Oche"}]}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
 ```
 
 Statistiken abrufen:
 
 ```bash
-comvenio booking stats object <object-id> --year 2026 --month 7 --json
-comvenio booking stats guests --from 2026-01-01 --to 2026-12-31 --json
+comvenio action call cai.booking.12.stats_object_guests \
+  --input '{"operation":"object","object_id":"<object-id>","year":2026,"month":7}' --json
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**booking** — vollständig
+**booking**
 
-- `comvenio booking list`
-- `comvenio booking show`
-- `comvenio booking create`
-- `comvenio booking update`
-- `comvenio booking approve`
-- `comvenio booking reject`
-- `comvenio booking cancel`
-- `comvenio booking delete`
-- `comvenio booking bulk`
-- `comvenio booking participant list|show|add|add-groups|update|remove`
-- `comvenio booking link list|club|add|remove`
-- `comvenio booking stats object|guests`
+- `cai.booking.01.list` — list, list_object (lesen)
+- `cai.booking.02.show` — show (lesen)
+- `cai.booking.03.create` — create (ändern mit Bestätigung)
+- `cai.booking.04.update` — update (ändern mit Bestätigung)
+- `cai.booking.05.approve` — approve (ändern mit Bestätigung)
+- `cai.booking.06.reject` — reject (ändern mit Bestätigung)
+- `cai.booking.07.cancel` — cancel (ändern mit Bestätigung)
+- `cai.booking.08.delete` — delete (ändern mit Bestätigung)
+- `cai.booking.09.bulk` — create (ändern mit Bestätigung)
+- `cai.booking.10.participant_list_show_add_add_groups_update_remove` — list, show, add, add_groups, update, remove (lesen, ändern, ändern mit Bestätigung)
+- `cai.booking.11.link_list_club_add_remove` — list, club, add, remove (lesen, ändern, ändern mit Bestätigung)
+- `cai.booking.12.stats_object_guests` — object, guests (lesen)
 - Felder und Werte: `comvenio schema booking --json`
 
-**object** — vollständig
+**object**
 
-- `comvenio object list`
-- `comvenio object show`
-- `comvenio object create`
-- `comvenio object update`
-- `comvenio object delete`
-- `comvenio object building list|show|create|update|delete`
-- `comvenio object room list|show|create|update|delete`
-- `comvenio object booking-rule list|show|create|bulk|update|delete`
-- `comvenio object task-rule list|show|create|update|delete`
+- `cai.object.01.list` — list (lesen)
+- `cai.object.02.show` — show (lesen)
+- `cai.object.03.create` — create (ändern)
+- `cai.object.04.update` — update (ändern)
+- `cai.object.05.delete` — delete (ändern mit Bestätigung)
+- `cai.object.06.building_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.object.07.room_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.object.08.booking_rule_list_show_create_bulk_update_delete` — list, list_object, show, create, bulk, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.object.09.task_rule_list_show_create_update_delete` — list, list_object, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema object --json`
 <!-- /gen:docs -->
 
@@ -411,13 +324,17 @@ comvenio booking stats guests --from 2026-01-01 --to 2026-12-31 --json
 - `PERMISSION_DENIED` — es fehlt `manage_objects` für eine Änderung an Gebäude, Raum, Objekt oder
   Regel, oder `confirm_object_bookings` für Genehmigung, Ablehnung oder eine rückwirkende Buchung.
   Siehe `comvenio help fehler PERMISSION_DENIED`.
-- `VALIDATION_FAILED` — ein Feld fehlt oder passt nicht, etwa ein fehlendes Dauerlimit bei einem
-  zeitrasterbasierten Objekt oder ein unvollständiger Regel-Body. Siehe
-  `comvenio help fehler VALIDATION_FAILED`.
+- `VALIDATION_FAILED` — ein Feld fehlt oder passt nicht, etwa ein fehlendes `force: true` beim Löschen
+  oder ein unvollständiger Regel-Body. Siehe `comvenio help fehler VALIDATION_FAILED`.
 - `NOT_FOUND` — die angegebene Gebäude-, Raum-, Objekt-, Regel- oder Buchungs-ID gehört zu keinem
   sichtbaren Eintrag im verbundenen Verein. Siehe `comvenio help fehler NOT_FOUND`.
-- `CONFLICT` — ein Objekt mit bestehenden Kind-Einträgen wird ohne erzwungene Kaskade gelöscht, oder
-  eine Buchung überschneidet sich mit einer bestehenden Reservierung. Siehe
+- `CONFLICT` — ein Objekt mit bestehenden Kind-Einträgen wird ohne `force: true` gelöscht, oder eine
+  Buchung überschneidet sich mit einer bestehenden Reservierung. Siehe
   `comvenio help fehler CONFLICT`.
-- `SCOPE_REQUIRED` — die Anmeldung wurde ohne den für eine Schreibaktion nötigen Scope erteilt. Siehe
+- `SCOPE_REQUIRED` — die Anmeldung wurde ohne den für eine Schreibaction nötigen Scope erteilt. Siehe
   `comvenio help fehler SCOPE_REQUIRED`.
+- `OUTCOME_UNKNOWN` — eine kritische Action (Anlegen, Ändern, Genehmigen, Löschen) wurde nach
+  `action confirm` nicht eindeutig bestätigt; vor einer Wiederholung erst mit einem Lesebefehl den
+  Stand prüfen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
+- `OAUTH_ONLY` — ein alter, klassischer Befehl (`comvenio object …`, `comvenio booking …`) läuft nicht
+  mehr; die entsprechende Action verwenden. Siehe `comvenio help fehler OAUTH_ONLY`.

@@ -13,12 +13,7 @@ Mit dem Sponsoring-Bereich verwaltet ein Verein seine lokalen Sponsoren, deren A
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Sponsoren, Produkte und Zuordnungen gehören immer zu einem Verein und meist zu einer Abteilung.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Sponsoren, Produkte und Zuordnungen gehören immer zu einem Verein und zu einer Abteilung (`department_id`).
 
 ## Abläufe
 
@@ -26,31 +21,29 @@ Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeig
 
 Das Sponsoring-Modell besteht aus vier Ebenen: ein **Sponsor** (Werbepartner) mit Logo und verantwortlichen Vereinsmitgliedern wird einem **Sponsoring-Produkt** zugeordnet; die **Zuordnung** trägt Preis, Laufzeit und Status; ein Produkt kann mehrere **Vertragsversionen** mit eigenen Konditionen haben, und jede Zuordnung kann eigene, private Vertragsdokumente tragen.
 
-### Sponsor anlegen
+### Sponsor anlegen (`cai.sponsor.03.add`)
 
-1. Pflichtangaben sind Abteilung, Name und E-Mail-Adresse.
-2. Wird beim Anlegen zusätzlich eine Datei angegeben, lädt das CLI sie als öffentliches Sponsorlogo hoch und verknüpft die Datei-ID direkt mit dem Sponsor.
-3. Logo, Kontaktperson und weitere Angaben lassen sich danach jederzeit aktualisieren.
+Pflichtangaben sind Abteilung (`department_id`), Name und E-Mail-Adresse. Ein Logo wird nicht beim Anlegen übergeben, sondern danach separat gesetzt: erst die Datei hochladen (siehe [dateien.md](dateien.md)), dann deren Datei-ID mit `cai.sponsor.06.logo` verknüpfen — das Setzen des Logos ist `critical_write`. Kontaktperson und weitere Angaben lassen sich mit `cai.sponsor.04.update` (`operation: update`) jederzeit aktualisieren; ein Wechsel der Abteilung läuft über `operation: move_department` und ist `critical_write`.
 
-### Sponsoring-Produkt anlegen
+### Sponsoring-Produkt anlegen (`cai.sponsor.08.product_add`)
 
-Ein Produkt beschreibt ein Angebot des Clubs, etwa „Trikotsponsor", „Bandenwerbung" oder ein „Gold-Paket". Preise werden in Cent angegeben; ohne ausdrückliche Angabe gelten beim Anlegen die Währung `EUR`, das Abrechnungsintervall `year` und eine Laufzeit von zwölf Monaten. Ein Produkt kann später als inaktiv markiert werden, ohne bestehende Zuordnungen zu verlieren.
+Ein Produkt beschreibt ein Angebot des Clubs, etwa „Trikotsponsor", „Bandenwerbung" oder ein „Gold-Paket", und gehört ebenfalls zu einer Abteilung (`department_id`). Preise werden in Cent angegeben; ohne ausdrückliche Angabe gelten beim Anlegen die Währung `EUR`, das Abrechnungsintervall `year` und eine Laufzeit von zwölf Monaten. Ein Produkt kann später über `cai.sponsor.09.product_update` (`operation: update`, Feld `is_active`) als inaktiv markiert werden, ohne bestehende Zuordnungen zu verlieren; eine andere Abteilung läuft wieder über `operation: move_department` (`critical_write`).
 
 ### Vertragsversion eines Produkts
 
-Eine neue Vertragsversion bildet geänderte Konditionen ab, ohne ältere Verträge zu überschreiben — ältere Versionen bleiben als Historie erhalten. Eine neue Version kann eine vorherige ausdrücklich ablösen und deren Gültigkeit begrenzen; eine interne Notiz lässt sich mitspeichern. Vertragsdateien sind immer privat. Zum Ändern oder Löschen einer Version ist neben der Produkt-ID stets die konkrete Versions-ID anzugeben; das Ändern setzt dabei nur die angegebenen Felder und lässt sich in derselben Aktion zusätzlich um eine neue Vertragsdatei ergänzen. Löschen entfernt eine Version per Soft-Delete, andere Versionen bleiben unberührt.
+Eine neue Vertragsversion (`cai.sponsor.12.contract_add`) bildet geänderte Konditionen ab, ohne ältere Verträge zu überschreiben — ältere Versionen bleiben als Historie erhalten. Die Vertragsdatei wird zuerst hochgeladen (siehe [dateien.md](dateien.md)); ihre Datei-ID ist als `contract_file_id` Pflicht. Eine neue Version kann eine vorherige ausdrücklich ablösen und deren Gültigkeit begrenzen; eine interne Notiz lässt sich mitspeichern. Zum Ändern (`cai.sponsor.13.contract_update`, `operation: update`) oder Austauschen der Datei (`operation: replace_file`) ist neben der Produkt-ID stets die konkrete Versions-ID anzugeben. Löschen (`cai.sponsor.14.contract_delete`) entfernt eine Version per Soft-Delete und ist `critical_write`; andere Versionen bleiben unberührt.
 
-### Sponsor einem Produkt zuordnen
+### Sponsor einem Produkt zuordnen (`cai.sponsor.16.assign`)
 
-Eine Zuordnung verbindet einen Sponsor mit einem Produkt für einen Zeitraum und optional eine Menge; Preis oder Gesamtpreis können dabei die Produktvorgabe überschreiben. Eine Zuordnung lässt sich später anpassen oder mit einer Notiz und einem Enddatum beenden. Gelöschte Zuordnungen lassen sich auf Wunsch mit anzeigen.
+Eine Zuordnung verbindet einen Sponsor mit einem Produkt für einen Zeitraum und optional eine Menge; Preis oder Gesamtpreis können dabei die Produktvorgabe überschreiben. Das Anlegen ist `critical_write`: der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` führt die Zuordnung aus. Eine Zuordnung lässt sich später über `cai.sponsor.17.assignment_update` anpassen oder mit `cai.sponsor.18.cancel` mit einer Notiz und einem Enddatum beenden — beides ebenfalls `critical_write`. `cai.sponsor.15.assignment_list` zeigt gelöschte Zuordnungen auf Wunsch mit an.
 
-### Vertragsdokument einer Zuordnung hochladen
+### Vertragsdokument einer Zuordnung hochladen (`cai.sponsor.20.doc_upload`)
 
-Unterschriebene Vertragsdokumente werden einer einzelnen Zuordnung zugeordnet, sind privat gespeichert und tragen die Sponsor-ID als Unterkontext.
+Unterschriebene Vertragsdokumente werden mit einer einzelnen Zuordnung als Datei-Übertragung (`asset`: `source_file_id`, `filename`, `content_type`, `expected_size`) direkt übergeben, sind privat gespeichert und tragen ein Label. `cai.sponsor.19.doc_list` listet die Dokumente einer Zuordnung.
 
 ### Verantwortliche Vereinsmitglieder
 
-Einem Sponsor lassen sich verantwortliche Mitglieder mit einer Rolle zuweisen; eines davon kann als primärer Kontakt markiert werden. Dabei wird ausdrücklich eine Mitglieds-ID erwartet, keine Benutzer-ID.
+Einem Sponsor lassen sich mit `cai.sponsor.22.responsible_add` (Abteilung, Sponsor, Mitglieds-ID, Rolle, `is_primary`) verantwortliche Mitglieder zuweisen; eines davon kann als primärer Kontakt markiert werden. Dabei wird ausdrücklich eine Mitglieds-ID erwartet, keine Benutzer-ID. `cai.sponsor.23.responsible_update` ändert eine Zuweisung, `cai.sponsor.24.responsible_remove` entfernt sie (`critical_write`); `cai.sponsor.21.responsible_list` listet nach Sponsor oder Mitglied gefiltert.
 
 ### Datei-Sichtbarkeit
 
@@ -63,135 +56,149 @@ Ein globaler Anzeigenmarktplatz oder eine Plattform-Abrechnung gehören bewusst 
 ## Beispiele
 
 ```bash
-comvenio sponsor add \
-  --department-id <department-id> \
-  --name "Muster GmbH" \
-  --email sponsor@example.org \
-  --website https://example.org \
-  --contact-person "<contact-person>" \
-  --contact-phone "+49 123 456789" \
-  --organization-type crafts \
-  --file ./logo.png \
-  --json
+comvenio action call cai.sponsor.03.add --input '{
+  "department_id": "<department-id>",
+  "company_name": "Muster GmbH",
+  "contact_email": "sponsor@example.org",
+  "website_url": "https://example.org",
+  "contact_person": "<contact-person>",
+  "contact_phone": "+49 123 456789",
+  "organization_type": "crafts"
+}'
 
-comvenio sponsor list --json
-comvenio sponsor list --department-id <department-id> --json
-comvenio sponsor show <sponsor-id> --json
-comvenio sponsor update <sponsor-id> --contact-person "<contact-person>" --json
-comvenio sponsor logo <sponsor-id> --file ./neues-logo.svg --json
-comvenio sponsor delete <sponsor-id> --json
+comvenio action call cai.sponsor.01.list --input '{"limit":50}'
+comvenio action call cai.sponsor.02.show --input '{"sponsor_id":"<sponsor-id>"}'
+comvenio action call cai.sponsor.04.update --input '{"operation":"update","sponsor_id":"<sponsor-id>","changes":{"contact_person":"<contact-person>"}}'
+comvenio action call cai.sponsor.06.logo --input '{"sponsor_id":"<sponsor-id>","logo_file_id":"<file-id>"}'
+comvenio action call cai.sponsor.05.delete --input '{"sponsor_id":"<sponsor-id>"}'
 ```
 
 ```bash
-comvenio sponsor product-add \
-  --department-id <department-id> \
-  --name "Gold-Paket" \
-  --description "Logo auf Website, Plakat und Bande" \
-  --conditions "Laufzeit mindestens zwölf Monate" \
-  --price-cents 150000 \
-  --currency EUR \
-  --billing-interval year \
-  --duration-months 12 \
-  --sort-order 10 \
-  --json
+comvenio action call cai.sponsor.08.product_add --input '{
+  "department_id": "<department-id>",
+  "name": "Gold-Paket",
+  "description": "Logo auf Website, Plakat und Bande",
+  "conditions": "Laufzeit mindestens zwölf Monate",
+  "default_unit_price_cents": 150000,
+  "currency": "EUR",
+  "billing_interval": "year",
+  "default_duration_months": 12,
+  "sort_order": 10
+}'
 
-comvenio sponsor product-list --json
-comvenio sponsor product-list --include-inactive --json
-comvenio sponsor product-update <product-id> --price-cents 175000 --json
-comvenio sponsor product-update <product-id> --inactive --json
-comvenio sponsor product-delete <product-id> --json
+comvenio action call cai.sponsor.07.product_list --input '{"include_inactive":false,"limit":50}'
+comvenio action call cai.sponsor.09.product_update --input '{"operation":"update","product_id":"<product-id>","changes":{"default_unit_price_cents":175000}}'
+comvenio action call cai.sponsor.09.product_update --input '{"operation":"update","product_id":"<product-id>","changes":{"is_active":false}}'
+comvenio action call cai.sponsor.10.product_delete --input '{"product_id":"<product-id>"}'
 ```
 
 ```bash
-comvenio sponsor contract-add <product-id> \
-  --file ./gold-paket-2027.pdf \
-  --label "Konditionen 2027" \
-  --valid-from 2027-01-01T00:00:00+01:00 \
-  --price-cents 175000 \
-  --currency EUR \
-  --billing-interval year \
-  --duration-months 12 \
-  --json
+comvenio action call cai.sponsor.12.contract_add --input '{
+  "product_id": "<product-id>",
+  "contract_file_id": "<file-id>",
+  "label": "Konditionen 2027",
+  "valid_from": "2027-01-01T00:00:00+01:00",
+  "unit_price_cents": 175000,
+  "currency": "EUR",
+  "billing_interval": "year",
+  "duration_months": 12
+}'
 
-comvenio sponsor contract-list <product-id> --json
+comvenio action call cai.sponsor.11.contract_list --input '{"product_id":"<product-id>","limit":50}'
 
-comvenio sponsor contract-update <product-id> \
-  --contract-version <version-id> \
-  --price-cents 185000 \
-  --valid-until 2027-12-31T23:59:59+01:00 \
-  --json
+comvenio action call cai.sponsor.13.contract_update --input '{
+  "operation": "update",
+  "product_id": "<product-id>",
+  "contract_version_id": "<version-id>",
+  "changes": { "unit_price_cents": 185000, "valid_until": "2027-12-31T23:59:59+01:00" }
+}'
 
-comvenio sponsor contract-delete <product-id> --contract-version <version-id> --json
+comvenio action call cai.sponsor.14.contract_delete --input '{"product_id":"<product-id>","contract_version_id":"<version-id>"}'
 ```
 
-Optionale Versionsverkettung: `--supersedes-version <id>` benennt die abgelöste Version, `--superseded-valid-until <iso>` begrenzt sie, `--valid-until <iso>` begrenzt die neue Version, `--note <text>` speichert eine interne Notiz.
+Optionale Versionsverkettung in `contract_add`: `supersedes_version_id` benennt die abgelöste Version, `superseded_valid_until` begrenzt sie, `valid_until` begrenzt die neue Version, `note` speichert eine interne Notiz.
 
 ```bash
-comvenio sponsor assign \
-  --department-id <department-id> \
-  --sponsor <sponsor-id> \
-  --product <product-id> \
-  --quantity 1 \
-  --starts-at 2027-01-01T00:00:00+01:00 \
-  --ends-at 2027-12-31T23:59:59+01:00 \
-  --json
+comvenio action call cai.sponsor.16.assign --input '{
+  "department_id": "<department-id>",
+  "sponsor_id": "<sponsor-id>",
+  "product_id": "<product-id>",
+  "quantity": 1,
+  "starts_at": "2027-01-01T00:00:00+01:00",
+  "ends_at": "2027-12-31T23:59:59+01:00"
+}'
+# Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <confirmation-token> \
+  --idempotency-key <idempotency-key>
 
-comvenio sponsor assignment-list --json
-comvenio sponsor assignment-list --sponsor <sponsor-id> --status active --json
-comvenio sponsor assignment-update <assignment-id> --quantity 2 --json
-comvenio sponsor cancel <assignment-id> --note "Vertrag beendet" --ends-at <iso> --json
+comvenio action call cai.sponsor.15.assignment_list --input '{"sponsor_id":"<sponsor-id>","status":"active","include_deleted":false,"limit":50}'
+comvenio action call cai.sponsor.17.assignment_update --input '{"assignment_id":"<assignment-id>","changes":{"quantity":2}}'
+comvenio action call cai.sponsor.18.cancel --input '{"assignment_id":"<assignment-id>","cancellation_note":"Vertrag beendet","ends_at":"2027-06-30T23:59:59+02:00"}'
 ```
 
-`--include-deleted` erweitert `assignment-list` um gelöschte Zuordnungen.
+`assignment_update` und `cancel` sind ebenfalls `critical_write` und laufen über dieselbe Vorschau-/Bestätigungsfolge.
 
 ```bash
-comvenio sponsor doc-upload <assignment-id> --file ./unterschrieben.pdf --json
-comvenio sponsor doc-list <assignment-id> --json
+comvenio action call cai.sponsor.20.doc_upload --input '{
+  "assignment_id": "<assignment-id>",
+  "asset": {
+    "source_file_id": "<file-id>",
+    "filename": "unterschrieben.pdf",
+    "content_type": "application/pdf",
+    "expected_size": 512000
+  },
+  "label": "Unterschriebener Vertrag"
+}'
+
+comvenio action call cai.sponsor.19.doc_list --input '{"assignment_id":"<assignment-id>","limit":50}'
 ```
 
 ```bash
-comvenio sponsor responsible-add <sponsor-id> \
-  --department-id <department-id> \
-  --member <member-id> \
-  --role responsible \
-  --primary \
-  --json
+comvenio action call cai.sponsor.22.responsible_add --input '{
+  "department_id": "<department-id>",
+  "sponsor_id": "<sponsor-id>",
+  "member_id": "<member-id>",
+  "role": "responsible",
+  "is_primary": true
+}'
 
-comvenio sponsor responsible-list --sponsor <sponsor-id> --json
-comvenio sponsor responsible-update <responsible-assignment-id> --role contact --json
-comvenio sponsor responsible-remove <responsible-assignment-id> --json
+comvenio action call cai.sponsor.21.responsible_list --input '{"sponsor_id":"<sponsor-id>","limit":50}'
+comvenio action call cai.sponsor.23.responsible_update --input '{"responsible_id":"<responsible-assignment-id>","changes":{"role":"contact"}}'
+comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id":"<responsible-assignment-id>"}'
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**sponsor** — vollständig
+**sponsor**
 
-- `comvenio sponsor list`
-- `comvenio sponsor show`
-- `comvenio sponsor add`
-- `comvenio sponsor update`
-- `comvenio sponsor delete`
-- `comvenio sponsor logo`
-- `comvenio sponsor product-list`
-- `comvenio sponsor product-add`
-- `comvenio sponsor product-update`
-- `comvenio sponsor product-delete`
-- `comvenio sponsor contract-list`
-- `comvenio sponsor contract-add`
-- `comvenio sponsor contract-update`
-- `comvenio sponsor contract-delete`
-- `comvenio sponsor assignment-list`
-- `comvenio sponsor assign`
-- `comvenio sponsor assignment-update`
-- `comvenio sponsor cancel`
-- `comvenio sponsor doc-list`
-- `comvenio sponsor doc-upload`
-- `comvenio sponsor responsible-list`
-- `comvenio sponsor responsible-add`
-- `comvenio sponsor responsible-update`
-- `comvenio sponsor responsible-remove`
+- `cai.sponsor.01.list` — list (lesen)
+- `cai.sponsor.02.show` — show (lesen)
+- `cai.sponsor.03.add` — add (ändern)
+- `cai.sponsor.04.update` — update, move_department (ändern mit Bestätigung)
+- `cai.sponsor.05.delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.06.logo` — set (ändern mit Bestätigung)
+- `cai.sponsor.07.product_list` — list (lesen)
+- `cai.sponsor.08.product_add` — add (ändern)
+- `cai.sponsor.09.product_update` — update, move_department (ändern, ändern mit Bestätigung)
+- `cai.sponsor.10.product_delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.11.contract_list` — list (lesen)
+- `cai.sponsor.12.contract_add` — add (ändern)
+- `cai.sponsor.13.contract_update` — update, replace_file (ändern)
+- `cai.sponsor.14.contract_delete` — delete (ändern mit Bestätigung)
+- `cai.sponsor.15.assignment_list` — list (lesen)
+- `cai.sponsor.16.assign` — assign (ändern mit Bestätigung)
+- `cai.sponsor.17.assignment_update` — update (ändern mit Bestätigung)
+- `cai.sponsor.18.cancel` — cancel (ändern mit Bestätigung)
+- `cai.sponsor.19.doc_list` — list (lesen)
+- `cai.sponsor.20.doc_upload` — upload (ändern)
+- `cai.sponsor.21.responsible_list` — list (lesen)
+- `cai.sponsor.22.responsible_add` — add (ändern)
+- `cai.sponsor.23.responsible_update` — update (ändern)
+- `cai.sponsor.24.responsible_remove` — remove (ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema sponsor --json`
 <!-- /gen:docs -->
 
@@ -202,3 +209,4 @@ comvenio sponsor responsible-remove <responsible-assignment-id> --json
 - `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt die Sponsoring-Verwaltung in dieser Abteilung nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
 - `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope für Sponsoring-Aktionen. Mehr: `comvenio help fehler SCOPE_REQUIRED`
 - `CONFLICT` — Produkt, Vertragsversion oder Zuordnung wurden inzwischen geändert oder erlauben die Aktion in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`
+- `OUTCOME_UNKNOWN` — bei einer ändernden Action (etwa `assign`, `cancel` oder `delete`) blieb die Serverantwort aus; vor einer Wiederholung mit einer lesenden Action prüfen, ob die Änderung schon angekommen ist. Mehr: `comvenio help fehler OUTCOME_UNKNOWN`

@@ -16,10 +16,8 @@ Vereinsprofil, Einstellungen, Abteilungen und Design.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die `club`-Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und
+welche Scopes sie brauchen, zeigt `comvenio action list --json`.
 
 Eine gültige Anmeldung ist Voraussetzung für jeden weiteren Befehl. Die
 Anmeldung entscheidet nur, *dass* jemand angemeldet ist; *was* erlaubt ist,
@@ -52,13 +50,11 @@ Optionen:
 
 | Flag | Bedeutung |
 |---|---|
-| `--device-token <token>` | Anmeldung mit Geräte-Token statt Browser; nötig für die klassischen Befehle |
 | `--scopes <csv>` | Anmeldung auf diese Scopes einschränken (ohne Angabe: alle) |
-| `--club <id>` | nur mit `--device-token`: Vereinskontext ausdrücklich setzen |
 | `--json` | maschinenlesbare Ausgabe |
 
-Eine Anmeldung per Geräte-Token speichert das opake Token im Zustand — die Datei `~/.comvenio-cli-state.json` darf deshalb grundsätzlich
-nie eingecheckt, protokolliert oder in einer Antwort ausgegeben werden.
+Die Datei `~/.comvenio-cli-state.json` darf grundsätzlich nie eingecheckt,
+protokolliert oder in einer Antwort ausgegeben werden.
 
 ### Mit Actions arbeiten
 
@@ -75,7 +71,7 @@ und Eingabeschema stammen aus dem serverseitigen Vertrag der jeweiligen
 Action. Schreibende Actions erhalten einen Wiederholungsschutz; kritische
 Änderungen brauchen zusätzlich `action confirm` mit einer kurzlebigen
 Vorschau. Verein, Nutzeridentität und Scopes lassen sich dabei nicht über die
-Eingabe überschreiben.
+Eingabe überschreiben — `club_id` gehört deshalb nie in `--input`.
 
 ### Identität prüfen
 
@@ -94,147 +90,107 @@ fehlender Zugang wird davon unabhängig weiterhin korrekt gemeldet.
 comvenio logout --json
 ```
 
-Bei einer Browser-Anmeldung widerruft `logout` die Anmeldung serverseitig und
-entfernt anschließend den lokalen Zugangsdatensatz. Schlägt der serverseitige
-Widerruf vorübergehend fehl, erscheint eine Warnung; die lokale Anmeldung wird
-trotzdem entfernt. Ein Geräte-Token wird dabei nicht serverseitig widerrufen.
+`logout` widerruft die Anmeldung serverseitig und entfernt anschließend den
+lokalen Zugangsdatensatz. Schlägt der serverseitige Widerruf vorübergehend
+fehl, erscheint eine Warnung; die lokale Anmeldung wird trotzdem entfernt.
 
 ### Vereinsinformationen lesen
 
-```bash
-comvenio club info --json
-comvenio club info --club <club-id> --json
-```
-
-Die menschenlesbare Ansicht zeigt Name, Kurzname, Adresse, E-Mail, Telefon,
-Website und Gründungsdatum, soweit vorhanden; für automatisierte Arbeit ist
-die maschinenlesbare Ausgabe maßgeblich.
+Noch nicht als Action verfügbar — in der Web-App erledigen. Dort stehen Name,
+Kurzname, Adresse, E-Mail, Telefon, Website und Gründungsdatum des Vereins.
 
 ### Öffentliche Vereinsorgane und Impressum prüfen
 
-```bash
-comvenio club group-list --json
-comvenio club position-list --json
-comvenio club public-organ <group-id> --json
-comvenio club public-organ <group-id> --avatars --json
-comvenio club public-legal --json
-```
-
-Diese Abfrage liefert nur ausdrücklich freigegebene Organe aktiver Vereine.
-Standardpositionen werden ausgeschlossen; Mitglieder ohne eine andere
-aktuelle Position erscheinen nicht. Die Antwort enthält Namen und
-Positionsbeschreibungen, aber keine privaten Kontaktdaten. Öffentliche
-Profilbilder werden ausschließlich mit `--avatars` angefordert; fehlende
-Bilder sind erlaubt. Die Freigabe eines Organs wird getrennt verwaltet — diese
-Lesebefehle verändern sie nicht. `public-legal` prüft die öffentlichen
-Vereinsangaben samt aufgelöstem Verantwortlichen; fehlende Angaben werden
-nicht durch erfundene Daten ersetzt.
+Noch nicht als Action verfügbar — in der Web-App erledigen. Dort lassen sich
+freigegebene Vereinsorgane mit ihren Positionen und die öffentlichen
+Impressumsangaben des Vereins einsehen.
 
 ### Vereinsprofil und Einstellungen ändern
 
 ```bash
-comvenio club update --file club-update.json --json
-comvenio club settings --json
-comvenio club settings-update --file settings-update.json --json
+comvenio action call cai.club.03.settings --input '{}' --json
+comvenio action call cai.club.02.update \
+  --input '{"changes":{"name":"Neuer Vereinsname"}}' \
+  --json
+comvenio action call cai.club.04.settings_update \
+  --input '{"settings":{"notifications":{"weekly_digest":true}}}' \
+  --json
 ```
 
-`club update` übergibt einen teilweisen Profil-Datensatz. Gültige Felder sind
-unter anderem Name, Beschreibung, Adresse, Ort, Postleitzahl, Land, Region,
-Telefonnummer, E-Mail, Website, Gründungsdatum, Adressen zu sozialen Netzwerken,
-Standardsprache, Standard-Zeitzone und die verantwortliche Person.
-`settings-update` führt eine Feld-für-Feld-Zusammenführung durch für
-Bereiche wie Funktionen, Datenschutzeinstellungen, Kontaktangaben,
-Sucheinstellungen, Benachrichtigungen, Spracheinstellungen,
-Zahlungseinstellungen und eigene Einstellungen.
+`cai.club.02.update` übergibt in `changes` einen teilweisen Profil-Datensatz.
+Gültige Felder sind unter anderem Name, Beschreibung, Adresse, Ort,
+Postleitzahl, Land, Region, Telefonnummer, E-Mail, Website, Gründungsdatum,
+Adressen zu sozialen Netzwerken, Standardsprache, Standard-Zeitzone und die
+verantwortliche Person. `cai.club.04.settings_update` führt mit `settings`
+eine Feld-für-Feld-Zusammenführung durch für Bereiche wie Funktionen,
+Datenschutzeinstellungen, Kontaktangaben, Sucheinstellungen,
+Benachrichtigungen, Spracheinstellungen, Zahlungseinstellungen und eigene
+Einstellungen.
 
 ### Abteilungen verwalten
 
 ```bash
-comvenio club department-list --json
-comvenio club department-list --tree --json
-comvenio club department-show <department-id> --json
-comvenio club department-add --file department.json --json
-comvenio club department-update <department-id> --file department-update.json --json
-comvenio club department-delete <department-id> --json
-```
-
-Beispiel für `department.json`:
-
-```json
-{
-  "name": "Dart",
-  "description": "Dart-Abteilung",
-  "slug": "dart",
-  "color_theme_1": "#123456",
-  "parent_department_id": null,
-  "is_default": false
-}
+comvenio action call cai.club.06.department_list --input '{}' --json
+comvenio action call cai.club.06.department_list --input '{"tree":true}' --json
+comvenio action call cai.club.07.department_show \
+  --input '{"department_id":"<department-id>"}' \
+  --json
+comvenio action call cai.club.08.department_add \
+  --input '{"department":{"name":"Dart","description":"Dart-Abteilung","slug":"dart","color_theme_1":"#123456","parent_department_id":null,"is_default":false}}' \
+  --json
+comvenio action call cai.club.09.department_update \
+  --input '{"department_id":"<department-id>","changes":{"name":"Dart"}}' \
+  --json
 ```
 
 Beim Ändern sind zusätzlich die verantwortliche Person und eine neue
 übergeordnete Abteilung erlaubt. Der Verein wird beim Anlegen aus dem
-aktiven Anmeldekontext übernommen, nicht aus der Datei.
+aktiven Anmeldekontext übernommen.
+
+Löschen ist kritisch und läuft über Vorschau und Bestätigung:
+
+```bash
+comvenio action call cai.club.10.department_delete \
+  --input '{"department_id":"<department-id>"}' \
+  --json
+# Antwort enthält preview_id und confirmation_token
+comvenio action confirm \
+  --preview-id <preview-id> \
+  --confirmation-token <token> \
+  --idempotency-key <key>
+```
 
 ### Vereinsdesign setzen
 
-`club design` führt die Design-Einstellungen zusammen: nicht angegebene
-Felder bleiben erhalten.
+`cai.club.05.design` führt die Design-Einstellungen in `design_settings`
+zusammen: nicht angegebene Felder bleiben erhalten. Die vollständigen Felder
+— Farben, Schrift, Abstand, eigenes CSS, Kopfzeile — stehen im Schema:
+`comvenio schema design --json`.
 
 ```bash
-comvenio club design \
-  --template modern \
-  --public-template flex \
-  --primary "#123456" \
-  --accent "#e7b23c" \
-  --font modern \
-  --spacing balanced \
-  --dry-run --json
-
-comvenio club design --file design-settings.json --json
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"homepage_theme":"modern","homepage_template":"flex","primary_color":"#123456","accent_color":"#e7b23c"}}' \
+  --json
 ```
 
-| Flag | Wirkung |
-|---|---|
-| `--template <name>` | internes Vereinsbereich-Thema |
-| `--public-template <id>` | Vorlage der öffentlichen Homepage |
-| `--primary`, `--accent`, `--secondary` | Markenfarben als Hex-Wert |
-| `--font <pair>` | erlaubte Schriftkombination |
-| `--spacing <mode>` | Abstandsmodus |
-| `--file <json>` | vollständiges teilweises Design-Objekt |
-| `--css-file <css>` | begrenztes eigenes CSS — die serverseitige Sicherheitsprüfung bleibt dabei maßgeblich |
-| `--tokens-file <json>` | Design-Tokens wie Palette, Rundung und Typografie |
-| `--header-layout`, `--header-surface`, `--header-density` | öffentliche Kopfzeile |
-| `--header-sticky <true\|false>` | Sticky-Verhalten der Kopfzeile |
-| `--clear-header` | eigene Kopfzeilen-Konfiguration entfernen |
-| `--dry-run` | Nutzlast anzeigen, nichts schreiben |
-
-Vor jeder Design-Änderung erst `--dry-run --json`, anschließend die
-Homepage-Vorschau und -Prüfung verwenden. Der vollständige Ablauf für die
-öffentliche Seite steht im Artikel zur Vereins-Homepage.
+Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
+verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
+zur Vereins-Homepage.
 
 ### Vereinslogo pflegen
 
-```bash
-comvenio club logo --json                          # aktuelles Logo (Metadaten)
-comvenio club logo-upload --file wappen.png --json  # neues Logo hochladen
-```
-
-`logo-upload` braucht das Recht, Vereinseinstellungen zu verwalten. Das
-zuletzt hochgeladene Logo gilt sofort überall, wo die Plattform das
-Vereinslogo zeigt: Kopfzeile der Homepage, Bild-Widget mit Vereinslogo als
-Quelle, Vereinsauswahl. Ein Bild mit transparentem Hintergrund wirkt auf
-farbigen Flächen am besten. Ein gewöhnlicher Datei-Upload ersetzt das Logo
-**nicht** — die Logo-Auswahl berücksichtigt nur Dateien, die über
-`logo-upload` hochgeladen wurden.
+Noch nicht als Action verfügbar — in der Web-App erledigen. Das zuletzt dort
+hochgeladene Logo gilt sofort überall, wo die Plattform das Vereinslogo
+zeigt: Kopfzeile der Homepage, Bild-Widget mit Vereinslogo als Quelle,
+Vereinsauswahl.
 
 ## Beispiele
 
-Anmeldung mit eingeschränkten Scopes, danach Identität und Verein prüfen:
+Anmeldung mit eingeschränkten Scopes, danach Identität prüfen:
 
 ```bash
 comvenio login --scopes club.read,event.read --json
 comvenio whoami --json
-comvenio club info --json
 ```
 
 Bestehende Action mit Eingabe aufrufen:
@@ -249,50 +205,42 @@ comvenio action call cai.event.01.list \
 Neue Abteilung anlegen:
 
 ```bash
-comvenio club department-add --file department.json --json
+comvenio action call cai.club.08.department_add \
+  --input '{"department":{"name":"Dart","description":"Dart-Abteilung","slug":"dart","color_theme_1":"#123456","parent_department_id":null,"is_default":false}}' \
+  --json
 ```
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**login** — vollständig
+**login**
 
-- `comvenio login`
-- `comvenio login --device-token`
+- Noch keine Action — dieser Bereich läuft über die Web-App.
 
-**logout** — vollständig
+**logout**
 
-- `comvenio logout`
+- Noch keine Action — dieser Bereich läuft über die Web-App.
 
-**whoami** — vollständig
+**whoami**
 
-- `comvenio whoami`
+- `cai.whoami.01.whoami` — whoami (lesen)
 
-**action** — vollständig
+**action**
 
-- `comvenio action list`
-- `comvenio action call`
-- `comvenio action confirm`
+- Noch keine Action — dieser Bereich läuft über die Web-App.
 
-**club** — vollständig
+**club**
 
-- `comvenio club info`
-- `comvenio club update`
-- `comvenio club settings`
-- `comvenio club settings-update`
-- `comvenio club design`
-- `comvenio club logo`
-- `comvenio club logo-upload`
-- `comvenio club contact-requests`
-- `comvenio club contact-request-done`
-- `comvenio club contact-request-reopen`
-- `comvenio club contact-request-delete`
-- `comvenio club department-list`
-- `comvenio club department-show`
-- `comvenio club department-add`
-- `comvenio club department-update`
-- `comvenio club department-delete`
+- `cai.club.02.update` — update (ändern)
+- `cai.club.03.settings` — settings (lesen)
+- `cai.club.04.settings_update` — settings-update (ändern)
+- `cai.club.05.design` — design (ändern)
+- `cai.club.06.department_list` — department-list (lesen)
+- `cai.club.07.department_show` — department-show (lesen)
+- `cai.club.08.department_add` — department-add (ändern)
+- `cai.club.09.department_update` — department-update (ändern)
+- `cai.club.10.department_delete` — department-delete (ändern mit Bestätigung)
 <!-- /gen:docs -->
 
 ## Fehler
@@ -305,8 +253,14 @@ comvenio club department-add --file department.json --json
 - `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt die
   Aktion nicht; das Recht vergibt ein Administrator des Vereins.
   `comvenio help fehler PERMISSION_DENIED`.
-- `OAUTH_ONLY` — ein klassischer Befehl läuft nicht über die aktuelle
-  Anmeldung; die passende Action verwenden. `comvenio help fehler OAUTH_ONLY`.
+- `VALIDATION_FAILED` — die Eingabe passt nicht zum Schema der Action, etwa
+  ein fehlendes Pflichtfeld in `changes`, `settings` oder `department`.
+  `comvenio help fehler VALIDATION_FAILED`.
+- `OUTCOME_UNKNOWN` — `action confirm` (etwa bei `department_delete`) endete
+  mit Zeitüberschreitung oder Serverfehler; nicht wiederholen, erst den Stand
+  prüfen. `comvenio help fehler OUTCOME_UNKNOWN`.
+- `OAUTH_ONLY` — ein alter Befehl läuft nicht über die Anmeldung; die
+  passende Action verwenden. `comvenio help fehler OAUTH_ONLY`.
 - `CLUB_SELECTION_REQUIRED` — der aktuellen Verbindung ist kein Verein
   zugeordnet. `comvenio help fehler CLUB_SELECTION_REQUIRED`.
 - `ACTION_NOT_LISTED` — die Action steht gerade nicht in der freigegebenen

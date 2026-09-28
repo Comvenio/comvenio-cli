@@ -9,16 +9,11 @@ stichwoerter: [veranstaltung, event, termin, serie, vorlage, dauertermin, bereic
 
 ## Wozu
 
-Mit den `event`-Befehlen verwaltest du Veranstaltungen deines Vereins vollständig: von der Vorlage über wiederkehrende Termine und mehrtägige Feste bis zu Bereichen, Programm, Einladungen, Anmeldungen, Sponsoren und Design.
+Mit den `event`-Actions verwaltest du Veranstaltungen deines Vereins vollständig: von der Vorlage über wiederkehrende Termine und mehrtägige Feste bis zu Bereichen, Programm, Einladungen, Anmeldungen, Sponsoren und Design.
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Nutze vor jeder Event-Arbeit `comvenio schema event --json` und `comvenio event --help`, um Felder und Unterbefehle zu sehen. Anmeldung über `comvenio login`; ohne `--scopes` fordert sie alle Scopes an, `--scopes` schränkt sie ein. Was du tatsächlich darfst, bestimmt zusätzlich deine Rolle im Verein — das Recht wird ausschließlich serverseitig geprüft.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Felder und Eingaben siehst du auch offline, ohne Anmeldung: `comvenio schema event --json`, `comvenio schema plan --json` und `comvenio help veranstaltungen`. Was du tatsächlich darfst, bestimmt zusätzlich deine Rolle im Verein — das Recht wird ausschließlich serverseitig geprüft.
 
 | Operation | Recht oder Regel |
 |---|---|
@@ -33,13 +28,12 @@ Ein `403` bedeutet fehlendes Recht. Ein `404` kann bei nicht sichtbaren Daten ab
 
 ### Sicherheitsregeln für Agenten
 
-- Rufe keine Comvenio-API direkt auf — nutze ausschließlich die `event`-Befehle. Fehlt ein Befehl, muss das CLI erweitert werden.
-- Frage vor `delete`, `clear`, `set` mit leerer Liste und `dj reset` nach einer ausdrücklichen Bestätigung, wenn die Löschung nicht bereits klar beauftragt ist.
-- Nutze keine fremde Club-ID in JSON-Dateien — `club_id` kommt bei eindeutigen Verträgen aus dem Login-Kontext.
+- Rufe keine Comvenio-API direkt auf — nutze ausschließlich die freigegebenen `event`- und `plan`-Actions (`comvenio action call …`). Fehlt eine Action, muss das CLI erweitert werden.
+- Frage vor `delete`, `remove`, `clear`, `unassign` und vergleichbar kritischen Vorgängen nach einer ausdrücklichen Bestätigung, wenn die Löschung nicht bereits klar beauftragt ist — das CLI selbst verlangt bei diesen Actions ohnehin erst eine Vorschau, danach `comvenio action confirm`.
+- Gib `club_id` nie im `--input` an — der Verein kommt aus der Anmeldung, das CLI lehnt `club_id` in der Eingabe ab.
 - Lege bei mehrtägigen Festen Programmpunkte am Child-Event an; der Parent zeigt nur das Aggregat.
 - Lösche nie die automatisch erzeugte Default-Area.
-- Nutze `resource set` nur, wenn die vollständige Zielmenge bekannt ist; `resource add` ist additiv.
-- Lade Dateien zuerst mit `data upload` hoch und verknüpfe sie danach mit `event attachment add`.
+- Nutze `resource … --input '{"operation":"set", …}'` nur, wenn die vollständige Zielmenge bekannt ist; `operation=add` ist additiv.
 - Zeige Namen statt Kennungen an, sobald Namen aus den Antworten verfügbar sind.
 
 ## Abläufe
@@ -69,121 +63,113 @@ Wichtige Werte: `event_type` (`party`, `meeting`, `excursion`, `training`, `comp
 
 ### Vorlage, Serie und Termine materialisieren
 
-1. Vorlage anlegen: `comvenio event template create --title "Darttraining" --event-type training --visibility-scope member --organizer-type member --department-id <department-id> --description "Wöchentliches Training" --json`.
-2. Serie aus der Vorlage definieren: `comvenio event series create <template-id> --start-time <iso> --frequency weekly --weekdays WE --duration-minutes 120 --json`.
-3. Konkreten Zeitraum materialisieren: `comvenio event series materialize <series-id> --start <iso> --end <iso> --json`. `materialize` ist idempotent und überspringt vorhandene Termine.
-4. Für „Ende offen" `--open-end` statt `--duration-minutes` verwenden — das übermittelt ausdrücklich `duration_minutes=null`, die erzeugten Termine haben `end_time=null`. Den Zeitraum der Serie unabhängig davon mit `--until <iso>` begrenzen. Ohne eines der beiden Dauer-Flags bleibt die bisherige Standarddauer bestehen.
+1. Vorlage anlegen: `comvenio action call cai.event.07.template_list_create_clone_instantiate --input '{"operation":"create","template":{"department_id":"<department-id>","title":"Darttraining","event_type":"training","visibility_scope":"member","organizer_type":"member","description":"Wöchentliches Training"}}'`.
+2. Serie aus der Vorlage definieren: `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"create","series":{"name":"Darttraining Mittwoch","department_id":"<department-id>","event_type":"training","visibility_scope":"member","timezone":"Europe/Berlin","rrule":"FREQ=WEEKLY;BYDAY=WE","dtstart":"2026-01-07T19:00:00+01:00","duration_minutes":120}}'`. Die Wiederholung steht als RRULE in `rrule` (z. B. `FREQ=WEEKLY;BYDAY=WE`), nicht mehr als einzelne Frequenz-/Wochentag-Flags.
+3. Konkreten Zeitraum materialisieren: Aufruf ohne Bestätigung liefert eine Vorschau — `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"materialize","series_id":"<series-id>","range":{"from":"2026-01-01","to":"2026-03-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}'`. Preview prüfen, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `materialize` ist idempotent und überspringt vorhandene Termine.
 
 ### Einzelnes Event anlegen und veröffentlichen
 
-1. Event anlegen: `comvenio event create --file event.json --json` (Flags sind ebenso möglich; Werte aus der Datei ergänzen die Flags).
-2. Event lesen oder auflisten: `comvenio event show <event-id>`, `comvenio event list [--month|--start|--end|--complexity]`.
-3. Event aktualisieren: `comvenio event update <event-id> --file patch.json --json`.
-4. Event veröffentlichen: `comvenio event publish <event-id> [--public]` — setzt `status=confirmed`; mit `--public` zusätzlich `visibility_scope=public`.
-5. Event löschen: `comvenio event delete <event-id>`.
+1. Event anlegen: `comvenio action call cai.event.03.create --input '{"event":{"department_id":"<department-id>","title":"Sommerfest","event_type":"party","visibility_scope":"public","organizer_type":"member","start_time":"2026-08-15T16:00:00+02:00","end_time":"2026-08-16T01:00:00+02:00","description":"Sommerfest am Vereinsheim","location":"Vereinsheim","event_complexity":"simple"}}'`.
+2. Event lesen: `comvenio action call cai.event.02.show --input '{"event_id":"<event-id>"}'`. Events auflisten (Zeitraum ist Pflicht): `comvenio action call cai.event.01.list --input '{"range":{"from":"2026-08-01","to":"2026-09-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true},"limit":50}'`.
+3. Event aktualisieren: `comvenio action call cai.event.04.update --input '{"event_id":"<event-id>","changes":{"description":"Neuer Text"}}'`.
+4. Event veröffentlichen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.event.05.publish --input '{"event_id":"<event-id>","make_public":true}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `publish` setzt `status=confirmed`; `make_public=true` setzt zusätzlich `visibility_scope=public`.
+5. Event löschen (kritisch): `comvenio action call cai.event.06.delete --input '{"event_id":"<event-id>"}'`, danach `comvenio action confirm …`.
 
 ### Mehrtägige Feste mit Festtagen
 
-1. Parent-Event mit `event_complexity=multi_day` anlegen; es muss öffentlich sein.
-2. Festtage verwalten: `comvenio event child list|create|invitation-summary <parent-id>`.
+1. Parent-Event mit `event_complexity=multi_day` anlegen (siehe oben); es muss öffentlich sein.
+2. Festtage verwalten: `comvenio action call cai.event.27.child_list_create_invitation_summary --input '{"operation":"list","event_id":"<parent-event-id>"}'`, zum Anlegen `--input '{"operation":"create","event_id":"<parent-event-id>","child":{"title":"Samstag","event_type":"party","visibility_scope":"public","organizer_type":"member","start_time":"2026-08-15T16:00:00+02:00","end_time":"2026-08-16T01:00:00+02:00"}}'`.
 3. Programmpunkte am jeweiligen Child-Event anlegen — der Parent zeigt nur das Aggregat.
-4. Bereiche zwischen Festtagen kopieren: `comvenio event area copy --file area-copy.json --json`.
+4. Bereiche zwischen Festtagen kopieren (kritisch): `comvenio action call cai.event.09.area_list_add_show_update_delete_bulk_copy --input '{"operation":"copy","source_event_id":"<child-event-id>","target_event_ids":["<other-child-event-id>"]}'`, danach `comvenio action confirm …`.
 
 ### Bereiche einrichten, besetzen und dokumentieren
 
-1. Bereich anlegen: `comvenio event area add <event-id> --name "Bühne" --description "Programm und Technik" --color "#7c3aed" --area-category stage --public --json`, oder mehrere in einem Aufruf mit `comvenio event area bulk --file areas.json --json`. Für den vollständigen Bereichs-Vertrag nimmt `area add` zusätzlich `--file` mit unter anderem einer öffentlichen Beschreibung, Öffnungs- und Schließzeit sowie einer Geometrie (GeoJSON als Text); `area update <area-id> --file area-patch.json` unterstützt dieselben änderbaren Felder — ob ein Bereich der Standardbereich ist, lässt sich dagegen nur beim Anlegen setzen, nicht nachträglich ändern.
-2. Mitglieder zuweisen: `comvenio event assignment add <area-id> --member-id <member-id> --json`; entfernen mit `comvenio event assignment remove <area-id> --member-id <member-id> --json`, leeren mit `clear`; Event- und Club-ID werden automatisch über die Area aufgelöst.
-3. Bereichsleitung anlegen: `comvenio event lead add <area-id> --file lead.json --json`.
-4. Notiz hinterlegen: `comvenio event area-note add <area-id> --notes "Stromanschluss geprüft" --json`.
+1. Bereich anlegen: `comvenio action call cai.event.09.area_list_add_show_update_delete_bulk_copy --input '{"operation":"add","event_id":"<event-id>","area":{"name":"Bühne","description":"Programm und Technik","color":"#7c3aed","is_public":true,"area_category":"stage"}}'`, oder mehrere in einem Aufruf (kritisch) mit `operation=bulk` und `areas`. Bereichsfelder sind `name`, `description`, `color`, `is_public`, `public_description` und `area_category`; ob ein Bereich die Default-Area ist, entsteht automatisch beim Event und lässt sich über die Action nicht setzen.
+2. Bereich ändern: `operation=update` mit `area_id` und `changes`. Bereich löschen (kritisch): `operation=delete` mit `area_id`, danach `comvenio action confirm …`.
+3. Mitglieder zuweisen: `comvenio action call cai.event.10.assignment_list_add_remove_clear --input '{"operation":"add","area_id":"<area-id>","event_id":"<event-id>","member_id":"<member-id>"}'`; entfernen (kritisch) mit `operation=remove` und `member_id`, leeren (kritisch) mit `operation=clear`.
+4. Bereichsleitung anlegen: `comvenio action call cai.event.11.lead_list_add_update_delete --input '{"operation":"add","area_id":"<area-id>","lead":{"member_id":"<member-id>","role":"Bereichsleitung"}}'`.
+5. Notiz hinterlegen: `comvenio action call cai.event.12.area_note_list_add_update_delete --input '{"operation":"add","area_id":"<area-id>","note":{"content":"Stromanschluss geprüft","is_public":false}}'`. Notizen auflisten braucht `limit` und `offset`: `--input '{"operation":"list","area_id":"<area-id>","limit":20,"offset":0}'`.
 
 ### Programm und Kontakte pflegen
 
-1. Programmpunkt anlegen: `comvenio event program add <event-id> --area <area-id> --title "Eröffnung" --start-time <iso> --end-time <iso> --sort-order 10 --json`.
-2. Reihenfolge ändern: `comvenio event program reorder <event-id> --file reorder.json --json`.
-3. Kontakt anlegen: `comvenio event contact add <event-id> --file contact.json --json`.
+1. Programmpunkt anlegen: `comvenio action call cai.event.13.program_list_add_update_delete_reorder --input '{"operation":"add","event_id":"<event-id>","item":{"title":"Eröffnung","description":"Begrüßung durch den Vorstand","start_time":"2026-08-15T18:00:00+02:00","end_time":"2026-08-15T18:15:00+02:00","location":"Hauptbühne","sort_order":10}}'`.
+2. Reihenfolge ändern (kritisch): `--input '{"operation":"reorder","event_id":"<event-id>","item_ids":["<program-item-1>","<program-item-2>"]}'` — `item_ids` trägt die neue Reihenfolge, danach `comvenio action confirm …`.
+3. Kontakt anlegen: `comvenio action call cai.event.14.contact_list_add_update_delete --input '{"operation":"add","event_id":"<event-id>","contact":{"name":"Max Mustermann","role":"Technik","email":"max@example.org","phone_number":"+49...","is_public":false}}'`.
 
 ### Dateien, Ressourcen und Tags verknüpfen
 
-1. Datei hochladen: `comvenio data upload ./flyer.pdf --context event --context-id <event-id> --json`.
-2. Datei fachlich verknüpfen: `comvenio event attachment add <event-id> --attachment-type flyer --attachment-id <file-id> --title "Festflyer" --json`. Anhangstypen: `content`, `counter`, `protocol`, `tournament`, `title_picture`, `flyer`, `news`, `menu`, `shoppinglist`, `canva_embed`.
-3. Ressource verknüpfen: `comvenio event resource add <event-id> --file resources.json --json` (ergänzt) oder `comvenio event resource set <event-id> --file resources.json --json` (ersetzt die gesamte Menge); entfernen mit `comvenio event resource remove <event-id> --target-type room --target-id <room-id> --json`. Auslastung prüfen: `comvenio event resource usage --target-type room --target-id <room-id> --start <iso> --end <iso> --status planned,confirmed --json`.
-4. Tag-Kategorie und Tag anlegen, dann zuweisen: `comvenio event tag category-add --name "Sportart" --json`, `comvenio event tag add --name "Darts" --category-id <category-id> --json`, `comvenio event tag assign <event-id> --tag-id <tag-id> --json`; zugewiesene Tags ansehen: `comvenio event tag assigned <event-id> --json`. Bei `tag category-update` und `tag update` liest das CLI zuerst den bestehenden Datensatz und ergänzt die Club- sowie bei Tags die Kategorie-Kennung — dadurch funktionieren Teiländerungen sicher, egal ob über Flags oder eine Patch-Datei.
+1. Eine Datei zunächst über die Datei-Actions hochladen (siehe eigener Artikel „Dateien"), danach fachlich verknüpfen: `comvenio action call cai.event.16.attachment_list_show_add_update_delete --input '{"operation":"add","event_id":"<event-id>","attachment":{"file_id":"<file-id>","attachment_type":"flyer","title":"Festflyer","is_public":true}}'`. Gebräuchliche Anhangstypen: `content`, `counter`, `protocol`, `tournament`, `title_picture`, `flyer`, `news`, `menu`, `shoppinglist`, `canva_embed`.
+2. Ressource verknüpfen: `operation=add` ergänzt (`resource*:object` mit `target_type`, `target_id`, optional `quantity`/`notes`), `operation=set` ersetzt die gesamte Menge (`resources*:array`); entfernen (kritisch) mit `operation=remove` und `target_type`/`target_id`. Auslastung prüfen: `operation=usage` mit `target_type`, `target_id`, `range`, optional `status`.
+3. Tag-Kategorie und Tag anlegen, dann zuweisen: `comvenio action call cai.event.17.tag_category_and_assignment_workflows --input '{"operation":"category_add","category":{"name":"Sportart"}}'`, `--input '{"operation":"tag_add","tag":{"name":"Darts","category_id":"<category-id>"}}'`, `--input '{"operation":"assign","event_id":"<event-id>","tag_id":"<tag-id>"}'`; zugewiesene Tags ansehen mit `operation=assigned`. `category_update` und `tag_update` erwarten die vollständigen Teiländerungen in `changes`.
 
 ### Mitglieder und Vereine einladen, Anmeldungen erfassen
 
-1. Mitglied einladen: `comvenio event invitation add <event-id> --user-id <user-id> --json`; Status setzen: `comvenio event invitation status <invitation-id> --status accepted --json`.
-2. Gruppenweise einladen: `comvenio event invitation groups --file groups.json --json` (für Abteilungen `departments`/`department_ids`, für Organisationsgruppen `org-groups`/`org_group_ids`).
-3. Comvenio-Club einladen: `comvenio event club-invitation add --file club-invitation.json --json`; externen Club per E-Mail: `comvenio event club-invitation external --file external-invitation.json --json`.
-4. Manuelle Anmeldung erfassen: `comvenio event registration add <event-id> --file registration.json --json`; Statistik: `comvenio event registration stats <event-id> --json`; Admin-Korrektur: `comvenio event registration adjust <registration-id> --file adjustment.json --json`.
+1. Mitglied einladen: `comvenio action call cai.event.19.invitation_and_club_invitation_workflows --input '{"operation":"member_add","invitation":{"event_id":"<event-id>","member_id":"<member-id>"}}'`; Status setzen: `--input '{"operation":"member_status","invitation_id":"<invitation-id>","status":"accepted"}'`.
+2. Gruppenweise einladen: `--input '{"operation":"member_add_groups","event_id":"<event-id>","group_ids":["<group-id>"]}'` (für Abteilungen `member_add_departments`/`department_ids`, für Organisationsgruppen `member_add_org_groups`/`organization_group_ids`).
+3. Comvenio-Club einladen: `--input '{"operation":"club_add","event_id":"<event-id>","invited_club_id":"<club-id>","invitation_type":"public","message":"Wir freuen uns auf euch."}'`; externen Club per E-Mail einladen (kritisch): `--input '{"operation":"club_external","event_id":"<event-id>","external_email":"kontakt@example.org","external_club_name":"Dartfreunde Beispiel","invitation_type":"public"}'`, danach `comvenio action confirm …`.
+4. Manuelle Anmeldung erfassen: `--input '{"operation":"add","event_id":"<event-id>","registration":{"participant_count":3,"notes":"Kommt gegen 18 Uhr"}}'` über `cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate`; Statistik mit `operation=stats`; Admin-Korrektur (kritisch) mit `operation=adjust`, `registration_id`, `participant_count`, `reason`.
 
 ### Sponsoren, Design, Texte, DJ und externen Spielplan pflegen
 
-1. Sponsor-Stammdaten zuerst über `comvenio sponsor` anlegen, danach mit dem Event verknüpfen: `comvenio event sponsor add <event-id> --advertiser-id <advertiser-id> --area <area-id> --tier gold --sort-order 10 --json`.
-2. Sponsor mit Programmpunkt verknüpfen: `comvenio event sponsor-program add <sponsor-link-id> --program-item-id <program-item-id> --label "präsentiert von" --json`.
-3. Event-Theme setzen und Assets hochladen: `comvenio event design theme-set <event-id> --file theme.json --json`, `comvenio event design asset-upload <event-id> --file ./flyer.png --asset-type FLYER --json`; Asset entfernen: `comvenio event design asset-delete <event-id> --asset-id <asset-id> --json`.
-4. Public-Hub-Texte schlüsselweise mergen: `comvenio event copy set <event-id> --file copy.json --json`; einzelnen Schlüssel zurücksetzen: `comvenio event copy reset <event-id> --key program_title --json`.
-5. DJ-Einstellungen und -Wünsche verwalten: `comvenio event dj settings|requests|settings-set|request-status|reset`.
-6. Externe Team-Synchronisation anlegen und ausführen: `comvenio event external-sync add --file sync.json --json`, danach `comvenio event external-sync run --json`.
+1. Sponsor-Stammdaten legst du über die Sponsoring-Actions an (siehe eigener Artikel); die Verknüpfung mit dem Event läuft über `comvenio action call cai.event.18.sponsor_and_sponsor_program_workflows --input '{"operation":"link_add","event_id":"<event-id>","link":{"sponsor_id":"<sponsor-id>","tier":"gold"}}'`.
+2. Sponsor mit Programmpunkt verknüpfen: `--input '{"operation":"program_add","link_id":"<sponsor-link-id>","item_id":"<program-item-id>"}'`.
+3. Event-Theme setzen: `comvenio action call cai.event.22.design_theme_and_asset_workflows --input '{"operation":"theme_set","event_id":"<event-id>","theme":{"primary_color":"#123456","accent_color":"#f59e0b","font_family":"Inter"}}'`. Asset hochladen (kritisch, Datei vorher über die Datei-Actions hochladen): `--input '{"operation":"asset_upload","event_id":"<event-id>","file_id":"<file-id>","asset_type":"FLYER"}'`, danach `comvenio action confirm …`; Asset entfernen ebenfalls kritisch mit `operation=asset_delete`.
+4. Public-Hub-Texte schlüsselweise mergen: `comvenio action call cai.event.23.copy_set_reset --input '{"operation":"set","event_id":"<event-id>","values":{"hero_kicker":"Vereinsfest","program_title":"Unser Programm"}}'`; einzelnen Schlüssel zurücksetzen (kritisch): `--input '{"operation":"reset","event_id":"<event-id>","key":"program_title"}'`.
+5. DJ-Einstellungen und -Wünsche: `comvenio action call cai.event.24.dj_settings_and_request_workflows --input '{"operation":"settings","event_id":"<event-id>"}'`, Wünsche mit `operation=requests`, Einstellungen ändern mit `operation=settings_set`, Wunsch-Status mit `operation=request_status` und `status` (`played`, `rejected`, `pending`), zurücksetzen (kritisch) mit `operation=reset`.
+6. Externe Team-Synchronisation anlegen und ausführen: `comvenio action call cai.event.25.external_sync_workflows --input '{"operation":"add","sync":{"provider_id":"nuliga_tennis","external_club_id":"<provider-club-id>"}}'`, danach ausführen (kritisch) mit `operation=run`, danach `comvenio action confirm …`.
 
 ### Geländeplan
 
-Geländepläne sind Event-Funktionalität, aber wegen ihres Umfangs eine eigene CLI-Domäne:
+Geländepläne sind Event-Funktionalität, aber wegen ihres Umfangs eine eigene Action-Domäne. Lesende und einfach schreibende Vorgänge (`list`, `show`, `create`, `update`, `link`, `duplicate`) laufen direkt; kritische Vorgänge (`delete`, `unlink`, `export`, `illustrate`, `compose`) liefern erst eine Vorschau, dann `comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …`.
 
 ```bash
-comvenio plan list <event-id> --json
-comvenio plan create <event-id> --name "Hauptgelände" --json
-comvenio plan update <plan-id> --file plan-patch.json --json
-comvenio plan delete <plan-id> --json
+comvenio action call cai.plan.01.list --input '{"event_id":"<event-id>"}'
+comvenio action call cai.plan.03.create --input '{"event_id":"<event-id>","plan":{"name":"Hauptgelände"}}'
+comvenio action call cai.plan.04.update --input '{"plan_id":"<plan-id>","changes":{"name":"Hauptgelände Nord"}}'
+comvenio action call cai.plan.05.delete --input '{"plan_id":"<plan-id>"}'   # kritisch
 
-comvenio plan zone create <plan-id> --name "Festzelt" --length 20 --width 10 --json
-comvenio plan zone update <zone-id> --file zone-patch.json --json
-comvenio plan zone delete <zone-id> --json
+comvenio action call cai.plan.06.zone_list_create_update_delete_link_unlink \
+  --input '{"operation":"create","plan_id":"<plan-id>","zone":{"name":"Festzelt","length_m":20,"width_m":10}}'
 
-comvenio plan table create <plan-id> --capacity 8 --length 2.2 --width 0.8 --json
-comvenio plan table update <table-id> --file table-patch.json --json
-comvenio plan table delete <table-id> --json
+comvenio action call cai.plan.07.table_create_duplicate_update_delete \
+  --input '{"operation":"create","table":{"event_id":"<event-id>","capacity":8,"length_m":2.2,"width_m":0.8}}'
 
-comvenio plan marker create <plan-id> --marker-type parking --label "Parken" --json
-comvenio plan marker update <marker-id> --file marker-patch.json --json
-comvenio plan marker delete <marker-id> --json
+comvenio action call cai.plan.08.marker_create_update_delete \
+  --input '{"operation":"create","marker":{"event_id":"<event-id>","marker_type":"parking","label":"Parken"}}'
 
-comvenio plan guest list <event-id> --json
-comvenio plan guest add <event-id> --file guest.json --json
-comvenio plan guest update <guest-id> --file guest-patch.json --json
-comvenio plan guest delete <guest-id> --json
+comvenio action call cai.plan.09.guest_list_add_update_delete \
+  --input '{"operation":"add","event_id":"<event-id>","guest":{"name":"Gastverein"}}'
+
+comvenio action call cai.plan.10.detail --input '{"zone_id":"<zone-id>","detail_plan":{"name":"Zeltplan Detail"}}'
+comvenio action call cai.plan.11.export --input '{"event_id":"<event-id>","format":"pdf","hide_zone_ids":[],"hide_marker_ids":[],"hide_tables":false,"hide_labels":false}'   # kritisch
 ```
-
-`guest.json` enthält `{"name": "Gastverein", "logo_file_id": "<file-id-oder-null>"}`;
-bei `guest update` sind beide Felder optional.
-
-Weitere Plan-Befehle: `zone list|link|unlink`, `table duplicate`, `detail`, `export`, `illustrate`, `compose`.
 
 ## Beispiele
 
-Minimaler `event.json`-Vertrag:
+Event-Objekt beim Anlegen (`event`-Feld von `cai.event.03.create`):
 
 ```json
 {
+  "department_id": "<department-id>",
   "title": "Sommerfest",
   "event_type": "party",
   "visibility_scope": "public",
   "organizer_type": "member",
-  "department_id": "<department-id>",
   "start_time": "2026-08-15T16:00:00+02:00",
   "end_time": "2026-08-16T01:00:00+02:00",
   "description": "Sommerfest am Vereinsheim",
   "location": "Vereinsheim",
-  "status": "planned",
   "event_complexity": "simple"
 }
 ```
 
-Zusätzliche Felder beim Anlegen und Aktualisieren sind unter anderem `organizer_member_id`, `external_name`, `external_email`, `has_protocol_support`, `has_counter_support`, `has_purchase_support`, `invitation_mode` und `feature_profile`. Nur beim Aktualisieren verfügbar sind `actual_visitors`, `actual_revenue` und `actual_costs`.
+Weitere Felder sind unter anderem `organizer_member_id`, `external_name`, `external_email`, `has_protocol_support`, `has_counter_support`, `has_purchase_support` und `feature_profile`. `status` lässt sich nur beim Aktualisieren setzen.
 
-Mehrere Bereiche in einem Aufruf:
+Mehrere Bereiche in einem Aufruf (`cai.event.09…`, `operation=bulk`, kritisch):
 
 ```json
 {
+  "operation": "bulk",
   "event_id": "<event-id>",
   "areas": [
     {"name": "Bühne", "is_public": true, "area_category": "stage"},
@@ -192,90 +178,51 @@ Mehrere Bereiche in einem Aufruf:
 }
 ```
 
-```bash
-comvenio event area bulk --file areas.json --json
+Bereichsleitung (`lead`-Feld):
+
+```json
+{"member_id": "<member-id>", "role": "Bereichsleitung"}
 ```
 
-Bereiche zwischen Festtagen kopieren:
+Programmpunkt (`item`-Feld von `cai.event.13…`, `operation=add`):
 
 ```json
 {
-  "source_area_ids": ["<area-id>"],
-  "target_event_ids": ["<child-event-id>"],
-  "copy_leads": true,
-  "copy_assignments": true,
-  "copy_notes": true,
-  "copy_program": true,
-  "copy_contacts": true,
-  "copy_sponsors": true,
-  "copy_resources": true,
-  "copy_tasks": true,
-  "copy_shifts": true,
-  "reuse_existing": true
-}
-```
-
-Bereichsleitung:
-
-```json
-{"member_id": "<member-id>", "title": "Bereichsleitung", "is_default": true}
-```
-
-Ein vollständiger Programm-Payload:
-
-```json
-{
-  "club_id": "<club-id>",
-  "area_id": "<area-id>",
-  "responsible_member_id": "<member-id>",
-  "start_time": "2026-08-15T18:00:00+02:00",
-  "end_time": "2026-08-15T20:00:00+02:00",
-  "time_label": "Sa 18:00",
   "title": "Live-Musik",
   "description": "Band auf der Hauptbühne",
-  "icon": "music",
-  "image_url": "https://example.org/legacy-image.jpg",
-  "image_file_id": "<file-id>",
-  "flyer_file_id": "<file-id>",
-  "reference_type": "tournament",
-  "reference_id": "<event-id>",
-  "reference_label": "Dartturnier",
-  "reference_url": "/club/...",
+  "start_time": "2026-08-15T18:00:00+02:00",
+  "end_time": "2026-08-15T20:00:00+02:00",
+  "location": "Hauptbühne",
   "sort_order": 20
 }
 ```
 
-Reihenfolge ändern (`items` enthält die neue Sortierung):
+Reihenfolge ändern (`item_ids` trägt die neue Sortierung):
 
 ```json
-{"items": [{"id": "<program-item-1>", "sort_order": 10}, {"id": "<program-item-2>", "sort_order": 20}]}
+{"operation": "reorder", "event_id": "<event-id>", "item_ids": ["<program-item-1>", "<program-item-2>"]}
 ```
 
-Kontakt anlegen:
+Kontakt (`contact`-Feld):
 
 ```json
 {
-  "area_id": "<area-id>",
   "name": "Max Mustermann",
   "role": "Technik",
-  "phone": "+49...",
+  "phone_number": "+49...",
   "email": "max@example.org",
-  "notes": "Ab 14 Uhr vor Ort",
-  "member_id": null,
-  "priority": "important",
-  "sort_order": 10,
-  "visibility": "members"
+  "is_public": false
 }
 ```
 
-`priority` ist `normal`, `important` oder `emergency`; `visibility` ist `public`, `members` oder `admin`.
-
-Ressourcen-Payload — `add` ergänzt, `set` ersetzt die gesamte Menge, die Club-ID wird pro Ziel ergänzt:
+Ressourcen-Payload — `operation=add` ergänzt, `operation=set` ersetzt die gesamte Menge:
 
 ```json
 {
-  "targets": [
-    {"target_type": "room", "target_id": "<room-id>", "event_area_id": "<area-id>"},
+  "operation": "set",
+  "event_id": "<event-id>",
+  "resources": [
+    {"target_type": "room", "target_id": "<room-id>"},
     {"target_type": "object", "target_id": "<object-id>"}
   ]
 }
@@ -284,13 +231,14 @@ Ressourcen-Payload — `add` ergänzt, `set` ersetzt die gesamte Menge, die Club
 Einladung an Gruppen, Abteilungen oder Organisationsgruppen:
 
 ```json
-{"event_id": "<event-id>", "group_ids": ["<group-id>"]}
+{"operation": "member_add_groups", "event_id": "<event-id>", "group_ids": ["<group-id>"]}
 ```
 
 Comvenio-Club einladen:
 
 ```json
 {
+  "operation": "club_add",
   "event_id": "<event-id>",
   "invited_club_id": "<club-id>",
   "invitation_type": "public",
@@ -298,157 +246,156 @@ Comvenio-Club einladen:
 }
 ```
 
-Externen Club per E-Mail einladen:
+Externen Club per E-Mail einladen (kritisch):
 
 ```json
 {
+  "operation": "club_external",
   "event_id": "<event-id>",
   "external_email": "kontakt@example.org",
   "external_club_name": "Dartfreunde Beispiel",
   "external_contact_name": "Erika Beispiel",
   "invitation_type": "public",
-  "message": "Einladung zum Turnier",
-  "menu_id": null
+  "message": "Einladung zum Turnier"
 }
 ```
 
-Manuelle Anmeldung mit Bestellungen:
+Manuelle Anmeldung:
 
 ```json
 {
-  "attendee_count": 3,
-  "contact_name": "Erika Beispiel",
-  "contact_email": "erika@example.org",
-  "contact_phone": "+49...",
-  "notes": "Kommt gegen 18 Uhr",
-  "orders": [
-    {"menu_item_id": "<menu-item-id>", "quantity": 2, "note": "ohne Zwiebeln"}
-  ]
+  "operation": "add",
+  "event_id": "<event-id>",
+  "registration": {
+    "participant_count": 3,
+    "notes": "Kommt gegen 18 Uhr"
+  }
 }
 ```
 
-Admin-Korrektur einer Anmeldung:
+Admin-Korrektur einer Anmeldung (kritisch):
 
 ```json
-{"admin_adjustment_count": 10, "admin_adjustment_reason": "Helfer ohne Online-Anmeldung"}
+{"operation": "adjust", "registration_id": "<registration-id>", "participant_count": 10, "reason": "Helfer ohne Online-Anmeldung"}
 ```
 
 Event-Theme setzen:
 
 ```json
 {
-  "name": "Sommerfest 2026",
-  "base_brief": "Warm, familiär, Vereinsfarben im Mittelpunkt",
-  "css_vars": {"--event-primary": "#123456", "--event-accent": "#f59e0b"},
-  "reference_image_ids": ["<file-id>"],
-  "mood_tags": ["sommerlich", "familiär"]
+  "operation": "theme_set",
+  "event_id": "<event-id>",
+  "theme": {
+    "primary_color": "#123456",
+    "accent_color": "#f59e0b",
+    "font_family": "Inter"
+  }
 }
 ```
 
 Public-Hub-Texte werden schlüsselweise gemergt:
 
 ```json
-{"copy": {"hero_kicker": "Vereinsfest", "program_title": "Unser Programm"}}
+{"operation": "set", "event_id": "<event-id>", "values": {"hero_kicker": "Vereinsfest", "program_title": "Unser Programm"}}
 ```
 
-Externe Team-Synchronisation:
+Externe Team-Synchronisation anlegen:
 
 ```json
-{
-  "department_id": "<department-id>",
-  "provider": "nuliga_tennis",
-  "external_club_id": "<provider-club-id>",
-  "external_team_id": "<provider-team-id>",
-  "age_group_filter": null,
-  "home_location": "Vereinsanlage",
-  "team_label": "Herren 1",
-  "sync_enabled": true
-}
+{"operation": "add", "sync": {"provider_id": "nuliga_tennis", "external_club_id": "<provider-club-id>", "active": true}}
+```
+
+Geländeplan-Zone:
+
+```json
+{"operation": "create", "plan_id": "<plan-id>", "zone": {"name": "Festzelt", "length_m": 20, "width_m": 10}}
 ```
 
 ### Verbindungen zu anderen Bereichen
 
-| Aufgabe | Richtiger Befehl |
+| Aufgabe | Wo |
 |---|---|
-| Dateien/Galerie hochladen | `comvenio data upload ... --context event --context-id <event-id>` |
-| Datei fachlich als Flyer/Titelbild verknüpfen | `comvenio event attachment add ...` |
-| Sponsor-Stammdaten und Verträge | `comvenio sponsor ...` |
-| Sponsor einem Event zuweisen | `comvenio event sponsor add ...` |
-| Räume, Gebäude und Objekte verwalten | `comvenio object ...` |
-| Buchungen bestätigen oder ablehnen | `comvenio booking ...` |
-| Ressource mit Event verknüpfen | `comvenio event resource ...` |
-| Aufgaben und Schichten | `comvenio task ...` auf dem Task-Kontext des Bereichs |
-| Speisekarten | `comvenio menu ...` |
-| Speisekarte einem Event-Bereich zuweisen | `comvenio event menu list|assign|unassign` |
-| Geländeplan | `comvenio plan ...` |
+| Dateien/Galerie hochladen | eigener Artikel „Dateien" |
+| Datei fachlich als Flyer/Titelbild verknüpfen | `cai.event.16…`, `operation=add` |
+| Sponsor-Stammdaten und Verträge | eigener Artikel „Sponsoring" |
+| Sponsor einem Event zuweisen | `cai.event.18…`, `operation=link_add` |
+| Räume, Gebäude und Objekte verwalten | eigener Artikel „Buchungen und Objekte" |
+| Buchungen bestätigen oder ablehnen | eigener Artikel „Buchungen und Objekte" |
+| Ressource mit Event verknüpfen | `cai.event.15…` |
+| Aufgaben und Schichten | eigener Artikel „Aufgaben" auf dem Bereichs-Kontext |
+| Speisekarten | eigener Artikel „Speisekarten" |
+| Speisekarte einem Event-Bereich zuweisen | `cai.event.28.menu_list_assign_unassign` |
+| Geländeplan | `cai.plan…` |
 
 ### Bewusst nicht abgebildet
 
 | Bereich | Grund |
 |---|---|
 | Systemweite Copy-Defaults ändern | Plattformadministration, nicht Vereinsverwaltung. |
-| Rein öffentliche Share-, Public-Hub- und Formularseiten | Sie verwalten den Club nicht; Admin-Funktionen haben eigene Befehle. |
-| Kalender-Abos | Für diesen Weg ist der CLI-Anmeldevertrag noch nicht ausgelegt. Nicht per direktem Aufruf umgehen. |
+| Rein öffentliche Share-, Public-Hub- und Formularseiten | Sie verwalten den Club nicht; Admin-Funktionen haben eigene Actions. |
+| Kalender-Abos | Für diesen Weg ist der Anmeldevertrag noch nicht ausgelegt. Nicht per direktem Aufruf umgehen. |
 | Alte Geländeplan-Darstellung | Durch die aktuelle `plan`-Domäne ersetzt. |
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**event** — vollständig
+**event**
 
-- `comvenio event list`
-- `comvenio event show`
-- `comvenio event create`
-- `comvenio event update`
-- `comvenio event publish`
-- `comvenio event delete`
-- `comvenio event template list|create|clone|instantiate`
-- `comvenio event series list|show|create|materialize|promote-recurring|promote-yearly|next`
-- `comvenio event area list|add|show|update|delete|bulk|copy`
-- `comvenio event assignment list|add|remove|clear`
-- `comvenio event lead list|add|update|delete`
-- `comvenio event area-note list|add|update|delete`
-- `comvenio event program list|add|update|delete|reorder`
-- `comvenio event contact list|add|update|delete`
-- `comvenio event resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch`
-- `comvenio event attachment list|show|add|update|delete`
-- `comvenio event tag category and assignment workflows`
-- `comvenio sponsor and sponsor-program workflows`
-- `comvenio event invitation and club-invitation workflows`
-- `comvenio event registration list|add|stats|show|update|adjust|delete|aggregate`
-- `comvenio event design theme and asset workflows`
-- `comvenio event copy set|reset`
-- `comvenio event dj settings and request workflows`
-- `comvenio event external-sync workflows`
-- `comvenio event instance previous|next|compare|clone-next`
-- `comvenio event child list|create|invitation-summary`
-- `comvenio event menu list|assign|unassign`
+- `cai.event.01.list` — list (lesen)
+- `cai.event.02.show` — show (lesen)
+- `cai.event.03.create` — create (ändern)
+- `cai.event.04.update` — update (ändern)
+- `cai.event.05.publish` — publish (ändern mit Bestätigung)
+- `cai.event.06.delete` — delete (ändern mit Bestätigung)
+- `cai.event.07.template_list_create_clone_instantiate` — list, create, clone, instantiate (lesen, ändern)
+- `cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n` — list, show, create, update, delete, materialize, materialize_next, promote_recurring, promote_yearly (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.09.area_list_add_show_update_delete_bulk_copy` — list, add, show, update, delete, bulk, copy (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.10.assignment_list_add_remove_clear` — list, add, remove, clear (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.11.lead_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.12.area_note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.13.program_list_add_update_delete_reorder` — list, add, update, delete, reorder (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.14.contact_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.15.resource_list_add_set_remove_link_show_link_update_link_delete_usage_u` — list, add, set, remove, link_show, link_update, link_delete, usage, usage_batch (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.16.attachment_list_show_add_update_delete` — list, show, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.17.tag_category_and_assignment_workflows` — category_list, category_show, category_add, category_update, category_delete, tag_list, tag_show, tag_add, tag_update, tag_delete, assigned, assignment_list, assign, unassign, clear (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.18.sponsor_and_sponsor_program_workflows` — link_list, link_add, link_delete, tier_list, tier_add, tier_update, tier_delete, tier_sync, program_by_sponsor, program_by_item, program_add, program_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.19.invitation_and_club_invitation_workflows` — member_mine, member_list, member_show, member_add, member_add_groups, member_add_departments, member_add_org_groups, member_update, member_status, member_delete, member_notified, club_list, club_attending, club_incoming, club_accepted, club_show, club_add, club_external, club_self_join, club_update, club_respond, club_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.20.registration_list_add_stats_show_update_adjust_delete_aggregate` — list, add, stats, show, update, adjust, delete, aggregate (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.22.design_theme_and_asset_workflows` — theme_show, theme_set, theme_delete, asset_list, asset_upload, asset_delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.23.copy_set_reset` — set, reset (ändern, ändern mit Bestätigung)
+- `cai.event.24.dj_settings_and_request_workflows` — settings, requests, settings_set, request_status, reset (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.25.external_sync_workflows` — list, add, show, update, delete, matches, run, stats, provider_run (lesen, ändern, ändern mit Bestätigung)
+- `cai.event.26.instance_previous_next_compare_clone_next` — previous, next, compare, clone_next (lesen, ändern)
+- `cai.event.27.child_list_create_invitation_summary` — list, create, invitation_summary (lesen, ändern)
+- `cai.event.28.menu_list_assign_unassign` — list, assign, unassign (lesen, ändern, ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema event --json`
 
-**plan** — vollständig
+**plan**
 
-- `comvenio plan list`
-- `comvenio plan show`
-- `comvenio plan create`
-- `comvenio plan update`
-- `comvenio plan delete`
-- `comvenio plan zone list|create|update|delete|link|unlink`
-- `comvenio plan table create|duplicate|update|delete`
-- `comvenio plan marker create|update|delete`
-- `comvenio plan guest list|add|update|delete`
-- `comvenio plan detail`
-- `comvenio plan export`
-- `comvenio plan illustrate`
-- `comvenio plan compose`
+- `cai.plan.01.list` — list (lesen)
+- `cai.plan.02.show` — show (lesen)
+- `cai.plan.03.create` — create (ändern)
+- `cai.plan.04.update` — update (ändern)
+- `cai.plan.05.delete` — delete (ändern mit Bestätigung)
+- `cai.plan.06.zone_list_create_update_delete_link_unlink` — list, create, update, delete, link, unlink (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.07.table_create_duplicate_update_delete` — create, duplicate, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.08.marker_create_update_delete` — create, update, delete (ändern, ändern mit Bestätigung)
+- `cai.plan.09.guest_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
+- `cai.plan.10.detail` — create (ändern)
+- `cai.plan.11.export` — export (ändern mit Bestätigung)
+- `cai.plan.12.illustrate` — illustrate (ändern mit Bestätigung)
+- `cai.plan.13.compose` — compose (ändern mit Bestätigung)
 <!-- /gen:docs -->
 
 ## Fehler
 
-- `AUTH_REQUIRED` — deine Anmeldung ist abgelaufen oder fehlt, bevor ein Event-Befehl läuft. Siehe `comvenio help fehler AUTH_REQUIRED`.
-- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Scope für diese Event-Aktion. Siehe `comvenio help fehler SCOPE_REQUIRED`.
+- `AUTH_REQUIRED` — deine Anmeldung ist abgelaufen oder fehlt, bevor eine Event- oder Plan-Action läuft. Siehe `comvenio help fehler AUTH_REQUIRED`.
+- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Scope für diese Action. Siehe `comvenio help fehler SCOPE_REQUIRED`.
 - `PERMISSION_DENIED` — deine Rolle im Verein erlaubt zum Beispiel `create_events` oder `manage_events` nicht. Siehe `comvenio help fehler PERMISSION_DENIED`.
-- `NOT_FOUND` — Event, Bereich, Vorlage oder Serie existiert nicht oder ist für dich nicht sichtbar. Siehe `comvenio help fehler NOT_FOUND`.
-- `VALIDATION_FAILED` — ein Pflichtfeld fehlt oder hat das falsche Format, etwa im Event- oder Bereichs-JSON. Siehe `comvenio help fehler VALIDATION_FAILED`.
+- `NOT_FOUND` — Event, Bereich, Vorlage, Serie oder Plan existiert nicht oder ist für dich nicht sichtbar. Siehe `comvenio help fehler NOT_FOUND`.
+- `VALIDATION_FAILED` — ein Pflichtfeld fehlt oder hat das falsche Format in der Eingabe. Siehe `comvenio help fehler VALIDATION_FAILED`.
 - `CONFLICT` — ein Bereich, eine Ressource oder ein Termin lässt die Aktion im aktuellen Zustand nicht zu. Siehe `comvenio help fehler CONFLICT`.
-- `CONFIRMATION_REQUIRED` — eine kritische Änderung wie das Löschen eines Bereichs muss zuerst bestätigt werden. Siehe `comvenio help fehler CONFIRMATION_REQUIRED`.
+- `CONFIRMATION_REQUIRED` — eine kritische Action wie das Löschen eines Bereichs braucht zuerst `comvenio action confirm` mit der Vorschau. Siehe `comvenio help fehler CONFIRMATION_REQUIRED`.
+- `OUTCOME_UNKNOWN` — eine schreibende Action hat nach der Bestätigung nicht rechtzeitig geantwortet; Stand prüfen statt wiederholen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
+- `OAUTH_ONLY` — nur wenn ein alter, klassischer Befehl statt einer Action verwendet wird. Siehe `comvenio help fehler OAUTH_ONLY`.

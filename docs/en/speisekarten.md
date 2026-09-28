@@ -13,12 +13,7 @@ With `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template` and `
 
 ## Requirements and permissions
 
-> **Sign-in:** The commands in this article are classic commands. They run with a device-token
-> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
-> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
-> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
-
-Sign in with `comvenio login`; without `--scopes` it requests all scopes, `--scopes` narrows it down. Comvenio additionally checks your role in the club server-side.
+Sign in with `comvenio login`; which actions your club has enabled and which scopes they need is shown by `comvenio action list --json`. Comvenio additionally checks your role in the club server-side.
 
 | Operation | Permission or rule |
 |---|---|
@@ -39,57 +34,56 @@ A missing permission is reported as `403`.
 - Allergens live on the ingredient, not on the recipe. The recipe inherits them transitively through its ingredients — that only becomes correct once the ingredients match the templates (see below).
 - The recipe is the source of truth, the menu item is the presentation: the same recipe can appear on several menus with a different name and price — create the recipe once, then set an item with its own label and price per menu.
 - Several package sizes (e.g. glass and bottle of the same drink) are price variants of the same item, not duplicate items — they are held structurally in `price_options`.
-- The CLI does not call any language model of its own for recipes and menus: you (as a person or agent) compose the content and structure yourself, and the CLI stores it unchanged. The earlier commands `menu generate` and `menu design` were therefore deliberately removed; they abort with an explanation. A menu and its design are created through `menu apply`, `menu create`, `menu add-item` and `menu style` respectively.
+- The CLI does not call any language model of its own for recipes and menus: you (as a person or agent) compose the content and structure yourself, and the action stores it unchanged.
 
 ### Use templates first
 
-1. Search for a matching dish template: `comvenio template dish --search "Schnitzel" --json`.
-2. Instantiate a recipe from it, optionally overriding the price: `comvenio recipe from-template <template-id> --price 12 --json`. The response contains `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` and the success status.
+1. Search for a matching dish template: `comvenio action call cai.template.01.dish --input '{"operation":"list","search":"Schnitzel","limit":20}'`.
+2. Instantiate a recipe from it (critical — preview first, then confirmation): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. The response contains `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` and the success status.
 3. `from-template` matches server-side on club and recipe name — a second call with the same name returns the existing `recipe_id` instead of creating a duplicate.
-4. If an ingredient appears in `missing_ingredients`, it had no template match and was created without an allergen. For important allergen carriers (flour, beer, cheese, fish, …) check the exact template spelling with `comvenio template ingredient --search "<name>"` — the match is case-insensitive but not fuzzy.
+4. If an ingredient appears in `missing_ingredients`, it had no template match and was created without an allergen. For important allergen carriers (flour, beer, cheese, fish, …) check the exact template spelling with `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` — the match is case-insensitive but not fuzzy.
 
 ### Create an ad-hoc recipe (when no template fits)
 
-1. Create a recipe with ingredients: `comvenio recipe create --name "Brezn" --type food --price 3.00 --category "Snacks" --ingredients "Laugenbreze:1:pc" --json`. Format of `--ingredients`: `"Name:Menge:Einheit,Name2:Menge2:Einheit2"`.
-2. Match ingredient template names exactly so the allergens are inherited too — check the spelling first with `comvenio template ingredient --search "<name>"`.
-3. Missing ingredients are created automatically when the recipe is created.
+1. Create a recipe with ingredients (critical — preview first, then confirmation): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `ingredients` is an array of `{"name","quantity","unit"}`, no longer a text format.
+2. Match ingredient template names exactly so the allergens are inherited too — check the spelling first with `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'`.
+3. Missing ingredients are created automatically when the recipe is created (`auto_create_missing_ingredients`, on by default).
 
 ### Building a menu: check first, then apply
 
-1. Compose the menu and its items as a file (see Examples).
-2. Check it without writing anything: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. This checks required fields, prices, `display_order` and every recipe link, also loading the linked recipe data for category, description, age rating, allergens and colorants, and generates a data report, a responsive HTML/PNG view and a DIN-A4 PDF locally without writing anything.
-3. A `valid: false` is a deliberately visible review result; the artifacts are still generated so the error can be judged in context.
-4. Only then apply it: `comvenio menu apply --file menu.json --json` (creates the menu and its items in bulk).
+1. Compose the menu and its items as one object (see Examples).
+2. `apply` is critical: the first call without confirmation already is the check — `comvenio action call cai.menu.09.apply --input '{"menu": {…}}'` checks required fields, prices, `display_order` and every recipe link server-side, without writing anything, and returns a preview with `preview_id` and `confirmation_token`.
+3. Review the preview; only then does `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` create the menu and its items in bulk.
 
 ### Assembling a menu directly and reusing recipes
 
-1. Create a menu: `comvenio menu create --name "Grillbude – Dorfabend" --category "Fest" --json`.
-2. Create a recipe once, or instantiate it from a template, then reference it on as many menus as you like: `comvenio menu add-item <menu-id> --recipe <recipe-id> --name "Helles Bier" --price 4.50 --json`. Name and price can be overridden per menu; the recipe (including its allergens) stays the single source of truth.
-3. Change an existing item via its item ID instead of creating a new one: `comvenio menu update-item <menu-item-id> --name "..." --price-options '[...]' --json`. This preserves the item's identity and creates neither a second item nor a new recipe.
+1. Create a menu: `comvenio action call cai.menu.01.create --input '{"menu":{"name":"Grillbude – Dorfabend","category":"Fest"}}'`.
+2. Create a recipe once, or instantiate it from a template, then reference it on as many menus as you like: `comvenio action call cai.menu.04.add_item --input '{"menu_id":"<menu-id>","item":{"recipe_id":"<recipe-id>","name":"Helles Bier","selling_price":4.50}}'`. Name and price can be overridden per menu; the recipe (including its allergens) stays the single source of truth.
+3. Change an existing item via its item ID instead of creating a new one: `comvenio action call cai.menu.05.update_item --input '{"item_id":"<menu-item-id>","changes":{"name":"…","price_options":[…]}}'`. This preserves the item's identity and creates neither a second item nor a new recipe.
 4. A product with several package sizes (e.g. glass/bottle) stays one item with several `price_options`, not a second item.
 5. Do not create a new recipe for the same dish for every menu — that produces duplicates.
 
 ### Maintaining club ingredients and categories
 
-1. Create an ingredient: `comvenio ingredient create --file ingredient.json --json` (required fields: `name`, `unit`).
-2. Search and read ingredients: `comvenio ingredient list --search "Kartoffel" --category <category-id> --json`, `comvenio ingredient show <ingredient-id> --json`. `--category` includes subcategories; `--skip` and `--limit` (1–1000) control the list.
-3. Read the category tree and assign categories: `comvenio ingredient-category tree --json`, `comvenio ingredient-category assign <ingredient-id> --category <category-id> --json`.
-4. Create your own category: `comvenio ingredient-category create --file category.json --json` (required fields: `name`, `category_type`; optional fields include `description`, `parent_id`, `icon`, `color` and `sort_order`). `comvenio ingredient-category init --json` creates default categories and is only meant for clubs that have none yet — otherwise it reports a conflict.
+1. Create an ingredient: `comvenio action call cai.ingredient.03.create --input '{"ingredient":{"name":"Bio-Kartoffeln","unit":"kg","cost_per_unit":2.4,"supplier":"Hof Muster","category_ids":["<category-id>"]}}'` (required fields inside `ingredient`: `name`, `unit`).
+2. Search and read ingredients: `comvenio action call cai.ingredient.01.list --input '{"search":"Kartoffel","category_id":"<category-id>","limit":20,"offset":0}'`, `comvenio action call cai.ingredient.02.show --input '{"ingredient_id":"<ingredient-id>"}'`. `limit` (1–100) and `offset` control the list.
+3. Read the category tree and assign categories: `comvenio action call cai.ingredient-category.03.tree --input '{}'`, `comvenio action call cai.ingredient-category.09.assign --input '{"ingredient_id":"<ingredient-id>","category_id":"<category-id>"}'`.
+4. Create your own category: `comvenio action call cai.ingredient-category.06.create --input '{"category":{"name":"Vegan","category_type":"dietary"}}'` (required fields inside `category`: `name`, `category_type`; optional fields include `description`, `parent_id`, `icon`, `color` and `sort_order`). `comvenio action call cai.ingredient-category.11.init --input '{"acknowledge_defaults":true}'` creates default categories after confirmation and is only meant for clubs that have none yet — otherwise the action reports a conflict.
 
 ### Running shopping lists
 
-1. Create a list: `comvenio shopping create --file shopping-list.json --json` with `context_type` (`club`, `event`, `object`, `meeting`) and status `draft`, `active`, `completed` or `cancelled`.
-2. Add an item: `comvenio shopping item-add <list-id> --file item.json --json`. An item needs `quantity`, `unit` and either `ingredient_id` or a non-empty `name`.
-3. Mark it purchased: `comvenio shopping purchased <item-id> --purchased true --json`.
-4. Generate deterministically from existing data: `comvenio shopping generate-from-recipe <recipe-id> --portions 80 --name "Einkauf Grillteller" --json` or `comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json`.
+1. Create a list: `comvenio action call cai.shopping.07.create --input '{"shopping_list":{"name":"Einkauf Sommerfest","description":"Grillbude und Getränkestand","context_type":"event","context_id":"<event-id>","status":"draft"}}'` with `context_type` (`club`, `event`, `object`, `meeting`) and status `draft`, `active`, `completed` or `cancelled`.
+2. Add an item: `comvenio action call cai.shopping.10.item_add --input '{"shopping_list_id":"<list-id>","item":{"ingredient_id":"<ingredient-id>","quantity":20,"unit":"kg","estimated_cost":48,"notes":"Festkochend"}}'`. An item needs `quantity`, `unit` and either `ingredient_id` or a non-empty `name`.
+3. Mark it purchased: `comvenio action call cai.shopping.13.purchased --input '{"item_id":"<item-id>","purchased":true}'`.
+4. Generate deterministically from existing data: `comvenio action call cai.shopping.14.generate_from_recipe --input '{"recipe_id":"<recipe-id>","portions":80,"name":"Einkauf Grillteller","output_format":"pdf"}'` or `comvenio action call cai.shopping.15.generate_from_menu --input '{"menu_id":"<menu-id>","name":"Einkauf Festkarte","output_format":"pdf"}'`.
 
 ### Styling a menu
 
-1. Set free CSS: `comvenio menu style <menu_id> --css ./meine-karte.css`.
-2. The CSS is injected in isolation into the menu container on the frontend (it cannot break out of the container) and targets semantic classes such as `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`, `.menu-item-name`, `.menu-item-price`, `.menu-qr`.
-3. Allergens, prices and the QR code remain structured, required components — the CSS only styles their appearance.
-4. `style` reads the current state, merges your CSS into it and writes it back; other design settings of the menu are preserved.
-5. The CSS content itself is not validated — you are responsible for valid, effective CSS.
+1. Set the design: `comvenio action call cai.menu.08.style --input '{"menu_id":"<menu-id>","design":{"background":"#ffffff","textColor":"#1a1a1a","accentColor":"#7c3aed","showPrices":true,"showAllergens":true}}'`. The `design` object carries named fields for colors, fonts, columns, logo, QR code and watermark — free CSS alone is no longer the only way.
+2. Additional free CSS is still possible through the `custom_css` field inside the same `design` object, but it is checked for unsafe patterns: the action rejects `@import`, `javascript:`, `expression()`, `behavior:` and embedded `<style>` or `<script>` tags.
+3. Allergens, prices and the QR code remain structured, required components and still come from the recipe and item — the design fields (`showPrices`, `showAllergens`, `showColorants`, `showQr`, …) only control whether they are shown, not their content.
+4. Design can also be set directly on creation: `cai.menu.09.apply` accepts `design_config` inside the `menu` object; the plain `cai.menu.01.create` has no design field — use `menu style` afterward for that.
+5. The CSS content itself is only checked against the unsafe patterns listed above, not otherwise validated — you are responsible for valid, effective CSS.
 
 ## Examples
 
@@ -109,36 +103,35 @@ Creating an ingredient:
 ```
 
 ```bash
-comvenio ingredient create --file ingredient.json --json
+comvenio action call cai.ingredient.03.create --input '{"ingredient": <object above>}'
 ```
 
-Creating a category (category types: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`):
+Creating, changing and deleting a category (category types: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`):
 
 ```bash
-comvenio ingredient-category create --file category.json --json
-comvenio ingredient-category update <category-id> --file category.json --json
-comvenio ingredient-category delete <category-id> --json       # soft delete
-comvenio ingredient-category delete <category-id> --hard --json
+comvenio action call cai.ingredient-category.06.create --input '{"category":{"name":"Vegan","category_type":"dietary"}}'
+comvenio action call cai.ingredient-category.07.update --input '{"category_id":"<category-id>","changes":{"description":"Ohne tierische Zutaten"}}'
+comvenio action call cai.ingredient-category.08.delete --input '{"category_id":"<category-id>"}'
 ```
 
 A product with several package sizes — `selling_price` stays as the base price, `price_options` holds the individual package sizes:
 
 ```json
 {
-  "recipe_id": "<riesling-recipe-id>",
-  "name": "Riesling Nahe trocken",
-  "selling_price": 4.20,
-  "price_options": [
-    {"label": "0,2 l", "price": 4.20},
-    {"label": "Flasche", "price": 15.60}
-  ]
+  "item_id": "<riesling-item-id>",
+  "changes": {
+    "name": "Riesling Nahe trocken",
+    "selling_price": 4.20,
+    "price_options": [
+      {"label": "0,2 l", "price": 4.20},
+      {"label": "Flasche", "price": 15.60}
+    ]
+  }
 }
 ```
 
 ```bash
-comvenio menu add-item <menu-id> --recipe <riesling-recipe-id> \
-  --name "Riesling Nahe trocken" --price 4.20 \
-  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+comvenio action call cai.menu.05.update_item --input '<object above>'
 ```
 
 Creating a shopping list:
@@ -149,8 +142,7 @@ Creating a shopping list:
   "description": "Grillbude und Getränkestand",
   "context_type": "event",
   "context_id": "<event-id>",
-  "status": "draft",
-  "items": []
+  "status": "draft"
 }
 ```
 
@@ -166,25 +158,29 @@ A shopping item:
 }
 ```
 
-Complete example — a barbecue-stand menu from the recipes to the finished menu:
+Complete example — a barbecue-stand menu from the recipes to the finished menu (`$( … )` reads the id from the confirmed response each time):
 
 ```bash
-# Create recipes once (with allergens)
-STEAK=$(comvenio recipe from-template <steaksemmel-template-id> --name "Steaksemmel" --price 4.50 --json | jq -r .recipe_id)
-BRAT=$(comvenio recipe from-template <bratwurstsemmel-template-id> --name "Bratwurstsemmel" --price 4.50 --json | jq -r .recipe_id)
-KAAS=$(comvenio recipe create --name "Käse" --type food --price 3.40 --ingredients "Gouda Käse:0.1:kg" --json | jq -r .id)
+# Create recipes once (with allergens) — recipe.from-template and recipe.create are critical
+comvenio action call cai.recipe.02.from_template --input '{"template_id":"<steaksemmel-template-id>","custom_name":"Steaksemmel","custom_price":4.50}'
+comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+STEAK=<recipe_id from the response>
+
+comvenio action call cai.recipe.01.create --input '{"name":"Käse","type_of_recipe":"food","selling_price":3.40,"ingredients":[{"name":"Gouda Käse","quantity":0.1,"unit":"kg"}]}'
+comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+KAAS=<recipe_id from the response>
 
 # Create the menu
-MENU=$(comvenio menu create --name "Grillbude – Sporttag" --category "Fest" --json | jq -r .id)
+comvenio action call cai.menu.01.create --input '{"menu":{"name":"Grillbude – Sporttag","category":"Fest"}}'
+MENU=<id from the response>
 
 # Set items (recipe reuse, label/price per menu)
-comvenio menu add-item $MENU --recipe $STEAK --name "Steaksemmel" --price 4.50 --json
-comvenio menu add-item $MENU --recipe $BRAT --name "Bratwurstsemmel" --price 4.50 --json
-comvenio menu add-item $MENU --recipe $KAAS --name "Kaas (100 g)" --price 3.40 --json
+comvenio action call cai.menu.04.add_item --input "{\"menu_id\":\"$MENU\",\"item\":{\"recipe_id\":\"$STEAK\",\"name\":\"Steaksemmel\",\"selling_price\":4.50}}"
+comvenio action call cai.menu.04.add_item --input "{\"menu_id\":\"$MENU\",\"item\":{\"recipe_id\":\"$KAAS\",\"name\":\"Kaas (100 g)\",\"selling_price\":3.40}}"
 
 # Optionally style and check it
-comvenio menu style $MENU --css ./festkarte.css
-comvenio menu show $MENU --json
+comvenio action call cai.menu.08.style --input "{\"menu_id\":\"$MENU\",\"design\":{\"accentColor\":\"#7c3aed\"}}"
+comvenio action call cai.menu.03.show --input "{\"menu_id\":\"$MENU\"}"
 ```
 
 ### Enums
@@ -202,103 +198,113 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 
 - A menu item without a recipe is missing from the public item list, because that list always links through the recipe — always attach a recipe for QR menus.
 - The menu price overrides the recipe's base price per menu; without its own price, the recipe default applies. Several package sizes belong in `price_options`, not in separate items. The sort field is called `display_order`.
-- For existing menu items, always pass their item ID to `menu update-item`; `menu add-item` and `menu apply` create new items.
+- For existing menu items, always pass their item ID to `cai.menu.05.update_item`; `cai.menu.04.add_item` and `cai.menu.09.apply` create new items.
 - Allergens only arise from ingredient names that match a template. A freely invented ingredient without a template match gets no allergen.
-- `custom_css` can only be set via `menu style` (or a menu update), not when creating the menu.
-- A QR graphic or URL is generated not by the CLI but by the frontend from the public menu data.
+- Design can be set during bulk creation via `cai.menu.09.apply` (`design_config`) or afterward via `cai.menu.08.style` (`design`), not on the plain `cai.menu.01.create`.
+- A QR graphic or URL is generated not by the action but by the frontend from the public menu data.
+- `recipe.create` and `recipe.from-template` are `critical_write`: the call without confirmation only returns the preview, the recipe is created only with `action confirm`.
 
 ### Further read and management commands
 
-- Manage recipes: `comvenio recipe list|show|update|delete`.
-- Manage ingredients: `comvenio ingredient list|show|update|delete`.
-- Read and assign categories: `comvenio ingredient-category list|roots|tree|by-ingredient|unassign`.
-- Read shopping lists: `comvenio shopping list --status draft`, `comvenio shopping active`, `comvenio shopping completed`, `comvenio shopping by-context --context-id <event-id>`, `comvenio shopping by-context-type --context-type event`, `comvenio shopping show <list-id>`.
-- Change or delete a shopping list: `comvenio shopping update <list-id> --file shopping-list.json --json`, `comvenio shopping delete <list-id> --json`.
-- Change or delete a shopping item: `comvenio shopping item-update <item-id> --file item.json --json`, `comvenio shopping item-delete <item-id> --json`.
-- Manage a menu: `comvenio menu list|show|delete`, `comvenio menu delete-item <item-id>`, `comvenio menu export <menu-id> [--out]`.
+- Manage recipes: `cai.recipe.03.list`, `cai.recipe.04.show`, `cai.recipe.05.update`, `cai.recipe.06.delete` (critical).
+- Manage ingredients: `cai.ingredient.01.list`, `cai.ingredient.02.show`, `cai.ingredient.04.update`, `cai.ingredient.05.delete` (critical).
+- Read and assign categories: `cai.ingredient-category.01.list`, `.02.roots`, `.03.tree`, `.04.by_ingredient`, `.10.unassign` (critical).
+- Read shopping lists: `cai.shopping.01.list`, `.02.active`, `.03.completed`, `.04.by_context`, `.05.by_context_type`, `.06.show` (`operation=show`).
+- Change, delete or export a shopping list as PDF/CSV: `cai.shopping.08.update`, `cai.shopping.09.delete` (critical), `cai.shopping.06.show` (`operation=export`).
+- Change or delete a shopping item: `cai.shopping.11.item_update`, `cai.shopping.12.item_delete` (critical).
+- Manage a menu: `cai.menu.02.list`, `cai.menu.03.show`, `cai.menu.07.delete` (critical), `cai.menu.06.delete_item` (critical), `cai.menu.10.export`.
 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
 
-**recipe** — complete
+**recipe**
 
-- `comvenio recipe create`
-- `comvenio recipe from-template`
-- `comvenio recipe list`
-- `comvenio recipe show`
-- `comvenio recipe update`
-- `comvenio recipe delete`
+- `cai.recipe.01.create` — create (change with confirmation)
+- `cai.recipe.02.from_template` — create (change with confirmation)
+- `cai.recipe.03.list` — list (read)
+- `cai.recipe.04.show` — show (read)
+- `cai.recipe.05.update` — update (change)
+- `cai.recipe.06.delete` — delete (change with confirmation)
 
-**ingredient** — complete
+**ingredient**
 
-- `comvenio ingredient list`
-- `comvenio ingredient show`
-- `comvenio ingredient create`
-- `comvenio ingredient update`
-- `comvenio ingredient delete`
+- `cai.ingredient.01.list` — list (read)
+- `cai.ingredient.02.show` — show (read)
+- `cai.ingredient.03.create` — create (change)
+- `cai.ingredient.04.update` — update (change)
+- `cai.ingredient.05.delete` — delete (change with confirmation)
 - Fields and values: `comvenio schema ingredient --json`
 
-**ingredient-category** — complete
+**ingredient-category**
 
-- `comvenio ingredient-category list`
-- `comvenio ingredient-category roots`
-- `comvenio ingredient-category tree`
-- `comvenio ingredient-category by-ingredient`
-- `comvenio ingredient-category show`
-- `comvenio ingredient-category create`
-- `comvenio ingredient-category update`
-- `comvenio ingredient-category delete`
-- `comvenio ingredient-category assign`
-- `comvenio ingredient-category unassign`
-- `comvenio ingredient-category init`
+- `cai.ingredient-category.01.list` — list (read)
+- `cai.ingredient-category.02.roots` — roots (read)
+- `cai.ingredient-category.03.tree` — tree (read)
+- `cai.ingredient-category.04.by_ingredient` — list (read)
+- `cai.ingredient-category.05.show` — show (read)
+- `cai.ingredient-category.06.create` — create (change)
+- `cai.ingredient-category.07.update` — update (change)
+- `cai.ingredient-category.08.delete` — delete (change with confirmation)
+- `cai.ingredient-category.09.assign` — assign (change)
+- `cai.ingredient-category.10.unassign` — unassign (change with confirmation)
+- `cai.ingredient-category.11.init` — initialize (change with confirmation)
 - Fields and values: `comvenio schema ingredient-category --json`
 
-**shopping** — complete
+**shopping**
 
-- `comvenio shopping list`
-- `comvenio shopping active`
-- `comvenio shopping completed`
-- `comvenio shopping by-context`
-- `comvenio shopping by-context-type`
-- `comvenio shopping show`
-- `comvenio shopping create`
-- `comvenio shopping update`
-- `comvenio shopping delete`
-- `comvenio shopping item-add`
-- `comvenio shopping item-update`
-- `comvenio shopping item-delete`
-- `comvenio shopping purchased`
-- `comvenio shopping generate-from-recipe`
-- `comvenio shopping generate-from-menu`
+- `cai.shopping.01.list` — list (read)
+- `cai.shopping.02.active` — list (read)
+- `cai.shopping.03.completed` — list (read)
+- `cai.shopping.04.by_context` — list (read)
+- `cai.shopping.05.by_context_type` — list (read)
+- `cai.shopping.06.show` — show, export (read, change)
+- `cai.shopping.07.create` — create (change)
+- `cai.shopping.08.update` — update (change)
+- `cai.shopping.09.delete` — delete (change with confirmation)
+- `cai.shopping.10.item_add` — add (change)
+- `cai.shopping.11.item_update` — update (change)
+- `cai.shopping.12.item_delete` — delete (change with confirmation)
+- `cai.shopping.13.purchased` — set (change)
+- `cai.shopping.14.generate_from_recipe` — generate (change)
+- `cai.shopping.15.generate_from_menu` — generate (change)
+- `cai.shopping.procurement.activate` — activate (change)
+- `cai.shopping.procurement.add` — add (change)
+- `cai.shopping.procurement.list` — list (read)
+- `cai.shopping.procurement.purchase` — purchase (change with confirmation)
+- `cai.shopping.procurement.template_create` — create (change)
+- `cai.shopping.procurement.template_deactivate` — deactivate (change)
+- `cai.shopping.procurement.template_update` — update (change)
+- `cai.shopping.procurement.templates` — list (read)
 - Fields and values: `comvenio schema shopping --json`
 
-**template** — complete
+**template**
 
-- `comvenio template dish`
-- `comvenio template ingredient`
+- `cai.template.01.dish` — list, show (read)
+- `cai.template.02.ingredient` — list, show (read)
 
-**menu** — complete
+**menu**
 
-- `comvenio menu create`
-- `comvenio menu list`
-- `comvenio menu show`
-- `comvenio menu add-item`
-- `comvenio menu update-item`
-- `comvenio menu delete-item`
-- `comvenio menu delete`
-- `comvenio menu style`
-- `comvenio menu apply`
-- `comvenio menu export`
+- `cai.menu.01.create` — create (change)
+- `cai.menu.02.list` — list (read)
+- `cai.menu.03.show` — show (read)
+- `cai.menu.04.add_item` — add (change)
+- `cai.menu.05.update_item` — update (change)
+- `cai.menu.06.delete_item` — delete (change with confirmation)
+- `cai.menu.07.delete` — delete (change with confirmation)
+- `cai.menu.08.style` — style (change)
+- `cai.menu.09.apply` — apply (change with confirmation)
+- `cai.menu.10.export` — export (change)
 - Fields and values: `comvenio schema menu --json`
 <!-- /gen:docs -->
 
 ## Errors
 
-- `AUTH_REQUIRED` — your sign-in has expired or is missing before a recipe, ingredient or menu command runs. See `comvenio help fehler AUTH_REQUIRED`.
+- `AUTH_REQUIRED` — your sign-in has expired or is missing before a recipe, ingredient or menu action runs. See `comvenio help fehler AUTH_REQUIRED`.
 - `SCOPE_REQUIRED` — the sign-in does not carry the scope required for this action. See `comvenio help fehler SCOPE_REQUIRED`.
 - `PERMISSION_DENIED` — your role in the club does not allow, for example, `manage_menus` or `create_menus`. See `comvenio help fehler PERMISSION_DENIED`.
 - `NOT_FOUND` — the recipe, ingredient, category, shopping list or menu does not exist or belongs to a different club. See `comvenio help fehler NOT_FOUND`.
 - `VALIDATION_FAILED` — a required field is missing, for example `name`/`unit` on an ingredient or `quantity`/`unit` on a shopping item. See `comvenio help fehler VALIDATION_FAILED`.
 - `CONFLICT` — for example `ingredient-category init` when default categories already exist. See `comvenio help fehler CONFLICT`.
-- `USAGE_ERROR` — for example `--ingredients` not in the `Name:Menge:Einheit` format. See `comvenio help fehler USAGE_ERROR`.
+- `CONFIRMATION_REQUIRED` — a critical action such as `recipe.create`, `recipe.from-template` or `menu.apply` needs `comvenio action confirm` with the preview first. See `comvenio help fehler CONFIRMATION_REQUIRED`.
+- `OUTCOME_UNKNOWN` — a writing action did not answer in time after confirmation; check the current state instead of repeating. See `comvenio help fehler OUTCOME_UNKNOWN`.

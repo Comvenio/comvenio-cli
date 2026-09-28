@@ -10,12 +10,13 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadActionInventory } from "./action-inventory.ts";
 import { generateDocs } from "./docs-lib.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const check = process.argv.includes("--check");
 const drift: string[] = [];
-for (const [path, content] of generateDocs(root)) {
+for (const [path, content] of generateDocs(root, await loadActionInventory(root))) {
   const target = join(root, path);
   const current = existsSync(target) ? readFileSync(target, "utf8") : null;
   if (current === content) continue;

@@ -13,12 +13,7 @@ Mit `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template` und `m
 
 ## Voraussetzungen und Rechte
 
-> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
-> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
-> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
-> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
-
-Anmeldung über `comvenio login`; ohne `--scopes` fordert sie alle Scopes an, `--scopes` schränkt sie ein. Zusätzlich prüft Comvenio serverseitig deine Rolle im Verein.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Zusätzlich prüft Comvenio serverseitig deine Rolle im Verein.
 
 | Operation | Recht oder Regel |
 |---|---|
@@ -39,57 +34,56 @@ Ein fehlendes Recht meldet `403`.
 - Allergene leben an der Zutat, nicht am Rezept. Das Rezept erbt sie transitiv über seine Zutaten — korrekt wird das, wenn die Zutaten gegen die Vorlagen matchen (siehe unten).
 - Das Rezept ist die Wahrheit, der Karten-Eintrag die Darstellung: Dasselbe Rezept kann auf mehreren Karten mit unterschiedlichem Namen und Preis erscheinen — Rezept einmal anlegen, pro Karte einen Eintrag mit eigenem Label und Preis setzen.
 - Mehrere Gebinde (z. B. Glas und Flasche desselben Getränks) sind Preisvarianten desselben Eintrags, keine doppelten Einträge — sie stehen strukturiert in `price_options`.
-- Das CLI ruft für Rezepte und Karten kein eigenes Sprachmodell auf: Du (als Mensch oder Agent) komponierst Inhalt und Struktur selbst, das CLI speichert sie unverändert. Die früheren Befehle `menu generate` und `menu design` sind deshalb bewusst entfernt; sie brechen mit einer Erklärung ab. Karte und Design entstehen über `menu apply`, `menu create`, `menu add-item` beziehungsweise `menu style`.
+- Das CLI ruft für Rezepte und Karten kein eigenes Sprachmodell auf: Du (als Mensch oder Agent) komponierst Inhalt und Struktur selbst, die Action speichert sie unverändert.
 
 ### Vorlagen zuerst nutzen
 
-1. Passende Gericht-Vorlage suchen: `comvenio template dish --search "Schnitzel" --json`.
-2. Rezept daraus instanziieren, Preis optional überschreiben: `comvenio recipe from-template <template-id> --price 12 --json`. Die Antwort enthält `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus.
+1. Passende Gericht-Vorlage suchen: `comvenio action call cai.template.01.dish --input '{"operation":"list","search":"Schnitzel","limit":20}'`.
+2. Rezept daraus instanziieren (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. Die Antwort enthält `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus.
 3. `from-template` matcht serverseitig auf Verein und Rezeptname — ein zweiter Aufruf mit demselben Namen liefert die bestehende `recipe_id` statt eines Duplikats.
-4. Steht eine Zutat in `missing_ingredients`, hatte sie keinen Vorlagen-Match und wurde ohne Allergen angelegt. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch, …) mit `comvenio template ingredient --search "<name>"` die exakte Vorlagen-Schreibweise prüfen — der Match ist case-insensitiv, aber nicht fuzzy.
+4. Steht eine Zutat in `missing_ingredients`, hatte sie keinen Vorlagen-Match und wurde ohne Allergen angelegt. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch, …) mit `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` die exakte Vorlagen-Schreibweise prüfen — der Match ist case-insensitiv, aber nicht fuzzy.
 
 ### Ad-hoc-Rezept anlegen (wenn keine Vorlage passt)
 
-1. Rezept mit Zutaten anlegen: `comvenio recipe create --name "Brezn" --type food --price 3.00 --category "Snacks" --ingredients "Laugenbreze:1:pc" --json`. Format von `--ingredients`: `"Name:Menge:Einheit,Name2:Menge2:Einheit2"`.
-2. Zutaten-Vorlagen-Namen exakt treffen, damit die Allergene mit erben — vorher mit `comvenio template ingredient --search "<name>"` die Schreibweise prüfen.
-3. Fehlende Zutaten werden beim Anlegen automatisch erzeugt.
+1. Rezept mit Zutaten anlegen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `ingredients` ist ein Array aus `{"name","quantity","unit"}`, kein Textformat mehr.
+2. Zutaten-Vorlagen-Namen exakt treffen, damit die Allergene mit erben — vorher mit `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` die Schreibweise prüfen.
+3. Fehlende Zutaten werden beim Anlegen automatisch erzeugt (`auto_create_missing_ingredients`, Voreinstellung an).
 
 ### Karte bauen: erst prüfen, dann anlegen
 
-1. Karte und Einträge als Datei komponieren (siehe Beispiele).
-2. Schreibfrei prüfen: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. Das prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen, lädt dabei auch die verknüpften Rezeptdaten zu Kategorie, Beschreibung, Altersfreigabe, Allergenen und Farbstoffen und erzeugt lokal einen Datenbericht, eine responsive HTML-/PNG-Ansicht und ein DIN-A4-PDF, ohne etwas zu schreiben.
-3. Ein `valid: false` ist ein bewusst sichtbares Review-Ergebnis; die Artefakte entstehen trotzdem, damit der Fehler im Zusammenhang beurteilt werden kann.
-4. Erst danach anlegen: `comvenio menu apply --file menu.json --json` (legt Karte und Einträge im Bulk an).
+1. Karte und Einträge als ein Objekt komponieren (siehe Beispiele).
+2. `apply` ist kritisch: Der erste Aufruf ohne Bestätigung ist bereits die Prüfung — `comvenio action call cai.menu.09.apply --input '{"menu": {…}}'` prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen serverseitig, ohne etwas zu schreiben, und liefert eine Vorschau mit `preview_id` und `confirmation_token`.
+3. Vorschau prüfen; erst danach legt `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` Karte und Einträge im Bulk an.
 
 ### Karte direkt zusammenstellen und Rezepte wiederverwenden
 
-1. Karte anlegen: `comvenio menu create --name "Grillbude – Dorfabend" --category "Fest" --json`.
-2. Rezept einmal anlegen oder aus Vorlage instanziieren, danach auf beliebig vielen Karten referenzieren: `comvenio menu add-item <menu-id> --recipe <recipe-id> --name "Helles Bier" --price 4.50 --json`. Name und Preis sind pro Karte überschreibbar; das Rezept (inklusive Allergene) bleibt die einzige Quelle.
-3. Bestehenden Eintrag über seine Eintrags-ID ändern statt neu anzulegen: `comvenio menu update-item <menu-item-id> --name "..." --price-options '[...]' --json`. Das erhält die Identität des Eintrags und legt weder einen zweiten Eintrag noch ein neues Rezept an.
+1. Karte anlegen: `comvenio action call cai.menu.01.create --input '{"menu":{"name":"Grillbude – Dorfabend","category":"Fest"}}'`.
+2. Rezept einmal anlegen oder aus Vorlage instanziieren, danach auf beliebig vielen Karten referenzieren: `comvenio action call cai.menu.04.add_item --input '{"menu_id":"<menu-id>","item":{"recipe_id":"<recipe-id>","name":"Helles Bier","selling_price":4.50}}'`. Name und Preis sind pro Karte überschreibbar; das Rezept (inklusive Allergene) bleibt die einzige Quelle.
+3. Bestehenden Eintrag über seine Eintrags-ID ändern statt neu anzulegen: `comvenio action call cai.menu.05.update_item --input '{"item_id":"<menu-item-id>","changes":{"name":"…","price_options":[…]}}'`. Das erhält die Identität des Eintrags und legt weder einen zweiten Eintrag noch ein neues Rezept an.
 4. Ein Produkt mit mehreren Ausgaben (z. B. Glas/Flasche) bleibt ein Eintrag mit mehreren `price_options`, kein zweiter Eintrag.
 5. Nicht pro Karte ein neues Rezept für dasselbe Gericht anlegen — das erzeugt Duplikate.
 
 ### Club-Zutaten und Kategorien pflegen
 
-1. Zutat anlegen: `comvenio ingredient create --file ingredient.json --json` (Pflichtfelder: `name`, `unit`).
-2. Zutaten suchen und lesen: `comvenio ingredient list --search "Kartoffel" --category <category-id> --json`, `comvenio ingredient show <ingredient-id> --json`. `--category` schließt Unterkategorien ein; `--skip` und `--limit` (1–1000) steuern die Liste.
-3. Kategorienbaum lesen und zuordnen: `comvenio ingredient-category tree --json`, `comvenio ingredient-category assign <ingredient-id> --category <category-id> --json`.
-4. Eigene Kategorie anlegen: `comvenio ingredient-category create --file category.json --json` (Pflichtfelder: `name`, `category_type`; optional unter anderem `description`, `parent_id`, `icon`, `color` und `sort_order`). `comvenio ingredient-category init --json` legt Standardkategorien an und ist nur für Vereine ohne vorhandene gedacht — sonst antwortet er mit einem Konflikt.
+1. Zutat anlegen: `comvenio action call cai.ingredient.03.create --input '{"ingredient":{"name":"Bio-Kartoffeln","unit":"kg","cost_per_unit":2.4,"supplier":"Hof Muster","category_ids":["<category-id>"]}}'` (Pflichtfelder im `ingredient`-Objekt: `name`, `unit`).
+2. Zutaten suchen und lesen: `comvenio action call cai.ingredient.01.list --input '{"search":"Kartoffel","category_id":"<category-id>","limit":20,"offset":0}'`, `comvenio action call cai.ingredient.02.show --input '{"ingredient_id":"<ingredient-id>"}'`. `limit` (1–100) und `offset` steuern die Liste.
+3. Kategorienbaum lesen und zuordnen: `comvenio action call cai.ingredient-category.03.tree --input '{}'`, `comvenio action call cai.ingredient-category.09.assign --input '{"ingredient_id":"<ingredient-id>","category_id":"<category-id>"}'`.
+4. Eigene Kategorie anlegen: `comvenio action call cai.ingredient-category.06.create --input '{"category":{"name":"Vegan","category_type":"dietary"}}'` (Pflichtfelder im `category`-Objekt: `name`, `category_type`; optional unter anderem `description`, `parent_id`, `icon`, `color` und `sort_order`). `comvenio action call cai.ingredient-category.11.init --input '{"acknowledge_defaults":true}'` legt nach Bestätigung Standardkategorien an und ist nur für Vereine ohne vorhandene gedacht — sonst antwortet die Action mit einem Konflikt.
 
 ### Einkaufslisten führen
 
-1. Liste anlegen: `comvenio shopping create --file shopping-list.json --json` mit `context_type` (`club`, `event`, `object`, `meeting`) und Status `draft`, `active`, `completed` oder `cancelled`.
-2. Position hinzufügen: `comvenio shopping item-add <list-id> --file item.json --json`. Eine Position braucht `quantity`, `unit` und entweder `ingredient_id` oder einen nicht leeren `name`.
-3. Als erledigt markieren: `comvenio shopping purchased <item-id> --purchased true --json`.
-4. Deterministisch aus vorhandenen Daten erzeugen: `comvenio shopping generate-from-recipe <recipe-id> --portions 80 --name "Einkauf Grillteller" --json` oder `comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json`.
+1. Liste anlegen: `comvenio action call cai.shopping.07.create --input '{"shopping_list":{"name":"Einkauf Sommerfest","description":"Grillbude und Getränkestand","context_type":"event","context_id":"<event-id>","status":"draft"}}'` mit `context_type` (`club`, `event`, `object`, `meeting`) und Status `draft`, `active`, `completed` oder `cancelled`.
+2. Position hinzufügen: `comvenio action call cai.shopping.10.item_add --input '{"shopping_list_id":"<list-id>","item":{"ingredient_id":"<ingredient-id>","quantity":20,"unit":"kg","estimated_cost":48,"notes":"Festkochend"}}'`. Eine Position braucht `quantity`, `unit` und entweder `ingredient_id` oder einen nicht leeren `name`.
+3. Als erledigt markieren: `comvenio action call cai.shopping.13.purchased --input '{"item_id":"<item-id>","purchased":true}'`.
+4. Deterministisch aus vorhandenen Daten erzeugen: `comvenio action call cai.shopping.14.generate_from_recipe --input '{"recipe_id":"<recipe-id>","portions":80,"name":"Einkauf Grillteller","output_format":"pdf"}'` oder `comvenio action call cai.shopping.15.generate_from_menu --input '{"menu_id":"<menu-id>","name":"Einkauf Festkarte","output_format":"pdf"}'`.
 
 ### Karte stylen
 
-1. Freies CSS setzen: `comvenio menu style <menu_id> --css ./meine-karte.css`.
-2. Das CSS wird im Frontend isoliert in den Karten-Container injiziert (kein Ausbruch aus dem Container) und targetet semantische Klassen wie `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`, `.menu-item-name`, `.menu-item-price`, `.menu-qr`.
-3. Allergene, Preise und der QR-Code bleiben strukturierte Pflicht-Komponenten — das CSS stylt nur ihr Aussehen.
-4. `style` liest den aktuellen Stand, merged dein CSS hinein und schreibt zurück; andere Design-Einstellungen der Karte bleiben erhalten.
-5. Der Inhalt des CSS wird nicht inhaltlich geprüft — für gültiges, wirksames CSS bist du selbst verantwortlich.
+1. Design setzen: `comvenio action call cai.menu.08.style --input '{"menu_id":"<menu-id>","design":{"background":"#ffffff","textColor":"#1a1a1a","accentColor":"#7c3aed","showPrices":true,"showAllergens":true}}'`. Das `design`-Objekt trägt benannte Felder für Farben, Schrift, Spalten, Logo, QR-Code und Wasserzeichen — kein freies CSS mehr als alleiniger Weg.
+2. Zusätzliches freies CSS bleibt über das Feld `custom_css` im selben `design`-Objekt möglich, wird aber auf unsichere Muster geprüft: `@import`, `javascript:`, `expression()`, `behavior:` sowie eingebettete `<style>`- oder `<script>`-Tags lehnt die Action ab.
+3. Allergene, Preise und der QR-Code bleiben strukturierte Pflicht-Komponenten und stammen weiterhin aus Rezept und Eintrag — die Design-Felder (`showPrices`, `showAllergens`, `showColorants`, `showQr`, …) steuern nur, ob sie angezeigt werden, nicht ihren Inhalt.
+4. Design lässt sich auch direkt beim Anlegen setzen: `cai.menu.09.apply` nimmt im `menu`-Objekt zusätzlich `design_config` entgegen; die einfache `cai.menu.01.create` kennt kein Design-Feld — dafür danach `menu style` verwenden.
+5. Der Inhalt des freien CSS wird nur auf die genannten unsicheren Muster geprüft, nicht inhaltlich validiert — für gültiges, wirksames CSS bist du selbst verantwortlich.
 
 ## Beispiele
 
@@ -109,36 +103,35 @@ Zutat anlegen:
 ```
 
 ```bash
-comvenio ingredient create --file ingredient.json --json
+comvenio action call cai.ingredient.03.create --input '{"ingredient": <obiges Objekt>}'
 ```
 
-Kategorie anlegen (Kategorie-Typen: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`):
+Kategorie anlegen, ändern, löschen (Kategorie-Typen: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`):
 
 ```bash
-comvenio ingredient-category create --file category.json --json
-comvenio ingredient-category update <category-id> --file category.json --json
-comvenio ingredient-category delete <category-id> --json       # weiches Löschen
-comvenio ingredient-category delete <category-id> --hard --json
+comvenio action call cai.ingredient-category.06.create --input '{"category":{"name":"Vegan","category_type":"dietary"}}'
+comvenio action call cai.ingredient-category.07.update --input '{"category_id":"<category-id>","changes":{"description":"Ohne tierische Zutaten"}}'
+comvenio action call cai.ingredient-category.08.delete --input '{"category_id":"<category-id>"}'
 ```
 
 Ein Produkt mit mehreren Ausgaben — `selling_price` bleibt als Grundpreis erhalten, `price_options` bildet die einzelnen Ausgaben ab:
 
 ```json
 {
-  "recipe_id": "<riesling-recipe-id>",
-  "name": "Riesling Nahe trocken",
-  "selling_price": 4.20,
-  "price_options": [
-    {"label": "0,2 l", "price": 4.20},
-    {"label": "Flasche", "price": 15.60}
-  ]
+  "item_id": "<riesling-item-id>",
+  "changes": {
+    "name": "Riesling Nahe trocken",
+    "selling_price": 4.20,
+    "price_options": [
+      {"label": "0,2 l", "price": 4.20},
+      {"label": "Flasche", "price": 15.60}
+    ]
+  }
 }
 ```
 
 ```bash
-comvenio menu add-item <menu-id> --recipe <riesling-recipe-id> \
-  --name "Riesling Nahe trocken" --price 4.20 \
-  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+comvenio action call cai.menu.05.update_item --input '<obiges Objekt>'
 ```
 
 Einkaufsliste anlegen:
@@ -149,8 +142,7 @@ Einkaufsliste anlegen:
   "description": "Grillbude und Getränkestand",
   "context_type": "event",
   "context_id": "<event-id>",
-  "status": "draft",
-  "items": []
+  "status": "draft"
 }
 ```
 
@@ -166,25 +158,29 @@ Einkaufsposition:
 }
 ```
 
-Vollständiges Beispiel — eine Grillbuden-Karte von den Rezepten bis zur fertigen Karte:
+Vollständiges Beispiel — eine Grillbuden-Karte von den Rezepten bis zur fertigen Karte (`$( … )` liest jeweils die Kennung aus der bestätigten Antwort):
 
 ```bash
-# Rezepte einmalig anlegen (mit Allergenen)
-STEAK=$(comvenio recipe from-template <steaksemmel-template-id> --name "Steaksemmel" --price 4.50 --json | jq -r .recipe_id)
-BRAT=$(comvenio recipe from-template <bratwurstsemmel-template-id> --name "Bratwurstsemmel" --price 4.50 --json | jq -r .recipe_id)
-KAAS=$(comvenio recipe create --name "Käse" --type food --price 3.40 --ingredients "Gouda Käse:0.1:kg" --json | jq -r .id)
+# Rezepte einmalig anlegen (mit Allergenen) — recipe.from-template und recipe.create sind kritisch
+comvenio action call cai.recipe.02.from_template --input '{"template_id":"<steaksemmel-template-id>","custom_name":"Steaksemmel","custom_price":4.50}'
+comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+STEAK=<recipe_id aus der Antwort>
+
+comvenio action call cai.recipe.01.create --input '{"name":"Käse","type_of_recipe":"food","selling_price":3.40,"ingredients":[{"name":"Gouda Käse","quantity":0.1,"unit":"kg"}]}'
+comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+KAAS=<recipe_id aus der Antwort>
 
 # Karte anlegen
-MENU=$(comvenio menu create --name "Grillbude – Sporttag" --category "Fest" --json | jq -r .id)
+comvenio action call cai.menu.01.create --input '{"menu":{"name":"Grillbude – Sporttag","category":"Fest"}}'
+MENU=<id aus der Antwort>
 
 # Einträge setzen (Rezept-Wiederverwendung, Label/Preis pro Karte)
-comvenio menu add-item $MENU --recipe $STEAK --name "Steaksemmel" --price 4.50 --json
-comvenio menu add-item $MENU --recipe $BRAT --name "Bratwurstsemmel" --price 4.50 --json
-comvenio menu add-item $MENU --recipe $KAAS --name "Kaas (100 g)" --price 3.40 --json
+comvenio action call cai.menu.04.add_item --input "{\"menu_id\":\"$MENU\",\"item\":{\"recipe_id\":\"$STEAK\",\"name\":\"Steaksemmel\",\"selling_price\":4.50}}"
+comvenio action call cai.menu.04.add_item --input "{\"menu_id\":\"$MENU\",\"item\":{\"recipe_id\":\"$KAAS\",\"name\":\"Kaas (100 g)\",\"selling_price\":3.40}}"
 
 # Optional stylen und prüfen
-comvenio menu style $MENU --css ./festkarte.css
-comvenio menu show $MENU --json
+comvenio action call cai.menu.08.style --input "{\"menu_id\":\"$MENU\",\"design\":{\"accentColor\":\"#7c3aed\"}}"
+comvenio action call cai.menu.03.show --input "{\"menu_id\":\"$MENU\"}"
 ```
 
 ### Enums
@@ -202,103 +198,113 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 
 - Ein Karten-Eintrag ohne Rezept fehlt in der öffentlichen Artikel-Liste, weil diese zwingend mit dem Rezept verknüpft — für QR-Karten immer ein Rezept hinterlegen.
 - Der Karten-Preis überschreibt den Rezept-Grundpreis pro Karte; ohne eigenen Preis gilt der Rezept-Standard. Mehrere Gebinde gehören in `price_options`, nicht in getrennte Einträge. Das Sortierfeld heißt `display_order`.
-- Für bestehende Karten-Einträge immer deren Eintrags-ID an `menu update-item` übergeben; `menu add-item` und `menu apply` legen neue Einträge an.
+- Für bestehende Karten-Einträge immer deren Eintrags-ID an `cai.menu.05.update_item` übergeben; `cai.menu.04.add_item` und `cai.menu.09.apply` legen neue Einträge an.
 - Allergene entstehen nur über Zutaten-Namen, die eine Vorlage treffen. Eine frei erfundene Zutat ohne Vorlagen-Match bekommt kein Allergen.
-- `custom_css` lässt sich nur über `menu style` (bzw. ein Karten-Update) setzen, nicht beim Anlegen der Karte.
-- Eine QR-Grafik oder -URL erzeugt nicht das CLI, sondern das Frontend aus den öffentlichen Karten-Daten.
+- Design lässt sich beim Bulk-Anlegen über `cai.menu.09.apply` (`design_config`) oder danach über `cai.menu.08.style` (`design`) setzen, nicht beim einfachen `cai.menu.01.create`.
+- Eine QR-Grafik oder -URL erzeugt nicht die Action, sondern das Frontend aus den öffentlichen Karten-Daten.
+- `recipe.create` und `recipe.from-template` sind `critical_write`: Der Aufruf ohne Bestätigung liefert nur die Vorschau, das Rezept entsteht erst mit `action confirm`.
 
 ### Weitere Lese- und Verwaltungsbefehle
 
-- Rezepte verwalten: `comvenio recipe list|show|update|delete`.
-- Zutaten verwalten: `comvenio ingredient list|show|update|delete`.
-- Kategorien lesen und zuordnen: `comvenio ingredient-category list|roots|tree|by-ingredient|unassign`.
-- Einkaufslisten lesen: `comvenio shopping list --status draft`, `comvenio shopping active`, `comvenio shopping completed`, `comvenio shopping by-context --context-id <event-id>`, `comvenio shopping by-context-type --context-type event`, `comvenio shopping show <list-id>`.
-- Einkaufsliste ändern oder löschen: `comvenio shopping update <list-id> --file shopping-list.json --json`, `comvenio shopping delete <list-id> --json`.
-- Einkaufsposition ändern oder löschen: `comvenio shopping item-update <item-id> --file item.json --json`, `comvenio shopping item-delete <item-id> --json`.
-- Karte verwalten: `comvenio menu list|show|delete`, `comvenio menu delete-item <item-id>`, `comvenio menu export <menu-id> [--out]`.
+- Rezepte verwalten: `cai.recipe.03.list`, `cai.recipe.04.show`, `cai.recipe.05.update`, `cai.recipe.06.delete` (Löschen kritisch).
+- Zutaten verwalten: `cai.ingredient.01.list`, `cai.ingredient.02.show`, `cai.ingredient.04.update`, `cai.ingredient.05.delete` (Löschen kritisch).
+- Kategorien lesen und zuordnen: `cai.ingredient-category.01.list`, `.02.roots`, `.03.tree`, `.04.by_ingredient`, `.10.unassign` (Entfernen kritisch).
+- Einkaufslisten lesen: `cai.shopping.01.list`, `.02.active`, `.03.completed`, `.04.by_context`, `.05.by_context_type`, `.06.show` (`operation=show`).
+- Einkaufsliste ändern, löschen oder als PDF/CSV exportieren: `cai.shopping.08.update`, `cai.shopping.09.delete` (kritisch), `cai.shopping.06.show` (`operation=export`).
+- Einkaufsposition ändern oder löschen: `cai.shopping.11.item_update`, `cai.shopping.12.item_delete` (kritisch).
+- Karte verwalten: `cai.menu.02.list`, `cai.menu.03.show`, `cai.menu.07.delete` (kritisch), `cai.menu.06.delete_item` (kritisch), `cai.menu.10.export`.
 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
 
-**recipe** — vollständig
+**recipe**
 
-- `comvenio recipe create`
-- `comvenio recipe from-template`
-- `comvenio recipe list`
-- `comvenio recipe show`
-- `comvenio recipe update`
-- `comvenio recipe delete`
+- `cai.recipe.01.create` — create (ändern mit Bestätigung)
+- `cai.recipe.02.from_template` — create (ändern mit Bestätigung)
+- `cai.recipe.03.list` — list (lesen)
+- `cai.recipe.04.show` — show (lesen)
+- `cai.recipe.05.update` — update (ändern)
+- `cai.recipe.06.delete` — delete (ändern mit Bestätigung)
 
-**ingredient** — vollständig
+**ingredient**
 
-- `comvenio ingredient list`
-- `comvenio ingredient show`
-- `comvenio ingredient create`
-- `comvenio ingredient update`
-- `comvenio ingredient delete`
+- `cai.ingredient.01.list` — list (lesen)
+- `cai.ingredient.02.show` — show (lesen)
+- `cai.ingredient.03.create` — create (ändern)
+- `cai.ingredient.04.update` — update (ändern)
+- `cai.ingredient.05.delete` — delete (ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema ingredient --json`
 
-**ingredient-category** — vollständig
+**ingredient-category**
 
-- `comvenio ingredient-category list`
-- `comvenio ingredient-category roots`
-- `comvenio ingredient-category tree`
-- `comvenio ingredient-category by-ingredient`
-- `comvenio ingredient-category show`
-- `comvenio ingredient-category create`
-- `comvenio ingredient-category update`
-- `comvenio ingredient-category delete`
-- `comvenio ingredient-category assign`
-- `comvenio ingredient-category unassign`
-- `comvenio ingredient-category init`
+- `cai.ingredient-category.01.list` — list (lesen)
+- `cai.ingredient-category.02.roots` — roots (lesen)
+- `cai.ingredient-category.03.tree` — tree (lesen)
+- `cai.ingredient-category.04.by_ingredient` — list (lesen)
+- `cai.ingredient-category.05.show` — show (lesen)
+- `cai.ingredient-category.06.create` — create (ändern)
+- `cai.ingredient-category.07.update` — update (ändern)
+- `cai.ingredient-category.08.delete` — delete (ändern mit Bestätigung)
+- `cai.ingredient-category.09.assign` — assign (ändern)
+- `cai.ingredient-category.10.unassign` — unassign (ändern mit Bestätigung)
+- `cai.ingredient-category.11.init` — initialize (ändern mit Bestätigung)
 - Felder und Werte: `comvenio schema ingredient-category --json`
 
-**shopping** — vollständig
+**shopping**
 
-- `comvenio shopping list`
-- `comvenio shopping active`
-- `comvenio shopping completed`
-- `comvenio shopping by-context`
-- `comvenio shopping by-context-type`
-- `comvenio shopping show`
-- `comvenio shopping create`
-- `comvenio shopping update`
-- `comvenio shopping delete`
-- `comvenio shopping item-add`
-- `comvenio shopping item-update`
-- `comvenio shopping item-delete`
-- `comvenio shopping purchased`
-- `comvenio shopping generate-from-recipe`
-- `comvenio shopping generate-from-menu`
+- `cai.shopping.01.list` — list (lesen)
+- `cai.shopping.02.active` — list (lesen)
+- `cai.shopping.03.completed` — list (lesen)
+- `cai.shopping.04.by_context` — list (lesen)
+- `cai.shopping.05.by_context_type` — list (lesen)
+- `cai.shopping.06.show` — show, export (lesen, ändern)
+- `cai.shopping.07.create` — create (ändern)
+- `cai.shopping.08.update` — update (ändern)
+- `cai.shopping.09.delete` — delete (ändern mit Bestätigung)
+- `cai.shopping.10.item_add` — add (ändern)
+- `cai.shopping.11.item_update` — update (ändern)
+- `cai.shopping.12.item_delete` — delete (ändern mit Bestätigung)
+- `cai.shopping.13.purchased` — set (ändern)
+- `cai.shopping.14.generate_from_recipe` — generate (ändern)
+- `cai.shopping.15.generate_from_menu` — generate (ändern)
+- `cai.shopping.procurement.activate` — activate (ändern)
+- `cai.shopping.procurement.add` — add (ändern)
+- `cai.shopping.procurement.list` — list (lesen)
+- `cai.shopping.procurement.purchase` — purchase (ändern mit Bestätigung)
+- `cai.shopping.procurement.template_create` — create (ändern)
+- `cai.shopping.procurement.template_deactivate` — deactivate (ändern)
+- `cai.shopping.procurement.template_update` — update (ändern)
+- `cai.shopping.procurement.templates` — list (lesen)
 - Felder und Werte: `comvenio schema shopping --json`
 
-**template** — vollständig
+**template**
 
-- `comvenio template dish`
-- `comvenio template ingredient`
+- `cai.template.01.dish` — list, show (lesen)
+- `cai.template.02.ingredient` — list, show (lesen)
 
-**menu** — vollständig
+**menu**
 
-- `comvenio menu create`
-- `comvenio menu list`
-- `comvenio menu show`
-- `comvenio menu add-item`
-- `comvenio menu update-item`
-- `comvenio menu delete-item`
-- `comvenio menu delete`
-- `comvenio menu style`
-- `comvenio menu apply`
-- `comvenio menu export`
+- `cai.menu.01.create` — create (ändern)
+- `cai.menu.02.list` — list (lesen)
+- `cai.menu.03.show` — show (lesen)
+- `cai.menu.04.add_item` — add (ändern)
+- `cai.menu.05.update_item` — update (ändern)
+- `cai.menu.06.delete_item` — delete (ändern mit Bestätigung)
+- `cai.menu.07.delete` — delete (ändern mit Bestätigung)
+- `cai.menu.08.style` — style (ändern)
+- `cai.menu.09.apply` — apply (ändern mit Bestätigung)
+- `cai.menu.10.export` — export (ändern)
 - Felder und Werte: `comvenio schema menu --json`
 <!-- /gen:docs -->
 
 ## Fehler
 
-- `AUTH_REQUIRED` — deine Anmeldung ist abgelaufen oder fehlt, bevor ein Rezept-, Zutaten- oder Karten-Befehl läuft. Siehe `comvenio help fehler AUTH_REQUIRED`.
-- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Scope für diese Aktion. Siehe `comvenio help fehler SCOPE_REQUIRED`.
+- `AUTH_REQUIRED` — deine Anmeldung ist abgelaufen oder fehlt, bevor eine Rezept-, Zutaten- oder Karten-Action läuft. Siehe `comvenio help fehler AUTH_REQUIRED`.
+- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Scope für diese Action. Siehe `comvenio help fehler SCOPE_REQUIRED`.
 - `PERMISSION_DENIED` — deine Rolle im Verein erlaubt zum Beispiel `manage_menus` oder `create_menus` nicht. Siehe `comvenio help fehler PERMISSION_DENIED`.
 - `NOT_FOUND` — Rezept, Zutat, Kategorie, Einkaufsliste oder Karte existiert nicht oder gehört zu einem anderen Verein. Siehe `comvenio help fehler NOT_FOUND`.
 - `VALIDATION_FAILED` — ein Pflichtfeld fehlt, etwa `name`/`unit` bei einer Zutat oder `quantity`/`unit` bei einer Einkaufsposition. Siehe `comvenio help fehler VALIDATION_FAILED`.
 - `CONFLICT` — zum Beispiel `ingredient-category init` bei bereits vorhandenen Standardkategorien. Siehe `comvenio help fehler CONFLICT`.
-- `USAGE_ERROR` — etwa `--ingredients` nicht im Format `Name:Menge:Einheit`. Siehe `comvenio help fehler USAGE_ERROR`.
+- `CONFIRMATION_REQUIRED` — eine kritische Action wie `recipe.create`, `recipe.from-template` oder `menu.apply` braucht zuerst `comvenio action confirm` mit der Vorschau. Siehe `comvenio help fehler CONFIRMATION_REQUIRED`.
+- `OUTCOME_UNKNOWN` — eine schreibende Action hat nach der Bestätigung nicht rechtzeitig geantwortet; Stand prüfen statt wiederholen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.

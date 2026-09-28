@@ -1,7 +1,7 @@
 ---
 id: fehler/oauth-only
 kategorie: fehler
-stichwoerter: [oauth, classic command, device token]
+stichwoerter: [oauth, classic command, action]
 ---
 
 # OAUTH_ONLY — This command does not run with the OAuth sign-in.
@@ -12,8 +12,8 @@ This command does not run with the OAuth sign-in.
 
 ## Typical causes
 
-- A classic command that needs a device token was run under the OAuth sign-in.
-- This is intentional: classic commands do not run under OAuth, OAuth runs the same tasks through actions.
+- An old, classic command was run.
+- This is intentional: classic commands no longer run under the sign-in, the same tasks run through actions.
 
 ## Solution
 
