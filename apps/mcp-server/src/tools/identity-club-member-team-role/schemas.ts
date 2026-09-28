@@ -53,19 +53,14 @@ const publicHeader = z.object({
   density: z.enum(["compact", "comfortable"]).optional(),
   sticky: z.boolean().optional(),
 }).strict();
+// Mirrors club-service validate_tokens: palette is role -> hex with free role
+// names (surface, ink, accent, nav, on_nav, ...), radius is key -> px.
 const designTokens = z.object({
-  palette: z.object({
-    primary: color.optional(),
-    secondary: color.optional(),
-    accent: color.optional(),
-    background: color.optional(),
-    surface: color.optional(),
-    text: color.optional(),
-  }).strict().optional(),
-  radius: z.enum(["none", "small", "medium", "large", "pill"]).optional(),
-  spacing_scale: z.enum(["compact", "normal", "spacious"]).optional(),
-  type_scale: z.enum(["compact", "normal", "large"]).optional(),
-  shadow_level: z.enum(["none", "subtle", "medium", "strong"]).optional(),
+  palette: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,39}$/u), color).optional(),
+  radius: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,15}$/u), z.number().min(0).max(48)).optional(),
+  spacing_scale: z.number().min(0.5).max(2).optional(),
+  type_scale: z.number().min(0.8).max(1.4).optional(),
+  shadow_level: z.number().int().min(0).max(3).optional(),
 }).strict();
 const designSettings = z.object({
   homepage_theme: z.enum([
@@ -86,7 +81,7 @@ const designSettings = z.object({
   header_font_color: color.nullable().optional(),
   content_bg_color: color.nullable().optional(),
   sidebar_style: z.enum(["slide", "fixed"]).optional(),
-  sidebar_color_mode: z.enum(["match", "custom"]).optional(),
+  sidebar_color_mode: z.enum(["match", "light", "dark", "custom"]).optional(),
   sidebar_custom_bg: color.nullable().optional(),
   sidebar_font_color: color.nullable().optional(),
   nav_auto_hide: z.boolean().optional(),
@@ -94,7 +89,8 @@ const designSettings = z.object({
   quicklist_mode: z.enum(["visible", "hidden"]).nullable().optional(),
   onepager: z.boolean().optional(),
   custom_template_config: z.object({
-    font_pair: z.enum(["default", "editorial", "sporty", "friendly", "corporate"]).optional(),
+    // club-service keeps font_pair free (extension keys stay); the web offers more pairs than these names.
+    font_pair: z.string().trim().min(1).max(40).optional(),
     spacing: z.enum(["compact", "normal", "spacious"]).optional(),
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),
@@ -175,6 +171,28 @@ const settingsPayload = z.object({
   notification_settings: notificationSettings.nullable().optional(),
   locale_settings: localeSettings.nullable().optional(),
 }).strict();
+
+// Reads return what club-service stored. Its DesignSettings keeps these fields as
+// free strings, so the read contract must not reject a value the web wrote
+// (sidebar_color_mode "light"/"dark" once failed the whole read).
+const freeName = z.string().trim().max(80);
+const designSettingsRead = designSettings.extend({
+  homepage_theme: freeName.optional(),
+  homepage_template: freeName.nullable().optional(),
+  sidebar_style: freeName.optional(),
+  sidebar_color_mode: freeName.optional(),
+  quicklist_mode: freeName.nullable().optional(),
+  custom_template_config: z.object({
+    font_pair: freeName.optional(),
+    spacing: freeName.optional(),
+    public_header: publicHeader.nullable().optional(),
+  }).strict().nullable().optional(),
+});
+const settingsReadPayload = settingsPayload.extend({
+  design_settings: designSettingsRead.nullable().optional(),
+  homepage_config: homepageConfig.extend({ navigation_position: freeName.optional() }).nullable().optional(),
+  notification_settings: notificationSettings.extend({ notification_frequency: freeName.optional() }).nullable().optional(),
+});
 
 const departmentPatch = z.object({
   name: shortText.optional(),
@@ -585,9 +603,9 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.whoami.01.whoami": contract(clubContext, z.object({ subject_id: uuid, club_id: uuid, display_name: z.string().nullable(), email: z.string().email().nullable() }).strict()),
   "cai.club.01.info": contract(clubContext, clubOutput),
   "cai.club.02.update": contract(z.object({ club_id: uuid, changes: clubProfilePatch }).strict(), clubOutput),
-  "cai.club.03.settings": contract(clubContext, settingsPayload),
-  "cai.club.04.settings_update": contract(z.object({ club_id: uuid, settings: settingsPayload.refine((value) => Object.keys(value).length > 0) }).strict(), settingsPayload),
-  "cai.club.05.design": contract(z.object({ club_id: uuid, design_settings: designSettings.refine((value) => Object.keys(value).length > 0) }).strict(), settingsPayload),
+  "cai.club.03.settings": contract(clubContext, settingsReadPayload),
+  "cai.club.04.settings_update": contract(z.object({ club_id: uuid, settings: settingsPayload.refine((value) => Object.keys(value).length > 0) }).strict(), settingsReadPayload),
+  "cai.club.05.design": contract(z.object({ club_id: uuid, design_settings: designSettings.refine((value) => Object.keys(value).length > 0) }).strict(), settingsReadPayload),
   "cai.club.06.department_list": contract(z.object({ club_id: uuid, tree: z.boolean().optional() }).strict(), z.array(departmentOutput)),
   "cai.club.07.department_show": contract(entityContext("department_id"), departmentOutput),
   "cai.club.08.department_add": contract(z.object({ club_id: uuid, department: departmentCreate }).strict(), departmentOutput),

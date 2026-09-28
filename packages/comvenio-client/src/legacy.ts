@@ -45,9 +45,9 @@ export function createClient(state: LegacyClientState): ComvenioClient {
   // (`03-oauth-connection-lifecycle.md` §11).
   if (state.authMode === "oauth" && state.hasDeviceToken !== true) {
     throw new Error(
-      "Für diesen Befehl fehlt ein Geräte-Token. Der OAuth-Grant gilt nur für „comvenio action …“; "
-      + "der Backend-Aktor-Token wird nicht an das CLI ausgegeben. "
-      + "Hole dir einen Geräte-Token mit „comvenio login --device-token“ — die OAuth-Verbindung bleibt dabei bestehen.",
+      "Dieser klassische Befehl läuft nicht über die OAuth-Anmeldung. "
+      + "Der Weg ist „comvenio action …“: „comvenio action list“ zeigt, was der verbundene Verein freigibt, "
+      + "etwa „comvenio action call cai.club.03.settings --input '{}'“ für die Vereinseinstellungen.",
     );
   }
   const gatewayBase = state.gatewayBaseUrl.replace(/\/+$/, "");

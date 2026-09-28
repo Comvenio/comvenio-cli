@@ -28,16 +28,16 @@ describe("createClient: die Sperre trifft den echten Fall, nicht jede OAuth-Anme
     expect(typeof client.get).toBe("function");
   });
 
-  test("ohne Geräte-Token wird abgelehnt — mit dem Weg in der Meldung", () => {
+  test("ohne Geräte-Token wird abgelehnt — die Meldung zeigt den OAuth-Weg", () => {
     expect(() => createClient({ token: "oauth-access-token", gatewayBaseUrl: GATEWAY, authMode: "oauth", hasDeviceToken: false }))
-      .toThrow(/--device-token/u);
+      .toThrow(/comvenio action list/u);
   });
 
   // `hasDeviceToken` ist optional; ein alter Aufrufer, der es nicht setzt,
   // darf nicht versehentlich durchrutschen.
   test("ein fehlendes hasDeviceToken zählt als „keiner da“", () => {
     expect(() => createClient({ token: "oauth-access-token", gatewayBaseUrl: GATEWAY, authMode: "oauth" }))
-      .toThrow(/Geräte-Token/u);
+      .toThrow(/OAuth-Anmeldung/u);
   });
 
   test("der reine Geräte-Weg bleibt unverändert", () => {
