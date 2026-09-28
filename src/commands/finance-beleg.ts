@@ -1,4 +1,4 @@
-// Upload a receipt through the CLI (belegerfassung-01/-03, Tom 2026-09-27).
+// Upload a receipt through the CLI (belegerfassung-01/-03, 2026-09-27).
 //
 // The file goes to the content-service first — the context the web app uses:
 // `finance_receipt_inbox` of the club for the inbox, `finance_receipt` of the

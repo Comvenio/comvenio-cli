@@ -339,8 +339,9 @@ export function maskIcalUrl(raw: string): string {
 }
 
 /** AK-N-02: drop the full iCal URL the backend returns to managers — the CLI only ever prints masked_url. */
-function withoutFullUrl<T extends { url?: unknown }>(subscription: T): T {
-  const { url: _url, ...rest } = subscription;
+// `T extends object`: a weak-type bound ({ url?: unknown }) rejects read types without `url`.
+function withoutFullUrl<T extends object>(subscription: T): T {
+  const { url: _url, ...rest } = subscription as T & { url?: unknown };
   return rest as T;
 }
 
