@@ -224,6 +224,13 @@ Bestätigung möglich; alles, was ändert, ist kritisch und läuft über Vorscha
    `cai.teams.06.season_list` (Status `AKTIV`); deren `id` ist die `team_season_id`.
 
 ```bash
+comvenio action call cai.teams.06.season_list --input '{"team_id":"<team-id>"}' --json
+
+comvenio action call cai.teams.12.roster_add \
+  --input '{"team_season_id":"<saison-id>","member_id":"<member-id>","role":"CAPTAIN","jersey_number":7}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+  --idempotency-key <schlüssel> --json
+
 comvenio action call cai.teams.07.season_create \
   --input '{"team_id":"<team-id>","season":{"name":"Saison 2026/27","starts_on":"2026-08-01","ends_on":"2027-06-30"}}' --json
 comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
