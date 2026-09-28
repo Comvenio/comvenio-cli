@@ -2992,6 +2992,24 @@ describe("K10 booking, object and task tenant/RBAC isolation", () => {
     };
   }
 
+  test("canonical task reads use club.read and still enforce tenant and backend rights", async () => {
+    for (const item of [
+      { action_id: "cai.task.01.list", input: { club_id: clubId, operation: "mine" } },
+      { action_id: "cai.task.14.checklist_list_add_update_toggle_delete_reorder", input: { club_id: clubId, operation: "list", task_id: objectId } },
+    ] as const) {
+      let calls = 0;
+      const task = createK10ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).task;
+      const request = { ...item, context: { ...context, scopes: ["club.read"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: {} } };
+      await task.execute(request);
+      expect(calls).toBe(1);
+      await expect(task.execute({ ...request, context: { ...context, scopes: [] } })).rejects.toMatchObject({ code: "SCOPE_REQUIRED" });
+      await expect(task.execute({ ...request, input: { ...item.input, club_id: otherClubId } })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+      expect(calls).toBe(1);
+      const denied = createK10ToolSets({ client: adapterClient(async () => { throw createConnectorError({ code: "PERMISSION_DENIED", message: "denied", request_id: context.request_id, retryable: false }); }) }).task;
+      await expect(denied.execute(request)).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    }
+  });
+
   test("rejects a foreign club before any booking backend call", async () => {
     let calls = 0;
     const booking = createK10ToolSets({ client: adapterClient(async () => { calls++; return []; }) }).booking;
