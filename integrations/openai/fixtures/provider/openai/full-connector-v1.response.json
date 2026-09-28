@@ -452,7 +452,7 @@
       "tool_name": "cv_club_11_weekly_preview_create",
       "risk_class": "critical_write",
       "required_scopes": [
-        "admin.write"
+        "club.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
       "oauth_bound_club_context": true,

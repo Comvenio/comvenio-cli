@@ -79,6 +79,8 @@ function definition(input: {
 
 const CLUB_READ = ["club.read"] as const;
 const ADMIN_WRITE = ["admin.write"] as const;
+// Club-Agent functions that change the club require club.write (ai-service function_runs.required_scope).
+const CLUB_WRITE = ["club.write"] as const;
 const MEMBER_BASIC = ["member.read.basic"] as const;
 const MEMBER_DETAILS = ["member.read.details"] as const;
 
@@ -137,7 +139,7 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
   // The service checks department rights (manage_club_settings or manage_events); the draft
   // then waits in the caller's agent DM for approval in web or app.
   "cai.club.11.weekly_preview_create": definition({
-    action_id: "cai.club.11.weekly_preview_create", domain: "club", source_action: "weekly-preview-create", scopes: ADMIN_WRITE,
+    action_id: "cai.club.11.weekly_preview_create", domain: "club", source_action: "weekly-preview-create", scopes: CLUB_WRITE,
     permission: policy([], "optional", true), risk: "critical_write",
     routes: [route(null, "POST", "ai", "/club-agents/{club_id}/weekly-previews/create")],
   }),
