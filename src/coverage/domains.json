@@ -7,7 +7,7 @@
     "core-partial": "Ein nutzbarer Kern ist vorhanden, aber mindestens ein wichtiger Club-Admin-Workflow fehlt noch.",
     "intentional-exclusion": "Der Top-Level-Command ist ausschließlich als bewusstes Nicht-Ziel dokumentiert."
   },
-  "scope_note": "Workflow-Registry für die 28 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
+  "scope_note": "Workflow-Registry für die 31 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.",
   "domains": [
     {
       "id": "login",
@@ -816,7 +816,7 @@
     },
     {
       "id": "finance",
-      "status": "partial",
+      "status": "core-partial",
       "actions": [
         "plan list|show|create|update|close|reopen|copy",
         "position list|create|show|update|delete|import-shopping",

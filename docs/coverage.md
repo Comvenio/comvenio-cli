@@ -1,10 +1,10 @@
 # CLI-Coverage
 
-Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-07-24.
+Version `1.0.0` für comvenio-cli `0.1.0`, verifiziert am 2026-09-20.
 
 Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird aus `src/coverage/domains.json` erzeugt; die maschinenlesbare Kopie liegt unter `src/schema/coverage.json`.
 
-> Workflow-Registry für die 28 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
+> Workflow-Registry für die 31 in src/index.ts verdrahteten Top-Level-Commands. Öffentliche, anonyme, interne, Service-to-Service- und AI-Provider-Routen benötigen keine eigene CLI-Action. Lücken benennen fehlende CLI-Workflows, nicht jede technische Backend-Route.
 
 ## Statusmodell
 
@@ -43,7 +43,10 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `plan` | `covered` | list<br>show<br>create<br>update<br>delete<br>zone list|create|update|delete|link|unlink<br>table create|duplicate|update|delete<br>marker create|update|delete<br>guest list|add|update|delete<br>detail<br>export<br>illustrate<br>compose | Keine bekannte Kernlücke. |
 | `tournament` | `covered` | series-list<br>series-show<br>series-create<br>series-update<br>series-delete<br>execution-create<br>execution-link<br>list<br>show<br>update<br>delete<br>status<br>participants<br>mannschaft<br>participant<br>participant-withdraw<br>participant-reinstate<br>participant-remove<br>start<br>matches<br>matches-clear<br>reset<br>redraw<br>standings<br>preview<br>draw<br>draw-confirm<br>schedule-generate<br>match-schedule<br>match-delete<br>match-result<br>deadline | Keine bekannte Kernlücke. |
 | `sponsor` | `covered` | list<br>show<br>add<br>update<br>delete<br>logo<br>product-list<br>product-add<br>product-update<br>product-delete<br>contract-list<br>contract-add<br>contract-update<br>contract-delete<br>assignment-list<br>assign<br>assignment-update<br>cancel<br>doc-list<br>doc-upload<br>responsible-list<br>responsible-add<br>responsible-update<br>responsible-remove | Keine bekannte Kernlücke. |
-| `agent` | `core-partial` | chat | Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions. |
+| `agent` | `core-partial` | chat<br>approval<br>function | Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions. |
+| `finance` | `core-partial` | plan list|show|create|update|close|reopen|copy<br>position list|create|show|update|delete|import-shopping<br>summary (je Plan und je Abteilung)<br>entry list|create|show|update|delete|approve | Welle 2: Dashboard, Kassenbericht (Entwurf/Einreichen/Freigeben/Ablehnen), Steuerbericht (reports.py) Welle 3 (lesend): Event-Finanzen, Supply-Bruecke, Sponsoring-Deal Investitionsplanung (investment_plans, funding_sources, investment_scenarios, investment_feasibility) Stripe: Connect, Rechnungen, Auszahlungen, Abos, Kunden, Checkout |
+| `weekly-preview` | `core-partial` | create<br>list<br>template list<br>template show<br>template set<br>template delete | template preview (lokales PNG) folgt mit dem Render-Dienst der Wochenvorschau (K2-Bildteil). |
+| `zone` | `covered` | set list<br>set create<br>set update<br>set delete<br>list<br>create<br>update<br>estimate<br>delete<br>import<br>overview<br>task-zones<br>task-zones add<br>task-zones remove | Keine bekannte Kernlücke. |
 
 ## Verbindliche Nutzungsregeln
 
@@ -55,7 +58,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 
 ## Nicht erschlossene Themengebiete
 
-> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "28 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
+> Backend-Bereiche **ohne** eigenen Top-Level-Command. Diese Liste ist der ehrliche Gegenpol zur Übersicht oben: Ohne sie liest sich "31 dokumentierte Commands" wie "die Plattform ist vollständig abgedeckt". Ein `gap` ist kein Freibrief für einen direkten API-Call — er wird geschlossen, indem das CLI erweitert wird.
 
 - `gap`: Echter Club-Admin-Workflow, serverseitig implementiert, aber ohne jeden CLI-Zugang. Muss im CLI ergänzt werden.
 - `partial-gap`: Ein Teil der vorhandenen Backend-Workflows fehlt im CLI; der Rest ist bewusst ausgeschlossen oder serverseitig nicht implementiert.
@@ -65,7 +68,6 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | Gebiet | Service | Verdikt | Fehlende Club-Admin-Workflows |
 |---|---|---|---|
 | `channel` | message-service | `gap` | Channels anlegen, bearbeiten, archivieren, löschen (Event/Objekt/Sitzung/Custom)<br>Channel-Mitglieder verwalten (hinzufügen, entfernen, Rolle ändern, bannen, stummschalten)<br>Forum-Boards anlegen und deren Permissions setzen<br>Thread-Moderation (sperren, anpinnen, als gelöst markieren)<br>Gäste-Post-Moderation für Event- und Turnier-Feeds (Liste, freigeben, ablehnen)<br>Vereins-Posts und Umfragen im Feed veröffentlichen |
-| `finance` | finance-service | `partial-gap` | Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)<br>Vereins-Rechnungen einsehen<br>Auszahlungshistorie einsehen und Auszahlung anstoßen |
 | `marketing-platform` | marketing-service | `no-gap` | — |
 | `notify` | notify-service | `no-gap` | — |
 | `automation` | automation-service | `no-gap` | — |
@@ -83,17 +85,6 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
   - Vereins-Posts und Umfragen im Feed veröffentlichen
 - Vorgeschlagene Actions: `channel list|show|create|update|delete|archive`, `channel member list|add|remove|ban|unban|mute|unmute|role`, `forum board list|show|create|update|delete`, `forum board-permission list|add|remove`, `forum thread list|show|create|lock|pin|solve`, `feed moderation-list --context event|tournament <id>`, `feed approve <post-id> | reject <post-id>`, `feed post --context-type <t> --context-id <id> --body <html>`
 - Begründung: Die Gäste-Post-Moderation ist ein DSGVO-relevanter, wiederkehrender Admin-Workflow und existiert bisher nur im Web-UI. Chat selbst (Nachrichten senden, Reactions, Typing, Read-Receipts) ist bewusst KEIN CLI-Ziel — das ist Endnutzer-Echtzeitkommunikation.
-
-### finance (finance-service)
-
-- Verdikt: `partial-gap`
-- Drei real vorhandene, club-scoped Workflows fehlen im CLI. Die klassischen Vereinsfinanz-Workflows existieren serverseitig noch gar nicht.
-- Fehlende Club-Admin-Workflows:
-  - Stripe-Connect-Onboarding (Auszahlungskonto einrichten, Status prüfen)
-  - Vereins-Rechnungen einsehen
-  - Auszahlungshistorie einsehen und Auszahlung anstoßen
-- Vorgeschlagene Actions: `finance connect-status|connect-onboard|connect-refresh`, `finance invoice-list|invoice-show`, `finance payout-list|payout-show|payout-create`
-- Begründung: Beiträge, Kassenberichte, Budgets, Spenden und Vereins-Rechnungen liefern serverseitig HTTP 501 — die Modelle existieren, die Routen sind Platzhalter. Das ist eine Backend-Lücke, kein CLI-Gap: zuerst Backend bauen, dann CLI. Nur Connect, Invoices und Payouts sind heute real nutzbar (manage_finances).
 
 ### marketing-platform (marketing-service)
 
@@ -426,11 +417,49 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## agent
 
 - Status: `core-partial`
-- Actions: `chat`
+- Actions: `chat`, `approval`, `function`
 - Wichtige Lücken:
-  - Die dialogische Nutzung des Club-Agenten ist abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Freigabe-Cockpit, Journal und Memory fehlen noch als CLI-Actions.
+  - Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions.
 - Bewusste Ausschlüsse:
+  - agent approval approve|reject entscheidet nicht: Freigaben und Dauerfreigaben entstehen nur mit einer Sitzung in Web oder App (D-AF-16, D-AF-18); das Terminal gibt den Direktlink aus.
   - Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.
   - Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft.
-- Geprüfte Quellen: `src/commands/agent.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
+- Geprüfte Quellen: `src/commands/agent.ts`, `src/commands/function.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
 - Weiterführende Doku: `docs/club-agent.md`
+
+## finance
+
+- Status: `core-partial`
+- Actions: `plan list|show|create|update|close|reopen|copy`, `position list|create|show|update|delete|import-shopping`, `summary (je Plan und je Abteilung)`, `entry list|create|show|update|delete|approve`
+- Wichtige Lücken:
+  - Welle 2: Dashboard, Kassenbericht (Entwurf/Einreichen/Freigeben/Ablehnen), Steuerbericht (reports.py)
+  - Welle 3 (lesend): Event-Finanzen, Supply-Bruecke, Sponsoring-Deal
+  - Investitionsplanung (investment_plans, funding_sources, investment_scenarios, investment_feasibility)
+  - Stripe: Connect, Rechnungen, Auszahlungen, Abos, Kunden, Checkout
+- Bewusste Ausschlüsse:
+  - /internal/* (supply-poll, sync-sponsoring) sind Dienst-zu-Dienst-Routen, kein Bedienweg fuer Menschen.
+  - accounting, club_invoices, donations, member_fees liefern HTTP 501 — Platzhalter ohne Implementierung. Was es nicht gibt, bietet der Hilfetext nicht an.
+- Geprüfte Quellen: `src/commands/finance.ts`
+- Weiterführende Doku: `docs/finanzen.md`
+
+## weekly-preview
+
+- Status: `core-partial`
+- Actions: `create`, `list`, `template list`, `template show`, `template set`, `template delete`
+- Wichtige Lücken:
+  - template preview (lokales PNG) folgt mit dem Render-Dienst der Wochenvorschau (K2-Bildteil).
+- Bewusste Ausschlüsse:
+  - Die Share-Seite /share/weekly-preview/{token} ist anonym und braucht keine Action.
+- Geprüfte Quellen: `src/commands/weekly-preview.ts`
+- Weiterführende Doku: 
+
+## zone
+
+- Status: `covered`
+- Actions: `set list`, `set create`, `set update`, `set delete`, `list`, `create`, `update`, `estimate`, `delete`, `import`, `overview`, `task-zones`, `task-zones add`, `task-zones remove`
+- Wichtige Lücken:
+  - Keine bekannte Kernlücke im vorgesehenen CLI-Scope.
+- Bewusste Ausschlüsse:
+  - Zeichnen und Eckpunkte ändern geschieht im Gebiets-Editor der Web-App; die CLI arbeitet mit GeoJSON-Dateien.
+- Geprüfte Quellen: `src/commands/zone.ts`
+- Weiterführende Doku: `docs/zonen.md`
