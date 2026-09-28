@@ -13,6 +13,11 @@ Mit den `event`-Befehlen verwaltest du Veranstaltungen deines Vereins vollständ
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Nutze vor jeder Event-Arbeit `comvenio schema event --json` und `comvenio event --help`, um Felder und Unterbefehle zu sehen. Anmeldung über `comvenio login`; ohne `--scopes` fordert sie alle Scopes an, `--scopes` schränkt sie ein. Was du tatsächlich darfst, bestimmt zusätzlich deine Rolle im Verein — das Recht wird ausschließlich serverseitig geprüft.
 
 | Operation | Recht oder Regel |

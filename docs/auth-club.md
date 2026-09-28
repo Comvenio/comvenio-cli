@@ -16,6 +16,11 @@ Vereinsprofil, Einstellungen, Abteilungen und Design.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die `club`-Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Eine gültige Anmeldung ist Voraussetzung für jeden weiteren Befehl. Die
 Anmeldung entscheidet nur, *dass* jemand angemeldet ist; *was* erlaubt ist,
 ergibt sich aus den angeforderten Scopes und zusätzlich aus der Rolle im
@@ -28,7 +33,6 @@ brauchen das Recht, Vereinseinstellungen zu verwalten.
 
 ```bash
 comvenio login
-comvenio login --env dev --json
 comvenio login --scopes club.read,event.read --json
 ```
 
@@ -48,16 +52,12 @@ Optionen:
 
 | Flag | Bedeutung |
 |---|---|
-| `--device-token <token>` | nur Entwicklung/Automation; opakes Token als Alternative zur Browser-Anmeldung |
-| `--env prod\|dev\|local` | Betriebsziel, Standard `prod` |
+| `--device-token <token>` | Anmeldung mit Geräte-Token statt Browser; nötig für die klassischen Befehle |
 | `--scopes <csv>` | Anmeldung auf diese Scopes einschränken (ohne Angabe: alle) |
 | `--club <id>` | nur mit `--device-token`: Vereinskontext ausdrücklich setzen |
 | `--json` | maschinenlesbare Ausgabe |
 
-Für eine rein lokale Testumgebung ohne öffentlich erreichbares, gesichertes
-Gateway ist die Browser-Anmeldung bewusst gesperrt; dort ist `--device-token`
-erforderlich. Dieser Ausweichweg speichert das opake Token weiterhin im
-Zustand — die Datei `~/.comvenio-cli-state.json` darf deshalb grundsätzlich
+Eine Anmeldung per Geräte-Token speichert das opake Token im Zustand — die Datei `~/.comvenio-cli-state.json` darf deshalb grundsätzlich
 nie eingecheckt, protokolliert oder in einer Antwort ausgegeben werden.
 
 ### Mit Actions arbeiten
@@ -97,8 +97,7 @@ comvenio logout --json
 Bei einer Browser-Anmeldung widerruft `logout` die Anmeldung serverseitig und
 entfernt anschließend den lokalen Zugangsdatensatz. Schlägt der serverseitige
 Widerruf vorübergehend fehl, erscheint eine Warnung; die lokale Anmeldung wird
-trotzdem entfernt. Ein ausdrücklich gesetztes Entwicklungs-Token wird dabei
-nicht serverseitig widerrufen.
+trotzdem entfernt. Ein Geräte-Token wird dabei nicht serverseitig widerrufen.
 
 ### Vereinsinformationen lesen
 

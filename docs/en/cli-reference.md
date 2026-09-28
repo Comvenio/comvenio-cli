@@ -16,6 +16,11 @@ a topic of their own but accompany every other command.
 
 ## Requirements and permissions
 
+> **Sign-in:** Except `login`, `logout`, `whoami`, `action`, `finance` and `schema`, all commands are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Every command needs a valid sign-in; exceptions and details are in the
 article on sign-in and club context. What is allowed beyond that follows
 from the sign-in's scopes and the role in the club — the server-side check
@@ -33,8 +38,8 @@ comvenio <command> ... --json
 - For automated calls, always use `--json`. Successful responses land on
   standard output, errors on standard error.
 - The default is the browser sign-in with secure storage in the respective
-  operating system; an opaque token is only an explicit
-  development/automation fallback and is never decoded.
+  operating system; an opaque device token is the older path for the
+  classic commands and is never decoded.
 - Permissions are checked on the server: `401` usually means an invalid or
   expired sign-in, `403` a missing permission, `404` an unknown resource.
 - If there is no matching command for a task, that is a gap in the CLI — it

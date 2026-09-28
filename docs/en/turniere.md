@@ -16,6 +16,11 @@ team.
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 - Creating, updating or deleting tournaments, and editing participants, the draw, the schedule or
   results, is a club administration task and requires a sign-in with the matching write permissions.
 - Public registration and spectator viewing run through the web interface, not through this CLI.

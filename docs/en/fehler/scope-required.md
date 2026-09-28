@@ -17,5 +17,5 @@ Your sign-in is missing a permission for this action.
 
 ## Solution
 
-1. Run the command shown in the error message — it combines the previous and the missing scopes: `comvenio login --scopes <previous-and-missing-scopes>`
+1. Run the command shown in the error message. If the message names the missing scopes, it combines the previous and the missing ones: `comvenio login --scopes <previous-and-missing-scopes>`. If it names none, it is `comvenio login`, which requests all scopes.
 2. The scopes an action needs are shown by `comvenio action list --json`.

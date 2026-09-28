@@ -17,5 +17,5 @@ Deiner Anmeldung fehlt eine Berechtigung für diese Aktion.
 
 ## Lösung
 
-1. Den in der Fehlermeldung angezeigten Befehl ausführen — er enthält die bisherigen und die fehlenden Scopes zusammen: `comvenio login --scopes <bisherige-und-fehlende-scopes>`
+1. Den in der Fehlermeldung angezeigten Befehl ausführen. Nennt die Meldung die fehlenden Scopes, enthält er die bisherigen und die fehlenden zusammen: `comvenio login --scopes <bisherige-und-fehlende-scopes>`. Nennt sie keine, lautet er `comvenio login` — das fordert alle Scopes an.
 2. Welche Scopes eine Action braucht, zeigt `comvenio action list --json`.

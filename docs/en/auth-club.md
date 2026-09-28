@@ -16,6 +16,11 @@ departments and design.
 
 ## Requirements and permissions
 
+> **Sign-in:** The `club` commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 A valid sign-in is required for every further command. The sign-in only
 decides *that* someone is signed in; *what* is allowed follows from the
 requested scopes and additionally from the role in the club. Write steps on
@@ -27,7 +32,6 @@ the club profile or settings need the permission to manage club settings.
 
 ```bash
 comvenio login
-comvenio login --env dev --json
 comvenio login --scopes club.read,event.read --json
 ```
 
@@ -48,16 +52,12 @@ Options:
 
 | Flag | Meaning |
 |---|---|
-| `--device-token <token>` | development/automation only; opaque token as an alternative to the browser sign-in |
-| `--env prod\|dev\|local` | target environment, default `prod` |
+| `--device-token <token>` | sign in with a device token instead of the browser; needed for the classic commands |
 | `--scopes <csv>` | restrict the sign-in to these scopes (without: all) |
 | `--club <id>` | only with `--device-token`: set the club context explicitly |
 | `--json` | machine-readable output |
 
-For a purely local test environment without a publicly reachable, secured
-gateway, the browser sign-in is deliberately blocked; `--device-token` is
-required there. This fallback keeps storing the opaque token in the state —
-the file `~/.comvenio-cli-state.json` must therefore never be committed,
+A device-token sign-in stores the opaque token in the state — the file `~/.comvenio-cli-state.json` must therefore never be committed,
 logged or printed in a response, as a matter of principle.
 
 ### Working with actions
@@ -96,7 +96,7 @@ comvenio logout --json
 With a browser sign-in, `logout` revokes the sign-in on the server and then
 removes the local credential entry. If the server-side revocation
 temporarily fails, a warning is shown; the local sign-in is removed anyway.
-An explicitly set development token is not revoked on the server.
+A device token is not revoked on the server.
 
 ### Reading club information
 

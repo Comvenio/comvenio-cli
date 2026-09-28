@@ -15,6 +15,11 @@ zugewiesen ist, ist damit ihren Zonen zugeteilt.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Anmeldung per `comvenio login`; welche Scopes ein einzelner Befehl braucht, zeigt
 `comvenio action list --json`. Gezeichnet wird ausschließlich im Gebiets-Editor der Web-App — die
 CLI liest und schreibt Zonen als GeoJSON-Dateien, ändert aber keine Eckpunkte interaktiv.

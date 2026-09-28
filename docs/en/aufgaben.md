@@ -13,6 +13,11 @@ Tasks let a club plan work, assign it to members, accompany it with checklists a
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Sign in with `comvenio login`; which scopes a given action needs is shown by `comvenio action list --json`. For a member's own personal task reminder, the read scope `task.read` is already enough — a write scope is explicitly not required for it, because it does not change a shared task, only the member's own preference.
 
 ## Workflows

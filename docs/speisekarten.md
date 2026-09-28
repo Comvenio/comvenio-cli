@@ -13,6 +13,11 @@ Mit `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template` und `m
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Anmeldung über `comvenio login`; ohne `--scopes` fordert sie alle Scopes an, `--scopes` schränkt sie ein. Zusätzlich prüft Comvenio serverseitig deine Rolle im Verein.
 
 | Operation | Recht oder Regel |

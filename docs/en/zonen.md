@@ -15,6 +15,11 @@ thereby assigned to its zones.
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Sign in with `comvenio login`; the scopes a given command needs are shown by
 `comvenio action list --json`. Drawing happens exclusively in the territory editor of the web app
 — the CLI reads and writes zones as GeoJSON files, it does not change corner points interactively.

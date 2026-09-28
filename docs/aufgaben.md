@@ -13,6 +13,11 @@ Mit Aufgaben lassen sich Arbeiten im Verein planen, Mitgliedern zuweisen, mit Ch
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Für die eigene, persönliche Aufgaben-Erinnerung genügt bereits der Lese-Scope `task.read` — ein Schreib-Scope ist dafür ausdrücklich nicht nötig, weil dabei keine gemeinsame Aufgabe geändert wird, sondern nur die eigene Präferenz.
 
 ## Abläufe

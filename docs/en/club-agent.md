@@ -16,6 +16,11 @@ of the signed-in person, and the service checks club and rights again.
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Sign in with `comvenio login` — the default sign-in covers all scopes, narrow it with `--scopes`.
 What chat and functions may actually do additionally depends on the club role. If the club agent
 is not yet set up for the club, an administrator of the club must do that in the web app first.

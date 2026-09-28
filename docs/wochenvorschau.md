@@ -15,6 +15,11 @@ Design des Entwurfs.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Gleiche Endpunkte und Rechte wie der Knopf in der Web-App: die Vereinsrolle braucht das Recht,
 Vereinseinstellungen zu verwalten, oder das Recht, Veranstaltungen der jeweiligen Abteilung zu
 verwalten. Anmeldung per `comvenio login`; welche Scopes im Einzelnen nötig sind, zeigt

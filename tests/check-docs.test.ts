@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { checkDocs, generateDocs } from "../scripts/docs-lib.ts";
+import { checkDocs, generateDocs, registryCommand } from "../scripts/docs-lib.ts";
 
 const roots: string[] = [];
 
@@ -37,6 +37,7 @@ function fixture(): string {
     domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/teams.md"] }],
   }));
   write(root, "src/schema/team.json", "{}");
+  write(root, "src/commands/team.ts", 'cli.command("team <verb>", "Teams");');
   write(root, "docs/fehler/katalog.json", JSON.stringify({
     NOT_FOUND: { de: { message: "x" }, en: { message: "x" }, help: "fehler/not-found" },
   }));
@@ -119,6 +120,82 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     expect(checkDocs(root)).toContainEqual({ file: "docs/teams.md", reason: "Erzeugter Stand veraltet — bun run gen:docs" });
     for (const [path, content] of generateDocs(root)) write(root, path, content);
     expect(checkDocs(root)).toEqual([]);
+  });
+
+  test("a start marker without end marker fails", () => {
+    const root = fixture();
+    write(root, "docs/teams.md", topic("de").replace("<!-- /gen:docs -->", ""));
+    expect(checkDocs(root).some((finding) => finding.reason.startsWith("Erzeugter Abschnitt fehlt"))).toBe(true);
+  });
+
+  test("an unknown kategorie or diverging language versions fail", () => {
+    const root = fixture();
+    write(root, "docs/en/teams.md", topic("en").replace("kategorie: thema", "kategorie: archiv"));
+    const reasons = checkDocs(root).map((finding) => finding.reason);
+    expect(reasons).toContain("Unbekannte kategorie: archiv");
+    expect(reasons).toContain("Sprachfassungen weichen ab (kategorie): docs/en/teams.md");
+  });
+
+  test("TC-01: a domain claimed by an article the registry does not point to does not count", () => {
+    const root = fixture();
+    write(root, "src/coverage/domains.json", JSON.stringify({
+      domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/andere.md"] }],
+    }));
+    const reasons = checkDocs(root).map((finding) => finding.reason);
+    expect(reasons).toContain("Domäne ohne Artikel: team");
+    expect(reasons).toContain("Registry verweist für team nicht auf diesen Artikel");
+  });
+
+  test("TC-05: forbidden content in the frontmatter and HTTP routes fail, self-service does not", () => {
+    const root = fixture();
+    write(root, "docs/teams.md", topic("de").replace("stichwoerter: [team]", "stichwoerter: [src/commands/team.ts]"));
+    for (const [path, content] of generateDocs(root)) write(root, path, content);
+    expect(checkDocs(root).some((finding) => finding.reason === "Verbotener Inhalt (Quellpfad)")).toBe(true);
+
+    const route = fixture();
+    write(route, "docs/teams.md", topic("de", " Intern GET /member/teams."));
+    for (const [path, content] of generateDocs(route)) write(route, path, content);
+    expect(checkDocs(route).some((finding) => finding.reason === "Verbotener Inhalt (HTTP-Route)")).toBe(true);
+
+    const selfService = fixture();
+    write(selfService, "docs/teams.md", topic("de", " Das Self-Service-Portal und self-service helfen."));
+    for (const [path, content] of generateDocs(selfService)) write(selfService, path, content);
+    expect(checkDocs(selfService)).toEqual([]);
+  });
+
+  test("TC-05: a real UUID with a repeated prefix is still found", () => {
+    const root = fixture();
+    write(root, "docs/teams.md", topic("de", " Verein 00000000-4c2a-4b1d-9e3f-7a6b5c4d3e2f."));
+    for (const [path, content] of generateDocs(root)) write(root, path, content);
+    expect(checkDocs(root).some((finding) => finding.reason === "Verbotener Inhalt (echte Kennung (UUID))")).toBe(true);
+  });
+
+  test("registry entries resolve to the command the CLI really registers", () => {
+    const commands = new Map([
+      ["zone", 'cli.command("zone <verb>"); cli.command("task-zones <id>");'],
+      ["task-zones", 'cli.command("zone <verb>"); cli.command("task-zones <id>");'],
+      ["finance", 'if (action === "plan") {}'],
+      ["plan", ""],
+      ["agent", 'if (action === "chat") {}'],
+      ["function", ""],
+    ]);
+    expect(registryCommand("zone", "list", commands)).toBe("zone list");
+    expect(registryCommand("zone", "task-zones add", commands)).toBe("task-zones add");
+    expect(registryCommand("finance", "plan list", commands)).toBe("finance plan list");
+    expect(registryCommand("agent", "function", commands)).toBe("function");
+    expect(registryCommand("login", "login --device-token", commands)).toBe("login --device-token");
+  });
+
+  test("TC-06: a registry entry whose command the CLI does not register fails", () => {
+    const root = fixture();
+    write(root, "src/coverage/domains.json", JSON.stringify({
+      domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/teams.md"] },
+        { id: "ghost", status: "covered", actions: ["ghost list"], docs: ["docs/teams.md"] }],
+    }));
+    expect(checkDocs(root)).toContainEqual({
+      file: "src/coverage/domains.json",
+      reason: "Befehl nicht registriert: comvenio ghost (ghost)",
+    });
   });
 
   test("the index lists both languages and the error articles", () => {

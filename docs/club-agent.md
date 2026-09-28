@@ -16,6 +16,11 @@ Identität der angemeldeten Person, und der Dienst prüft Verein und Rechte erne
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Anmeldung per `comvenio login` — die Standardanmeldung deckt alle Scopes ab, mit `--scopes`
 einschränkbar. Was Chat und Funktionen tatsächlich ausführen dürfen, richtet sich zusätzlich nach
 der Vereinsrolle. Ist der Club-Agent für den Verein noch nicht eingerichtet, muss das zuerst ein

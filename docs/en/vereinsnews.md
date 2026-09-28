@@ -13,6 +13,11 @@ Club news lets a club publish updates as rich-HTML posts, either as a draft or l
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Sign in with `comvenio login`; which scopes a given action needs is shown by `comvenio action list --json`. A draft (`is_draft=true`) is only visible to authorized editors; a news post only becomes visible to its visibility group once it is published.
 
 ## Workflows

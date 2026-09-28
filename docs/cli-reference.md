@@ -16,6 +16,11 @@ Thema, sondern jeden anderen Befehl begleiten.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Außer `login`, `logout`, `whoami`, `action`, `finance` und `schema` sind alle Befehle klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 Jeder Befehl braucht eine gültige Anmeldung; Ausnahmen und Details stehen im
 Artikel zu Anmeldung und Vereinskontext. Welche Befehle darüber hinaus
 erlaubt sind, ergibt sich aus den Scopes der Anmeldung und der Rolle im
@@ -33,8 +38,8 @@ comvenio <command> ... --json
 - Für automatisierte Aufrufe immer `--json` verwenden. Erfolgreiche
   Antworten landen auf der Standardausgabe, Fehler auf der Fehlerausgabe.
 - Standard ist die Browser-Anmeldung mit sicherer Speicherung im jeweiligen
-  Betriebssystem; ein opakes Token ist nur ein expliziter
-  Entwicklungs-/Automationsfallback und wird nie inhaltlich ausgewertet.
+  Betriebssystem; ein opakes Geräte-Token ist der ältere Weg für die
+  klassischen Befehle und wird nie inhaltlich ausgewertet.
 - Rechte werden serverseitig geprüft: `401` bedeutet in der Regel eine
   ungültige oder abgelaufene Anmeldung, `403` ein fehlendes Recht, `404` eine
   unbekannte Ressource.

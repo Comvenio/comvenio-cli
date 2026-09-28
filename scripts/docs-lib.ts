@@ -23,6 +23,7 @@ export const ERROR_SECTIONS: Record<Lang, readonly string[]> = {
 };
 
 const GEN_START = "<!-- gen:docs befehle -->";
+const KATEGORIEN = new Set(["thema", "fehler", "uebersicht"]);
 const GEN_END = "<!-- /gen:docs -->";
 
 // Files in docs/ that are no customer articles: the template, the generated
@@ -55,6 +56,36 @@ interface RegistryDomain {
   status: string;
   actions: string[];
   docs: string[];
+}
+
+/** Top-level commands the CLI registers (`.command("zone …")`) → source text of the registering file. */
+export function topLevelCommands(root: string): Map<string, string> {
+  const commands = new Map<string, string>();
+  for (const dir of ["src/commands", "src"]) {
+    const base = join(root, dir);
+    if (!existsSync(base)) continue;
+    for (const name of readdirSync(base).filter((file) => file.endsWith(".ts"))) {
+      const text = readFileSync(join(base, name), "utf8");
+      for (const match of text.matchAll(/\.command\(\s*["'`]([a-z][a-z0-9-]*)/gu)) commands.set(match[1]!, text);
+    }
+  }
+  return commands;
+}
+
+/**
+ * The full command of one registry entry. The registry lists subcommands
+ * without their top-level command ("list" under "team"), but some entries are
+ * top-level commands of their own ("task-zones" under "zone", "function"
+ * under "agent"). A word is a subcommand when the domain's own source handles
+ * it as a quoted verb ("plan" in finance); otherwise a registered top-level
+ * command of that name stands for itself.
+ */
+export function registryCommand(domain: string, action: string, commands: ReadonlyMap<string, string>): string {
+  const head = action.split(" ")[0]!;
+  if (head === domain) return action;
+  const ownSource = commands.get(domain) ?? "";
+  if (commands.has(head) && !ownSource.includes(`"${head}"`)) return action;
+  return `${domain} ${action}`;
 }
 
 interface CatalogEntry {
@@ -143,19 +174,15 @@ const STATUS_LABEL: Record<string, Record<Lang, string>> = {
 /** The generated block of "Befehle und Actions" for one article. */
 export function commandsBlock(root: string, domains: readonly string[], lang: Lang): string {
   const registry = new Map(readRegistry(root).map((domain) => [domain.id, domain]));
+  const commands = topLevelCommands(root);
+  // The markers say it is generated; the customer text itself stays free of tooling.
   const lines: string[] = [GEN_START];
-  lines.push(lang === "de"
-    ? "_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._"
-    : "_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._");
   for (const id of domains) {
     const domain = registry.get(id);
     if (!domain) continue;
     lines.push("", `**${id}** — ${STATUS_LABEL[domain.status]?.[lang] ?? domain.status}`, "");
-    // The registry lists subcommands without their top-level command ("list"
-    // under "team"); login, logout and whoami carry it already.
     for (const action of domain.actions) {
-      const command = action.split(" ")[0] === id ? action : `${id} ${action}`;
-      lines.push(`- \`comvenio ${command}\``);
+      lines.push(`- \`comvenio ${registryCommand(id, action, commands)}\``);
     }
     if (existsSync(join(root, "src/schema", `${id}.json`))) {
       lines.push(lang === "de"
@@ -223,11 +250,18 @@ export function generateDocs(root: string): Map<string, string> {
 // and infrastructure names, internal tools, real club IDs.
 const FORBIDDEN: Array<[RegExp, string]> = [
   [/(?:^|[\s`(/])(?:src|apps|packages|scripts)\/[\w.-]/mu, "Quellpfad"],
-  [/\b[a-z][a-z0-9]*(?:-[a-z0-9]+)*-service\b/u, "interner Dienstname"],
+  [/\b(?!self-service\b)[a-z][a-z0-9]*(?:-[a-z0-9]+)*-service\b/u, "interner Dienstname"],
+  [/\b(?:GET|POST|PUT|PATCH|DELETE) \/[\w{]/u, "HTTP-Route"],
   [/\b(?:railway|localhost|127\.0\.0\.1|postgres(?:ql)?|redis|kubernetes)\b/iu, "Infrastruktur"],
   [/\b(?:rts|codex|harness)\b/iu, "internes Werkzeug"],
-  [/\b(?!([0-9a-f])\1{7}-)[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/iu, "echte Kennung (UUID)"],
 ];
+
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
+
+/** A placeholder like 11111111-1111-4111-8111-111111111111 uses at most three distinct digits. */
+function realUuid(line: string): boolean {
+  return [...line.matchAll(UUID)].some((match) => new Set(match[0].replaceAll("-", "").toLowerCase()).size > 3);
+}
 
 function headings(body: string): string[] {
   return [...body.matchAll(/^## (.+)$/gmu)].map((match) => match[1]!.trim());
@@ -238,43 +272,78 @@ export function checkDocs(root: string): Finding[] {
   const findings: Finding[] = [];
   const articles = readArticles(root);
   const byPath = new Map(articles.map((article) => [article.path, article]));
+  const registry = readRegistry(root);
+  const commands = topLevelCommands(root);
 
   for (const article of articles) {
     if (!article.frontmatter) {
       findings.push({ file: article.path, reason: "Frontmatter fehlt (id, kategorie)" });
       continue;
     }
-    if (!article.title) findings.push({ file: article.path, reason: "Überschrift (# …) fehlt" });
-    const required = article.frontmatter.kategorie === "thema"
-      ? TOPIC_SECTIONS[article.lang]
-      : article.frontmatter.kategorie === "fehler" ? ERROR_SECTIONS[article.lang] : [];
-    const present = new Set(headings(article.body));
-    for (const section of required) {
-      if (!present.has(section)) findings.push({ file: article.path, reason: `Pflichtabschnitt fehlt: ${section}` });
+    const { kategorie } = article.frontmatter;
+    if (!KATEGORIEN.has(kategorie)) {
+      findings.push({ file: article.path, reason: `Unbekannte kategorie: ${kategorie}` });
     }
-    if (article.frontmatter.kategorie === "thema" && !article.raw.includes(GEN_START)) {
-      findings.push({ file: article.path, reason: "Erzeugter Abschnitt fehlt (Marker gen:docs befehle)" });
+    if (!article.title) findings.push({ file: article.path, reason: "Überschrift (# …) fehlt" });
+    const required = kategorie === "fehler" ? ERROR_SECTIONS[article.lang] : TOPIC_SECTIONS[article.lang];
+    if (kategorie !== "uebersicht") {
+      const present = new Set(headings(article.body));
+      for (const section of required) {
+        if (!present.has(section)) findings.push({ file: article.path, reason: `Pflichtabschnitt fehlt: ${section}` });
+      }
+    }
+    if (kategorie === "thema" && withCommandsBlock(article.raw, "") === null) {
+      findings.push({ file: article.path, reason: "Erzeugter Abschnitt fehlt oder ist unvollständig (Marker gen:docs befehle … /gen:docs)" });
     }
     const other = article.lang === "de"
       ? article.path.replace(/^docs\//u, "docs/en/")
       : article.path.replace(/^docs\/en\//u, "docs/");
-    if (!byPath.has(other)) {
+    const pair = byPath.get(other);
+    if (!pair) {
       findings.push({ file: article.path, reason: `Sprachfassung fehlt: ${other}` });
-    } else if (byPath.get(other)!.frontmatter?.id !== article.frontmatter.id) {
-      findings.push({ file: article.path, reason: `Sprachfassungen haben verschiedene id: ${other}` });
+    } else if (pair.frontmatter) {
+      for (const field of ["id", "kategorie"] as const) {
+        if (pair.frontmatter[field] !== article.frontmatter[field]) {
+          findings.push({ file: article.path, reason: `Sprachfassungen weichen ab (${field}): ${other}` });
+        }
+      }
+      if (pair.frontmatter.domaenen.join(",") !== article.frontmatter.domaenen.join(",")) {
+        findings.push({ file: article.path, reason: `Sprachfassungen weichen ab (domaenen): ${other}` });
+      }
     }
-    article.body.split("\n").forEach((line, index) => {
+    // Frontmatter counts too: its keywords are published in docs/index.json.
+    article.raw.split("\n").forEach((line, index) => {
       for (const [pattern, reason] of FORBIDDEN) {
         if (pattern.test(line)) findings.push({ file: `${article.path}:${index + 1}`, reason: `Verbotener Inhalt (${reason})` });
       }
+      if (realUuid(line)) findings.push({ file: `${article.path}:${index + 1}`, reason: "Verbotener Inhalt (echte Kennung (UUID))" });
     });
   }
 
+  // Each domain needs a German topic article that the registry points to and
+  // that names the domain; an article may only claim domains that point to it.
   const topics = articles.filter((article) => article.lang === "de" && article.frontmatter?.kategorie === "thema");
-  const covered = new Set(topics.flatMap((article) => article.frontmatter!.domaenen));
-  for (const domain of readRegistry(root)) {
-    if (!covered.has(domain.id)) {
+  for (const domain of registry) {
+    const documented = topics.some((article) =>
+      domain.docs.includes(article.path) && article.frontmatter!.domaenen.includes(domain.id));
+    if (!documented) {
       findings.push({ file: "src/coverage/domains.json", reason: `Domäne ohne Artikel: ${domain.id}` });
+    }
+    for (const action of domain.actions) {
+      const head = registryCommand(domain.id, action, commands).split(" ")[0]!;
+      if (!commands.has(head)) {
+        findings.push({ file: "src/coverage/domains.json", reason: `Befehl nicht registriert: comvenio ${head} (${domain.id})` });
+      }
+    }
+  }
+  const byId = new Map(registry.map((domain) => [domain.id, domain]));
+  for (const article of topics) {
+    for (const id of article.frontmatter!.domaenen) {
+      const domain = byId.get(id);
+      if (!domain) findings.push({ file: article.path, reason: `Unbekannte Domäne: ${id}` });
+      else if (!domain.docs.includes(article.path)) {
+        findings.push({ file: article.path, reason: `Registry verweist für ${id} nicht auf diesen Artikel` });
+      }
     }
   }
 

@@ -14,6 +14,11 @@ approval in the agent messenger and publishing afterwards. Templates control the
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Same endpoints and rights as the button in the web app: the club role needs the right to manage
 club settings, or the right to manage events of the relevant department. Sign in with
 `comvenio login`; the exact scopes needed are shown by `comvenio action list --json`.

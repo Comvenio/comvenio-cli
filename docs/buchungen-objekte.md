@@ -16,6 +16,11 @@ Gastgebühren aus.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 - Lesezugriffe auf Gebäude, Räume, Objekte und Buchungen verlangen Vereinsmitgliedschaft.
 - Gebäude, Räume, Objekte, Buchungs- und Task-Regeln zu ändern erfordert `manage_objects` im
   passenden Verein- oder Abteilungs-Scope.

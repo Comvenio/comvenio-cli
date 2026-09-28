@@ -212,7 +212,7 @@
       "message": "The action was not confirmed — it may still have been carried out.",
       "cause": "A writing action ended with a timeout or server error, possibly after Comvenio had already carried it out. Check the current state instead of repeating, otherwise it may be created twice."
     },
-    "next_command": "comvenio action list",
+    "next_command": "comvenio action call <action-id> --input '<json>'",
     "help": "fehler/outcome-unknown"
   },
   "UPSTREAM_UNAVAILABLE": {

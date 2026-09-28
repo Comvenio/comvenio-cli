@@ -12,11 +12,16 @@ The action was not confirmed — it may still have been carried out.
 
 ## Typical causes
 
-- A writing action ended with a timeout or a server error, possibly after Comvenio had already carried it out.
-- The effect depends on the action's risk class (read/write), not on the exact cause of the error.
+- A writing action (for example `comvenio action confirm`) ended with a timeout — the limit is
+  15 seconds — or with a server error, possibly after Comvenio had already carried it out.
+- Reading actions never report this code; they can be repeated safely.
 
 ## Solution
 
-1. Do NOT simply repeat the action — otherwise it may be created twice.
-2. First check the current state with the matching read action: `comvenio action list`
-3. Only if the entry is genuinely missing there, run the action again.
+1. Do **not** repeat the action — not even with the same `--idempotency-key`: after an abort the
+   key does not protect against a second execution.
+2. Fetch the affected entry with the matching **reading** action. `comvenio action list` shows which
+   one (actions without a writing effect); call it with
+   `comvenio action call <read-action> --input '<json>'`, for example the list of the area.
+3. If the entry is there, nothing else is needed. If it is definitely missing, start the action again
+   — with a new preview and a new key.

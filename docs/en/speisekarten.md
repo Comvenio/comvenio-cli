@@ -13,6 +13,11 @@ With `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template` and `
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Sign in with `comvenio login`; without `--scopes` it requests all scopes, `--scopes` narrows it down. Comvenio additionally checks your role in the club server-side.
 
 | Operation | Permission or rule |

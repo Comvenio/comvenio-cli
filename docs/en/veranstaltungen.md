@@ -13,6 +13,11 @@ With the `event` commands you manage your club's events end to end: from templat
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 Before working with events, run `comvenio schema event --json` and `comvenio event --help` to see fields and subcommands. Sign in with `comvenio login`; without `--scopes` it requests all scopes, `--scopes` narrows it down. What you can actually do also depends on your role in the club — permissions are checked server-side only.
 
 | Operation | Permission or rule |

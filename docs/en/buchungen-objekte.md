@@ -15,6 +15,11 @@ rejects them, links related bookings, and evaluates utilization and guest fees.
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 - Read access to buildings, rooms, objects and bookings requires club membership.
 - Changing buildings, rooms, objects, booking rules or task rules requires `manage_objects` in the
   matching club or department scope.

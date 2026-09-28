@@ -15,6 +15,11 @@ Teilnehmer — Team, Einzelperson oder Doppel/Paar —, nicht zwingend ein feste
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 - Turniere anzulegen, zu ändern oder zu löschen sowie Teilnehmer, Auslosung, Spielplan und Ergebnisse
   zu bearbeiten ist eine Vereinsverwaltungsaufgabe und erfordert eine Anmeldung mit den entsprechenden
   Schreibrechten.

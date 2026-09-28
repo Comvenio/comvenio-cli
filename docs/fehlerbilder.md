@@ -14,9 +14,9 @@ stichwoerter: [fehler, fehlerbilder, fehlercodes, ursache]
 
 Der Weg ist `comvenio login` (Browser, OAuth) und danach
 `comvenio action list|call|confirm`. Ältere, klassische Befehle laufen unter
-dieser Anmeldung **nicht** — das ist Absicht, kein Fehler: Ein
-Entwicklungs-Token ist der alte Weg, die Browser-Anmeldung der einzige
-vorgesehene. Fehlt eine Funktion als Action, wird sie über das
+dieser Anmeldung **nicht** — das ist Absicht, kein Fehler: Sie laufen nur mit
+einem Geräte-Token (`comvenio login --device-token <token>`), dem älteren Weg; vorgesehen ist
+die Browser-Anmeldung mit Actions. Fehlt eine Funktion als Action, wird sie über das
 Issue-Formular gemeldet.
 
 **Die Standard-Anmeldung fordert alle Scopes an.** Was tatsächlich erlaubt
@@ -64,6 +64,6 @@ Ursachen und Lösung.
 | `Fehler ACTION_NOT_LISTED` | Die Action steht nicht in der Tool-Liste dieser Verbindung. **Direkt nach einer neuen Version** auch vorübergehend. | `comvenio action list` prüfen; nach einer neuen Version eine Minute warten und wiederholen. |
 | „Der Fachservice hat keine freigegebene Antwortform geliefert." | Die Antwort passt nicht zum veröffentlichten Vertrag der Action — ein Fehler auf Comvenio-Seite, nicht bei dir. | Nicht umgehen; als Fehlerbericht melden (Issue-Formular) mit Action-Kennung und Uhrzeit. |
 | `Fehler AUTH_REQUIRED` mit dem Zusatz, die Verbindung trage nicht mehr | Die Anmeldung ist abgelaufen oder wurde widerrufen. | `comvenio login` (mit denselben `--scopes`). |
-| Beim Anmelden wird nach einem Entwicklungs-Token gefragt / der Wert fehlt | Alter Weg. | Nicht verwenden; `comvenio login` ohne Token ausführen. |
+| Beim Anmelden wird nach einem Geräte-Token gefragt / der Wert fehlt | Alter Weg. | Nicht verwenden; `comvenio login` ohne Token ausführen. |
 | `Fehler OUTCOME_UNKNOWN` | Eine schreibende Action (etwa `action confirm`) endete mit Zeitüberschreitung oder Serverfehler — womöglich nachdem Comvenio sie schon ausgeführt hatte. | **Nicht wiederholen**, sonst entsteht der Eintrag womöglich doppelt. Erst den Stand mit der passenden Lese-Action prüfen. |
 | `Fehler UNKNOWN_ERROR` | Ein Fall ohne Beschreibung. | Als Fehlerbericht melden (Issue-Formular) mit Anfrage-ID und Uhrzeit. |

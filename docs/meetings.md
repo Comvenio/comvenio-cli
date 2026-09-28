@@ -16,6 +16,11 @@ offizielle Reinschrift veröffentlichen.
 
 ## Voraussetzungen und Rechte
 
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
 - Schreibende Aktionen (Serien, Protokolle, Tagesordnung, Notizen, Teilnehmer, Entscheidungen,
   Abstimmungen, Beschlüsse, Reinschrift) erfordern das Recht `manage_meetings` beziehungsweise die
   jeweilige granulare Meeting-Berechtigung.

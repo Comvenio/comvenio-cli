@@ -16,6 +16,11 @@ rosters, competitions, iCal subscriptions, schedule synchronization and team app
 
 ## Requirements and permissions
 
+> **Sign-in:** The commands in this article are classic commands. They run with a device-token
+> sign-in (`comvenio login --device-token <token>`). With the browser sign-in alone the CLI reports
+> `OAUTH_ONLY`; the same goal is then reached through the enabled actions: `comvenio action list`
+> shows them, `comvenio help fehler OAUTH_ONLY` explains the way.
+
 - Reading members, teams, squads and resource priorities requires the member visibility permission
   in the club.
 - Creating, updating or deleting members, families, membership statuses, membership periods and team
