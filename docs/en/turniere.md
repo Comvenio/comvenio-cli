@@ -311,38 +311,38 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
 
 **tournament**
 
-- `cai.tournament.01.series_list` — list (read)
-- `cai.tournament.02.series_show` — show (read)
-- `cai.tournament.03.series_create` — create (change)
-- `cai.tournament.04.series_update` — update (change)
-- `cai.tournament.05.series_delete` — delete (change with confirmation)
-- `cai.tournament.06.execution_create` — create (change)
-- `cai.tournament.07.execution_link` — link (change)
-- `cai.tournament.08.list` — list (read)
-- `cai.tournament.09.show` — show (read)
-- `cai.tournament.10.update` — update (change)
-- `cai.tournament.11.delete` — delete (change with confirmation)
-- `cai.tournament.12.status` — set (change with confirmation)
-- `cai.tournament.13.participants` — list (read)
-- `cai.tournament.14.mannschaft` — create (change)
-- `cai.tournament.15.participant` — create (change)
-- `cai.tournament.16.participant_withdraw` — withdraw (change with confirmation)
-- `cai.tournament.17.participant_reinstate` — reinstate (change)
-- `cai.tournament.18.participant_remove` — remove (change with confirmation)
-- `cai.tournament.19.start` — start (change with confirmation)
-- `cai.tournament.20.matches` — list (change)
-- `cai.tournament.21.matches_clear` — clear (change with confirmation)
-- `cai.tournament.22.reset` — reset (change with confirmation)
-- `cai.tournament.23.redraw` — redraw (change with confirmation)
-- `cai.tournament.24.standings` — show (read)
-- `cai.tournament.25.preview` — export (change with confirmation)
-- `cai.tournament.26.draw` — create (change)
-- `cai.tournament.27.draw_confirm` — confirm (change with confirmation)
-- `cai.tournament.28.schedule_generate` — generate (change with confirmation)
-- `cai.tournament.29.match_schedule` — set (change)
-- `cai.tournament.30.match_delete` — delete (change with confirmation)
-- `cai.tournament.31.match_result` — set (change)
-- `cai.tournament.32.deadline` — show, set_deadline, set_policy (read, change)
+- `cai.tournament.01.series_list` — list (read) · Scopes: `event.read`
+- `cai.tournament.02.series_show` — show (read) · Scopes: `event.read`
+- `cai.tournament.03.series_create` — create (change) · Scopes: `event.write`
+- `cai.tournament.04.series_update` — update (change) · Scopes: `event.write`
+- `cai.tournament.05.series_delete` — delete (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.06.execution_create` — create (change) · Scopes: `event.write`
+- `cai.tournament.07.execution_link` — link (change) · Scopes: `event.write`
+- `cai.tournament.08.list` — list (read) · Scopes: `event.read`
+- `cai.tournament.09.show` — show (read) · Scopes: `event.read`
+- `cai.tournament.10.update` — update (change) · Scopes: `event.write`
+- `cai.tournament.11.delete` — delete (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.12.status` — set (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.13.participants` — list (read) · Scopes: `event.read`
+- `cai.tournament.14.mannschaft` — create (change) · Scopes: `event.write`
+- `cai.tournament.15.participant` — create (change) · Scopes: `event.write`
+- `cai.tournament.16.participant_withdraw` — withdraw (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.17.participant_reinstate` — reinstate (change) · Scopes: `event.write`
+- `cai.tournament.18.participant_remove` — remove (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.19.start` — start (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.20.matches` — list (change) · Scopes: `event.write`
+- `cai.tournament.21.matches_clear` — clear (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.22.reset` — reset (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.23.redraw` — redraw (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.24.standings` — show (read) · Scopes: `event.read`
+- `cai.tournament.25.preview` — export (change with confirmation) · Scopes: `event.read`, `files.export`
+- `cai.tournament.26.draw` — create (change) · Scopes: `event.write`
+- `cai.tournament.27.draw_confirm` — confirm (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.28.schedule_generate` — generate (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.29.match_schedule` — set (change) · Scopes: `event.write`
+- `cai.tournament.30.match_delete` — delete (change with confirmation) · Scopes: `event.write`
+- `cai.tournament.31.match_result` — set (change) · Scopes: `event.write`
+- `cai.tournament.32.deadline` — show, set_deadline, set_policy (read, change) · Scopes: `event.read`, `event.write`
 <!-- /gen:docs -->
 
 ## Errors

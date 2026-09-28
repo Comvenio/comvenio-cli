@@ -220,82 +220,82 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 
 **recipe**
 
-- `cai.recipe.01.create` — create (change with confirmation)
-- `cai.recipe.02.from_template` — create (change with confirmation)
-- `cai.recipe.03.list` — list (read)
-- `cai.recipe.04.show` — show (read)
-- `cai.recipe.05.update` — update (change)
-- `cai.recipe.06.delete` — delete (change with confirmation)
+- `cai.recipe.01.create` — create (change with confirmation) · Scopes: `supply.write`
+- `cai.recipe.02.from_template` — create (change with confirmation) · Scopes: `supply.write`
+- `cai.recipe.03.list` — list (read) · Scopes: `supply.read`
+- `cai.recipe.04.show` — show (read) · Scopes: `supply.read`
+- `cai.recipe.05.update` — update (change) · Scopes: `supply.write`
+- `cai.recipe.06.delete` — delete (change with confirmation) · Scopes: `supply.write`
 
 **ingredient**
 
-- `cai.ingredient.01.list` — list (read)
-- `cai.ingredient.02.show` — show (read)
-- `cai.ingredient.03.create` — create (change)
-- `cai.ingredient.04.update` — update (change)
-- `cai.ingredient.05.delete` — delete (change with confirmation)
-- Fields and values: `comvenio schema ingredient --json`
+- `cai.ingredient.01.list` — list (read) · Scopes: `supply.read`
+- `cai.ingredient.02.show` — show (read) · Scopes: `supply.read`
+- `cai.ingredient.03.create` — create (change) · Scopes: `supply.write`
+- `cai.ingredient.04.update` — update (change) · Scopes: `supply.write`
+- `cai.ingredient.05.delete` — delete (change with confirmation) · Scopes: `supply.write`
+- Fields and values: `comvenio schema ingredient --json` (the sign-in sets `club_id` — never in `--input`)
 
 **ingredient-category**
 
-- `cai.ingredient-category.01.list` — list (read)
-- `cai.ingredient-category.02.roots` — roots (read)
-- `cai.ingredient-category.03.tree` — tree (read)
-- `cai.ingredient-category.04.by_ingredient` — list (read)
-- `cai.ingredient-category.05.show` — show (read)
-- `cai.ingredient-category.06.create` — create (change)
-- `cai.ingredient-category.07.update` — update (change)
-- `cai.ingredient-category.08.delete` — delete (change with confirmation)
-- `cai.ingredient-category.09.assign` — assign (change)
-- `cai.ingredient-category.10.unassign` — unassign (change with confirmation)
-- `cai.ingredient-category.11.init` — initialize (change with confirmation)
-- Fields and values: `comvenio schema ingredient-category --json`
+- `cai.ingredient-category.01.list` — list (read) · Scopes: `supply.read`
+- `cai.ingredient-category.02.roots` — roots (read) · Scopes: `supply.read`
+- `cai.ingredient-category.03.tree` — tree (read) · Scopes: `supply.read`
+- `cai.ingredient-category.04.by_ingredient` — list (read) · Scopes: `supply.read`
+- `cai.ingredient-category.05.show` — show (read) · Scopes: `supply.read`
+- `cai.ingredient-category.06.create` — create (change) · Scopes: `supply.write`
+- `cai.ingredient-category.07.update` — update (change) · Scopes: `supply.write`
+- `cai.ingredient-category.08.delete` — delete (change with confirmation) · Scopes: `supply.write`
+- `cai.ingredient-category.09.assign` — assign (change) · Scopes: `supply.write`
+- `cai.ingredient-category.10.unassign` — unassign (change with confirmation) · Scopes: `supply.write`
+- `cai.ingredient-category.11.init` — initialize (change with confirmation) · Scopes: `supply.write`
+- Fields and values: `comvenio schema ingredient-category --json` (the sign-in sets `club_id` — never in `--input`)
 
 **shopping**
 
-- `cai.shopping.01.list` — list (read)
-- `cai.shopping.02.active` — list (read)
-- `cai.shopping.03.completed` — list (read)
-- `cai.shopping.04.by_context` — list (read)
-- `cai.shopping.05.by_context_type` — list (read)
-- `cai.shopping.06.show` — show, export (read, change)
-- `cai.shopping.07.create` — create (change)
-- `cai.shopping.08.update` — update (change)
-- `cai.shopping.09.delete` — delete (change with confirmation)
-- `cai.shopping.10.item_add` — add (change)
-- `cai.shopping.11.item_update` — update (change)
-- `cai.shopping.12.item_delete` — delete (change with confirmation)
-- `cai.shopping.13.purchased` — set (change)
-- `cai.shopping.14.generate_from_recipe` — generate (change)
-- `cai.shopping.15.generate_from_menu` — generate (change)
-- `cai.shopping.procurement.activate` — activate (change)
-- `cai.shopping.procurement.add` — add (change)
-- `cai.shopping.procurement.list` — list (read)
-- `cai.shopping.procurement.purchase` — purchase (change with confirmation)
-- `cai.shopping.procurement.template_create` — create (change)
-- `cai.shopping.procurement.template_deactivate` — deactivate (change)
-- `cai.shopping.procurement.template_update` — update (change)
-- `cai.shopping.procurement.templates` — list (read)
-- Fields and values: `comvenio schema shopping --json`
+- `cai.shopping.01.list` — list (read) · Scopes: `supply.read`
+- `cai.shopping.02.active` — list (read) · Scopes: `supply.read`
+- `cai.shopping.03.completed` — list (read) · Scopes: `supply.read`
+- `cai.shopping.04.by_context` — list (read) · Scopes: `supply.read`
+- `cai.shopping.05.by_context_type` — list (read) · Scopes: `supply.read`
+- `cai.shopping.06.show` — show, export (read, change) · Scopes: `supply.read`, `files.export`
+- `cai.shopping.07.create` — create (change) · Scopes: `supply.write`
+- `cai.shopping.08.update` — update (change) · Scopes: `supply.write`
+- `cai.shopping.09.delete` — delete (change with confirmation) · Scopes: `supply.write`
+- `cai.shopping.10.item_add` — add (change) · Scopes: `supply.write`
+- `cai.shopping.11.item_update` — update (change) · Scopes: `supply.write`
+- `cai.shopping.12.item_delete` — delete (change with confirmation) · Scopes: `supply.write`
+- `cai.shopping.13.purchased` — set (change) · Scopes: `supply.write`
+- `cai.shopping.14.generate_from_recipe` — generate (change) · Scopes: `supply.write`, `files.export`
+- `cai.shopping.15.generate_from_menu` — generate (change) · Scopes: `supply.write`, `files.export`
+- `cai.shopping.procurement.activate` — activate (change) · Scopes: `supply.write`
+- `cai.shopping.procurement.add` — add (change) · Scopes: `supply.write`
+- `cai.shopping.procurement.list` — list (read) · Scopes: `supply.read`
+- `cai.shopping.procurement.purchase` — purchase (change with confirmation) · Scopes: `supply.write`
+- `cai.shopping.procurement.template_create` — create (change) · Scopes: `supply.write`
+- `cai.shopping.procurement.template_deactivate` — deactivate (change) · Scopes: `supply.write`
+- `cai.shopping.procurement.template_update` — update (change) · Scopes: `supply.write`
+- `cai.shopping.procurement.templates` — list (read) · Scopes: `supply.read`
+- Fields and values: `comvenio schema shopping --json` (the sign-in sets `club_id` — never in `--input`)
 
 **template**
 
-- `cai.template.01.dish` — list, show (read)
-- `cai.template.02.ingredient` — list, show (read)
+- `cai.template.01.dish` — list, show (read) · Scopes: `supply.read`
+- `cai.template.02.ingredient` — list, show (read) · Scopes: `supply.read`
 
 **menu**
 
-- `cai.menu.01.create` — create (change)
-- `cai.menu.02.list` — list (read)
-- `cai.menu.03.show` — show (read)
-- `cai.menu.04.add_item` — add (change)
-- `cai.menu.05.update_item` — update (change)
-- `cai.menu.06.delete_item` — delete (change with confirmation)
-- `cai.menu.07.delete` — delete (change with confirmation)
-- `cai.menu.08.style` — style (change)
-- `cai.menu.09.apply` — apply (change with confirmation)
-- `cai.menu.10.export` — export (change)
-- Fields and values: `comvenio schema menu --json`
+- `cai.menu.01.create` — create (change) · Scopes: `supply.write`
+- `cai.menu.02.list` — list (read) · Scopes: `supply.read`
+- `cai.menu.03.show` — show (read) · Scopes: `supply.read`
+- `cai.menu.04.add_item` — add (change) · Scopes: `supply.write`
+- `cai.menu.05.update_item` — update (change) · Scopes: `supply.write`
+- `cai.menu.06.delete_item` — delete (change with confirmation) · Scopes: `supply.write`
+- `cai.menu.07.delete` — delete (change with confirmation) · Scopes: `supply.write`
+- `cai.menu.08.style` — style (change) · Scopes: `supply.write`
+- `cai.menu.09.apply` — apply (change with confirmation) · Scopes: `supply.write`
+- `cai.menu.10.export` — export (change) · Scopes: `supply.read`, `files.export`
+- Fields and values: `comvenio schema menu --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

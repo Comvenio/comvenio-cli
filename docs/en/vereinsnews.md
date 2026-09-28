@@ -158,15 +158,15 @@ comvenio action call cai.news.09.video_slideshow_result_teaser --input '{
 
 **news**
 
-- `cai.news.01.list` — private, public (read)
-- `cai.news.02.show` — private, public (read)
-- `cai.news.03.create` — draft, publish (change, change with confirmation)
-- `cai.news.04.update` — update (change with confirmation)
-- `cai.news.05.delete` — delete (change with confirmation)
-- `cai.news.06.apply` — draft, publish (change, change with confirmation)
-- `cai.news.07.preview` — preview (read)
-- `cai.news.08.publish` — publish (change with confirmation)
-- `cai.news.09.video_slideshow_result_teaser` — render, render_and_upload (read, change)
+- `cai.news.01.list` — private, public (read) · Scopes: `content.read`, `public.read`
+- `cai.news.02.show` — private, public (read) · Scopes: `content.read`, `public.read`
+- `cai.news.03.create` — draft, publish (change, change with confirmation) · Scopes: `content.write`
+- `cai.news.04.update` — update (change with confirmation) · Scopes: `content.write`
+- `cai.news.05.delete` — delete (change with confirmation) · Scopes: `content.write`
+- `cai.news.06.apply` — draft, publish (change, change with confirmation) · Scopes: `content.write`
+- `cai.news.07.preview` — preview (read) · Scopes: `content.write`
+- `cai.news.08.publish` — publish (change with confirmation) · Scopes: `content.write`
+- `cai.news.09.video_slideshow_result_teaser` — render, render_and_upload (read, change) · Scopes: `content.read`, `files.export`, `content.write`, `files.import`
 <!-- /gen:docs -->
 
 ## Errors

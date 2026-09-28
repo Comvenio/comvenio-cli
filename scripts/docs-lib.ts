@@ -196,12 +196,13 @@ export function commandsBlock(root: string, domains: readonly string[], lang: La
       const risks = [...new Set(action.operations.map((operation) => operation.risk))];
       const label = risks.map((risk) => RISK_LABEL[risk]?.[lang] ?? risk).join(", ");
       const operations = action.operations.map((operation) => operation.operation).join(", ");
-      lines.push(`- \`${action.action_id}\` — ${operations} (${label})`);
+      const scopes = [...new Set(action.operations.flatMap((operation) => operation.scopes))].map((scope) => `\`${scope}\``).join(", ");
+      lines.push(`- \`${action.action_id}\` — ${operations} (${label})${scopes ? ` · Scopes: ${scopes}` : ""}`);
     }
     if (existsSync(join(root, "src/schema", `${id}.json`))) {
       lines.push(lang === "de"
-        ? `- Felder und Werte: \`comvenio schema ${id} --json\``
-        : `- Fields and values: \`comvenio schema ${id} --json\``);
+        ? `- Felder und Werte: \`comvenio schema ${id} --json\` (\`club_id\` setzt die Anmeldung — nie in \`--input\`)`
+        : `- Fields and values: \`comvenio schema ${id} --json\` (the sign-in sets \`club_id\` — never in \`--input\`)`);
     }
   }
   lines.push(GEN_END);

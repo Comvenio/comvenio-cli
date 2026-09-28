@@ -209,42 +209,42 @@ comvenio action call cai.data.35.export_members_bookings --input '{"operation":"
 
 **data**
 
-- `cai.data.01.list` — list (read)
-- `cai.data.02.show` — show (read)
-- `cai.data.03.update` — update (change)
-- `cai.data.04.url` — reference (read)
-- `cai.data.05.download` — download (read)
-- `cai.data.06.upload` — upload (change)
-- `cai.data.07.delete` — soft_delete, hard_delete (change, change with confirmation)
-- `cai.data.08.restore` — restore (change)
-- `cai.data.09.move` — move (change)
-- `cai.data.10.visibility` — private, public (change, change with confirmation)
-- `cai.data.11.stats` — stats (read)
-- `cai.data.12.empty_trash` — empty (change with confirmation)
-- `cai.data.13.area_media` — list (read)
-- `cai.data.14.area_shares` — list (read)
-- `cai.data.15.area_share_add` — add (change)
-- `cai.data.16.area_share_remove` — remove (change with confirmation)
-- `cai.data.17.children` — list (read)
-- `cai.data.18.search` — search (read)
-- `cai.data.19.breadcrumb` — show (read)
-- `cai.data.20.folder_create` — create (change)
-- `cai.data.21.folder_rename` — rename (change)
-- `cai.data.22.folder_move` — move (change)
-- `cai.data.23.folder_protect` — protect (change)
-- `cai.data.24.folder_delete` — delete (change with confirmation)
-- `cai.data.25.folder_restore` — restore (change)
-- `cai.data.26.folder_rights` — list (read)
-- `cai.data.27.folder_right_add` — add (change)
-- `cai.data.28.folder_right_bulk` — bulk (change with confirmation)
-- `cai.data.29.folder_right_delete` — delete (change with confirmation)
-- `cai.data.30.papers` — list (read)
-- `cai.data.31.paper_show` — show (read)
-- `cai.data.32.paper_add` — create (change)
-- `cai.data.33.paper_update` — update (change)
-- `cai.data.34.paper_delete` — delete (change with confirmation)
-- `cai.data.35.export_members_bookings` — members, bookings (change with confirmation)
-- Fields and values: `comvenio schema data --json`
+- `cai.data.01.list` — list (read) · Scopes: `files.read`
+- `cai.data.02.show` — show (read) · Scopes: `files.read`
+- `cai.data.03.update` — update (change) · Scopes: `files.write`
+- `cai.data.04.url` — reference (read) · Scopes: `files.read`
+- `cai.data.05.download` — download (read) · Scopes: `files.read`, `files.export`
+- `cai.data.06.upload` — upload (change) · Scopes: `files.import`, `files.write`
+- `cai.data.07.delete` — soft_delete, hard_delete (change, change with confirmation) · Scopes: `files.write`
+- `cai.data.08.restore` — restore (change) · Scopes: `files.write`
+- `cai.data.09.move` — move (change) · Scopes: `files.write`
+- `cai.data.10.visibility` — private, public (change, change with confirmation) · Scopes: `files.write`
+- `cai.data.11.stats` — stats (read) · Scopes: `files.read`
+- `cai.data.12.empty_trash` — empty (change with confirmation) · Scopes: `files.write`
+- `cai.data.13.area_media` — list (read) · Scopes: `files.read`
+- `cai.data.14.area_shares` — list (read) · Scopes: `files.read`
+- `cai.data.15.area_share_add` — add (change) · Scopes: `files.write`
+- `cai.data.16.area_share_remove` — remove (change with confirmation) · Scopes: `files.write`
+- `cai.data.17.children` — list (read) · Scopes: `files.read`
+- `cai.data.18.search` — search (read) · Scopes: `files.read`
+- `cai.data.19.breadcrumb` — show (read) · Scopes: `files.read`
+- `cai.data.20.folder_create` — create (change) · Scopes: `files.write`
+- `cai.data.21.folder_rename` — rename (change) · Scopes: `files.write`
+- `cai.data.22.folder_move` — move (change) · Scopes: `files.write`
+- `cai.data.23.folder_protect` — protect (change) · Scopes: `files.write`
+- `cai.data.24.folder_delete` — delete (change with confirmation) · Scopes: `files.write`
+- `cai.data.25.folder_restore` — restore (change) · Scopes: `files.write`
+- `cai.data.26.folder_rights` — list (read) · Scopes: `files.read`
+- `cai.data.27.folder_right_add` — add (change) · Scopes: `files.write`
+- `cai.data.28.folder_right_bulk` — bulk (change with confirmation) · Scopes: `files.write`
+- `cai.data.29.folder_right_delete` — delete (change with confirmation) · Scopes: `files.write`
+- `cai.data.30.papers` — list (read) · Scopes: `content.read`
+- `cai.data.31.paper_show` — show (read) · Scopes: `content.read`
+- `cai.data.32.paper_add` — create (change) · Scopes: `content.write`
+- `cai.data.33.paper_update` — update (change) · Scopes: `content.write`
+- `cai.data.34.paper_delete` — delete (change with confirmation) · Scopes: `content.write`
+- `cai.data.35.export_members_bookings` — members, bookings (change with confirmation) · Scopes: `member.read.details`, `files.export`, `booking.read`
+- Fields and values: `comvenio schema data --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

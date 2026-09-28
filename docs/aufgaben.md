@@ -28,7 +28,7 @@ Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche S
 ### Aufgabe anlegen (`cai.task.05.create`)
 
 1. Zuerst einen Context finden (`cai.task.11.context_list_show_create_update_delete`, `operation: list`) oder anlegen (`operation: create`): Der Context beschreibt, worauf sich die Aufgabe bezieht.
-2. Die `id` aus der Context-Antwort als `task_context_id` für die Aufgabe verwenden.
+2. Die `id` aus der Context-Antwort als `task_context_id` für die Aufgabe verwenden. Für eine Aufgabe ohne Bezug zu Veranstaltung, Objekt, Meeting oder Vorrat gilt `context_type: club` mit der Vereinskennung als `context_id` (zeigt `comvenio whoami --json`); ein vorhandener Vereins-Context aus der Liste wird wiederverwendet.
 3. Aufgabe mit `title` und `task_context_id` anlegen; beides ist Pflicht. Ein Fälligkeitsdatum (`due_date`) wird als ISO-Zeitpunkt angegeben.
 4. Optional ein Mitglied zuweisen (siehe unten).
 
@@ -156,21 +156,21 @@ Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Not
 
 **task**
 
-- `cai.task.01.list` — list, mine (lesen)
-- `cai.task.02.show` — show (lesen)
-- `cai.task.03.show_subtasks` — show (lesen)
-- `cai.task.04.show_chain` — show (lesen)
-- `cai.task.05.create` — create (ändern)
-- `cai.task.06.bulk` — create (ändern mit Bestätigung)
-- `cai.task.07.update` — update (ändern)
-- `cai.task.08.assign` — assign (ändern)
-- `cai.task.09.done` — complete (ändern)
-- `cai.task.10.delete` — delete (ändern mit Bestätigung)
-- `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung)
-- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung)
-- Felder und Werte: `comvenio schema task --json`
+- `cai.task.01.list` — list, mine (lesen) · Scopes: `task.read`
+- `cai.task.02.show` — show (lesen) · Scopes: `task.read`
+- `cai.task.03.show_subtasks` — show (lesen) · Scopes: `task.read`
+- `cai.task.04.show_chain` — show (lesen) · Scopes: `task.read`
+- `cai.task.05.create` — create (ändern) · Scopes: `task.write`
+- `cai.task.06.bulk` — create (ändern mit Bestätigung) · Scopes: `task.write`
+- `cai.task.07.update` — update (ändern) · Scopes: `task.write`
+- `cai.task.08.assign` — assign (ändern) · Scopes: `task.write`
+- `cai.task.09.done` — complete (ändern) · Scopes: `task.write`
+- `cai.task.10.delete` — delete (ändern mit Bestätigung) · Scopes: `task.write`
+- `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
+- `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
+- `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
+- Felder und Werte: `comvenio schema task --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler

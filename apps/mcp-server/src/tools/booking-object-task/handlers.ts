@@ -34,6 +34,12 @@ function without(input: JsonObject, keys: readonly string[]): JsonObject {
   return Object.fromEntries(Object.entries(input).filter(([key]) => !keys.includes(key)));
 }
 
+/** Binds nested participants to the signed-in club; the input never names a club. */
+function withParticipantClub(body: JsonObject): JsonObject {
+  if (!Array.isArray(body.participants)) return body;
+  return { ...body, participants: body.participants.map((participant) => ({ ...record(participant), club_id: body.club_id! })) };
+}
+
 function query(input: JsonObject, keys: readonly string[]): Record<string, string> {
   return Object.fromEntries(keys.flatMap((key) => {
     const value = input[key];
@@ -88,7 +94,7 @@ const bookingList = "cai.booking.01.list" as const;
 simple(bookingList, "list", "object", "GET", (i) => `/object-reservations/club/${string(i, "club_id")}`, { response: filterReservations });
 simple(bookingList, "list_object", "object", "GET", by("/object-reservations/object/", "object_id"), { response: filterReservations });
 simple("cai.booking.02.show", "show", "object", "GET", by("/object-reservations/", "reservation_id"), { response: (value, input, context) => minimizeReservation(assertClub(value, input, context)) });
-simple("cai.booking.03.create", "create", "object", "POST", fixed("/object-reservations/"), { body: (i) => without(i, ["timezone", "confirmation"]), response: (value, input, context) => minimizeReservation(assertClub(value, input, context)) });
+simple("cai.booking.03.create", "create", "object", "POST", fixed("/object-reservations/"), { body: (i) => withParticipantClub(without(i, ["timezone", "confirmation"])), response: (value, input, context) => minimizeReservation(assertClub(value, input, context)) });
 
 async function patchReservation(input: JsonObject, context: RequestContext, client: ComvenioApiClient, changes: JsonObject): Promise<JsonValue> {
   const current = record(assertClub(await client.request<JsonValue>({ method: "GET", service: "object", path: `/object-reservations/${string(input, "reservation_id")}`, context }), input, context));
@@ -104,7 +110,7 @@ add("cai.booking.05.approve", "approve", (input, context, client) => patchReserv
 add("cai.booking.06.reject", "reject", (input, context, client) => patchReservation(input, context, client, { status: "rejected", ...(typeof input.reason === "string" ? { comment: input.reason } : {}) }));
 add("cai.booking.07.cancel", "cancel", (input, context, client) => patchReservation(input, context, client, { status: "cancelled", ...(typeof input.reason === "string" ? { comment: input.reason } : {}) }));
 simple("cai.booking.08.delete", "delete", "object", "DELETE", by("/object-reservations/", "reservation_id"), { deleted_id: "reservation_id" });
-simple("cai.booking.09.bulk", "create", "object", "POST", fixed("/object-reservations/bulk"), { body: (i) => without(i, ["timezone", "confirmation"]), response: (value, input, context) => redactBookingObjectTaskValue(assertClub(value, input, context)) });
+simple("cai.booking.09.bulk", "create", "object", "POST", fixed("/object-reservations/bulk"), { body: (i) => withParticipantClub(without(i, ["timezone", "confirmation"])), response: (value, input, context) => redactBookingObjectTaskValue(assertClub(value, input, context)) });
 
 const participant = "cai.booking.10.participant_list_show_add_add_groups_update_remove" as const;
 simple(participant, "list", "object", "GET", by("/object-reservations/participants/reservation/", "reservation_id"), { response: (value, input, context) => minimizeReservationParticipants(assertClub(value, input, context), Number(input.limit)) });

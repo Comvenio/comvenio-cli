@@ -216,7 +216,9 @@ changes data is critical and goes through a preview and `comvenio action confirm
    `{"type":"POSSIBLE_DUPLICATE","action":"KEEP_EXISTING"}`).
 7. List team appointments (`cai.teams.30.termin_list`) and create one (`cai.teams.31.termin_create`,
    `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, plus `start_time`; a match needs `opponent`;
-   repeat with weekdays via `repeat`).
+   repeat with weekdays via `repeat`). Times are ISO timestamps with a time zone, for example
+   `2026-09-12T15:00:00+02:00` for 3 pm Central European Summer Time. The running season is shown by
+   `cai.teams.06.season_list` (status `AKTIV`); its `id` is the `team_season_id`.
 
 ```bash
 comvenio action call cai.teams.07.season_create \
@@ -225,7 +227,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.teams.31.termin_create \
-  --input '{"team_season_id":"<season-id>","termin":{"kind":"MATCH","opponent":"SV Example","home_state":"HOME","start_time":"2026-09-12T15:00:00Z"}}' --json
+  --input '{"team_season_id":"<season-id>","termin":{"kind":"MATCH","opponent":"SV Example","home_state":"HOME","start_time":"2026-09-12T15:00:00+02:00"}}' --json
 ```
 
 ## Examples
@@ -284,70 +286,70 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 **member**
 
-- `cai.member.01.list` — list (read)
-- `cai.member.02.show` — show (read)
-- `cai.member.03.add` — add (change)
-- `cai.member.04.update` — update (change)
-- `cai.member.05.remove` — remove (change with confirmation)
-- `cai.member.06.import` — import (change with confirmation)
-- `cai.member.07.family_list` — family-list (read)
-- `cai.member.08.family_show` — family-show (read)
-- `cai.member.09.family_add` — family-add (change)
-- `cai.member.10.family_update` — family-update (change)
-- `cai.member.11.family_delete` — family-delete (change with confirmation)
-- `cai.member.12.status_list` — status-list (read)
-- `cai.member.13.status_show` — status-show (read)
-- `cai.member.14.status_add` — status-add (change)
-- `cai.member.15.status_update` — status-update (change)
-- `cai.member.16.status_delete` — status-delete (change with confirmation)
-- `cai.member.17.period_list` — period-list (read)
-- `cai.member.18.period_show` — period-show (read)
-- `cai.member.19.period_add` — period-add (change)
-- `cai.member.20.period_update` — period-update (change)
-- `cai.member.21.period_delete` — period-delete (change with confirmation)
-- Fields and values: `comvenio schema member --json`
+- `cai.member.01.list` — list (read) · Scopes: `member.read.basic`
+- `cai.member.02.show` — show (read) · Scopes: `member.read.details`
+- `cai.member.03.add` — add (change) · Scopes: `admin.write`
+- `cai.member.04.update` — update (change) · Scopes: `admin.write`
+- `cai.member.05.remove` — remove (change with confirmation) · Scopes: `admin.write`
+- `cai.member.06.import` — import (change with confirmation) · Scopes: `files.import`
+- `cai.member.07.family_list` — family-list (read) · Scopes: `member.read.details`
+- `cai.member.08.family_show` — family-show (read) · Scopes: `member.read.details`
+- `cai.member.09.family_add` — family-add (change) · Scopes: `admin.write`
+- `cai.member.10.family_update` — family-update (change) · Scopes: `admin.write`
+- `cai.member.11.family_delete` — family-delete (change with confirmation) · Scopes: `admin.write`
+- `cai.member.12.status_list` — status-list (read) · Scopes: `member.read.basic`
+- `cai.member.13.status_show` — status-show (read) · Scopes: `member.read.details`
+- `cai.member.14.status_add` — status-add (change) · Scopes: `admin.write`
+- `cai.member.15.status_update` — status-update (change) · Scopes: `admin.write`
+- `cai.member.16.status_delete` — status-delete (change with confirmation) · Scopes: `admin.write`
+- `cai.member.17.period_list` — period-list (read) · Scopes: `member.read.basic`
+- `cai.member.18.period_show` — period-show (read) · Scopes: `member.read.details`
+- `cai.member.19.period_add` — period-add (change) · Scopes: `admin.write`
+- `cai.member.20.period_update` — period-update (change) · Scopes: `admin.write`
+- `cai.member.21.period_delete` — period-delete (change with confirmation) · Scopes: `admin.write`
+- Fields and values: `comvenio schema member --json` (the sign-in sets `club_id` — never in `--input`)
 
 **team**
 
-- `cai.team.01.list` — list (read)
-- `cai.team.02.show` — show (read)
-- `cai.team.03.create` — create (change)
-- `cai.team.04.update` — update (change)
-- `cai.team.05.delete` — delete (change with confirmation)
-- `cai.team.06.member_list_add_update_remove` — member list|add|update|remove (change with confirmation)
-- `cai.team.07.resource_list_add_update_remove` — resource list|add|update|remove (change with confirmation)
-- `cai.teams.01.list` — list (read)
-- `cai.teams.02.show` — show (read)
-- `cai.teams.03.create` — create (change with confirmation)
-- `cai.teams.04.update` — update (change with confirmation)
-- `cai.teams.05.archive` — archive (change with confirmation)
-- `cai.teams.06.season_list` — season list (read)
-- `cai.teams.07.season_create` — season create (change with confirmation)
-- `cai.teams.08.season_correct` — season update (change with confirmation)
-- `cai.teams.09.season_activate` — season activate (change with confirmation)
-- `cai.teams.10.season_complete` — season complete (change with confirmation)
-- `cai.teams.11.roster_list` — roster show (read)
-- `cai.teams.12.roster_add` — roster add (change with confirmation)
-- `cai.teams.13.roster_update` — roster update (change with confirmation)
-- `cai.teams.14.roster_remove` — roster remove (change with confirmation)
-- `cai.teams.15.roster_carry_over_preview` — roster carry-over --preview (read)
-- `cai.teams.16.roster_carry_over` — roster carry-over (change with confirmation)
-- `cai.teams.17.competition_list` — competition list (read)
-- `cai.teams.18.competition_create` — competition create (change with confirmation)
-- `cai.teams.19.competition_update` — competition update (change with confirmation)
-- `cai.teams.20.competition_delete` — competition delete (change with confirmation)
-- `cai.teams.21.ical_list` — ical list (read)
-- `cai.teams.22.ical_create` — ical create (change with confirmation)
-- `cai.teams.23.ical_preview` — ical preview (change)
-- `cai.teams.24.ical_activate` — ical activate (change with confirmation)
-- `cai.teams.25.ical_deactivate` — ical deactivate (change with confirmation)
-- `cai.teams.26.sync_now` — sync now (change with confirmation)
-- `cai.teams.27.sync_runs` — sync runs (read)
-- `cai.teams.28.clarification_list` — sync clarifications (read)
-- `cai.teams.29.clarification_resolve` — sync resolve (change with confirmation)
-- `cai.teams.30.termin_list` — termin list (read)
-- `cai.teams.31.termin_create` — termin create (change with confirmation)
-- Fields and values: `comvenio schema team --json`
+- `cai.team.01.list` — list (read) · Scopes: `club.read`
+- `cai.team.02.show` — show (read) · Scopes: `club.read`
+- `cai.team.03.create` — create (change) · Scopes: `admin.write`
+- `cai.team.04.update` — update (change) · Scopes: `admin.write`
+- `cai.team.05.delete` — delete (change with confirmation) · Scopes: `admin.write`
+- `cai.team.06.member_list_add_update_remove` — member list|add|update|remove (change with confirmation) · Scopes: `admin.write`
+- `cai.team.07.resource_list_add_update_remove` — resource list|add|update|remove (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.01.list` — list (read) · Scopes: `club.read`
+- `cai.teams.02.show` — show (read) · Scopes: `club.read`
+- `cai.teams.03.create` — create (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.04.update` — update (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.05.archive` — archive (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.06.season_list` — season list (read) · Scopes: `club.read`
+- `cai.teams.07.season_create` — season create (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.08.season_correct` — season update (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.09.season_activate` — season activate (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.10.season_complete` — season complete (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.11.roster_list` — roster show (read) · Scopes: `club.read`
+- `cai.teams.12.roster_add` — roster add (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.13.roster_update` — roster update (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.14.roster_remove` — roster remove (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.15.roster_carry_over_preview` — roster carry-over --preview (read) · Scopes: `club.read`
+- `cai.teams.16.roster_carry_over` — roster carry-over (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.17.competition_list` — competition list (read) · Scopes: `club.read`
+- `cai.teams.18.competition_create` — competition create (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.19.competition_update` — competition update (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.20.competition_delete` — competition delete (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.21.ical_list` — ical list (read) · Scopes: `club.read`
+- `cai.teams.22.ical_create` — ical create (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.23.ical_preview` — ical preview (change) · Scopes: `admin.write`
+- `cai.teams.24.ical_activate` — ical activate (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.25.ical_deactivate` — ical deactivate (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.26.sync_now` — sync now (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.27.sync_runs` — sync runs (read) · Scopes: `club.read`
+- `cai.teams.28.clarification_list` — sync clarifications (read) · Scopes: `club.read`
+- `cai.teams.29.clarification_resolve` — sync resolve (change with confirmation) · Scopes: `admin.write`
+- `cai.teams.30.termin_list` — termin list (read) · Scopes: `club.read`
+- `cai.teams.31.termin_create` — termin create (change with confirmation) · Scopes: `admin.write`
+- Fields and values: `comvenio schema team --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
