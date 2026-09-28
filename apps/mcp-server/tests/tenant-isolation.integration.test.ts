@@ -2903,6 +2903,30 @@ describe("K9 meeting and tournament tenant/RBAC isolation", () => {
     };
   }
 
+  test("reads the match schedule with a read-only grant and no write coordinator", async () => {
+    const requests: ComvenioApiRequest[] = [];
+    const tournament = createK9ToolSets({ client: adapterClient(async (request) => {
+      requests.push(request);
+      return [];
+    }) }).tournament;
+    const request = {
+      action_id: "cai.tournament.20.matches" as const,
+      input: { club_id: clubId, tournament_id: tournamentId },
+      context: { ...context, scopes: ["event.read"] } as RequestContext,
+      capability_snapshot: { ...capabilitySnapshot, permissions: { view_tournaments: true } },
+    };
+    await tournament.execute(request);
+    expect(requests.map((item) => [item.method, item.path])).toEqual([
+      ["GET", `/tournaments/${tournamentId}/matches`],
+      ["GET", `/tournaments/${tournamentId}/participants`],
+    ]);
+    requests.length = 0;
+    await expect(tournament.execute({ ...request,
+      capability_snapshot: { ...capabilitySnapshot, permissions: {} },
+    })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    expect(requests).toHaveLength(0);
+  });
+
   test("TC-03: hides tournament writes while preserving permitted reads", () => {
     const tournament = createK9ToolSets({
       client: adapterClient(async () => []),
