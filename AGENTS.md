@@ -102,8 +102,8 @@ Die kundenorientierte Langfassung steht in `README.md` unter **„Eigene Domain 
 ## Quickstart (Auth)
 
 ```bash
-comvenio login                                            # Browser, OAuth — Standard: nur Leserechte
-comvenio login --scopes club.read,role.read.self,admin.write   # wenn geschrieben werden soll
+comvenio login                                            # Browser, OAuth — Standard: alle Scopes
+comvenio login --scopes club.read,role.read.self          # bewusst nur lesen
 comvenio action list                                      # was diese Verbindung darf
 comvenio action call <cai.…-id> --input '{…}' --json      # lesen oder Vorschau erzeugen
 comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …
@@ -112,8 +112,9 @@ comvenio action confirm --preview-id … --confirmation-token … --idempotency-
 - **Nur noch OAuth.** Klassische Befehle (`comvenio teams …`, `comvenio club info` …) brauchen
   einen Geräte-Token und laufen unter OAuth nicht. Fehlt eine Funktion als Action, wird sie im
   Connector ergänzt: `docs/connector-aktion-hinzufuegen.md`.
-- **Die Standard-Anmeldung liest nur** (`club.read`, `role.read.self`). Schreibende Actions
-  scheitern sonst mit „…in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar“.
+- **Die Standard-Anmeldung fordert alle Scopes an**; was geht, entscheiden die Rollen im Verein.
+  Eine ältere, eingeschränkte Anmeldung scheitert beim Schreiben mit „…in deinem aktuellen
+  Vereins- und Rechtekontext nicht verfügbar“ — dann einmal `comvenio login` ohne `--scopes`.
 - **Bei jeder Fehlermeldung zuerst** `docs/fehlerbilder.md` nach dem Meldungstext durchsuchen.
 - Der State (`~/.comvenio-cli-state.json`) enthält keine Tokens; `connector.scopes` zeigt die
   Rechte der Verbindung.

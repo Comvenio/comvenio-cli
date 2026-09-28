@@ -11,13 +11,16 @@ Der Weg ist `comvenio login` (Browser, OAuth) und danach `comvenio action list|c
 Klassische Befehle (`comvenio teams …`, `comvenio club info` …) laufen unter OAuth **nicht** — das ist Absicht, kein Fehler: Der Geräte-Token ist der alte Weg,
 OAuth der einzige vorgesehene. Fehlt eine Funktion als Action, bitte über das Issue-Formular melden.
 
-**Die Standard-Anmeldung bringt nur Leserechte:** `club.read`, `role.read.self`
-(`DEFAULT_SCOPES`, `src/oauth/client.ts`). Wer schreiben will, meldet sich mit den nötigen
-Scopes an, z. B.:
+**Die Standard-Anmeldung fordert alle Scopes an** (`DEFAULT_SCOPES`, `src/oauth/client.ts`).
+Was du tatsächlich darfst, entscheiden weiter deine Rollen im Verein. Wer den Zugriff
+bewusst begrenzen will, schränkt ihn ein, z. B. nur lesen:
 
 ```bash
-comvenio login --scopes club.read,role.read.self,admin.write
+comvenio login --scopes club.read,role.read.self
 ```
+
+Meldet eine Action trotzdem „nicht verfügbar“, stammt die Anmeldung meist noch aus der Zeit vor
+dieser Voreinstellung: einmal `comvenio login` ohne `--scopes` ausführen.
 
 Welche Scopes eine Action braucht, zeigt `comvenio action list --json` (Sicherheitsangaben je Tool). Die aktuelle Verbindung zeigt
 `~/.comvenio-cli-state.json` → `connector.scopes` (nicht geheim).

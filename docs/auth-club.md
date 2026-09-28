@@ -10,8 +10,9 @@ comvenio login --env dev --json
 comvenio login --scopes club.read,event.read --json
 ```
 
-> Ohne `--scopes` fordert `login` nur `club.read` und `role.read.self` an — genug zum Lesen,
-> nicht zum Schreiben. Fehlerbilder und Lösungen: [fehlerbilder.md](fehlerbilder.md).
+> Ohne `--scopes` fordert `login` alle Scopes an; was du tatsächlich darfst, entscheiden deine
+> Rollen im Verein. `--scopes` schränkt die Anmeldung ein. Fehlerbilder und Lösungen:
+> [fehlerbilder.md](fehlerbilder.md).
 
 `login` öffnet den Systembrowser und verwendet OAuth 2.1 Authorization Code
 mit PKCE. Der native Public Client
@@ -38,7 +39,7 @@ Optionen:
 | `--env prod|dev|local` | Betriebsziel, Standard `prod` |
 | `--gateway <url>` | Gateway-Basis explizit überschreiben |
 | `--connector <url>` | zugehörigen MCP-Origin für ein eigenes Gateway setzen |
-| `--scopes <csv>` | minimale benötigte OAuth-Scopes anfordern |
+| `--scopes <csv>` | Anmeldung auf diese OAuth-Scopes einschränken (ohne: alle) |
 | `--club <id>` | nur im Device-Token-Modus: Club-Kontext überschreiben |
 | `--json` | maschinenlesbare Ausgabe |
 
