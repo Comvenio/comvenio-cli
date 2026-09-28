@@ -40,7 +40,9 @@ export function publicToolError(
     help: rendered.help,
     request_id: context.request_id,
   };
-  const content = [{ type: "text" as const, text: formatPublicError(rendered) }];
+  // Assistants read the article through the public help tool (05-ki-zugang).
+  const assistantHint = `Hilfe: comvenio_hilfe mit operation "fehler" und code "${rendered.code}".`;
+  const content = [{ type: "text" as const, text: `${formatPublicError(rendered)}\n${assistantHint}` }];
   if (connectorError?.code === "SCOPE_REQUIRED" && requiredScopes.length > 0) {
     return insufficientScopeToolResult({
       public_origin: publicOrigin,

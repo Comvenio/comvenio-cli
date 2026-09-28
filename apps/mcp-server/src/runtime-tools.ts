@@ -34,6 +34,7 @@ import {
   type DomainToolSummary,
 } from "./domain-runtime.ts";
 import type { DomainStateStore } from "./domain-state-store.ts";
+import { HELP_TOOL_COPY, HELP_TOOL_HINT, HELP_TOOL_NAME, registerHelpTool } from "./help-tool.ts";
 import { PublicAccessPolicy } from "./public/policy.ts";
 import { PublicResponseRedactor } from "./public/redaction.ts";
 import { PUBLIC_INPUT_SCHEMAS } from "./public/schemas.ts";
@@ -180,7 +181,7 @@ const TOOL_SCOPES = Object.freeze({
   cv_my_task_reminder_write: ["task.read"],
 } satisfies Record<(typeof PROTECTED_TOOLS)[number]["tool_name"], OAuthScope[]>);
 
-const TOOL_COPY = Object.freeze({
+const TOOL_COPY_BASE = {
   cv_whoami_read: {
     title: "Comvenio: Eigene Verbindung",
     description: "Ohne Eingabe aufrufen, wenn Vereinskontext oder Verbindung unklar sind oder der Nutzer „mein Verein“ sagt. Zeigt den im OAuth-Grant gewählten Verein, den geprüften KI-Provider und die aktiven OAuth-Scopes. Bei aktiver Verbindung niemals nach Club-ID, Vereinsdomain oder einer erneuten Vereinsauswahl fragen.",
@@ -201,7 +202,12 @@ const TOOL_COPY = Object.freeze({
     title: "Comvenio: Eigene Aufgaben-Erinnerung verwalten",
     description: "Zeigt, setzt oder löscht deine persönliche Erinnerung für eine Aufgabe. Verwende nur eine task_id aus cv_my_tasks_read; Verein und Benutzer werden sicher aus OAuth abgeleitet. Die Erinnerung wird ausschließlich dir zugestellt.",
   },
-});
+};
+
+// Every tool names comvenio_hilfe for error cases (05-ki-zugang §4.3).
+const TOOL_COPY = Object.freeze(Object.fromEntries(
+  Object.entries(TOOL_COPY_BASE).map(([name, copy]) => [name, { ...copy, description: `${copy.description} ${HELP_TOOL_HINT}` }]),
+) as typeof TOOL_COPY_BASE);
 
 const CLUB_AGENT_TOOL_COPY = Object.freeze({
   title: "Comvenio: Mit dem Club-Agenten sprechen",
@@ -211,6 +217,8 @@ const CLUB_AGENT_TOOL_COPY = Object.freeze({
 export interface RuntimeToolCatalog {
   public_tools: PublicToolCandidate[];
   protected_tools: ProtectedToolDescriptor[];
+  /** Public tools without a backend call: the embedded customer help (05-ki-zugang). */
+  static_public_tools: string[];
 }
 
 export type { ConnectorReleaseScope } from "@comvenio/connector-contracts";
@@ -271,6 +279,7 @@ export function createRuntimeToolCatalog(
 ): RuntimeToolCatalog {
   return {
     public_tools: publicCandidates(environment),
+    static_public_tools: [HELP_TOOL_NAME],
     protected_tools: [
       ...PROTECTED_TOOLS.map((tool) => ({
         tool_name: tool.tool_name,
@@ -299,6 +308,7 @@ export function publishedRuntimeToolNames(
   const catalog = createRuntimeToolCatalog(environment, releaseScope);
   return [
     ...catalog.public_tools.map((tool) => tool.tool_name),
+    ...catalog.static_public_tools,
     ...catalog.protected_tools.map((tool) => tool.tool_name),
   ].sort();
 }
@@ -333,6 +343,14 @@ export function publishedRuntimeCatalog(
     required_scopes: ["public.read"],
     risk_class: "read",
   }));
+  if (runtimeCatalog.static_public_tools.includes(HELP_TOOL_NAME)) {
+    publicTools.push({
+      name: HELP_TOOL_NAME,
+      ...HELP_TOOL_COPY,
+      required_scopes: ["public.read"],
+      risk_class: "read",
+    });
+  }
   const protectedTools: PublishedRuntimeToolContract[] = [
     ...Object.entries(TOOL_COPY).map(([name, copy]) => ({
       name,
@@ -836,6 +854,13 @@ export function createRuntimeServer(input: {
       context: input.context.request,
     }));
   }
+  // Public customer documentation for assistants, in every release scope (05-ki-zugang).
+  registerHelpTool({
+    server,
+    context: input.context.request,
+    advertised_security_schemes: advertisedSecuritySchemes,
+    with_security_metadata: (schemes) => withSecurityMetadata(undefined, schemes),
+  });
 
   if (
     input.context.provider_request.authenticated

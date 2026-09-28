@@ -3,13 +3,7 @@
 // line fits the given width: prose is wrapped, tables become lists, long code
 // lines are continued (a CLI command with a trailing backslash, so it stays
 // runnable when copied).
-
-/** Removes the frontmatter and the generator markers. */
-export function articleBody(raw: string): string {
-  return raw
-    .replace(/^---\n[\s\S]*?\n---\n?/u, "")
-    .replace(/^<!-- \/?gen:docs[^>]*-->\n?/gmu, "");
-}
+import { articleBody } from "@comvenio/kundendoku";
 
 function stripInline(text: string): string {
   return text
