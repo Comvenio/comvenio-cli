@@ -68,3 +68,23 @@ describe("runtime operation inventory", () => {
     }
   });
 });
+
+
+test("deadline inventory covers both reads performed by its real handler", async () => {
+  const { executeK9Operation } = await import("../src/tools/meeting-tournament/handlers.ts");
+  type Args = Parameters<typeof executeK9Operation>;
+  const paths: string[] = [];
+  const client = { request: async (request: { method: string; path: string }) => {
+    expect(request.method).toBe("GET");
+    paths.push(request.path);
+    return request.path.endsWith("/matches") ? [] : { rules_config: { result_deadline: { policy: "manual" } } };
+  } } as unknown as Args[4];
+  const tournamentId = "11111111-1111-4111-8111-111111111111";
+  await executeK9Operation("cai.tournament.32.deadline", "show", { tournament_id: tournamentId }, {} as Args[3], client);
+  const row = fullDomainOperationContracts().find((r) => r.action_id === "cai.tournament.32.deadline" && r.operation === "show")!;
+  const routes = row.backend_routes as { method: string; normalized_path_template: string; purpose: string }[];
+  expect(routes.map((r) => r.normalized_path_template.replace("{tournament_id}", tournamentId)).sort()).toEqual(paths.sort());
+  expect(routes.every((r) => r.method === "GET" && r.purpose === "read")).toBe(true);
+  expect(row.risk_class).toBe("read");
+  expect(row.required_scopes).toEqual(["event.read"]);
+});

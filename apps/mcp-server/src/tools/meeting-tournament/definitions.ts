@@ -174,7 +174,7 @@ export const K9_ACTION_DEFINITIONS: Readonly<Record<K9ActionId, K9ActionDefiniti
   "cai.tournament.30.match_delete": action("cai.tournament.30.match_delete", "tournament", "match-delete", [tournamentWrite("delete", "DELETE", "/matches/{match_id}", "tournament_manage", true)]),
   "cai.tournament.31.match_result": action("cai.tournament.31.match_result", "tournament", "match-result", [tournamentWrite("set", "POST", "/matches/{match_id}/result", "tournament_results")]),
   "cai.tournament.32.deadline": action("cai.tournament.32.deadline", "tournament", "deadline", [
-    tournamentRead("show", "/tournaments/{tournament_id}/matches"), tournamentWrite("set_deadline", "PATCH", "/tournaments/{tournament_id}/matches/deadline", "tournament_manage"),
+    op({ name: "show", domain: "tournament", permission: "tournament_view", risk: "read", routes: [route("GET", "tournament", "/tournaments/{tournament_id}"), route("GET", "tournament", "/tournaments/{tournament_id}/matches")] }), tournamentWrite("set_deadline", "PATCH", "/tournaments/{tournament_id}/matches/deadline", "tournament_manage"),
     op({ name: "set_policy", domain: "tournament", permission: "tournament_manage", risk: "reversible_write", routes: [route("GET", "tournament", "/tournaments/{tournament_id}", "preflight"), route("PATCH", "tournament", "/tournaments/{tournament_id}")] }),
   ]),
 });
