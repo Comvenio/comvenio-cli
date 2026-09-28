@@ -1,55 +1,66 @@
-# Authentifizierung und Club-Kontext
+---
+id: auth-club
+kategorie: thema
+domaenen: [login, logout, whoami, action, club]
+stichwoerter: [login, anmeldung, verein, club, scopes, rechte]
+---
 
-Stand: 23. Juli 2026 · Quellen: `src/index.ts`, `src/auth.ts`, `src/oauth/`, `src/commands/whoami.ts`, `src/commands/club.ts`
+# Anmeldung und Vereinskontext
 
-## Login
+## Wozu
+
+Vor jeder Arbeit mit dem CLI wird eine Anmeldung hergestellt und der
+Vereinskontext geprüft. Dieser Artikel beschreibt Anmeldung, Abmeldung,
+Identitätsprüfung, die freigegebenen Actions sowie das Lesen und Ändern von
+Vereinsprofil, Einstellungen, Abteilungen und Design.
+
+## Voraussetzungen und Rechte
+
+> **Anmeldung:** Die `club`-Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
+
+Eine gültige Anmeldung ist Voraussetzung für jeden weiteren Befehl. Die
+Anmeldung entscheidet nur, *dass* jemand angemeldet ist; *was* erlaubt ist,
+ergibt sich aus den angeforderten Scopes und zusätzlich aus der Rolle im
+Verein. Schreibende Schritte am Vereinsprofil oder an den Einstellungen
+brauchen das Recht, Vereinseinstellungen zu verwalten.
+
+## Abläufe
+
+### Anmelden
 
 ```bash
 comvenio login
-comvenio login --env dev --json
 comvenio login --scopes club.read,event.read --json
 ```
 
-> Ohne `--scopes` fordert `login` alle Scopes an; was du tatsächlich darfst, entscheiden deine
-> Rollen im Verein. `--scopes` schränkt die Anmeldung ein. Fehlerbilder und Lösungen:
-> [fehlerbilder.md](fehlerbilder.md).
+`login` öffnet den Systembrowser und meldet über eine offene,
+PKCE-gesicherte OAuth-Anmeldung an. Ohne `--scopes` fordert `login` alle
+Scopes an; was tatsächlich erlaubt ist, entscheiden weiterhin die Rollen im
+Verein. `--scopes` schränkt die Anmeldung bewusst ein, etwa auf reines Lesen.
 
-`login` öffnet den Systembrowser und verwendet OAuth 2.1 Authorization Code
-mit PKCE. Der native Public Client
-`{issuer}/oauth/clients/comvenio-cli` akzeptiert ausschließlich einen
-ephemeren Callback unter `http://127.0.0.1:{port}/oauth/callback`. Seine
-Ressource `{MCP_PUBLIC_ORIGIN}/cli` ist strikt von der Provider-Ressource am
-MCP-Origin getrennt.
-
-Access- und Refresh-Tokens werden nicht im CLI-State gespeichert. Der
-kurzlebige Backend-Actor wird ausschließlich intern im MCP-Gateway erzeugt und
-nie an das CLI ausgegeben. Unter Windows schützt DPAPI den Credential-Eintrag für den
-aktuellen Benutzer; unter macOS wird der Keychain und unter Linux der Secret
-Service verwendet. `~/.comvenio-cli-state.json` enthält nur nicht geheime
-Metadaten wie Gateway, Umgebung, Verein, Client-ID und Scopes. Vor der
-Speicherung prüft `cv_whoami_read` über den `/cli`-Connector den autoritativ im
-OAuth-Grant gebundenen Verein.
+Zugangsdaten werden nicht offen im CLI-Zustand gespeichert: Unter Windows
+schützt der Betriebssystem-Zugangsdatenspeicher den Eintrag für den aktuellen
+Benutzer, unter macOS die Schlüsselbundverwaltung, unter Linux der jeweilige
+Secret-Dienst. Die Datei `~/.comvenio-cli-state.json` enthält ausschließlich
+nicht geheime Angaben wie Umgebung, Verein, Client-Kennung und Scopes. Vor dem
+Speichern wird der im Anmelde-Vorgang tatsächlich zugeordnete Verein geprüft.
 
 Optionen:
 
 | Flag | Bedeutung |
 |---|---|
-| `--device-token <token>` | nur Entwicklung/Automation; opakes `cvn_`-Token |
-| `--token <token>` | veralteter Alias für `--device-token` |
-| `--env prod|dev|local` | Betriebsziel, Standard `prod` |
-| `--gateway <url>` | Gateway-Basis explizit überschreiben |
-| `--connector <url>` | zugehörigen MCP-Origin für ein eigenes Gateway setzen |
-| `--scopes <csv>` | Anmeldung auf diese OAuth-Scopes einschränken (ohne: alle) |
-| `--club <id>` | nur im Device-Token-Modus: Club-Kontext überschreiben |
+| `--device-token <token>` | Anmeldung mit Geräte-Token statt Browser; nötig für die klassischen Befehle |
+| `--scopes <csv>` | Anmeldung auf diese Scopes einschränken (ohne Angabe: alle) |
+| `--club <id>` | nur mit `--device-token`: Vereinskontext ausdrücklich setzen |
 | `--json` | maschinenlesbare Ausgabe |
 
-Für lokale Entwicklung ohne öffentliches HTTPS-Gateway ist OAuth bewusst
-gesperrt. Dort ist `--device-token` erforderlich. Dieser Legacy-Fallback
-speichert das opake Token weiterhin im State; das State-File darf daher
-grundsätzlich nie committed, protokolliert oder in Nutzerantworten ausgegeben
-werden.
+Eine Anmeldung per Geräte-Token speichert das opake Token im Zustand — die Datei `~/.comvenio-cli-state.json` darf deshalb grundsätzlich
+nie eingecheckt, protokolliert oder in einer Antwort ausgegeben werden.
 
-## OAuth-Aktionen
+### Mit Actions arbeiten
 
 ```bash
 comvenio action list --json
@@ -58,44 +69,46 @@ comvenio action call cai.event.01.list \
   --json
 ```
 
-`action list` liefert nur Actions, die für Grant, Verein, Scopes und aktuelle
-RBAC-Capabilities tatsächlich sichtbar sind. Die Action-ID und ihr
-Eingabeschema stammen aus dem serverseitigen Capability-Vertrag. Schreibende
-Actions erhalten einen Idempotenzschlüssel; kritische Änderungen erfordern
-zusätzlich `action confirm` mit der kurzlebigen serverseitigen Vorschau.
-`club_id`, Benutzeridentität und Scopes können nicht aus der CLI-Eingabe
-überschrieben werden.
+`action list` liefert nur Actions, die für die aktuelle Anmeldung, den Verein,
+die Scopes und die aktuellen Rechte tatsächlich sichtbar sind. Action-Kennung
+und Eingabeschema stammen aus dem serverseitigen Vertrag der jeweiligen
+Action. Schreibende Actions erhalten einen Wiederholungsschutz; kritische
+Änderungen brauchen zusätzlich `action confirm` mit einer kurzlebigen
+Vorschau. Verein, Nutzeridentität und Scopes lassen sich dabei nicht über die
+Eingabe überschreiben.
 
-## Identität prüfen
+### Identität prüfen
 
 ```bash
 comvenio whoami --json
 ```
 
-Die JSON-Ausgabe enthält `userId`, `email`, `name`, `clubId`, `environment`, `gatewayBaseUrl` und `stateFile`. Bei einem vorübergehenden Ausfall des Benutzer-Service darf `whoami` gecachte Identitätsfelder anzeigen. `401` und `403` werden jedoch nicht verschluckt.
+Die Ausgabe enthält unter anderem Nutzerkennung, E-Mail, Name, Vereinskennung
+und Umgebung. Bei einem kurzzeitigen Ausfall der Identitätsprüfung darf
+`whoami` zwischengespeicherte Angaben zeigen; ein abgelaufener oder
+fehlender Zugang wird davon unabhängig weiterhin korrekt gemeldet.
 
-## Abmelden
+### Abmelden
 
 ```bash
 comvenio logout --json
 ```
 
-Bei OAuth widerruft `logout` den Refresh-Grant serverseitig und entfernt
-anschließend Credential-Eintrag und State. Schlägt der Remote-Widerruf
-vorübergehend fehl, wird dies als Warnung ausgegeben; die lokale Anmeldung wird
-trotzdem entfernt. Ein explizites Device-Token wird nicht serverseitig
-widerrufen.
+Bei einer Browser-Anmeldung widerruft `logout` die Anmeldung serverseitig und
+entfernt anschließend den lokalen Zugangsdatensatz. Schlägt der serverseitige
+Widerruf vorübergehend fehl, erscheint eine Warnung; die lokale Anmeldung wird
+trotzdem entfernt. Ein Geräte-Token wird dabei nicht serverseitig widerrufen.
 
-## Club-Informationen
+### Vereinsinformationen lesen
 
 ```bash
 comvenio club info --json
 comvenio club info --club <club-id> --json
 ```
 
-Die menschenlesbare Ansicht zeigt Name, Kurzname, Adresse, E-Mail, Telefon, Website und Gründungsdatum, soweit vorhanden. Für Agents ist die JSON-Ausgabe maßgeblich.
-
-## Club-Profil und Settings
+Die menschenlesbare Ansicht zeigt Name, Kurzname, Adresse, E-Mail, Telefon,
+Website und Gründungsdatum, soweit vorhanden; für automatisierte Arbeit ist
+die maschinenlesbare Ausgabe maßgeblich.
 
 ### Öffentliche Vereinsorgane und Impressum prüfen
 
@@ -107,17 +120,17 @@ comvenio club public-organ <group-id> --avatars --json
 comvenio club public-legal --json
 ```
 
-`public-organ` liefert nur ausdrücklich freigegebene Organe aktiver Vereine.
-Positionen mit `is_default=true` werden ausgeschlossen; Mitglieder ohne andere
-aktuelle Position erscheinen nicht. Die Antwort enthält Namen und Beschreibungen
-der Positionen, aber keine privaten Kontaktdaten. Öffentliche Comvenio-Avatare
-werden ausschließlich mit `--avatars` angefordert. Fehlende Avatare sind erlaubt.
-Die Freigabe wird separat im Club Hub verwaltet; diese Lesebefehle verändern sie nicht.
+Diese Abfrage liefert nur ausdrücklich freigegebene Organe aktiver Vereine.
+Standardpositionen werden ausgeschlossen; Mitglieder ohne eine andere
+aktuelle Position erscheinen nicht. Die Antwort enthält Namen und
+Positionsbeschreibungen, aber keine privaten Kontaktdaten. Öffentliche
+Profilbilder werden ausschließlich mit `--avatars` angefordert; fehlende
+Bilder sind erlaubt. Die Freigabe eines Organs wird getrennt verwaltet — diese
+Lesebefehle verändern sie nicht. `public-legal` prüft die öffentlichen
+Vereinsangaben samt aufgelöstem Verantwortlichen; fehlende Angaben werden
+nicht durch erfundene Daten ersetzt.
 
-`public-legal` prüft die öffentlichen Vereinsangaben einschließlich des aufgelösten
-Vereinsverantwortlichen. Fehlende Angaben dürfen nicht durch erfundene Daten ersetzt werden.
-
-### Profil ändern
+### Vereinsprofil und Einstellungen ändern
 
 ```bash
 comvenio club update --file club-update.json --json
@@ -125,15 +138,16 @@ comvenio club settings --json
 comvenio club settings-update --file settings-update.json --json
 ```
 
-`club update` übergibt einen partiellen `ClubUpdate`-Body. Gültige Profilfelder sind unter anderem
-`name`, `description`, `address`, `city`, `postal_code`, `country`, `state`, `phone_number`,
-`email_address`, `website_url`, `founded_date`, Social-URLs, `default_language`,
-`default_timezone` und `responsible_member_id`. `settings-update` verwendet den Deep-Merge-`PUT`
-für Bereiche wie `features`, `privacy_settings`, `contact_info`, `seo_settings`,
-`notification_settings`, `locale_settings`, `payment_settings`, `custom_settings` und
-`letterhead_config`.
+`club update` übergibt einen teilweisen Profil-Datensatz. Gültige Felder sind
+unter anderem Name, Beschreibung, Adresse, Ort, Postleitzahl, Land, Region,
+Telefonnummer, E-Mail, Website, Gründungsdatum, Adressen zu sozialen Netzwerken,
+Standardsprache, Standard-Zeitzone und die verantwortliche Person.
+`settings-update` führt eine Feld-für-Feld-Zusammenführung durch für
+Bereiche wie Funktionen, Datenschutzeinstellungen, Kontaktangaben,
+Sucheinstellungen, Benachrichtigungen, Spracheinstellungen,
+Zahlungseinstellungen und eigene Einstellungen.
 
-## Abteilungen
+### Abteilungen verwalten
 
 ```bash
 comvenio club department-list --json
@@ -157,12 +171,14 @@ Beispiel für `department.json`:
 }
 ```
 
-Beim Update sind zusätzlich `responsible_member_id` und ein neuer `parent_department_id` erlaubt.
-Die Club-ID wird beim Anlegen aus dem aktiven CLI-Kontext genommen und nicht aus der Datei.
+Beim Ändern sind zusätzlich die verantwortliche Person und eine neue
+übergeordnete Abteilung erlaubt. Der Verein wird beim Anlegen aus dem
+aktiven Anmeldekontext übernommen, nicht aus der Datei.
 
-## Club-Design
+### Vereinsdesign setzen
 
-`club design` verändert `design_settings` per Deep-Merge: Nicht angegebene Schlüssel bleiben erhalten.
+`club design` führt die Design-Einstellungen zusammen: nicht angegebene
+Felder bleiben erhalten.
 
 ```bash
 comvenio club design \
@@ -177,42 +193,122 @@ comvenio club design \
 comvenio club design --file design-settings.json --json
 ```
 
-Wichtige Flags:
-
 | Flag | Wirkung |
 |---|---|
-| `--template <name>` | Club-Hub-Theme |
-| `--public-template <id>` | öffentliches Website-Template |
-| `--primary`, `--accent`, `--secondary` | Markenfarben als `#RRGGBB` |
-| `--font <pair>` | erlaubtes Font-Pair |
+| `--template <name>` | internes Vereinsbereich-Thema |
+| `--public-template <id>` | Vorlage der öffentlichen Homepage |
+| `--primary`, `--accent`, `--secondary` | Markenfarben als Hex-Wert |
+| `--font <pair>` | erlaubte Schriftkombination |
 | `--spacing <mode>` | Abstandsmodus |
-| `--file <json>` | vollständiges partielles `design_settings`-Objekt |
-| `--css-file <css>` | scoped Agent-CSS; Server-Sicherheitsgate bleibt maßgeblich |
-| `--tokens-file <json>` | Design-Tokens wie Palette, Radius und Typografie |
-| `--header-layout`, `--header-surface`, `--header-density` | öffentlicher Header |
-| `--header-sticky <true|false>` | Sticky-Verhalten |
-| `--clear-header` | eigene Header-Konfiguration entfernen |
-| `--dry-run` | Payload anzeigen, nichts schreiben |
+| `--file <json>` | vollständiges teilweises Design-Objekt |
+| `--css-file <css>` | begrenztes eigenes CSS — die serverseitige Sicherheitsprüfung bleibt dabei maßgeblich |
+| `--tokens-file <json>` | Design-Tokens wie Palette, Rundung und Typografie |
+| `--header-layout`, `--header-surface`, `--header-density` | öffentliche Kopfzeile |
+| `--header-sticky <true\|false>` | Sticky-Verhalten der Kopfzeile |
+| `--clear-header` | eigene Kopfzeilen-Konfiguration entfernen |
+| `--dry-run` | Nutzlast anzeigen, nichts schreiben |
 
-Vor jeder Design-Mutation zuerst `--dry-run --json`, anschließend die Homepage-Vorschau und den Homepage-Verifier verwenden. Der vollständige Frontend-Workflow steht in [`homepage.md`](homepage.md).
+Vor jeder Design-Änderung erst `--dry-run --json`, anschließend die
+Homepage-Vorschau und -Prüfung verwenden. Der vollständige Ablauf für die
+öffentliche Seite steht im Artikel zur Vereins-Homepage.
 
-## Vereinslogo
+### Vereinslogo pflegen
 
 ```bash
 comvenio club logo --json                          # aktuelles Logo (Metadaten)
-comvenio club logo-upload --file wappen.png --json # neues Logo hochladen
+comvenio club logo-upload --file wappen.png --json  # neues Logo hochladen
 ```
 
-`logo-upload` nutzt die eigene Logo-Route des content-service und braucht
-`manage_club_settings`. Das zuletzt hochgeladene Logo gilt sofort überall, wo die
-Plattform das Vereinslogo zeigt: Homepage-Kopfzeile, `image`-Widget mit
-`source=club_logo`, Vereinsauswahl. Ein Bild mit transparentem Hintergrund
-(PNG) wirkt auf farbigen Flächen am besten.
+`logo-upload` braucht das Recht, Vereinseinstellungen zu verwalten. Das
+zuletzt hochgeladene Logo gilt sofort überall, wo die Plattform das
+Vereinslogo zeigt: Kopfzeile der Homepage, Bild-Widget mit Vereinslogo als
+Quelle, Vereinsauswahl. Ein Bild mit transparentem Hintergrund wirkt auf
+farbigen Flächen am besten. Ein gewöhnlicher Datei-Upload ersetzt das Logo
+**nicht** — die Logo-Auswahl berücksichtigt nur Dateien, die über
+`logo-upload` hochgeladen wurden.
 
-Ein normaler Datei-Upload (`data upload --context club`) ersetzt das Logo **nicht**:
-Die Logo-Auswahl berücksichtigt nur Dateien, die über `logo-upload` entstanden sind.
+## Beispiele
 
-## Abgrenzung
+Anmeldung mit eingeschränkten Scopes, danach Identität und Verein prüfen:
 
-Homepage-Inhalte bleiben im eigenständigen `homepage`-Command; Mitglieder und Teams haben ebenfalls
-eigene Commands. Die aktuelle Workflow-Coverage steht in [`coverage.md`](coverage.md).
+```bash
+comvenio login --scopes club.read,event.read --json
+comvenio whoami --json
+comvenio club info --json
+```
+
+Bestehende Action mit Eingabe aufrufen:
+
+```bash
+comvenio action list --json
+comvenio action call cai.event.01.list \
+  --input '{"range":{"from":"2026-07-24","to":"2026-08-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}' \
+  --json
+```
+
+Neue Abteilung anlegen:
+
+```bash
+comvenio club department-add --file department.json --json
+```
+
+## Befehle und Actions
+
+<!-- gen:docs befehle -->
+
+**login** — vollständig
+
+- `comvenio login`
+- `comvenio login --device-token`
+
+**logout** — vollständig
+
+- `comvenio logout`
+
+**whoami** — vollständig
+
+- `comvenio whoami`
+
+**action** — vollständig
+
+- `comvenio action list`
+- `comvenio action call`
+- `comvenio action confirm`
+
+**club** — vollständig
+
+- `comvenio club info`
+- `comvenio club update`
+- `comvenio club settings`
+- `comvenio club settings-update`
+- `comvenio club design`
+- `comvenio club logo`
+- `comvenio club logo-upload`
+- `comvenio club contact-requests`
+- `comvenio club contact-request-done`
+- `comvenio club contact-request-reopen`
+- `comvenio club contact-request-delete`
+- `comvenio club department-list`
+- `comvenio club department-show`
+- `comvenio club department-add`
+- `comvenio club department-update`
+- `comvenio club department-delete`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `AUTH_REQUIRED` — die Anmeldung ist abgelaufen, wurde widerrufen oder fehlt.
+  `comvenio help fehler AUTH_REQUIRED`.
+- `SCOPE_REQUIRED` — der angeforderten Anmeldung fehlt der Scope für diese
+  Aktion; der nächste Befehl zeigt die passende erneute Anmeldung.
+  `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt die
+  Aktion nicht; das Recht vergibt ein Administrator des Vereins.
+  `comvenio help fehler PERMISSION_DENIED`.
+- `OAUTH_ONLY` — ein klassischer Befehl läuft nicht über die aktuelle
+  Anmeldung; die passende Action verwenden. `comvenio help fehler OAUTH_ONLY`.
+- `CLUB_SELECTION_REQUIRED` — der aktuellen Verbindung ist kein Verein
+  zugeordnet. `comvenio help fehler CLUB_SELECTION_REQUIRED`.
+- `ACTION_NOT_LISTED` — die Action steht gerade nicht in der freigegebenen
+  Liste; kurz nach einer neuen Version kann das vorübergehend so sein.
+  `comvenio help fehler ACTION_NOT_LISTED`.

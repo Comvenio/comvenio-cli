@@ -172,6 +172,13 @@ comvenio action confirm --preview-id … --confirmation-token … --idempotency-
 > `docs/aufgaben.md`, `docs/mitglieder-teams.md`, `docs/buchungen-objekte.md`,
 > `docs/dateien.md`, `docs/vereinsnews.md`, `docs/turniere.md`,
 > `docs/sponsoring.md`, `docs/meetings.md` und `docs/rollen-rechte.md`.
+>
+> **Kundendoku pflegen (BLOCKIEREND):** Jeder Artikel in `docs/` hat eine englische Fassung unter
+> `docs/en/`, jeder öffentliche Fehlercode einen Artikel unter `docs/fehler/` (Vorlage:
+> `docs/_vorlage.md`). Ein neuer oder geänderter Befehl ändert Registry und Artikel **im selben PR**;
+> danach `bun run gen:docs` (Befehlsliste und `docs/index.json`) und `bun run check:docs` —
+> die Prüfung läuft im CI und schlägt bei fehlender Domäne, Sprache, Pflichtabschnitt oder internen
+> Angaben (Quellpfade, Dienstnamen) fehl.
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)

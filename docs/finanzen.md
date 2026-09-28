@@ -1,102 +1,131 @@
+---
+id: finanzen
+kategorie: thema
+domaenen: [finance]
+stichwoerter: [finanzen, buchhaltung, jahresplan, budgetposten, buchung, cent]
+---
+
 # Vereins-Buchhaltung
 
-Die Finance-CLI deckt die Vereins-Buchhaltung des `finance-service` ab: den Jahresplan, die Budgetposten darunter und die Buchungen an den Posten.
+## Wozu
 
-```bash
-comvenio finance <action> [id] [optionen]
-```
+Die Finanzbefehle decken die Vereins-Buchhaltung ab: den Jahresplan, die Budgetposten darunter und
+die Buchungen an den Posten — damit Ausgaben und Einnahmen eines Vereinsjahres geplant, gebucht
+und ausgewertet werden können.
 
-Für Agenten ist `--json` die verbindliche Ausgabeform.
+## Voraussetzungen und Rechte
 
-> **Nicht verwechseln:** `comvenio booking` ist die Raumbuchung des `object-service`, `comvenio sponsor` der lokale Sponsor. Mit der Buchhaltung hat beides nichts zu tun.
+Anmeldung per `comvenio login`; welche Scopes ein einzelner Befehl braucht, zeigt
+`comvenio action list --json`. Für Agenten ist `--json` die verbindliche Ausgabeform.
 
-## Grundregeln
+- `--club <club-id>` überschreibt den Verein aus dem lokalen Anmeldestatus.
 
-- `--club <id>` überschreibt den Club aus dem lokalen Login-State.
-- `--year <jahr>` ist Pflicht bei allen `plan-*`, bei `position-list`/`position-create` und bei `summary`. Der Plan ist das Jahr — es gibt keinen Vorgabewert.
-- `[id]` bezeichnet je nach Aktion die Positions- oder Buchungs-ID; bei `plan-copy` das **Quelljahr**.
-- **Beträge sind Cent, immer ganze Zahlen.** 45,50 € sind `4550`. Wer `45.50` schreibt, meint Euro — die CLI lehnt das ab, statt klaglos eine Buchung über 45 Cent anzulegen.
-- `--file <payload.json>` ist die Grundlage, einzelne Optionen überschreiben einzelne Felder daraus. Für den Alltag braucht es keine Datei.
-- Ein HTTP-Fehler ist kein leeres Ergebnis. Die CLI gibt Backend-Fehler mit Exit-Code ungleich null zurück.
+> **Nicht verwechseln:** `comvenio booking` ist die Raumbuchung, `comvenio sponsor` der lokale
+> Sponsor. Mit der Buchhaltung hat beides nichts zu tun.
 
-## Jahresplan
+## Abläufe
 
-```bash
-comvenio finance plan-list
-comvenio finance plan-show   --year 2026
-comvenio finance plan-create --year 2026 --capital 500000 --notes "Haushalt 2026"
-comvenio finance plan-update --year 2026 --capital 550000
-comvenio finance plan-close  --year 2026
-comvenio finance plan-close  --year 2026 --force --notes "Jahresabschluss"
-comvenio finance plan-reopen --year 2026 --reason "Nachtragsbuchung Hallenmiete"
-comvenio finance plan-copy 2025 --year 2026     # Quelle als Argument, Ziel in --year
-comvenio finance plan-copy 2025 --year 2026 --include-non-recurring
-comvenio finance plan-copy 2025 --year 2026 --positions POS_A,POS_B
-```
+### Jahresplan führen
 
-`plan-close` schliesst das Jahr ab. Danach weisen Änderungen an Positionen und Buchungen der Dienst mit `409` ab — auch das Stornieren einer Auto-Buchung (RTS-Bug `d5327bb5`). `plan-reopen` macht es rückgängig.
+1. Pläne ansehen: `comvenio finance plan-list`.
+2. Einzelnen Plan ansehen: `comvenio finance plan-show --year <jahr>`.
+3. Plan anlegen: `comvenio finance plan-create --year <jahr> --capital <cent> --notes "<Text>"`.
+4. Plan ändern: `comvenio finance plan-update --year <jahr> --capital <cent>`.
+5. Jahr abschließen: `comvenio finance plan-close --year <jahr>`; bei offenen Posten zusätzlich
+   `--force`. Danach weist der Dienst Änderungen an Positionen und Buchungen ab — auch das
+   Stornieren einer automatischen Buchung.
+6. Abgeschlossenes Jahr wieder öffnen: `comvenio finance plan-reopen --year <jahr> --reason "<Begründung>"`.
+   `--reason` ist Pflicht (mindestens 3 Zeichen).
+7. Plan in ein neues Jahr kopieren: `comvenio finance plan-copy <quelljahr> --year <zieljahr>`.
+   Wiederkehrende Posten werden von selbst übernommen; einmalige nur mit
+   `--include-non-recurring` oder über eine Auswahl in `--positions`. Posten, deren Veranstaltung
+   es im Zieljahr nicht gibt, meldet die Antwort unter `unlinked_positions` — die bleiben zu
+   verknüpfen.
 
-**`--reason` ist bei `plan-reopen` Pflicht** (mindestens 3 Zeichen) — der Dienst verlangt eine Begründung, wer ein abgeschlossenes Jahr wieder öffnet. `--force` bei `plan-close` schliesst auch bei offenen Posten.
+`--year <jahr>` ist Pflicht bei allen `plan-*`, bei `position-list`/`position-create` und bei
+`summary` — es gibt keinen Vorgabewert. `[id]` bezeichnet je nach Aktion die Positions- oder
+Buchungs-ID, bei `plan-copy` das Quelljahr.
 
-`plan-copy` übernimmt **wiederkehrende** Posten von selbst; einmalige nur mit `--include-non-recurring` oder über eine Auswahl in `--positions`. Posten, deren Veranstaltung es im Zieljahr nicht gibt, meldet die Antwort unter `unlinked_positions` — die bleiben zu verknüpfen.
+### Budgetposten führen
 
-## Budgetposten
+1. Posten ansehen: `comvenio finance position-list --year <jahr>`, wahlweise gefiltert mit
+   `--department <department-id>`.
+2. Posten anlegen: `comvenio finance position-create --year <jahr> --name <Name> --category <Kategorie> --expense <cent>`.
+3. Einzelnen Posten ansehen: `comvenio finance position-show <position-id>`.
+4. Posten ändern: `comvenio finance position-update <position-id> --expense <cent>`.
+5. Posten löschen: `comvenio finance position-delete <position-id>`.
+6. Einkaufsschätzung als Planwert übernehmen: `comvenio finance position-import-shopping <position-id>`;
+   ohne `--overwrite` bleibt ein bereits gesetzter Planwert stehen, die Antwort sagt unter
+   `applied` und `reason`, ob übernommen wurde.
 
-```bash
-comvenio finance position-list   --year 2026
-comvenio finance position-list   --year 2026 --department DEPARTMENT_UUID
-comvenio finance position-create --year 2026 --name Sommerfest --category Feste --expense 120000
-comvenio finance position-show   POSITION_UUID
-comvenio finance position-update POSITION_UUID --expense 135000
-comvenio finance position-delete POSITION_UUID
-comvenio finance position-import-shopping POSITION_UUID
-comvenio finance position-import-shopping POSITION_UUID --overwrite
-```
+Für seltenere Felder (`position_number`, `context_type`, `context_id`, `parent_position_id`,
+`recurring`, Vorjahreswerte) eine JSON-Datei angeben: `--file <payload.json>`; einzelne Optionen
+überschreiben dabei einzelne Felder aus der Datei.
 
-`position-import-shopping` übernimmt die Einkaufsschätzung aus dem `supply-service` als Planwert. Ohne `--overwrite` bleibt ein bereits gesetzter Planwert stehen; die Antwort sagt unter `applied` und `reason`, ob übernommen wurde.
+### Zusammenfassung ansehen
 
-Für die selteneren Felder — `position_number`, `context_type`, `context_id`, `parent_position_id`, `recurring`, die Vorjahreswerte — eine JSON-Datei nehmen:
+1. Je Plan: `comvenio finance summary --year <jahr>`.
+2. Je Abteilung (eigener Endpunkt, kein Filter): `comvenio finance summary --year <jahr> --department <department-id>`.
 
-```bash
-comvenio finance position-create --year 2026 --file posten.json
-```
+### Buchungen führen
 
-## Zusammenfassung
+1. Buchungen eines Postens ansehen: `comvenio finance entry-list <position-id>`, wahlweise
+   gefiltert mit `--source-type <quelle>` (von Hand erfasst, aus dem Einkauf, aus dem Sponsoring).
+2. Buchung anlegen: `comvenio finance entry-create <position-id> --description "<Text>" --expense <cent> --date <datum>`
+   oder mit `--revenue <cent>` statt `--expense`. Eine Buchung ist Einnahme oder Ausgabe — nie
+   beides, nie keines, und der Betrag ist größer als null; das wird vor dem Netzaufruf geprüft.
+3. Einzelne Buchung ansehen: `comvenio finance entry-show <entry-id>`.
+4. Buchung ändern: `comvenio finance entry-update <entry-id> --expense <cent>`.
+5. Buchung freigeben: `comvenio finance entry-approve <entry-id>`, wahlweise mit `--notes "<Text>"`.
+6. Buchung löschen: `comvenio finance entry-delete <entry-id>`.
 
-```bash
-comvenio finance summary --year 2026
-comvenio finance summary --year 2026 --department DEPARTMENT_UUID
-```
+**Beträge sind Cent, immer ganze Zahlen.** 45,50 € sind `4550`. Wer `45.50` schreibt, meint Euro —
+die CLI lehnt das ab, statt klaglos eine Buchung über 45 Cent anzulegen.
 
-Mit `--department` ist es ein **anderer Endpunkt**, kein Filter: Der Dienst rechnet die Summe je Abteilung.
-
-## Buchungen
-
-```bash
-comvenio finance entry-list   POSITION_UUID
-comvenio finance entry-list   POSITION_UUID --source-type supply
-comvenio finance entry-create POSITION_UUID --description "Getränke" --expense 4550 --date 2026-07-01
-comvenio finance entry-create POSITION_UUID --description "Standgebühr" --revenue 25000 --date 2026-07-02
-comvenio finance entry-show   ENTRY_UUID
-comvenio finance entry-update ENTRY_UUID --expense 4990
-comvenio finance entry-approve ENTRY_UUID
-comvenio finance entry-approve ENTRY_UUID --notes "Beleg liegt vor"
-comvenio finance entry-delete ENTRY_UUID
-```
-
-**Eine Buchung ist Einnahme oder Ausgabe — nie beides, nie keines, und der Betrag ist grösser als null.** Die CLI prüft das vor dem Netz, damit ein Tippfehler einen Satz ergibt statt eines `422` aus dem Dienst.
-
-`--source-type` filtert nach Herkunft: von Hand erfasst, aus dem Einkauf, aus dem Sponsoring.
-
-## Was diese CLI (noch) nicht kann
+### Was hier (noch) nicht geht
 
 | Bereich | Lage |
 |---|---|
-| Dashboard, Kassenbericht, Steuerbericht | im Dienst vorhanden, CLI folgt in Welle 2 |
-| Event-Finanzen, Supply-Brücke, Sponsoring-Deal | im Dienst vorhanden (lesend), CLI folgt in Welle 3 |
-| Investitionsplanung, Förderquellen, Szenarien | im Dienst vorhanden, kein CLI |
-| Stripe: Connect, Rechnungen, Auszahlungen, Abos | im Dienst vorhanden, kein CLI |
-| Beiträge, Spenden, Vereinsrechnungen, Kontenrahmen | **im Dienst nur Platzhalter** (`HTTP 501`) — es gibt dort nichts zu bedienen |
-| `/internal/supply-poll`, `/internal/sync-sponsoring` | Dienst-zu-Dienst, kein Bedienweg für Menschen |
+| Dashboard, Kassenbericht, Steuerbericht | vorhanden, folgt hier später |
+| Event-Finanzen, Einkaufs-Brücke, Sponsoring-Deal | lesend vorhanden, folgt hier später |
+| Investitionsplanung, Förderquellen, Szenarien | vorhanden, hier bewusst nicht vorgesehen |
+| Stripe: Connect, Rechnungen, Auszahlungen, Abos | vorhanden, hier bewusst nicht vorgesehen |
+| Beiträge, Spenden, Vereinsrechnungen, Kontenrahmen | noch nicht umgesetzt — es gibt dort nichts zu bedienen |
 
-> **Zur Vorgeschichte.** Bis zum 2026-09-20 gab es diesen Befehl nicht — das CLI kannte den `finance-service` überhaupt nicht, obwohl das Gateway ihn längst routete und die Vereins-Buchhaltung seit dem 2026-09-03 voll implementiert war. Verdeckt hat das die eigene Abdeckungsdatei: Sie führte finance als Backend-Lücke mit `HTTP 501`, was bei ihrer Entstehung stimmte. Wer daraufhin nicht nachsieht, findet auch nichts.
+## Beispiele
+
+```bash
+comvenio finance plan-create --year 2026 --capital 500000 --notes "Haushalt 2026"
+comvenio finance plan-close --year 2026 --force --notes "Jahresabschluss"
+comvenio finance plan-reopen --year 2026 --reason "Nachtragsbuchung Hallenmiete"
+comvenio finance plan-copy 2025 --year 2026 --include-non-recurring
+comvenio finance position-create --year 2026 --name Sommerfest --category Feste --expense 120000
+comvenio finance entry-create <position-id> --description "Getränke" --expense 4550 --date 2026-07-01
+comvenio finance entry-approve <entry-id> --notes "Beleg liegt vor"
+comvenio finance summary --year 2026 --department <department-id>
+```
+
+## Befehle und Actions
+
+<!-- gen:docs befehle -->
+
+**finance** — Kern vorhanden, einzelne Abläufe fehlen
+
+- `comvenio finance plan list|show|create|update|close|reopen|copy`
+- `comvenio finance position list|create|show|update|delete|import-shopping`
+- `comvenio finance summary (je Plan und je Abteilung)`
+- `comvenio finance entry list|create|show|update|delete|approve`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `CONFLICT` — das Jahr ist abgeschlossen; Änderungen an Positionen und Buchungen weist der Dienst
+  ab, bis es wieder geöffnet ist. Mehr: `comvenio help fehler CONFLICT`.
+- `VALIDATION_FAILED` — ein Betrag ist nicht in Cent, eine Buchung ist weder Einnahme noch Ausgabe
+  oder beides, oder ein Pflichtfeld fehlt. Mehr: `comvenio help fehler VALIDATION_FAILED`.
+- `NOT_FOUND` — Plan, Posten oder Buchung sind unter der angegebenen Kennung nicht bekannt. Mehr:
+  `comvenio help fehler NOT_FOUND`.
+- `PERMISSION_DENIED` — die Vereinsrolle erlaubt die Buchhaltungsaktion nicht. Mehr:
+  `comvenio help fehler PERMISSION_DENIED`.
+
+Ein Backend-Fehler ist kein leeres Ergebnis: Die CLI gibt ihn mit Exit-Code ungleich null zurück.

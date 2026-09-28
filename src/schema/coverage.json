@@ -547,8 +547,8 @@
       "id": "schema",
       "status": "core-partial",
       "actions": [
-        "list domains",
-        "show domain schema"
+        "schema",
+        "schema <domain>"
       ],
       "gaps": [
         "Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback."
@@ -694,6 +694,7 @@
         "src/commands/plan.ts"
       ],
       "docs": [
+        "docs/veranstaltungen.md",
         "docs/cli-reference.md"
       ]
     },
@@ -861,7 +862,9 @@
       "source": [
         "src/commands/weekly-preview.ts"
       ],
-      "docs": []
+      "docs": [
+        "docs/wochenvorschau.md"
+      ]
     },
     {
       "id": "zone",

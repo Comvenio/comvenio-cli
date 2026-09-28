@@ -36,7 +36,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `menu` | `covered` | create<br>list<br>show<br>add-item<br>update-item<br>delete-item<br>delete<br>style<br>apply<br>export | Keine bekannte Kernlücke. |
 | `meeting` | `covered` | series list|show|create|update|delete<br>protocol list|show|create|update|delete|advance|revert|updates|validation|publish<br>agenda list|show|create|update|delete|reorder|start|complete|skip|approve<br>note list|list-protocol|create|update|delete<br>participant list|add|update|remove|validate|unvalidate<br>decision create|agenda|update|cancel|option-add|options-add|promote<br>voting open|close|results|eligible|tally<br>vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract<br>resolution list|list-protocol|show|history|create|update|approve|decline|delete<br>entry list|show|show-agenda|create|update|delete<br>attachment list|add|remove | Keine bekannte Kernlücke. |
 | `homepage` | `covered` | preview<br>apply<br>show | Keine bekannte Kernlücke. |
-| `schema` | `core-partial` | list domains<br>show domain schema | Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback. |
+| `schema` | `core-partial` | schema<br>schema <domain> | Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback. |
 | `verify` | `covered` | url<br>event<br>menu<br>homepage<br>news<br>certificate | Keine bekannte Kernlücke. |
 | `data` | `covered` | list<br>show<br>update<br>url<br>download<br>upload<br>delete<br>restore<br>move<br>visibility<br>stats<br>empty-trash<br>area-media<br>area-shares<br>area-share-add<br>area-share-remove<br>children<br>search<br>breadcrumb<br>folder-create<br>folder-rename<br>folder-move<br>folder-protect<br>folder-delete<br>folder-restore<br>folder-rights<br>folder-right-add<br>folder-right-bulk<br>folder-right-delete<br>papers<br>paper-show<br>paper-add<br>paper-update<br>paper-delete<br>export members|bookings | Keine bekannte Kernlücke. |
 | `news` | `covered` | list<br>show<br>create<br>update<br>delete<br>apply<br>preview<br>publish<br>video slideshow|result|teaser | Keine bekannte Kernlücke. |
@@ -338,7 +338,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## schema
 
 - Status: `core-partial`
-- Actions: `list domains`, `show domain schema`
+- Actions: `schema`, `schema <domain>`
 - Wichtige Lücken:
   - Detaillierte Payload- und Enum-Schemas sind noch nicht für jeden Top-Level-Command verfügbar; fehlende Domains erhalten nur einen Workflow-Coverage-Fallback.
 - Bewusste Ausschlüsse:
@@ -389,7 +389,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 - Bewusste Ausschlüsse:
   - Die Bildgenerierung selbst liegt außerhalb des CLI; illustrate bereitet das deterministische Kit vor und compose setzt exakte Beschriftungen darüber.
 - Geprüfte Quellen: `src/commands/plan.ts`
-- Weiterführende Doku: `docs/cli-reference.md`
+- Weiterführende Doku: `docs/veranstaltungen.md`, `docs/cli-reference.md`
 
 ## tournament
 
@@ -451,7 +451,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 - Bewusste Ausschlüsse:
   - Die Share-Seite /share/weekly-preview/{token} ist anonym und braucht keine Action.
 - Geprüfte Quellen: `src/commands/weekly-preview.ts`
-- Weiterführende Doku: 
+- Weiterführende Doku: `docs/wochenvorschau.md`
 
 ## zone
 

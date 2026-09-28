@@ -1,30 +1,27 @@
-# Vereins-Homepages mit der Comvenio CLI
+---
+id: homepage
+kategorie: thema
+domaenen: [homepage]
+stichwoerter: [homepage, website, vereinsseite, widgets, design]
+---
 
-Dieser Leitfaden ist der verbindliche Arbeitsvertrag für KI-Agenten, die eine
-öffentliche Vereins-Homepage erstellen oder ändern. Homepage-Operationen laufen
-ausschließlich über die Comvenio CLI. Direkte Requests gegen Comvenio-APIs sind
-verboten.
+# Vereins-Homepage gestalten
 
-## 1. Grundsatz
+## Wozu
 
-Der bedienende Agent ist die Design- und Kompositionsintelligenz. Es gibt keinen
-zweiten Homepage-LLM-Aufruf im Backend.
+Mit dem CLI wird die öffentliche Vereins-Homepage aufgebaut und gepflegt:
+Struktur, Inhalte und Design werden als deklaratives JSON beschrieben, in
+einer Vorschau geprüft und erst nach ausdrücklicher Freigabe veröffentlicht.
+Es gibt keinen automatischen Text- oder Design-Generator im Hintergrund — wer
+die Seite gestaltet, komponiert sie über die hier beschriebenen Befehle
+selbst.
 
-`schema → Bestand lesen → Struktur/Design komponieren → Preview → Verifier → menschliche Freigabe → Apply`
+## Voraussetzungen und Rechte
 
-Pflichtregeln:
-
-1. Vor jeder Arbeit `comvenio schema homepage --json` und
-   `comvenio schema design --json` lesen.
-2. Bestehende Homepage mit `comvenio homepage show --public --json` lesen.
-3. Struktur als deklaratives JSON erstellen. Keine direkten API-Aufrufe.
-4. Immer zuerst eine No-Write-Preview erzeugen und im Browser öffnen.
-5. Den Homepage-Verifier vollständig ausführen.
-6. Ohne ausdrückliche menschliche Freigabe niemals `homepage apply --clear`
-   ausführen.
-7. Nach einer CLI-Änderung nur eine gemergte und neu installierte CLI verwenden.
-
-## 2. Authentifizierung und Kontext
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
 
 ```bash
 comvenio login
@@ -32,64 +29,305 @@ comvenio whoami --json
 comvenio club info --json
 ```
 
-Der Club kommt normalerweise aus dem CLI-State. Bei bewusster Arbeit für einen
-anderen Verein wird `--club <club-id>` gesetzt. UUIDs werden nicht geraten.
+Der Verein kommt normalerweise aus dem angemeldeten Kontext. Für bewusste
+Arbeit an einem anderen Verein wird `--club <club-id>` gesetzt; Kennungen
+werden dabei nie geraten, sondern vorher nachgeschlagen.
 
-## 3. Maschinenlesbare Verträge
+Design- und Veröffentlichungsschritte (`club design`, `homepage apply`)
+brauchen das Recht, Vereinseinstellungen zu verwalten. Fehlt es, meldet
+Comvenio `PERMISSION_DENIED` — das Recht vergibt ein Administrator des
+Vereins. Fehlt der Anmeldung der nötige Scope, meldet Comvenio
+`SCOPE_REQUIRED` mit dem passenden `comvenio login --scopes …`-Befehl.
+
+## Abläufe
+
+### Werkzeugkette
+
+Jede Änderung folgt derselben Reihenfolge: Verträge lesen → Bestand lesen →
+Struktur und Design komponieren → Vorschau erzeugen → Prüfung laufen lassen →
+Freigabe einholen → anwenden. Kein Schritt wird übersprungen, und
+`homepage apply --clear` läuft nie ohne ausdrückliche Freigabe.
+
+### Verträge und Bestand lesen
 
 ```bash
 comvenio schema homepage --json > homepage-schema.json
 comvenio schema design --json > design-schema.json
+comvenio homepage show --public --json
 ```
 
-Das Homepage-Schema ist autoritativ für:
+Das Homepage-Schema ist maßgeblich für die verfügbaren Widget-Arten und ihre
+Config-Felder, für Section-Layouts und Stilvarianten, für die öffentlichen
+Detailrouten zu News und Veranstaltungen, für sichere Button-Ziele und für den
+nicht konfigurierbaren, immer gleichen Rahmen der Seite. Unbekannte Felder,
+Widget-Arten oder Werte werden nicht erfunden, sondern im Schema
+nachgeschlagen.
 
-- `widget_kinds` und die Config-Felder jedes Widgets
-- Section-Layouts und Style-Varianten
-- öffentliche Detailrouten für News und Veranstaltungen
-- sichere, konfigurierbare Button-Ziele
-- den nicht konfigurierbaren `public_shell_contract`
+### Unveränderbare Bereiche der Seite
 
-Unbekannte Felder, Widget-Arten oder Enum-Werte werden nicht erfunden.
-
-## 4. Unveränderbare öffentliche Shell
-
-Der Agent konfiguriert ausschließlich die eigentlichen Homepage-Inhalte. Die
-Plattform rendert immer und unabhängig vom Homepage-JSON:
+Konfiguriert werden nur die eigentlichen Homepage-Inhalte. Unabhängig vom
+Homepage-JSON zeigt jede Vereinsseite immer:
 
 | Element | Festes Ziel |
 |---|---|
-| Impressum | `/impressum` auf der Vereins-Homepage |
-| Datenschutz | `https://www.comvenio.app/datenschutz` |
-| AGB | `https://www.comvenio.app/agb` |
-| Powered by Comvenio | `https://www.comvenio.app` |
+| Impressum | eigene Impressum-Seite der Vereins-Homepage |
+| Datenschutz | zentrale Datenschutzseite von Comvenio |
+| AGB | zentrale AGB-Seite von Comvenio |
+| „Powered by Comvenio" | Comvenio-Startseite |
 
-Das Impressum bezieht seine Daten automatisch aus einer öffentlichen Allowlist:
+Das Impressum bezieht seine Angaben automatisch: zuerst aus den hinterlegten
+Kontaktdaten des Vereins (Adresse, E-Mail, Telefon, Website), bei leeren
+Werten aus den öffentlichen Vereins-Stammdaten. Vereinsname, Rechtsform und
+Registernummer kommen ebenfalls aus den Stammdaten. Eine abweichende
+Verantwortlichkeit lässt sich hinterlegen; fehlt sie, gilt „Eigentümer des
+Vereins" mit dem Hinweis „Verantwortlich für die Inhalte ist der Verein.". Ist
+die öffentliche Homepage in den Vereinsfunktionen abgeschaltet, liefert die
+Impressum-Seite keine Kontaktdaten mehr. Nie öffentlich ausgegeben werden
+Zahlungsdaten, Bankverbindungen, Steuernummern, Mitglieder- oder
+Benutzerkennungen sowie interne Prüffelder.
 
-1. `ClubSettings.contact_info` für Adresse, E-Mail, Telefon und Website
-2. leere Werte fallen auf die öffentlichen Club-Stammdaten zurück
-3. Vereinsname, Rechtsform und Registernummer kommen aus den Club-Stammdaten
-4. optionale Verantwortlichkeit kommt ausschließlich aus `ClubSettings.custom_settings.legal_info` (`responsible_label`, `responsibility_text`); fehlt sie, gilt:
-   „Eigentümer des Vereins“ und „Verantwortlich für die Inhalte ist der Verein.“
+Verboten sind deshalb: ein eigener Pflicht-Tab „Rechtliches", ein
+Inhaltswidget als vermeintliche Quelle des Impressums, doppelte Pflichtlinks
+in freiem HTML und ein per eigenem CSS versteckter oder umgeleiteter
+Rechtsfußzeile. Ein älteres Inhaltswidget für rechtliche Hinweise existiert
+nur noch aus Gründen der Rückwärtskompatibilität.
 
-Ist die öffentliche Homepage in den Club-Features explizit deaktiviert, liefert die interne Legal-Quelle 404 und keine Kontaktdaten.
+### Struktur der Seite aufbauen
 
-Nie öffentlich ausgegeben werden Zahlungsdaten, Bankverbindungen, Stripe-Secrets,
-Steuernummern, Member-/User-IDs oder Auditfelder.
+Eine Homepage besteht aus Tabs (Reitern), jeder Tab aus Sections, jede Section
+aus Widgets. Die vollständige Struktur wird als eine Datei geschrieben (siehe
+Beispiele). Das Feld `clear_existing` in dieser Datei ist keine Freigabe für
+einen löschenden Write — gesteuert wird das ausschließlich über das bewusste
+CLI-Flag `--clear` beim Anwenden.
 
-Agenten dürfen:
+### Inhalte gestalten
 
-- keinen Pflicht-`rechtliches`-Tab erzeugen
-- kein `legal_notice`-Widget als Quelle des Impressums voraussetzen
-- die Pflichtlinks nicht in `custom_html` duplizieren
-- den Rechtsfooter nicht per `custom_css` verstecken oder umleiten
+- **Bildergalerie** (`image_gallery`): Quelle wahlweise ausgewählte Dateien,
+  öffentliche Vereinsbilder, die Bilder einer Veranstaltung, die letzten drei
+  abgeschlossenen öffentlichen Veranstaltungen, ein Ordner oder externe
+  Adressen; `limit` 1–50, Standard 24. Es erscheinen nur öffentliche, fertige,
+  aktive Bilder desselben Vereins; Titelbilder, Flyer und Logos einer
+  Veranstaltung werden dabei ausgelassen. Die Ordnerquelle zeigt ausschließlich
+  die öffentlich freigegebene Ansicht eines Ordners, nie einen privaten
+  Dateibestand. Bereits ausgelieferte, zeitlich begrenzte Bildadressen können
+  eine kurz zuvor geänderte Berechtigung noch eine Weile weiter zeigen.
+- **Downloads** (`files` mit `source=files`): eine feste Auswahl an
+  Datei-Kennungen zeigt gezielt einzelne Dokumente, etwa ein Antragsformular.
+  Eine leere Auswahl zeigt keine beliebigen anderen Vereinsdateien.
+- **Lauftext/Ticker** (`ticker`): `show_events`, `show_news`,
+  `show_birthdays`, `news_limit`, `events_limit`. Geburtstage werden nur nach
+  ausdrücklicher Klärung mit dem Verein gezeigt, und immer nur mit Vorname
+  sowie Tag und Monat. Die Geschwindigkeit steuert `speed_px_per_second`
+  (10–150; ein mittlerer Wert liegt bei etwa 55) und bleibt bei
+  unterschiedlich langen Inhalten konstant.
+- **Kontaktformular** (`contact_form`): Name, E-Mail, Nachricht, Einwilligung
+  und Spam-Schutz. Anfragen werden gespeichert, der Vorstand benachrichtigt,
+  der Verein bearbeitet sie im Verein-Bereich oder über
+  `comvenio club contact-requests`. In der Vorschau versendet das Formular
+  nichts. Ein älteres, rein informatives Beitrittsformular bestätigt keinen
+  erfolgreichen Antrag und darf dafür auch nicht gehalten werden; für Kontakt
+  und Mitgliedsinteresse ist ausschließlich `contact_form` vorgesehen. Ein
+  Formular selbst aus freiem HTML nachzubauen ist nicht vorgesehen. Gespeicherte
+  Anfragen werden 30 Tage nach dem Löschen endgültig entfernt, spätestens aber
+  365 Tage nach Eingang.
+- **Vereinsorgan** (`team` mit `group_id`): zeigt die Positionen eines
+  Vereinsorgans mit aktuellen Namen; Standardpositionen werden dabei
+  ausgeschlossen. Vorher mit dem Verein klären, denn ein gespeichertes,
+  öffentliches Organ-Widget macht die Namen des Organs öffentlich. Auch
+  unbesetzte, nicht-standardmäßige Positionen erscheinen mit
+  Positionsbeschreibung und dem Hinweis „Nicht besetzt" — eine vorübergehend
+  nicht verfügbare Datenquelle wird dabei nicht als unbesetzte Position
+  ausgegeben. Öffentliche Comvenio-Profilbilder werden nur mit `show_avatar`
+  angefordert; fehlende Bilder sind erlaubt. Ein gespeichertes Organ-Widget
+  auf einer öffentlichen, aktiven Seite gibt das Organ frei — ein separater
+  Freigabeschalter ist nicht nötig; private Seiten, versteckte Sections und
+  gelöschte Widgets geben nichts frei. Reihenfolge und Hervorhebung der
+  Positionen lassen sich mit `position_order` (Positions-IDs von oben nach
+  unten — nicht genannte Positionen folgen in der Reihenfolge des Organs,
+  unbekannte Kennungen werden ignoriert) und `highlighted_position_ids`
+  (farblich hervorgehobene Karten) steuern; die passenden IDs liefern die
+  Positions- und Organ-Abfragen des Vereins.
+- **Veranstaltungsliste** (`events_list`): `time_scope` unterscheidet
+  vergangene (zuletzt beendet zuerst), kommende und alle Veranstaltungen.
+  Rückblick und Ausschau lassen sich als zwei getrennte Widgets gestalten.
+- **Termin im Fließtext** (`event_highlight` mit `layout: "date"`): bettet ein
+  Veranstaltungsdatum als Inline-Text statt als Karte ein — Farbe und Schrift
+  übernimmt das umgebende Layout. Die Veranstaltungs-ID ist hier Pflicht;
+  `date_format` ist `full` (vollständiger Zeitraum), `days` (Tageszahlen) oder
+  `month-year`; bei einem Monats- oder Jahreswechsel wird stets der
+  vollständige Zeitraum gezeigt. Bei einer nicht verfügbaren Veranstaltung
+  erscheint kein fest eingetragener Ersatztermin. Über `series_id` lässt sich
+  stattdessen die jeweils nächste veröffentlichte Veranstaltung einer Serie
+  zeigen — die Formate `weekday-time` und `time` eignen sich für
+  wiederkehrende Vereinsabende; angezeigt werden dabei immer echte, bereits
+  angelegte Termine, keine aus einem Text angenommene Wiederholung.
+- **Vereinslogo im Bild-Widget** (`image` mit `source=club_logo`): bindet das
+  aktuelle Vereinslogo ein und hat Vorrang vor einer sonst hinterlegten Datei
+  oder Adresse; eine Logo-Änderung wirkt beim nächsten Abruf.
+- **Vollbild-Video** (`background_video`): Layout `cover` (Standard) legt das
+  Video als Vollbild-Hintergrund hinter den Section-Inhalt, Layout
+  `spotlight` zeigt es als gerahmte Highlight-Karte auf einer gebrandeten
+  Fläche mit eigenen Logo-, Titel- und Teaser-Feldern (Details in den
+  Beispielen). Medien immer über eine Datei-Kennung einbinden — eine direkt
+  angegebene Adresse ist nur ein kurzlebiger Ersatz und kann ablaufen.
+- **Vollbild-Landingseite**: `custom_template_config.landing` (Standard
+  `false`) schaltet eine Section auf einen bare Vollbild-Modus für reine
+  Teaser- oder Kampagnenseiten — ohne Kopfzeile, ohne Navigation, ohne
+  Standard-Hero. Die Rechtsfußzeile bleibt davon unberührt und immer
+  sichtbar. Ohne Navigation sind weitere Tabs für Besucher nicht erreichbar —
+  eine bewusste Wahl für reine Teaser-Seiten, kein Fehler.
 
-`legal_notice` existiert nur aus Rückwärtskompatibilität als optionaler
-Legacy-Inhaltsblock.
+### Gerüst und benannte Slots
 
-## 5. Struktur komponieren
+Für freies HTML (`custom_html`) gilt die feste Bauform: Das HTML ist nur
+Gerüst, jeder veränderliche Inhalt ist ein benannter Slot. Nur so lässt sich
+die Seite als Baum von Überschrift, Text, Bild und Knopf bearbeiten, ohne HTML
+zu schreiben.
 
-Eine Homepage-Datei entspricht dem deklarativen Bulk-Vertrag:
+- Je Tab genau eine volle Section mit genau einem `custom_html`-Widget als
+  Gerüst. Es trägt nur Layout — Elemente, Klassen, und je Bereich ein
+  beschriftendes Attribut.
+- Jeder Inhalt ist ein benannter Slot: `heading` (Text, Zeilenumbruch
+  möglich), `text` (einfaches HTML mit Fettung, Kursiv, Links, Absätzen und
+  Listen), `link` (Beschriftung, Ziel, neuer Tab); Live-Daten wie Ticker,
+  News, Veranstaltungsliste, Termin, Vereinsorgan, Bildergalerie, Downloads,
+  Bild, Video und Kontaktformular stehen ebenfalls als Slot ihrer Art.
+  Slot-Namen bestehen aus Kleinbuchstaben, Ziffern und Bindestrich, beginnen
+  mit Buchstabe oder Ziffer, sind höchstens 63 Zeichen lang und je Reiter
+  eindeutig.
+- Ein Bild-Slot direkt auf einem Bildelement füllt nur Adresse und
+  Alternativtext; Klasse, Größe und Ladeverhalten bleiben im Gerüst. Ein
+  Bild-Slot auf einem umschließenden Element ist dagegen das vollständige
+  Bild-Widget mit eigener Box. Zulässig sind gesicherte Adressen, hochgeladene
+  Dateien und eingebettete Bilddaten; alles andere zeigt kein Bild.
+- Ein Slot lässt sich einzeln adressieren und setzen (Details in den
+  Beispielen); ein bestehendes Gerüst lässt sich austauschen, ohne die Seite
+  neu anzulegen — dabei bleiben die vorhandenen Slot-Inhalte erhalten, und ein
+  inzwischen geänderter Slot wird nicht überschrieben, sondern mit Exit-Code
+  `4` gemeldet. Die dafür nötige Widget-Kennung liefert `comvenio homepage
+  slot get <reiter>/<slot> --json` (Feld `widget_id`) oder `comvenio homepage
+  tree --json` (zweites Pfadglied).
+- Stile, die im Nachhinein umgeschaltet werden sollen, werden als Katalog
+  angemeldet und dann als `style` am Slot statt als feste Klasse im Gerüst
+  vergeben. Farben und Spaltenzahlen, die veränderbar sein sollen, werden
+  ebenfalls als Token beziehungsweise Attribut angemeldet, nicht als feste
+  Werte im CSS.
+- Elemente lassen sich als „Reihe" nebeneinanderstellen: ein Container mit
+  fester Spaltenzahl und Prozentbreiten wird ab einer mittleren Bildschirmbreite
+  nebeneinander, darunter untereinander dargestellt (Beispiel unten). Die
+  Breiten sind 2 bis 4 ganze Prozentwerte in 5er-Schritten, jeder mindestens
+  20, in Summe 100 und genau so viele wie Spalten — eine ungültige Angabe wird
+  verworfen, dann sind die Spalten gleich breit. Eine Reihe in einer Reihe ist
+  nicht vorgesehen. Eine Section mit mehrspaltigem Layout und passender
+  Breitenangabe wirkt gleichwertig als Reihe.
+- Ein bestehendes Gerüst im älteren Format — festem Text und Bildern direkt im
+  HTML statt in Slots — bleibt lesbar, lässt sich im Baum aber nur noch an den
+  Slot-Inhalten bearbeiten. `comvenio homepage tree` nennt je Reiter das
+  erkannte Format in einer Zeile. Es lässt sich mit
+  `comvenio homepage convert --tab <slug> --out home.json` in das neue Format
+  umstellen; danach offen gebliebene Stellen werden von Hand nachgetragen, in
+  der Vorschau geprüft und erst dann angewendet.
+- Ein Gerüst mit festem Text oder Bild außerhalb eines Slots, ohne
+  eindeutigen Slot-Namen, ohne Bereichsbeschriftung, mit unbekanntem Stil oder
+  mit mehr als einer Hauptüberschrift wird beim Schreiben abgelehnt.
+
+### Bekannte Stolpersteine
+
+| Bild | Ursache | Abhilfe |
+|---|---|---|
+| Live fehlen Kopfzeile und Navigation, die Vorschau zeigte sie noch | ein älterer Landing-Modus ist in der Design-Datei erhalten geblieben | `"landing": false` ausdrücklich in die Design-Datei schreiben und erneut anwenden |
+| Dunkler Rahmen oder Schatten um ein freigestelltes Logo | das Bild-Widget zeichnet standardmäßig eine Karte | am Bild-Slot die Kartendarstellung ausdrücklich abschalten (Feld `card_style` auf `none`) |
+| Ein hochformatiges Wappen wirkt in der runden Kopfzeile beschnitten | ältere Version der Anzeige | aktuelle Version verwenden; Logo möglichst quadratisch oder transparent hochladen |
+| „Kein Bild konfiguriert" nur bei einer Person im Organ | ein alter Stand liegt im Browser-Zwischenspeicher | Seite mit vollständigem Neuladen aktualisieren |
+| Eigenes CSS für eine Breite greift nicht | die Regel zielt auf eine Klasse, die der Slot gar nicht trägt | den tatsächlichen Aufbau in der Vorschau ansehen und den richtigen Container ansprechen |
+| Die Prüfung meldet einen Befund nur auf einer Veranstaltungsseite | Kontrastproblem in einem eingebetteten externen Inhalt | getrennt vermerken, nicht über das Homepage-Design „reparieren" |
+| Ein Vereinsorgan zeigt viele „Nicht besetzt" | Positionen im Verein sind nicht zugeordnet | die Vereinsdaten pflegen, nicht die Anzeige verändern |
+
+### Vorschau und Prüfung
+
+```bash
+comvenio homepage preview \
+  --file home.json \
+  --design-file design-settings.json \
+  --ttl-hours 24 \
+  --open \
+  --json
+
+comvenio verify homepage \
+  --file home.json \
+  --design-file design-settings.json \
+  --audit \
+  --json
+```
+
+Die Vorschau gilt standardmäßig 30 Minuten; mit `--ttl-hours` (1–24) lässt
+sich eine längere, serverseitig begrenzte Laufzeit setzen, etwa für eine
+ganztägige Abnahme. Die Vorschau verändert die veröffentlichte Seite nicht.
+
+Ohne `--file` prüft die Prüfung die veröffentlichte Adresse des Vereins.
+Diese ergibt sich ausschließlich aus der hinterlegten Subdomain des Vereins;
+andere technische Kennungen sind keine Homepage-Adresse und werden nicht
+ersatzweise verwendet. Fehlt die Subdomain, weist das CLI auf die
+Vereinseinstellungen oder auf die Entwurfsprüfung mit `--file` hin.
+
+Geprüft werden jeder öffentliche Tab, die getrennte Impressum-Seite, die
+Darstellung auf Mobilgerät, Tablet, Querformat und Desktop — konkret bei
+390, 768, 1024 und 1440 Pixel Breite —, horizontales Überlaufen und leere
+Hauptbereiche, unsichtbarer Text und Kontrast,
+Konsolen- und Netzwerkfehler, der unveränderbare Rechtsfußzeile mit allen
+festen Zielen, die Bedienbarkeit aller Pflichtlinks sowie die
+Vereinsverantwortlichkeit und mindestens eine öffentliche Kontaktangabe auf
+der Impressum-Seite. Text auf Bild-, Video- oder Verlaufsflächen ist dabei
+grundsätzlich nicht messbar und wird deshalb nicht als Befund gezählt.
+
+Exit-Codes: `0` vollständig geprüft, keine behebbaren Befunde; `2` Prüfung
+unvollständig, etwa wegen eines technischen Fehlers während der Prüfung; `4`
+vollständig geprüft, aber mit einem behebbaren Qualitäts- oder
+Rechtsseitenfehler. Screenshots und Bericht gehören immer vor die
+menschliche Freigabe — ein Exit-Code `0` ersetzt diese Freigabe nicht.
+
+### Veröffentlichen
+
+Erst nach ausdrücklicher Freigabe, und erst nachdem der bisherige Stand
+gesichert wurde — `--clear` ersetzt alle bestehenden Tabs, Sections und
+Widgets:
+
+```bash
+comvenio homepage show --public --json > sicherung-home.json
+comvenio club info --json > sicherung-club.json
+
+comvenio club design --file design-settings.json --dry-run --json   # Warnungen lesen
+comvenio club design --file design-settings.json --json
+comvenio homepage apply --file home.json --clear --json
+comvenio homepage show --public --json
+comvenio verify homepage --audit --json
+```
+
+`club design` führt zusammen, statt zu ersetzen: Ein live gesetzter
+Schlüssel, der in der Datei fehlt, bleibt erhalten — auch wenn die Vorschau
+ihn nicht zeigt, weil sie nur die Datei rendert. Das CLI weist auf solche
+erhaltenen Schlüssel ausdrücklich hin, insbesondere wenn ein alter
+Vollbild-Landing-Modus überlebt: Dann fehlen auf der veröffentlichten Seite
+Kopfzeile und Navigation, obwohl die Vorschau richtig aussah. Für eine normale
+Seite wird deshalb `"landing": false` immer ausdrücklich in die Design-Datei
+geschrieben.
+
+Nach dem Anwenden wird die veröffentlichte Seite im Bild geprüft (Kopfzeile,
+Navigation, Hero, Mobilansicht). Wer die Seite vorher schon offen hatte, sieht
+nach einer Veröffentlichung unter Umständen zunächst noch einen alten Stand —
+ein vollständiges Neuladen der Seite behebt das.
+
+### Mobilgeräte
+
+Jede Section bricht auf kleineren Bildschirmen um: Raster werden einspaltig,
+Knöpfe brechen um statt zu überlaufen. Grafiken im Hero-Bereich werden auf
+dem Handy nicht einfach ausgeblendet, sondern bewusst gestaltet — etwa ein
+halbtransparentes Wappen neben der Schlagzeile. Bei 390 Pixeln Breite darf
+kein horizontales Überlaufen entstehen.
+
+## Beispiele
+
+Grundstruktur mit einem Tab, einer Section und einem Hero-Widget:
 
 ```json
 {
@@ -124,15 +362,10 @@ Eine Homepage-Datei entspricht dem deklarativen Bulk-Vertrag:
 }
 ```
 
-`clear_existing` in der Datei ist nicht die Freigabe für einen destruktiven
-Write. Der CLI-Write wird ausschließlich über das bewusste Flag `--clear`
-gesteuert.
-
-### Zwei Mannschaften in zwei Spalten
-
-`two-col` füllt desktop zeilenweise von links nach rechts. Für dauerhaft
-gleiche Mannschaftsspalten werden Tabelle und nächste Spiele in zwei ausgerichteten
-Sections angeordnet:
+Zwei Mannschaften dauerhaft nebeneinander, als zwei ausgerichtete Sections
+(die vollständigen Felder des FuPa-Widgets stehen im Schema; `widgetId` ist
+dabei Pflicht, `title`, `includeSrc`, `hrefUrl`, `hrefLabel`, `height` und
+`show_title` sind optional):
 
 ```json
 [
@@ -159,415 +392,7 @@ Sections angeordnet:
 ]
 ```
 
-Die vollständigen FuPa-Felder stehen ausschließlich im Schema. Aktuell ist
-`widgetId` Pflicht; `title`, `includeSrc`, `hrefUrl`,
-`hrefLabel`, `height` und `show_title` sind optional.
-
-## 6. Design komponieren
-
-### Verwaltbare Galerie, Downloads und Lauftext
-
-Diese Ergänzungen benötigen die dazugehörigen ausgelieferten Web- und Service-Versionen.
-Das CLI-Schema wird vollständig aus der passenden Web-Deklaration erzeugt.
-Hinweise zu nicht gelesenen Feldern bleiben als Diagnose sichtbar; daraus folgt
-keine Zusicherung, dass jedes bestehende Widget jedes deklarierte Feld verwendet.
-
-- `image_gallery.source`: `files` (bewusst ausgewählte `file_ids` in Reihenfolge),
-  `club` (öffentliche Vereinsbilder), `event` (`event_id`), `recent_events`
-  (letzte drei abgeschlossene öffentliche Events), `folder` (`folder_id`, direkte
-  Ordnerinhalte) oder `urls` (externe `urls`). `limit`: 1–50, Standard 24.
-- Nur öffentliche, fertige, aktive Bilder desselben Vereins; Event-Quellen lassen
-  Titelbilder/Flyer/Logos aus. Ordnerquelle braucht die öffentliche Galerieprojektion;
-  niemals als Ersatz einen privaten Ordnerabruf verwenden. Keine automatische
-  Änderung der Dateirechte. Moments sind noch keine freigegebene öffentliche Quelle.
-- `files.source=files` mit `file_ids` bietet gezielte Downloads, z. B. genau das
-  Antrags-PDF. Eine leere Auswahl zeigt keine beliebigen anderen Vereinsdateien.
-- `ticker`: `show_events`, `show_news`, `show_birthdays`, `news_limit`, `events_limit`.
-  Für zwei neueste News `news_limit=2`; zusätzliche Quellen standardmäßig aus.
-  Geburtstage nur nach geklärter Veröffentlichung, nur Vorname und Tag/Monat.
-- In eingebetteten `custom_html`-Widgets lassen sich diese Inhalte auch über
-  „Bildergalerie/Downloads/News/Lauftext verwalten“ bedienen; kein HTML-Editieren nötig.
-- Dateiquellen werden regelmäßig neu gelesen; Berechtigungsänderungen können durch
-  bereits ausgegebene zeitlich begrenzte Download-URLs verzögert sichtbar werden.
-- Das bisherige `membership_form` ist kein digitaler Aufnahmeprozess. Es darf keinen
-  erfolgreichen Antrag bestätigen, bevor ein echter Antragsendpunkt angebunden ist.
-- Für „Kontakt“ und „Mitglied werden“ gibt es das echte Widget `contact_form`
-  (Name, E-Mail, Nachricht, Einwilligung, Spam-Schutz). Anfragen werden gespeichert,
-  der Vorstand wird benachrichtigt, der Verein bearbeitet sie unter
-  Verein → Kontaktanfragen bzw. mit `comvenio club contact-requests`. In der
-  Vorschau sendet es nicht. Nie ein Formular in `custom_html` nachbauen.
-
-### Event-Datum im eigenen Layout
-
-Ab der Web-/CLI-Version mit `event_highlight.layout=date` lassen sich
-Event-Termine als Inline-Text einbetten. Vorher das installierte Schema und
-den Renderer-Stand prüfen; ältere Renderer kennen diese Variante nicht.
-
-```html
-<span data-widget-slot="event_highlight"
-      data-widget-config='{"event_id":"<event-id>","layout":"date","date_format":"full","date_timezone":"Europe/Berlin"}'></span>
-```
-
-Die Event-ID ist bei dieser Darstellung Pflicht. `date_format` ist `full`
-(vollständiger Zeitraum), `days` (Tageszahlen) oder `month-year` (Monat/Jahr).
-Bei Monats-/Jahreswechsel wird ein vollständiger Zeitraum angezeigt.
-Farbe und Schrift kommen aus dem umgebenden Layout. Es entsteht keine Karte
-und keine zweite Kopie des Termins. Die Event-Daten werden beim Laden über
-die bestehende öffentliche Quelle gelesen; Sofortaktualisierung bereits
-offener anonymer Seiten wird damit nicht zugesichert. Bei nicht verfügbarem
-Event wird kein fest eingetragener Ersatztermin ausgegeben.
-
-```bash
-comvenio club design --file design-settings.json --dry-run --json
-```
-
-Das Design stammt aus `comvenio schema design --json`. Vereinsfarben und
-Kontrast werden als Design-Tokens gesetzt; Layout und Look werden nicht durch
-club-spezifischen Frontend-Code implementiert.
-
-### Landing-Modus (Vollbild-Teaser ohne Chrome)
-
-`custom_template_config.landing` (boolean, Default `false`) schaltet das
-Flex-Template in einen bare Vollbild-Modus für reine Teaser-/Kampagnen-Landings:
-
-- Kein Header — weder die interne FlexTemplate-Navigation noch ein gesetzter
-  `public_header`.
-- Kein Template-Hero, kein About-Block, kein Design-Footer.
-- `<main>` wird full-bleed gerendert (kein `maxWidth`/Padding) — eine einzige
-  Section füllt den gesamten Viewport.
-- Der `PublicLegalFooter` (Impressum/Datenschutz/AGB/„Powered by Comvenio“)
-  bleibt **immer** sichtbar unter dem Inhalt — er wird außerhalb des
-  Flex-Templates gerendert (Abschnitt 4) und ist vom Landing-Modus nicht
-  betroffen.
-- **Landing impliziert 1-Tab-Nutzung:** ohne Navigation sind weitere Tabs für
-  Besucher unerreichbar. Bewusste Wahl für reine Teaser-Seiten, kein Fehler.
-
-Setzen (Beispiel-Ausschnitt für `design-settings.json`):
-
-```json
-{
-  "homepage_theme": "...",
-  "primary_color": "#..",
-  "custom_template_config": { "landing": true, "hero": { "variant": "video" } }
-}
-```
-
-Wichtig: `custom_template_config` wird beim `club design --file`-Write
-**gemergt**, nicht ersetzt — bestehende Overrides (Hero, Sections,
-Look-Recipe, ...) bleiben erhalten. `landing` ist ein reines
-`custom_template_config`-Feld, kein Widget-`kind` — es unterliegt nicht der
-Widget-kind-Synchronität, steht aber wie jedes Design-Feld in
-`comvenio schema design --json`.
-
-**Ausblick (noch nicht gebaut):** ein geplantes `landing_cta`-Feld soll einen
-konfigurierbaren „Weiter“-Button ergänzen und die Landing so zur
-Vorschalt-Seite vor der eigentlichen Homepage machen. Aktuell nicht im Schema
-— nicht verwenden, bis es in `comvenio schema design --json` erscheint.
-
-### background_video Spotlight-Layout
-
-Das Widget `background_video` (`comvenio schema homepage --json`) kennt zwei
-Layouts:
-
-| Layout | Wirkung |
-|---|---|
-| `cover` (Default) | Video als klassischer Vollbild-Hintergrund hinter dem Section-Content |
-| `spotlight` | Video als gerahmte Highlight-Card auf einer gebrandeten Fläche, mit Logo-/Titel-/Teaser-Slots |
-
-Spotlight-Config-Felder (zusätzlich zu den Basis-Feldern `video_file_id` /
-`video_url` / `poster_file_id` / `poster_url` / `overlay` / `loop` /
-`headline`):
-
-| Feld | Bedeutung |
-|---|---|
-| `layout` | `"cover"` oder `"spotlight"`, Default `"cover"` |
-| `background` | CSS-Hintergrund der gebrandeten Fläche hinter der Video-Card |
-| `accent_color` | Akzentfarbe für `[[wort]]`-Markup im `title` |
-| `text_color` | Textfarbe auf der Fläche |
-| `logo_file_id` / `logo_url` | Emblem links (Datei-ID bevorzugt — wird beim Public-Read re-signed) |
-| `logo_right_file_id` / `logo_right_url` | Zweites Emblem/Sponsor-Logo rechts |
-| `eyebrow` | Kicker-Zeile über dem Titel |
-| `title` | Überschrift; `[[wort]]` markiert ein Wort zur Hervorhebung in `accent_color` |
-| `date_badge` | Pill-Badge (z. B. Datum/Ort) |
-| `claim` | Schlusszeile unter der Video-Card; `\n` erlaubt für Zeilenumbruch |
-
-Medien immer über `*_file_id` referenzieren — die `url`-Felder sind nur ein
-kurzlebiger Fallback und laufen beim Public-Read ins Leere, sobald die
-presignte URL abläuft.
-
-## 7. Preview und Verifier
-
-```bash
-comvenio homepage preview \
-  --file home.json \
-  --design-file design-settings.json \
-  --ttl-hours 24 \
-  --open \
-  --json
-
-comvenio verify homepage \
-  --file home.json \
-  --design-file design-settings.json \
-  --audit \
-  --json
-```
-
-Die Preview gilt standardmäßig 30 Minuten. Mit `--ttl-hours <1-24>` übermittelt
-das CLI eine längere, serverseitig begrenzte Laufzeit; für eine ganztägige
-Abnahme wird `--ttl-hours 24` verwendet.
-
-Ohne `--file` prüft der Verifier die verwaltete Live-Adresse des Vereins. Sie
-wird ausschließlich aus `Club.subdomain` gebildet: in PROD als
-`https://<subdomain>.web.comvenio.app`, in DEV als
-`https://<subdomain>.web.dev.comvenio.app`. Technische Kennungen wie `Club.slug`,
-`handle` oder `public_slug` sind keine Homepage-Adresse und werden nicht als
-Fallback verwendet. Fehlt die Subdomain, weist das CLI auf die Club-Einstellungen
-oder die Entwurfsprüfung mit `--file` hin.
-
-Die Preview verändert die Live-Homepage nicht. Der Verifier prüft:
-
-- jeden öffentlichen Tab
-- die separate Impressum-Seite
-- Mobile, Tablet, Landscape und Desktop
-- horizontales Überlaufen und leere Hauptregionen
-- unsichtbaren Text und WCAG-Kontrast
-  - Nicht messbar und deshalb kein Befund: Text auf Bild-, Video- oder
-    Verlaufsflächen — auch dann, wenn die Fläche als absolut positioniertes
-    Geschwister über dem Text liegt statt in seiner Elternkette (Karten mit
-    Bild und Lesbarkeits-Verlauf). Solche Stellen zählen als
-    `unverifiable_background`; vorher ergaben sie Phantombefunde mit einem
-    Verhältnis nahe 1,0.
-- Console- und Same-Origin-Netzwerkfehler
-- den unveränderbaren Rechtsfooter und alle festen Ziele
-- Sichtbarkeit, Pointer-Bedienbarkeit und Mittelpunkt-Hit-Test aller Pflichtlinks
-- Vereinsverantwortlichkeit auf der Impressum-Seite
-- erfolgreich geladene Legal-Daten und mindestens eine öffentliche Kontaktangabe
-
-Exit-Codes:
-
-| Code | Bedeutung |
-|---|---|
-| 0 | vollständig geprüft, keine behebbaren Findings |
-| 2 | Prüfung unvollständig, etwa Browser-/HTTP-/Navigationsfehler |
-| 4 | vollständig geprüft, aber behebbarer Qualitäts- oder Rechtsseitenfehler |
-
-Screenshots und JSON-Bericht müssen dem Nutzer gezeigt werden. Ein Exit 0 ersetzt
-nicht die menschliche Designfreigabe.
-
-## 8. Anwenden
-
-Erst nach der Freigabe. Vorher den Live-Stand sichern — `--clear` ersetzt alles:
-
-```bash
-comvenio homepage show --public --json > sicherung-home.json
-comvenio club info --json > sicherung-club.json
-
-comvenio club design --file design-settings.json --dry-run --json   # Warnungen lesen!
-comvenio club design --file design-settings.json --json
-comvenio homepage apply --file home.json --clear --json
-comvenio homepage show --public --json
-comvenio verify homepage --audit --json
-```
-
-**`club design` führt zusammen, es ersetzt nicht.** Jeder Schlüssel, der live
-gesetzt ist und in der Datei fehlt, bleibt erhalten — und die Vorschau zeigt ihn
-nicht, weil sie nur die Datei rendert. Das CLI nennt diese Schlüssel auf stderr
-(„Diese Live-Schlüssel bleiben erhalten …“) und warnt ausdrücklich, wenn ein alter
-`custom_template_config.landing: true` überlebt: Dann zeigt die Live-Seite **keine
-Kopfzeile und keine Navigation**, obwohl die Vorschau richtig aussah. Für eine
-normale Website deshalb `"landing": false` immer ausdrücklich in die Datei schreiben.
-
-Nach dem Apply die Live-Seite im Bild prüfen (Kopfzeile, Navigation, Hero,
-mobil). Wer die Seite vorher im Browser offen hatte, sieht nach einem
-Plattform-Deploy mitunter einen alten App-Stand — `Strg+Umschalt+R` lädt neu.
-
-Der Agent dokumentiert, welche Revision angewendet wurde. Bei einem Fehler wird
-nicht mit direkten API-Aufrufen „nachgebessert“; stattdessen wird das CLI erweitert
-oder die deklarative Datei korrigiert.
-
-## 9. Qualitätscheckliste
-
-### Verwaltete Organe, Serientermine und Lauftext
-
-Das `team`-Widget kann mit `group_id` an ein Vereinsorgan gebunden werden.
-`show_avatar` steuert die öffentlichen Comvenio-Avatare einschließlich der
-Platzhalter. Namen und Positionstexte stammen aus den aktuellen Vereinsdaten;
-Default-Positionen werden serverseitig ausgeschlossen. Ein gespeichertes Organ-Widget
-auf einer öffentlichen, aktiven Seite gibt genau dieses Organ frei — auch als
-`data-widget-slot` in `custom_html`. Ein separater Freigabeschalter ist nicht nötig.
-Private Seiten, versteckte Sections und gelöschte Widgets geben nichts frei.
-Nach Entfernen aller öffentlichen Widgets endet der Zugriff. Vorschauen sind
-separat an ihren gültigen, zeitlich begrenzten Link gebunden (`preview_id`);
-sie schalten den Live-Endpunkt nicht frei. Der Avatar-Schalter begrenzt auch die
-öffentliche Datenprojektion. Bereits geladene Daten/Avatar-URLs können bis zum
-nächsten Abruf beziehungsweise URL-Ablauf sichtbar bleiben.
-
-Die Organansicht ist positionsbezogen: Auch unbesetzte, nicht-default Positionen
-erscheinen mit Positionsbeschreibung, leerem Avatarplatz und „Nicht besetzt“.
-Eine nicht verfügbare Datenquelle wird nicht als unbesetzte Position interpretiert.
-
-Reihenfolge und Hervorhebung der Ämter (seit 2026-09-19):
-
-- `position_order`: Ämter-IDs von oben nach unten, zum Beispiel
-  `["<id 1. Vorstand>", "<id 2. Vorstand>"]`. Nicht genannte Ämter folgen in
-  der Reihenfolge des Organs; unbekannte IDs werden ignoriert.
-- `highlighted_position_ids`: Ämter, deren Karten einen Rahmen in der
-  Vereinsfarbe bekommen (Raster, Karussell und Spotlight-Bühne).
-
-Die Ämter-IDs liefert `comvenio club position-list --json` (Feld `group_id`
-ordnet sie dem Organ zu) oder `club public-organ <group-id>`. Im Konfigurator
-stellt der Verein beides unter der Organ-Auswahl ein.
-
-Für das `image`-Widget bindet `source=club_logo` das aktuelle Vereinslogo;
-es hat Vorrang vor einer hinterlegten Datei oder URL. Änderungen am Vereinslogo
-werden beim nächsten Abruf übernommen. Der Editor bietet dieselbe Quellenauswahl.
-
-`events_list.time_scope` unterscheidet `past` (abgeschlossene Veranstaltungen,
-zuletzt beendet zuerst), `upcoming` (nächste Veranstaltungen) und `all`.
-Rückblick und Ausschau können als zwei Widgets gestaltet werden. Der öffentliche
-Rückblick wird bereits vor dem serverseitigen Limit nach Abschlussdatum sortiert.
-
-`event_highlight` kann über `series_id` die nächste veröffentlichte Veranstaltung
-einer bestimmten Serie anzeigen. Die Datumsformate `weekday-time` und `time`
-eignen sich für Vereinsabende. Angezeigt werden echte materialisierte Termine,
-keine aus einem Text angenommene Wiederholung.
-
-Beim Lauftext steuert `speed_px_per_second` die Geschwindigkeit (10–150).
-Die Einstellung ist im Widget-Editor verfügbar; die Geschwindigkeit bleibt
-auch bei unterschiedlich langen Inhalten konstant. Beispielsweise entspricht
-55 einer mittleren Geschwindigkeit.
-
-### Abnahme
-
-Vor Übergabe prüfen:
-
-- Homepage ist kein One-Pager, wenn der Nutzer mehrere Seiten verlangt.
-- Navigation, News, Veranstaltungen und Buttons öffnen echte Ziele.
-- Bilder verwenden stabile Comvenio-Datei-IDs bzw. öffentliche Datei-URLs.
-- Vereinsfarben, Kontrast und responsive Layouts sind geprüft.
-- Partnersponsoren zeigen Logo und sichere Website-Verlinkung.
-- Keine technischen Erklärtexte stehen sichtbar in der Homepage.
-- Kein Pflicht-Rechtsinhalt ist als konfigurierbares Widget modelliert.
-- Impressum, Datenschutz, AGB und Powered-by sind in Preview und Live vorhanden.
-- Preview-URL, Screenshots und Verifier-Bericht wurden gezeigt.
-- Apply erfolgte erst nach ausdrücklicher Freigabe.
-
-## 10. Qualitätsrezept: Homepages auf Referenzniveau
-
-Dieses Rezept beschreibt die Bauform der Referenz-Homepages (erstmals umgesetzt
-im September 2026 für einen Schützenverein). Wer es einhält, erreicht dieselbe
-Qualität, ohne Quelltext der Plattform zu sehen. Alle Namen unten sind Beispiele.
-
-### 10.1 Bauform: Gerüst und benannte Slots
-
-Seit dem Homepage-Designer (Lastenheft `homepage-generator/17-designer-struktur`)
-gilt: **Das HTML ist nur Gerüst, jeder Inhalt ist ein benannter Slot.** Nur so
-zeigt der Designer die Seite als Baum und ein Mensch kann jede Überschrift, jeden
-Absatz und jeden Knopf im Formular ändern.
-
-- **Je Tab genau eine Section `full` mit genau einem `custom_html`-Widget — dem
-  Gerüst.** Es trägt nur Layout: Elemente, Klassen, und je Bereich ein
-  `aria-label` (`<section aria-label="Startbild">`). Bereiche mit Namen werden im
-  Designer zu Baumknoten; Container ohne Namen bleiben unsichtbar.
-- **Jeder Inhalt ist ein benannter Slot** (`data-slot="<name>"`, Inhalt in
-  `config.slots`) — auch Überschrift, Text und Knopf:
-  - `heading` (`text`, `\n` für Zeilenumbruch), `text` (`content`: einfaches
-    HTML mit strong, em, a, br, p, Listen), `link` (`label`, `href`, `new_tab`);
-  - Live-Daten wie bisher als Slot ihrer Art: `ticker`, `news`, `events_list`,
-    `event_highlight` mit `layout: "date"`, `team`, `image_gallery`, `files`,
-    `image`, `background_video`, `contact_form`.
-- **Ein Grundbaustein-Slot ist das Element selbst**, keine Hülle:
-  `<h2 class="jaga-title" data-slot="verein-titel"></h2>`. Die Ebene (h1–h6)
-  gehört zum Gerüst. Ein `link`-Slot ist ein `a`-Element. Live-Widgets stehen in
-  einem `div`.
-- **Bilder gibt es in zwei Formen.** Ein `image`-Slot **auf einem `img`**
-  (`<img class="sv-photo" loading="lazy" data-slot="jugend-bild">`) füllt nur
-  `src` aus `config.url` und `alt` aus `config.alt` (leer bleibt leer); Klasse,
-  `style`, `loading` und Maße bleiben im Gerüst, und der Designer lässt ihn nicht
-  aus dem Gerüst ziehen. Ein `image`-Slot auf einem `div` ist das volle
-  Bild-Widget mit eigener Box. Zulässige Adressen: `https://…`, `/pfad`, `blob:`,
-  `data:image/…;base64`; `http` wird zu `https` angehoben (`http://localhost`
-  bleibt), alles andere zeigt kein Bild. `convert` meldet solche Bilder als offene
-  Stelle, ebenso ein `img` ohne `src` oder in einem Link.
-- **Namen** `^[a-z0-9][a-z0-9-]{0,62}$`, **je Reiter eindeutig** über alle
-  Gerüste. Die Adresse `<reiter-slug>/<slot>` nutzen Designer und CLI gleich:
-  `comvenio homepage slot get start/hero-titel`,
-  `comvenio homepage slot set start/hero-titel --file entry.json`.
-- **Stile, die ein Mensch umschalten soll, als Katalog anmelden**
-  (`design_settings.styles`, `comvenio club design --file`). Katalogklassen stehen
-  dann **nicht im Gerüst**, sondern als `style` im Slot; am Element bleiben nur
-  Grundklassen. Wiederkehrende Bereiche als Vorlage anmelden
-  (`design_settings.area_templates`).
-- **Theme-Farben und Spalten lesen, damit der Designer sie ändern kann**
-  (Lastenheft 17-designer-struktur 09). Farben im CSS über die Tokens:
-  `--green: var(--tok-primary)` statt fester Werte, die Palette in
-  `design_settings.tokens` mit denselben Werten. Ein Raster, dessen Spaltenzahl
-  ein Mensch umschalten soll, trägt `data-spalten="<1–4>"` mit dem heutigen Wert,
-  und sein CSS liest ihn: `grid-template-columns: repeat(var(--spalten, 3),
-  minmax(0, 1fr))`. Auf schmaleren Stufen begrenzen, ohne `min()` in `repeat()`:
-  die Stufe behält ihre feste Spaltenzahl, und nur kleinere Werte fallen darunter
-  (`.raster[data-spalten="1"]{grid-template-columns:1fr}`).
-  Andere Werte entfernt der Dienst; `verify` meldet sie als `invalid_spalten`.
-- **Elemente nebeneinander stellen: die Reihe** (Lastenheft 17-designer-struktur 10).
-  `<div data-reihe data-spalten="2" data-breiten="65 35">` mit genau so vielen
-  Kindern wie Spalten ist ein Plattform-Baustein, den die CLI selbst schreiben
-  darf. Die Plattform stellt die Kinder ab 640 px nebeneinander, darunter
-  untereinander; das Vereins-CSS muss die Reihe nicht kennen. `data-breiten` sind
-  2–4 ganze Prozentwerte in 5er-Schritten, jeder mindestens 20, Summe 100, und
-  genau so viele wie `data-spalten` — sonst entfernt der Dienst das Attribut
-  (gleich breit), und `verify`, `slot set` und `geruest set --dry-run` melden
-  `invalid_breiten`. Keine Reihe in einer Reihe; ein Inline-Stil an der Reihe
-  mit `display`, `grid*` oder `all` wird entfernt. `homepage tree` zeigt sie als
-  „Reihe · 2 Spalten · 65/35“.
-- **Reihe als Sektion:** Eine Sektion mit mehrspaltigem `layout` und höchstens so
-  vielen Widgets wie Spalten ist eine Reihe. Ihre Breiten stehen in
-  `spalten_breiten` (gleiche Form wie `data-breiten`, etwa `[65, 35]`) und wirken
-  nur, wenn die Anzahl zur Spaltenzahl des Layouts passt; sonst bleiben sie
-  gespeichert, und das Layout gilt wie ohne Breiten. `homepage export` und
-  `apply` tragen das Feld mit.
-- **Eine bestehende Seite nachrüsten, ohne sie neu anzulegen:** nur das Gerüst
-  eines Widgets tauschen, Slots bleiben —
-  `comvenio homepage geruest set <reiter> --widget <id> --file geruest.html --dry-run`,
-  dann ohne `--dry-run`. Die Widget-ID liefert `homepage slot get <reiter>/<slot> --json`
-  (`widget_id`) für einen Slot im Gerüst, oder `homepage tree --json` (zweites
-  Pfadglied). `homepage export` trägt keine IDs. Der Befehl prüft R1–R6 vor dem
-  Schreiben; die Version prüft der Dienst unter der Reitersperre und nimmt die
-  Slots aus dem gespeicherten Stand — ein inzwischen geänderter Slot ergibt
-  Exit 4 (`widget_changed`), nie ein Überschreiben. `--expected-version` legt
-  die erwartete Version fest. BOM und Windows-Zeilenenden der Datei werden
-  vereinheitlicht. `apply --clear` dagegen legt alle Reiter, Sektionen und
-  Widgets mit neuen IDs neu an.
-- **Regeln R1–R6** (`comvenio schema homepage` → `slots_contract`): kein fester
-  Text und kein Link/Bild im Gerüst außerhalb von Slots, jeder Slot benannt mit
-  genau einem Eintrag, Bereiche mit `aria-label`, bekannte Stile, genau eine `h1`
-  je Reiter. Der club-service lehnt Fehler im neuen Format mit
-  `422 skeleton_rules` ab — auf jedem Schreibweg.
-- **Vor `apply`:** `comvenio verify homepage --file home.json` meldet R1–R6 vor dem
-  Browserlauf; Fehler beenden den Lauf mit Exit 4.
-- Keine erfundenen Termine, Namen, Zahlen oder Kontaktdaten. Fehlt eine
-  Information, bleibt der Slot mit einem ehrlichen Platzhalter („Vereinsfoto
-  folgt“), nicht mit einem Fantasiewert.
-- Navigation zwischen Tabs als `link`-Slot mit `href: "?tab=<slug>"`.
-
-**Altformat erkennen.** `comvenio homepage tree` nennt je Reiter das Format in
-einer Zeile — `Format: neu (Gerüst mit benannten Slots)` oder
-`Format: alt — 1 Gerüst, 42 Stellen … Umstellen: comvenio homepage convert --tab <slug> --out home.json`.
-`verify homepage` fasst ein Altformat-Gerüst zu **einem** Befund `legacy_format`
-(Warnung) zusammen statt jeden R1–R6-Treffer einzeln zu melden, und der Designer
-zeigt dasselbe („Gerüst im alten Format · n Stellen“ mit Hilfe-Link). Die Treffer
-sind im Altformat keine Fehler und blockieren nichts; behebbar sind sie nur durch
-die Umstellung. Erklärung für Vereine: https://www.comvenio.app/hilfe/website.
-
-**Bestehende Seiten im Altformat** (`data-widget-slot`, fester Text im HTML)
-bleiben lesbar, der Designer bearbeitet dort aber nur die Slot-Inhalte. Umstellen:
-`comvenio homepage convert --out home.json [--styles styles.json]` → offene
-Stellen aus dem Bericht von Hand lösen → `homepage preview --file home.json` →
-Bildvergleich gegen die Live-Seite → `homepage apply` erst nach Freigabe.
-
-Altformat zum Vergleich (nicht mehr für neue Seiten):
-`<div data-widget-slot="news" data-widget-config="{&quot;limit&quot;:3}"></div>`
-
-### 10.2 Design-Datei vollständig schreiben
+Vollständige Design-Datei:
 
 ```json
 {
@@ -580,71 +405,81 @@ Altformat zum Vergleich (nicht mehr für neue Seiten):
     "landing": false,
     "public_header": { "layout": "brand-left", "surface": "light", "density": "comfortable", "sticky": true }
   },
-  "custom_css": ".sv-page{...}"
+  "custom_css": ".vw-page{...}"
 }
 ```
 
-- `landing: false` immer ausdrücklich (siehe §8).
-- `custom_css` wird auf `.pub-site-root` begrenzt. Eigene Klassen mit einem
-  Vereinspräfix (`.sv-…`) benennen; Farben als CSS-Variablen am Seitenwurzel-Element.
-- Überschriften-Serif plus ruhige Grotesk für Fließtext, großzügige Abstände
-  (Sektionen 80–110 px vertikal), eine Akzentfarbe für Knöpfe und Kicker.
+Eigenes CSS wirkt nur innerhalb der Seite selbst; eigene Klassen tragen einen
+Vereinspräfix, Farben werden als Variablen am Seitenwurzel-Element gesetzt.
 
-### 10.3 Logo und Wappen
+Termin als Inline-Text im Fließtext:
 
-- Das Vereinslogo in Kopfzeile und überall sonst: `comvenio club logo-upload --file wappen.png`
-  (nicht `data upload` — ein normaler Datei-Upload ersetzt das Logo nicht).
-- Liegt das Logo als EPS/SVG vor: lokal in ein PNG mit transparentem Hintergrund
-  umwandeln, mindestens ~1000 px Kantenlänge (z. B. Ghostscript `pngalpha`).
-- Im Hero ein freigestelltes Wappen als `image`-Slot mit `file_id` und
-  `"card_style": "none"` — sonst liegt ein Karten-Schatten mit runden Ecken als
-  Kasten um das transparente Bild. `source: "club_logo"` nimmt stattdessen das
-  aktuelle Vereinslogo.
+```html
+<span data-widget-slot="event_highlight"
+      data-widget-config='{"event_id":"<event-id>","layout":"date","date_format":"full","date_timezone":"Europe/Berlin"}'></span>
+```
 
-### 10.4 Mobil zuerst prüfen
+Spotlight-Video-Konfiguration (zusätzlich zu Datei/Adresse, Vorschaubild,
+Überlagerung, Endlosschleife und Schlagzeile):
 
-- Für jede Sektion ein Umbruch bei ≤ 900 px und ≤ 600 px; Raster einspaltig,
-  Knöpfe umbrechen statt überlaufen.
-- Hero-Grafiken auf dem Handy nicht per `display:none` wegwerfen. Bewährt:
-  Wappen absolut rechts neben der Schlagzeile, halbtransparent (`opacity ≈ .5`),
-  teils über den Rand hinaus, Text davor mit leichtem `text-shadow`.
-- Kein horizontaler Überlauf bei 390 px.
+| Feld | Bedeutung |
+|---|---|
+| `layout` | `cover` oder `spotlight`, Standard `cover` |
+| `background` | Hintergrund der gebrandeten Fläche hinter der Video-Karte |
+| `accent_color` | Akzentfarbe für hervorgehobene Wörter im Titel |
+| `text_color` | Textfarbe auf der Fläche |
+| `logo_file_id` | Emblem links |
+| `logo_right_file_id` | zweites Emblem oder Sponsor-Logo rechts |
+| `eyebrow` | Kicker-Zeile über dem Titel |
+| `title` | Überschrift, ein markiertes Wort erscheint in `accent_color` |
+| `date_badge` | Pill-Badge, etwa für Datum oder Ort |
+| `claim` | Schlusszeile unter der Video-Karte, Zeilenumbruch möglich |
 
-### 10.5 CSS für Widget-Innenleben
+Eine Reihe mit zwei ungleich breiten Spalten im Gerüst:
 
-Widgets rendern in den Slot hinein; nicht jedes trägt die Klasse `.widget-base`.
-Regeln für Slot-Inhalte über den eigenen Container schreiben
-(`.sv-hero-mark > div { width: … }`) und **vor** dem Schreiben den echten Aufbau
-im Vorschau-Screenshot bzw. mit `comvenio verify url <preview-url>` ansehen. Eine
-Regel, die nie greift, fällt sonst erst im Bild auf.
+```html
+<div data-reihe data-spalten="2" data-breiten="65 35">
+  <div><!-- erster Slot-Inhalt --></div>
+  <div><!-- zweiter Slot-Inhalt --></div>
+</div>
+```
 
-### 10.6 Prüfen wie die Referenz
+Ein Slot einzeln lesen und setzen:
 
-1. `homepage preview --ttl-hours 24` — Link dem Menschen geben.
-2. Bildvergleich an **390, 768, 1024 und 1440 px** (`verify url <preview-url>` bzw.
-   Screenshots aus `verify homepage`): Hero, Kopfzeile, Navigation, Sektionen.
-3. `verify homepage --file … --audit` — Exit 0 anstreben; Kontrastbefunde in
-   eingebetteten Fremdinhalten (Fest-/Event-Embeds, iframes) getrennt benennen.
-4. Nach dem Apply dieselben Breiten live prüfen, einschließlich Kopfzeile.
+```bash
+comvenio homepage slot get start/hero-titel --json
+comvenio homepage slot set start/hero-titel --file entry.json
+```
 
-### 10.7 Datenschutz beim Gestalten
+Nur das Gerüst eines bestehenden Widgets austauschen, Slot-Inhalte bleiben
+erhalten:
 
-- Ein `team`-Widget mit `group_id` auf einer öffentlichen Seite macht die Namen
-  des Organs öffentlich (Freigabe ergibt sich aus dem Widget). Vorher mit dem
-  Verein klären.
-- `contact_form` speichert Anfragen; Löschfrist 30 Tage nach Löschen, 365 Tage
-  nach Eingang.
-- Geburtstage im Lauftext nur nach ausdrücklicher Klärung (Vorname, Tag/Monat).
+```bash
+comvenio homepage geruest set start --widget <widget-id> --file geruest.html --dry-run
+comvenio homepage geruest set start --widget <widget-id> --file geruest.html
+```
 
-## 11. Fehlerbild → Ursache → Abhilfe
+## Befehle und Actions
 
-| Fehlerbild | Ursache | Abhilfe |
-|---|---|---|
-| Live fehlen Kopfzeile und Navigation, Vorschau zeigt sie | alter `landing: true` überlebt das Zusammenführen | `"landing": false` in die Design-Datei, erneut `club design --file` |
-| Dunkler Kasten/Schatten um ein freigestelltes Logo | Bild-Widget zeichnet eine Karte | `"card_style": "none"` am `image`-Slot |
-| Hochformatiges Wappen in der runden Kopfzeile beschnitten | ältere Plattformversion | aktuelle Web-App; Logo quadratisch oder transparent hochladen |
-| „Kein Bild konfiguriert“ nur bei einer Person | alter App-Stand im Browser-Cache | `Strg+Umschalt+R` |
-| Hochgeladene Dateien fehlen im DataShare | Upload ohne Abteilung (vor Sept. 2026) | aktuelle Plattform setzt die Standard-Abteilung; Altbestand per Nachtrag |
-| Eigene CSS-Breite greift nicht | Selektor zielt auf eine Klasse, die der Slot nicht trägt | Slot-Container ansprechen (`.x > div`), DOM vorher ansehen |
-| Verifier Exit 4 nur auf einer Event-Seite | Kontrast im eingebetteten Event-Hub | getrennt melden; nicht mit Homepage-CSS „reparieren“ |
-| Organ zeigt viele „Nicht besetzt“ | Positionen im Verein ohne Zuordnung | Vereinsdaten pflegen, nicht im HTML überdecken |
+<!-- gen:docs befehle -->
+
+**homepage** — vollständig
+
+- `comvenio homepage preview`
+- `comvenio homepage apply`
+- `comvenio homepage show`
+- Felder und Werte: `comvenio schema homepage --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Schreib-Scope für
+  Design oder Veröffentlichung. `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — die Anmeldung reicht, aber die Vereinsrolle erlaubt
+  Design oder Veröffentlichung nicht. `comvenio help fehler PERMISSION_DENIED`.
+- `VALIDATION_FAILED` — die Struktur- oder Design-Datei passt nicht zum
+  Schema, etwa ein fehlendes oder falsch formatiertes Feld.
+  `comvenio help fehler VALIDATION_FAILED`.
+- `CONFLICT` — ein Gerüst oder Widget wurde zwischen Lesen und Schreiben
+  bereits geändert; aktuellen Stand erneut lesen und neu entscheiden.
+  `comvenio help fehler CONFLICT`.

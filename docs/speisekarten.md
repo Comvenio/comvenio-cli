@@ -1,231 +1,99 @@
-# Speisekarten, Gerichte & Getränke — CLI-Referenz (supply-service)
-
-> Praktischer Leitfaden für das Anlegen von **Gerichten/Getränken (Rezepte)**, **Speisekarten** und
-> deren **Design** über das `comvenio`-CLI — deterministisch, ohne ai-service-LLM. Du (der bedienende
-> Agent) bist der **KI-Träger**: du komponierst Inhalt + Struktur selbst, das CLI persistiert 1:1 über
-> die supply-CRUD-Endpoints.
->
-> Verifiziert am Code (`Backend/Microservice-Backend/supply-service/`, Stand 2026-06-24). Code = Wahrheit.
-
+---
+id: speisekarten
+kategorie: thema
+domaenen: [recipe, ingredient, ingredient-category, shopping, template, menu]
+stichwoerter: [speisekarte, menü, rezept, zutat, allergen, vorlage, einkaufsliste, gericht, getränk, kategorie]
 ---
 
-## 1. Das mentale Modell (so hängt alles zusammen)
+# Speisekarten
 
-```
-Allergen (global, 14 EU-Allergene)        Colorant (global, E-Nummern)
-        ▲ M:N                                     ▲ M:N
-        │                                         │
-     Ingredient (Zutat, club-spezifisch) ─────────┘
-        ▲ trägt die Allergene/Farbstoffe
-        │ (1:N RecipeIngredient: Menge + Einheit)
-        │
-     Recipe (Gericht/Getränk) ── default_selling_price, category, type_of_recipe
-        │   ⚠ HAT KEINE eigenen Allergene — sie werden TRANSITIV abgeleitet:
-        │      Recipe → RecipeIngredient → Ingredient → Allergen
-        │ (1:N)
-        │
-     MenuItem (Eintrag auf EINER Karte) ── name + selling_price (Override pro Karte), display_order
-        │      price_options = benannte Ausgaben desselben Produkts (z.B. 0,2 l / Flasche)
-        │      recipe_id ist OPTIONAL — aber ohne Recipe: keine Allergene, keine Kategorie,
-        │      fehlt sogar in der öffentlichen QR-Item-Liste (INNER JOIN auf Recipe)
-        │ (N:1)
-        │
-     Menu (Speisekarte) ── name, category, design_config (JSONB: enthält custom_css)
-```
+## Wozu
 
-**Die drei Kernsätze:**
+Mit `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template` und `menu` legst du Gerichte und Getränke deines Vereins als Rezepte an, gruppierst sie zu Speisekarten mit eigenem Namen, Preis und Design und leitest bei Bedarf Einkaufslisten daraus ab — inklusive korrekter Allergenkennzeichnung.
 
-1. **Eine Speise ist ein Rezept, kein Karten-Eintrag.** Ein `MenuItem` ohne `recipe_id` ist nur ein
-   Name+Preis-Etikett — ohne Allergene, ohne Kategorie, unsichtbar in der QR-Item-Liste. Für eine echte
-   (rechtssichere) Karte braucht **jeder** Eintrag ein Rezept.
-2. **Allergene leben an der Zutat, nicht am Rezept.** Das Rezept erbt sie transitiv über seine Zutaten.
-   Korrekte Allergene bekommst du, indem die Zutaten gegen die **Vorlagen** matchen (die tragen die
-   Allergene) — siehe §3.
-3. **Das Rezept ist die Wahrheit, der Karten-Eintrag die Darstellung.** Dasselbe Rezept (z.B. „Steaksemmel")
-   kann auf mehreren Karten mit **unterschiedlichem Namen + Preis** erscheinen. Rezept einmal anlegen,
-   pro Karte einen `MenuItem` mit eigenem Label + Preis setzen (`--name`/`--price` überschreiben).
-4. **Mehrere Gebinde sind Preisvarianten, keine doppelten Einträge.** Ein Wein mit Glas- und Flaschenpreis
-   bleibt ein `MenuItem`. Die Ausgaben stehen strukturiert in `price_options`, damit Online-Karte,
-   Vorschau und Druckansicht sie gemeinsam unter demselben Wein darstellen.
+## Voraussetzungen und Rechte
 
----
+> **Anmeldung:** Die Befehle dieses Artikels sind klassische Befehle. Sie laufen mit einer
+> Anmeldung per Geräte-Token (`comvenio login --device-token <token>`). Mit der Browser-Anmeldung
+> allein meldet das CLI `OAUTH_ONLY`; derselbe Zweck ist dann über die freigegebenen Actions
+> erreichbar: `comvenio action list` zeigt sie, `comvenio help fehler OAUTH_ONLY` erklärt den Weg.
 
-## 2. Befehlsübersicht
+Anmeldung über `comvenio login`; ohne `--scopes` fordert sie alle Scopes an, `--scopes` schränkt sie ein. Zusätzlich prüft Comvenio serverseitig deine Rolle im Verein.
 
-| Befehl | Zweck |
-|--------|-------|
-| `comvenio template dish [--search\|--category\|--common]` | Globale **Gericht-Vorlagen** durchsuchen (100+, mit Rezept + Allergenen) |
-| `comvenio template ingredient [--search\|--common]` | Globale **Zutaten-Vorlagen** durchsuchen (380+, mit `allergen_types`) |
-| `comvenio recipe from-template <id> [--price] [--name]` | Rezept aus einer **Dish-Vorlage** instanziieren (Allergene inklusive, idempotent) |
-| `comvenio recipe create --name --type --price [--ingredients]` | **Ad-hoc-Rezept** (für Speisen ohne passende Vorlage); fehlende Zutaten werden auto-angelegt |
-| `comvenio recipe list\|show\|update\|delete` | Rezepte verwalten |
-| `comvenio ingredient list\|show\|create\|update\|delete` | Club-Zutaten samt Allergen-/Farbstoff-/Kategorie-IDs verwalten |
-| `comvenio ingredient-category list\|roots\|tree\|…` | Kategorienbaum und Zutaten-Zuordnungen verwalten |
-| `comvenio shopping list\|show\|create\|…` | Einkaufslisten und Positionen verwalten oder aus Rezept/Karte erzeugen |
-| `comvenio menu create --name [--description] [--category]` | Leere **Speisekarte** anlegen |
-| `comvenio menu add-item <menu_id> --recipe <id> [--name] [--price] [--price-options <json>]` | Rezept als Eintrag auf eine Karte setzen; optional mehrere benannte Ausgaben/Preise |
-| `comvenio menu list\|show\|delete` | Karten verwalten |
-| `comvenio menu style <menu_id> --css <datei>` | Freies CSS auf eine Karte (`design_config.custom_css`) |
-| `comvenio menu preview --file <menu.json> [--css <datei>] [--out <ordner>]` | Schreibfreie Daten- und Layoutprüfung mit Online-PNG, HTML und echtem DIN-A4-PDF |
-| `comvenio menu apply --file <menu.json>` | Vom Agenten komponierte Karte + Einträge im Bulk anlegen |
-| `comvenio menu update-item\|delete-item` | Bestehende Karten-Einträge ändern oder entfernen |
-| `comvenio menu export <menu_id> [--out]` | Karte über das echte Frontend als PDF exportieren |
+| Operation | Recht oder Regel |
+|---|---|
+| Gericht- und Zutaten-Vorlagen durchsuchen | Anmeldung genügt |
+| Rezept aus Vorlage instanziieren, Ad-hoc-Rezept anlegen, Karte oder Karten-Eintrag anlegen | `manage_menus`, `create_menus` oder `manage_club_settings` |
+| Rezept, Karte oder Eintrag ändern, löschen oder das Karten-Design setzen | `manage_menus`, `create_menus` oder `manage_club_settings` |
+| Rezepte, Karten, Zutaten, Kategorien und Einkaufslisten lesen | allgemeines Leserecht auf Speisekarten-Daten |
+| Zutaten, Kategorien und Einkaufslisten anlegen, ändern oder löschen | serverseitig geprüftes Verwaltungsrecht |
+| Allergene, Farbstoffe und eine veröffentlichte Karte über den QR-Code lesen | ohne Anmeldung möglich |
 
-Jeder Befehl hat `--help`. `--json` für maschinenlesbare Ausgabe (Agent-Modus).
+Ein fehlendes Recht meldet `403`.
 
-> `menu generate` und `menu design` sind bewusst entfernt und brechen mit einer
-> Erklärung ab. Der bedienende Agent liest Foto/Text selbst, komponiert Rezepte,
-> Einträge und `design_config` und nutzt anschließend `menu apply`, `menu create`,
-> `menu add-item` beziehungsweise `menu style`. Das CLI ruft kein Backend-LLM auf.
+## Abläufe
 
----
+### Das Modell dahinter
 
-## 3. Das Vorlagen-System (Vorlagen ZUERST nutzen)
+- Eine Speise ist ein Rezept, kein Karten-Eintrag: Ein Karten-Eintrag ohne verknüpftes Rezept ist nur ein Name-Preis-Etikett — ohne Allergene, ohne Kategorie und unsichtbar in der öffentlichen Artikel-Liste. Für eine rechtssichere Karte braucht jeder Eintrag ein Rezept.
+- Allergene leben an der Zutat, nicht am Rezept. Das Rezept erbt sie transitiv über seine Zutaten — korrekt wird das, wenn die Zutaten gegen die Vorlagen matchen (siehe unten).
+- Das Rezept ist die Wahrheit, der Karten-Eintrag die Darstellung: Dasselbe Rezept kann auf mehreren Karten mit unterschiedlichem Namen und Preis erscheinen — Rezept einmal anlegen, pro Karte einen Eintrag mit eigenem Label und Preis setzen.
+- Mehrere Gebinde (z. B. Glas und Flasche desselben Getränks) sind Preisvarianten desselben Eintrags, keine doppelten Einträge — sie stehen strukturiert in `price_options`.
+- Das CLI ruft für Rezepte und Karten kein eigenes Sprachmodell auf: Du (als Mensch oder Agent) komponierst Inhalt und Struktur selbst, das CLI speichert sie unverändert. Die früheren Befehle `menu generate` und `menu design` sind deshalb bewusst entfernt; sie brechen mit einer Erklärung ab. Karte und Design entstehen über `menu apply`, `menu create`, `menu add-item` beziehungsweise `menu style`.
 
-Der supply-service liefert **global vorgeseedete Vorlagen** (club-unabhängig):
+### Vorlagen zuerst nutzen
 
-- **GlobalDishTemplate** (100+): fertige Gerichte **mit Rezept** (Zutatenliste + Mengen) + `suggested_price`
-  + `category` + `type_of_recipe`. Beispiele: `Schnitzel Wiener Art mit Kartoffelsalat`, `Bratwurstsemmel`,
-  `Grillteller mit Kartoffelsalat`, `Grillhähnchen halb`, `Currywurst mit Pommes`, `Bier (Helles)`,
-  `Weißbier`, `Radler`, `Wasser (still)`.
-- **GlobalIngredientTemplate** (380+): Basis-Zutaten **mit `allergen_types`** (und `colorant_types`).
-  Beispiele: `Brötchen (Semmel)`→gluten, `Laugenbreze`→gluten, `Bier (Helles)`→gluten, `Gouda Käse`→lactose,
-  `Weißwurst`, `Spezi`→Farbstoffe, `Apfelschorle`.
+1. Passende Gericht-Vorlage suchen: `comvenio template dish --search "Schnitzel" --json`.
+2. Rezept daraus instanziieren, Preis optional überschreiben: `comvenio recipe from-template <template-id> --price 12 --json`. Die Antwort enthält `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus.
+3. `from-template` matcht serverseitig auf Verein und Rezeptname — ein zweiter Aufruf mit demselben Namen liefert die bestehende `recipe_id` statt eines Duplikats.
+4. Steht eine Zutat in `missing_ingredients`, hatte sie keinen Vorlagen-Match und wurde ohne Allergen angelegt. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch, …) mit `comvenio template ingredient --search "<name>"` die exakte Vorlagen-Schreibweise prüfen — der Match ist case-insensitiv, aber nicht fuzzy.
 
-**Warum Vorlagen zuerst?** `recipe from-template` instanziiert ein **vollständiges** Rezept (Zutaten + Preis +
-Kategorie) und **erbt die Allergene automatisch** — die auto-angelegten Zutaten ziehen ihre Allergene aus den
-Zutaten-Vorlagen. Du musst keine Zutaten/Allergene von Hand zusammenstellen.
+### Ad-hoc-Rezept anlegen (wenn keine Vorlage passt)
 
-```bash
-# 1) Passende Vorlage finden
-comvenio template dish --search "Schnitzel" --json
-#  → "Schnitzel Wiener Art mit Kartoffelsalat"  91bfad18-…  (9.00 € Default)
+1. Rezept mit Zutaten anlegen: `comvenio recipe create --name "Brezn" --type food --price 3.00 --category "Snacks" --ingredients "Laugenbreze:1:pc" --json`. Format von `--ingredients`: `"Name:Menge:Einheit,Name2:Menge2:Einheit2"`.
+2. Zutaten-Vorlagen-Namen exakt treffen, damit die Allergene mit erben — vorher mit `comvenio template ingredient --search "<name>"` die Schreibweise prüfen.
+3. Fehlende Zutaten werden beim Anlegen automatisch erzeugt.
 
-# 2) Rezept daraus instanziieren, Preis überschreiben
-comvenio recipe from-template 91bfad18-99cf-4f2f-bdad-956d36d10eaf --price 12 --json
-#  → { recipe_id, recipe_name, created_ingredients[], missing_ingredients[] }
-```
+### Karte bauen: erst prüfen, dann anlegen
 
-**Idempotenz:** `from-template` matcht serverseitig auf `(club_id, recipe_name)`. Ein zweiter Aufruf mit
-gleichem Namen liefert die bestehende `recipe_id` statt ein Duplikat anzulegen. Die Antwort enthält
-`recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus; ein
-`already_exists`-Feld gehört nicht zum aktuellen Vertrag.
+1. Karte und Einträge als Datei komponieren (siehe Beispiele).
+2. Schreibfrei prüfen: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. Das prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen, lädt dabei auch die verknüpften Rezeptdaten zu Kategorie, Beschreibung, Altersfreigabe, Allergenen und Farbstoffen und erzeugt lokal einen Datenbericht, eine responsive HTML-/PNG-Ansicht und ein DIN-A4-PDF, ohne etwas zu schreiben.
+3. Ein `valid: false` ist ein bewusst sichtbares Review-Ergebnis; die Artefakte entstehen trotzdem, damit der Fehler im Zusammenhang beurteilt werden kann.
+4. Erst danach anlegen: `comvenio menu apply --file menu.json --json` (legt Karte und Einträge im Bulk an).
 
-**`missing_ingredients`** im Ergebnis = Zutaten, die kein Vorlagen-Match hatten und als nackte Zutat (ohne
-Allergen) angelegt wurden. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch …) prüfen, ob der
-Zutatenname exakt zu einer Vorlage passt (Match ist case-insensitiv, aber **kein** Fuzzy).
+### Karte direkt zusammenstellen und Rezepte wiederverwenden
 
----
+1. Karte anlegen: `comvenio menu create --name "Grillbude – Dorfabend" --category "Fest" --json`.
+2. Rezept einmal anlegen oder aus Vorlage instanziieren, danach auf beliebig vielen Karten referenzieren: `comvenio menu add-item <menu-id> --recipe <recipe-id> --name "Helles Bier" --price 4.50 --json`. Name und Preis sind pro Karte überschreibbar; das Rezept (inklusive Allergene) bleibt die einzige Quelle.
+3. Bestehenden Eintrag über seine Eintrags-ID ändern statt neu anzulegen: `comvenio menu update-item <menu-item-id> --name "..." --price-options '[...]' --json`. Das erhält die Identität des Eintrags und legt weder einen zweiten Eintrag noch ein neues Rezept an.
+4. Ein Produkt mit mehreren Ausgaben (z. B. Glas/Flasche) bleibt ein Eintrag mit mehreren `price_options`, kein zweiter Eintrag.
+5. Nicht pro Karte ein neues Rezept für dasselbe Gericht anlegen — das erzeugt Duplikate.
 
-## 4. Ad-hoc-Rezepte (wenn keine Vorlage passt)
+### Club-Zutaten und Kategorien pflegen
 
-Nicht jede Speise hat eine Dish-Vorlage (z.B. Brezn, Weißwurst, Steckerlfisch, Gemüselasagne, Spezi, Limo).
-Dann ein Rezept **direkt** anlegen — und die **Zutaten-Vorlagen-Namen exakt treffen**, damit die Allergene
-trotzdem erben:
+1. Zutat anlegen: `comvenio ingredient create --file ingredient.json --json` (Pflichtfelder: `name`, `unit`).
+2. Zutaten suchen und lesen: `comvenio ingredient list --search "Kartoffel" --category <category-id> --json`, `comvenio ingredient show <ingredient-id> --json`. `--category` schließt Unterkategorien ein; `--skip` und `--limit` (1–1000) steuern die Liste.
+3. Kategorienbaum lesen und zuordnen: `comvenio ingredient-category tree --json`, `comvenio ingredient-category assign <ingredient-id> --category <category-id> --json`.
+4. Eigene Kategorie anlegen: `comvenio ingredient-category create --file category.json --json` (Pflichtfelder: `name`, `category_type`; optional unter anderem `description`, `parent_id`, `icon`, `color` und `sort_order`). `comvenio ingredient-category init --json` legt Standardkategorien an und ist nur für Vereine ohne vorhandene gedacht — sonst antwortet er mit einem Konflikt.
 
-```bash
-# Große Brezn — Zutat "Laugenbreze" matcht die Vorlage (→ gluten erbt automatisch)
-comvenio recipe create --name "Brezn" --type food --price 3.00 \
-  --category "Snacks" --ingredients "Laugenbreze:1:pc" --json
+### Einkaufslisten führen
 
-# Kaas — Zutat "Gouda Käse" matcht die Vorlage (→ lactose erbt)
-comvenio recipe create --name "Käse" --type food --price 3.40 \
-  --category "Snacks" --ingredients "Gouda Käse:0.1:kg" --json
+1. Liste anlegen: `comvenio shopping create --file shopping-list.json --json` mit `context_type` (`club`, `event`, `object`, `meeting`) und Status `draft`, `active`, `completed` oder `cancelled`.
+2. Position hinzufügen: `comvenio shopping item-add <list-id> --file item.json --json`. Eine Position braucht `quantity`, `unit` und entweder `ingredient_id` oder einen nicht leeren `name`.
+3. Als erledigt markieren: `comvenio shopping purchased <item-id> --purchased true --json`.
+4. Deterministisch aus vorhandenen Daten erzeugen: `comvenio shopping generate-from-recipe <recipe-id> --portions 80 --name "Einkauf Grillteller" --json` oder `comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json`.
 
-# Spezi — Getränk, Zutat "Spezi" matcht die Vorlage
-comvenio recipe create --name "Spezi" --type drink --price 4.00 \
-  --category "Getränke" --ingredients "Spezi:0.5:l" --json
-```
+### Karte stylen
 
-`--ingredients` Format: `"Name:Menge:Einheit,Name2:Menge2:Einheit2"`. Fehlende Zutaten werden
-auto-angelegt (`auto_create_missing_ingredients`). **Tipp:** vorher `comvenio template ingredient --search "<name>"`
-laufen lassen, um die exakte Vorlagen-Schreibweise (und die Allergene) zu sehen.
+1. Freies CSS setzen: `comvenio menu style <menu_id> --css ./meine-karte.css`.
+2. Das CSS wird im Frontend isoliert in den Karten-Container injiziert (kein Ausbruch aus dem Container) und targetet semantische Klassen wie `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`, `.menu-item-name`, `.menu-item-price`, `.menu-qr`.
+3. Allergene, Preise und der QR-Code bleiben strukturierte Pflicht-Komponenten — das CSS stylt nur ihr Aussehen.
+4. `style` liest den aktuellen Stand, merged dein CSS hinein und schreibt zurück; andere Design-Einstellungen der Karte bleiben erhalten.
+5. Der Inhalt des CSS wird nicht inhaltlich geprüft — für gültiges, wirksames CSS bist du selbst verantwortlich.
 
-> Hinweis: `recipe create` nutzt den `from-ai-dish`-Endpoint — „ai" steht hier für **du als KI-Träger**, NICHT
-> für einen ai-service-LLM-Call. Es ist ein reiner, deterministischer Persist-Endpoint.
+## Beispiele
 
----
-
-## 5. Karte bauen + Wiederverwendung
-
-### Erst prüfen, dann anlegen
-
-Der Standardweg entspricht Homepage und News: `preview` läuft vor `apply`. Die Vorschau
-legt weder eine Karte noch MenuItems an. Sie prüft Pflichtfelder, Preise,
-`display_order`, alle `recipe_id`-Verknüpfungen und lädt die zugehörigen Rezeptdaten für
-Kategorie, Beschreibung, Altersangabe, Allergene und Farbstoffe. Anschließend entstehen
-lokal vier prüfbare Artefakte: Datenbericht, responsive HTML-/PNG-Ansicht und DIN-A4-PDF.
-
-```bash
-comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json
-# Daten + Online- und A4-Ansicht prüfen; erst danach:
-comvenio menu apply --file menu.json --json
-```
-
-Ein `valid: false` ist ein bewusst sichtbares Review-Ergebnis. Die Artefakte werden
-trotzdem erzeugt, damit Fehler im Zusammenhang beurteilt werden können. `writes_backend`
-bleibt bei `preview` immer `false`.
-
-### Ein Produkt mit mehreren Ausgaben
-
-Glas und Flasche sind keine zwei Weine. Das deklarative Format bildet beide Preise an einem
-Karten-Eintrag ab; `selling_price` bleibt als Grundpreis für ältere Darstellungen erhalten:
-
-```json
-{
-  "recipe_id": "<riesling-recipe-id>",
-  "name": "Riesling Nahe trocken",
-  "selling_price": 4.20,
-  "price_options": [
-    { "label": "0,2 l", "price": 4.20 },
-    { "label": "Flasche", "price": 15.60 }
-  ]
-}
-```
-
-```bash
-comvenio menu add-item <menu-id> --recipe <riesling-recipe-id> \
-  --name "Riesling Nahe trocken" --price 4.20 \
-  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
-```
-
-Ein vorhandener Eintrag wird über seine `MenuItem`-ID geändert. Das erhält seine Identität und
-erzeugt weder einen zweiten Karten-Eintrag noch ein neues Rezept:
-
-```bash
-comvenio menu update-item <menu-item-id> --name "Riesling Nahe trocken" \
-  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
-```
-
-```bash
-# Karte anlegen
-comvenio menu create --name "Grillbude – Dorfabend" --category "Fest" --json
-#  → { id: <menu_id>, ... }
-
-# Rezepte als Einträge setzen — Name + Preis PRO KARTE überschreibbar
-comvenio menu add-item <menu_id> --recipe <steaksemmel_recipe_id> --name "Steaksemmel" --price 4.50 --json
-comvenio menu add-item <menu_id> --recipe <bratwurst_recipe_id>  --name "Bratwurstlsemmel" --price 4.50 --json
-```
-
-**Wiederverwendung (das Kernmuster):** Lege ein Rezept **einmal** an, referenziere es auf **mehreren** Karten.
-Beispiel „Bier (Helles)": das Rezept heißt `Bier (Helles)` (mit gluten), auf der Fest-Schenke-Karte erscheint
-es als Eintrag `Helles Bier` für `4,50 €`:
-
-```bash
-# Rezept existiert/instanziiert einmal:
-comvenio recipe from-template <bier-helles-template-id> --json     # recipe_name "Bier (Helles)"
-# Karten-Eintrag mit eigenem Label + Preis:
-comvenio menu add-item <fest-schenke-id> --recipe <bier-recipe-id> --name "Helles Bier" --price 4.50 --json
-```
-
-So bleibt das Rezept (inkl. Allergene) die Single Source, während jede Karte ihr eigenes Wording + ihren
-eigenen Preis hat. **Nicht** pro Karte ein neues „Steaksemmel"-Rezept anlegen — das wäre Duplikat-Wildwuchs.
-
----
-
-## 6. Club-Zutaten und Kategorien
-
-Zutaten-CRUD verwendet JSON-Dateien. Beim Anlegen sind `name` und `unit` Pflicht:
+Zutat anlegen:
 
 ```json
 {
@@ -242,45 +110,38 @@ Zutaten-CRUD verwendet JSON-Dateien. Beim Anlegen sind `name` und `unit` Pflicht
 
 ```bash
 comvenio ingredient create --file ingredient.json --json
-comvenio ingredient list --search "Kartoffel" --category <category-id> --json
-comvenio ingredient show <ingredient-id> --json
-comvenio ingredient update <ingredient-id> --file ingredient.json --json
-comvenio ingredient delete <ingredient-id> --json
 ```
 
-`--category` schließt Unterkategorien ein. `--skip` und `--limit` steuern die Liste; `--limit` liegt zwischen 1 und 1000.
-
-Kategorien lesen und zuordnen:
-
-```bash
-comvenio ingredient-category roots --type main --json
-comvenio ingredient-category tree --json
-comvenio ingredient-category list --include-inactive --json
-comvenio ingredient-category by-ingredient <ingredient-id> --json
-comvenio ingredient-category assign <ingredient-id> --category <category-id> --json
-comvenio ingredient-category unassign <ingredient-id> --category <category-id> --json
-```
-
-Kategorie-Typen: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`.
-
-Ein Kategorie-Create-Body benötigt `name` und `category_type`; optional sind `description`, `parent_id`, `icon`, `color`, `sort_order` und `is_active`. Das CLI ergänzt `club_id`.
+Kategorie anlegen (Kategorie-Typen: `main`, `food_type`, `meat_type`, `dietary`, `origin`, `custom`):
 
 ```bash
 comvenio ingredient-category create --file category.json --json
 comvenio ingredient-category update <category-id> --file category.json --json
-comvenio ingredient-category delete <category-id> --json       # Soft-Delete
+comvenio ingredient-category delete <category-id> --json       # weiches Löschen
 comvenio ingredient-category delete <category-id> --hard --json
-comvenio ingredient-category init --json
 ```
 
-Der Backend-Vertrag akzeptiert `club_id` im Create-Body. Das CLI setzt den aktiven Club
-automatisch aus `--club` oder dem Login-State.
+Ein Produkt mit mehreren Ausgaben — `selling_price` bleibt als Grundpreis erhalten, `price_options` bildet die einzelnen Ausgaben ab:
 
-`init` ist nur für Clubs ohne vorhandene Standardkategorien gedacht und kann andernfalls mit `409` antworten.
+```json
+{
+  "recipe_id": "<riesling-recipe-id>",
+  "name": "Riesling Nahe trocken",
+  "selling_price": 4.20,
+  "price_options": [
+    {"label": "0,2 l", "price": 4.20},
+    {"label": "Flasche", "price": 15.60}
+  ]
+}
+```
 
-## 7. Einkaufslisten
+```bash
+comvenio menu add-item <menu-id> --recipe <riesling-recipe-id> \
+  --name "Riesling Nahe trocken" --price 4.20 \
+  --price-options '[{"label":"0,2 l","price":4.20},{"label":"Flasche","price":15.60}]' --json
+```
 
-Einkaufslisten haben `context_type` (`club`, `event`, `object`, `meeting`) und Status `draft`, `active`, `completed` oder `cancelled`.
+Einkaufsliste anlegen:
 
 ```json
 {
@@ -293,19 +154,7 @@ Einkaufslisten haben `context_type` (`club`, `event`, `object`, `meeting`) und S
 }
 ```
 
-```bash
-comvenio shopping create --file shopping-list.json --json
-comvenio shopping list --status draft --json
-comvenio shopping active --json
-comvenio shopping completed --json
-comvenio shopping by-context --context-id <event-id> --json
-comvenio shopping by-context-type --context-type event --json
-comvenio shopping show <list-id> --json
-comvenio shopping update <list-id> --file shopping-list.json --json
-comvenio shopping delete <list-id> --json
-```
-
-Eine Position benötigt `quantity`, `unit` und entweder `ingredient_id` oder einen nicht leeren `name`:
+Einkaufsposition:
 
 ```json
 {
@@ -317,145 +166,139 @@ Eine Position benötigt `quantity`, `unit` und entweder `ingredient_id` oder ein
 }
 ```
 
-```bash
-comvenio shopping item-add <list-id> --file item.json --json
-comvenio shopping item-update <item-id> --file item.json --json
-comvenio shopping purchased <item-id> --purchased true --json
-comvenio shopping item-delete <item-id> --json
-```
-
-Deterministische Generierung aus vorhandenen Daten:
+Vollständiges Beispiel — eine Grillbuden-Karte von den Rezepten bis zur fertigen Karte:
 
 ```bash
-comvenio shopping generate-from-recipe <recipe-id> --portions 80 \
-  --name "Einkauf Grillteller" --json
-comvenio shopping generate-from-menu <menu-id> --name "Einkauf Festkarte" --json
-```
+# Rezepte einmalig anlegen (mit Allergenen)
+STEAK=$(comvenio recipe from-template <steaksemmel-template-id> --name "Steaksemmel" --price 4.50 --json | jq -r .recipe_id)
+BRAT=$(comvenio recipe from-template <bratwurstsemmel-template-id> --name "Bratwurstsemmel" --price 4.50 --json | jq -r .recipe_id)
+KAAS=$(comvenio recipe create --name "Käse" --type food --price 3.40 --ingredients "Gouda Käse:0.1:kg" --json | jq -r .id)
 
-`shopping show` nutzt die eigenständige Detailroute `GET /shopping/lists/{id}`. Die
-Club-ID wird serverseitig aus der Liste aufgelöst und anschließend per Supply-RBAC geprüft.
-
----
-
-## 8. Karte stylen (freies CSS)
-
-Das Karten-Design liegt in `Menu.design_config` (JSONB). Das CLI setzt freies, scoped CSS unter dem Key
-`custom_css`:
-
-```bash
-comvenio menu style <menu_id> --css ./meine-karte.css
-```
-
-- Das CSS wird im Frontend **`@scope`-isoliert** in den Karten-Container injiziert (kein Ausbruch).
-- Es targetet semantische Klassen: `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`,
-  `.menu-item-name`, `.menu-item-price`, `.menu-qr` u.a.
-- **Allergene/Preise/QR bleiben strukturierte Komponenten** (Pflicht-Daten, kein freies HTML) — das CSS
-  stylt nur ihr Aussehen.
-- `style` macht **GET → merge → PUT**, d.h. andere `design_config`-Knöpfe bleiben erhalten.
-
----
-
-## 9. Enums (verifiziert am Code — `schemas/core.py`)
-
-| Enum | Werte |
-|------|-------|
-| **UnitType** | `gr`, `kg`, `ml`, `l`, `pc`, `portion`, `tsp`, `tbsp`, `cup`, `pinch` |
-| **TypeOfIngredient** (`type_of_recipe`) | `food`, `drink` |
-| **AgeGroup** | `none`, `teen` (16+), `adult` (18+) |
-| **14 EU-Allergene** (`type`) | `gluten`, `crustaceans`, `eggs`, `fish`, `peanuts`, `soy`, `lactose`, `nuts`, `celery`, `mustard`, `sesame`, `sulfites`, `lupin`, `molluscs` |
-
-> ⚠ Die Einheiten sind `gr`/`pc`/`portion` — **NICHT** `g`/`piece`/`serving` (eine alte AI-doc nannte sie falsch).
-
----
-
-## 10. Gotchas (verifiziert — nicht raten)
-
-- **MenuItem ohne Recipe ist eine Falle.** `recipe_id` ist nullable, aber dann: keine Allergene, keine
-  Kategorie (kommt transitiv vom Recipe), und der Eintrag **fehlt in `GET …/items/public`** (INNER JOIN auf
-  Recipe). Für QR-Karten **immer** ein Recipe hinterlegen.
-- **Preis-Override.** `MenuItem.selling_price` überschreibt `Recipe.default_selling_price` pro Karte. NULL =
-  Rezept-Default. Mehrere Gebinde desselben Produkts gehören in **`price_options`**, nicht in getrennte
-  `MenuItem`s. Sortierfeld heißt **`display_order`** (nicht `sort_order`).
-- **Bearbeiten heißt in-place aktualisieren.** Für bestehende Karten-Einträge immer deren Item-ID an
-  `menu update-item` übergeben. `menu add-item` und `menu apply` legen neue Einträge an.
-- **Single-Item-Route** ist `POST /menu/club/{club_id}/items` (mit `menu_id` im Body), **nicht**
-  `/menus/{id}/items`. Bulk: `POST …/items/bulk` erwartet ein **rohes Array** `List[MenuItemCreate]`.
-- **RBAC ist serverseitig aktiv** (supply-service hat inzwischen RBAC): Mutationen brauchen eine Permission
-  aus `manage_menus` / `create_menus` / `manage_club_settings`. 403 = Token-Recht fehlt.
-  `GET /allergens/` + `GET /colorants/` sind **public** (QR-Speisekarten).
-- **Allergene nur über Zutaten-Namen, die Vorlagen matchen.** Eine frei erfundene Zutat ohne Vorlagen-Match
-  bekommt **kein** Allergen. Match ist case-insensitiv, aber exakt (kein Fuzzy).
-- **`from-template` ist idempotent** (per `(club, recipe_name)`). Gleicher Name → bestehendes Rezept.
-- **`custom_css` ist ein freier JSONB-Key** ohne Backend-Validierung; nur via `PUT …/menus/{id}` (bzw.
-  `menu style`) setzbar — **nicht** beim Create.
-- **Kein QR-Endpoint im Backend.** Die QR-URL/-Grafik erzeugt das Frontend aus den public-Routen.
-
----
-
-## 11. Komplettes Beispiel: eine Grillbude-Karte end-to-end
-
-```bash
-CLUB=9ea9d95a-…        # SV Motzing (aus dem State-File, sonst --club)
-
-# --- Rezepte (einmalig, mit Allergenen) ---
-# aus Vorlagen:
-STEAK=$(comvenio recipe from-template 425b1269-… --name "Steaksemmel"  --price 4.50 --json | jq -r .recipe_id)
-BRAT=$( comvenio recipe from-template 006d6044-… --name "Bratwurstsemmel" --price 4.50 --json | jq -r .recipe_id)
-TELL=$( comvenio recipe from-template 8712a3a6-… --name "Grillteller"   --price 8.50 --json | jq -r .recipe_id)
-HENDL=$(comvenio recipe from-template e9cff170-… --name "Grillhendl"    --price 7.00 --json | jq -r .recipe_id)
-# ad-hoc (keine Dish-Vorlage, aber Zutaten-Vorlagen matchen → Allergene erben):
-KAAS=$( comvenio recipe create --name "Käse" --type food --price 3.40 --ingredients "Gouda Käse:0.1:kg"   --json | jq -r .id)
-BREZ=$( comvenio recipe create --name "Brezn" --type food --price 3.00 --ingredients "Laugenbreze:1:pc"   --json | jq -r .id)
-SEM=$(  comvenio recipe create --name "Semmel" --type food --price 2.00 --ingredients "Brötchen (Semmel):1:pc" --json | jq -r .id)
-
-# --- Karte ---
+# Karte anlegen
 MENU=$(comvenio menu create --name "Grillbude – Sporttag" --category "Fest" --json | jq -r .id)
 
-# --- Einträge (Rezept-Wiederverwendung, Label/Preis pro Karte) ---
-comvenio menu add-item $MENU --recipe $STEAK --name "Steaksemmel"     --price 4.50 --json
-comvenio menu add-item $MENU --recipe $BRAT  --name "Bratwurstsemmel" --price 4.50 --json
-comvenio menu add-item $MENU --recipe $TELL  --name "Grillteller"     --price 8.50 --json
-comvenio menu add-item $MENU --recipe $KAAS  --name "Kaas (100 g)"    --price 3.40 --json
-comvenio menu add-item $MENU --recipe $BREZ  --name "Große Brezn"     --price 3.00 --json
-comvenio menu add-item $MENU --recipe $SEM   --name "Semmel"          --price 2.00 --json
-comvenio menu add-item $MENU --recipe $HENDL --name "½ Grillhendl"    --price 7.00 --json
+# Einträge setzen (Rezept-Wiederverwendung, Label/Preis pro Karte)
+comvenio menu add-item $MENU --recipe $STEAK --name "Steaksemmel" --price 4.50 --json
+comvenio menu add-item $MENU --recipe $BRAT --name "Bratwurstsemmel" --price 4.50 --json
+comvenio menu add-item $MENU --recipe $KAAS --name "Kaas (100 g)" --price 3.40 --json
 
-# --- Optional: stylen ---
-comvenio menu style $MENU --css ./sv-motzing-menu.css
-
-# --- Prüfen ---
+# Optional stylen und prüfen
+comvenio menu style $MENU --css ./festkarte.css
 comvenio menu show $MENU --json
 ```
 
----
+### Enums
 
-## 12. Endpoint-Karte (Gateway `supply` → supply-service)
+| Enum | Werte |
+|---|---|
+| Einheit | `gr`, `kg`, `ml`, `l`, `pc`, `portion`, `tsp`, `tbsp`, `cup`, `pinch` |
+| Rezepttyp | `food`, `drink` |
+| Altersgruppe | `none`, `teen` (16+), `adult` (18+) |
+| Allergene (14 EU-Allergene) | `gluten`, `crustaceans`, `eggs`, `fish`, `peanuts`, `soy`, `lactose`, `nuts`, `celery`, `mustard`, `sesame`, `sulfites`, `lupin`, `molluscs` |
 
-| Aktion | Methode | Pfad | Auth |
-|--------|---------|------|------|
-| Dish-Vorlagen | GET | `/global-dish-templates/?search=&category=&common_only=&limit=` | JWT |
-| Zutaten-Vorlagen | GET | `/global-ingredient-templates/?search=&common_only=&limit=` | JWT |
-| Rezept aus Vorlage | POST | `/global-dish-templates/create-recipe` | `manage_menus`/`create_menus`/`manage_club_settings` |
-| Rezept (ad-hoc) | POST | `/recipe/club/{club_id}/from-ai-dish` | `require_menu_create` |
-| Rezept-Liste/Detail | GET | `/recipe/club/{club_id}/recipes[/{id}]` | `require_supply_read` |
-| Rezept Update/Delete | PUT/DELETE | `/recipe/club/{club_id}/recipes/{id}` | `require_menu_manage` |
-| Zutaten-Liste/Create | GET/POST | `/ingredients/club/{club_id}/ingredients` · `/ingredients/club/{club_id}` | serverseitige Supply-RBAC |
-| Zutat Detail/Update/Delete | GET/PUT/DELETE | `/ingredients/{id}` | serverseitige Supply-RBAC |
-| Kategorienbaum | GET | `/ingredient-categories/by-club/{club_id}/tree` | serverseitige Supply-RBAC |
-| Kategorie CRUD | POST/GET/PUT/DELETE | `/ingredient-categories/[{id}]` | serverseitige Supply-RBAC |
-| Einkaufslisten Create/List/Update/Delete | POST/GET/PUT/DELETE | `/shopping/club/{club_id}/lists[/{id}]` | serverseitige Supply-RBAC |
-| Einkaufsliste Detail | GET | `/shopping/lists/{id}` | serverseitige Supply-RBAC |
-| Einkaufsposition CRUD | POST/PUT/DELETE | `/shopping/club/{club_id}/lists/{id}/items` · `/shopping/club/{club_id}/items/{id}` | serverseitige Supply-RBAC |
-| Liste aus Rezept/Karte | POST | `/shopping/club/{club_id}/generate-from-recipe/{id}` · `generate-from-menu/{id}` | serverseitige Supply-RBAC |
-| Karte anlegen | POST | `/menu/club/{club_id}/menus` | `require_menu_create` |
-| Karten-Liste/Detail | GET | `/menu/club/{club_id}/menus[/{id}]` | `require_supply_read` |
-| Karte Update (design) | PUT | `/menu/club/{club_id}/menus/{id}` | `require_menu_manage` |
-| Eintrag (single) | POST | `/menu/club/{club_id}/items` | `require_menu_create` |
-| Eintrag (bulk) | POST | `/menu/club/{club_id}/items/bulk` | `require_menu_create` |
-| Public-Karte (QR) | GET | `/menu/club/{club_id}/menus/{id}/public` | **public** |
-| Allergene/Farbstoffe | GET | `/allergens/` · `/colorants/` | **public** |
+Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serving`.
 
-> Das Gateway strippt das erste Pfadsegment (`supply`) und leitet den Rest an
-> supply-service. Das CLI sendet den kurzlebigen OAuth-Actor; nur beim
-> expliziten Entwicklungsfallback wird ein `cvn_…`-Token verwendet. RBAC bleibt
-> serverseitig.
+### Wichtige Regeln
+
+- Ein Karten-Eintrag ohne Rezept fehlt in der öffentlichen Artikel-Liste, weil diese zwingend mit dem Rezept verknüpft — für QR-Karten immer ein Rezept hinterlegen.
+- Der Karten-Preis überschreibt den Rezept-Grundpreis pro Karte; ohne eigenen Preis gilt der Rezept-Standard. Mehrere Gebinde gehören in `price_options`, nicht in getrennte Einträge. Das Sortierfeld heißt `display_order`.
+- Für bestehende Karten-Einträge immer deren Eintrags-ID an `menu update-item` übergeben; `menu add-item` und `menu apply` legen neue Einträge an.
+- Allergene entstehen nur über Zutaten-Namen, die eine Vorlage treffen. Eine frei erfundene Zutat ohne Vorlagen-Match bekommt kein Allergen.
+- `custom_css` lässt sich nur über `menu style` (bzw. ein Karten-Update) setzen, nicht beim Anlegen der Karte.
+- Eine QR-Grafik oder -URL erzeugt nicht das CLI, sondern das Frontend aus den öffentlichen Karten-Daten.
+
+### Weitere Lese- und Verwaltungsbefehle
+
+- Rezepte verwalten: `comvenio recipe list|show|update|delete`.
+- Zutaten verwalten: `comvenio ingredient list|show|update|delete`.
+- Kategorien lesen und zuordnen: `comvenio ingredient-category list|roots|tree|by-ingredient|unassign`.
+- Einkaufslisten lesen: `comvenio shopping list --status draft`, `comvenio shopping active`, `comvenio shopping completed`, `comvenio shopping by-context --context-id <event-id>`, `comvenio shopping by-context-type --context-type event`, `comvenio shopping show <list-id>`.
+- Einkaufsliste ändern oder löschen: `comvenio shopping update <list-id> --file shopping-list.json --json`, `comvenio shopping delete <list-id> --json`.
+- Einkaufsposition ändern oder löschen: `comvenio shopping item-update <item-id> --file item.json --json`, `comvenio shopping item-delete <item-id> --json`.
+- Karte verwalten: `comvenio menu list|show|delete`, `comvenio menu delete-item <item-id>`, `comvenio menu export <menu-id> [--out]`.
+
+## Befehle und Actions
+
+<!-- gen:docs befehle -->
+
+**recipe** — vollständig
+
+- `comvenio recipe create`
+- `comvenio recipe from-template`
+- `comvenio recipe list`
+- `comvenio recipe show`
+- `comvenio recipe update`
+- `comvenio recipe delete`
+
+**ingredient** — vollständig
+
+- `comvenio ingredient list`
+- `comvenio ingredient show`
+- `comvenio ingredient create`
+- `comvenio ingredient update`
+- `comvenio ingredient delete`
+- Felder und Werte: `comvenio schema ingredient --json`
+
+**ingredient-category** — vollständig
+
+- `comvenio ingredient-category list`
+- `comvenio ingredient-category roots`
+- `comvenio ingredient-category tree`
+- `comvenio ingredient-category by-ingredient`
+- `comvenio ingredient-category show`
+- `comvenio ingredient-category create`
+- `comvenio ingredient-category update`
+- `comvenio ingredient-category delete`
+- `comvenio ingredient-category assign`
+- `comvenio ingredient-category unassign`
+- `comvenio ingredient-category init`
+- Felder und Werte: `comvenio schema ingredient-category --json`
+
+**shopping** — vollständig
+
+- `comvenio shopping list`
+- `comvenio shopping active`
+- `comvenio shopping completed`
+- `comvenio shopping by-context`
+- `comvenio shopping by-context-type`
+- `comvenio shopping show`
+- `comvenio shopping create`
+- `comvenio shopping update`
+- `comvenio shopping delete`
+- `comvenio shopping item-add`
+- `comvenio shopping item-update`
+- `comvenio shopping item-delete`
+- `comvenio shopping purchased`
+- `comvenio shopping generate-from-recipe`
+- `comvenio shopping generate-from-menu`
+- Felder und Werte: `comvenio schema shopping --json`
+
+**template** — vollständig
+
+- `comvenio template dish`
+- `comvenio template ingredient`
+
+**menu** — vollständig
+
+- `comvenio menu create`
+- `comvenio menu list`
+- `comvenio menu show`
+- `comvenio menu add-item`
+- `comvenio menu update-item`
+- `comvenio menu delete-item`
+- `comvenio menu delete`
+- `comvenio menu style`
+- `comvenio menu apply`
+- `comvenio menu export`
+- Felder und Werte: `comvenio schema menu --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `AUTH_REQUIRED` — deine Anmeldung ist abgelaufen oder fehlt, bevor ein Rezept-, Zutaten- oder Karten-Befehl läuft. Siehe `comvenio help fehler AUTH_REQUIRED`.
+- `SCOPE_REQUIRED` — die Anmeldung trägt nicht den nötigen Scope für diese Aktion. Siehe `comvenio help fehler SCOPE_REQUIRED`.
+- `PERMISSION_DENIED` — deine Rolle im Verein erlaubt zum Beispiel `manage_menus` oder `create_menus` nicht. Siehe `comvenio help fehler PERMISSION_DENIED`.
+- `NOT_FOUND` — Rezept, Zutat, Kategorie, Einkaufsliste oder Karte existiert nicht oder gehört zu einem anderen Verein. Siehe `comvenio help fehler NOT_FOUND`.
+- `VALIDATION_FAILED` — ein Pflichtfeld fehlt, etwa `name`/`unit` bei einer Zutat oder `quantity`/`unit` bei einer Einkaufsposition. Siehe `comvenio help fehler VALIDATION_FAILED`.
+- `CONFLICT` — zum Beispiel `ingredient-category init` bei bereits vorhandenen Standardkategorien. Siehe `comvenio help fehler CONFLICT`.
+- `USAGE_ERROR` — etwa `--ingredients` nicht im Format `Name:Menge:Einheit`. Siehe `comvenio help fehler USAGE_ERROR`.

@@ -36,7 +36,7 @@ bun run gen:connector-release      # Release-Artefakte (eval, quality, gate repo
 ## 4. Alle CI-Schritte lokal (die GitHub-CI kann am Budget scheitern)
 
 ```bash
-for s in typecheck test:cli test:mcp test:contracts gen:coverage:check \
+for s in typecheck test:cli test:mcp test:contracts gen:coverage:check check:docs \
   gen:openai-submission:check gen:anthropic-submission:draft:check \
   gen:connector-release:check gen:provider-submissions:check build:mcp; do
   bun run $s >/tmp/ci-$s.log 2>&1; echo "$s exit $?"; done
