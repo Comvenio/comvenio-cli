@@ -33,7 +33,7 @@ angezeigten `comvenio login`-Befehl ausführen.
 
 Welche Scopes eine Action braucht, zeigt `comvenio action list --json`
 (Sicherheitsangaben je Aktion). Die aktuell erteilten Scopes der Verbindung
-zeigt `~/.comvenio-cli-state.json` (nicht geheim).
+zeigt `~/.comvenio-cli-state.json` → Feld `connector.scopes` (nicht geheim).
 
 ## Aufbau einer Fehlermeldung
 
@@ -65,5 +65,6 @@ Ursachen und Lösung.
 | „Der Fachservice hat keine freigegebene Antwortform geliefert." | Die Antwort passt nicht zum veröffentlichten Vertrag der Action — ein Fehler auf Comvenio-Seite, nicht bei dir. | Nicht umgehen; als Fehlerbericht melden (Issue-Formular) mit Action-Kennung und Uhrzeit. |
 | `Fehler AUTH_REQUIRED` mit dem Zusatz, die Verbindung trage nicht mehr | Die Anmeldung ist abgelaufen oder wurde widerrufen. | `comvenio login` (mit denselben `--scopes`). |
 | Beim Anmelden wird nach einem Geräte-Token gefragt / der Wert fehlt | Alter Weg. | Nicht verwenden; `comvenio login` ohne Token ausführen. |
-| `Fehler OUTCOME_UNKNOWN` | Eine schreibende Action (etwa `action confirm`) endete mit Zeitüberschreitung oder Serverfehler — womöglich nachdem Comvenio sie schon ausgeführt hatte. | **Nicht wiederholen**, sonst entsteht der Eintrag womöglich doppelt. Erst den Stand mit der passenden Lese-Action prüfen. |
+| `--club ist bei OAuth nicht zulässig` | `--club` wurde bei `comvenio login` mit der Browser-Anmeldung angegeben — ein Bedienfehler, keine abgelaufene Anmeldung. | `comvenio login` ohne `--club` ausführen; der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden. |
+| `Fehler OUTCOME_UNKNOWN` | Eine schreibende Action (etwa `action confirm`) endete mit Zeitüberschreitung (Grenze 15 Sekunden) oder Serverfehler — womöglich nachdem Comvenio sie schon ausgeführt hatte. | **Nicht wiederholen**, sonst entsteht der Eintrag womöglich doppelt. Erst den Stand mit der passenden Lese-Action prüfen. |
 | `Fehler UNKNOWN_ERROR` | Ein Fall ohne Beschreibung. | Als Fehlerbericht melden (Issue-Formular) mit Anfrage-ID und Uhrzeit. |

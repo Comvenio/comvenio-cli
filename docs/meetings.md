@@ -29,6 +29,8 @@ offizielle Reinschrift veröffentlichen.
 - `--json` ist für Skripte und Agenten die verbindliche Ausgabeform.
 - Umfangreiche Eingaben werden als JSON-Datei mit `--file <payload.json>` übergeben; die Felder
   gehen unverändert an den Vertrag der jeweiligen Aktion.
+- Ein Fehler ist kein leeres Ergebnis: Die CLI gibt einen Fehler des Dienstes mit einem Exit-Code
+  ungleich null zurück.
 
 ## Abläufe
 
@@ -80,13 +82,16 @@ vorgesehen.
 
 1. Teilnehmer eines Protokolls auflisten.
 2. Teilnehmer hinzufügen — mit Benutzer, Mitglied oder mindestens einem Namen als Identität.
-3. Rolle oder Anwesenheit eines Teilnehmers ändern; Teilnehmer entfernen.
+3. Rolle oder Anwesenheit eines Teilnehmers ändern — mehr lässt sich an einem bestehenden Teilnehmer
+   nicht anpassen; Teilnehmer entfernen.
 4. Teilnehmer validieren oder die Validierung zurücknehmen.
 
 ### Entscheidungen und Abstimmungen
 
 Eine Entscheidung entsteht immer an einem Tagesordnungspunkt und darf nur für einen gerade
-behandelten Punkt angelegt werden.
+behandelten Punkt angelegt werden. Die vollständigen Entscheidungsdaten eines Tagesordnungspunkts
+liefert der Tagesordnungspunkt selbst — eine eigene Liste oder Detailansicht einzelner
+Entscheidungen gibt es nicht.
 
 1. Entscheidung mit Protokoll, Tagesordnungspunkt, Abteilung, Verein, Titel, Art und Gültigkeitsbeginn
    anlegen.
@@ -272,7 +277,6 @@ comvenio meeting attachment-add <entry-id> --file attachment.json --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **meeting** — vollständig
 

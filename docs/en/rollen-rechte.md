@@ -33,7 +33,7 @@ Role names are unique within a club after trimming outer whitespace and regardle
 3. A matrix file is additive by default: only the given keys are changed. A full replacement explicitly sets every key that is not given to "not allowed".
 4. Without explicit confirmation, the CLI only shows the full before/after diff and performs no write. With confirmation, it re-reads the same state within the same run and secures the write against concurrent changes in the meantime.
 
-A matrix file is a JSON object with true/false values per permission key; alternatively, a wrapper with a `values` field is allowed.
+A matrix file is a JSON object with true/false values per permission key; alternatively, a wrapper with a `values` field is allowed. A wrapper with a `permissions` field stays compatible for reading, but is deprecated.
 
 ### Assigning a role directly
 
@@ -52,7 +52,7 @@ A member's effective permissions are merged server-side: without a department re
 - Protected default roles and their matrix cannot be changed.
 - There is no public forced delete and no club-wide wipe actions.
 - Deleting, removing and unlinking are soft deletes; restoring remains its own, explicit state each time.
-- Critical changes return machine-readable target, current state, diff and risk.
+- Critical changes return machine-readable target, current state, diff, risk and an operation identifier.
 - An assignment always uses the member ID, never a name or email address.
 - Writing calls are never retried automatically.
 - Every full matrix replacement requires a visible preview and explicit confirmation.
@@ -136,7 +136,6 @@ comvenio role effective --member-id <member-id> --department-id <department-id> 
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **role** — complete
 

@@ -52,10 +52,14 @@ CLI liest und schreibt Zonen als GeoJSON-Dateien, ändert aber keine Eckpunkte i
 ### Angaben zur Zone pflegen
 
 1. Gebäudezahl von Hand eintragen: `comvenio zone update <zone-id> --building-count 120`; wieder
-   der Schätzung überlassen mit `--building-count leer`.
+   der Schätzung überlassen mit `--building-count leer`. Die Schätzung selbst entsteht automatisch:
+   nach dem Anlegen einer Zone und nach jeder Änderung ihrer Form werden die Adressen (Straße und
+   Hausnummer) im Polygon aus OpenStreetMap gezählt. `zone list` zeigt die geschätzte Zahl in der
+   Spalte „Gebäude“ mit „≈“; eine eingetragene Zahl steht ohne „≈“ und hat Vorrang.
 2. Notiz setzen oder löschen: `comvenio zone update <zone-id> --notes "<Text>"` bzw. `--notes ""`.
 3. Schätzung neu anstoßen (etwa nach „Schätzung fehlgeschlagen“): `comvenio zone estimate <zone-id>`
-   — das Ergebnis steht nach wenigen Sekunden in `zone list`.
+   — das Ergebnis steht nach wenigen Sekunden in `zone list`. Dabei wird auch die Straßenliste der
+   Zone neu geschrieben; `zone list --json` liefert sie im Feld `strassen`.
 4. Paten, Treffpunkt, Fortbewegung und Besonderheiten setzen:
    `comvenio zone update <zone-id> --pate <member-id> --treffpunkt "<lat>,<lng>,<Beschreibung>" --fortbewegung fuss --besonderheiten hunde,zugang`.
    Jedes dieser Felder löscht `leer` einzeln wieder.
@@ -65,7 +69,9 @@ CLI liest und schreibt Zonen als GeoJSON-Dateien, ändert aber keine Eckpunkte i
 1. `comvenio zone import --set <zone-set-id> --geojson <datei>.geojson`. Je Feature der
    `FeatureCollection` entsteht eine Zone; der Name kommt aus `properties.name`, die Farbe
    wahlweise aus `properties.color`. Ungültige Features werden übersprungen und mit Index und
-   Grund gelistet; die gültigen Zonen sind trotzdem angelegt.
+   Grund gelistet; die gültigen Zonen sind trotzdem angelegt. Der Befehl endet dann mit **Exit 1**
+   — den Import in diesem Fall nicht einfach wiederholen, sonst entstehen für die bereits
+   angelegten Zonen doppelte Einträge; stattdessen die gelisteten Features einzeln korrigieren.
 
 ### Übersicht und Zuteilung
 
@@ -93,7 +99,6 @@ comvenio task-zones <task-id> add <zone-id>
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **zone** — vollständig
 
@@ -108,9 +113,9 @@ _Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ände
 - `comvenio zone delete`
 - `comvenio zone import`
 - `comvenio zone overview`
-- `comvenio zone task-zones`
-- `comvenio zone task-zones add`
-- `comvenio zone task-zones remove`
+- `comvenio task-zones`
+- `comvenio task-zones add`
+- `comvenio task-zones remove`
 - Felder und Werte: `comvenio schema zone --json`
 <!-- /gen:docs -->
 
@@ -127,3 +132,11 @@ _Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ände
   `comvenio help fehler PERMISSION_DENIED`.
 - `UPSTREAM_UNAVAILABLE` — ein für die Prüfung nötiger Dienst (etwa für `--pate`) antwortet
   gerade nicht. Mehr: `comvenio help fehler UPSTREAM_UNAVAILABLE`.
+
+### Exit-Codes
+
+| Exit | Bedeutung |
+|---|---|
+| 0 | Erfolg |
+| 1 | Fehler laut Code oben — oder ein Import, bei dem Features übersprungen wurden |
+| 2 | ungültige Eingabe vor dem Aufruf (Datei, Geometrie, `--center`, `--color`) |

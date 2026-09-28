@@ -34,14 +34,14 @@ Sign in with `comvenio login`; which scopes a given action needs is shown by `co
 
 1. First find or create a context: the context describes what the task refers to; the referenced entity is given as the context's own reference (`--ref-id`), not as the ID that `task create` needs afterwards.
 2. Use the `id` from the context response as `--context-id` for the task.
-3. Create the task with a title and context ID; both are required.
+3. Create the task with a title and context ID; both are required. A due date is given as an ISO timestamp.
 4. Optionally assign a member (see below).
 
 Several tasks, including checklists and assignments, can be created together in one call.
 
 ### Changing, cancelling or completing a task
 
-Changing a task only replaces the fields that were actually given. `completed` and `cancelled` may not be set back to `open`. To complete a task, a dedicated command is more convenient than a status change through update, because it also sets the completion timestamp.
+Changing a task only replaces the fields that were actually given. `completed` and `cancelled` may not be set back to `open`. To complete a task, a dedicated command is more convenient than a status change through update: it sets the status to `completed` and the completion timestamp to the current time in one step.
 
 ### Assigning a member
 
@@ -55,15 +55,15 @@ Contexts, notes and checklist items are passed as a file so the current backend 
 
 Every signed-in user can set, view and delete exactly one own, freely chosen reminder for a task visible to them:
 
-1. Give the reminder time as a valid, future timestamp.
+1. Give the reminder time as a valid, future timestamp in RFC 3339 format.
 2. Optionally add a comment.
 3. Setting a reminder again for the same task replaces the existing personal reminder idempotently.
 
-Right before delivery, Comvenio checks task existence and active membership again and takes the club context automatically from the task. A reminder that was replaced, deleted, or is no longer allowed after leaving the club, is not delivered; it is delivered exclusively to the member's own account. A club, member or recipient ID is not needed for these commands and is not sent either.
+Right before delivery, Comvenio checks task existence and active membership again and takes the club context automatically from the task. A reminder that was replaced, deleted, or is no longer allowed after leaving the club, is not delivered; it is delivered exclusively to the member's own account. A club, member, user or recipient ID is not needed for these commands and is not sent either.
 
 ### Scope boundary
 
-Internal automation routes, specialized tournament-schedule models and cross-cutting cleanup endpoints are not general club actions. The usual task, context, assignment, note and checklist workflow is fully reachable through the CLI.
+Internal automation routes, specialized polling and scheduling-matrix models, and cross-cutting cleanup endpoints are not general club actions. The usual task, context, assignment, note and checklist workflow is fully reachable through the CLI.
 
 ## Examples
 
@@ -170,7 +170,6 @@ comvenio task reminder delete <task-id> --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **task** — complete
 

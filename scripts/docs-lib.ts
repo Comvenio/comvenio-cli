@@ -249,7 +249,8 @@ export function generateDocs(root: string): Map<string, string> {
 // What a customer text must not contain (TC-05): source paths, internal service
 // and infrastructure names, internal tools, real club IDs.
 const FORBIDDEN: Array<[RegExp, string]> = [
-  [/(?:^|[\s`(/])(?:src|apps|packages|scripts)\/[\w.-]/mu, "Quellpfad"],
+  // Any position not glued to a word: also "[src/…" in a frontmatter list.
+  [/(?<![\w.-])(?:src|apps|packages|scripts)\/[\w.-]/u, "Quellpfad"],
   [/\b(?!self-service\b)[a-z][a-z0-9]*(?:-[a-z0-9]+)*-service\b/u, "interner Dienstname"],
   [/\b(?:GET|POST|PUT|PATCH|DELETE) \/[\w{]/u, "HTTP-Route"],
   [/\b(?:railway|localhost|127\.0\.0\.1|postgres(?:ql)?|redis|kubernetes)\b/iu, "Infrastruktur"],

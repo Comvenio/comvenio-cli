@@ -56,7 +56,8 @@ serienlosen Weg, ein Turnier anzulegen.
 
 1. Teilnehmer eines Turniers auflisten.
 2. Mannschaft, Einzelperson oder Paar anmelden; der Anmeldestatus ist standardmäßig bestätigt und
-   lässt sich beim Anmelden übersteuern.
+   lässt sich beim Anmelden übersteuern. Das Anmelden einer Mannschaft ist ein eigener Befehl mit der
+   Teilnehmerart Team fest voreingestellt.
 3. Teilnehmer zurückziehen — annulierend vor einer Neuauslosung oder als Wertung zugunsten des
    Gegners — oder wieder einsetzen.
 4. Teilnehmer vollständig entfernen (stärkere, weiche Löschung).
@@ -103,7 +104,8 @@ Zurückgezogene Teilnehmer werden bei keiner der drei Varianten erneut gezogen.
 ### Tabelle und Vorschau
 
 1. Aktuelle Tabelle abrufen.
-2. Lokale Vorschau erzeugen und optional direkt öffnen — sie verändert das Turnier nicht.
+2. Lokale Vorschau erzeugen und optional direkt öffnen — sie entsteht als eigenständige HTML-Datei
+   und verändert das Turnier nicht.
 
 ### Abgrenzung
 
@@ -266,7 +268,6 @@ comvenio tournament preview <tournament-id> --open
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **tournament** — vollständig
 

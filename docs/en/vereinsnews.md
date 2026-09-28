@@ -43,7 +43,7 @@ Without `--publish`, a newly created news post defaults to a draft.
 
 Pure preview fields such as a short-lived image address, club name, author name and preview date are removed before permanent storage. Images in the HTML need a stable file identifier in addition to the address, so the application can re-sign an expired address automatically.
 
-For a simple news post without an elaborate layout, creating it directly with title and content as flags is enough; for elaborate rich HTML, the file-based route is clearer.
+For a simple news post without an elaborate layout, creating it directly with title and content as flags is enough — both are required; for elaborate rich HTML, the file-based route is clearer.
 
 ### Updating without losing the status
 
@@ -58,14 +58,14 @@ A file that was already uploaded before the news post was created can be assigne
 - Use a semantic structure: headings, paragraphs, lists, tables, and a captioned image.
 - Give images a stable file identifier; a short-lived signed address alone expires.
 - For videos, use the standard control with a metadata preview; autoplay is not allowed.
-- For YouTube, use only the privacy-friendly embed address.
+- For YouTube, use only the privacy-friendly embed address `https://www.youtube-nocookie.com/embed/...`.
 - Do not embed scripts, event handlers or unknown embedded addresses.
 
 ### Generating local videos
 
 Short videos for club news can be rendered locally from templates: an image slideshow, a match result, an announcement teaser, or a generic highlight opener. Each template requires certain mandatory fields and allows further optional fields such as subtitle, overlays, brand color or logo.
 
-The highlight template is deliberately generic and can optionally show a partner or catering scene: up to two partner cards with name, subtitle and logo, plus a subtle backdrop motif. This scene only appears when partners are given, and sits between the program list and a closing note; the video becomes automatically longer as a result, with no need to adjust the duration manually.
+The highlight template is deliberately generic (a loopable opener clip with no club-specific code) and can optionally show a partner or catering scene: up to two partner cards with name, subtitle and logo, plus a subtle backdrop motif. This scene only appears when partners are given, and sits between the program list and a closing note; the video becomes automatically about 4.3 seconds longer as a result, with no need to adjust the duration manually.
 
 With an additional option, the CLI uploads the rendered video directly and returns a ready HTML embed snippet for the news post. The video upload limit is 200 MB. Rendering runs locally; missing dependencies are not installed automatically.
 
@@ -142,7 +142,7 @@ Templates:
 | `slideshow` | title, at least two images, brand color | subtitle, overlays, duration per image, logo |
 | `result` | home and away team, home and away score, brand color | competition, scorers, date, logo |
 | `teaser` | title, date, brand color | location, call-to-action text, background image, logo |
-| `highlight` | title, brand color | subtitle, club name, date range, program items (max. 3), partners (max. 2), backdrop motif, note text, closing text |
+| `highlight` | title, brand color | subtitle, club name, date range, kicker text, program list heading, program items (max. 3), partners (max. 2), backdrop motif, note text, closing text, background image, logo, hero image, sponsor logos, custom color scheme |
 
 ```json
 {
@@ -175,7 +175,6 @@ comvenio news video slideshow --params slideshow.json \
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **news** — complete
 

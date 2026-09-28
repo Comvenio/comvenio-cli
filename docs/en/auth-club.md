@@ -197,7 +197,7 @@ comvenio club design --file design-settings.json --json
 | `--font <pair>` | allowed font pairing |
 | `--spacing <mode>` | spacing mode |
 | `--file <json>` | full partial design object |
-| `--css-file <css>` | scoped custom CSS |
+| `--css-file <css>` | scoped custom CSS — the server-side security check remains authoritative regardless |
 | `--tokens-file <json>` | design tokens such as palette, radius and typography |
 | `--header-layout`, `--header-surface`, `--header-density` | public header |
 | `--header-sticky <true\|false>` | sticky behavior of the header |
@@ -215,7 +215,8 @@ comvenio club logo --json                          # current logo (metadata)
 comvenio club logo-upload --file crest.png --json   # upload a new logo
 ```
 
-The most recently uploaded logo takes effect immediately everywhere the
+`logo-upload` needs the permission to manage club settings. The most
+recently uploaded logo takes effect immediately everywhere the
 platform shows the club logo: homepage header, image widget with the club
 logo as source, club selection. An image with a transparent background works
 best on colored surfaces. A regular file upload does **not** replace the
@@ -250,7 +251,6 @@ comvenio club department-add --file department.json --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **login** — complete
 

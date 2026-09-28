@@ -27,6 +27,7 @@ decisions and votes, managing resolutions, and finally publishing the official r
 - `--json` is the binding output form for scripts and agents.
 - Larger inputs are passed as a JSON file with `--file <payload.json>`; the fields are forwarded
   unchanged to the respective action's contract.
+- An error is not an empty result: the CLI returns a service error with a non-zero exit code.
 
 ## Workflows
 
@@ -75,13 +76,15 @@ automatically by the task workflow and is not meant for manual notes.
 
 1. List a protocol's participants.
 2. Add a participant — with a user, a member, or at least a name as identity.
-3. Update a participant's role or presence; remove a participant.
+3. Update a participant's role or presence — nothing else on an existing participant can be changed
+   this way; remove a participant.
 4. Validate a participant or undo a validation.
 
 ### Decisions and voting
 
 A decision is always created on an agenda item and may only be created for an item that is currently
-being handled.
+being handled. Full decision data for an agenda item is returned by the agenda item itself — there is
+no separate list or detail view for individual decisions.
 
 1. Create a decision with a protocol, agenda item, department, club, title, decision type and start of
    validity.
@@ -264,7 +267,6 @@ comvenio meeting attachment-add <entry-id> --file attachment.json --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **meeting** — complete
 

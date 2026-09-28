@@ -33,7 +33,7 @@ this default or was deliberately restricted: run the displayed
 
 Which scopes an action needs is shown by `comvenio action list --json`
 (security details per action). The scopes currently granted to the
-connection are shown by `~/.comvenio-cli-state.json` (not secret).
+connection are shown by `~/.comvenio-cli-state.json` → field `connector.scopes` (not secret).
 
 ## Anatomy of an error message
 
@@ -65,5 +65,6 @@ article under `fehler/` with meaning, typical causes and solution.
 | "The service did not return an approved response shape." | The response does not match the action's published contract — an error on Comvenio's side, not yours. | Do not work around it; report it as a bug (issue form) with the action id and time. |
 | `Error AUTH_REQUIRED` with the note that the connection no longer holds | The OAuth sign-in has expired or was revoked. | `comvenio login` (with the same `--scopes`). |
 | Asked for a device token during login / value missing | Old path. | Do not use it; run `comvenio login` without a token. |
-| `Error OUTCOME_UNKNOWN` | A write action (for example `action confirm`) ended with a timeout or server error — possibly after Comvenio had already carried it out. | **Do not retry**, or the entry may be created twice. Check the current state with the matching read action first. |
+| `--club is not allowed with OAuth` | `--club` was given to `comvenio login` together with the browser sign-in — a usage error, not an expired sign-in. | Run `comvenio login` without `--club`; the club is chosen in the Comvenio consent screen and bound server-side. |
+| `Error OUTCOME_UNKNOWN` | A write action (for example `action confirm`) ended with a timeout (15-second limit) or server error — possibly after Comvenio had already carried it out. | **Do not retry**, or the entry may be created twice. Check the current state with the matching read action first. |
 | `Error UNKNOWN_ERROR` | A case without a description. | Report it as a bug (issue form) with the request id and time. |

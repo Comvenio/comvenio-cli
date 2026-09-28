@@ -58,7 +58,8 @@ comvenio member family-update <family-id> --file family-update.json --json
 comvenio member family-delete <family-id> --json
 ```
 
-Der Verein wird beim Anlegen automatisch aus dem angemeldeten Kontext gesetzt.
+Der Verein wird beim Anlegen automatisch aus dem angemeldeten Kontext gesetzt. Pflichtfelder beim
+Anlegen sind Name und verantwortliches Mitglied.
 
 ### Mitgliedsstatus
 
@@ -200,12 +201,13 @@ Wettbewerbe, iCal-Abonnements und Spielplan-Synchronisation — und ersetzt die 
 | Termin absagen | `comvenio teams termin cancel <season-id> <event-id> [--reason …] [--scope this\|following] --yes` |
 | Termin löschen | `comvenio teams termin delete <season-id> <event-id> [--scope this\|series] --yes` |
 
-Verhaltensvertrag: Jede Lese- und Schreibaktion unterstützt `--json`. Wichtige Mutationen (Anlegen,
-Archivieren, Lebenszyklus-Wechsel, Aktivierung, Deaktivierung, Sofortlauf, Klärungsauflösung sowie
-Kader- und Wettbewerbs-Schreibaktionen) zeigen zuerst eine vollständige Zusammenfassung und schreiben
-ohne ausdrückliche Bestätigung nichts. Saisonbezogene Schreibaktionen verlangen immer die konkrete
-Ziel-ID, nie einen Sammel-Scope. iCal-Quell-URLs erscheinen in Ausgaben und Zusammenfassungen nur
-maskiert.
+Verhaltensvertrag: Jede Lese- und Schreibaktion unterstützt `--json`. Exitcodes: `0` Erfolg, `2`
+Validierung oder unbekanntes Ziel, `3` fehlende Berechtigung, `4` Konflikt, `5` Transport- oder
+Dienstfehler. Wichtige Mutationen (Anlegen, Archivieren, Lebenszyklus-Wechsel, Aktivierung,
+Deaktivierung, Sofortlauf, Klärungsauflösung sowie Kader- und Wettbewerbs-Schreibaktionen) zeigen
+zuerst eine vollständige Zusammenfassung und schreiben ohne ausdrückliche Bestätigung nichts.
+Saisonbezogene Schreibaktionen verlangen immer die konkrete Ziel-ID, nie einen Sammel-Scope.
+iCal-Quell-URLs erscheinen in Ausgaben und Zusammenfassungen nur maskiert.
 
 Die Aktivierung einer iCal-Quelle folgt immer derselben Kette: Quelle anlegen → Vorschau abrufen
 (liefert einen kurzlebigen Vorschau-Token) → mit diesem Token aktivieren. Ändert sich das Abonnement,
@@ -217,9 +219,10 @@ Für Mannschaftstermine gilt das Saisonrecht (Mannschaften verwalten) oder die R
 Trainer oder Teammanager der Saison. Start- und Endzeit gelten in Ortszeit Berlin. Eine Wiederholung
 legt eine Serie bis zu einem Enddatum oder bis Saisonende an; ein Spiel braucht zusätzlich einen
 Gegner sowie die Angabe Heim- oder Auswärtsspiel. Eine allgemeine Ankündigung lässt sich gezielt
-ein- oder ausschalten. Fehlermeldungen des Dienstes erscheinen als Satz mit Code, etwa ein Hinweis,
+ein- oder ausschalten; ohne ausdrückliche Angabe richtet sie sich nach der Art des Termins.
+Fehlermeldungen des Dienstes erscheinen als Satz mit Code, etwa ein Hinweis,
 dass einem Spiel der Gegner fehlt; fehlt das Saisonrecht, weist Comvenio die Änderung zurück, hat der
-Termin bereits begonnen, meldet Comvenio einen Konflikt. Termine, die aus dem Spielplan-Abgleich
+Termin bereits begonnen, meldet Comvenio einen Konflikt (Exit-Code `3` bzw. `4`, siehe oben). Termine, die aus dem Spielplan-Abgleich
 stammen, erscheinen in der Übersicht, lassen sich dort aber nicht bearbeiten.
 
 ### Abgrenzung
@@ -421,7 +424,6 @@ comvenio teams termin cancel <season-id> <event-id> --reason "Platz gesperrt" --
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **member** — vollständig
 

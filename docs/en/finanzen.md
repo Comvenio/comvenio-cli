@@ -18,6 +18,8 @@ planned, recorded and reported on.
 Sign in with `comvenio login`; the scopes a given command needs are shown by
 `comvenio action list --json`. For agents, `--json` is the binding output form.
 
+- `--club <club-id>` overrides the club from the local sign-in state.
+
 > **Not to be confused with:** `comvenio booking` is room booking, `comvenio sponsor` is the local
 > sponsor. Neither has anything to do with accounting.
 
@@ -107,7 +109,6 @@ comvenio finance summary --year 2026 --department <department-id>
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **finance** — core available, some workflows missing
 
@@ -127,3 +128,5 @@ _Generated from the coverage registry (`bun run gen:docs`) — do not edit by ha
   `comvenio help fehler NOT_FOUND`.
 - `PERMISSION_DENIED` — the club role does not allow the accounting action. More:
   `comvenio help fehler PERMISSION_DENIED`.
+
+A backend error is not an empty result: the CLI returns it with a non-zero exit code.

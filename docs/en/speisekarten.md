@@ -57,7 +57,7 @@ A missing permission is reported as `403`.
 ### Building a menu: check first, then apply
 
 1. Compose the menu and its items as a file (see Examples).
-2. Check it without writing anything: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. This checks required fields, prices, `display_order` and every recipe link, and generates a data report, a responsive HTML/PNG view and a DIN-A4 PDF locally without writing anything.
+2. Check it without writing anything: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. This checks required fields, prices, `display_order` and every recipe link, also loading the linked recipe data for category, description, age rating, allergens and colorants, and generates a data report, a responsive HTML/PNG view and a DIN-A4 PDF locally without writing anything.
 3. A `valid: false` is a deliberately visible review result; the artifacts are still generated so the error can be judged in context.
 4. Only then apply it: `comvenio menu apply --file menu.json --json` (creates the menu and its items in bulk).
 
@@ -74,7 +74,7 @@ A missing permission is reported as `403`.
 1. Create an ingredient: `comvenio ingredient create --file ingredient.json --json` (required fields: `name`, `unit`).
 2. Search and read ingredients: `comvenio ingredient list --search "Kartoffel" --category <category-id> --json`, `comvenio ingredient show <ingredient-id> --json`. `--category` includes subcategories; `--skip` and `--limit` (1–1000) control the list.
 3. Read the category tree and assign categories: `comvenio ingredient-category tree --json`, `comvenio ingredient-category assign <ingredient-id> --category <category-id> --json`.
-4. Create your own category: `comvenio ingredient-category create --file category.json --json` (required fields: `name`, `category_type`). `comvenio ingredient-category init --json` creates default categories and is only meant for clubs that have none yet — otherwise it reports a conflict.
+4. Create your own category: `comvenio ingredient-category create --file category.json --json` (required fields: `name`, `category_type`; optional fields include `description`, `parent_id`, `icon`, `color` and `sort_order`). `comvenio ingredient-category init --json` creates default categories and is only meant for clubs that have none yet — otherwise it reports a conflict.
 
 ### Running shopping lists
 
@@ -89,6 +89,7 @@ A missing permission is reported as `403`.
 2. The CSS is injected in isolation into the menu container on the frontend (it cannot break out of the container) and targets semantic classes such as `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`, `.menu-item-name`, `.menu-item-price`, `.menu-qr`.
 3. Allergens, prices and the QR code remain structured, required components — the CSS only styles their appearance.
 4. `style` reads the current state, merges your CSS into it and writes it back; other design settings of the menu are preserved.
+5. The CSS content itself is not validated — you are responsible for valid, effective CSS.
 
 ## Examples
 
@@ -219,7 +220,6 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **recipe** — complete
 

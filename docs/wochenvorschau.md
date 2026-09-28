@@ -76,7 +76,6 @@ comvenio weekly-preview template delete <template-id>
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **weekly-preview** — Kern vorhanden, einzelne Abläufe fehlen
 

@@ -12,7 +12,9 @@ stichwoerter: [cli, reference, commands, schema, verify]
 This article is the entry point to the comvenio CLI: the ground rules for
 every call, an overview of the top-level commands with a pointer to their
 own article, and the topic commands `schema` and `verify`, which don't form
-a topic of their own but accompany every other command.
+a topic of their own but accompany every other command. The full workflow
+coverage with known gaps and deliberate exclusions per command is in
+[`coverage.md`](coverage.md).
 
 ## Requirements and permissions
 
@@ -158,12 +160,11 @@ comvenio verify url https://club.web.comvenio.app --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **schema** — core available, some workflows missing
 
-- `comvenio schema list domains`
-- `comvenio schema show domain schema`
+- `comvenio schema`
+- `comvenio schema <domain>`
 
 **verify** — complete
 

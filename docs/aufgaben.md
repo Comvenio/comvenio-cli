@@ -34,14 +34,14 @@ Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeig
 
 1. Zuerst einen Context finden oder anlegen: Der Context beschreibt, worauf sich die Aufgabe bezieht; die referenzierte Entität steht dabei in der Context-eigenen Referenz (`--ref-id`), nicht in der ID, die `task create` später braucht.
 2. Die `id` aus der Context-Antwort als `--context-id` für die Aufgabe verwenden.
-3. Aufgabe mit Titel und Kontext-ID anlegen; beides ist Pflicht.
+3. Aufgabe mit Titel und Kontext-ID anlegen; beides ist Pflicht. Ein Fälligkeitsdatum wird als ISO-Zeitpunkt angegeben.
 4. Optional ein Mitglied zuweisen (siehe unten).
 
 Mehrere Aufgaben lassen sich inklusive Checklisten und Zuweisungen in einem Aufruf gemeinsam anlegen.
 
 ### Aufgabe ändern, abbrechen oder abschließen
 
-Das Ändern ersetzt nur die tatsächlich gesetzten Felder. `completed` und `cancelled` dürfen nicht wieder auf `open` zurückgesetzt werden. Zum Abschließen ist ein eigener Befehl bequemer als ein Statuswechsel per Update, weil er zusätzlich den Abschlusszeitpunkt setzt.
+Das Ändern ersetzt nur die tatsächlich gesetzten Felder. `completed` und `cancelled` dürfen nicht wieder auf `open` zurückgesetzt werden. Zum Abschließen ist ein eigener Befehl bequemer als ein Statuswechsel per Update: Er setzt den Status zugleich auf `completed` und den Abschlusszeitpunkt auf den aktuellen Zeitpunkt.
 
 ### Mitglied zuweisen
 
@@ -55,15 +55,15 @@ Contexts, Notizen und Checklisten-Einträge werden über eine Datei übergeben, 
 
 Jeder angemeldete Nutzer kann für eine für ihn sichtbare Aufgabe genau eine eigene, frei gewählte Erinnerung setzen, anzeigen und löschen:
 
-1. Erinnerungszeitpunkt als gültigen, zukünftigen Zeitstempel angeben.
+1. Erinnerungszeitpunkt als gültigen, zukünftigen Zeitstempel im RFC-3339-Format angeben.
 2. Optional einen eigenen Kommentar mitgeben.
 3. Ein erneutes Setzen für dieselbe Aufgabe ersetzt die bestehende persönliche Erinnerung idempotent.
 
-Unmittelbar vor dem Versand prüft Comvenio Aufgabenexistenz und aktive Mitgliedschaft erneut und übernimmt den Vereinskontext automatisch aus der Aufgabe. Eine ersetzte, gelöschte oder nach einem Vereinsaustritt nicht mehr zulässige Erinnerung wird nicht zugestellt; zugestellt wird sie ausschließlich dem eigenen Konto. Eine Club-, Mitglieds- oder Empfänger-ID ist für diese Befehle nicht nötig und wird auch nicht gesendet.
+Unmittelbar vor dem Versand prüft Comvenio Aufgabenexistenz und aktive Mitgliedschaft erneut und übernimmt den Vereinskontext automatisch aus der Aufgabe. Eine ersetzte, gelöschte oder nach einem Vereinsaustritt nicht mehr zulässige Erinnerung wird nicht zugestellt; zugestellt wird sie ausschließlich dem eigenen Konto. Eine Club-, Mitglieds-, Benutzer- oder Empfänger-ID ist für diese Befehle nicht nötig und wird auch nicht gesendet.
 
 ### Abgrenzung
 
-Interne Automatisierungsrouten, Spezialmodelle für Turnierspielpläne und übergreifende Aufräum-Endpunkte sind keine allgemeinen Vereins-Actions. Der übliche Aufgaben-, Context-, Zuweisungs-, Notiz- und Checklisten-Workflow ist vollständig über das CLI erreichbar.
+Interne Automatisierungsrouten, spezielle Abstimmungs- und Planungsmatrix-Modelle sowie übergreifende Aufräum-Endpunkte sind keine allgemeinen Vereins-Actions. Der übliche Aufgaben-, Context-, Zuweisungs-, Notiz- und Checklisten-Workflow ist vollständig über das CLI erreichbar.
 
 ## Beispiele
 
@@ -170,7 +170,6 @@ comvenio task reminder delete <task-id> --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **task** — vollständig
 

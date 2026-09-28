@@ -57,7 +57,8 @@ comvenio member family-update <family-id> --file family-update.json --json
 comvenio member family-delete <family-id> --json
 ```
 
-The club is set automatically from the signed-in context when creating a family.
+The club is set automatically from the signed-in context when creating a family. Required fields when
+creating one: name and responsible member.
 
 ### Membership statuses
 
@@ -197,11 +198,12 @@ schedule synchronization on top of the permanent team master data — it does no
 | Cancel an appointment | `comvenio teams termin cancel <season-id> <event-id> [--reason …] [--scope this\|following] --yes` |
 | Delete an appointment | `comvenio teams termin delete <season-id> <event-id> [--scope this\|series] --yes` |
 
-Behavior contract: every read and write action supports `--json`. Important mutations (create,
-archive, lifecycle transitions, activation, deactivation, immediate sync, clarification resolution,
-and roster or competition writes) first show a full summary and write nothing without explicit
-confirmation. Season-related writes always require the concrete target ID, never a collective scope.
-iCal source URLs appear masked in output and summaries.
+Behavior contract: every read and write action supports `--json`. Exit codes: `0` success, `2`
+validation or unknown target, `3` missing permission, `4` conflict, `5` transport or service error.
+Important mutations (create, archive, lifecycle transitions, activation, deactivation, immediate
+sync, clarification resolution, and roster or competition writes) first show a full summary and
+write nothing without explicit confirmation. Season-related writes always require the concrete
+target ID, never a collective scope. iCal source URLs appear masked in output and summaries.
 
 Activating an iCal source always follows the same chain: create the source → fetch a preview (returns
 a short-lived preview token) → activate with that token. If the subscription changes, the token
@@ -212,10 +214,11 @@ reconcile the resource assignment afterwards.
 Team appointments require the season permission (manage teams) or the role of an active coach or team
 manager for that season. Start and end times are in Berlin local time. A repeat creates a series up to
 an end date or the end of the season; a match additionally needs an opponent and whether it is a home
-or away match. A general announcement can be switched on or off explicitly. Error messages from the
+or away match. A general announcement can be switched on or off explicitly; without an explicit
+setting it follows the kind of appointment. Error messages from the
 service appear as a sentence with a code, for example a note that a match is missing its opponent; if
 the season permission is missing, Comvenio rejects the change, and if the appointment has already
-started, Comvenio reports a conflict. Appointments originating from schedule synchronization appear in
+started, Comvenio reports a conflict (exit code `3` or `4` respectively, see above). Appointments originating from schedule synchronization appear in
 the overview but cannot be edited there.
 
 ### Scope
@@ -417,7 +420,6 @@ comvenio teams termin cancel <season-id> <event-id> --reason "Court closed" --sc
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **member** — complete
 

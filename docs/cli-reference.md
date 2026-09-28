@@ -12,7 +12,9 @@ stichwoerter: [cli, referenz, befehle, schema, verify]
 Dieser Artikel ist der Einstieg in das comvenio CLI: die Grundregeln jedes
 Aufrufs, die Top-Level-Befehle im Überblick mit Verweis auf ihren eigenen
 Artikel, sowie die Themenbefehle `schema` und `verify`, die kein eigenes
-Thema, sondern jeden anderen Befehl begleiten.
+Thema, sondern jeden anderen Befehl begleiten. Die vollständige Workflow-Coverage
+mit bekannten Lücken und bewussten Ausschlüssen je Befehl steht in
+[`coverage.md`](coverage.md).
 
 ## Voraussetzungen und Rechte
 
@@ -160,12 +162,11 @@ comvenio verify url https://verein.web.comvenio.app --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **schema** — Kern vorhanden, einzelne Abläufe fehlen
 
-- `comvenio schema list domains`
-- `comvenio schema show domain schema`
+- `comvenio schema`
+- `comvenio schema <domain>`
 
 **verify** — vollständig
 

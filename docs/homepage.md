@@ -107,7 +107,10 @@ CLI-Flag `--clear` beim Anwenden.
   abgeschlossenen öffentlichen Veranstaltungen, ein Ordner oder externe
   Adressen; `limit` 1–50, Standard 24. Es erscheinen nur öffentliche, fertige,
   aktive Bilder desselben Vereins; Titelbilder, Flyer und Logos einer
-  Veranstaltung werden dabei ausgelassen.
+  Veranstaltung werden dabei ausgelassen. Die Ordnerquelle zeigt ausschließlich
+  die öffentlich freigegebene Ansicht eines Ordners, nie einen privaten
+  Dateibestand. Bereits ausgelieferte, zeitlich begrenzte Bildadressen können
+  eine kurz zuvor geänderte Berechtigung noch eine Weile weiter zeigen.
 - **Downloads** (`files` mit `source=files`): eine feste Auswahl an
   Datei-Kennungen zeigt gezielt einzelne Dokumente, etwa ein Antragsformular.
   Eine leere Auswahl zeigt keine beliebigen anderen Vereinsdateien.
@@ -124,19 +127,26 @@ CLI-Flag `--clear` beim Anwenden.
   nichts. Ein älteres, rein informatives Beitrittsformular bestätigt keinen
   erfolgreichen Antrag und darf dafür auch nicht gehalten werden; für Kontakt
   und Mitgliedsinteresse ist ausschließlich `contact_form` vorgesehen. Ein
-  Formular selbst aus freiem HTML nachzubauen ist nicht vorgesehen.
+  Formular selbst aus freiem HTML nachzubauen ist nicht vorgesehen. Gespeicherte
+  Anfragen werden 30 Tage nach dem Löschen endgültig entfernt, spätestens aber
+  365 Tage nach Eingang.
 - **Vereinsorgan** (`team` mit `group_id`): zeigt die Positionen eines
   Vereinsorgans mit aktuellen Namen; Standardpositionen werden dabei
-  ausgeschlossen. Auch unbesetzte, nicht-standardmäßige Positionen erscheinen
-  mit Positionsbeschreibung und dem Hinweis „Nicht besetzt". Öffentliche
-  Comvenio-Profilbilder werden nur mit `show_avatar` angefordert; fehlende
-  Bilder sind erlaubt. Ein gespeichertes Organ-Widget auf einer öffentlichen,
-  aktiven Seite gibt das Organ frei — ein separater Freigabeschalter ist nicht
-  nötig; private Seiten, versteckte Sections und gelöschte Widgets geben
-  nichts frei. Reihenfolge und Hervorhebung der Positionen lassen sich mit
-  `position_order` (Positions-IDs von oben nach unten) und
-  `highlighted_position_ids` (farblich hervorgehobene Karten) steuern; die
-  passenden IDs liefern die Positions- und Organ-Abfragen des Vereins.
+  ausgeschlossen. Vorher mit dem Verein klären, denn ein gespeichertes,
+  öffentliches Organ-Widget macht die Namen des Organs öffentlich. Auch
+  unbesetzte, nicht-standardmäßige Positionen erscheinen mit
+  Positionsbeschreibung und dem Hinweis „Nicht besetzt" — eine vorübergehend
+  nicht verfügbare Datenquelle wird dabei nicht als unbesetzte Position
+  ausgegeben. Öffentliche Comvenio-Profilbilder werden nur mit `show_avatar`
+  angefordert; fehlende Bilder sind erlaubt. Ein gespeichertes Organ-Widget
+  auf einer öffentlichen, aktiven Seite gibt das Organ frei — ein separater
+  Freigabeschalter ist nicht nötig; private Seiten, versteckte Sections und
+  gelöschte Widgets geben nichts frei. Reihenfolge und Hervorhebung der
+  Positionen lassen sich mit `position_order` (Positions-IDs von oben nach
+  unten — nicht genannte Positionen folgen in der Reihenfolge des Organs,
+  unbekannte Kennungen werden ignoriert) und `highlighted_position_ids`
+  (farblich hervorgehobene Karten) steuern; die passenden IDs liefern die
+  Positions- und Organ-Abfragen des Vereins.
 - **Veranstaltungsliste** (`events_list`): `time_scope` unterscheidet
   vergangene (zuletzt beendet zuerst), kommende und alle Veranstaltungen.
   Rückblick und Ausschau lassen sich als zwei getrennte Widgets gestalten.
@@ -182,18 +192,21 @@ zu schreiben.
   Listen), `link` (Beschriftung, Ziel, neuer Tab); Live-Daten wie Ticker,
   News, Veranstaltungsliste, Termin, Vereinsorgan, Bildergalerie, Downloads,
   Bild, Video und Kontaktformular stehen ebenfalls als Slot ihrer Art.
-  Slot-Namen sind kurze Kleinbuchstaben-Kennungen und je Reiter eindeutig.
+  Slot-Namen bestehen aus Kleinbuchstaben, Ziffern und Bindestrich, beginnen
+  mit Buchstabe oder Ziffer, sind höchstens 63 Zeichen lang und je Reiter
+  eindeutig.
 - Ein Bild-Slot direkt auf einem Bildelement füllt nur Adresse und
   Alternativtext; Klasse, Größe und Ladeverhalten bleiben im Gerüst. Ein
   Bild-Slot auf einem umschließenden Element ist dagegen das vollständige
-  Bild-Widget mit eigener Box.
+  Bild-Widget mit eigener Box. Zulässig sind gesicherte Adressen, hochgeladene
+  Dateien und eingebettete Bilddaten; alles andere zeigt kein Bild.
 - Ein Slot lässt sich einzeln adressieren und setzen (Details in den
   Beispielen); ein bestehendes Gerüst lässt sich austauschen, ohne die Seite
   neu anzulegen — dabei bleiben die vorhandenen Slot-Inhalte erhalten, und ein
-  inzwischen geänderter Slot wird nicht überschrieben, sondern gemeldet. Die
-  dafür nötige Widget-Kennung liefert `comvenio homepage slot get
-  <reiter>/<slot> --json` (Feld `widget_id`) oder `comvenio homepage tree
-  --json` (zweites Pfadglied).
+  inzwischen geänderter Slot wird nicht überschrieben, sondern mit Exit-Code
+  `4` gemeldet. Die dafür nötige Widget-Kennung liefert `comvenio homepage
+  slot get <reiter>/<slot> --json` (Feld `widget_id`) oder `comvenio homepage
+  tree --json` (zweites Pfadglied).
 - Stile, die im Nachhinein umgeschaltet werden sollen, werden als Katalog
   angemeldet und dann als `style` am Slot statt als feste Klasse im Gerüst
   vergeben. Farben und Spaltenzahlen, die veränderbar sein sollen, werden
@@ -201,9 +214,12 @@ zu schreiben.
   Werte im CSS.
 - Elemente lassen sich als „Reihe" nebeneinanderstellen: ein Container mit
   fester Spaltenzahl und Prozentbreiten wird ab einer mittleren Bildschirmbreite
-  nebeneinander, darunter untereinander dargestellt (Beispiel unten). Eine
-  Section mit mehrspaltigem Layout und passender Breitenangabe wirkt
-  gleichwertig als Reihe.
+  nebeneinander, darunter untereinander dargestellt (Beispiel unten). Die
+  Breiten sind 2 bis 4 ganze Prozentwerte in 5er-Schritten, jeder mindestens
+  20, in Summe 100 und genau so viele wie Spalten — eine ungültige Angabe wird
+  verworfen, dann sind die Spalten gleich breit. Eine Reihe in einer Reihe ist
+  nicht vorgesehen. Eine Section mit mehrspaltigem Layout und passender
+  Breitenangabe wirkt gleichwertig als Reihe.
 - Ein bestehendes Gerüst im älteren Format — festem Text und Bildern direkt im
   HTML statt in Slots — bleibt lesbar, lässt sich im Baum aber nur noch an den
   Slot-Inhalten bearbeiten. `comvenio homepage tree` nennt je Reiter das
@@ -220,7 +236,7 @@ zu schreiben.
 | Bild | Ursache | Abhilfe |
 |---|---|---|
 | Live fehlen Kopfzeile und Navigation, die Vorschau zeigte sie noch | ein älterer Landing-Modus ist in der Design-Datei erhalten geblieben | `"landing": false` ausdrücklich in die Design-Datei schreiben und erneut anwenden |
-| Dunkler Rahmen oder Schatten um ein freigestelltes Logo | das Bild-Widget zeichnet standardmäßig eine Karte | am Bild-Slot die Kartendarstellung ausdrücklich abschalten |
+| Dunkler Rahmen oder Schatten um ein freigestelltes Logo | das Bild-Widget zeichnet standardmäßig eine Karte | am Bild-Slot die Kartendarstellung ausdrücklich abschalten (Feld `card_style` auf `none`) |
 | Ein hochformatiges Wappen wirkt in der runden Kopfzeile beschnitten | ältere Version der Anzeige | aktuelle Version verwenden; Logo möglichst quadratisch oder transparent hochladen |
 | „Kein Bild konfiguriert" nur bei einer Person im Organ | ein alter Stand liegt im Browser-Zwischenspeicher | Seite mit vollständigem Neuladen aktualisieren |
 | Eigenes CSS für eine Breite greift nicht | die Regel zielt auf eine Klasse, die der Slot gar nicht trägt | den tatsächlichen Aufbau in der Vorschau ansehen und den richtigen Container ansprechen |
@@ -255,8 +271,9 @@ ersatzweise verwendet. Fehlt die Subdomain, weist das CLI auf die
 Vereinseinstellungen oder auf die Entwurfsprüfung mit `--file` hin.
 
 Geprüft werden jeder öffentliche Tab, die getrennte Impressum-Seite, die
-Darstellung auf Mobilgerät, Tablet, Querformat und Desktop, horizontales
-Überlaufen und leere Hauptbereiche, unsichtbarer Text und Kontrast,
+Darstellung auf Mobilgerät, Tablet, Querformat und Desktop — konkret bei
+390, 768, 1024 und 1440 Pixel Breite —, horizontales Überlaufen und leere
+Hauptbereiche, unsichtbarer Text und Kontrast,
 Konsolen- und Netzwerkfehler, der unveränderbare Rechtsfußzeile mit allen
 festen Zielen, die Bedienbarkeit aller Pflichtlinks sowie die
 Vereinsverantwortlichkeit und mindestens eine öffentliche Kontaktangabe auf
@@ -345,7 +362,10 @@ Grundstruktur mit einem Tab, einer Section und einem Hero-Widget:
 }
 ```
 
-Zwei Mannschaften dauerhaft nebeneinander, als zwei ausgerichtete Sections:
+Zwei Mannschaften dauerhaft nebeneinander, als zwei ausgerichtete Sections
+(die vollständigen Felder des FuPa-Widgets stehen im Schema; `widgetId` ist
+dabei Pflicht, `title`, `includeSrc`, `hrefUrl`, `hrefLabel`, `height` und
+`show_title` sind optional):
 
 ```json
 [
@@ -442,7 +462,6 @@ comvenio homepage geruest set start --widget <widget-id> --file geruest.html
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **homepage** — vollständig
 

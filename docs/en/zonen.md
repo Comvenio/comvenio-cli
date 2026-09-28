@@ -51,10 +51,15 @@ Sign in with `comvenio login`; the scopes a given command needs are shown by
 ### Maintaining zone details
 
 1. Enter a building count by hand: `comvenio zone update <zone-id> --building-count 120`; leave it
-   to the estimate again with `--building-count leer`.
+   to the estimate again with `--building-count leer`. The estimate itself is automatic: after
+   creating a zone and after every change to its shape, the addresses (street and house number)
+   inside the polygon are counted from OpenStreetMap. `zone list` shows the estimated number in the
+   "buildings" column with "≈"; an entered number is shown without "≈" and takes precedence.
 2. Set or clear a note: `comvenio zone update <zone-id> --notes "<text>"` or `--notes ""`.
 3. Restart the estimate (for example after "estimate failed"):
    `comvenio zone estimate <zone-id>` — the result appears in `zone list` within a few seconds.
+   This also rewrites the zone's street list; `zone list --json` returns it in the `strassen`
+   field.
 4. Set sponsor, meeting point, mode of transport and special notes:
    `comvenio zone update <zone-id> --pate <member-id> --treffpunkt "<lat>,<lng>,<description>" --fortbewegung fuss --besonderheiten hunde,zugang`.
    Each of these fields is cleared individually with `leer`.
@@ -64,7 +69,9 @@ Sign in with `comvenio login`; the scopes a given command needs are shown by
 1. `comvenio zone import --set <zone-set-id> --geojson <file>.geojson`. Every feature of the
    `FeatureCollection` becomes a zone; the name comes from `properties.name`, the color optionally
    from `properties.color`. Invalid features are skipped and listed with their index and reason;
-   the valid zones are created regardless.
+   the valid zones are created regardless. The command then ends with **exit 1** — do not simply
+   retry the import in that case, or the zones already created get duplicated; instead, fix the
+   listed features one by one.
 
 ### Overview and assignment
 
@@ -92,7 +99,6 @@ comvenio task-zones <task-id> add <zone-id>
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **zone** — complete
 
@@ -107,9 +113,9 @@ _Generated from the coverage registry (`bun run gen:docs`) — do not edit by ha
 - `comvenio zone delete`
 - `comvenio zone import`
 - `comvenio zone overview`
-- `comvenio zone task-zones`
-- `comvenio zone task-zones add`
-- `comvenio zone task-zones remove`
+- `comvenio task-zones`
+- `comvenio task-zones add`
+- `comvenio task-zones remove`
 - Fields and values: `comvenio schema zone --json`
 <!-- /gen:docs -->
 
@@ -125,3 +131,11 @@ _Generated from the coverage registry (`bun run gen:docs`) — do not edit by ha
   `comvenio help fehler PERMISSION_DENIED`.
 - `UPSTREAM_UNAVAILABLE` — a service needed for validation (for example for `--pate`) is currently
   not answering. More: `comvenio help fehler UPSTREAM_UNAVAILABLE`.
+
+### Exit codes
+
+| Exit | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Error per the code above — or an import where features were skipped |
+| 2 | invalid input before the call (file, geometry, `--center`, `--color`) |

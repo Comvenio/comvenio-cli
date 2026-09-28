@@ -57,7 +57,7 @@ Ein fehlendes Recht meldet `403`.
 ### Karte bauen: erst prüfen, dann anlegen
 
 1. Karte und Einträge als Datei komponieren (siehe Beispiele).
-2. Schreibfrei prüfen: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. Das prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen und erzeugt lokal einen Datenbericht, eine responsive HTML-/PNG-Ansicht und ein DIN-A4-PDF, ohne etwas zu schreiben.
+2. Schreibfrei prüfen: `comvenio menu preview --file menu.json --css weinfest.css --out .menu-preview --json`. Das prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen, lädt dabei auch die verknüpften Rezeptdaten zu Kategorie, Beschreibung, Altersfreigabe, Allergenen und Farbstoffen und erzeugt lokal einen Datenbericht, eine responsive HTML-/PNG-Ansicht und ein DIN-A4-PDF, ohne etwas zu schreiben.
 3. Ein `valid: false` ist ein bewusst sichtbares Review-Ergebnis; die Artefakte entstehen trotzdem, damit der Fehler im Zusammenhang beurteilt werden kann.
 4. Erst danach anlegen: `comvenio menu apply --file menu.json --json` (legt Karte und Einträge im Bulk an).
 
@@ -74,7 +74,7 @@ Ein fehlendes Recht meldet `403`.
 1. Zutat anlegen: `comvenio ingredient create --file ingredient.json --json` (Pflichtfelder: `name`, `unit`).
 2. Zutaten suchen und lesen: `comvenio ingredient list --search "Kartoffel" --category <category-id> --json`, `comvenio ingredient show <ingredient-id> --json`. `--category` schließt Unterkategorien ein; `--skip` und `--limit` (1–1000) steuern die Liste.
 3. Kategorienbaum lesen und zuordnen: `comvenio ingredient-category tree --json`, `comvenio ingredient-category assign <ingredient-id> --category <category-id> --json`.
-4. Eigene Kategorie anlegen: `comvenio ingredient-category create --file category.json --json` (Pflichtfelder: `name`, `category_type`). `comvenio ingredient-category init --json` legt Standardkategorien an und ist nur für Vereine ohne vorhandene gedacht — sonst antwortet er mit einem Konflikt.
+4. Eigene Kategorie anlegen: `comvenio ingredient-category create --file category.json --json` (Pflichtfelder: `name`, `category_type`; optional unter anderem `description`, `parent_id`, `icon`, `color` und `sort_order`). `comvenio ingredient-category init --json` legt Standardkategorien an und ist nur für Vereine ohne vorhandene gedacht — sonst antwortet er mit einem Konflikt.
 
 ### Einkaufslisten führen
 
@@ -89,6 +89,7 @@ Ein fehlendes Recht meldet `403`.
 2. Das CSS wird im Frontend isoliert in den Karten-Container injiziert (kein Ausbruch aus dem Container) und targetet semantische Klassen wie `.menu-card`, `.menu-title`, `.menu-category-header`, `.menu-item`, `.menu-item-name`, `.menu-item-price`, `.menu-qr`.
 3. Allergene, Preise und der QR-Code bleiben strukturierte Pflicht-Komponenten — das CSS stylt nur ihr Aussehen.
 4. `style` liest den aktuellen Stand, merged dein CSS hinein und schreibt zurück; andere Design-Einstellungen der Karte bleiben erhalten.
+5. Der Inhalt des CSS wird nicht inhaltlich geprüft — für gültiges, wirksames CSS bist du selbst verantwortlich.
 
 ## Beispiele
 
@@ -219,7 +220,6 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **recipe** — vollständig
 

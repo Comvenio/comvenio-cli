@@ -43,11 +43,11 @@ Der Upload funktioniert auch aus der eigenständigen Programmversion; Dateiinhal
 
 Mobile Browser starten große Videos oft nicht automatisch — eine kleine, tonlose MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig automatisch und stumm an. Mit `--optimize-video` re-encodiert der Upload das Video automatisch, bevor es hochgeladen wird:
 
-1. `ffmpeg` muss verfügbar sein — ohne `ffmpeg` bricht der Befehl vor jedem Upload mit einer klaren Fehlermeldung ab.
+1. `ffmpeg` muss verfügbar sein (unter Windows zum Beispiel per `winget install Gyan.FFmpeg`) — ohne `ffmpeg` bricht der Befehl vor jedem Upload mit einer klaren Fehlermeldung ab.
 2. Nur Video-Dateien (`.mp4`, `.mov`, `.webm`, `.mkv`) lassen sich optimieren; andere Endungen brechen den Befehl vorher ab.
 3. Das Original bleibt unverändert auf der Festplatte; die optimierte Kopie entsteht temporär unter demselben Dateinamen und wird nach dem Upload automatisch gelöscht.
 
-Die Optimierung erzeugt H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** und mit vorangestelltem moov-Atom. Die Konsole zeigt die Größenänderung an; bei `--json` steht dieselbe Information zusätzlich strukturiert in der Antwort.
+Die Optimierung erzeugt H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** und mit vorangestelltem moov-Atom. Die Konsole zeigt die Größenänderung als „Video optimiert: X MB -> Y MB" an; bei `--json` steht dieselbe Information zusätzlich strukturiert unter `optimized.inputSizeBytes` und `optimized.outputSizeBytes` in der Antwort.
 
 ### Kontext nachträglich ändern
 
@@ -68,7 +68,7 @@ Ordner können angelegt, umbenannt, verschoben, geschützt und gelöscht werden;
 
 ### Ordnerrechte setzen
 
-Rechte werden einem Ordner als Objekt mit `subject_type`, `subject_id`, `can_read` und `can_write` zugeordnet; aktuell ist ausschließlich `subject_type=user` produktiv. Sobald ein Ordner oder einer seiner Vorfahren explizite Rechte trägt, ist der geschützte Bereich nur für passende Subjekte lesbar oder schreibbar. Unterordner können eigene, abweichende Rechte definieren. Rechte lassen sich auch gesammelt als Liste anlegen.
+Rechte werden einem Ordner als Objekt mit `subject_type`, `subject_id`, `can_read` und `can_write` zugeordnet; aktuell ist ausschließlich `subject_type=user` produktiv, `group` ist für später reserviert. Sobald ein Ordner oder einer seiner Vorfahren explizite Rechte trägt, ist der geschützte Bereich nur für passende Subjekte lesbar oder schreibbar. Unterordner können eigene, abweichende Rechte definieren. Rechte lassen sich auch gesammelt als Liste anlegen.
 
 ### Dateien zwischen Event-Bereichen teilen
 
@@ -81,6 +81,12 @@ Ein Paper verknüpft eine vorhandene Datei mit einem veröffentlichbaren Dokumen
 ### Mitglieder- und Buchungsdaten exportieren
 
 Nur die Bereiche `members` und `bookings` sowie die Formate `csv` und `xlsx` sind zulässig; andere Werte brechen schon vor der Anfrage mit einem Eingabefehler ab.
+
+### Abgrenzung
+
+Fachworkflows, die eigene Publikations- oder Newsletter-Regeln haben, bleiben in ihren eigenen
+Themenbereichen; DataShare verwaltet nur deren Dateien und Kontexte, nicht die fachliche Logik
+dahinter.
 
 ## Beispiele
 
@@ -213,7 +219,6 @@ comvenio data export bookings --format csv --out ./buchungen.csv --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **data** — vollständig
 

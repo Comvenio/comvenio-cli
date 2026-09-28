@@ -43,7 +43,7 @@ Ohne `--publish` bleibt eine neu angelegte News standardmäßig ein Entwurf.
 
 Reine Vorschau-Felder wie eine kurzlebige Bild-Adresse, Vereinsname, Autorenname und Vorschaudatum werden vor dem dauerhaften Speichern entfernt. Bilder im HTML brauchen zusätzlich zur Adresse eine stabile Datei-Kennung, damit die Anwendung eine abgelaufene Adresse automatisch neu signieren kann.
 
-Für eine einfache News ohne aufwendiges Layout genügt das direkte Anlegen mit Titel und Inhalt als Flags; für aufwendiges Rich-HTML ist der Weg über eine Datei übersichtlicher.
+Für eine einfache News ohne aufwendiges Layout genügt das direkte Anlegen mit Titel und Inhalt als Flags — beide sind dabei Pflicht; für aufwendiges Rich-HTML ist der Weg über eine Datei übersichtlicher.
 
 ### Aktualisieren, ohne den Status zu verlieren
 
@@ -58,14 +58,14 @@ Eine Datei, die schon vor der News-Erstellung hochgeladen wurde, lässt sich der
 - Semantische Struktur verwenden: Überschriften, Absätze, Listen, Tabellen sowie Bild mit Beschriftung.
 - Bilder mit einer stabilen Datei-Kennung versehen; eine kurzlebige, signierte Adresse allein läuft ab.
 - Für Videos das Standard-Steuerelement mit Metadaten-Vorschau verwenden; automatisches Abspielen ist nicht zulässig.
-- Für YouTube ausschließlich die datenschutzfreundliche Einbettungsadresse verwenden.
+- Für YouTube ausschließlich die datenschutzfreundliche Einbettungsadresse `https://www.youtube-nocookie.com/embed/...` verwenden.
 - Keine Skripte, Ereignis-Handler oder unbekannte eingebettete Adressen einbetten.
 
 ### Lokale Videos erzeugen
 
 Für Vereinsnews lassen sich kurze Videos aus Vorlagen lokal rendern: eine Bilder-Diashow, ein Spielergebnis, ein Ankündigungs-Teaser oder ein generischer Highlight-Auftakt. Jede Vorlage verlangt bestimmte Pflichtfelder und erlaubt weitere optionale Felder wie Untertitel, Overlays, Markenfarbe oder Logo.
 
-Die Highlight-Vorlage ist bewusst allgemein gehalten und kann optional eine Partner- oder Gastro-Szene zeigen: bis zu zwei Partnerkarten mit Name, Untertitel und Logo sowie ein dezentes Hintergrundmotiv. Diese Szene erscheint nur, wenn Partner angegeben sind, und liegt zwischen der Programmliste und einem abschließenden Hinweistext; das Video wird dadurch automatisch länger, ohne dass die Dauer manuell angepasst werden muss.
+Die Highlight-Vorlage ist bewusst allgemein gehalten (ein loopfähiger Auftakt-Clip ohne vereinsspezifischen Code) und kann optional eine Partner- oder Gastro-Szene zeigen: bis zu zwei Partnerkarten mit Name, Untertitel und Logo sowie ein dezentes Hintergrundmotiv. Diese Szene erscheint nur, wenn Partner angegeben sind, und liegt zwischen der Programmliste und einem abschließenden Hinweistext; das Video wird dadurch automatisch rund 4,3 Sekunden länger, ohne dass die Dauer manuell angepasst werden muss.
 
 Mit einer zusätzlichen Option lädt das CLI das gerenderte Video direkt hoch und liefert ein fertiges HTML-Einbettungsschnipsel für die News. Das Video-Upload-Limit beträgt 200 MB. Das Rendern läuft lokal; fehlende Abhängigkeiten werden nicht automatisch nachinstalliert.
 
@@ -142,7 +142,7 @@ Vorlagen:
 | `slideshow` | Titel, mindestens zwei Bilder, Markenfarbe | Untertitel, Overlays, Dauer je Bild, Logo |
 | `result` | Heim- und Gastteam, Heim- und Gastergebnis, Markenfarbe | Wettbewerb, Torschützen, Datum, Logo |
 | `teaser` | Titel, Datum, Markenfarbe | Ort, Aktionstext, Hintergrundbild, Logo |
-| `highlight` | Titel, Markenfarbe | Untertitel, Vereinsname, Datumsspanne, Programmpunkte (max. 3), Partner (max. 2), Hintergrundmotiv, Hinweistext, Abschlusstext |
+| `highlight` | Titel, Markenfarbe | Untertitel, Vereinsname, Datumsspanne, Kicker-Text, Überschrift der Programmliste, Programmpunkte (max. 3), Partner (max. 2), Hintergrundmotiv, Hinweistext, Abschlusstext, Hintergrundbild, Logo, Heldenbild, Sponsoren-Logos, eigene Farbgebung |
 
 ```json
 {
@@ -175,7 +175,6 @@ comvenio news video slideshow --params slideshow.json \
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **news** — vollständig
 

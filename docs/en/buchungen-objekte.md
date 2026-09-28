@@ -47,6 +47,9 @@ automatically creates a default object of type "event" when created.
 2. Create a building with a department, name, description and address.
 3. Update or remove a building.
 
+When updating, the CLI first reads the existing building and fills in its identifier, club and
+department automatically — these do not need to be supplied by hand.
+
 | Purpose | Command |
 |---|---|
 | List | `comvenio object building list [--with-rooms]` |
@@ -60,6 +63,8 @@ automatically creates a default object of type "event" when created.
 1. List rooms or view a single one.
 2. Create a room with a building, name, capacity and bookability.
 3. Update or remove a room.
+
+When updating, the CLI fills in the identifier automatically from the given room ID.
 
 | Purpose | Command |
 |---|---|
@@ -129,7 +134,8 @@ booking ends — not a recurrence interval, but a one-off due date per booking.
 3. Approve, reject or cancel a booking; for this the CLI first reads the current booking so that the
    required club and object details are sent along in full.
 4. Update a booking — title, comment, times or status; the object assignment deliberately stays
-   unchanged.
+   unchanged. This also first reads the current booking and fills in the club and object
+   automatically.
 5. Soft-delete a booking.
 6. Create several related bookings — for example a main booking together with portable objects — in
    a single bulk run.
@@ -181,6 +187,7 @@ comvenio booking link remove <link-id>
 ```
 
 If the main booking is canceled, Comvenio can automatically cancel linked portable bookings as well.
+The club is filled in automatically for all link actions.
 
 ### Evaluating statistics
 
@@ -366,7 +373,6 @@ comvenio booking stats guests --from 2026-01-01 --to 2026-12-31 --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **booking** — complete
 

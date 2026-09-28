@@ -103,7 +103,10 @@ destructive write — that is controlled exclusively by the deliberate
   public club images, the images of one event, the last three completed
   public events, a folder, or external addresses; `limit` 1–50, default 24.
   Only public, finished, active images of the same club appear; cover
-  images, flyers and logos of an event are left out.
+  images, flyers and logos of an event are left out. The folder source only
+  shows a folder's publicly released view, never a private file store.
+  Already-issued, time-limited image addresses may keep showing a recently
+  changed permission for a while.
 - **Downloads** (`files` with `source=files`): a fixed set of file
   identifiers shows specific documents, for example an application form. An
   empty selection shows no other club files.
@@ -118,18 +121,23 @@ destructive write — that is controlled exclusively by the deliberate
   does not send anything. An older, purely informational membership form
   does not confirm a successful application and must not be treated as one;
   `contact_form` is the only widget intended for contact and membership
-  interest. Rebuilding a form from free-form HTML is not supported.
+  interest. Rebuilding a form from free-form HTML is not supported. Stored
+  requests are permanently removed 30 days after deletion, and at the latest
+  365 days after they were received.
 - **Club body** (`team` with `group_id`): shows the positions of a club body
-  with current names; default positions are excluded. Even unfilled,
-  non-default positions appear with their position description and a "not
-  filled" note. Public Comvenio profile pictures are only requested with
-  `show_avatar`; missing pictures are allowed. A saved body widget on a
-  public, active page exposes that body — no separate release switch is
-  needed; private pages, hidden sections and deleted widgets expose nothing.
-  Order and highlighting of positions can be set with `position_order`
-  (position ids from top to bottom) and `highlighted_position_ids`
-  (color-highlighted cards); the matching ids come from the club's position
-  and body lookups.
+  with current names; default positions are excluded. Clarify with the club
+  first, because a saved, public body widget makes the body's names public.
+  Even unfilled, non-default positions appear with their position
+  description and a "not filled" note — a data source that is temporarily
+  unavailable is never shown as an unfilled position. Public Comvenio
+  profile pictures are only requested with `show_avatar`; missing pictures
+  are allowed. A saved body widget on a public, active page exposes that
+  body — no separate release switch is needed; private pages, hidden
+  sections and deleted widgets expose nothing. Order and highlighting of
+  positions can be set with `position_order` (position ids from top to
+  bottom — positions left out follow the body's own order, unknown ids are
+  ignored) and `highlighted_position_ids` (color-highlighted cards); the
+  matching ids come from the club's position and body lookups.
 - **Event list** (`events_list`): `time_scope` distinguishes past events
   (most recently finished first), upcoming events and all events. Recap and
   outlook can be designed as two separate widgets.
@@ -173,26 +181,31 @@ without writing HTML.
   lists), `link` (label, target, new tab); live data such as ticker, news,
   event list, date, club body, image gallery, downloads, image, video and
   contact form are likewise represented as a slot of their kind. Slot names
-  are short lowercase identifiers and unique per tab.
+  consist of lowercase letters, digits and hyphens, start with a letter or
+  digit, are at most 63 characters long, and are unique per tab.
 - An image slot placed directly on an image element only fills address and
   alt text; class, size and loading behavior stay in the skeleton. An image
   slot on a wrapping element is instead the full image widget with its own
-  box.
+  box. Accepted are secure addresses, uploaded files and embedded image
+  data; anything else shows no image.
 - A slot can be addressed and set individually (details in Examples); an
   existing skeleton can be swapped without recreating the page — existing
   slot content is preserved, and a slot changed in the meantime is never
-  overwritten, only reported. The widget id needed for that comes from
-  `comvenio homepage slot get <tab>/<slot> --json` (field `widget_id`) or
-  `comvenio homepage tree --json` (second path segment).
+  overwritten, only reported with exit code `4`. The widget id needed for
+  that comes from `comvenio homepage slot get <tab>/<slot> --json` (field
+  `widget_id`) or `comvenio homepage tree --json` (second path segment).
 - Styles meant to be switched later are registered as a catalog and then
   assigned as a `style` on the slot instead of a fixed class in the
   skeleton. Colors and column counts meant to be adjustable are likewise
   registered as a token or attribute, not as fixed values in CSS.
 - Elements can be placed side by side as a "row": a container with a fixed
   column count and percentage widths is shown side by side from a medium
-  screen width upward, and stacked below that (example below). A section
-  with a multi-column layout and matching width values acts equivalently as
-  a row.
+  screen width upward, and stacked below that (example below). The widths are
+  2 to 4 whole percentage values in steps of 5, each at least 20, summing to
+  100, and matching the column count — an invalid value is discarded, and the
+  columns fall back to equal width. A row inside a row is not supported. A
+  section with a multi-column layout and matching width values acts
+  equivalently as a row.
 - An existing skeleton in the older format — fixed text and images directly
   in the HTML instead of in slots — stays readable but can only be edited at
   the slot level in the tree. `comvenio homepage tree` states the detected
@@ -209,7 +222,7 @@ without writing HTML.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Header and navigation are missing live, the preview still showed them | an older landing mode survived in the design file | write `"landing": false` explicitly into the design file and apply again |
-| Dark border or shadow around a cut-out logo | the image widget draws a card by default | explicitly turn off the card style on the image slot |
+| Dark border or shadow around a cut-out logo | the image widget draws a card by default | explicitly turn off the card style on the image slot (`card_style` field set to `none`) |
 | A portrait crest looks cropped in the round header | older version of the display | use the current version; upload the logo square or transparent |
 | "No image configured" for only one person | an old state sits in the browser cache | fully reload the page |
 | Custom CSS for a width has no effect | the rule targets a class the slot does not carry | inspect the actual structure in the preview and target the right container |
@@ -244,7 +257,8 @@ fallback. If the subdomain is missing, the CLI points to the club settings
 or to the draft check with `--file`.
 
 The check covers every public tab, the separate legal notice page, display
-on mobile, tablet, landscape and desktop, horizontal overflow and empty main
+on mobile, tablet, landscape and desktop — concretely at 390, 768, 1024 and
+1440 pixels width —, horizontal overflow and empty main
 regions, invisible text and contrast, console and network errors, the fixed
 legal footer with all its targets, operability of every mandatory link, and
 the club's stated responsibility plus at least one public contact detail on
@@ -330,7 +344,10 @@ Basic structure with one tab, one section and one hero widget:
 }
 ```
 
-Two teams permanently side by side, as two aligned sections:
+Two teams permanently side by side, as two aligned sections (the full fields
+of the FuPa widget are in the schema; `widgetId` is required there, `title`,
+`includeSrc`, `hrefUrl`, `hrefLabel`, `height` and `show_title` are
+optional):
 
 ```json
 [
@@ -426,7 +443,6 @@ comvenio homepage geruest set start --widget <widget-id> --file geruest.html
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **homepage** — complete
 

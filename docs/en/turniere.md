@@ -56,7 +56,8 @@ series-less way to create a tournament.
 
 1. List a tournament's participants.
 2. Register a team, individual or pair; the registration status defaults to confirmed and can be
-   overridden when registering.
+   overridden when registering. Registering a team is its own command with the participant kind fixed
+   to team.
 3. Withdraw a participant — annulling, ahead of a redraw, or scored in the opponent's favor — or
    reinstate one.
 4. Fully remove a participant (a stronger, soft deletion).
@@ -104,7 +105,8 @@ Withdrawn participants are not drawn again in any of the three variants.
 ### Standings and preview
 
 1. Retrieve the current standings.
-2. Generate a local preview and optionally open it directly — it does not change the tournament.
+2. Generate a local preview and optionally open it directly — it is created as a standalone HTML file
+   and does not change the tournament.
 
 ### Scope
 
@@ -267,7 +269,6 @@ comvenio tournament preview <tournament-id> --open
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **tournament** — complete
 

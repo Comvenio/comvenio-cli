@@ -38,7 +38,7 @@ A product describes an offer from the club, for example "jersey sponsor", "billb
 
 ### Contract version of a product
 
-A new contract version reflects changed terms without overwriting older contracts — older versions remain as history. A new version can explicitly supersede a previous one and limit its validity; an internal note can be stored alongside it. Contract files are always private. Changing or deleting a version always needs the specific version ID in addition to the product ID; when changing a version, a new contract file can be uploaded in the same action. Deleting removes a version as a soft delete; other versions are unaffected.
+A new contract version reflects changed terms without overwriting older contracts — older versions remain as history. A new version can explicitly supersede a previous one and limit its validity; an internal note can be stored alongside it. Contract files are always private. Changing or deleting a version always needs the specific version ID in addition to the product ID; changing only sets the given fields, and a new contract file can be uploaded in the same action. Deleting removes a version as a soft delete; other versions are unaffected.
 
 ### Assigning a sponsor to a product
 
@@ -165,7 +165,6 @@ comvenio sponsor responsible-remove <responsible-assignment-id> --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **sponsor** — complete
 

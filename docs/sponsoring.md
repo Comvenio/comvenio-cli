@@ -38,7 +38,7 @@ Ein Produkt beschreibt ein Angebot des Clubs, etwa „Trikotsponsor", „Bandenw
 
 ### Vertragsversion eines Produkts
 
-Eine neue Vertragsversion bildet geänderte Konditionen ab, ohne ältere Verträge zu überschreiben — ältere Versionen bleiben als Historie erhalten. Eine neue Version kann eine vorherige ausdrücklich ablösen und deren Gültigkeit begrenzen; eine interne Notiz lässt sich mitspeichern. Vertragsdateien sind immer privat. Zum Ändern oder Löschen einer Version ist neben der Produkt-ID stets die konkrete Versions-ID anzugeben; beim Ändern lässt sich in derselben Aktion zusätzlich eine neue Vertragsdatei hochladen. Löschen entfernt eine Version per Soft-Delete, andere Versionen bleiben unberührt.
+Eine neue Vertragsversion bildet geänderte Konditionen ab, ohne ältere Verträge zu überschreiben — ältere Versionen bleiben als Historie erhalten. Eine neue Version kann eine vorherige ausdrücklich ablösen und deren Gültigkeit begrenzen; eine interne Notiz lässt sich mitspeichern. Vertragsdateien sind immer privat. Zum Ändern oder Löschen einer Version ist neben der Produkt-ID stets die konkrete Versions-ID anzugeben; das Ändern setzt dabei nur die angegebenen Felder und lässt sich in derselben Aktion zusätzlich um eine neue Vertragsdatei ergänzen. Löschen entfernt eine Version per Soft-Delete, andere Versionen bleiben unberührt.
 
 ### Sponsor einem Produkt zuordnen
 
@@ -165,7 +165,6 @@ comvenio sponsor responsible-remove <responsible-assignment-id> --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **sponsor** — vollständig
 

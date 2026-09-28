@@ -33,7 +33,7 @@ Rollennamen sind innerhalb eines Vereins nach Entfernen äußerer Leerzeichen un
 3. Eine Matrix-Datei ist standardmäßig additiv: Nur gelieferte Schlüssel werden geändert. Ein vollständiger Ersatz setzt alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt".
 4. Ohne ausdrückliche Bestätigung zeigt das CLI nur den vollständigen Vorher-/Nachher-Unterschied und führt keine Änderung aus. Mit Bestätigung liest es denselben Stand im selben Lauf erneut und sichert die Änderung gegen zwischenzeitliche parallele Änderungen ab.
 
-Eine Matrix-Datei ist ein JSON-Objekt mit wahr/falsch-Werten je Berechtigungs-Schlüssel; alternativ ist eine Hülle mit dem Feld `values` zulässig.
+Eine Matrix-Datei ist ein JSON-Objekt mit wahr/falsch-Werten je Berechtigungs-Schlüssel; alternativ ist eine Hülle mit dem Feld `values` zulässig. Eine Hülle mit dem Feld `permissions` bleibt zum Lesen kompatibel, gilt aber als veraltet.
 
 ### Rolle direkt zuweisen
 
@@ -52,7 +52,7 @@ Die effektiven Rechte eines Mitglieds werden serverseitig zusammengeführt: Ohne
 - Geschützte Standardrollen und ihre Matrix lassen sich nicht ändern.
 - Es gibt kein öffentliches erzwungenes Löschen und keine vereinsweiten Aufräum-Aktionen.
 - Löschen, Entfernen und Entkoppeln sind Soft-Deletes; Wiederherstellen bleibt jeweils ein eigener Zustand.
-- Kritische Änderungen liefern maschinenlesbar Ziel, Ist-Stand, Unterschied und Risiko.
+- Kritische Änderungen liefern maschinenlesbar Ziel, Ist-Stand, Unterschied, Risiko und eine Vorgangs-Kennung.
 - Eine Zuweisung läuft ausschließlich über die Mitglieds-ID, nie über Namen oder E-Mail-Adresse.
 - Schreibende Aufrufe werden nicht automatisch wiederholt.
 - Jeder vollständige Matrix-Ersatz verlangt eine sichtbare Vorschau und eine ausdrückliche Bestätigung.
@@ -136,7 +136,6 @@ comvenio role effective --member-id <member-id> --department-id <department-id> 
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **role** — vollständig
 

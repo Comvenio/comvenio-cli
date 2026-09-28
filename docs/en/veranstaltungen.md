@@ -25,6 +25,7 @@ Before working with events, run `comvenio schema event --json` and `comvenio eve
 | Read visible events | Visibility filter; some catalog and series functions additionally need `view_events` |
 | Create event, template or series | `create_events` |
 | Manage event and sub-resources (areas, program, contacts, resources, sponsors, design, DJ) | `manage_events` |
+| Manage the site plan (`plan`) | also `manage_events` |
 | Edit or delete your own area note | only the person who created it |
 | Respond to your own invitation | ownership and visibility rule |
 
@@ -90,7 +91,7 @@ Key values: `event_type` (`party`, `meeting`, `excursion`, `training`, `competit
 
 ### Set up, staff and document areas
 
-1. Create an area: `comvenio event area add <event-id> --name "Bühne" --description "Programm und Technik" --color "#7c3aed" --area-category stage --public --json`, or several in one call with `comvenio event area bulk --file areas.json --json`.
+1. Create an area: `comvenio event area add <event-id> --name "Bühne" --description "Programm und Technik" --color "#7c3aed" --area-category stage --public --json`, or several in one call with `comvenio event area bulk --file areas.json --json`. For the full area contract, `area add` also accepts `--file` with, among other fields, a public description, opening and closing times, and a geometry (GeoJSON as text); `area update <area-id> --file area-patch.json` supports the same editable fields — whether an area is the default area, however, can only be set on creation, not changed afterward.
 2. Assign members: `comvenio event assignment add <area-id> --member-id <member-id> --json`; remove with `comvenio event assignment remove <area-id> --member-id <member-id> --json`, clear with `clear`; the event and club IDs are resolved automatically via the area.
 3. Create an area lead: `comvenio event lead add <area-id> --file lead.json --json`.
 4. Add a note: `comvenio event area-note add <area-id> --notes "Stromanschluss geprüft" --json`.
@@ -106,7 +107,7 @@ Key values: `event_type` (`party`, `meeting`, `excursion`, `training`, `competit
 1. Upload a file: `comvenio data upload ./flyer.pdf --context event --context-id <event-id> --json`.
 2. Link the file at the business level: `comvenio event attachment add <event-id> --attachment-type flyer --attachment-id <file-id> --title "Festflyer" --json`. Attachment types: `content`, `counter`, `protocol`, `tournament`, `title_picture`, `flyer`, `news`, `menu`, `shoppinglist`, `canva_embed`.
 3. Link a resource: `comvenio event resource add <event-id> --file resources.json --json` (adds) or `comvenio event resource set <event-id> --file resources.json --json` (replaces the whole set); remove with `comvenio event resource remove <event-id> --target-type room --target-id <room-id> --json`. Check utilization: `comvenio event resource usage --target-type room --target-id <room-id> --start <iso> --end <iso> --status planned,confirmed --json`.
-4. Create a tag category and tag, then assign: `comvenio event tag category-add --name "Sportart" --json`, `comvenio event tag add --name "Darts" --category-id <category-id> --json`, `comvenio event tag assign <event-id> --tag-id <tag-id> --json`; view assigned tags: `comvenio event tag assigned <event-id> --json`.
+4. Create a tag category and tag, then assign: `comvenio event tag category-add --name "Sportart" --json`, `comvenio event tag add --name "Darts" --category-id <category-id> --json`, `comvenio event tag assign <event-id> --tag-id <tag-id> --json`; view assigned tags: `comvenio event tag assigned <event-id> --json`. For `tag category-update` and `tag update`, the CLI first reads the existing record and fills in the club id and, for tags, the category id — that makes partial changes work safely whether they come through flags or a patch file.
 
 ### Invite members and clubs, capture registrations
 
@@ -394,7 +395,6 @@ External team synchronization:
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **event** — complete
 
@@ -415,7 +415,7 @@ _Generated from the coverage registry (`bun run gen:docs`) — do not edit by ha
 - `comvenio event resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch`
 - `comvenio event attachment list|show|add|update|delete`
 - `comvenio event tag category and assignment workflows`
-- `comvenio event sponsor and sponsor-program workflows`
+- `comvenio sponsor and sponsor-program workflows`
 - `comvenio event invitation and club-invitation workflows`
 - `comvenio event registration list|add|stats|show|update|adjust|delete|aggregate`
 - `comvenio event design theme and asset workflows`

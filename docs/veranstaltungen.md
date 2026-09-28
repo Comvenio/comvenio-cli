@@ -25,6 +25,7 @@ Nutze vor jeder Event-Arbeit `comvenio schema event --json` und `comvenio event 
 | Sichtbare Events lesen | Sichtbarkeitsfilter; für Katalog- und Serienfunktionen teilweise zusätzlich `view_events` |
 | Event, Vorlage oder Serie erstellen | `create_events` |
 | Event und Unterressourcen (Bereiche, Programm, Kontakte, Ressourcen, Sponsoren, Design, DJ) verwalten | `manage_events` |
+| Geländeplan verwalten (`plan`) | ebenfalls `manage_events` |
 | Eigene Bereichsnotiz bearbeiten oder löschen | nur die Person, die sie angelegt hat |
 | Eigene Einladung beantworten | Eigentümer- und Sichtbarkeitsregel |
 
@@ -90,7 +91,7 @@ Wichtige Werte: `event_type` (`party`, `meeting`, `excursion`, `training`, `comp
 
 ### Bereiche einrichten, besetzen und dokumentieren
 
-1. Bereich anlegen: `comvenio event area add <event-id> --name "Bühne" --description "Programm und Technik" --color "#7c3aed" --area-category stage --public --json`, oder mehrere in einem Aufruf mit `comvenio event area bulk --file areas.json --json`.
+1. Bereich anlegen: `comvenio event area add <event-id> --name "Bühne" --description "Programm und Technik" --color "#7c3aed" --area-category stage --public --json`, oder mehrere in einem Aufruf mit `comvenio event area bulk --file areas.json --json`. Für den vollständigen Bereichs-Vertrag nimmt `area add` zusätzlich `--file` mit unter anderem einer öffentlichen Beschreibung, Öffnungs- und Schließzeit sowie einer Geometrie (GeoJSON als Text); `area update <area-id> --file area-patch.json` unterstützt dieselben änderbaren Felder — ob ein Bereich der Standardbereich ist, lässt sich dagegen nur beim Anlegen setzen, nicht nachträglich ändern.
 2. Mitglieder zuweisen: `comvenio event assignment add <area-id> --member-id <member-id> --json`; entfernen mit `comvenio event assignment remove <area-id> --member-id <member-id> --json`, leeren mit `clear`; Event- und Club-ID werden automatisch über die Area aufgelöst.
 3. Bereichsleitung anlegen: `comvenio event lead add <area-id> --file lead.json --json`.
 4. Notiz hinterlegen: `comvenio event area-note add <area-id> --notes "Stromanschluss geprüft" --json`.
@@ -106,7 +107,7 @@ Wichtige Werte: `event_type` (`party`, `meeting`, `excursion`, `training`, `comp
 1. Datei hochladen: `comvenio data upload ./flyer.pdf --context event --context-id <event-id> --json`.
 2. Datei fachlich verknüpfen: `comvenio event attachment add <event-id> --attachment-type flyer --attachment-id <file-id> --title "Festflyer" --json`. Anhangstypen: `content`, `counter`, `protocol`, `tournament`, `title_picture`, `flyer`, `news`, `menu`, `shoppinglist`, `canva_embed`.
 3. Ressource verknüpfen: `comvenio event resource add <event-id> --file resources.json --json` (ergänzt) oder `comvenio event resource set <event-id> --file resources.json --json` (ersetzt die gesamte Menge); entfernen mit `comvenio event resource remove <event-id> --target-type room --target-id <room-id> --json`. Auslastung prüfen: `comvenio event resource usage --target-type room --target-id <room-id> --start <iso> --end <iso> --status planned,confirmed --json`.
-4. Tag-Kategorie und Tag anlegen, dann zuweisen: `comvenio event tag category-add --name "Sportart" --json`, `comvenio event tag add --name "Darts" --category-id <category-id> --json`, `comvenio event tag assign <event-id> --tag-id <tag-id> --json`; zugewiesene Tags ansehen: `comvenio event tag assigned <event-id> --json`.
+4. Tag-Kategorie und Tag anlegen, dann zuweisen: `comvenio event tag category-add --name "Sportart" --json`, `comvenio event tag add --name "Darts" --category-id <category-id> --json`, `comvenio event tag assign <event-id> --tag-id <tag-id> --json`; zugewiesene Tags ansehen: `comvenio event tag assigned <event-id> --json`. Bei `tag category-update` und `tag update` liest das CLI zuerst den bestehenden Datensatz und ergänzt die Club- sowie bei Tags die Kategorie-Kennung — dadurch funktionieren Teiländerungen sicher, egal ob über Flags oder eine Patch-Datei.
 
 ### Mitglieder und Vereine einladen, Anmeldungen erfassen
 
@@ -393,7 +394,6 @@ Externe Team-Synchronisation:
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **event** — vollständig
 
@@ -414,7 +414,7 @@ _Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ände
 - `comvenio event resource list|add|set|remove|link-show|link-update|link-delete|usage|usage-batch`
 - `comvenio event attachment list|show|add|update|delete`
 - `comvenio event tag category and assignment workflows`
-- `comvenio event sponsor and sponsor-program workflows`
+- `comvenio sponsor and sponsor-program workflows`
 - `comvenio event invitation and club-invitation workflows`
 - `comvenio event registration list|add|stats|show|update|adjust|delete|aggregate`
 - `comvenio event design theme and asset workflows`

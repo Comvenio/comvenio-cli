@@ -48,6 +48,9 @@ erzeugt beim Anlegen automatisch ein Standardobjekt vom Typ „Veranstaltung".
 2. Gebäude mit Abteilung, Name, Beschreibung und Adresse anlegen.
 3. Gebäude ändern oder entfernen.
 
+Beim Ändern liest das CLI zuerst das bestehende Gebäude und ergänzt Kennung, Verein und Abteilung
+automatisch — diese Angaben müssen nicht von Hand mitgegeben werden.
+
 | Zweck | Befehl |
 |---|---|
 | Liste | `comvenio object building list [--with-rooms]` |
@@ -61,6 +64,8 @@ erzeugt beim Anlegen automatisch ein Standardobjekt vom Typ „Veranstaltung".
 1. Räume auflisten oder einen einzelnen ansehen.
 2. Raum mit Gebäude, Name, Kapazität und Buchbarkeit anlegen.
 3. Raum ändern oder entfernen.
+
+Beim Ändern ergänzt das CLI die Kennung automatisch aus der angegebenen Raum-ID.
 
 | Zweck | Befehl |
 |---|---|
@@ -131,7 +136,8 @@ nach Buchungsende fest — kein Wiederholungsintervall, sondern eine einmalige F
 3. Buchung genehmigen, ablehnen oder stornieren; dafür liest das CLI vorher die aktuelle Buchung,
    damit die geforderten Vereins- und Objektangaben vollständig mitgeschickt werden.
 4. Buchung ändern — Titel, Kommentar, Zeiten oder Status; die Objekt-Zuordnung bleibt dabei bewusst
-   bestehen.
+   bestehen. Auch dafür liest das CLI zuerst die aktuelle Buchung und ergänzt Verein und Objekt
+   automatisch.
 5. Buchung mit Soft-Delete entfernen.
 6. Mehrere zusammengehörige Buchungen — etwa eine Hauptbuchung mit portablen Objekten — in einem
    Sammellauf anlegen.
@@ -183,7 +189,7 @@ comvenio booking link remove <link-id>
 ```
 
 Wird die Hauptbuchung storniert, kann Comvenio verknüpfte portable Buchungen automatisch mit
-stornieren.
+stornieren. Der Verein wird bei allen Verknüpfungs-Aktionen automatisch ergänzt.
 
 ### Statistiken auswerten
 
@@ -369,7 +375,6 @@ comvenio booking stats guests --from 2026-01-01 --to 2026-12-31 --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **booking** — vollständig
 

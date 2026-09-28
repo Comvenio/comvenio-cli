@@ -43,11 +43,11 @@ Upload also works from the standalone build; file contents are transferred as a 
 
 Mobile browsers often don't autoplay large videos — a small, silent MP4 with a moov atom moved to the front (faststart) plays automatically and muted reliably instead. With `--optimize-video`, the upload re-encodes the video automatically before it is uploaded:
 
-1. `ffmpeg` must be available — without `ffmpeg` the command aborts with a clear error before any upload happens.
+1. `ffmpeg` must be available (on Windows, for example via `winget install Gyan.FFmpeg`) — without `ffmpeg` the command aborts with a clear error before any upload happens.
 2. Only video files (`.mp4`, `.mov`, `.webm`, `.mkv`) can be optimized; other extensions abort the command beforehand.
 3. The original file on disk stays untouched; the optimized copy is created temporarily under the same file name and is deleted automatically after the upload.
 
-Optimization produces H.264 (profile main, level 4.0, yuv420p), a maximum width of 1280 px, **no audio track**, and a moved-forward moov atom. The console shows the size change; with `--json` the same information also appears structured in the response.
+Optimization produces H.264 (profile main, level 4.0, yuv420p), a maximum width of 1280 px, **no audio track**, and a moved-forward moov atom. The console shows the size change as "Video optimiert: X MB -> Y MB"; with `--json` the same information also appears structured under `optimized.inputSizeBytes` and `optimized.outputSizeBytes` in the response.
 
 ### Changing the context afterwards
 
@@ -68,7 +68,7 @@ Folders can be created, renamed, moved, protected and deleted; deleting and rest
 
 ### Setting folder rights
 
-Rights are assigned to a folder as an object with `subject_type`, `subject_id`, `can_read` and `can_write`; currently only `subject_type=user` is in production use. As soon as a folder or one of its ancestors carries explicit rights, the protected area is only readable or writable for matching subjects. Subfolders can define their own, different rights. Rights can also be created in bulk as a list.
+Rights are assigned to a folder as an object with `subject_type`, `subject_id`, `can_read` and `can_write`; currently only `subject_type=user` is in production use, `group` is reserved for later. As soon as a folder or one of its ancestors carries explicit rights, the protected area is only readable or writable for matching subjects. Subfolders can define their own, different rights. Rights can also be created in bulk as a list.
 
 ### Sharing files between event areas
 
@@ -81,6 +81,11 @@ A paper links an existing file to a publishable document record. Document types 
 ### Exporting member and booking data
 
 Only the areas `members` and `bookings`, and the formats `csv` and `xlsx`, are allowed; other values fail with an input error before the request is sent.
+
+### Scope
+
+Workflows with their own publication or newsletter rules stay in their own topic areas; DataShare
+only manages their files and contexts, not the business logic behind them.
 
 ## Examples
 
@@ -213,7 +218,6 @@ comvenio data export bookings --format csv --out ./buchungen.csv --json
 ## Commands and actions
 
 <!-- gen:docs befehle -->
-_Generated from the coverage registry (`bun run gen:docs`) — do not edit by hand._
 
 **data** — complete
 

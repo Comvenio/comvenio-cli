@@ -201,7 +201,7 @@ comvenio club design --file design-settings.json --json
 | `--font <pair>` | erlaubte Schriftkombination |
 | `--spacing <mode>` | Abstandsmodus |
 | `--file <json>` | vollständiges teilweises Design-Objekt |
-| `--css-file <css>` | begrenztes eigenes CSS |
+| `--css-file <css>` | begrenztes eigenes CSS — die serverseitige Sicherheitsprüfung bleibt dabei maßgeblich |
 | `--tokens-file <json>` | Design-Tokens wie Palette, Rundung und Typografie |
 | `--header-layout`, `--header-surface`, `--header-density` | öffentliche Kopfzeile |
 | `--header-sticky <true\|false>` | Sticky-Verhalten der Kopfzeile |
@@ -219,7 +219,8 @@ comvenio club logo --json                          # aktuelles Logo (Metadaten)
 comvenio club logo-upload --file wappen.png --json  # neues Logo hochladen
 ```
 
-Das zuletzt hochgeladene Logo gilt sofort überall, wo die Plattform das
+`logo-upload` braucht das Recht, Vereinseinstellungen zu verwalten. Das
+zuletzt hochgeladene Logo gilt sofort überall, wo die Plattform das
 Vereinslogo zeigt: Kopfzeile der Homepage, Bild-Widget mit Vereinslogo als
 Quelle, Vereinsauswahl. Ein Bild mit transparentem Hintergrund wirkt auf
 farbigen Flächen am besten. Ein gewöhnlicher Datei-Upload ersetzt das Logo
@@ -254,7 +255,6 @@ comvenio club department-add --file department.json --json
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **login** — vollständig
 

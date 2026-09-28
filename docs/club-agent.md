@@ -11,8 +11,9 @@ stichwoerter: [club-agent, chat, funktionen, freigabe, freigaben, session, dauer
 
 Der Club-Agent ist Comvenios vereinseigener, kanalunabhängiger Assistent für Beratung, Planung
 und mehrstufige Aufgaben im Verein — etwa eine Helfereinteilung planen oder eine Aufgabe anlegen.
-Er ist keine alternative Datenquelle und kein generischer Durchgriff: Jeder Zugriff läuft mit der
-Identität der angemeldeten Person, und der Dienst prüft Verein und Rechte erneut.
+CLI, MCP/ChatGPT, Claude, App, Web, Voice und weitere Kanäle sind dabei nur Oberflächen desselben
+Assistenten. Er ist keine alternative Datenquelle und kein generischer Durchgriff: Jeder Zugriff
+läuft mit der Identität der angemeldeten Person, und der Dienst prüft Verein und Rechte erneut.
 
 ## Voraussetzungen und Rechte
 
@@ -24,10 +25,21 @@ Identität der angemeldeten Person, und der Dienst prüft Verein und Rechte erne
 Anmeldung per `comvenio login` — die Standardanmeldung deckt alle Scopes ab, mit `--scopes`
 einschränkbar. Was Chat und Funktionen tatsächlich ausführen dürfen, richtet sich zusätzlich nach
 der Vereinsrolle. Ist der Club-Agent für den Verein noch nicht eingerichtet, muss das zuerst ein
-Administrator des Vereins in der Web-App erledigen. Freigaben und Dauerfreigaben entstehen und
-enden ausschließlich in Web oder App, nie im Terminal.
+Administrator des Vereins in der Web-App erledigen; der Dienst antwortet in diesem Fall ohne
+interne Diagnose- oder Trace-Daten. Freigaben und Dauerfreigaben entstehen und enden
+ausschließlich in Web oder App, nie im Terminal — Dauerfreigaben im Reiter
+„Fähigkeiten & Routinen“.
 
 ## Abläufe
+
+### Die drei Ausführungsebenen
+
+Der Club-Agent kombiniert drei Ebenen: Direkte Daten- und Aktionsbefehle liefern strukturierte,
+deterministische Vereinsdaten und sind für einfache Fragen zu Events, News, Aufgaben, Mitgliedern
+oder anderen einzelnen Bereichen vorzuziehen. Domain-Skills bündeln bekannte Vereinsabläufe und
+erzwingen deren fachliche Vorbedingungen, Risiko- und Freigaberegeln. Der eigentliche Agent
+übernimmt Beratung, Planung, proaktive Hinweise und mehrstufige Aufgaben; eine hinterlegte
+Werkzeug- und Fähigkeitsübersicht bestimmt dabei, welche Skills tatsächlich ausführbar sind.
 
 ### Im Dialog mit dem Club-Agenten sprechen
 
@@ -35,6 +47,12 @@ enden ausschließlich in Web oder App, nie im Terminal.
 2. Die Antwort enthält eine Session-ID.
 3. Für Rückfragen und Korrekturen dieselbe Session weiterverwenden:
    `comvenio agent chat "<Nachricht>" --session <session-id>`.
+
+Das CLI sendet dabei ausschließlich die Nachricht, den gebundenen Verein, einen festen
+Gesprächskontext und optional die Session-ID; eine Benutzer-ID, Rollen, Berechtigungen oder
+Zielpersonen lassen sich nicht mitgeben. Schreibt der Agent im Dialog etwas, legt er automatisch
+eine Freigabe-Anfrage an — die Antwort nennt sofort deren Direktlink, im JSON-Modus im Feld
+`approval_refs`; ein getipptes „Ja“ gibt dabei nichts frei, weder im Terminal noch im Web-Chat.
 
 ### Freigaben lesen
 
@@ -44,9 +62,15 @@ enden ausschließlich in Web oder App, nie im Terminal.
 4. Direktlink ausgeben lassen (entscheidet nichts): `comvenio agent approval approve <id>` bzw.
    `comvenio agent approval reject <id>`.
 5. Entschieden wird ausschließlich über den ausgegebenen Link in Web oder App — ein getipptes „Ja“
-   im Terminal gibt nichts frei.
+   gibt nichts frei, weder im Terminal noch im Web-Chat. Eine Entscheidung über die
+   Geräte-Token-Anmeldung des CLI lehnt der Dienst ab.
 
 ### Funktionen direkt aufrufen
+
+Jede freigegebene Funktion lässt sich auch ohne Chat aufrufen — mit derselben Prüfung wie der
+Knopf im Web und der Agent selbst (Eingabeschema, Recht, Freigabe). Welche Funktionen es gibt und
+welche Angaben sie brauchen, liefert der Dienst zur Laufzeit; eine neue Funktion braucht dafür kein
+neues CLI.
 
 1. Freigegebene Funktionen ansehen: `comvenio function list`.
 2. Funktion ausführen: `comvenio function run <funktion> --args '{"…":"…"}'`.
@@ -55,6 +79,20 @@ enden ausschließlich in Web oder App, nie im Terminal.
    denselben Lauf statt einen zweiten.
 5. Braucht die Funktion eine Freigabe, gibt `run` deren Direktlink aus; entschieden wird auch hier
    nur in Web oder App.
+
+### Verfügbarkeit
+
+Der CLI- und Funktionszugang zum Club-Agenten verursacht keinen eigenen Aufpreis; die zentralen
+Produkt- und Vereinsfreigaben gelten unabhängig vom Kanal — CLI oder ein anderer Zugang umgehen
+sie nicht. Ist der Club-Agent für einen bestimmten Kanal nicht freigeschaltet, verbirgt das
+ausschließlich den Club-Agent-Dialog auf diesem Kanal; direkte Vereins-Actions bleiben davon
+unberührt nutzbar.
+
+### Was die CLI noch nicht verwaltet
+
+`agent chat` deckt die dialogische Nutzung ab, `agent approval` das Lesen von Freigaben. Die
+administrativen Club-Agent-Workflows — Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal
+und Memory — sind noch nicht als eigene, abgesicherte CLI-Actions umgesetzt.
 
 ## Beispiele
 
@@ -72,13 +110,12 @@ comvenio function show <lauf-id>
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **agent** — Kern vorhanden, einzelne Abläufe fehlen
 
 - `comvenio agent chat`
 - `comvenio agent approval`
-- `comvenio agent function`
+- `comvenio function`
 <!-- /gen:docs -->
 
 ## Fehler

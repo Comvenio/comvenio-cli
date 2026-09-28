@@ -18,6 +18,8 @@ und ausgewertet werden können.
 Anmeldung per `comvenio login`; welche Scopes ein einzelner Befehl braucht, zeigt
 `comvenio action list --json`. Für Agenten ist `--json` die verbindliche Ausgabeform.
 
+- `--club <club-id>` überschreibt den Verein aus dem lokalen Anmeldestatus.
+
 > **Nicht verwechseln:** `comvenio booking` ist die Raumbuchung, `comvenio sponsor` der lokale
 > Sponsor. Mit der Buchhaltung hat beides nichts zu tun.
 
@@ -106,7 +108,6 @@ comvenio finance summary --year 2026 --department <department-id>
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
-_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
 **finance** — Kern vorhanden, einzelne Abläufe fehlen
 
@@ -126,3 +127,5 @@ _Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ände
   `comvenio help fehler NOT_FOUND`.
 - `PERMISSION_DENIED` — die Vereinsrolle erlaubt die Buchhaltungsaktion nicht. Mehr:
   `comvenio help fehler PERMISSION_DENIED`.
+
+Ein Backend-Fehler ist kein leeres Ergebnis: Die CLI gibt ihn mit Exit-Code ungleich null zurück.
