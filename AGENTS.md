@@ -102,16 +102,21 @@ Die kundenorientierte Langfassung steht in `README.md` unter **„Eigene Domain 
 ## Quickstart (Auth)
 
 ```bash
-comvenio login --token cvn_xxxxxxxx   # Device-Token aus der Web-App (Einstellungen → CLI-Zugriff)
-comvenio whoami                       # zeigt Name + Verein
-comvenio club info                    # Vereinsdaten
+comvenio login                                            # Browser, OAuth — Standard: nur Leserechte
+comvenio login --scopes club.read,role.read.self,admin.write   # wenn geschrieben werden soll
+comvenio action list                                      # was diese Verbindung darf
+comvenio action call <cai.…-id> --input '{…}' --json      # lesen oder Vorschau erzeugen
+comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …
 ```
 
-- Das Token ist **opak** (`cvn_...`), kein JWT — niemals dekodieren. Der Server
-  prüft Gültigkeit/Ablauf.
-- `--env prod|dev|local` (Default `prod`) wählt das Gateway. `--club <id>`
-  überschreibt die Club-ID aus dem State-File (`~/.comvenio-cli-state.json`).
-- 401 → Token abgelaufen, neu erzeugen. 403 → dein Token hat das Recht nicht.
+- **Nur noch OAuth.** Klassische Befehle (`comvenio teams …`, `comvenio club info` …) brauchen
+  einen Geräte-Token und laufen unter OAuth nicht. Fehlt eine Funktion als Action, wird sie im
+  Connector ergänzt: `docs/connector-aktion-hinzufuegen.md`.
+- **Die Standard-Anmeldung liest nur** (`club.read`, `role.read.self`). Schreibende Actions
+  scheitern sonst mit „…in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar“.
+- **Bei jeder Fehlermeldung zuerst** `docs/fehlerbilder.md` nach dem Meldungstext durchsuchen.
+- Der State (`~/.comvenio-cli-state.json`) enthält keine Tokens; `connector.scopes` zeigt die
+  Rechte der Verbindung.
 
 ## Commands (Domänen-Übersicht)
 
