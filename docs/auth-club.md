@@ -214,6 +214,20 @@ Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
 verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
 zur Vereins-Homepage.
 
+### Öffentliches Vereinslogo laden
+
+Das Logo eines Vereins ist öffentlich. `club logo --slug` lädt es ohne Anmeldung
+über den Slug der öffentlichen Vereinsseite und speichert es in einer Datei; die
+Ausgabe nennt Vereins-ID, Name und Vereinsfarbe. Gelesen wird nur, was die
+öffentliche Vereinsseite ohnehin zeigt.
+
+```bash
+comvenio club logo --slug sv-motzing --out sv-motzing.png --json
+```
+
+Unbekannter Slug oder Verein ohne Logo → Abbruch mit Meldung. `--env dev` liest
+die Testumgebung.
+
 ### Vereinslogo pflegen
 
 Noch nicht als Action verfügbar — in der Web-App erledigen. Das zuletzt dort

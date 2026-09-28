@@ -4,7 +4,7 @@ import { createClient } from "../http.ts";
 import { output } from "../format.ts";
 import { readJsonFile } from "../util/file.ts";
 import { uploadClubLogo } from "../util/upload.ts";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 type ClubResponse = {
   id?: string;
@@ -47,6 +47,9 @@ export type Opts = {
   previewId?: string;
   // contact-requests action
   status?: string;
+  slug?: string;
+  out?: string;
+  env?: string;
 };
 
 const CONTACT_REQUEST_STATUSES = ["open", "done", "all"] as const;
@@ -287,6 +290,66 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  * It writes ClubSettings.design_settings via the deep-merge PUT — only the
  * supplied keys change, everything else in design_settings is preserved.
  */
+// Public club logo without sign-in (app-qualitaet 22): club logos are always public
+// (Tom 2026-09-28). Reads only the public club summary and the public logo — nothing else.
+export const PUBLIC_GATEWAY: Record<string, string> = {
+  prod: "https://api.comvenio.app",
+  dev: "https://apidev.comvenio.app",
+};
+const PUBLIC_SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+export type PublicClubLogo = {
+  club_id: string;
+  slug: string;
+  name: string;
+  farbe: string | null;
+  content_type: string;
+  bytes: number;
+  out: string;
+};
+
+export async function fetchPublicClubLogo(
+  slug: string,
+  out: string,
+  env = "prod",
+  fetchImpl: typeof fetch = fetch,
+): Promise<PublicClubLogo> {
+  const s = slug.trim().toLowerCase();
+  if (!PUBLIC_SLUG.test(s)) throw new Error(`club logo --slug: „${slug}“ ist kein gültiger Slug.`);
+  if (!out) throw new Error("club logo --slug braucht --out <datei>.");
+  const gateway = PUBLIC_GATEWAY[env];
+  if (!gateway) throw new Error('club logo --slug: --env muss "prod" oder "dev" sein.');
+  const accept = { headers: { Accept: "application/json" } };
+
+  const clubRes = await fetchImpl(`${gateway}/club/public/clubs/by-slug/${encodeURIComponent(s)}`, accept);
+  if (clubRes.status === 404) throw new Error(`Kein öffentlicher Verein mit dem Slug „${s}“.`);
+  if (!clubRes.ok) throw new Error(`Vereinsseite „${s}“ nicht abrufbar (HTTP ${clubRes.status}).`);
+  const club = (await clubRes.json()) as { id: string; name: string; color_theme_1?: string | null };
+
+  const urlRes = await fetchImpl(
+    `${gateway}/content/logos/club/${encodeURIComponent(club.id)}/download-url`,
+    accept,
+  );
+  if (urlRes.status === 404) throw new Error(`${club.name} hat kein öffentliches Vereinslogo.`);
+  if (!urlRes.ok) throw new Error(`Logo von ${club.name} nicht abrufbar (HTTP ${urlRes.status}).`);
+  const { url } = (await urlRes.json()) as { url: string };
+
+  const file = await fetchImpl(url);
+  if (!file.ok) throw new Error(`Logo-Datei von ${club.name} nicht ladbar (HTTP ${file.status}).`);
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (bytes.length === 0) throw new Error(`Logo-Datei von ${club.name} ist leer.`);
+  writeFileSync(out, bytes);
+  return {
+    club_id: club.id,
+    slug: s,
+    name: club.name,
+    farbe: club.color_theme_1 ?? null,
+    content_type: file.headers.get("content-type") ?? "application/octet-stream",
+    bytes: bytes.length,
+    out,
+  };
+}
+
 export function registerClubCommands(cli: CAC): void {
   cli
     .command("club <action> [id]", "Club-Profil, Settings, Abteilungen, Design, Vereinslogo (logo, logo-upload) und Kontaktanfragen (contact-requests, contact-request-done|reopen|delete) verwalten; group-list, position-list, public-organ, public-legal lesen")
@@ -312,8 +375,19 @@ export function registerClubCommands(cli: CAC): void {
     .option("--avatars", "public-organ: öffentliche Comvenio-Avatare mitladen")
     .option("--preview-id <id>", "public-organ: Organ innerhalb einer gültigen Homepage-Vorschau lesen")
     .option("--status <status>", "contact-requests: open (Standard) | done | all")
+    .option("--slug <slug>", "logo: öffentliches Logo eines Vereins über seinen Slug laden (ohne Anmeldung)")
+    .option("--out <datei>", "logo --slug: Zieldatei für das Logo")
+    .option("--env <env>", "logo --slug: prod (Standard) | dev")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, id: string | undefined, opts: Opts) => {
+      if (action === "logo" && opts.slug) {
+        const logo = await fetchPublicClubLogo(opts.slug, opts.out ?? "", opts.env ?? "prod");
+        output(logo, opts.json, () =>
+          `${logo.name} (${logo.club_id}) — Logo gespeichert: ${logo.out} (${logo.content_type}, ${logo.bytes} Bytes)` +
+          (logo.farbe ? `, Vereinsfarbe ${logo.farbe}` : ""),
+        );
+        return;
+      }
       const state = await loadState();
       const client = createClient(state);
 
