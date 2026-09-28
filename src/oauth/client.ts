@@ -24,7 +24,9 @@ type TokenResponse = {
 };
 
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1_000;
-const DEFAULT_SCOPES = ["club.read", "role.read.self"] as const satisfies readonly OAuthScope[];
+// A login asks for every scope by default; the club roles still decide what the user may do,
+// and --scopes narrows the grant down.
+const DEFAULT_SCOPES: readonly OAuthScope[] = OAUTH_SCOPE_VALUES;
 
 function canonicalHttpsOrigin(value: string, field: string): string {
   const url = new URL(value.replace(/\/+$/, ""));

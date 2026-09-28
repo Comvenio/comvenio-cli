@@ -123,7 +123,7 @@ cli
   .option("--club <id>", "Club-ID überschreiben (sonst aus /users/me)")
   .option("--gateway <url>", "Gateway-Basis überschreiben")
   .option("--connector <url>", "MCP-Connector-Origin überschreiben")
-  .option("--scopes <csv>", "Minimale OAuth-Scopes, kommasepariert")
+  .option("--scopes <csv>", "OAuth-Scopes einschränken, kommasepariert (ohne: alle)")
   .option("--json", "JSON-Ausgabe (maschinenlesbar)")
   .action(async (o: LoginOpts) => {
     if (!(o.env in GATEWAY_BY_ENV)) {

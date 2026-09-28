@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { OAUTH_SCOPE_VALUES } from "@comvenio/connector-contracts";
 
 import {
   loginWithOAuth,
@@ -28,7 +29,7 @@ describe("native CLI OAuth", () => {
       clientId: "https://api.comvenio.app/auth/oauth/clients/comvenio-cli",
       resource: "https://mcp.comvenio.app/cli",
     });
-    expect(runtime.scopes).toEqual(["club.read", "role.read.self"]);
+    expect(runtime.scopes).toEqual([...OAUTH_SCOPE_VALUES]);
   });
 
   test("rejects insecure or ambiguous gateways for interactive OAuth", () => {
