@@ -50,8 +50,8 @@ export async function connector(): Promise<CliConnectorClient> {
   const state = await loadState();
   if (state.authMode !== "oauth" || !state.oauth?.resource) {
     throw new AuthError(
-      "Actions brauchen eine OAuth-Anmeldung. "
-      + 'Führe "comvenio login" ohne --device-token aus.',
+      "Actions brauchen eine Anmeldung über den Browser. "
+      + 'Führe "comvenio login" aus.',
     );
   }
   // KEIN Rueckfall auf `state.token`. Der ist seit dem Nebeneinander der
@@ -64,7 +64,7 @@ export async function connector(): Promise<CliConnectorClient> {
   if (!state.connectorToken) {
     throw new AuthError(
       "Die Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
-      + 'Melde dich mit "comvenio login" neu an; dein Geräte-Token bleibt dabei bestehen.',
+      + 'Melde dich mit "comvenio login" neu an.',
     );
   }
   return new CliConnectorClient({

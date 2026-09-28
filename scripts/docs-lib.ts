@@ -10,6 +10,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import type { InventoryAction } from "./action-inventory.ts";
+
 export type Lang = "de" | "en";
 
 export const TOPIC_SECTIONS: Record<Lang, readonly string[]> = {
@@ -165,24 +167,34 @@ export function errorSlug(code: string): string {
   return code.toLowerCase().replaceAll("_", "-");
 }
 
-const STATUS_LABEL: Record<string, Record<Lang, string>> = {
-  covered: { de: "vollständig", en: "complete" },
-  "core-partial": { de: "Kern vorhanden, einzelne Abläufe fehlen", en: "core available, some workflows missing" },
-  "intentional-exclusion": { de: "bewusst nicht im CLI", en: "intentionally not in the CLI" },
+const RISK_LABEL: Record<string, Record<Lang, string>> = {
+  read: { de: "lesen", en: "read" },
+  reversible_write: { de: "ändern", en: "change" },
+  critical_write: { de: "ändern mit Bestätigung", en: "change with confirmation" },
+  agent_orchestration: { de: "Club-Agent", en: "club agent" },
 };
 
-/** The generated block of "Befehle und Actions" for one article. */
-export function commandsBlock(root: string, domains: readonly string[], lang: Lang): string {
-  const registry = new Map(readRegistry(root).map((domain) => [domain.id, domain]));
-  const commands = topLevelCommands(root);
-  // The markers say it is generated; the customer text itself stays free of tooling.
+/** The topic an action belongs to; the weekly preview actions sit in the club domain. */
+export function actionTopic(action: InventoryAction): string {
+  return action.action_id.includes("weekly_preview") ? "weekly-preview" : action.domain;
+}
+
+/** The generated block of "Befehle und Actions": the connector actions of the article's domains. */
+export function commandsBlock(root: string, domains: readonly string[], lang: Lang, inventory: readonly InventoryAction[]): string {
   const lines: string[] = [GEN_START];
   for (const id of domains) {
-    const domain = registry.get(id);
-    if (!domain) continue;
-    lines.push("", `**${id}** — ${STATUS_LABEL[domain.status]?.[lang] ?? domain.status}`, "");
-    for (const action of domain.actions) {
-      lines.push(`- \`comvenio ${registryCommand(id, action, commands)}\``);
+    const actions = inventory.filter((action) => actionTopic(action) === id);
+    lines.push("", `**${id}**`, "");
+    if (actions.length === 0) {
+      lines.push(lang === "de"
+        ? "- Noch keine Action — dieser Bereich läuft über die Web-App."
+        : "- No action yet — this area works through the web app.");
+    }
+    for (const action of actions) {
+      const risks = [...new Set(action.operations.map((operation) => operation.risk))];
+      const label = risks.map((risk) => RISK_LABEL[risk]?.[lang] ?? risk).join(", ");
+      const operations = action.operations.map((operation) => operation.operation).join(", ");
+      lines.push(`- \`${action.action_id}\` — ${operations} (${label})`);
     }
     if (existsSync(join(root, "src/schema", `${id}.json`))) {
       lines.push(lang === "de"
@@ -231,12 +243,12 @@ function embeddedArticlesModule(index: readonly IndexEntry[]): string {
 }
 
 /** Builds docs/index.json and every generated block. Returns path → expected content. */
-export function generateDocs(root: string): Map<string, string> {
+export function generateDocs(root: string, inventory: readonly InventoryAction[]): Map<string, string> {
   const articles = readArticles(root);
   const out = new Map<string, string>();
   for (const article of articles) {
     if (article.frontmatter?.kategorie !== "thema") continue;
-    const block = commandsBlock(root, article.frontmatter.domaenen, article.lang);
+    const block = commandsBlock(root, article.frontmatter.domaenen, article.lang, inventory);
     const next = withCommandsBlock(article.raw, block);
     if (next !== null && next !== article.raw) out.set(article.path, next);
   }
@@ -275,6 +287,8 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [/\b(?:GET|POST|PUT|PATCH|DELETE) \/[\w{]/u, "HTTP-Route"],
   [/\b(?:railway|localhost|127\.0\.0\.1|postgres(?:ql)?|redis|kubernetes)\b/iu, "Infrastruktur"],
   [/\b(?:rts|codex|harness)\b/iu, "internes Werkzeug"],
+  // Tom 2026-09-28: there are no device tokens any more — only OAuth and actions.
+  [/ger(?:ä|ae)te-?token|device[- ]token/iu, "Geräte-Token"],
 ];
 
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
@@ -289,7 +303,7 @@ function headings(body: string): string[] {
 }
 
 /** Every finding with file and reason; an empty list means the documentation is complete. */
-export function checkDocs(root: string): Finding[] {
+export function checkDocs(root: string, inventory: readonly InventoryAction[]): Finding[] {
   const findings: Finding[] = [];
   const articles = readArticles(root);
   const byPath = new Map(articles.map((article) => [article.path, article]));
@@ -379,7 +393,7 @@ export function checkDocs(root: string): Finding[] {
     }
   }
 
-  for (const [path, expected] of generateDocs(root)) {
+  for (const [path, expected] of generateDocs(root, inventory)) {
     const current = existsSync(join(root, path)) ? readFileSync(join(root, path), "utf8") : null;
     if (current !== expected) {
       findings.push({ file: path, reason: "Erzeugter Stand veraltet — bun run gen:docs" });

@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import type { InventoryAction } from "../scripts/action-inventory.ts";
 import { checkDocs, generateDocs, registryCommand } from "../scripts/docs-lib.ts";
+
+// A tiny connector catalog: the generated section lists these actions.
+const INVENTORY: InventoryAction[] = [
+  { action_id: "cai.team.01.list", domain: "team", operations: [{ operation: "list", risk: "read", scopes: ["club.read"] }] },
+];
 
 const roots: string[] = [];
 
@@ -45,7 +51,7 @@ function fixture(): string {
   write(root, "docs/en/teams.md", topic("en"));
   write(root, "docs/fehler/not-found.md", errorArticle("de"));
   write(root, "docs/en/fehler/not-found.md", errorArticle("en"));
-  for (const [path, content] of generateDocs(root)) write(root, path, content);
+  for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
   return root;
 }
 
@@ -55,7 +61,7 @@ afterEach(() => {
 
 describe("check:docs (02-inhalte-und-pruefung)", () => {
   test("a complete tree has no findings", () => {
-    expect(checkDocs(fixture())).toEqual([]);
+    expect(checkDocs(fixture(), INVENTORY)).toEqual([]);
   });
 
   test("TC-01: a registry domain without article is named", () => {
@@ -64,7 +70,7 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
       { id: "team", status: "covered", actions: ["team list"], docs: [] },
       { id: "zone", status: "covered", actions: ["zone list"], docs: [] },
     ] }));
-    expect(checkDocs(root)).toContainEqual({ file: "src/coverage/domains.json", reason: "Domäne ohne Artikel: zone" });
+    expect(checkDocs(root, INVENTORY)).toContainEqual({ file: "src/coverage/domains.json", reason: "Domäne ohne Artikel: zone" });
   });
 
   test("TC-02: an error code without article fails", () => {
@@ -73,7 +79,7 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
       NOT_FOUND: { de: { message: "x" }, en: { message: "x" }, help: "fehler/not-found" },
       RATE_LIMITED: { de: { message: "x" }, en: { message: "x" }, help: "fehler/rate-limited" },
     }));
-    const reasons = checkDocs(root).map((finding) => finding.reason);
+    const reasons = checkDocs(root, INVENTORY).map((finding) => finding.reason);
     expect(reasons).toContain("Fehlercode ohne Artikel (de): RATE_LIMITED");
     expect(reasons).toContain("Fehlercode ohne Artikel (en): RATE_LIMITED");
   });
@@ -81,13 +87,13 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
   test("TC-03: an article without English version fails", () => {
     const root = fixture();
     rmSync(join(root, "docs/en/teams.md"));
-    expect(checkDocs(root)).toContainEqual({ file: "docs/teams.md", reason: "Sprachfassung fehlt: docs/en/teams.md" });
+    expect(checkDocs(root, INVENTORY)).toContainEqual({ file: "docs/teams.md", reason: "Sprachfassung fehlt: docs/en/teams.md" });
   });
 
   test("TC-04: a missing required section is named", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de", "", "Beispiele"));
-    expect(checkDocs(root)).toContainEqual({ file: "docs/teams.md", reason: "Pflichtabschnitt fehlt: Beispiele" });
+    expect(checkDocs(root, INVENTORY)).toContainEqual({ file: "docs/teams.md", reason: "Pflichtabschnitt fehlt: Beispiele" });
   });
 
   test("TC-05: source paths, service names, internal tools and real IDs fail", () => {
@@ -100,38 +106,53 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     ]) {
       const root = fixture();
       write(root, "docs/teams.md", topic("de", bad));
-      for (const [path, content] of generateDocs(root)) write(root, path, content);
-      expect(checkDocs(root).some((finding) => finding.reason.startsWith("Verbotener Inhalt")), bad).toBe(true);
+      for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+      expect(checkDocs(root, INVENTORY).some((finding) => finding.reason.startsWith("Verbotener Inhalt")), bad).toBe(true);
     }
   });
 
   test("TC-05: placeholder IDs are allowed", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de", " Verein 11111111-1111-4111-8111-111111111111."));
-    for (const [path, content] of generateDocs(root)) write(root, path, content);
-    expect(checkDocs(root)).toEqual([]);
+    for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+    expect(checkDocs(root, INVENTORY)).toEqual([]);
   });
 
-  test("TC-06: a generated section that differs from the registry fails, gen:docs repairs it", () => {
+  test("TC-06: a generated section that differs from the connector catalog fails, gen:docs repairs it", () => {
     const root = fixture();
-    write(root, "src/coverage/domains.json", JSON.stringify({
-      domains: [{ id: "team", status: "covered", actions: ["team list", "team create"], docs: ["docs/teams.md"] }],
-    }));
-    expect(checkDocs(root)).toContainEqual({ file: "docs/teams.md", reason: "Erzeugter Stand veraltet — bun run gen:docs" });
-    for (const [path, content] of generateDocs(root)) write(root, path, content);
-    expect(checkDocs(root)).toEqual([]);
+    const changed: InventoryAction[] = [...INVENTORY,
+      { action_id: "cai.team.02.create", domain: "team", operations: [{ operation: "create", risk: "critical_write", scopes: ["club.write"] }] }];
+    expect(checkDocs(root, changed)).toContainEqual({ file: "docs/teams.md", reason: "Erzeugter Stand veraltet — bun run gen:docs" });
+    for (const [path, content] of generateDocs(root, changed)) write(root, path, content);
+    expect(checkDocs(root, changed)).toEqual([]);
+    expect(generateDocs(root, changed).size).toBeGreaterThan(0);
+  });
+
+  test("the generated section lists the actions, and a domain without action says so", () => {
+    const root = fixture();
+    const written = readFileSync(join(root, "docs/teams.md"), "utf8");
+    expect(written).toContain("`cai.team.01.list` — list (lesen)");
+    expect(written).not.toContain("comvenio team list");
+    expect(generateDocs(root, []).get("docs/teams.md")).toContain("Noch keine Action");
+  });
+
+  test("device tokens are forbidden in customer texts (Tom 2026-09-28)", () => {
+    const root = fixture();
+    write(root, "docs/teams.md", topic("de", " Anmeldung mit Geräte-Token."));
+    for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+    expect(checkDocs(root, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (Geräte-Token)")).toBe(true);
   });
 
   test("a start marker without end marker fails", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de").replace("<!-- /gen:docs -->", ""));
-    expect(checkDocs(root).some((finding) => finding.reason.startsWith("Erzeugter Abschnitt fehlt"))).toBe(true);
+    expect(checkDocs(root, INVENTORY).some((finding) => finding.reason.startsWith("Erzeugter Abschnitt fehlt"))).toBe(true);
   });
 
   test("an unknown kategorie or diverging language versions fail", () => {
     const root = fixture();
     write(root, "docs/en/teams.md", topic("en").replace("kategorie: thema", "kategorie: archiv"));
-    const reasons = checkDocs(root).map((finding) => finding.reason);
+    const reasons = checkDocs(root, INVENTORY).map((finding) => finding.reason);
     expect(reasons).toContain("Unbekannte kategorie: archiv");
     expect(reasons).toContain("Sprachfassungen weichen ab (kategorie): docs/en/teams.md");
   });
@@ -141,7 +162,7 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     write(root, "src/coverage/domains.json", JSON.stringify({
       domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/andere.md"] }],
     }));
-    const reasons = checkDocs(root).map((finding) => finding.reason);
+    const reasons = checkDocs(root, INVENTORY).map((finding) => finding.reason);
     expect(reasons).toContain("Domäne ohne Artikel: team");
     expect(reasons).toContain("Registry verweist für team nicht auf diesen Artikel");
   });
@@ -149,25 +170,25 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
   test("TC-05: forbidden content in the frontmatter and HTTP routes fail, self-service does not", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de").replace("stichwoerter: [team]", "stichwoerter: [src/commands/team.ts]"));
-    for (const [path, content] of generateDocs(root)) write(root, path, content);
-    expect(checkDocs(root).some((finding) => finding.reason === "Verbotener Inhalt (Quellpfad)")).toBe(true);
+    for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+    expect(checkDocs(root, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (Quellpfad)")).toBe(true);
 
     const route = fixture();
     write(route, "docs/teams.md", topic("de", " Intern GET /member/teams."));
-    for (const [path, content] of generateDocs(route)) write(route, path, content);
-    expect(checkDocs(route).some((finding) => finding.reason === "Verbotener Inhalt (HTTP-Route)")).toBe(true);
+    for (const [path, content] of generateDocs(route, INVENTORY)) write(route, path, content);
+    expect(checkDocs(route, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (HTTP-Route)")).toBe(true);
 
     const selfService = fixture();
     write(selfService, "docs/teams.md", topic("de", " Das Self-Service-Portal und self-service helfen."));
-    for (const [path, content] of generateDocs(selfService)) write(selfService, path, content);
-    expect(checkDocs(selfService)).toEqual([]);
+    for (const [path, content] of generateDocs(selfService, INVENTORY)) write(selfService, path, content);
+    expect(checkDocs(selfService, INVENTORY)).toEqual([]);
   });
 
   test("TC-05: a real UUID with a repeated prefix is still found", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de", " Verein 00000000-4c2a-4b1d-9e3f-7a6b5c4d3e2f."));
-    for (const [path, content] of generateDocs(root)) write(root, path, content);
-    expect(checkDocs(root).some((finding) => finding.reason === "Verbotener Inhalt (echte Kennung (UUID))")).toBe(true);
+    for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+    expect(checkDocs(root, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (echte Kennung (UUID))")).toBe(true);
   });
 
   test("registry entries resolve to the command the CLI really registers", () => {
@@ -192,7 +213,7 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
       domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/teams.md"] },
         { id: "ghost", status: "covered", actions: ["ghost list"], docs: ["docs/teams.md"] }],
     }));
-    expect(checkDocs(root)).toContainEqual({
+    expect(checkDocs(root, INVENTORY)).toContainEqual({
       file: "src/coverage/domains.json",
       reason: "Befehl nicht registriert: comvenio ghost (ghost)",
     });
@@ -200,7 +221,7 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
 
   test("the index lists both languages and the error articles", () => {
     const root = fixture();
-    const index = JSON.parse(generateDocs(root).get("docs/index.json")!) as {
+    const index = JSON.parse(generateDocs(root, INVENTORY).get("docs/index.json")!) as {
       artikel: Array<{ id: string; kategorie: string; pfad: { de: string; en: string } }>;
     };
     expect(index.artikel.map((entry) => entry.id)).toEqual(["fehler/not-found", "teams"]);
