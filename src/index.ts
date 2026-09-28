@@ -60,6 +60,7 @@ import { registerZoneCommands } from "./commands/zone.ts";
 import { registerHelpCommand } from "./commands/help.ts";
 import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
+import { cliVersion } from "./build-info.ts";
 
 // --env selects the API gateway. OAuth intentionally has its own CLI resource
 // and never reuses the MCP audience.
@@ -385,7 +386,7 @@ registerHelpCommand(cli);
 
 cli.option("--lang <lang>", "Sprache der Fehlermeldungen: de oder en (sonst LANG, sonst de)");
 cli.help();
-cli.version(pkg.version);
+cli.version(cliVersion(pkg.version));
 
 async function main() {
   try {

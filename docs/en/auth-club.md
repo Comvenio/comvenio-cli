@@ -43,8 +43,9 @@ comvenio help
 `bun run build` creates a standalone file `comvenio` (`comvenio.exe` on
 Windows) that runs without Bun; its folder must be on your search path
 (`PATH`). To update: run `git pull` in the folder, repeat `bun install` and
-`bun run build`, and replace the file. If `comvenio help` shows no list of
-topics, an outdated version is installed.
+`bun run build`, and replace the file. `comvenio --version` names the build
+date and commit (for example `0.1.0+2026-09-29.abc1234`); if `comvenio help`
+shows no list of topics, an outdated version is installed.
 
 ### Signing in
 

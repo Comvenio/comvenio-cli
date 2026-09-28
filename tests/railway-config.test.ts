@@ -17,7 +17,9 @@ describe("Railway MCP deployment contract", () => {
       scripts: Record<string, string>;
     }>("apps/mcp-server/package.json");
 
-    expect(root.scripts.build).toContain("src/index.ts");
+    // The CLI build goes through the stamping script, which still compiles src/index.ts.
+    expect(root.scripts.build).toBe("bun run scripts/build-cli.ts");
+    expect(readFileSync(resolve(repositoryRoot, "scripts/build-cli.ts"), "utf8")).toContain('"src/index.ts", "--compile"');
     expect(root.scripts.start).toContain("src/index.ts");
     expect(root.scripts["build:mcp"]).toBe("bun run --cwd apps/mcp-server build");
     expect(root.scripts["start:mcp"]).toBe("bun run --cwd apps/mcp-server start");
