@@ -163,6 +163,24 @@ function pickNested(
   return pick(value as Record<string, unknown>, keys);
 }
 
+function hexRecord(value: unknown): Record<string, JsonValue> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const result: Record<string, JsonValue> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (/^[a-z][a-z0-9_]{0,39}$/u.test(key) && typeof entry === "string" && /^#[0-9a-f]{6}$/iu.test(entry)) result[key] = entry;
+  }
+  return result;
+}
+
+function numberRecord(value: unknown): Record<string, JsonValue> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const result: Record<string, JsonValue> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (/^[a-z][a-z0-9_]{0,15}$/u.test(key) && typeof entry === "number" && Number.isFinite(entry)) result[key] = entry;
+  }
+  return result;
+}
+
 export function redactClubSettings(value: unknown): JsonValue {
   const settings = object(value);
   const result: Record<string, JsonValue> = {};
@@ -219,9 +237,12 @@ export function redactClubSettings(value: unknown): JsonValue {
       safeDesign.tokens = null;
     } else if (tokens && typeof tokens === "object" && !Array.isArray(tokens)) {
       const tokenRecord = tokens as Record<string, unknown>;
-      const safeTokens = pick(tokenRecord, ["radius", "spacing_scale", "type_scale", "shadow_level"]);
-      const palette = pickNested(tokenRecord, "palette", ["primary", "secondary", "accent", "background", "surface", "text"]);
+      const safeTokens = pick(tokenRecord, ["spacing_scale", "type_scale", "shadow_level"]);
+      // Every palette role is a public colour (the sidebar reads nav/on_nav); keep hex values only.
+      const palette = hexRecord(tokenRecord.palette);
       if (palette !== undefined) safeTokens.palette = palette;
+      const radius = numberRecord(tokenRecord.radius);
+      if (radius !== undefined) safeTokens.radius = radius;
       safeDesign.tokens = safeTokens;
     }
     result.design_settings = safeDesign;
