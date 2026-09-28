@@ -451,7 +451,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 - Bewusste Ausschlüsse:
   - Die Share-Seite /share/weekly-preview/{token} ist anonym und braucht keine Action.
 - Geprüfte Quellen: `src/commands/weekly-preview.ts`
-- Weiterführende Doku: 
+- Weiterführende Doku: `docs/wochenvorschau.md`
 
 ## zone
 

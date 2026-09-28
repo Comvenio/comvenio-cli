@@ -1,10 +1,23 @@
-# Aufgaben – CLI-Referenz
+---
+id: aufgaben
+kategorie: thema
+domaenen: [task]
+stichwoerter: [aufgaben, checklisten, zuweisungen, erinnerung, notizen]
+---
 
-Stand: 23. Juli 2026 · Quelle: `src/commands/task.ts`
+# Aufgaben
 
-Eine Aufgabe benötigt einen `task_context_id`. Der Context beschreibt, worauf sich die Aufgabe bezieht; die referenzierte Entität steht in `context_id` des Contexts.
+## Wozu
 
-## Enums
+Mit Aufgaben lassen sich Arbeiten im Verein planen, Mitgliedern zuweisen, mit Checklisten und Notizen begleiten und abschließen — jede Aufgabe bezieht sich dabei auf einen fachlichen Kontext wie einen Verein, eine Veranstaltung, ein Objekt, eine Sitzung oder eine Versorgung.
+
+## Voraussetzungen und Rechte
+
+Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Für die eigene, persönliche Aufgaben-Erinnerung genügt bereits der Lese-Scope `task.read` — ein Schreib-Scope ist dafür ausdrücklich nicht nötig, weil dabei keine gemeinsame Aufgabe geändert wird, sondern nur die eigene Präferenz.
+
+## Abläufe
+
+### Enums
 
 | Feld | Werte |
 |---|---|
@@ -12,7 +25,42 @@ Eine Aufgabe benötigt einen `task_context_id`. Der Context beschreibt, worauf s
 | `priority` | `low`, `medium`, `high` |
 | `context_type` | `club`, `event`, `object`, `meeting`, `supply` |
 
-## Context finden oder anlegen
+### Aufgabe anlegen
+
+1. Zuerst einen Context finden oder anlegen: Der Context beschreibt, worauf sich die Aufgabe bezieht; die referenzierte Entität steht dabei in der Context-eigenen Referenz (`--ref-id`), nicht in der ID, die `task create` später braucht.
+2. Die `id` aus der Context-Antwort als `--context-id` für die Aufgabe verwenden.
+3. Aufgabe mit Titel und Kontext-ID anlegen; beides ist Pflicht.
+4. Optional ein Mitglied zuweisen (siehe unten).
+
+Mehrere Aufgaben lassen sich inklusive Checklisten und Zuweisungen in einem Aufruf gemeinsam anlegen.
+
+### Aufgabe ändern, abbrechen oder abschließen
+
+Das Ändern ersetzt nur die tatsächlich gesetzten Felder. `completed` und `cancelled` dürfen nicht wieder auf `open` zurückgesetzt werden. Zum Abschließen ist ein eigener Befehl bequemer als ein Statuswechsel per Update, weil er zusätzlich den Abschlusszeitpunkt setzt.
+
+### Mitglied zuweisen
+
+Eine Zuweisung erwartet ausdrücklich eine Mitglieds-ID, keine Benutzer-ID. Eine Zuweisung kann als hauptverantwortlich markiert werden. Zuweisungen lassen sich vollständig lesen, aktualisieren und wieder entfernen.
+
+### Contexts, Notizen und Checklisten pflegen
+
+Contexts, Notizen und Checklisten-Einträge werden über eine Datei übergeben, damit sich der jeweils aktuelle Datenkörper ohne verlustreiche Einzelfeld-Abbildung setzen lässt. Checklisten-Einträge lassen sich zusätzlich umschalten (erledigt/offen) und neu sortieren.
+
+### Eigene Aufgaben-Erinnerung setzen
+
+Jeder angemeldete Nutzer kann für eine für ihn sichtbare Aufgabe genau eine eigene, frei gewählte Erinnerung setzen, anzeigen und löschen:
+
+1. Erinnerungszeitpunkt als gültigen, zukünftigen Zeitstempel angeben.
+2. Optional einen eigenen Kommentar mitgeben.
+3. Ein erneutes Setzen für dieselbe Aufgabe ersetzt die bestehende persönliche Erinnerung idempotent.
+
+Unmittelbar vor dem Versand prüft Comvenio Aufgabenexistenz und aktive Mitgliedschaft erneut und übernimmt den Vereinskontext automatisch aus der Aufgabe. Eine ersetzte, gelöschte oder nach einem Vereinsaustritt nicht mehr zulässige Erinnerung wird nicht zugestellt; zugestellt wird sie ausschließlich dem eigenen Konto. Eine Club-, Mitglieds- oder Empfänger-ID ist für diese Befehle nicht nötig und wird auch nicht gesendet.
+
+### Abgrenzung
+
+Interne Automatisierungsrouten, Spezialmodelle für Turnierspielpläne und übergreifende Aufräum-Endpunkte sind keine allgemeinen Vereins-Actions. Der übliche Aufgaben-, Context-, Zuweisungs-, Notiz- und Checklisten-Workflow ist vollständig über das CLI erreichbar.
+
+## Beispiele
 
 ```bash
 comvenio task context list --json
@@ -23,10 +71,6 @@ comvenio task context create \
   --json
 ```
 
-`--ref-id` ist die ID der referenzierten Entität, nicht die spätere `task_context_id`. Für `task create` wird die `id` aus der Context-Antwort als `--context-id` verwendet.
-
-## Aufgaben lesen
-
 ```bash
 comvenio task list --json
 comvenio task list --mine --json
@@ -35,12 +79,7 @@ comvenio task show <task-id> --subtasks --json
 comvenio task show <task-id> --chain --json
 ```
 
-- `--mine` liefert die dem aktuellen Benutzer zugewiesenen Aufgaben.
-- `--subtasks` lädt die Unteraufgaben anstelle des normalen Details.
-- `--chain` lädt die Aufgabenkette anstelle des normalen Details.
-- `--subtasks` hat Vorrang vor `--chain`, wenn beide gesetzt werden.
-
-## Aufgabe anlegen
+`--mine` liefert die dem aktuellen Benutzer zugewiesenen Aufgaben. `--subtasks` lädt die Unteraufgaben, `--chain` die Aufgabenkette anstelle des normalen Details; `--subtasks` hat Vorrang, wenn beide gesetzt sind.
 
 ```bash
 comvenio task create \
@@ -54,9 +93,26 @@ comvenio task create \
   --json
 ```
 
-Pflicht sind `--title` und `--context-id`. `--due-date` ist ein ISO-Zeitpunkt.
+```json
+{
+  "items": [
+    {
+      "task": {
+        "club_id": "<club-id>",
+        "task_context_id": "<task-context-id>",
+        "title": "Dartboards aufbauen",
+        "priority": "high"
+      },
+      "checklist_items": [{ "title": "Werkzeug prüfen", "order_index": 0 }],
+      "assignments": [{ "member_id": "<member-id>", "is_responsible": true }]
+    }
+  ]
+}
+```
 
-## Aufgabe ändern, abbrechen oder löschen
+```bash
+comvenio task bulk --file tasks.json --json
+```
 
 ```bash
 comvenio task update <task-id> --title "Neuer Titel" --priority medium --json
@@ -64,53 +120,17 @@ comvenio task update <task-id> --status in_progress --json
 comvenio task update <task-id> --status cancelled --json
 comvenio task update <task-id> --file task-update.json --json
 comvenio task delete <task-id> --json
+comvenio task done <task-id> --json
 ```
-
-Der Update-Endpoint verwendet `PUT`; das CLI sendet nur gesetzte Flags oder den Body aus `--file`.
-`completed` und `cancelled` dürfen laut Backend-Statusguard nicht wieder auf `open` gesetzt werden.
-Zum Abschließen ist `task done` der bequemere Weg, weil er zusätzlich `completed_at` setzt.
-
-Mehrere Aufgaben inklusive Checklisten und Zuweisungen lassen sich gemeinsam anlegen:
-
-```bash
-comvenio task bulk --file tasks.json --json
-```
-
-```json
-{
-  "items": [
-    {
-      "task": {
-        "club_id": "UUID",
-        "task_context_id": "UUID",
-        "title": "Dartboards aufbauen",
-        "priority": "high"
-      },
-      "checklist_items": [{ "title": "Werkzeug prüfen", "order_index": 0 }],
-      "assignments": [{ "member_id": "UUID", "is_responsible": true }]
-    }
-  ]
-}
-```
-
-## Mitglied zuweisen
 
 ```bash
 comvenio task assign <task-id> --member-id <member-id> --responsible --json
-```
 
-`--member-id` erwartet ausdrücklich eine Member-ID, keine User-ID. `--responsible` setzt die Zuweisung als hauptverantwortlich.
-
-Zuweisungen können vollständig gelesen und verwaltet werden:
-
-```bash
 comvenio task assignment list <task-id> --json
 comvenio task assignment show <assignment-id> --json
 comvenio task assignment update <assignment-id> --file assignment-update.json --json
 comvenio task assignment delete <assignment-id> --json
 ```
-
-## Contexts, Notizen und Checklisten
 
 ```bash
 comvenio task context show <context-id> --json
@@ -130,22 +150,7 @@ comvenio task checklist reorder <task-id> --file reorder.json --json
 comvenio task checklist delete <item-id> --json
 ```
 
-Unterressourcen verwenden bewusst `--file`, damit der jeweils aktuelle Backend-Body ohne verlustreiche
-Flag-Abbildung übergeben werden kann. Die geprüften Routen stehen zusätzlich im Offline-Schema
-`comvenio schema task --json` und in [`coverage.md`](coverage.md).
-
-## Aufgabe abschließen
-
-```bash
-comvenio task done <task-id> --json
-```
-
-Der Befehl setzt `status=completed` und `completed_at` auf den aktuellen ISO-Zeitpunkt.
-
-## Eigene Aufgaben-Erinnerung
-
-Jeder angemeldete Nutzer kann für eine sichtbare Aufgabe genau seine eigene,
-frei gewählte Erinnerung setzen, anzeigen und löschen:
+Die geprüften Felder je Route zeigt zusätzlich `comvenio schema task --json`.
 
 ```bash
 comvenio task reminder set <task-id> \
@@ -157,23 +162,35 @@ comvenio task reminder list <task-id> --json
 comvenio task reminder delete <task-id> --json
 ```
 
-`--remind-at` muss ein gültiger zukünftiger RFC-3339-Zeitpunkt sein. Eine
-Club-, Mitglieds-, Benutzer- oder Empfänger-ID ist für diese Kommandos nicht
-erforderlich und wird nicht gesendet. Der Automation-Service liest die Aufgabe
-mit dem aktuellen Actor-Token, übernimmt den Vereinskontext aus der
-autorisierten Task-Service-Antwort und stellt die Erinnerung ausschließlich dem
-JWT-Subjekt zu. Ein erneutes `set` für dieselbe Aufgabe ersetzt die bestehende
-persönliche Erinnerung idempotent. Unmittelbar vor dem Versand prüft das
-Backend aktuelle Reminder-Generation, Aufgabenexistenz und aktive
-Mitgliedschaft erneut. Ersetzte, gelöschte oder nach einem Vereinsaustritt
-nicht mehr zulässige Reminder werden nicht zugestellt.
+## Befehle und Actions
 
-Für den persönlichen Reminder genügt der OAuth-Scope `task.read`, weil der
-Nutzer keine gemeinsame Aufgabe ändert, sondern nur seine eigene Präferenz.
-`task.write` ist dafür ausdrücklich nicht erforderlich.
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-## Abgrenzung
+**task** — vollständig
 
-Interne Automation-Routen, Poll-/Matrix-Spezialmodelle und serviceweite Admin-Cleanup-Endpunkte sind
-keine allgemeinen Club-Admin-Actions. Der vorgesehene Aufgaben-, Context-, Zuweisungs-, Notiz- und
-Checklisten-Workflow ist über das CLI erreichbar.
+- `comvenio task list`
+- `comvenio task show`
+- `comvenio task show --subtasks`
+- `comvenio task show --chain`
+- `comvenio task create`
+- `comvenio task bulk`
+- `comvenio task update`
+- `comvenio task assign`
+- `comvenio task done`
+- `comvenio task delete`
+- `comvenio task reminder set|list|delete`
+- `comvenio task context list|show|create|update|delete`
+- `comvenio task assignment list|show|update|delete`
+- `comvenio task note list|add|update|delete`
+- `comvenio task checklist list|add|update|toggle|delete|reorder`
+- Felder und Werte: `comvenio schema task --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `VALIDATION_FAILED` — ein Pflichtfeld wie Titel oder Kontext-ID fehlt, oder ein Statuswechsel ist unzulässig (etwa zurück auf `open`). Mehr: `comvenio help fehler VALIDATION_FAILED`
+- `NOT_FOUND` — Aufgabe, Context, Zuweisung, Notiz oder Checklisten-Eintrag existiert nicht oder ist nicht sichtbar. Mehr: `comvenio help fehler NOT_FOUND`
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt diese Aufgaben-Aktion nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der nötige Aufgaben-Scope, etwa zum Schreiben. Mehr: `comvenio help fehler SCOPE_REQUIRED`
+- `CONFLICT` — die Aufgabe wurde inzwischen geändert oder erlaubt den gewünschten Statuswechsel in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`

@@ -1,88 +1,83 @@
-# comvenio CLI – eigenständige Referenz
+---
+id: cli-reference
+kategorie: thema
+domaenen: [schema, verify, plan]
+stichwoerter: [cli, referenz, befehle, schema, verify]
+---
 
-Stand: 20. Juli 2026 · CLI-Version: `0.1.0`
+# comvenio CLI — Übersicht
 
-Diese Referenz ist für Agents gedacht, die weder Backend-Quellcode noch interne AI-docs sehen. Sie beschreibt ausschließlich tatsächlich verdrahtete Top-Level-Commands. Die vollständige Coverage einschließlich bekannter Lücken und bewusster Ausschlüsse steht in [`coverage.md`](coverage.md); maschinenlesbar ist sie in `src/schema/coverage.json` enthalten.
+## Wozu
 
-## Grundregeln
+Dieser Artikel ist der Einstieg in das comvenio CLI: die Grundregeln jedes
+Aufrufs, die Top-Level-Befehle im Überblick mit Verweis auf ihren eigenen
+Artikel, sowie die Themenbefehle `schema` und `verify`, die kein eigenes
+Thema, sondern jeden anderen Befehl begleiten.
+
+## Voraussetzungen und Rechte
+
+Jeder Befehl braucht eine gültige Anmeldung; Ausnahmen und Details stehen im
+Artikel zu Anmeldung und Vereinskontext. Welche Befehle darüber hinaus
+erlaubt sind, ergibt sich aus den Scopes der Anmeldung und der Rolle im
+Verein — die serverseitige Prüfung entscheidet, nicht das CLI selbst.
+
+## Abläufe
+
+### Grundregeln
 
 ```bash
 comvenio <command> --help
 comvenio <command> ... --json
 ```
 
-- Nutze für Agenten-Aufrufe immer `--json`. Erfolgreiche JSON-Antworten landen auf stdout, Fehler auf stderr.
-- Standard ist OAuth 2.1 mit PKCE und sicherem Betriebssystem-Credential-Speicher.
-- Das opake `cvn_`-Device-Token ist nur ein expliziter Entwicklungs-/Automationsfallback und wird niemals dekodiert.
-- Im OAuth-Modus kommen Club, Benutzer und effektive Rechte ausschließlich aus
-  Grant und Backend-RBAC. `--club` ist dort nicht zulässig.
-- Rechte werden serverseitig geprüft. `401` bedeutet in der Regel ungültiges/abgelaufenes Token, `403` fehlendes Recht, `404` unbekannte Ressource.
-- Gibt es keine CLI-Action, ist ein direkter API-Aufruf kein Ersatz. Die Lücke muss im CLI geschlossen werden.
-- Mutationen werden nicht automatisch wiederholt. Nur lesende GET-Aufrufe haben einen begrenzten Retry bei vorübergehenden Fehlern.
+- Für automatisierte Aufrufe immer `--json` verwenden. Erfolgreiche
+  Antworten landen auf der Standardausgabe, Fehler auf der Fehlerausgabe.
+- Standard ist die Browser-Anmeldung mit sicherer Speicherung im jeweiligen
+  Betriebssystem; ein opakes Token ist nur ein expliziter
+  Entwicklungs-/Automationsfallback und wird nie inhaltlich ausgewertet.
+- Rechte werden serverseitig geprüft: `401` bedeutet in der Regel eine
+  ungültige oder abgelaufene Anmeldung, `403` ein fehlendes Recht, `404` eine
+  unbekannte Ressource.
+- Gibt es für eine Aufgabe keinen passenden Befehl, ist das eine Lücke im
+  CLI — sie wird dort geschlossen, nicht umgangen.
+- Änderungen werden nicht automatisch wiederholt; nur lesende Abfragen haben
+  einen begrenzten Wiederholungsversuch bei vorübergehenden Fehlern.
 
-## Die 26 Top-Level-Commands
+### Themen und ihre Befehle
 
-| Command | Vorhandener CLI-Scope | Detailreferenz |
+Jeder Top-Level-Befehl gehört zu einem Thema mit eigenem Artikel:
+
+| Befehl | Bereich | Artikel |
 |---|---|---|
-| `login` | OAuth-Grant herstellen; optional Device-Token-Fallback | [`auth-club.md`](auth-club.md) |
-| `logout` | OAuth-Grant widerrufen und lokale Anmeldung entfernen | [`auth-club.md`](auth-club.md) |
-| `whoami` | aktuelle Identität und Club-Kontext anzeigen | [`auth-club.md`](auth-club.md) |
-| `action` | freigegebene kanonische Connector-Actions auflisten, ausführen und bestätigen | [`auth-club.md`](auth-club.md) |
-| `club` | Profil, Settings, Abteilungen und `design` | [`auth-club.md`](auth-club.md), [`homepage.md`](homepage.md) |
-| `member` | Mitglieder, Familien, Status, Mitgliedschaftszeiten und Import | [`mitglieder-teams.md`](mitglieder-teams.md) |
-| `team` | Team-CRUD, Mitglieder und Ressourcen-Prioritäten | [`mitglieder-teams.md`](mitglieder-teams.md) |
-| `role` | Custom Roles, Berechtigungsmatrix, Zuweisungen und effektive Rechte | [`rollen-rechte.md`](rollen-rechte.md) |
-| `event` | Event-Core, Vorlagen, Serien und Event-Hub-Unterressourcen | [`veranstaltungen.md`](veranstaltungen.md) |
-| `booking` | Reservierungen lesen und verwalten | [`buchungen-objekte.md`](buchungen-objekte.md) |
-| `object` | Objekt-, Gebäude-, Raum-, Buchungsregel- und Task-Regel-CRUD | [`buchungen-objekte.md`](buchungen-objekte.md) |
-| `task` | Aufgaben, Contexts, Zuweisungen, Notizen und Checklisten | [`aufgaben.md`](aufgaben.md) |
-| `recipe` | Rezepte vollständig verwalten | [`speisekarten.md`](speisekarten.md) |
-| `ingredient` | Club-Zutaten lesen und verwalten | [`speisekarten.md`](speisekarten.md) |
-| `ingredient-category` | Kategorienbaum und Zutaten-Zuordnungen | [`speisekarten.md`](speisekarten.md) |
-| `shopping` | Einkaufslisten, Positionen und Generierung aus Rezept/Karte | [`speisekarten.md`](speisekarten.md) |
-| `template` | globale Gerichts- und Zutatenvorlagen durchsuchen | [`speisekarten.md`](speisekarten.md) |
-| `menu` | Karten, Einträge, CSS, deklaratives Apply und Export | [`speisekarten.md`](speisekarten.md) |
-| `meeting` | Sitzungsserien, Protokolle, Agenda, Teilnehmer, Abstimmungen, Beschlüsse und Einträge | [`meetings.md`](meetings.md) |
-| `finance` | Vereins-Buchhaltung: Jahresplan, Budgetposten und Buchungen | [`finanzen.md`](finanzen.md) |
-| `homepage` | `preview`, `apply`, `show` | [`homepage.md`](homepage.md) |
-| `schema` | verfügbare Domain-Schemas offline ausgeben | `comvenio schema --json` |
-| `verify` | visuelle Prüfung für URL, Event, Menü, Homepage, News, Urkunde | `comvenio verify --help` |
-| `data` | Dateien, Ordner, Papers und strukturierte Exporte | [`dateien.md`](dateien.md) |
-| `news` | Rich-News, Vorschau, Veröffentlichung und Videos | [`vereinsnews.md`](vereinsnews.md) |
-| `plan` | Geländepläne, Zonen, Tische, Marker, Gäste, Illustration | `comvenio plan --help` |
-| `tournament` | Serien, Ausführungen, Teilnehmer, Draw, Spielplan und Ergebnisse | [`turniere.md`](turniere.md) |
-| `sponsor` | lokale Sponsoren, Produkte, Verträge, Zuordnungen, Verantwortliche | [`sponsoring.md`](sponsoring.md) |
-| `zone`, `task-zones` | Vereinsgebiet: Einteilungen, Zonen, GeoJSON-Import, Übersicht, Zonen einer Aufgabe | [`zonen.md`](zonen.md) |
+| `login`, `logout`, `whoami`, `action`, `club` | Anmeldung, Vereinskontext, freigegebene Actions, Vereinsprofil und -design | [`auth-club.md`](auth-club.md) |
+| `homepage` | öffentliche Vereins-Homepage: Vorschau, Anwenden, Anzeigen | [`homepage.md`](homepage.md) |
+| `member`, `team` | Mitglieder, Familien, Mitgliedschaftszeiten, Teams | [`mitglieder-teams.md`](mitglieder-teams.md) |
+| `role` | eigene Rollen, Berechtigungsmatrix, Zuweisungen, effektive Rechte | [`rollen-rechte.md`](rollen-rechte.md) |
+| `event` | Veranstaltungen, Vorlagen, Serien | [`veranstaltungen.md`](veranstaltungen.md) |
+| `booking`, `object` | Reservierungen, Objekte, Gebäude, Räume, Buchungsregeln | [`buchungen-objekte.md`](buchungen-objekte.md) |
+| `task` | Aufgaben, Kontexte, Zuweisungen, Notizen, Checklisten | [`aufgaben.md`](aufgaben.md) |
+| `recipe`, `ingredient`, `ingredient-category`, `shopping`, `template`, `menu` | Speisekarten, Zutaten, Einkaufslisten | [`speisekarten.md`](speisekarten.md) |
+| `meeting` | Sitzungsserien, Protokolle, Agenda, Abstimmungen, Beschlüsse | [`meetings.md`](meetings.md) |
+| `finance` | Jahresplan, Budgetposten, Buchungen | [`finanzen.md`](finanzen.md) |
+| `data` | Dateien, Ordner, strukturierte Exporte | [`dateien.md`](dateien.md) |
+| `news` | Rich-News, Vorschau, Veröffentlichung, Videos | [`vereinsnews.md`](vereinsnews.md) |
+| `plan` | Geländepläne, Zonen, Tische, Marker, Gäste | [`veranstaltungen.md`](veranstaltungen.md) |
+| `tournament` | Serien, Ausführungen, Teilnehmer, Spielplan, Ergebnisse | [`turniere.md`](turniere.md) |
+| `sponsor` | lokale Sponsoren, Produkte, Verträge, Zuordnungen | [`sponsoring.md`](sponsoring.md) |
+| `zone`, `task-zones` | Vereinsgebiet: Einteilungen, Zonen, Übersicht | [`zonen.md`](zonen.md) |
+| `agent` | Club-Agent: Chat, Funktionen, Freigaben | [`club-agent.md`](club-agent.md) |
+| `weekly-preview` | Wochenvorschau: Flyer und Vorlagen | [`wochenvorschau.md`](wochenvorschau.md) |
 
-## Authentifizierung
-
-```bash
-comvenio login --json
-comvenio whoami --json
-comvenio action list --json
-comvenio logout --json
-```
-
-Der State liegt unter `~/.comvenio-cli-state.json`. OAuth-Secrets liegen
-ausschließlich im geschützten Betriebssystemspeicher. Weil der explizite
-Device-Token-Fallback weiterhin möglich ist, darf das State-File dennoch nie
-ausgegeben, eingecheckt oder weitergegeben werden.
-
-Die vollständige OAuth-Ausführungsfläche ist `comvenio action`. Bestehende
-menschenfreundliche Domänenbefehle verwenden während der Migration weiterhin
-den expliziten Device-Token-Kompatibilitätsmodus; sie dürfen keinen
-Connector-Token direkt an einen Domain-Service senden.
-
-## Schema und Coverage
+### Schemas abfragen
 
 ```bash
 comvenio schema --json
 comvenio schema event --json
 ```
 
-`schema` beantwortet die Frage „Welche Felder und Enums darf ich senden?“. `src/schema/coverage.json` beantwortet die andere Frage „Welche Workflows kann das CLI ausführen und welche noch nicht?“. Die Coverage-Registry ist bewusst unabhängig vom Backend lesbar.
-
-## Häufige sichere Arbeitsmuster
+`schema` beantwortet die Frage „Welche Felder und Werte darf ich senden?" für
+einen Bereich. Undokumentierte Felder aus Vermutung zu senden ist nicht
+vorgesehen — bei Unsicherheit wird zuerst das passende Schema geprüft.
 
 ### Erst lesen, dann ändern
 
@@ -92,11 +87,15 @@ comvenio news show <news-id> --json
 comvenio task show <task-id> --json
 ```
 
-Bei Vollersatz-Operationen wie News-Update liest das CLI vorhandene Daten und merged die angegebenen Felder. Trotzdem sollte ein Agent vor einer Mutation den aktuellen Stand prüfen.
+Bei Vollersatz-Änderungen liest das CLI vorhandene Daten und führt die
+angegebenen Felder zusammen. Trotzdem sollte vor jeder Änderung der
+aktuelle Stand geprüft werden.
 
-### Komplexe Payloads als Datei
+### Komplexe Eingaben als Datei
 
-Mehrteilige Strukturen werden über `--file <payload.json>` übergeben. Die jeweilige Domain-Doku beschreibt das erwartete JSON. Verwende keine undokumentierten Felder aus Vermutungen.
+Mehrteilige Strukturen werden über eine Datei übergeben. Der jeweilige
+Themenartikel beschreibt das erwartete JSON; undokumentierte Felder aus
+Vermutungen werden nicht verwendet.
 
 ### Vorschau vor Veröffentlichung
 
@@ -107,21 +106,97 @@ comvenio tournament preview <id> --json
 comvenio verify event <event-id> --json
 ```
 
-Vorschau und Verifier sind kein Freigabeersatz. Live-Mutationen erst nach fachlicher oder visueller Prüfung ausführen.
+Vorschau und Prüfung ersetzen keine Freigabe. Veröffentlichende oder
+verändernde Schritte laufen erst nach fachlicher oder visueller Prüfung.
 
-## Bewusst entfernte Generatoren
+### Prüfen mit `verify`
 
-`menu generate`, `menu design`, `homepage generate` und `homepage design` sind keine nutzbaren Generatoren. Diese Actions brechen absichtlich mit einer Erklärung ab. Der bedienende Agent komponiert Inhalt und Design selbst und persistiert sie deklarativ:
+```bash
+comvenio verify --help
+comvenio verify url <adresse> --json
+comvenio verify homepage --audit --json
+```
 
-- Menü: `menu create` + `menu add-item` oder `menu apply --file`, Design über `menu style`.
-- Homepage: `homepage preview --file` + `homepage apply --file`, Theme über `club design`.
+`verify` prüft eine Adresse, eine Veranstaltung, eine Speisekarte, die
+Homepage, eine News oder eine Urkunde visuell und meldet Befunde mit einem
+klaren Exit-Code statt nur einer bestandenen/nicht bestandenen Aussage.
+Details je Bereich stehen im jeweiligen Themenartikel.
 
-Das CLI ruft dafür kein Backend-LLM auf.
+### Bewusst entfernte Generatoren
 
-## Coverage richtig lesen
+`menu generate`, `menu design`, `homepage generate` und `homepage design`
+erzeugen keinen Inhalt automatisch — diese Aufrufe brechen absichtlich mit
+einer Erklärung ab. Inhalt und Design werden stattdessen bewusst komponiert
+und deklarativ gespeichert:
 
-- `covered`: Der vorgesehene Club-Admin-Workflow ist verfügbar; technische Public-/Internal-Routen müssen nicht gespiegelt werden.
-- `core-partial`: Nutzbarer Kern vorhanden, aber mindestens ein wichtiger Admin-Workflow fehlt.
-- `intentional-exclusion`: bewusst kein operativer CLI-Workflow.
+- Speisekarte: Karte und Einträge anlegen oder aus einer Datei anwenden,
+  Design über den eigenen Stil-Befehl.
+- Homepage: Vorschau aus einer Datei erzeugen, dann anwenden; das Thema über
+  das Vereinsdesign setzen.
 
-Die Registry zählt keine Backend-Routen. Sie bewertet Bedien-Workflows, nennt vorhandene Actions, belegte CLI-Lücken, Ausschlussgründe sowie Prüfdatum und Quellpfade.
+Es gibt dabei keinen zusätzlichen Hintergrund-Aufruf, der Inhalte erfindet.
+
+## Beispiele
+
+Schema eines Bereichs abrufen und Struktur erst lesen, dann prüfen:
+
+```bash
+comvenio schema event --json
+comvenio event show <event-id> --json
+comvenio verify event <event-id> --json
+```
+
+Öffentliche Adresse visuell prüfen:
+
+```bash
+comvenio verify url https://verein.web.comvenio.app --json
+```
+
+## Befehle und Actions
+
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
+
+**schema** — Kern vorhanden, einzelne Abläufe fehlen
+
+- `comvenio schema list domains`
+- `comvenio schema show domain schema`
+
+**verify** — vollständig
+
+- `comvenio verify url`
+- `comvenio verify event`
+- `comvenio verify menu`
+- `comvenio verify homepage`
+- `comvenio verify news`
+- `comvenio verify certificate`
+
+**plan** — vollständig
+
+- `comvenio plan list`
+- `comvenio plan show`
+- `comvenio plan create`
+- `comvenio plan update`
+- `comvenio plan delete`
+- `comvenio plan zone list|create|update|delete|link|unlink`
+- `comvenio plan table create|duplicate|update|delete`
+- `comvenio plan marker create|update|delete`
+- `comvenio plan guest list|add|update|delete`
+- `comvenio plan detail`
+- `comvenio plan export`
+- `comvenio plan illustrate`
+- `comvenio plan compose`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `AUTH_REQUIRED` — die Anmeldung ist abgelaufen, wurde widerrufen oder
+  fehlt; erneut anmelden. `comvenio help fehler AUTH_REQUIRED`.
+- `PERMISSION_DENIED` — die Vereinsrolle erlaubt den Befehl nicht.
+  `comvenio help fehler PERMISSION_DENIED`.
+- `NOT_FOUND` — die angegebene Kennung gehört zu keinem sichtbaren oder
+  vorhandenen Eintrag. `comvenio help fehler NOT_FOUND`.
+- `VALIDATION_FAILED` — eine Eingabedatei passt nicht zum Schema des
+  Bereichs. `comvenio help fehler VALIDATION_FAILED`.
+- `USAGE_ERROR` — ein Argument oder eine Option fehlt, passt nicht zusammen
+  oder hat das falsche Format. `comvenio help fehler USAGE_ERROR`.

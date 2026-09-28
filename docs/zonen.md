@@ -1,103 +1,124 @@
+---
+id: zonen
+kategorie: thema
+domaenen: [zone]
+stichwoerter: [zone, zonen, einteilung, zone-set, geojson, gebiet, pate, aufgaben]
+---
+
 # Vereinsgebiet und Zonen
+
+## Wozu
 
 Ein Verein teilt sein Gebiet in **Einteilungen** (zum Beispiel „Flyer (Straßenzüge)“) und jede
 Einteilung in **Zonen** — Flächen auf der Karte. Aufgaben werden Zonen zugeteilt; wer einer Aufgabe
-zugewiesen ist, ist ihren Zonen zugeteilt. Einteilungen und Zonen liegen im club-service, die
-Zuteilung im task-service. Gezeichnet wird im Gebiets-Editor der Web-App; die CLI arbeitet mit
-GeoJSON-Dateien.
+zugewiesen ist, ist damit ihren Zonen zugeteilt.
 
-## Einteilungen
+## Voraussetzungen und Rechte
+
+Anmeldung per `comvenio login`; welche Scopes ein einzelner Befehl braucht, zeigt
+`comvenio action list --json`. Gezeichnet wird ausschließlich im Gebiets-Editor der Web-App — die
+CLI liest und schreibt Zonen als GeoJSON-Dateien, ändert aber keine Eckpunkte interaktiv.
+
+## Abläufe
+
+### Einteilung anlegen und pflegen
+
+1. Vorhandene Einteilungen ansehen: `comvenio zone set list --json`.
+2. Neue Einteilung anlegen: `comvenio zone set create --name "<Name>" --center <lat>,<lng> --zoom <n>`.
+3. Namen ändern: `comvenio zone set update <zone-set-id> --name "<neuer Name>"`.
+   `update` liest den aktuellen Stand selbst; mit `--expected-version <n>` wird gegen einen
+   bekannten Stand geschrieben — passt er nicht, antwortet der Dienst mit `409` und nennt
+   `live_version`.
+4. Einteilung löschen: `comvenio zone set delete <zone-set-id>`.
+
+### Zonen anlegen und pflegen
+
+1. Zonen einer Einteilung ansehen: `comvenio zone list --set <zone-set-id>`.
+2. Zone aus einer GeoJSON-Datei anlegen:
+   `comvenio zone create --set <zone-set-id> --name "<Name>" --geojson <datei>.geojson --color "#e0842b"`.
+   `--geojson` nimmt ein `Polygon` oder `MultiPolygon`, ein `Feature` oder eine
+   `FeatureCollection` mit genau einem Feature; Koordinaten stehen als `[lng, lat]`, jeder Ring ist
+   geschlossen und hat mindestens vier Punkte, höchstens 2000 Punkte je Zone. Eine ungültige Datei
+   wird vor dem Aufruf abgewiesen.
+3. Form aktualisieren: `comvenio zone update <zone-id> --geojson <datei-neu>.geojson`.
+4. Zone löschen: `comvenio zone delete <zone-id>`. Gelöschte Zonen bleiben an ihren Aufgaben und
+   werden dort als gelöscht angezeigt.
+
+### Angaben zur Zone pflegen
+
+1. Gebäudezahl von Hand eintragen: `comvenio zone update <zone-id> --building-count 120`; wieder
+   der Schätzung überlassen mit `--building-count leer`.
+2. Notiz setzen oder löschen: `comvenio zone update <zone-id> --notes "<Text>"` bzw. `--notes ""`.
+3. Schätzung neu anstoßen (etwa nach „Schätzung fehlgeschlagen“): `comvenio zone estimate <zone-id>`
+   — das Ergebnis steht nach wenigen Sekunden in `zone list`.
+4. Paten, Treffpunkt, Fortbewegung und Besonderheiten setzen:
+   `comvenio zone update <zone-id> --pate <member-id> --treffpunkt "<lat>,<lng>,<Beschreibung>" --fortbewegung fuss --besonderheiten hunde,zugang`.
+   Jedes dieser Felder löscht `leer` einzeln wieder.
+
+### Zonen importieren
+
+1. `comvenio zone import --set <zone-set-id> --geojson <datei>.geojson`. Je Feature der
+   `FeatureCollection` entsteht eine Zone; der Name kommt aus `properties.name`, die Farbe
+   wahlweise aus `properties.color`. Ungültige Features werden übersprungen und mit Index und
+   Grund gelistet; die gültigen Zonen sind trotzdem angelegt.
+
+### Übersicht und Zuteilung
+
+1. Übersicht je Zone: `comvenio zone overview --set <zone-set-id>` — zeigt **nicht zugeteilt**,
+   **in Arbeit**, **zugeteilt, offen** und mit `--status completed` auch **erledigt**;
+   abgebrochene Aufgaben zählen nie.
+2. Zonen einer Aufgabe ansehen: `comvenio task-zones <task-id>`.
+3. Zone zuordnen oder entfernen: `comvenio task-zones <task-id> add <zone-id>` bzw.
+   `comvenio task-zones <task-id> remove <zone-id>`. Eine Aufgabe trägt Zonen immer nur einer
+   Einteilung; Vorlagen bekommen keine Zonen.
+
+Das Offline-Schema für Zonen steht unter `comvenio schema zone --json`.
+
+## Beispiele
 
 ```bash
-comvenio zone set list --json
 comvenio zone set create --name "Flyer (Straßenzüge)" --center 48.8950,12.3790 --zoom 16
-comvenio zone set update <zone-set-id> --name "Flyer 2027"
-comvenio zone set delete <zone-set-id>
-```
-
-`update` liest die aktuelle Version selbst; mit `--expected-version <n>` wird gegen einen bekannten
-Stand geschrieben. Passt er nicht, antwortet der Dienst mit `409` und nennt `live_version`.
-
-## Zonen
-
-```bash
-comvenio zone list --set <zone-set-id>
 comvenio zone create --set <zone-set-id> --name "Kastnerstraße" --geojson kastner.geojson --color "#e0842b"
-comvenio zone update <zone-id> --geojson kastner-neu.geojson
-comvenio zone delete <zone-id>
-```
-
-`--geojson` nimmt ein `Polygon` oder `MultiPolygon`, ein `Feature` oder eine `FeatureCollection` mit
-genau einem Feature. Koordinaten stehen als `[lng, lat]`; jeder Ring ist geschlossen und hat
-mindestens vier Punkte; höchstens 2000 Punkte je Zone. Eine ungültige Datei wird vor dem Aufruf
-abgewiesen (Exit 2).
-
-Gelöschte Zonen bleiben an den Aufgaben und werden dort als gelöscht angezeigt.
-
-## Angaben zur Zone
-
-```bash
-comvenio zone update <zone-id> --building-count 120 --notes "Zwei Mehrfamilienhäuser am Ende der Straße"
-comvenio zone update <zone-id> --building-count leer
+comvenio zone update <zone-id> --pate <member-id> --treffpunkt "49.05,12.36,Material bei Familie Huber" --fortbewegung fuss --besonderheiten hunde,zugang
 comvenio zone estimate <zone-id>
-comvenio zone update <zone-id> --pate <member-id> --treffpunkt "49.05,12.36,Material bei Familie Huber"   --fortbewegung fuss --besonderheiten hunde,zugang
-comvenio zone update <zone-id> --pate leer --treffpunkt leer --fortbewegung leer --besonderheiten leer
-```
-
-Die Gebäudezahl schätzt der club-service selbst: Nach dem Anlegen einer Zone und nach jeder
-Änderung ihrer Form zählt er die Adressen (Straße und Hausnummer) im Polygon aus OpenStreetMap.
-`zone list` zeigt sie in der Spalte „Gebäude“ mit „≈“; eine eingetragene Zahl (`--building-count`)
-steht ohne „≈“ und hat Vorrang, `--building-count leer` lässt wieder die Schätzung gelten.
-`zone estimate` startet die Zählung neu, etwa nach „Schätzung fehlgeschlagen“ — das Ergebnis steht
-nach wenigen Sekunden in `zone list`. `--notes ""` löscht die Notiz.
-
-Weitere Angaben (Sub-File 07): `--pate` nimmt die Mitglieds-ID eines Vereinsmitglieds — der
-club-service prüft sie beim member-service und antwortet sonst mit `422 pate_not_member`
-(`503 member_service_unavailable`, wenn der Mitgliederdienst nicht antwortet). `--treffpunkt`
-erwartet `<lat>,<lng>` und wahlweise eine Beschreibung dahinter, die selbst Kommas enthalten
-darf. `--fortbewegung` ist eine aus `fuss`, `rad`, `auto`; `--besonderheiten` eine Liste aus
-`hunde`, `zugang`, `mehrfamilien`, `parken`. „leer“ löscht jeweils. Die Straßenliste der Zone
-schreibt die Schätzung mit; `zone list --json` liefert sie im Feld `strassen`.
-
-## Import
-
-```bash
-comvenio zone import --set <zone-set-id> --geojson dorf.geojson
-```
-
-Je Feature der `FeatureCollection` entsteht eine Zone; der Name kommt aus `properties.name`, die
-Farbe wahlweise aus `properties.color`. Ungültige Features werden übersprungen und mit Index und
-Grund gelistet; der Befehl endet dann mit Exit 1, die gültigen Zonen sind angelegt.
-
-## Übersicht
-
-```bash
-comvenio zone overview --set <zone-set-id>
 comvenio zone overview --set <zone-set-id> --status open,in_progress,completed --json
-```
-
-Zeigt je Zone die Zuteilung wie die Übersicht der Web-App: **nicht zugeteilt** (keine Aufgabe im
-Filter oder keine mit Zuständigen), **in Arbeit**, **zugeteilt, offen**, **erledigt** (nur mit
-`completed` im Filter). Nicht zugeteilte Zonen stehen zuerst. Abgebrochene Aufgaben zählen nie.
-
-## Zonen einer Aufgabe
-
-```bash
-comvenio task-zones <task-id>
 comvenio task-zones <task-id> add <zone-id>
-comvenio task-zones <task-id> remove <zone-id>
 ```
 
-Eine Aufgabe trägt Zonen genau einer Einteilung (`422 zone_set_mismatch`). Vorlagen bekommen keine
-Zonen (`422 task_is_template`).
+## Befehle und Actions
 
-## Fehler und Exit-Codes
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-| Exit | Bedeutung |
-|---|---|
-| 0 | Erfolg |
-| 1 | Dienstfehler, ausgegeben mit Status, Code und Grund — etwa `409 zone_changed · live_version=5`, `422 invalid_geometry · Ein Ring ist nicht geschlossen`; oder Import mit übersprungenen Features |
-| 2 | ungültige Eingabe vor dem Aufruf (Datei, Geometrie, `--center`, `--color`) |
+**zone** — vollständig
 
-`--json` gibt die Rohantwort des Dienstes aus. Das Offline-Schema steht unter
-`comvenio schema zone --json`.
+- `comvenio zone set list`
+- `comvenio zone set create`
+- `comvenio zone set update`
+- `comvenio zone set delete`
+- `comvenio zone list`
+- `comvenio zone create`
+- `comvenio zone update`
+- `comvenio zone estimate`
+- `comvenio zone delete`
+- `comvenio zone import`
+- `comvenio zone overview`
+- `comvenio zone task-zones`
+- `comvenio zone task-zones add`
+- `comvenio zone task-zones remove`
+- Felder und Werte: `comvenio schema zone --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `VALIDATION_FAILED` — die GeoJSON-Geometrie oder ein Feld wie `--pate` ist ungültig, etwa ein
+  nicht geschlossener Ring oder eine unbekannte Mitglieds-ID. Mehr:
+  `comvenio help fehler VALIDATION_FAILED`.
+- `CONFLICT` — die Zone oder Einteilung wurde seit dem gelesenen Stand geändert
+  (`--expected-version` passt nicht mehr). Mehr: `comvenio help fehler CONFLICT`.
+- `NOT_FOUND` — Einteilung, Zone oder Aufgabe sind unter der angegebenen Kennung nicht bekannt.
+  Mehr: `comvenio help fehler NOT_FOUND`.
+- `PERMISSION_DENIED` — die Vereinsrolle erlaubt das Anlegen, Ändern oder Löschen nicht. Mehr:
+  `comvenio help fehler PERMISSION_DENIED`.
+- `UPSTREAM_UNAVAILABLE` — ein für die Prüfung nötiger Dienst (etwa für `--pate`) antwortet
+  gerade nicht. Mehr: `comvenio help fehler UPSTREAM_UNAVAILABLE`.

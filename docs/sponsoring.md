@@ -1,33 +1,61 @@
-# Lokales Sponsoring – eigenständige CLI-Referenz
+---
+id: sponsoring
+kategorie: thema
+domaenen: [sponsor]
+stichwoerter: [sponsoring, sponsor, werbepartner, vertrag, zuordnung]
+---
 
-Stand: 13. Juli 2026 · Quelle: `src/commands/sponsor.ts`
+# Lokales Sponsoring
 
-Das Sponsoring-Modell besteht aus vier Ebenen:
+## Wozu
 
-```text
-Sponsor (Advertiser)
-  ├─ Logo
-  ├─ Verantwortliche Vereinsmitglieder
-  └─ Zuordnung zu einem Sponsoring-Produkt
-       ├─ Preis/Laufzeit/Status
-       ├─ Vertragsversionen des Produkts
-       └─ private Vertragsdokumente der Zuordnung
-```
+Mit dem Sponsoring-Bereich verwaltet ein Verein seine lokalen Sponsoren, deren Angebote (Sponsoring-Produkte), die Zuordnung eines Sponsors zu einem Produkt samt Vertragskonditionen sowie die zugehörigen verantwortlichen Vereinsmitglieder und Vertragsdokumente.
 
-Lokale Sponsoren, Produkte und Zuordnungen sind immer einem Club und meist einer Abteilung zugeordnet.
+## Voraussetzungen und Rechte
 
-## Actions
+Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Sponsoren, Produkte und Zuordnungen gehören immer zu einem Verein und meist zu einer Abteilung.
 
-| Bereich | Actions |
-|---|---|
-| Sponsor | `list`, `show`, `add`, `update`, `delete`, `logo` |
-| Angebot/Produkt | `product-list`, `product-add`, `product-update`, `product-delete` |
-| Vertragsversion | `contract-list`, `contract-add`, `contract-update`, `contract-delete` |
-| Sponsor-Zuordnung | `assignment-list`, `assign`, `assignment-update`, `cancel` |
-| Dokumente | `doc-list`, `doc-upload` |
-| Verantwortliche | `responsible-list`, `responsible-add`, `responsible-update`, `responsible-remove` |
+## Abläufe
 
-## Sponsor anlegen
+### Die vier Ebenen
+
+Das Sponsoring-Modell besteht aus vier Ebenen: ein **Sponsor** (Werbepartner) mit Logo und verantwortlichen Vereinsmitgliedern wird einem **Sponsoring-Produkt** zugeordnet; die **Zuordnung** trägt Preis, Laufzeit und Status; ein Produkt kann mehrere **Vertragsversionen** mit eigenen Konditionen haben, und jede Zuordnung kann eigene, private Vertragsdokumente tragen.
+
+### Sponsor anlegen
+
+1. Pflichtangaben sind Abteilung, Name und E-Mail-Adresse.
+2. Wird beim Anlegen zusätzlich eine Datei angegeben, lädt das CLI sie als öffentliches Sponsorlogo hoch und verknüpft die Datei-ID direkt mit dem Sponsor.
+3. Logo, Kontaktperson und weitere Angaben lassen sich danach jederzeit aktualisieren.
+
+### Sponsoring-Produkt anlegen
+
+Ein Produkt beschreibt ein Angebot des Clubs, etwa „Trikotsponsor", „Bandenwerbung" oder ein „Gold-Paket". Preise werden in Cent angegeben; ohne ausdrückliche Angabe gelten beim Anlegen die Währung `EUR`, das Abrechnungsintervall `year` und eine Laufzeit von zwölf Monaten. Ein Produkt kann später als inaktiv markiert werden, ohne bestehende Zuordnungen zu verlieren.
+
+### Vertragsversion eines Produkts
+
+Eine neue Vertragsversion bildet geänderte Konditionen ab, ohne ältere Verträge zu überschreiben — ältere Versionen bleiben als Historie erhalten. Eine neue Version kann eine vorherige ausdrücklich ablösen und deren Gültigkeit begrenzen; eine interne Notiz lässt sich mitspeichern. Vertragsdateien sind immer privat. Zum Ändern oder Löschen einer Version ist neben der Produkt-ID stets die konkrete Versions-ID anzugeben; beim Ändern lässt sich in derselben Aktion zusätzlich eine neue Vertragsdatei hochladen. Löschen entfernt eine Version per Soft-Delete, andere Versionen bleiben unberührt.
+
+### Sponsor einem Produkt zuordnen
+
+Eine Zuordnung verbindet einen Sponsor mit einem Produkt für einen Zeitraum und optional eine Menge; Preis oder Gesamtpreis können dabei die Produktvorgabe überschreiben. Eine Zuordnung lässt sich später anpassen oder mit einer Notiz und einem Enddatum beenden. Gelöschte Zuordnungen lassen sich auf Wunsch mit anzeigen.
+
+### Vertragsdokument einer Zuordnung hochladen
+
+Unterschriebene Vertragsdokumente werden einer einzelnen Zuordnung zugeordnet, sind privat gespeichert und tragen die Sponsor-ID als Unterkontext.
+
+### Verantwortliche Vereinsmitglieder
+
+Einem Sponsor lassen sich verantwortliche Mitglieder mit einer Rolle zuweisen; eines davon kann als primärer Kontakt markiert werden. Dabei wird ausdrücklich eine Mitglieds-ID erwartet, keine Benutzer-ID.
+
+### Datei-Sichtbarkeit
+
+Logos sind standardmäßig öffentlich, damit Event- und Vereinsseiten sie zeigen können. Produktverträge und unterschriebene Zuordnungsdokumente sind dagegen immer privat. Uploads laufen über den gemeinsamen Datei-Mechanismus, siehe [dateien.md](dateien.md).
+
+### Abgrenzung
+
+Ein globaler Anzeigenmarktplatz oder eine Plattform-Abrechnung gehören bewusst nicht zum lokalen Sponsoring. Die Verwaltung von Sponsoren, Produkten, Vertragsversionen, Zuordnungen und Verantwortlichen ist vollständig über die hier beschriebenen Actions erreichbar.
+
+## Beispiele
 
 ```bash
 comvenio sponsor add \
@@ -35,27 +63,19 @@ comvenio sponsor add \
   --name "Muster GmbH" \
   --email sponsor@example.org \
   --website https://example.org \
-  --contact-person "Erika Muster" \
+  --contact-person "<contact-person>" \
   --contact-phone "+49 123 456789" \
   --organization-type crafts \
   --file ./logo.png \
   --json
-```
 
-Pflicht sind `--department-id`, `--name` und `--email`. Wird beim Anlegen `--file` angegeben, lädt das CLI die Datei als öffentliches Sponsorlogo hoch und verknüpft ihre File-ID.
-
-```bash
 comvenio sponsor list --json
 comvenio sponsor list --department-id <department-id> --json
 comvenio sponsor show <sponsor-id> --json
-comvenio sponsor update <sponsor-id> --contact-person "Max Muster" --json
+comvenio sponsor update <sponsor-id> --contact-person "<contact-person>" --json
 comvenio sponsor logo <sponsor-id> --file ./neues-logo.svg --json
 comvenio sponsor delete <sponsor-id> --json
 ```
-
-## Sponsoring-Produkt
-
-Ein Produkt beschreibt ein Club-Angebot wie „Trikotsponsor“, „Bandenwerbung“ oder „Gold-Paket“.
 
 ```bash
 comvenio sponsor product-add \
@@ -69,21 +89,13 @@ comvenio sponsor product-add \
   --duration-months 12 \
   --sort-order 10 \
   --json
-```
 
-Preise werden in Cent angegeben. Ohne explizite Werte gelten beim Anlegen `EUR`, `year` und zwölf Monate.
-
-```bash
 comvenio sponsor product-list --json
 comvenio sponsor product-list --include-inactive --json
 comvenio sponsor product-update <product-id> --price-cents 175000 --json
 comvenio sponsor product-update <product-id> --inactive --json
 comvenio sponsor product-delete <product-id> --json
 ```
-
-## Vertragsversion eines Produkts
-
-Vertragsversionen bilden neue Konditionen ab, ohne alte Verträge zu überschreiben.
 
 ```bash
 comvenio sponsor contract-add <product-id> \
@@ -107,22 +119,7 @@ comvenio sponsor contract-update <product-id> \
 comvenio sponsor contract-delete <product-id> --contract-version <version-id> --json
 ```
 
-Optionale Versionsverkettung:
-
-- `--supersedes-version <id>` benennt die abgelöste Version.
-- `--superseded-valid-until <iso>` begrenzt die alte Version.
-- `--valid-until <iso>` begrenzt die neue Version.
-- `--note <text>` speichert eine interne Notiz.
-
-Vertragsdateien sind privat.
-
-`contract-update` ändert nur die angegebenen Felder. Mit `--file` lädt das CLI zuerst eine neue
-private Vertragsdatei hoch und setzt deren `contract_file_id` in derselben Mutation.
-`contract-delete` entfernt die Version per Soft-Delete; andere historische Versionen bleiben
-erhalten. Beide Actions benötigen neben der Product-ID explizit
-`--contract-version <version-id>`.
-
-## Sponsor einem Produkt zuordnen
+Optionale Versionsverkettung: `--supersedes-version <id>` benennt die abgelöste Version, `--superseded-valid-until <iso>` begrenzt sie, `--valid-until <iso>` begrenzt die neue Version, `--note <text>` speichert eine interne Notiz.
 
 ```bash
 comvenio sponsor assign \
@@ -133,29 +130,19 @@ comvenio sponsor assign \
   --starts-at 2027-01-01T00:00:00+01:00 \
   --ends-at 2027-12-31T23:59:59+01:00 \
   --json
-```
 
-Optional können `--price-cents` oder `--total-price-cents` die Produktvorgabe überschreiben.
-
-```bash
 comvenio sponsor assignment-list --json
 comvenio sponsor assignment-list --sponsor <sponsor-id> --status active --json
 comvenio sponsor assignment-update <assignment-id> --quantity 2 --json
 comvenio sponsor cancel <assignment-id> --note "Vertrag beendet" --ends-at <iso> --json
 ```
 
-`--include-deleted` erweitert die Liste um gelöschte Zuordnungen.
-
-## Vertragsdokument einer Zuordnung
+`--include-deleted` erweitert `assignment-list` um gelöschte Zuordnungen.
 
 ```bash
 comvenio sponsor doc-upload <assignment-id> --file ./unterschrieben.pdf --json
 comvenio sponsor doc-list <assignment-id> --json
 ```
-
-Zuordnungsdokumente werden privat mit `context_type=sponsorship_assignment` gespeichert. Die Sponsor-ID wird als Unterkontext verwendet.
-
-## Verantwortliche Vereinsmitglieder
 
 ```bash
 comvenio sponsor responsible-add <sponsor-id> \
@@ -170,16 +157,44 @@ comvenio sponsor responsible-update <responsible-assignment-id> --role contact -
 comvenio sponsor responsible-remove <responsible-assignment-id> --json
 ```
 
-`--member` erwartet eine Member-ID, nicht eine User-ID.
+## Befehle und Actions
 
-## Datei-Sichtbarkeit
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-- Logos sind standardmäßig öffentlich, damit Event- und Clubseiten sie anzeigen können.
-- Produktverträge und unterschriebene Zuordnungsdokumente sind privat.
-- Uploads laufen über den gemeinsamen DataShare-Mechanismus; Details stehen in [`dateien.md`](dateien.md).
+**sponsor** — vollständig
 
-## Scope-Grenze
+- `comvenio sponsor list`
+- `comvenio sponsor show`
+- `comvenio sponsor add`
+- `comvenio sponsor update`
+- `comvenio sponsor delete`
+- `comvenio sponsor logo`
+- `comvenio sponsor product-list`
+- `comvenio sponsor product-add`
+- `comvenio sponsor product-update`
+- `comvenio sponsor product-delete`
+- `comvenio sponsor contract-list`
+- `comvenio sponsor contract-add`
+- `comvenio sponsor contract-update`
+- `comvenio sponsor contract-delete`
+- `comvenio sponsor assignment-list`
+- `comvenio sponsor assign`
+- `comvenio sponsor assignment-update`
+- `comvenio sponsor cancel`
+- `comvenio sponsor doc-list`
+- `comvenio sponsor doc-upload`
+- `comvenio sponsor responsible-list`
+- `comvenio sponsor responsible-add`
+- `comvenio sponsor responsible-update`
+- `comvenio sponsor responsible-remove`
+- Felder und Werte: `comvenio schema sponsor --json`
+<!-- /gen:docs -->
 
-Globaler Anzeigenmarktplatz und Plattform-Abrechnung sind bewusst kein lokales Club-Sponsoring.
-Die lokale Sponsor-, Produkt-, Vertragsversions-, Zuordnungs- und Verantwortlichenverwaltung ist
-vollständig über die oben dokumentierten Actions erreichbar.
+## Fehler
+
+- `VALIDATION_FAILED` — eine Pflichtangabe wie Abteilung, Name oder E-Mail fehlt oder ein Feld hat das falsche Format. Mehr: `comvenio help fehler VALIDATION_FAILED`
+- `NOT_FOUND` — Sponsor, Produkt, Vertragsversion oder Zuordnung existiert nicht oder ist nicht sichtbar. Mehr: `comvenio help fehler NOT_FOUND`
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt die Sponsoring-Verwaltung in dieser Abteilung nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope für Sponsoring-Aktionen. Mehr: `comvenio help fehler SCOPE_REQUIRED`
+- `CONFLICT` — Produkt, Vertragsversion oder Zuordnung wurden inzwischen geändert oder erlauben die Aktion in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`

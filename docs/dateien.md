@@ -1,21 +1,83 @@
-# DataShare – Dateien, Ordner und Papers
+---
+id: dateien
+kategorie: thema
+domaenen: [data]
+stichwoerter: [dateien, ordner, papierkorb, upload, freigaben, papers, export]
+---
 
-Stand: 13. Juli 2026 · Quellen: `src/commands/data.ts`, `src/util/upload.ts`, `src/schema/data.json`
+# DataShare — Dateien, Ordner und Papers
 
-DataShare verwaltet Club-Dateien, Ordner, Papierkorb, Ordnerrechte, Event-Bereichsfreigaben und veröffentlichbare Dokumente („Papers“). Der bedienende Agent analysiert heruntergeladene Inhalte selbst; es gibt keine `analyze`-Action.
+## Wozu
 
-## Kontext und Sichtbarkeit
+DataShare verwaltet die Dateien, Ordner und den Papierkorb eines Vereins, ordnet sie einem fachlichen Kontext wie einer Veranstaltung oder einer News zu und macht ausgewählte Dokumente als veröffentlichbare „Papers" verfügbar. Den Inhalt einer heruntergeladenen Datei wertet der bedienende Agent selbst aus — dafür gibt es keine eigene Action.
 
-Dateien können einem fachlichen Kontext zugeordnet werden:
+## Voraussetzungen und Rechte
 
-`none`, `club`, `department`, `event`, `object`, `task`, `news`, `paper`, `newsletter`, `tournament`, `protocol`, `agenda_item`, `agenda_item_note`, `protocol_entry`, `user_avatar`, `message_attachment`, `feedback`, `certificate`, `certificate_template`, `letter`, `event_sponsor`, `advertiser`, `sponsorship_product`, `sponsorship_assignment`.
+Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Zum Hochladen in eine bestimmte Abteilung ist dort das Dateirecht nötig — ohne dieses Recht schlägt der Upload in diese Abteilung fehl.
+
+## Abläufe
+
+### Kontext und Sichtbarkeit
+
+Jede Datei kann einem fachlichen Kontext zugeordnet werden: `none`, `club`, `department`, `event`, `object`, `task`, `news`, `paper`, `newsletter`, `tournament`, `protocol`, `agenda_item`, `agenda_item_note`, `protocol_entry`, `user_avatar`, `message_attachment`, `feedback`, `certificate`, `certificate_template`, `letter`, `event_sponsor`, `advertiser`, `sponsorship_product`, `sponsorship_assignment`.
 
 - `context_id` ist die ID der fachlichen Entität.
-- `sub_context_id` verfeinert sie, zum Beispiel auf einen Event-Bereich.
+- `sub_context_id` verfeinert den Kontext, zum Beispiel auf einen Event-Bereich.
 - `context_label` gruppiert Dateien innerhalb eines Kontexts, zum Beispiel `gallery`, `title_picture`, `flyer` oder `contract`.
-- Sichtbarkeit ist `private` (Default) oder `public`.
+- Die Sichtbarkeit ist `private` (Standard) oder `public`.
 
-## Dateien lesen
+### Datei hochladen
+
+1. Zielkontext und, falls nötig, Unterkontext bestimmen (siehe oben).
+2. Für die Kontexte `club`, `none` und `department` optional eine Abteilung wählen — ohne `--department` landet die Datei in der **Standard-Abteilung** des Vereins und erscheint dort im DataShare. `--department none` lädt bewusst ohne Abteilung hoch; die Datei ist dann **nicht** im DataShare sichtbar. Andere Kontexte (`event`, `news`, `certificate`, …) folgen eigenen Regeln des Servers.
+3. Hochladen — das CLI führt reservieren, direkt hochladen und finalisieren in einem Schritt aus. Das Limit beträgt 200 MB.
+
+Der Upload funktioniert auch aus der eigenständigen Programmversion; Dateiinhalte werden dabei als stabiler Byte-Body übertragen.
+
+### Video für mobiles Autoplay optimieren
+
+Mobile Browser starten große Videos oft nicht automatisch — eine kleine, tonlose MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig automatisch und stumm an. Mit `--optimize-video` re-encodiert der Upload das Video automatisch, bevor es hochgeladen wird:
+
+1. `ffmpeg` muss verfügbar sein — ohne `ffmpeg` bricht der Befehl vor jedem Upload mit einer klaren Fehlermeldung ab.
+2. Nur Video-Dateien (`.mp4`, `.mov`, `.webm`, `.mkv`) lassen sich optimieren; andere Endungen brechen den Befehl vorher ab.
+3. Das Original bleibt unverändert auf der Festplatte; die optimierte Kopie entsteht temporär unter demselben Dateinamen und wird nach dem Upload automatisch gelöscht.
+
+Die Optimierung erzeugt H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** und mit vorangestelltem moov-Atom. Die Konsole zeigt die Größenänderung an; bei `--json` steht dieselbe Information zusätzlich strukturiert in der Antwort.
+
+### Kontext nachträglich ändern
+
+Nur angegebene Felder werden geändert. Der Wert `none` setzt ein Feld ausdrücklich auf leer und entfernt so eine bestehende Zuordnung.
+
+### Datei-Lifecycle
+
+- Löschen verschiebt eine Datei standardmäßig in den Papierkorb.
+- Wiederherstellen holt eine weich gelöschte Datei zurück.
+- Endgültiges Löschen ist nicht rückgängig zu machen.
+- Speicherverbrauch und Papierkorb lassen sich je Verein oder je Abteilung abfragen; der Papierkorb einer Abteilung kann gezielt geleert werden.
+
+### Ordner lesen, suchen und verwalten
+
+Ordner lassen sich nach Unterordnern und Dateien auflisten, per Stichwort durchsuchen und über ihren Pfad (Breadcrumb) einordnen. `root` und der Wert `none` stehen bei Ordner-Angaben für die oberste Ebene.
+
+Ordner können angelegt, umbenannt, verschoben, geschützt und gelöscht werden; Löschen und Wiederherstellen wirken standardmäßig rekursiv auf den gesamten Unterbaum.
+
+### Ordnerrechte setzen
+
+Rechte werden einem Ordner als Objekt mit `subject_type`, `subject_id`, `can_read` und `can_write` zugeordnet; aktuell ist ausschließlich `subject_type=user` produktiv. Sobald ein Ordner oder einer seiner Vorfahren explizite Rechte trägt, ist der geschützte Bereich nur für passende Subjekte lesbar oder schreibbar. Unterordner können eigene, abweichende Rechte definieren. Rechte lassen sich auch gesammelt als Liste anlegen.
+
+### Dateien zwischen Event-Bereichen teilen
+
+Ein Titelbild oder ein Flyer kann zusätzlich in mehreren Event-Bereichen erscheinen, ohne dafür mehrfach hochgeladen zu werden. Für mehrere Bereiche gemeinsam liefert eine eigene Abfrage die passende Bild-/Datei-Zuordnung je Bereich; ohne Einschränkung auf bestimmte Bereiche bezieht sich die Abfrage auf den gesamten Club-Kontext.
+
+### Papers veröffentlichen
+
+Ein Paper verknüpft eine vorhandene Datei mit einem veröffentlichbaren Dokument-Datensatz. Dokumenttypen sind `protokoll`, `flyer`, `anleitung`, `zeitung`, `bericht`, `speisekarte` und `sonstiges`; der fachliche Kontext eines Papers ist `event`, `object`, `task`, `supply` oder `custom`. Ein vollständiges Update ersetzt alle Felder — es erwartet dieselben Angaben wie beim Anlegen.
+
+### Mitglieder- und Buchungsdaten exportieren
+
+Nur die Bereiche `members` und `bookings` sowie die Formate `csv` und `xlsx` sind zulässig; andere Werte brechen schon vor der Anfrage mit einem Eingabefehler ab.
+
+## Beispiele
 
 ```bash
 comvenio data list --context event --context-id <event-id> --json
@@ -24,9 +86,7 @@ comvenio data url <file-id> --json
 comvenio data download <file-id> --out ./bild.jpg --json
 ```
 
-`list` benötigt immer `--context` und `--context-id`. `url` liefert eine kurzlebige presigned URL, `download` schreibt die Bytes auf den lokalen Pfad.
-
-## Upload
+`list` benötigt immer `--context` und `--context-id`. `url` liefert eine kurzlebige, signierte Adresse; `download` schreibt die Bytes auf den lokalen Pfad.
 
 ```bash
 comvenio data upload ./bild.jpg \
@@ -39,14 +99,6 @@ comvenio data upload ./bild.jpg \
   --json
 ```
 
-Das CLI führt den vollständigen Presign-Flow aus: reservieren, direkt hochladen, finalisieren. Das Limit beträgt 200 MB. `--sub-context-id` und `--department` werden im Upload-Vertrag mitgesendet. Der Upload funktioniert auch aus der kompilierten Standalone-Binary; Dateiinhalte werden als stabiler Byte-Body übertragen.
-
-**Abteilung (seit 2026-09-19):** Für die DataShare-Kontexte `club`, `none` und `department` lädt `data upload` ohne `--department` in die **Standard-Abteilung** des Vereins — dort erscheint die Datei im DataShare. Eine andere Abteilung wählt `--department <id>` (IDs: `comvenio club department-list --json`); `--department none` lädt bewusst ohne Abteilung hoch, die Datei ist dann **nicht** im DataShare sichtbar. Andere Kontexte (`event`, `news`, `certificate`, …) behalten die Regeln des Servers. Hochladen in eine Abteilung verlangt dort das Dateirecht.
-
-### Video-Optimierung fürs mobile Autoplay (`--optimize-video`)
-
-Mobile Chrome (und Safari/iOS) autoplayen große Videos oft nicht — eine kleine, audio-freie MP4 mit vorangestelltem moov-Atom (faststart) läuft dagegen zuverlässig inline/muted an. `--optimize-video` re-encodiert das Video vor dem Hochladen automatisch:
-
 ```bash
 comvenio data upload ./festumzug.mp4 \
   --context event \
@@ -56,27 +108,15 @@ comvenio data upload ./festumzug.mp4 \
   --json
 ```
 
-Voraussetzung: `ffmpeg` muss im PATH verfügbar sein (`winget install Gyan.FFmpeg`). Ohne `ffmpeg` bricht der Befehl mit einer klaren Fehlermeldung ab, bevor irgendetwas hochgeladen wird.
-
-Das Original bleibt auf der Festplatte unangetastet — die optimierte Kopie entsteht in einem temporären Verzeichnis (gleicher Dateiname) und wird nach dem Upload automatisch gelöscht. Optimierung: H.264 (Profile main, Level 4.0, yuv420p), maximal 1280 px Breite, **ohne Tonspur** (Pflicht für stummes Autoplay) und `+faststart`. `--optimize-video` funktioniert nur mit Video-Dateien (`.mp4`/`.mov`/`.webm`/`.mkv`) — bei anderen Endungen bricht der Befehl vor dem Upload ab. Die Konsole zeigt „Video optimiert: X MB -> Y MB"; bei `--json` steht die gleiche Information zusätzlich unter `optimized.inputSizeBytes`/`optimized.outputSizeBytes` in der Antwort.
-
-## Kontext nachträglich ändern
-
 ```bash
 comvenio data update <file-id> \
   --context news \
   --context-id <news-id> \
   --label gallery \
   --json
-```
 
-Nur angegebene Felder werden geändert. Der Wert `none` sendet explizit `null` und entfernt die Zuordnung:
-
-```bash
 comvenio data update <file-id> --sub-context-id none --label none --json
 ```
-
-## Datei-Lifecycle
 
 ```bash
 comvenio data move <file-id> --folder <folder-id> --json
@@ -85,21 +125,11 @@ comvenio data visibility <file-id> --visibility public --json
 comvenio data delete <file-id> --json
 comvenio data restore <file-id> --json
 comvenio data delete <file-id> --hard --json
-```
 
-- `delete` verschiebt standardmäßig in den Papierkorb.
-- `restore` stellt eine weich gelöschte Datei wieder her.
-- `--hard` löscht endgültig und ist nicht rückgängig zu machen.
-
-Speicher und Papierkorb:
-
-```bash
 comvenio data stats --json
 comvenio data stats --department <department-id> --json
 comvenio data empty-trash --department <department-id> --folder root --json
 ```
-
-## Ordner lesen und suchen
 
 ```bash
 comvenio data children --parent root --json
@@ -107,13 +137,7 @@ comvenio data children --parent <folder-id> --include-deleted --json
 comvenio data search --query "Vertrag" --folder root --json
 comvenio data search --query "Protokoll" --folder <folder-id> --no-recursive --json
 comvenio data breadcrumb <folder-id> --json
-```
 
-`children` liefert Unterordner und Dateien. `search` liefert Treffer mit Pfadinformation. `root` und `none` stehen bei Ordner-Flags für die oberste Ebene.
-
-## Ordner verwalten
-
-```bash
 comvenio data folder-create --name "Vorstand" --parent root --protected true --json
 comvenio data folder-rename <folder-id> --name "Vorstand 2027" --json
 comvenio data folder-move <folder-id> --parent <new-parent-id> --json
@@ -122,11 +146,7 @@ comvenio data folder-delete <folder-id> --json
 comvenio data folder-restore <folder-id> --json
 ```
 
-Löschen und Wiederherstellen sind standardmäßig rekursiv. `--no-recursive` schaltet das ab.
-
-## Ordnerrechte
-
-Rechte werden als JSON übergeben. Aktuell ist `subject_type=user` produktiv; `group` ist reserviert.
+Ordnerrecht als JSON:
 
 ```json
 {
@@ -142,44 +162,21 @@ Rechte werden als JSON übergeben. Aktuell ist `subject_type=user` produktiv; `g
 comvenio data folder-right-add --file right.json --json
 comvenio data folder-rights <folder-id> --json
 comvenio data folder-right-delete <right-id> --json
-```
-
-Bulk-Create erwartet ein JSON-Array aus denselben Objekten:
-
-```bash
 comvenio data folder-right-bulk --file rights.json --json
 ```
-
-Sobald ein Ordner oder ein Vorfahre explizite Rechte besitzt, ist der geschützte Bereich nur für passende Subjekte lesbar/schreibbar. Unterordner können eigene Rechte definieren.
-
-## Dateien zwischen Event-Bereichen teilen
-
-Ein Titelbild oder Flyer kann zusätzlich in mehreren Event-Bereichen erscheinen:
 
 ```bash
 comvenio data area-share-add <file-id> --area-ids <area-id-1>,<area-id-2> --json
 comvenio data area-shares <file-id> --json
 comvenio data area-share-remove <file-id> --area-id <area-id-1> --json
-```
 
-Die Media-Map für mehrere Bereiche:
-
-```bash
 comvenio data area-media \
   --area-ids <area-id-1>,<area-id-2> \
   --label title_picture \
   --json
 ```
 
-`area-media` benötigt den Club-Kontext; ohne `--area-ids` wird die Anfrage nicht auf einzelne Bereiche eingeschränkt.
-
-## Papers
-
-Papers verknüpfen eine vorhandene Datei mit einem veröffentlichbaren Dokument-Metadatensatz.
-
-Document Types: `protokoll`, `flyer`, `anleitung`, `zeitung`, `bericht`, `speisekarte`, `sonstiges`.
-
-Paper Context Types: `event`, `object`, `task`, `supply`, `custom`.
+Paper-Datensatz als JSON:
 
 ```json
 {
@@ -202,18 +199,62 @@ comvenio data paper-update <paper-id> --file paper.json --json
 comvenio data paper-delete <paper-id> --json
 ```
 
-`paper-update` ist ein Vollersatz und erwartet dieselben Felder wie `paper-add`.
-
-## CSV/XLSX-Export
-
 ```bash
 comvenio data export members --format csv --out ./mitglieder.csv --json
 comvenio data export members --format xlsx --out ./mitglieder.xlsx --json
 comvenio data export bookings --format csv --out ./buchungen.csv --json
 ```
 
-Nur `members` und `bookings` sowie die Formate `csv` und `xlsx` sind zulässig. Andere Werte brechen vor dem Request mit einem Eingabefehler ab.
+## Befehle und Actions
 
-## Bewusste Grenze
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-DataShare führt keine Inhaltsanalyse aus. Der Agent lädt die Datei und wertet sie selbst aus. Publikations- und Newsletter-spezifische Fachworkflows bleiben in ihren eigenen Domänen; DataShare verwaltet deren Dateien und Kontexte.
+**data** — vollständig
+
+- `comvenio data list`
+- `comvenio data show`
+- `comvenio data update`
+- `comvenio data url`
+- `comvenio data download`
+- `comvenio data upload`
+- `comvenio data delete`
+- `comvenio data restore`
+- `comvenio data move`
+- `comvenio data visibility`
+- `comvenio data stats`
+- `comvenio data empty-trash`
+- `comvenio data area-media`
+- `comvenio data area-shares`
+- `comvenio data area-share-add`
+- `comvenio data area-share-remove`
+- `comvenio data children`
+- `comvenio data search`
+- `comvenio data breadcrumb`
+- `comvenio data folder-create`
+- `comvenio data folder-rename`
+- `comvenio data folder-move`
+- `comvenio data folder-protect`
+- `comvenio data folder-delete`
+- `comvenio data folder-restore`
+- `comvenio data folder-rights`
+- `comvenio data folder-right-add`
+- `comvenio data folder-right-bulk`
+- `comvenio data folder-right-delete`
+- `comvenio data papers`
+- `comvenio data paper-show`
+- `comvenio data paper-add`
+- `comvenio data paper-update`
+- `comvenio data paper-delete`
+- `comvenio data export members|bookings`
+- Felder und Werte: `comvenio schema data --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `NOT_FOUND` — die Datei-, Ordner- oder Paper-ID gehört zu keinem sichtbaren Eintrag oder wurde entfernt. Mehr: `comvenio help fehler NOT_FOUND`
+- `VALIDATION_FAILED` — Kontext, Format oder ein anderes Feld passt nicht zur Action, etwa ein nicht erlaubtes Export-Format. Mehr: `comvenio help fehler VALIDATION_FAILED`
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt Upload, Verwaltung oder Zugriff auf einen geschützten Ordner nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope für Lesen oder Schreiben von Dateien. Mehr: `comvenio help fehler SCOPE_REQUIRED`
+- `TENANT_MISMATCH` — die angefragte Datei oder der Ordner stammt aus einem anderen Verein als dem verbundenen. Mehr: `comvenio help fehler TENANT_MISMATCH`
+- `CONFLICT` — die Datei oder der Ordner wurde inzwischen geändert, gelöscht oder erlaubt die Aktion in ihrem aktuellen Zustand nicht. Mehr: `comvenio help fehler CONFLICT`

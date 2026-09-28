@@ -1,0 +1,1213 @@
+{
+  "version": 1,
+  "artikel": [
+    {
+      "id": "aufgaben",
+      "kategorie": "thema",
+      "title": {
+        "de": "Aufgaben",
+        "en": "Tasks"
+      },
+      "stichwoerter": {
+        "de": [
+          "aufgaben",
+          "checklisten",
+          "zuweisungen",
+          "erinnerung",
+          "notizen"
+        ],
+        "en": [
+          "tasks",
+          "checklists",
+          "assignments",
+          "reminder",
+          "notes"
+        ]
+      },
+      "domaenen": [
+        "task"
+      ],
+      "pfad": {
+        "de": "docs/aufgaben.md",
+        "en": "docs/en/aufgaben.md"
+      }
+    },
+    {
+      "id": "auth-club",
+      "kategorie": "thema",
+      "title": {
+        "de": "Anmeldung und Vereinskontext",
+        "en": "Sign-in and club context"
+      },
+      "stichwoerter": {
+        "de": [
+          "login",
+          "anmeldung",
+          "verein",
+          "club",
+          "scopes",
+          "rechte"
+        ],
+        "en": [
+          "login",
+          "sign-in",
+          "club",
+          "scopes",
+          "permissions"
+        ]
+      },
+      "domaenen": [
+        "login",
+        "logout",
+        "whoami",
+        "action",
+        "club"
+      ],
+      "pfad": {
+        "de": "docs/auth-club.md",
+        "en": "docs/en/auth-club.md"
+      }
+    },
+    {
+      "id": "buchungen-objekte",
+      "kategorie": "thema",
+      "title": {
+        "de": "Gebäude, Objekte und Buchungen",
+        "en": "Buildings, objects and bookings"
+      },
+      "stichwoerter": {
+        "de": [
+          "buchungen",
+          "objekte",
+          "gebäude",
+          "räume",
+          "reservierungen",
+          "buchungsregeln",
+          "statistiken"
+        ],
+        "en": [
+          "bookings",
+          "objects",
+          "buildings",
+          "rooms",
+          "reservations",
+          "booking-rules",
+          "statistics"
+        ]
+      },
+      "domaenen": [
+        "booking",
+        "object"
+      ],
+      "pfad": {
+        "de": "docs/buchungen-objekte.md",
+        "en": "docs/en/buchungen-objekte.md"
+      }
+    },
+    {
+      "id": "cli-reference",
+      "kategorie": "thema",
+      "title": {
+        "de": "comvenio CLI — Übersicht",
+        "en": "comvenio CLI — overview"
+      },
+      "stichwoerter": {
+        "de": [
+          "cli",
+          "referenz",
+          "befehle",
+          "schema",
+          "verify"
+        ],
+        "en": [
+          "cli",
+          "reference",
+          "commands",
+          "schema",
+          "verify"
+        ]
+      },
+      "domaenen": [
+        "schema",
+        "verify",
+        "plan"
+      ],
+      "pfad": {
+        "de": "docs/cli-reference.md",
+        "en": "docs/en/cli-reference.md"
+      }
+    },
+    {
+      "id": "club-agent",
+      "kategorie": "thema",
+      "title": {
+        "de": "Club-Agent",
+        "en": "Club agent"
+      },
+      "stichwoerter": {
+        "de": [
+          "club-agent",
+          "chat",
+          "funktionen",
+          "freigabe",
+          "freigaben",
+          "session",
+          "dauerfreigabe"
+        ],
+        "en": [
+          "club agent",
+          "chat",
+          "functions",
+          "approval",
+          "approvals",
+          "session",
+          "standing approval"
+        ]
+      },
+      "domaenen": [
+        "agent"
+      ],
+      "pfad": {
+        "de": "docs/club-agent.md",
+        "en": "docs/en/club-agent.md"
+      }
+    },
+    {
+      "id": "dateien",
+      "kategorie": "thema",
+      "title": {
+        "de": "DataShare — Dateien, Ordner und Papers",
+        "en": "DataShare — Files, Folders and Papers"
+      },
+      "stichwoerter": {
+        "de": [
+          "dateien",
+          "ordner",
+          "papierkorb",
+          "upload",
+          "freigaben",
+          "papers",
+          "export"
+        ],
+        "en": [
+          "files",
+          "folders",
+          "trash",
+          "upload",
+          "sharing",
+          "papers",
+          "export"
+        ]
+      },
+      "domaenen": [
+        "data"
+      ],
+      "pfad": {
+        "de": "docs/dateien.md",
+        "en": "docs/en/dateien.md"
+      }
+    },
+    {
+      "id": "fehler/action-not-listed",
+      "kategorie": "fehler",
+      "title": {
+        "de": "ACTION_NOT_LISTED — Diese Action steht für deine Verbindung gerade nicht zur Verfügung.",
+        "en": "ACTION_NOT_LISTED — This action is currently not available for your connection."
+      },
+      "stichwoerter": {
+        "de": [
+          "action",
+          "liste",
+          "neue version"
+        ],
+        "en": [
+          "action",
+          "list",
+          "new release"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/action-not-listed.md",
+        "en": "docs/en/fehler/action-not-listed.md"
+      }
+    },
+    {
+      "id": "fehler/auth-required",
+      "kategorie": "fehler",
+      "title": {
+        "de": "AUTH_REQUIRED — Deine Anmeldung ist nicht mehr gültig.",
+        "en": "AUTH_REQUIRED — Your sign-in is no longer valid."
+      },
+      "stichwoerter": {
+        "de": [
+          "anmeldung",
+          "abgelaufen",
+          "widerrufen",
+          "login"
+        ],
+        "en": [
+          "sign-in",
+          "expired",
+          "revoked",
+          "login"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/auth-required.md",
+        "en": "docs/en/fehler/auth-required.md"
+      }
+    },
+    {
+      "id": "fehler/auth-temporarily-unavailable",
+      "kategorie": "fehler",
+      "title": {
+        "de": "AUTH_TEMPORARILY_UNAVAILABLE — Die Anmeldung konnte gerade nicht geprüft werden.",
+        "en": "AUTH_TEMPORARILY_UNAVAILABLE — The sign-in could not be verified right now."
+      },
+      "stichwoerter": {
+        "de": [
+          "anmeldung",
+          "prüfung",
+          "kurzzeitig"
+        ],
+        "en": [
+          "sign-in",
+          "verification",
+          "temporary"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/auth-temporarily-unavailable.md",
+        "en": "docs/en/fehler/auth-temporarily-unavailable.md"
+      }
+    },
+    {
+      "id": "fehler/club-agent-not-ready",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CLUB_AGENT_NOT_READY — Der Club-Agent ist für deinen Verein noch nicht eingerichtet.",
+        "en": "CLUB_AGENT_NOT_READY — The club agent is not set up for your club yet."
+      },
+      "stichwoerter": {
+        "de": [
+          "club-agent",
+          "einrichtung",
+          "administrator"
+        ],
+        "en": [
+          "club agent",
+          "setup",
+          "administrator"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/club-agent-not-ready.md",
+        "en": "docs/en/fehler/club-agent-not-ready.md"
+      }
+    },
+    {
+      "id": "fehler/club-selection-required",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CLUB_SELECTION_REQUIRED — Für diese Aktion ist kein Verein gewählt.",
+        "en": "CLUB_SELECTION_REQUIRED — No club is selected for this action."
+      },
+      "stichwoerter": {
+        "de": [
+          "verein",
+          "auswahl",
+          "login"
+        ],
+        "en": [
+          "club",
+          "selection",
+          "login"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/club-selection-required.md",
+        "en": "docs/en/fehler/club-selection-required.md"
+      }
+    },
+    {
+      "id": "fehler/config-invalid",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CONFIG_INVALID — Die Anfrage konnte nicht zugeordnet werden.",
+        "en": "CONFIG_INVALID — The request could not be assigned."
+      },
+      "stichwoerter": {
+        "de": [
+          "verbindung",
+          "konfiguration",
+          "zuordnung"
+        ],
+        "en": [
+          "connection",
+          "configuration",
+          "mapping"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/config-invalid.md",
+        "en": "docs/en/fehler/config-invalid.md"
+      }
+    },
+    {
+      "id": "fehler/confirmation-expired",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CONFIRMATION_EXPIRED — Die Vorschau ist abgelaufen.",
+        "en": "CONFIRMATION_EXPIRED — The preview has expired."
+      },
+      "stichwoerter": {
+        "de": [
+          "vorschau",
+          "abgelaufen",
+          "bestätigung"
+        ],
+        "en": [
+          "preview",
+          "expired",
+          "confirmation"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/confirmation-expired.md",
+        "en": "docs/en/fehler/confirmation-expired.md"
+      }
+    },
+    {
+      "id": "fehler/confirmation-mismatch",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CONFIRMATION_MISMATCH — Die Bestätigung passt nicht mehr zur Vorschau.",
+        "en": "CONFIRMATION_MISMATCH — The confirmation no longer matches the preview."
+      },
+      "stichwoerter": {
+        "de": [
+          "bestätigung",
+          "vorschau",
+          "token"
+        ],
+        "en": [
+          "confirmation",
+          "preview",
+          "token"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/confirmation-mismatch.md",
+        "en": "docs/en/fehler/confirmation-mismatch.md"
+      }
+    },
+    {
+      "id": "fehler/confirmation-required",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CONFIRMATION_REQUIRED — Diese Aktion muss zuerst bestätigt werden.",
+        "en": "CONFIRMATION_REQUIRED — This action must be confirmed first."
+      },
+      "stichwoerter": {
+        "de": [
+          "bestätigung",
+          "vorschau",
+          "kritisch"
+        ],
+        "en": [
+          "confirmation",
+          "preview",
+          "critical"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/confirmation-required.md",
+        "en": "docs/en/fehler/confirmation-required.md"
+      }
+    },
+    {
+      "id": "fehler/conflict",
+      "kategorie": "fehler",
+      "title": {
+        "de": "CONFLICT — Die Aktion widerspricht dem aktuellen Stand.",
+        "en": "CONFLICT — The action conflicts with the current state."
+      },
+      "stichwoerter": {
+        "de": [
+          "konflikt",
+          "stand",
+          "version"
+        ],
+        "en": [
+          "conflict",
+          "state",
+          "version"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/conflict.md",
+        "en": "docs/en/fehler/conflict.md"
+      }
+    },
+    {
+      "id": "fehler/not-found",
+      "kategorie": "fehler",
+      "title": {
+        "de": "NOT_FOUND — Der angefragte Eintrag wurde nicht gefunden.",
+        "en": "NOT_FOUND — The requested entry was not found."
+      },
+      "stichwoerter": {
+        "de": [
+          "nicht gefunden",
+          "kennung",
+          "eintrag"
+        ],
+        "en": [
+          "not found",
+          "identifier",
+          "entry"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/not-found.md",
+        "en": "docs/en/fehler/not-found.md"
+      }
+    },
+    {
+      "id": "fehler/oauth-only",
+      "kategorie": "fehler",
+      "title": {
+        "de": "OAUTH_ONLY — Dieser Befehl läuft nicht über die OAuth-Anmeldung.",
+        "en": "OAUTH_ONLY — This command does not run with the OAuth sign-in."
+      },
+      "stichwoerter": {
+        "de": [
+          "oauth",
+          "klassischer befehl",
+          "geräte-token"
+        ],
+        "en": [
+          "oauth",
+          "classic command",
+          "device token"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/oauth-only.md",
+        "en": "docs/en/fehler/oauth-only.md"
+      }
+    },
+    {
+      "id": "fehler/outcome-unknown",
+      "kategorie": "fehler",
+      "title": {
+        "de": "OUTCOME_UNKNOWN — Die Aktion wurde nicht bestätigt — sie kann trotzdem ausgeführt worden sein.",
+        "en": "OUTCOME_UNKNOWN — The action was not confirmed — it may still have been carried out."
+      },
+      "stichwoerter": {
+        "de": [
+          "schreibende aktion",
+          "zeitüberschreitung",
+          "doppelt"
+        ],
+        "en": [
+          "writing action",
+          "timeout",
+          "duplicate"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/outcome-unknown.md",
+        "en": "docs/en/fehler/outcome-unknown.md"
+      }
+    },
+    {
+      "id": "fehler/permission-denied",
+      "kategorie": "fehler",
+      "title": {
+        "de": "PERMISSION_DENIED — Dir fehlt im Verein das Recht für diese Aktion.",
+        "en": "PERMISSION_DENIED — You lack the club permission for this action."
+      },
+      "stichwoerter": {
+        "de": [
+          "recht",
+          "rolle",
+          "verein",
+          "administrator"
+        ],
+        "en": [
+          "permission",
+          "role",
+          "club",
+          "administrator"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/permission-denied.md",
+        "en": "docs/en/fehler/permission-denied.md"
+      }
+    },
+    {
+      "id": "fehler/rate-limited",
+      "kategorie": "fehler",
+      "title": {
+        "de": "RATE_LIMITED — Zu viele Anfragen in kurzer Zeit.",
+        "en": "RATE_LIMITED — Too many requests in a short time."
+      },
+      "stichwoerter": {
+        "de": [
+          "rate limit",
+          "anfragen",
+          "begrenzung"
+        ],
+        "en": [
+          "rate limit",
+          "requests",
+          "throttling"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/rate-limited.md",
+        "en": "docs/en/fehler/rate-limited.md"
+      }
+    },
+    {
+      "id": "fehler/scope-required",
+      "kategorie": "fehler",
+      "title": {
+        "de": "SCOPE_REQUIRED — Deiner Anmeldung fehlt eine Berechtigung für diese Aktion.",
+        "en": "SCOPE_REQUIRED — Your sign-in is missing a permission for this action."
+      },
+      "stichwoerter": {
+        "de": [
+          "scope",
+          "berechtigung",
+          "anmeldung",
+          "login"
+        ],
+        "en": [
+          "scope",
+          "permission",
+          "sign-in",
+          "login"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/scope-required.md",
+        "en": "docs/en/fehler/scope-required.md"
+      }
+    },
+    {
+      "id": "fehler/tenant-mismatch",
+      "kategorie": "fehler",
+      "title": {
+        "de": "TENANT_MISMATCH — Die Anfrage gehört zu einem anderen Verein.",
+        "en": "TENANT_MISMATCH — The request belongs to a different club."
+      },
+      "stichwoerter": {
+        "de": [
+          "verein",
+          "vorschau",
+          "kennung"
+        ],
+        "en": [
+          "club",
+          "preview",
+          "identifier"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/tenant-mismatch.md",
+        "en": "docs/en/fehler/tenant-mismatch.md"
+      }
+    },
+    {
+      "id": "fehler/unknown-error",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UNKNOWN_ERROR — Ein unerwarteter Fehler ist aufgetreten.",
+        "en": "UNKNOWN_ERROR — An unexpected error occurred."
+      },
+      "stichwoerter": {
+        "de": [
+          "unbekannt",
+          "fehlerbericht",
+          "anfrage-id"
+        ],
+        "en": [
+          "unknown",
+          "bug report",
+          "request id"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/unknown-error.md",
+        "en": "docs/en/fehler/unknown-error.md"
+      }
+    },
+    {
+      "id": "fehler/upstream-timeout",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UPSTREAM_TIMEOUT — Comvenio hat nicht rechtzeitig geantwortet.",
+        "en": "UPSTREAM_TIMEOUT — Comvenio did not answer in time."
+      },
+      "stichwoerter": {
+        "de": [
+          "zeitüberschreitung",
+          "leseanfrage",
+          "timeout"
+        ],
+        "en": [
+          "timeout",
+          "read request"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/upstream-timeout.md",
+        "en": "docs/en/fehler/upstream-timeout.md"
+      }
+    },
+    {
+      "id": "fehler/upstream-unavailable",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UPSTREAM_UNAVAILABLE — Comvenio ist gerade nicht erreichbar.",
+        "en": "UPSTREAM_UNAVAILABLE — Comvenio is currently unavailable."
+      },
+      "stichwoerter": {
+        "de": [
+          "nicht erreichbar",
+          "verfügbarkeit"
+        ],
+        "en": [
+          "unavailable",
+          "availability"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/upstream-unavailable.md",
+        "en": "docs/en/fehler/upstream-unavailable.md"
+      }
+    },
+    {
+      "id": "fehler/usage-error",
+      "kategorie": "fehler",
+      "title": {
+        "de": "USAGE_ERROR — Der Befehl ist so nicht ausführbar.",
+        "en": "USAGE_ERROR — The command cannot run like this."
+      },
+      "stichwoerter": {
+        "de": [
+          "argument",
+          "option",
+          "aufruf"
+        ],
+        "en": [
+          "argument",
+          "option",
+          "invocation"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/usage-error.md",
+        "en": "docs/en/fehler/usage-error.md"
+      }
+    },
+    {
+      "id": "fehler/validation-failed",
+      "kategorie": "fehler",
+      "title": {
+        "de": "VALIDATION_FAILED — Die Eingabe passt nicht zur Action.",
+        "en": "VALIDATION_FAILED — The input does not match the action."
+      },
+      "stichwoerter": {
+        "de": [
+          "eingabe",
+          "feld",
+          "format",
+          "schema"
+        ],
+        "en": [
+          "input",
+          "field",
+          "format",
+          "schema"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/validation-failed.md",
+        "en": "docs/en/fehler/validation-failed.md"
+      }
+    },
+    {
+      "id": "fehlerbilder",
+      "kategorie": "uebersicht",
+      "title": {
+        "de": "comvenio CLI — Fehlerbild → Ursache → richtiger Weg",
+        "en": "comvenio CLI — symptom → cause → correct path"
+      },
+      "stichwoerter": {
+        "de": [
+          "fehler",
+          "fehlerbilder",
+          "fehlercodes",
+          "ursache"
+        ],
+        "en": [
+          "error",
+          "errors",
+          "error-codes",
+          "cause"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehlerbilder.md",
+        "en": "docs/en/fehlerbilder.md"
+      }
+    },
+    {
+      "id": "finanzen",
+      "kategorie": "thema",
+      "title": {
+        "de": "Vereins-Buchhaltung",
+        "en": "Club accounting"
+      },
+      "stichwoerter": {
+        "de": [
+          "finanzen",
+          "buchhaltung",
+          "jahresplan",
+          "budgetposten",
+          "buchung",
+          "cent"
+        ],
+        "en": [
+          "finance",
+          "accounting",
+          "annual plan",
+          "budget position",
+          "entry",
+          "cents"
+        ]
+      },
+      "domaenen": [
+        "finance"
+      ],
+      "pfad": {
+        "de": "docs/finanzen.md",
+        "en": "docs/en/finanzen.md"
+      }
+    },
+    {
+      "id": "homepage",
+      "kategorie": "thema",
+      "title": {
+        "de": "Vereins-Homepage gestalten",
+        "en": "Building the club homepage"
+      },
+      "stichwoerter": {
+        "de": [
+          "homepage",
+          "website",
+          "vereinsseite",
+          "widgets",
+          "design"
+        ],
+        "en": [
+          "homepage",
+          "website",
+          "club-site",
+          "widgets",
+          "design"
+        ]
+      },
+      "domaenen": [
+        "homepage"
+      ],
+      "pfad": {
+        "de": "docs/homepage.md",
+        "en": "docs/en/homepage.md"
+      }
+    },
+    {
+      "id": "meetings",
+      "kategorie": "thema",
+      "title": {
+        "de": "Meetings und Protokolle",
+        "en": "Meetings and protocols"
+      },
+      "stichwoerter": {
+        "de": [
+          "meetings",
+          "protokolle",
+          "tagesordnung",
+          "beschlüsse",
+          "abstimmungen",
+          "teilnehmer",
+          "vorstandssitzung"
+        ],
+        "en": [
+          "meetings",
+          "protocols",
+          "agenda",
+          "resolutions",
+          "voting",
+          "participants",
+          "board-meeting"
+        ]
+      },
+      "domaenen": [
+        "meeting"
+      ],
+      "pfad": {
+        "de": "docs/meetings.md",
+        "en": "docs/en/meetings.md"
+      }
+    },
+    {
+      "id": "mitglieder-teams",
+      "kategorie": "thema",
+      "title": {
+        "de": "Mitglieder und Teams",
+        "en": "Members and teams"
+      },
+      "stichwoerter": {
+        "de": [
+          "mitglieder",
+          "teams",
+          "mannschaften",
+          "kader",
+          "familien",
+          "mitgliedsstatus",
+          "saison",
+          "ressourcen-prioritäten"
+        ],
+        "en": [
+          "members",
+          "teams",
+          "squads",
+          "roster",
+          "families",
+          "membership-status",
+          "season",
+          "resource-priorities"
+        ]
+      },
+      "domaenen": [
+        "member",
+        "team"
+      ],
+      "pfad": {
+        "de": "docs/mitglieder-teams.md",
+        "en": "docs/en/mitglieder-teams.md"
+      }
+    },
+    {
+      "id": "rollen-rechte",
+      "kategorie": "thema",
+      "title": {
+        "de": "Rollen und Berechtigungen",
+        "en": "Roles and permissions"
+      },
+      "stichwoerter": {
+        "de": [
+          "rollen",
+          "rechte",
+          "berechtigungen",
+          "zuweisung",
+          "positionen"
+        ],
+        "en": [
+          "roles",
+          "permissions",
+          "rights",
+          "assignment",
+          "positions"
+        ]
+      },
+      "domaenen": [
+        "role"
+      ],
+      "pfad": {
+        "de": "docs/rollen-rechte.md",
+        "en": "docs/en/rollen-rechte.md"
+      }
+    },
+    {
+      "id": "speisekarten",
+      "kategorie": "thema",
+      "title": {
+        "de": "Speisekarten",
+        "en": "Menus"
+      },
+      "stichwoerter": {
+        "de": [
+          "speisekarte",
+          "menü",
+          "rezept",
+          "zutat",
+          "allergen",
+          "vorlage",
+          "einkaufsliste",
+          "gericht",
+          "getränk",
+          "kategorie"
+        ],
+        "en": [
+          "menu",
+          "recipe",
+          "ingredient",
+          "allergen",
+          "template",
+          "shopping-list",
+          "dish",
+          "drink",
+          "category"
+        ]
+      },
+      "domaenen": [
+        "recipe",
+        "ingredient",
+        "ingredient-category",
+        "shopping",
+        "template",
+        "menu"
+      ],
+      "pfad": {
+        "de": "docs/speisekarten.md",
+        "en": "docs/en/speisekarten.md"
+      }
+    },
+    {
+      "id": "sponsoring",
+      "kategorie": "thema",
+      "title": {
+        "de": "Lokales Sponsoring",
+        "en": "Local sponsoring"
+      },
+      "stichwoerter": {
+        "de": [
+          "sponsoring",
+          "sponsor",
+          "werbepartner",
+          "vertrag",
+          "zuordnung"
+        ],
+        "en": [
+          "sponsoring",
+          "sponsor",
+          "advertiser",
+          "contract",
+          "assignment"
+        ]
+      },
+      "domaenen": [
+        "sponsor"
+      ],
+      "pfad": {
+        "de": "docs/sponsoring.md",
+        "en": "docs/en/sponsoring.md"
+      }
+    },
+    {
+      "id": "turniere",
+      "kategorie": "thema",
+      "title": {
+        "de": "Turniere",
+        "en": "Tournaments"
+      },
+      "stichwoerter": {
+        "de": [
+          "turniere",
+          "auslosung",
+          "spielplan",
+          "ergebnisse",
+          "tabelle",
+          "wettkampf"
+        ],
+        "en": [
+          "tournaments",
+          "draw",
+          "schedule",
+          "results",
+          "standings",
+          "competition"
+        ]
+      },
+      "domaenen": [
+        "tournament"
+      ],
+      "pfad": {
+        "de": "docs/turniere.md",
+        "en": "docs/en/turniere.md"
+      }
+    },
+    {
+      "id": "veranstaltungen",
+      "kategorie": "thema",
+      "title": {
+        "de": "Veranstaltungen",
+        "en": "Events"
+      },
+      "stichwoerter": {
+        "de": [
+          "veranstaltung",
+          "event",
+          "termin",
+          "serie",
+          "vorlage",
+          "dauertermin",
+          "bereich",
+          "programm",
+          "einladung",
+          "anmeldung",
+          "sponsor",
+          "festtag"
+        ],
+        "en": [
+          "event",
+          "template",
+          "series",
+          "recurring-event",
+          "area",
+          "program",
+          "invitation",
+          "registration",
+          "sponsor",
+          "festival-day"
+        ]
+      },
+      "domaenen": [
+        "event",
+        "plan"
+      ],
+      "pfad": {
+        "de": "docs/veranstaltungen.md",
+        "en": "docs/en/veranstaltungen.md"
+      }
+    },
+    {
+      "id": "vereinsnews",
+      "kategorie": "thema",
+      "title": {
+        "de": "Vereinsnews",
+        "en": "Club news"
+      },
+      "stichwoerter": {
+        "de": [
+          "news",
+          "vereinsnews",
+          "redaktion",
+          "veröffentlichen",
+          "video"
+        ],
+        "en": [
+          "news",
+          "club news",
+          "editorial",
+          "publish",
+          "video"
+        ]
+      },
+      "domaenen": [
+        "news"
+      ],
+      "pfad": {
+        "de": "docs/vereinsnews.md",
+        "en": "docs/en/vereinsnews.md"
+      }
+    },
+    {
+      "id": "wochenvorschau",
+      "kategorie": "thema",
+      "title": {
+        "de": "Wochenvorschau",
+        "en": "Weekly preview"
+      },
+      "stichwoerter": {
+        "de": [
+          "wochenvorschau",
+          "flyer",
+          "vorlage",
+          "template",
+          "telegram",
+          "plan"
+        ],
+        "en": [
+          "weekly preview",
+          "flyer",
+          "template",
+          "telegram",
+          "plan"
+        ]
+      },
+      "domaenen": [
+        "weekly-preview"
+      ],
+      "pfad": {
+        "de": "docs/wochenvorschau.md",
+        "en": "docs/en/wochenvorschau.md"
+      }
+    },
+    {
+      "id": "zonen",
+      "kategorie": "thema",
+      "title": {
+        "de": "Vereinsgebiet und Zonen",
+        "en": "Club territory and zones"
+      },
+      "stichwoerter": {
+        "de": [
+          "zone",
+          "zonen",
+          "einteilung",
+          "zone-set",
+          "geojson",
+          "gebiet",
+          "pate",
+          "aufgaben"
+        ],
+        "en": [
+          "zone",
+          "zones",
+          "zone set",
+          "geojson",
+          "territory",
+          "sponsor",
+          "tasks"
+        ]
+      },
+      "domaenen": [
+        "zone"
+      ],
+      "pfad": {
+        "de": "docs/zonen.md",
+        "en": "docs/en/zonen.md"
+      }
+    }
+  ]
+}

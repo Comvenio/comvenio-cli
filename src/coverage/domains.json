@@ -861,7 +861,9 @@
       "source": [
         "src/commands/weekly-preview.ts"
       ],
-      "docs": []
+      "docs": [
+        "docs/wochenvorschau.md"
+      ]
     },
     {
       "id": "zone",

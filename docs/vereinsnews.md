@@ -1,22 +1,70 @@
-# Vereinsnews – eigenständige CLI-Referenz
+---
+id: vereinsnews
+kategorie: thema
+domaenen: [news]
+stichwoerter: [news, vereinsnews, redaktion, veröffentlichen, video]
+---
 
-Stand: 13. Juli 2026 · Quelle: `src/commands/news.ts`
+# Vereinsnews
 
-Der bedienende Agent schreibt die News selbst als Rich-HTML. Das CLI ruft keinen Textgenerator auf. Der Standard-Workflow ist: Bilder finden, `news.json` komponieren, Vorschau prüfen, als Entwurf anlegen und anschließend veröffentlichen.
+## Wozu
 
-## Status und Sichtbarkeit
+Mit Vereinsnews veröffentlicht ein Verein Neuigkeiten als Rich-HTML-Beiträge, wahlweise als Entwurf oder direkt live, wahlweise öffentlich, nur für Mitglieder oder nur für eine Abteilung. Den Text formuliert der bedienende Agent selbst; das CLI ruft dafür keinen eigenen Textgenerator auf.
+
+## Voraussetzungen und Rechte
+
+Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Ein Entwurf (`is_draft=true`) ist nur für berechtigte Redakteure sichtbar; erst mit der Veröffentlichung wird eine News für ihre Sichtbarkeitsgruppe sichtbar.
+
+## Abläufe
+
+### Status und Sichtbarkeit
 
 | Feld/Flag | Bedeutung |
 |---|---|
 | `is_draft=true` / `--draft` | nur für berechtigte Redakteure sichtbar |
-| `is_draft=false` / `--publish` | veröffentlicht; `published_at` wird gesetzt |
+| `is_draft=false` / `--publish` | veröffentlicht; der Veröffentlichungszeitpunkt wird gesetzt |
 | `visibility_scope` | `public`, `member` oder `department`; Standard `member` |
-| `design_source` | `apply` erzwingt `cli` |
+| `design_source` | wird beim Anwenden aus einer Datei auf `cli` erzwungen |
 | `is_pinned` / `--pinned` | News anpinnen |
 
 Ohne `--publish` bleibt eine neu angelegte News standardmäßig ein Entwurf.
 
-## Lesen
+### Standard-Workflow: Bilder finden → News komponieren → prüfen → veröffentlichen
+
+1. Bilder in DataShare finden oder zuerst dorthin hochladen (siehe [dateien.md](dateien.md)).
+2. Die News deklarativ als Datei komponieren: Titel, Teaser, Sichtbarkeit, Titelbild und Rich-HTML-Inhalt.
+3. Die Vorschau im echten Layout prüfen, bevor irgendetwas gespeichert wird.
+4. Als Entwurf anlegen oder direkt veröffentlichen.
+
+Reine Vorschau-Felder wie eine kurzlebige Bild-Adresse, Vereinsname, Autorenname und Vorschaudatum werden vor dem dauerhaften Speichern entfernt. Bilder im HTML brauchen zusätzlich zur Adresse eine stabile Datei-Kennung, damit die Anwendung eine abgelaufene Adresse automatisch neu signieren kann.
+
+Für eine einfache News ohne aufwendiges Layout genügt das direkte Anlegen mit Titel und Inhalt als Flags; für aufwendiges Rich-HTML ist der Weg über eine Datei übersichtlicher.
+
+### Aktualisieren, ohne den Status zu verlieren
+
+Das serverseitige Update ist ein Vollersatz aller Felder. Das CLI liest deshalb zuerst die vorhandene News und führt die angegebenen Änderungen mit dem bestehenden Stand zusammen — so wird eine bereits live geschaltete News beim Aktualisieren nicht versehentlich wieder zum Entwurf.
+
+### Bilder aus DataShare zuordnen
+
+Eine Datei, die schon vor der News-Erstellung hochgeladen wurde, lässt sich der News nachträglich zuordnen.
+
+### Rich-HTML-Regeln
+
+- Semantische Struktur verwenden: Überschriften, Absätze, Listen, Tabellen sowie Bild mit Beschriftung.
+- Bilder mit einer stabilen Datei-Kennung versehen; eine kurzlebige, signierte Adresse allein läuft ab.
+- Für Videos das Standard-Steuerelement mit Metadaten-Vorschau verwenden; automatisches Abspielen ist nicht zulässig.
+- Für YouTube ausschließlich die datenschutzfreundliche Einbettungsadresse verwenden.
+- Keine Skripte, Ereignis-Handler oder unbekannte eingebettete Adressen einbetten.
+
+### Lokale Videos erzeugen
+
+Für Vereinsnews lassen sich kurze Videos aus Vorlagen lokal rendern: eine Bilder-Diashow, ein Spielergebnis, ein Ankündigungs-Teaser oder ein generischer Highlight-Auftakt. Jede Vorlage verlangt bestimmte Pflichtfelder und erlaubt weitere optionale Felder wie Untertitel, Overlays, Markenfarbe oder Logo.
+
+Die Highlight-Vorlage ist bewusst allgemein gehalten und kann optional eine Partner- oder Gastro-Szene zeigen: bis zu zwei Partnerkarten mit Name, Untertitel und Logo sowie ein dezentes Hintergrundmotiv. Diese Szene erscheint nur, wenn Partner angegeben sind, und liegt zwischen der Programmliste und einem abschließenden Hinweistext; das Video wird dadurch automatisch länger, ohne dass die Dauer manuell angepasst werden muss.
+
+Mit einer zusätzlichen Option lädt das CLI das gerenderte Video direkt hoch und liefert ein fertiges HTML-Einbettungsschnipsel für die News. Das Video-Upload-Limit beträgt 200 MB. Das Rendern läuft lokal; fehlende Abhängigkeiten werden nicht automatisch nachinstalliert.
+
+## Beispiele
 
 ```bash
 comvenio news list --json
@@ -24,8 +72,6 @@ comvenio news show <news-id> --json
 ```
 
 `list` zeigt unter anderem Titel, Entwurf/Live, Design-Quelle, Sichtbarkeit und ID.
-
-## Direkt anlegen
 
 ```bash
 comvenio news create \
@@ -38,9 +84,7 @@ comvenio news create \
   --json
 ```
 
-Pflicht sind `--title` und `--content`. Für aufwendiges Rich-HTML ist `apply --file` übersichtlicher.
-
-## Deklaratives `news.json`
+Deklaratives `news.json`:
 
 ```json
 {
@@ -48,14 +92,10 @@ Pflicht sind `--title` und `--content`. Für aufwendiges Rich-HTML ist `apply --
   "teaser": "Drei Tage voller Sport und Musik",
   "visibility_scope": "public",
   "cover_image_file_id": "<file-id>",
-  "cover_url": "<kurzlebige-presigned-url-nur-fuer-preview>",
-  "content": "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p><figure><img src=\"<presigned-url>\" data-comvenio-file-id=\"<file-id>\" alt=\"Festplatz\"></figure>"
+  "cover_url": "<kurzlebige-signierte-adresse-nur-zur-vorschau>",
+  "content": "<h2>Freitag</h2><p>Wir starten um 18 Uhr.</p><figure><img src=\"<signierte-adresse>\" data-comvenio-file-id=\"<file-id>\" alt=\"Festplatz\"></figure>"
 }
 ```
-
-`cover_url`, `club_name`, `author_name` und `preview_date` sind reine Vorschau-Felder und werden vor dem Persistieren entfernt. Dauerhafte Bilder im HTML brauchen `data-comvenio-file-id`; dadurch kann die Anwendung abgelaufene URLs neu signieren.
-
-## Vorschau und Apply
 
 ```bash
 comvenio news preview --file news.json --json
@@ -66,12 +106,7 @@ comvenio news apply --file news.json --draft --json
 comvenio news apply --file news.json --publish --json
 ```
 
-- Die Standard-Vorschau erzeugt eine kurzlebige URL im echten Layout und verändert keine News.
-- `--local` schreibt eine Offline-Näherung; sie ist nicht maßgeblich für das Live-Layout.
-- `apply` erzwingt `design_source=cli`.
-- Erst Vorschau prüfen, dann `apply`.
-
-## Aktualisieren, veröffentlichen, löschen
+Die Standard-Vorschau erzeugt eine kurzlebige Adresse im echten Layout und verändert keine News; `--local` schreibt eine Offline-Näherung, die für das Live-Layout nicht maßgeblich ist.
 
 ```bash
 comvenio news update <news-id> --title "Neuer Titel" --json
@@ -80,25 +115,13 @@ comvenio news publish <news-id> --json
 comvenio news delete <news-id> --json
 ```
 
-Das Backend-Update ist ein Vollersatz. Das CLI liest deshalb zuerst die vorhandene News und merged angegebene Felder, damit etwa eine Live-News nicht unbeabsichtigt wieder zum Entwurf wird.
-
-## Bilder aus DataShare
-
 ```bash
 comvenio data list --context event --context-id <event-id> --json
 comvenio data url <file-id> --json
 comvenio data download <file-id> --out ./foto.jpg --json
-```
 
-Wenn eine Datei vor der News-Erstellung hochgeladen wurde, kann sie danach zugeordnet werden:
-
-```bash
 comvenio data update <file-id> --context news --context-id <news-id> --label gallery --json
 ```
-
-Der vollständige Datei- und Ordner-Workflow steht in [`dateien.md`](dateien.md).
-
-## Lokale Videos
 
 ```bash
 comvenio news video slideshow --params slideshow.json --out fest.mp4 --json
@@ -109,21 +132,12 @@ comvenio news video highlight --params highlight.json --out highlight.mp4 --json
 
 Vorlagen:
 
-| Template | Pflichtfelder | Häufige optionale Felder |
+| Vorlage | Pflichtfelder | Häufige optionale Felder |
 |---|---|---|
-| `slideshow` | `title`, `images[]` (mindestens 2), `brandColor` | `subtitle`, `overlays[]`, `durationPerImage`, `logoPath` |
-| `result` | `homeTeam`, `awayTeam`, `homeScore`, `awayScore`, `brandColor` | `competition`, `scorers[]`, `date`, `logoPath` |
-| `teaser` | `title`, `date`, `brandColor` | `location`, `ctaText`, `backgroundImage`, `logoPath` |
-| `highlight` | `title`, `brandColor` | `subtitle`, `orgName`, `dateRange`, `kicker`, `itemsHeading`, `items[]` (max. 3), `partners[]` (max. 2, siehe unten), `partnersBackdrop`, `noteText`, `closingText`, `background`, `logo`, `heroImage`, `sponsors[]`, `greenColor`/`creamColor`/`goldColor`, `logoPath` |
-
-`highlight` ist generisch (loopfähiger Auftakt-Clip, kein vereinsspezifischer Code) und kann
-optional eine **Partner-/Gastro-Szene** zeigen: `partners[]` ist ein Array aus max. 2 Karten
-`{ name, subtitle?, logo? }` (`logo` ist ein lokaler Bildpfad), `partnersBackdrop` ein optionales,
-dezentes Deko-Motiv im Hintergrund der Karten. Die Szene erscheint nur, wenn `partners` gesetzt
-ist, und liegt zwischen der Programm-Liste (`items[]`) und dem Hinweistext (`noteText`); das Video
-wird dadurch automatisch ca. 4,3 Sekunden länger — kein manuelles `--duration` nötig.
-
-Beispiel:
+| `slideshow` | Titel, mindestens zwei Bilder, Markenfarbe | Untertitel, Overlays, Dauer je Bild, Logo |
+| `result` | Heim- und Gastteam, Heim- und Gastergebnis, Markenfarbe | Wettbewerb, Torschützen, Datum, Logo |
+| `teaser` | Titel, Datum, Markenfarbe | Ort, Aktionstext, Hintergrundbild, Logo |
+| `highlight` | Titel, Markenfarbe | Untertitel, Vereinsname, Datumsspanne, Programmpunkte (max. 3), Partner (max. 2), Hintergrundmotiv, Hinweistext, Abschlusstext |
 
 ```json
 {
@@ -134,7 +148,7 @@ Beispiel:
 }
 ```
 
-Beispiel `highlight` mit optionaler Partner-Szene:
+Highlight mit optionaler Partner-Szene:
 
 ```json
 {
@@ -148,19 +162,33 @@ Beispiel `highlight` mit optionaler Partner-Szene:
 }
 ```
 
-Mit `--upload` lädt das CLI das gerenderte MP4 hoch und liefert ein HTML-Embed-Snippet:
-
 ```bash
 comvenio news video slideshow --params slideshow.json \
   --upload --context news --context-id <news-id> --json
 ```
 
-Das Video-Upload-Limit beträgt 200 MB. Das Rendern läuft lokal im `remotion/`-Unterprojekt; fehlende Abhängigkeiten werden nicht still installiert.
+## Befehle und Actions
 
-## Rich-HTML-Regeln
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-- Semantische Struktur mit Überschriften, Absätzen, Listen, Tabellen, `figure` und `figcaption` verwenden.
-- Bilder mit stabilem `data-comvenio-file-id` versehen; eine presigned URL allein läuft ab.
-- Für Videos `<video controls preload="metadata">` verwenden; `autoplay` ist nicht zulässig.
-- Für YouTube ausschließlich `https://www.youtube-nocookie.com/embed/...` verwenden.
-- Keine Skripte, Event-Handler oder unbekannte iframe-Hosts einbetten.
+**news** — vollständig
+
+- `comvenio news list`
+- `comvenio news show`
+- `comvenio news create`
+- `comvenio news update`
+- `comvenio news delete`
+- `comvenio news apply`
+- `comvenio news preview`
+- `comvenio news publish`
+- `comvenio news video slideshow|result|teaser`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `VALIDATION_FAILED` — Titel, Inhalt oder ein Vorlagenfeld für ein Video fehlt oder hat das falsche Format. Mehr: `comvenio help fehler VALIDATION_FAILED`
+- `NOT_FOUND` — die News-ID gehört zu keinem sichtbaren Beitrag oder wurde gelöscht. Mehr: `comvenio help fehler NOT_FOUND`
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt das Anlegen, Bearbeiten oder Veröffentlichen von News nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der Schreib-Scope für News. Mehr: `comvenio help fehler SCOPE_REQUIRED`
+- `CONFLICT` — die News wurde inzwischen geändert, zum Beispiel bereits veröffentlicht oder gelöscht. Mehr: `comvenio help fehler CONFLICT`

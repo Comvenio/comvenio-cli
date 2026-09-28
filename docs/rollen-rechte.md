@@ -1,10 +1,58 @@
+---
+id: rollen-rechte
+kategorie: thema
+domaenen: [role]
+stichwoerter: [rollen, rechte, berechtigungen, zuweisung, positionen]
+---
+
 # Rollen und Berechtigungen
 
-Der Top-Level-Command `role` verwaltet Custom Roles, deren Berechtigungsmatrix sowie direkte und positionsbasierte Rollenzuweisungen. Schreibende Aktionen benötigen serverseitig `manage_roles`.
+## Wozu
 
-Geschützte Standardrollen sind lesbar, aber unveränderlich. Es gibt bewusst kein öffentliches `--force`.
+Mit Rollen legt ein Verein eigene Rollen mit einer Berechtigungsmatrix an und weist sie Mitgliedern direkt oder über eine Position zu — und kann jederzeit nachvollziehen, welche Rechte ein Mitglied woher hat.
 
-## Rollen lesen und verwalten
+## Voraussetzungen und Rechte
+
+Anmeldung mit `comvenio login`; welche Scopes eine einzelne Action braucht, zeigt `comvenio action list --json`. Schreibende Rollen-Aktionen verlangen serverseitig das Recht `manage_roles`. Geschützte Standardrollen des Vereins lassen sich lesen, aber nicht ändern — dafür gibt es bewusst keinen erzwingenden Sonderweg.
+
+## Abläufe
+
+### Rolle anlegen und pflegen
+
+Rollennamen sind innerhalb eines Vereins nach Entfernen äußerer Leerzeichen und unabhängig von Groß-/Kleinschreibung eindeutig. Ein Namenskonflikt liefert einen Konfliktfehler; vorhandene Dubletten werden dabei nicht automatisch zusammengeführt. Eine gelöschte Rolle lässt sich wiederherstellen.
+
+### Berechtigungsmatrix setzen
+
+1. Verfügbare Berechtigungs-Schlüssel und die aktuelle Matrix einer Rolle abrufen.
+2. Entweder genau einen Wert gezielt ändern oder eine ganze Matrix-Datei anwenden.
+3. Eine Matrix-Datei ist standardmäßig additiv: Nur gelieferte Schlüssel werden geändert. Ein vollständiger Ersatz setzt alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt".
+4. Ohne ausdrückliche Bestätigung zeigt das CLI nur den vollständigen Vorher-/Nachher-Unterschied und führt keine Änderung aus. Mit Bestätigung liest es denselben Stand im selben Lauf erneut und sichert die Änderung gegen zwischenzeitliche parallele Änderungen ab.
+
+Eine Matrix-Datei ist ein JSON-Objekt mit wahr/falsch-Werten je Berechtigungs-Schlüssel; alternativ ist eine Hülle mit dem Feld `values` zulässig.
+
+### Rolle direkt zuweisen
+
+Eine Zuweisung akzeptiert ausschließlich eine stabile Mitglieds-ID und einen ausdrücklichen Geltungsbereich: entweder den gesamten Verein oder eine bestimmte Abteilung. Der Vereins-Geltungsbereich verbietet eine Abteilungsangabe, der Abteilungs-Geltungsbereich verlangt sie; Fehler dabei werden schon vor dem eigentlichen Schreiben erkannt. Eine Zuweisung, ein Entfernen und ein Entkoppeln von einer Position sind jeweils Soft-Deletes — die Wiederherstellung ist ein eigener, ausdrücklicher Schritt.
+
+### Rolle an eine Position koppeln
+
+Die Kopplung an eine Position beschreibt die fachliche Zuordnung: Wer diese Position innehat, erhält die verknüpfte Rolle automatisch. Effektive Rechte, die daraus entstehen, tragen die Quelle „Position" statt „direkt".
+
+### Effektive Rechte nachvollziehen
+
+Die effektiven Rechte eines Mitglieds werden serverseitig zusammengeführt: Ohne Abteilungsangabe zählen nur Vereins-Zuweisungen, mit Abteilungsangabe zusätzlich die Zuweisungen genau dieser Abteilung. Für jede beteiligte Rolle zeigt die Antwort den Berechtigungs-Schlüssel, das Ergebnis, die Rolle, den Geltungsbereich und ob das Recht direkt oder über eine Position zustande kam.
+
+### Sicherheitsgrenzen
+
+- Geschützte Standardrollen und ihre Matrix lassen sich nicht ändern.
+- Es gibt kein öffentliches erzwungenes Löschen und keine vereinsweiten Aufräum-Aktionen.
+- Löschen, Entfernen und Entkoppeln sind Soft-Deletes; Wiederherstellen bleibt jeweils ein eigener Zustand.
+- Kritische Änderungen liefern maschinenlesbar Ziel, Ist-Stand, Unterschied und Risiko.
+- Eine Zuweisung läuft ausschließlich über die Mitglieds-ID, nie über Namen oder E-Mail-Adresse.
+- Schreibende Aufrufe werden nicht automatisch wiederholt.
+- Jeder vollständige Matrix-Ersatz verlangt eine sichtbare Vorschau und eine ausdrückliche Bestätigung.
+
+## Beispiele
 
 ```bash
 comvenio role list --json
@@ -15,20 +63,10 @@ comvenio role delete <role-id> --json
 comvenio role restore <role-id> --json
 ```
 
-Rollennamen sind innerhalb eines Clubs nach Entfernen äußerer Leerzeichen und unabhängig von Groß-/Kleinschreibung eindeutig. Ein Konflikt liefert HTTP `409`; vorhandene Dubletten werden nicht automatisch zusammengeführt.
-
-## Permission-Definitionen und Matrix
-
-Alle verfügbaren Permission-Keys:
-
 ```bash
 comvenio role permission-defs --json
 comvenio role permissions show --role-id <role-id> --json
-```
 
-Genau einen Wert ändern:
-
-```bash
 comvenio role permission set \
   --role-id <role-id> \
   --permission-key manage_events \
@@ -36,7 +74,7 @@ comvenio role permission set \
   --json
 ```
 
-Eine Matrix-Datei ist ein JSON-Objekt mit booleschen Werten:
+Matrix-Datei:
 
 ```json
 {
@@ -45,24 +83,11 @@ Eine Matrix-Datei ist ein JSON-Objekt mit booleschen Werten:
 }
 ```
 
-Alternativ ist die Hülle `{ "values": { ... } }` zulässig; `{ "permissions": { ... } }` bleibt als Lesealias kompatibel.
-
-Standardmäßig werden nur gelieferte Keys geändert:
-
 ```bash
 comvenio role permissions apply --role-id <role-id> --file matrix.json --json
-```
-
-`--replace` ist ein vollständiger Ersatz. Nicht gelieferte Keys werden `false`. Ohne `--yes` zeigt das CLI den vollständigen Vorher-/Nachher-Diff und führt keinen Write aus. Mit `--yes` liest es denselben Stand im aktuellen Lauf erneut und sichert den Write über `expected_before` gegen parallele Änderungen ab:
-
-```bash
 comvenio role permissions apply --role-id <role-id> --file matrix.json --replace --json
 comvenio role permissions apply --role-id <role-id> --file matrix.json --replace --yes --json
 ```
-
-## Direkte Rollenzuweisungen
-
-Zuweisungen akzeptieren ausschließlich eine stabile `member_id` und einen expliziten Scope.
 
 ```bash
 comvenio role assign \
@@ -77,11 +102,7 @@ comvenio role assign \
   --scope department \
   --department-id <department-id> \
   --json
-```
 
-`club` verbietet `--department-id`; `department` verlangt das Flag. Fehler werden vor dem Write erkannt.
-
-```bash
 comvenio role assignments --json
 comvenio role assignments --member-id <member-id> --json
 comvenio role assignments --role-id <role-id> --json
@@ -89,8 +110,6 @@ comvenio role assignments --department-id <department-id> --json
 comvenio role unassign <assignment-id> --json
 comvenio role assignment-restore <assignment-id> --json
 ```
-
-## Rollen an Positionen koppeln
 
 ```bash
 comvenio role position-link \
@@ -104,25 +123,40 @@ comvenio role position-unlink <assignment-id> --json
 comvenio role position-restore <assignment-id> --json
 ```
 
-Die Positionsverknüpfung beschreibt die fachliche Zuordnung. Effektive Rechte kennzeichnen daraus entstandene Mitgliedszuweisungen mit der Quelle `position`.
-
-## Effektive Rechte mit Provenienz
-
 ```bash
 comvenio role effective --member-id <member-id> --json
 comvenio role effective --member-id <member-id> --department-id <department-id> --json
 ```
 
-Die Antwort wird serverseitig berechnet. `permissions` enthält das zusammengeführte Ergebnis; `sources` zeigt für jede beteiligte Rolle den Permission-Key, das Ergebnis, Rolle, Scope und die Quelle `direct` oder `position`.
+## Befehle und Actions
 
-Ohne `--department-id` gelten nur Club-Zuweisungen. Mit Abteilung werden Club-Zuweisungen und Zuweisungen genau dieser Abteilung berücksichtigt.
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-## Sicherheitsgrenzen
+**role** — vollständig
 
-- Keine Mutation geschützter Rollen oder ihrer Matrix.
-- Kein öffentliches Force-Delete und keine Club-weiten Wipe-Aktionen.
-- Delete, Unassign und Position-Unlink sind Soft-Deletes; Restore bleibt jeweils ein eigener, expliziter Zustand.
-- Kritische Mutationen liefern maschinenlesbar Ziel, Ist-Stand, Diff, Risiko und `run_id`.
-- Keine Zuweisung über Namen oder E-Mail-Adressen.
-- Keine automatische Wiederholung schreibender Requests.
-- Jeder Matrix-Ersatz benötigt eine sichtbare Vorschau und explizite Bestätigung.
+- `comvenio role list`
+- `comvenio role show`
+- `comvenio role create`
+- `comvenio role update`
+- `comvenio role delete`
+- `comvenio role permission-defs`
+- `comvenio role permission set`
+- `comvenio role permissions show|apply`
+- `comvenio role assign`
+- `comvenio role unassign`
+- `comvenio role assignments`
+- `comvenio role position-link`
+- `comvenio role position-unlink`
+- `comvenio role position-list`
+- `comvenio role effective`
+- Felder und Werte: `comvenio schema role --json`
+<!-- /gen:docs -->
+
+## Fehler
+
+- `CONFLICT` — der Rollenname ist innerhalb des Vereins schon vergeben, oder eine Matrix wurde seit der letzten Vorschau geändert. Mehr: `comvenio help fehler CONFLICT`
+- `VALIDATION_FAILED` — ein Geltungsbereich passt nicht zur Abteilungsangabe, oder ein Feld hat das falsche Format. Mehr: `comvenio help fehler VALIDATION_FAILED`
+- `NOT_FOUND` — Rolle, Zuweisung oder Positionskopplung existiert nicht oder ist nicht sichtbar. Mehr: `comvenio help fehler NOT_FOUND`
+- `PERMISSION_DENIED` — die Scopes stimmen, aber die Vereinsrolle erlaubt das Verwalten von Rollen nicht. Mehr: `comvenio help fehler PERMISSION_DENIED`
+- `SCOPE_REQUIRED` — der Anmeldung fehlt der Scope zum Verwalten von Rollen. Mehr: `comvenio help fehler SCOPE_REQUIRED`

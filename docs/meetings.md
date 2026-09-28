@@ -1,29 +1,139 @@
+---
+id: meetings
+kategorie: thema
+domaenen: [meeting]
+stichwoerter: [meetings, protokolle, tagesordnung, beschlüsse, abstimmungen, teilnehmer, vorstandssitzung]
+---
+
 # Meetings und Protokolle
 
-Die Meeting-CLI deckt die fachlichen Club-Admin-Abläufe des `meeting-service` ab: Meeting-Serien, konkrete Protokolle/Sitzungen, Tagesordnung, Notizen, Teilnehmer, Entscheidungen, Abstimmungen, Beschlüsse und die offizielle Reinschrift.
+## Wozu
 
-```bash
-comvenio meeting <action> [id] [optionen]
-```
+`comvenio meeting` deckt die fachlichen Abläufe rund um Vereinssitzungen ab: Meeting-Serien anlegen,
+für einen konkreten Termin ein Protokoll führen, die Tagesordnung steuern, Notizen und Teilnehmer
+erfassen, Entscheidungen und Abstimmungen durchführen, Beschlüsse verwalten und am Ende die
+offizielle Reinschrift veröffentlichen.
 
-Für Agenten ist `--json` die verbindliche Ausgabeform. Komplexe Create-/Update-Bodies werden als JSON-Datei mit `--file <payload.json>` übergeben. Die CLI reicht diese Payload ohne Umbenennung von Feldern an den Backend-Vertrag weiter.
+## Voraussetzungen und Rechte
 
-## Grundregeln
+- Schreibende Aktionen (Serien, Protokolle, Tagesordnung, Notizen, Teilnehmer, Entscheidungen,
+  Abstimmungen, Beschlüsse, Reinschrift) erfordern das Recht `manage_meetings` beziehungsweise die
+  jeweilige granulare Meeting-Berechtigung.
+- Stimmberechtigt bei einer Abstimmung sind nur Teilnehmer, die als anwesend erfasst sind.
+- `--club <club-id>` überschreibt den Verein aus dem lokalen Anmeldestatus.
+- `--json` ist für Skripte und Agenten die verbindliche Ausgabeform.
+- Umfangreiche Eingaben werden als JSON-Datei mit `--file <payload.json>` übergeben; die Felder
+  gehen unverändert an den Vertrag der jeweiligen Aktion.
 
-- `--club <id>` überschreibt den Club aus dem lokalen Login-State.
-- `[id]` bezeichnet je nach Aktion die Serien-, Protokoll-, TOP-, Teilnehmer-, Entscheidungs-, Beschluss-, Eintrags- oder Anhang-ID.
-- `--protocol <id>` ist nur für Carry-over-TOPs bei `agenda-start`, `agenda-complete` und `agenda-skip` nötig.
-- Schreibende Aktionen werden vom Backend über `manage_meetings` beziehungsweise granulare Meeting-Rechte geschützt.
-- Ein HTTP-Fehler ist kein leeres Ergebnis. Die CLI gibt Backend-Fehler mit Exit-Code ungleich null zurück.
+## Abläufe
 
-## Schnellstart
+### Meeting-Serie anlegen
 
-Eine Meeting-Serie anlegen:
+1. Serie mit Verein, Abteilung, Titel und Standardwerten für Protokolltyp, Genehmigungspflicht und
+   Protokollstil anlegen.
+2. Serien auflisten oder eine einzelne ansehen, bei Bedarf ändern oder löschen.
+
+### Protokoll für einen Termin anlegen
+
+1. Zu einem konkreten Veranstaltungstermin ein Protokoll mit Meeting-Serie, Termin, Verein, Abteilung
+   und Titel anlegen.
+2. Protokoll auflisten oder ansehen.
+
+Der Lebenszyklus eines Protokolls verläuft: Vorbereitung offen → Vorbereitung durch die Verwaltung →
+Tagesordnung fertig → in Sitzung → abgeschlossen → Reinschrift wird erstellt → wartet auf Freigabe →
+veröffentlicht. Beim Wechsel in den Sitzungsstatus setzt Comvenio den Beginnzeitpunkt, beim Abschluss
+den Endzeitpunkt.
+
+3. Protokoll zur nächsten Phase weiterschalten oder eine Phase zurücknehmen.
+4. Änderungen seit einem Zeitpunkt abfragen.
+5. Vor der Veröffentlichung den Validierungsstatus prüfen und veröffentlichen.
+
+Wichtige Bedingungen: Der Wechsel von „Reinschrift wird erstellt" zu „wartet auf Freigabe" verlangt,
+dass zu jedem behandelten Tagesordnungspunkt ein Reinschrift-Eintrag existiert. Die Veröffentlichung
+verlangt, dass alle Prüfer bestätigt haben. Eine Phase zurückzunehmen ist nicht in jeder Phase erlaubt.
+
+### Tagesordnung und Live-Status
+
+1. Tagesordnungspunkt mit Titel, Beschreibung und geschätzter Dauer anlegen.
+2. Tagesordnung auflisten, einen Punkt ansehen, ändern, löschen oder neu sortieren.
+3. Punkt starten, abschließen oder überspringen; einen Übernahme-Punkt aus einer Vorserie dabei mit
+   dem passenden Protokoll verknüpfen, weil ein Tagesordnungspunkt mehreren Protokollen zugeordnet
+   sein kann.
+4. Punkt freigeben.
+
+### Notizen
+
+1. Notizen eines Tagesordnungspunkts oder eines gesamten Protokolls auflisten.
+2. Notiz mit Protokoll, Tagesordnungspunkt, Verein, Inhalt und Notiztyp anlegen.
+3. Notiz ändern oder löschen.
+
+Fachliche Notiztypen: Verwaltung, Diskussion, Notiz, Zusammenfassung. Der Typ „Aufgaben-Update"
+entsteht ausschließlich automatisch aus dem Aufgaben-Workflow und ist nicht für manuelle Notizen
+vorgesehen.
+
+### Teilnehmer und Validierung
+
+1. Teilnehmer eines Protokolls auflisten.
+2. Teilnehmer hinzufügen — mit Benutzer, Mitglied oder mindestens einem Namen als Identität.
+3. Rolle oder Anwesenheit eines Teilnehmers ändern; Teilnehmer entfernen.
+4. Teilnehmer validieren oder die Validierung zurücknehmen.
+
+### Entscheidungen und Abstimmungen
+
+Eine Entscheidung entsteht immer an einem Tagesordnungspunkt und darf nur für einen gerade
+behandelten Punkt angelegt werden.
+
+1. Entscheidung mit Protokoll, Tagesordnungspunkt, Abteilung, Verein, Titel, Art und Gültigkeitsbeginn
+   anlegen.
+2. Bei Bedarf Abstimmungsoptionen einzeln oder als Sammlung ergänzen.
+3. Abstimmung öffnen, Stimmen abgeben — direkt, in Sammlung oder per Vollmacht —, Abstimmung
+   schließen, Ergebnisse und stimmberechtigte Teilnehmer einsehen.
+4. Entscheidung ändern, absagen oder zu einem Beschluss mit Beschlussnummer erheben.
+
+Offline-Auszählungen laufen über eine eigene Aktion: Ohne Inkrement setzt die Angabe den absoluten
+Zählerstand, mit Inkrement wird ein Delta addiert, auch negativ. Bei einer Mehrfachauswahl entfernt
+das Zurückziehen einer einzelnen Option nur die eigene Stimme für diese Option; das vollständige
+Zurückziehen entfernt alle eigenen Stimmen dieser Entscheidung.
+
+### Beschlüsse
+
+1. Beschlüsse eines Vereins auflisten, optional gefiltert nach Abteilung, Kategorie oder mit
+   abgelaufenen Beschlüssen; Beschlüsse eines Protokolls auflisten.
+2. Einzelnen Beschluss und seine Historie ansehen.
+3. Beschluss anlegen, ändern, genehmigen oder ablehnen, löschen.
+
+Beschlussstatus: neu, angenommen, abgelehnt, abgelaufen. Eine Ablehnung verlangt eine Begründung; bei
+einer Genehmigung ist die Begründung optional.
+
+### Reinschrift und Anhänge
+
+Reinschrift-Einträge sind die offizielle Fassung eines Protokolls in der Phase „Reinschrift wird
+erstellt".
+
+1. Einträge eines Protokolls oder zu einem Tagesordnungspunkt auflisten, einzelnen Eintrag ansehen.
+2. Eintrag mit Protokoll und Inhalt anlegen, optional als KI-unterstützt markiert.
+3. Eintrag ändern oder löschen.
+4. Anhänge eines Eintrags auflisten, eine bereits vorhandene Datei verknüpfen oder einen Anhang
+   entfernen.
+
+Ein Anhang verknüpft eine bereits hochgeladene Datei über ihre Datei-Kennung; der Upload selbst
+läuft nicht über diese Aktionen.
+
+### Bewusst ausgeschlossene Abläufe
+
+Folgende Bereiche sind bewusst kein Bestandteil dieser Club-Admin-Abläufe: interne
+System-zu-System-Wartung mit eigenem Authentifizierungsvertrag, der Browser- und Einladungszugang für
+Teilnehmende (öffentliche und persönliche Zugangslinks), private KI-Assistenz-Entwürfe mit eigenem
+Bestätigungs- und Berechtigungskontext, sowie automatisch erzeugte Aufgaben-Update-Notizen.
+
+## Beispiele
+
+Meeting-Serie anlegen (`meeting-series.json`):
 
 ```json
 {
-  "club_id": "CLUB_UUID",
-  "department_id": "DEPARTMENT_UUID",
+  "club_id": "<club-id>",
+  "department_id": "<department-id>",
   "title": "Monatliche Vorstandssitzung",
   "description": "Regeltermin des Vorstands",
   "meeting_type": "Vorstandssitzung",
@@ -38,14 +148,16 @@ comvenio meeting series-create --file meeting-series.json --json
 comvenio meeting series-list --json
 ```
 
-Für einen konkreten Event-Termin ein Protokoll anlegen:
+Zulässige Werte für den Protokollstil: `results`, `detailed`, `decision`, `short`, `action`, `custom`.
+
+Protokoll für einen Termin anlegen:
 
 ```json
 {
-  "meeting_id": "MEETING_SERIES_UUID",
-  "event_id": "EVENT_UUID",
-  "club_id": "CLUB_UUID",
-  "department_id": "DEPARTMENT_UUID",
+  "meeting_id": "<meeting-series-id>",
+  "event_id": "<event-id>",
+  "club_id": "<club-id>",
+  "department_id": "<department-id>",
   "title": "Vorstandssitzung Juli 2026",
   "protocol_type": "formal",
   "requires_approval": true,
@@ -55,67 +167,13 @@ Für einen konkreten Event-Termin ein Protokoll anlegen:
 
 ```bash
 comvenio meeting protocol-create --file protocol.json --json
-comvenio meeting protocol-show PROTOCOL_UUID --json
+comvenio meeting protocol-show <protocol-id> --json
+comvenio meeting protocol-advance <protocol-id> --json
+comvenio meeting protocol-validation <protocol-id> --json
+comvenio meeting protocol-publish <protocol-id> --json
 ```
 
-## Meeting-Serien
-
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `series`, `series-list` | – | `GET /meetings/by_club/{club_id}` | – |
-| `series-show` | Serien-ID | `GET /meetings/{id}` | – |
-| `series-create` | – | `POST /meetings/` | `MeetingCreate` |
-| `series-update` | Serien-ID | `PATCH /meetings/{id}` | `MeetingUpdate` |
-| `series-delete` | Serien-ID | `DELETE /meetings/{id}` | – |
-
-Pflichtfelder für `MeetingCreate`: `club_id`, `department_id`, `title`. Zulässige Werte für `default_protocol_summary_style`: `results`, `detailed`, `decision`, `short`, `action`, `custom`.
-
-## Protokolle und Lifecycle
-
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `list`, `protocol-list` | – | `GET /protocols/?club_id={club_id}` | – |
-| `show`, `protocol-show` | Protokoll-ID | `GET /protocols/{id}/view` | – |
-| `protocol-create` | – | `POST /protocols/` | `ProtocolCreate` |
-| `protocol-update` | Protokoll-ID | `PATCH /protocols/{id}` | `ProtocolUpdate` |
-| `protocol-delete` | Protokoll-ID | `DELETE /protocols/{id}` | – |
-| `protocol-advance` | Protokoll-ID | `POST /protocol-management/{id}/advance-phase` | – |
-| `protocol-revert` | Protokoll-ID | `POST /protocol-management/{id}/revert-phase` | – |
-| `protocol-updates` | Protokoll-ID | `GET /protocol-management/{id}/updates` | `--since <iso-datetime>` optional |
-| `protocol-validation` | Protokoll-ID | `GET /protocol-validation/protocols/{id}/validation-status` | – |
-| `protocol-publish` | Protokoll-ID | `POST /protocol-validation/protocols/{id}/publish` | – |
-
-Der reale Vorwärts-Lifecycle im Backend ist:
-
-```text
-preparation_open → preparation_admin → agenda_finished → in_progress
-→ finalized → protocol_generation → pending_approval → published
-```
-
-Beim Wechsel zu `in_progress` setzt das Backend `started_at`; beim Wechsel zu `finalized` setzt es `ended_at`. Die menschliche CLI-Liste zeigt deshalb `started_at` als Datum und Uhrzeit und erfindet kein nicht existentes `meeting_date`.
-
-Wichtige Gates:
-
-- `protocol_generation → pending_approval`: Für jeden behandelten TOP muss ein ProtocolEntry existieren.
-- `protocol-publish`: Alle Validatoren müssen bestätigt haben.
-- `protocol-revert` ist nicht für jede Phase erlaubt; der Backend-State-Machine-Check bleibt maßgeblich.
-
-## Tagesordnung und Live-Status
-
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `agenda-list` | Protokoll-ID | `GET /agenda-items/protocol/{id}` | – |
-| `agenda-show` | TOP-ID | `GET /agenda-items/{id}` | – |
-| `agenda-create` | Protokoll-ID | `POST /agenda-items/protocol/{id}` | `AgendaItemCreate` |
-| `agenda-update` | TOP-ID | `PATCH /agenda-items/{id}` | `AgendaItemUpdate` |
-| `agenda-delete` | TOP-ID | `DELETE /agenda-items/{id}` | – |
-| `agenda-reorder` | Protokoll-ID | `POST /agenda-management/protocol/{id}/reorder` | `ReorderRequest` |
-| `agenda-start` | TOP-ID | `POST /agenda-management/{id}/start` | – |
-| `agenda-complete` | TOP-ID | `POST /agenda-management/{id}/complete` | optional `CompleteRequest` |
-| `agenda-skip` | TOP-ID | `POST /agenda-management/{id}/skip` | – |
-| `agenda-approve` | TOP-ID | `POST /agenda-management/{id}/approve` | `ApproveRequest` |
-
-Beispiele:
+Tagesordnungspunkt anlegen und steuern:
 
 ```json
 {
@@ -127,86 +185,49 @@ Beispiele:
 ```
 
 ```bash
-comvenio meeting agenda-create PROTOCOL_UUID --file top.json --json
+comvenio meeting agenda-create <protocol-id> --file top.json --json
 ```
 
 ```json
 {
   "item_positions": {
-    "TOP_UUID_1": 0,
-    "TOP_UUID_2": 1
+    "<top-id-1>": 0,
+    "<top-id-2>": 1
   }
 }
 ```
 
 ```bash
-comvenio meeting agenda-reorder PROTOCOL_UUID --file order.json --json
-comvenio meeting agenda-start TOP_UUID --protocol PROTOCOL_UUID --json
-comvenio meeting agenda-complete TOP_UUID --protocol PROTOCOL_UUID --json
+comvenio meeting agenda-reorder <protocol-id> --file order.json --json
+comvenio meeting agenda-start <top-id> --protocol <protocol-id> --json
+comvenio meeting agenda-complete <top-id> --protocol <protocol-id> --json
 ```
 
-`--protocol` ist bei einem Carry-over-TOP wichtig, weil ein AgendaItem mehreren Protokollen zugeordnet sein kann.
+`--protocol` ist bei einem Übernahme-Tagesordnungspunkt wichtig, weil dieser mehreren Protokollen
+zugeordnet sein kann.
 
-## Notizen
+Notiz anlegen:
 
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `note-list` | TOP-ID | `GET /agenda-notes/agenda-item/{id}` | – |
-| `note-list-protocol` | Protokoll-ID | `GET /agenda-notes/protocol/{id}` | – |
-| `note-create` | – | `POST /agenda-notes/` | `AgendaItemNoteCreate` |
-| `note-update` | Notiz-ID | `PATCH /agenda-notes/{id}` | `AgendaItemNoteUpdate` |
-| `note-delete` | Notiz-ID | `DELETE /agenda-notes/{id}` | – |
+```bash
+comvenio meeting note-create --file note.json --json
+comvenio meeting note-list <top-id> --json
+```
 
-`note-create` benötigt `meeting_protocol_id`, `agenda_item_id`, `club_id`, `content` und `note_type`. Fachliche Werte für `note_type`: `admin`, `discussion`, `note`, `summary`; `taskupdate` wird nur über den speziellen Backend-Systemflow erzeugt und ist nicht für manuelle Notizen vorgesehen.
+Teilnehmer hinzufügen und validieren:
 
-## Teilnehmer und Validierung
+```bash
+comvenio meeting participant-add <protocol-id> --file participant.json --json
+comvenio meeting participant-validate <participant-id> --json
+```
 
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `participant-list` | Protokoll-ID | `GET /participants/{id}` | – |
-| `participant-add` | Protokoll-ID | `POST /participants/{id}` | `ParticipantCreate` |
-| `participant-update` | Teilnehmer-ID | `PATCH /participants/{id}` | `ParticipantUpdate` |
-| `participant-remove` | Teilnehmer-ID | `DELETE /participants/{id}` | – |
-| `participant-validate` | Teilnehmer-ID | `POST /protocol-validation/participants/{id}/validate` | optional `ParticipantValidate` |
-| `participant-unvalidate` | Teilnehmer-ID | `DELETE /protocol-validation/participants/{id}/validate` | – |
-
-`ParticipantCreate` benötigt `protocol_id`, `club_id` und mindestens eine Identität: `user_id`, `member_id` oder `name`. `ParticipantUpdate` erlaubt ausschließlich `role` und `is_present`.
-
-## Entscheidungen und Abstimmungen
-
-Entscheidungen werden an einem TOP erstellt. Vollständige Decision-Daten eines TOPs liefert `agenda-show`; der Backend-Code besitzt keinen separaten Decision-Listen-/Detail-Endpunkt.
-
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `decision-create` | TOP-ID | `POST /decisions/agenda-item/{id}` | `DecisionCreate` |
-| `decision-agenda` | Entscheidungs-ID | `GET /decisions/{id}/agenda-item` | – |
-| `decision-update` | Entscheidungs-ID | `PATCH /decisions/{id}` | `DecisionUpdate` |
-| `decision-cancel` | Entscheidungs-ID | `POST /decisions/{id}/cancel` | `--reason <text>` optional |
-| `decision-option-add` | Entscheidungs-ID | `POST /decisions/{id}/options` | `VotingOptionCreate` |
-| `decision-options-add` | Entscheidungs-ID | `POST /decisions/{id}/options/batch` | Array von `VotingOptionCreate` |
-| `decision-promote` | Entscheidungs-ID | `POST /decisions/{id}/promote-to-resolution` | `--number <beschlussnummer>` |
-| `voting-open` | Entscheidungs-ID | `POST /votes/{id}/open` | – |
-| `voting-close` | Entscheidungs-ID | `POST /votes/{id}/close` | – |
-| `voting-results` | Entscheidungs-ID | `GET /votes/{id}/results` | – |
-| `voting-eligible` | Entscheidungs-ID | `GET /votes/{id}/eligible-voters` | – |
-| `vote-cast` | Entscheidungs-ID | `POST /votes/{id}/cast` | `VoteCast` |
-| `vote-cast-bulk` | Entscheidungs-ID | `POST /votes/{id}/cast/bulk` | `BulkVoteCast` |
-| `vote-proxy` | Entscheidungs-ID | `POST /votes/{id}/proxy` | `VoteProxyCast` |
-| `vote-proxy-bulk` | Entscheidungs-ID | `POST /votes/{id}/proxy/bulk` | `BulkProxyVoteCast` |
-| `voting-tally` | Entscheidungs-ID | `POST /votes/{id}/offline-tally/{option_id}` | `--option <id> --count <n> [--increment]` |
-| `vote-option-retract` | Entscheidungs-ID | `DELETE /votes/{id}/option/{option_id}` | `--option <id>` |
-| `vote-retract` | Entscheidungs-ID | `DELETE /votes/{id}` | – |
-
-Für `DecisionCreate` sind unter anderem `protocol_id`, `agenda_item_id`, `department_id`, `club_id`, `title`, `decision_type` und `valid_from` nötig. Entscheidungen dürfen nur für einen aktuell behandelten TOP erstellt werden. Stimmberechtigt sind nur anwesende Teilnehmer.
-
-`voting-tally` ist ausschließlich für Offline-Abstimmungen gedacht. Ohne `--increment` setzt `--count` den absoluten Zählerstand; mit `--increment` wird die ganze Zahl als Delta addiert, beispielsweise `--count -1 --increment`. Bei einer Mehrfachauswahl entfernt `vote-option-retract` nur die eigene Stimme für die angegebene Option; `vote-retract` entfernt alle eigenen Stimmen dieser Entscheidung.
+Entscheidung anlegen und Abstimmung durchführen:
 
 ```json
 {
-  "agenda_item_id": "TOP_UUID",
-  "protocol_id": "PROTOCOL_UUID",
-  "department_id": "DEPARTMENT_UUID",
-  "club_id": "CLUB_UUID",
+  "agenda_item_id": "<top-id>",
+  "protocol_id": "<protocol-id>",
+  "department_id": "<department-id>",
+  "club_id": "<club-id>",
   "title": "Budget 2027 freigeben",
   "decision_type": "voting",
   "voting_visibility": "public",
@@ -218,51 +239,64 @@ Für `DecisionCreate` sind unter anderem `protocol_id`, `agenda_item_id`, `depar
 }
 ```
 
-## Beschlüsse
+```bash
+comvenio meeting decision-create <top-id> --file decision.json --json
+comvenio meeting voting-open <decision-id> --json
+comvenio meeting vote-cast <decision-id> --file vote.json --json
+comvenio meeting voting-close <decision-id> --json
+comvenio meeting voting-results <decision-id> --json
+comvenio meeting voting-tally <decision-id> --option <option-id> --count -1 --increment --json
+comvenio meeting decision-promote <decision-id> --number 12 --json
+```
 
-| Aktion | `[id]` | HTTP-Route | Payload/Optionen |
-|---|---|---|---|
-| `resolutions`, `resolution-list` | – | `GET /resolutions/?club_id={club_id}` | `--department`, `--category`, `--include-expired` |
-| `resolution-list-protocol` | Protokoll-ID | `GET /resolutions/protocol/{id}` | – |
-| `resolution-show` | Beschluss-ID | `GET /resolutions/{id}` | – |
-| `resolution-history` | Beschluss-ID | `GET /resolutions/{id}/history` | – |
-| `resolution-create` | – | `POST /resolutions/` | `ResolutionCreate` |
-| `resolution-update` | Beschluss-ID | `PATCH /resolutions/{id}` | `ResolutionUpdate` |
-| `resolution-approve` | Beschluss-ID | `POST /resolutions/{id}/approve` | `ResolutionApprove` |
-| `resolution-decline` | Beschluss-ID | `POST /resolutions/{id}/decline` | `ResolutionDecline` |
-| `resolution-delete` | Beschluss-ID | `DELETE /resolutions/{id}` | – |
+Beschluss genehmigen oder ablehnen:
 
-Beschlussstatus: `new`, `accepted`, `declined`, `expired`. `resolution-decline` benötigt `approval_notes`; `resolution-approve` akzeptiert dieses Feld optional.
+```bash
+comvenio meeting resolution-list --department <department-id> --category satzung --json
+comvenio meeting resolution-approve <resolution-id> --json
+comvenio meeting resolution-decline <resolution-id> --file decline.json --json
+```
 
-## Reinschrift und Anhänge
+Reinschrift-Eintrag mit Anhang anlegen:
 
-ProtocolEntries sind die offizielle Reinschrift in der Phase `protocol_generation`.
+```bash
+comvenio meeting entry-create <top-id> --file entry.json --json
+comvenio meeting attachment-add <entry-id> --file attachment.json --json
+```
 
-| Aktion | `[id]` | HTTP-Route | Payload |
-|---|---|---|---|
-| `entries`, `entry-list` | Protokoll-ID | `GET /protocol-entries/protocol/{id}` | – |
-| `entry-show` | Eintrags-ID | `GET /protocol-entries/{id}` | – |
-| `entry-show-agenda` | TOP-ID | `GET /protocol-entries/agenda-item/{id}` | – |
-| `entry-create` | TOP-ID | `POST /protocol-entries/{id}` | `ProtocolEntryCreate` |
-| `entry-update` | Eintrags-ID | `PUT /protocol-entries/{id}` | `ProtocolEntryUpdate` |
-| `entry-delete` | Eintrags-ID | `DELETE /protocol-entries/{id}` | – |
-| `attachment-list` | Eintrags-ID | `GET /protocol-entries/{id}/attachments` | – |
-| `attachment-add` | Eintrags-ID | `POST /protocol-entries/{id}/attachments` | `{ "file_id": "..." }` |
-| `attachment-remove` | Anhang-ID | `DELETE /protocol-entries/attachments/{id}` | – |
+## Befehle und Actions
 
-`entry-create` benötigt `meeting_protocol_id`, `content` und optional `is_ai_generated`. Anhänge verknüpfen eine bereits im Content-Service vorhandene `file_id`; die CLI lädt an dieser Stelle keine Datei hoch.
+<!-- gen:docs befehle -->
+_Erzeugt aus der Coverage-Registry (`bun run gen:docs`) — nicht von Hand ändern._
 
-## Bewusst ausgeschlossene Routen
+**meeting** — vollständig
 
-Die folgenden Backend-Bereiche sind keine allgemeinen Club-Admin-CLI-Workflows und werden absichtlich nicht angeboten:
+- `comvenio meeting series list|show|create|update|delete`
+- `comvenio meeting protocol list|show|create|update|delete|advance|revert|updates|validation|publish`
+- `comvenio meeting agenda list|show|create|update|delete|reorder|start|complete|skip|approve`
+- `comvenio meeting note list|list-protocol|create|update|delete`
+- `comvenio meeting participant list|add|update|remove|validate|unvalidate`
+- `comvenio meeting decision create|agenda|update|cancel|option-add|options-add|promote`
+- `comvenio meeting voting open|close|results|eligible|tally`
+- `comvenio meeting vote cast|cast-bulk|proxy|proxy-bulk|option-retract|retract`
+- `comvenio meeting resolution list|list-protocol|show|history|create|update|approve|decline|delete`
+- `comvenio meeting entry list|show|show-agenda|create|update|delete`
+- `comvenio meeting attachment list|add|remove`
+- Felder und Werte: `comvenio schema meeting --json`
+<!-- /gen:docs -->
 
-- `/internal/*`: Service-to-Service-Wartung mit internem Auth-Vertrag.
-- `/meeting-access/*`, `/protocols/*/join` und öffentliche/persönliche Token-Routen: Browser-/Einladungszugang, kein Admin-Automationsflow.
-- `/meeting-assistant-suggestions/*` und `/agenda-task-suggestion-drafts/*`: private AI-Assistenten-Drafts mit eigenem Bestätigungs- und Berechtigungskontext.
-- `taskupdate`-Systemnotizen: werden vom Task-/Meeting-Workflow erzeugt, nicht manuell.
+## Fehler
 
-Die CLI stellt diese technischen und sicherheitskritischen Spezialrouten nicht als generischen Raw-HTTP-Ausweg bereit.
-
-## Quellenstand
-
-Diese Referenz ist gegen die lokalen Router und Pydantic-Schemas unter `Backend/Microservice-Backend/meeting-service/app/routes/` und `app/schemas/` geprüft. Die maschinenlesbare Kurzfassung liegt in `src/schema/meeting.json`.
+- `PERMISSION_DENIED` — die Vereinsrolle trägt nicht das Recht `manage_meetings` oder die passende
+  granulare Meeting-Berechtigung für die versuchte Aktion. Siehe
+  `comvenio help fehler PERMISSION_DENIED`.
+- `VALIDATION_FAILED` — ein Pflichtfeld fehlt oder hat das falsche Format, etwa beim Anlegen einer
+  Serie, eines Protokolls, einer Entscheidung oder eines Beschlusses. Siehe
+  `comvenio help fehler VALIDATION_FAILED`.
+- `NOT_FOUND` — die angegebene Serien-, Protokoll-, Tagesordnungs-, Entscheidungs- oder Beschluss-ID
+  gehört zu keinem sichtbaren Eintrag. Siehe `comvenio help fehler NOT_FOUND`.
+- `CONFLICT` — eine Aktion widerspricht dem aktuellen Zustand, etwa ein Phasenwechsel, der die
+  nötigen Voraussetzungen noch nicht erfüllt, oder eine Abstimmung, die bereits geschlossen ist.
+  Siehe `comvenio help fehler CONFLICT`.
+- `SCOPE_REQUIRED` — die Anmeldung wurde ohne den für eine Meeting-Schreibaktion nötigen Scope
+  erteilt. Siehe `comvenio help fehler SCOPE_REQUIRED`.
