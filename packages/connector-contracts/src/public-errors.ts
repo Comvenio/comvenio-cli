@@ -40,16 +40,24 @@ export function isPublicErrorCode(value: unknown): value is PublicErrorCode {
 }
 
 /**
- * Maps an internal connector code to its public code. A write that ran into
- * the time limit is not retryable and may have completed upstream, so it is
- * OUTCOME_UNKNOWN ("check the state instead of repeating"), not a timeout.
+ * Maps an internal connector code to its public code.
+ *
+ * A request without an answer may still have been carried out upstream. For
+ * an action with a writing effect that is OUTCOME_UNKNOWN ("check the state
+ * instead of repeating"); a read stays an ordinary, repeatable timeout. The
+ * effect comes from the action's risk class, never from the HTTP method — a
+ * read preview may well be a POST. Without a known effect only the client's
+ * own marker counts: it never retries a non-GET, so `retryable: false`.
  */
 export function publicErrorCode(input: {
   code: ConnectorErrorCode | string;
   retryable?: boolean;
+  effect?: "read" | "write";
 }): PublicErrorCode {
-  if (input.code === "UPSTREAM_TIMEOUT" && input.retryable === false) {
-    return "OUTCOME_UNKNOWN";
+  const unanswered = input.code === "UPSTREAM_TIMEOUT" || input.code === "UPSTREAM_UNAVAILABLE";
+  if (unanswered && input.retryable === false) {
+    if (input.effect === "write") return "OUTCOME_UNKNOWN";
+    if (input.effect === undefined && input.code === "UPSTREAM_TIMEOUT") return "OUTCOME_UNKNOWN";
   }
   return isPublicErrorCode(input.code) ? input.code : "UNKNOWN_ERROR";
 }

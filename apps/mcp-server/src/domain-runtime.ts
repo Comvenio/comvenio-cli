@@ -975,8 +975,9 @@ function executionError(
   context: RequestContext,
   publicOrigin: string,
   error: unknown,
+  effect: "read" | "write",
 ): CallToolResult {
-  return publicToolError(context, publicOrigin, error);
+  return publicToolError(context, publicOrigin, error, effect);
 }
 
 function asToolSet(value: unknown): DomainToolSet {
@@ -1399,7 +1400,14 @@ export function registerFullDomainRuntime(input: {
             }
             return toMcpResult(input.context, result);
           } catch (error) {
-            return executionError(input.context, input.public_origin, error);
+            // The selected operation decides the effect; an unknown one is treated as writing.
+            const operation = selectedOperation(canonicalDefinition, parsedInput);
+            return executionError(
+              input.context,
+              input.public_origin,
+              error,
+              operation?.risk_class === "read" ? "read" : "write",
+            );
           }
         });
         registered.add(definition.action_id);
@@ -1505,7 +1513,8 @@ export function registerFullDomainRuntime(input: {
         }
         return toMcpResult(input.context, result);
       } catch (error) {
-        return executionError(input.context, input.public_origin, error);
+        // action_confirm always carries out a critical write.
+        return executionError(input.context, input.public_origin, error, "write");
       }
     });
   }

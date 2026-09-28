@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { AuthError } from "../src/auth.ts";
+import { AuthError, LoginOptionError } from "../src/auth.ts";
 import {
   PublicCliError,
+  cleanDetail,
   formatCliError,
   langArgument,
   resolveCliLang,
@@ -48,6 +49,14 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(permission.code).toBe("PERMISSION_DENIED");
   });
 
+  test("an older JSON-RPC error with a write timeout still becomes OUTCOME_UNKNOWN", () => {
+    const rendered = toPublicError(
+      new ConnectorClientError("x", { code: "UPSTREAM_TIMEOUT", retryable: false }),
+      { lang: "de" },
+    );
+    expect(rendered.code).toBe("OUTCOME_UNKNOWN");
+  });
+
   test("JSON shape matches the contract", () => {
     const rendered = toPublicError(new PublicCliError("ACTION_NOT_LISTED", "nicht freigegeben"), { lang: "de" });
     expect(Object.keys(rendered).sort()).toEqual(
@@ -62,21 +71,42 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(rendered.next_command).toBe("comvenio action list");
   });
 
-  test("TC-03: an unexpected error is UNKNOWN_ERROR and keeps its text as detail", () => {
-    const rendered = toPublicError(new TypeError("x is undefined"), { lang: "de" });
+  test("TC-03: an unexpected error is UNKNOWN_ERROR with an ID and without its internal text", () => {
+    const rendered = toPublicError(new TypeError("x is undefined at /srv/app/src/x.ts"), { lang: "de" });
     expect(rendered.code).toBe("UNKNOWN_ERROR");
-    expect(rendered.detail).toBe("x is undefined");
+    expect(rendered.request_id).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(rendered.detail).toBeUndefined();
+    expect(formatCliError(rendered)).not.toContain("x.ts");
     expect(rendered.cause).toContain("Fehlerbericht");
-    const multiLine = formatCliError(toPublicError(new AuthError("eins\nzwei"), { lang: "de" })).split("\n");
-    expect(multiLine.slice(1, 3)).toEqual(["  eins", "  zwei"]);
     const unknownConnector = toPublicError(new ConnectorClientError("neu", { error: "brand_new" }), { lang: "de" });
     expect(unknownConnector.code).toBe("UNKNOWN_ERROR");
+    expect(unknownConnector.request_id).not.toBeNull();
   });
 
-  test("argument errors are USAGE_ERROR; auth errors outside login are AUTH_REQUIRED", () => {
+  test("a multi-line detail is indented line by line", () => {
+    const lines = formatCliError(toPublicError(new AuthError("eins\nzwei"), { lang: "de" })).split("\n");
+    expect(lines.slice(1, 3)).toEqual(["  eins", "  zwei"]);
+  });
+
+  test("TC-05: a detail line never shows the home directory or a URL", () => {
+    expect(cleanDetail("State-File nicht gefunden: /Users/kim/.comvenio-cli-state.json", "/Users/kim"))
+      .toBe("State-File nicht gefunden: ~/.comvenio-cli-state.json");
+    expect(cleanDetail("siehe https://api.comvenio.app/club-service/x jetzt", "/Users/kim")).toBe("siehe <URL> jetzt");
+  });
+
+  test("argument errors are USAGE_ERROR; only wrong login options, not every sign-in problem", () => {
     expect(toPublicError(new Error("--file und --input …"), { lang: "de" }).code).toBe("USAGE_ERROR");
     expect(toPublicError(new AuthError("abgelaufen"), { lang: "de" }).code).toBe("AUTH_REQUIRED");
-    expect(toPublicError(new AuthError("Ungültige Umgebung"), { lang: "de", command: "login" }).code).toBe("USAGE_ERROR");
+    expect(toPublicError(new LoginOptionError("Ungültige Umgebung"), { lang: "de" }).code).toBe("USAGE_ERROR");
+  });
+
+  test("a tool detail from the connector is shown under the catalog sentence", () => {
+    const rendered = toPublicError(new ConnectorClientError("x", {
+      error: "validation_failed",
+      code: "VALIDATION_FAILED",
+      detail: "Der Erinnerungszeitpunkt muss in der Zukunft liegen.",
+    }), { lang: "de" });
+    expect(formatCliError(rendered).split("\n")[1]).toBe("  Der Erinnerungszeitpunkt muss in der Zukunft liegen.");
   });
 
   test("HTTP errors of classic commands never show the URL", () => {

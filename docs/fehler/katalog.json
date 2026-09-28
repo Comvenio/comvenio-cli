@@ -167,6 +167,18 @@
     "next_command": null,
     "help": "fehler/conflict"
   },
+  "CLUB_AGENT_NOT_READY": {
+    "de": {
+      "message": "Der Club-Agent ist für deinen Verein noch nicht eingerichtet.",
+      "cause": "Ein Administrator deines Vereins muss den Club-Agenten zuerst in der Web-App einrichten."
+    },
+    "en": {
+      "message": "The club agent is not set up for your club yet.",
+      "cause": "An administrator of your club must set up the club agent in the web app first."
+    },
+    "next_command": "comvenio agent --help",
+    "help": "fehler/club-agent-not-ready"
+  },
   "RATE_LIMITED": {
     "de": {
       "message": "Zu viele Anfragen in kurzer Zeit.",

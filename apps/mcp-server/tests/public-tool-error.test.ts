@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { createConnectorError, type RequestContext } from "@comvenio/connector-contracts";
 
+import { insufficientScopeToolResult } from "../src/oauth-tool-challenge.ts";
 import { publicToolError } from "../src/public-tool-error.ts";
 import { hasWriteAuthority } from "../src/widgets/confirmation/policy.ts";
 
@@ -30,7 +31,7 @@ describe("connector customer errors (01-fehlermodell)", () => {
       retryable: false,
       required_scope: "admin.write",
       required_scopes: ["admin.write"],
-    }));
+    }), "write");
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({
       error: "insufficient_scope",
@@ -52,13 +53,13 @@ describe("connector customer errors (01-fehlermodell)", () => {
       message: "intern",
       request_id: context.request_id,
       retryable: false,
-    }));
+    }), "read");
     expect(result.structuredContent).toMatchObject({ error: "permission_denied", code: "PERMISSION_DENIED" });
     expect((result.content[0] as { text: string }).text).toContain("Administrator deines Vereins");
   });
 
   test("TC-03: a foreign error becomes UNKNOWN_ERROR with the request ID", () => {
-    const result = publicToolError(context, origin, new TypeError("boom"));
+    const result = publicToolError(context, origin, new TypeError("boom"), "read");
     expect(result.structuredContent).toMatchObject({
       error: "upstream_unavailable",
       code: "UNKNOWN_ERROR",
@@ -69,15 +70,30 @@ describe("connector customer errors (01-fehlermodell)", () => {
     expect(text).not.toContain("boom");
   });
 
-  test("a confirmation that timed out upstream says: check the state instead of repeating", () => {
-    const result = publicToolError(context, origin, createConnectorError({
-      code: "UPSTREAM_TIMEOUT",
-      message: "Der Comvenio-Dienst hat nicht rechtzeitig geantwortet.",
+  test("an unanswered write says: check the state instead of repeating; a read POST does not", () => {
+    const unanswered = (code: "UPSTREAM_TIMEOUT" | "UPSTREAM_UNAVAILABLE") => createConnectorError({
+      code,
+      message: "intern",
       request_id: context.request_id,
       retryable: false,
-    }));
-    expect(result.structuredContent).toMatchObject({ error: "upstream_timeout", code: "OUTCOME_UNKNOWN" });
-    expect((result.content[0] as { text: string }).text).toContain("Stand prüfen statt wiederholen");
+    });
+    for (const code of ["UPSTREAM_TIMEOUT", "UPSTREAM_UNAVAILABLE"] as const) {
+      const write = publicToolError(context, origin, unanswered(code), "write");
+      expect(write.structuredContent).toMatchObject({ code: "OUTCOME_UNKNOWN" });
+      expect((write.content[0] as { text: string }).text).toContain("Stand prüfen statt wiederholen");
+      const read = publicToolError(context, origin, unanswered(code), "read");
+      expect(read.structuredContent).toMatchObject({ code });
+    }
+  });
+
+  test("every scope challenge carries the public fields, also outside publicToolError", () => {
+    const result = insufficientScopeToolResult({ public_origin: origin, required_scopes: ["task.read"], context });
+    expect(result.structuredContent).toMatchObject({
+      error: "insufficient_scope",
+      code: "SCOPE_REQUIRED",
+      next_command: "comvenio login --scopes club.read,role.read.self,task.read",
+      request_id: context.request_id,
+    });
   });
 
   test("write authority needs a writing scope", () => {

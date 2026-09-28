@@ -258,7 +258,8 @@ function widgetError(
   publicOrigin: string,
   error: unknown,
 ): CallToolResult {
-  return publicToolError(context, publicOrigin, error);
+  // Every widget tool is read-only (readOnlyHint: true).
+  return publicToolError(context, publicOrigin, error, "read");
 }
 
 function filterMembers(

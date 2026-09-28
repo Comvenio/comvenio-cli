@@ -8,9 +8,12 @@ import { createComvenioApiClient } from "@comvenio/comvenio-client";
 import {
   type ConnectorReleaseScope,
   createProviderNeutralResult,
+  formatPublicError,
   isConnectorError,
+  isPublicErrorCode,
   type JsonValue,
   type OAuthScope,
+  renderPublicError,
   type RequestContext,
 } from "@comvenio/connector-contracts";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -640,14 +643,40 @@ function projectTaskReminder(value: JsonValue): z.infer<typeof taskReminderResul
   return parsed.data;
 }
 
+// Internal codes of these tools that have no public code of the same name.
+const PROTECTED_PUBLIC_CODES: Record<string, string> = {
+  function_not_found: "NOT_FOUND",
+};
+
+/**
+ * Customer error of the club-agent and task tools: public code, cause and
+ * next command from docs/fehler/katalog.json; the tool's own sentence stays as
+ * `detail`, because it names the concrete case (e.g. a reminder in the past).
+ */
 function protectedToolError(
   context: RequestContext,
   code: string,
   text: string,
 ): CallToolResult {
+  const candidate = PROTECTED_PUBLIC_CODES[code] ?? code.toUpperCase();
+  const rendered = renderPublicError({
+    code: isPublicErrorCode(candidate) ? candidate : "UNKNOWN_ERROR",
+    lang: "de",
+    request_id: context.request_id,
+  });
+  const [first, ...rest] = formatPublicError(rendered).split("\n");
   return {
-    content: [{ type: "text", text }],
-    structuredContent: { error: code },
+    content: [{ type: "text", text: [first, `  ${text}`, ...rest].join("\n") }],
+    structuredContent: {
+      error: code,
+      code: rendered.code,
+      message: rendered.message,
+      cause: rendered.cause,
+      next_command: rendered.next_command,
+      help: rendered.help,
+      request_id: context.request_id,
+      detail: text,
+    },
     _meta: {
       request_id: context.request_id,
       ...(context.capability_version
@@ -738,6 +767,13 @@ function registerAgentFunctionTools(input: {
             CONFLICT: ["conflict", "Dieser Aufruf widerspricht einem früheren mit demselben Schlüssel."],
             RATE_LIMITED: ["rate_limited", "Der Club-Agent ist vorübergehend ausgelastet."],
           };
+          if (error.code === "SCOPE_REQUIRED" && error.required_scope) {
+            return insufficientScopeToolResult({
+              public_origin: input.public_origin,
+              required_scopes: error.required_scopes ?? [error.required_scope],
+              context: input.context,
+            });
+          }
           const mapped = codes[error.code];
           if (mapped) return protectedToolError(input.context, mapped[0], mapped[1]);
         }

@@ -1,6 +1,9 @@
 // Customer-facing error output of the CLI. Every failure is shown as
 // "Fehler <CODE>: <message> <cause>", the next command and the help pointer;
 // --json prints the same as one object. Texts come from docs/fehler/katalog.json.
+import { randomUUID } from "node:crypto";
+import { homedir } from "node:os";
+
 import {
   formatPublicError,
   isPublicErrorCode,
@@ -12,7 +15,7 @@ import {
   type PublicErrorLang,
 } from "@comvenio/connector-contracts";
 
-import { AuthError } from "./auth.ts";
+import { AuthError, LoginOptionError } from "./auth.ts";
 import { HttpError, OAuthOnlyError } from "./http.ts";
 import { ConnectorClientError } from "./mcp/client.ts";
 
@@ -28,9 +31,20 @@ export class PublicCliError extends Error {
 }
 
 export type CliPublicError = PublicError & {
-  /** The original text where it adds something to the catalog sentence. */
+  /**
+   * The CLI's own sentence for this case where it adds something to the
+   * catalog sentence (usage and sign-in errors, tool detail). Cleaned of the
+   * home directory and URLs; never set for unexpected errors.
+   */
   detail?: string;
 };
+
+/** Removes what the customer should not see in a detail line: home path and URLs. */
+export function cleanDetail(text: string, home: string = homedir()): string {
+  let cleaned = text.replace(/https?:\/\/\S+/gu, "<URL>");
+  if (home && home !== "/") cleaned = cleaned.split(home).join("~");
+  return cleaned.trim();
+}
 
 function object(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -64,7 +78,7 @@ export function langArgument(argv: readonly string[]): string | undefined {
 
 export function toPublicError(
   error: unknown,
-  options: { lang: PublicErrorLang; granted_scopes?: readonly string[]; command?: string | null },
+  options: { lang: PublicErrorLang; granted_scopes?: readonly string[] },
 ): CliPublicError {
   let code: PublicErrorCode = "UNKNOWN_ERROR";
   let requestId: string | null = null;
@@ -80,10 +94,12 @@ export function toPublicError(
     if (requiredScopes.length === 0 && typeof data?.required_scope === "string") {
       requiredScopes = [data.required_scope];
     }
-    if (isPublicErrorCode(data?.code)) {
+    if (typeof data?.error === "string" && isPublicErrorCode(data.code)) {
+      // Current connector answer: `code` is already the public code.
       code = data.code;
+      if (typeof data.detail === "string") detail = data.detail;
     } else {
-      // Older connector answers and JSON-RPC errors carry only the internal code.
+      // Older tool answers carry only `error`; JSON-RPC errors only the internal `code`.
       const internal = typeof data?.error === "string"
         ? data.error.toUpperCase()
         : typeof data?.code === "string" ? data.code : "";
@@ -93,25 +109,27 @@ export function toPublicError(
           code: internal,
           ...(typeof data?.retryable === "boolean" ? { retryable: data.retryable } : {}),
         });
-      if (code === "UNKNOWN_ERROR") detail = error.message;
     }
   } else if (error instanceof OAuthOnlyError) {
     code = "OAUTH_ONLY";
+  } else if (error instanceof LoginOptionError) {
+    code = "USAGE_ERROR";
+    detail = error.message;
   } else if (error instanceof AuthError) {
-    // During login an AuthError is a wrong option, not an expired sign-in.
-    code = options.command === "login" ? "USAGE_ERROR" : "AUTH_REQUIRED";
+    code = "AUTH_REQUIRED";
     detail = error.message;
   } else if (error instanceof HttpError) {
+    // URL and body can name internal services; the public code says enough.
     code = httpCode(error.status);
-    // The URL and body can name internal services; only the status is shown.
-    detail = `HTTP ${error.status}`;
   } else if (error instanceof Error && error.name === "Error") {
     // Plain errors are argument and input checks of the command modules.
     code = "USAGE_ERROR";
     detail = error.message;
-  } else {
-    detail = error instanceof Error ? error.message : String(error);
   }
+
+  // An unexpected error has no server request; a local ID ties the report to
+  // the run (COMVENIO_DEBUG=1 prints the stack next to it).
+  if (code === "UNKNOWN_ERROR" && requestId === null) requestId = randomUUID();
 
   const rendered = renderPublicError({
     code,
@@ -120,7 +138,8 @@ export function toPublicError(
     required_scopes: requiredScopes,
     granted_scopes: options.granted_scopes ?? [],
   });
-  return detail ? { ...rendered, detail } : rendered;
+  const cleaned = detail ? cleanDetail(detail) : "";
+  return cleaned ? { ...rendered, detail: cleaned } : rendered;
 }
 
 export function formatCliError(error: CliPublicError): string {

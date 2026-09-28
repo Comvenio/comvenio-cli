@@ -84,6 +84,10 @@ describe("public error catalog (01-fehlermodell)", () => {
 
   test("a write that ran into the time limit is OUTCOME_UNKNOWN, a read stays a timeout", () => {
     expect(publicErrorCode({ code: "UPSTREAM_TIMEOUT", retryable: false })).toBe("OUTCOME_UNKNOWN");
+    expect(publicErrorCode({ code: "UPSTREAM_TIMEOUT", retryable: false, effect: "read" })).toBe("UPSTREAM_TIMEOUT");
+    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: false, effect: "write" })).toBe("OUTCOME_UNKNOWN");
+    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: false })).toBe("UPSTREAM_UNAVAILABLE");
+    expect(publicErrorCode({ code: "UPSTREAM_UNAVAILABLE", retryable: true, effect: "write" })).toBe("UPSTREAM_UNAVAILABLE");
     expect(publicErrorCode({ code: "UPSTREAM_TIMEOUT", retryable: true })).toBe("UPSTREAM_TIMEOUT");
     const rendered = renderPublicError({ code: "OUTCOME_UNKNOWN", lang: "de" });
     expect(rendered.cause).toContain("Stand prüfen statt wiederholen");

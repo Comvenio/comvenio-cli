@@ -50,7 +50,7 @@ export async function connector(): Promise<CliConnectorClient> {
   const state = await loadState();
   if (state.authMode !== "oauth" || !state.oauth?.resource) {
     throw new AuthError(
-      "Der typisierte Connector benötigt eine OAuth-Anmeldung. "
+      "Actions brauchen eine OAuth-Anmeldung. "
       + 'Führe "comvenio login" ohne --device-token aus.',
     );
   }
@@ -63,7 +63,7 @@ export async function connector(): Promise<CliConnectorClient> {
   // Fremdvalidierung Runde 2 (2026-09-21), Befund 1.
   if (!state.connectorToken) {
     throw new AuthError(
-      "Die Connector-Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
+      "Die Verbindung trägt nicht mehr (abgelaufen oder widerrufen). "
       + 'Melde dich mit "comvenio login" neu an; dein Geräte-Token bleibt dabei bestehen.',
     );
   }

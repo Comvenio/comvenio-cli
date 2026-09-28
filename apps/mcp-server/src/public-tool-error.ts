@@ -19,9 +19,10 @@ export function publicToolError(
   context: RequestContext,
   publicOrigin: string,
   error: unknown,
+  effect: "read" | "write",
 ): CallToolResult {
   const connectorError = isConnectorError(error) ? error : null;
-  const code = connectorError ? publicErrorCode(connectorError) : "UNKNOWN_ERROR";
+  const code = connectorError ? publicErrorCode({ ...connectorError, effect }) : "UNKNOWN_ERROR";
   const requiredScopes = connectorError?.required_scopes
     ?? (connectorError?.required_scope ? [connectorError.required_scope] : []);
   const rendered = renderPublicError({
@@ -41,16 +42,11 @@ export function publicToolError(
   };
   const content = [{ type: "text" as const, text: formatPublicError(rendered) }];
   if (connectorError?.code === "SCOPE_REQUIRED" && requiredScopes.length > 0) {
-    const challenge = insufficientScopeToolResult({
+    return insufficientScopeToolResult({
       public_origin: publicOrigin,
       required_scopes: requiredScopes,
       context,
     });
-    return {
-      ...challenge,
-      content,
-      structuredContent: { ...challenge.structuredContent, ...publicFields },
-    };
   }
   return {
     content,

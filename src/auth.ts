@@ -93,6 +93,14 @@ export class AuthError extends Error {
   }
 }
 
+/** A wrong login option (public code USAGE_ERROR); keeps the auth exit code 2. */
+export class LoginOptionError extends AuthError {
+  constructor(message: string) {
+    super(message);
+    this.name = "LoginOptionError";
+  }
+}
+
 function text(wert: unknown): string | undefined {
   return typeof wert === "string" && wert.length > 0 ? wert : undefined;
 }
