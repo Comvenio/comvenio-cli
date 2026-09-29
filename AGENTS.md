@@ -283,31 +283,24 @@ IMMER `--json` verwenden.** (`schema` ist standardmäßig JSON.)
 
 Exit-Codes: 0 OK · 2 Auth-/Eingabefehler · 3 API-Fehler (HTTP) · 1 sonstiges.
 
-## Mit dem Club Agent arbeiten (Funktionen und Freigaben)
+## Mit dem Club Agent arbeiten (agent chat)
 
-Der Club Agent eines Vereins bietet **Funktionen** an (Wochenvorschau, Sponsoring-Check,
-Aufgaben …). Du rufst sie im Namen des angemeldeten Menschen auf — **freigeben kannst du
-nie**. Braucht ein Lauf eine Freigabe, meldest du die `approval_url` an den Menschen und
-arbeitest weiter; `agent approval approve|reject` gibt nur diesen Link aus.
-
-```bash
-comvenio function list --club <id> --json                     # was darf ich aufrufen? (input_schema, approval_required)
-comvenio function run <capability_id> --club <id> --args '<json>' --idempotency-key <k> --json
-comvenio function show <lauf-id> --club <id> --json           # state: succeeded | awaiting_approval | failed | …
-comvenio agent chat "<frage>" --club <id> --json              # response + run_refs + approval_refs
-comvenio agent approval list --club <id> --json               # lesen ja, entscheiden nur in Web/App
-```
-
-**Automatisierungen** (eine Funktion läuft nach Zeitplan oder per Knopf, ohne Agent; vereinsweit
-postet sie als Verein und liest nur Öffentliches, persönlich läuft sie mit deinen Rechten):
+Aus dem Terminal sprichst du mit dem Club Agent über `comvenio agent chat` — über den Connector
+mit der Anmeldung aus `comvenio login` (Scope `club.read`), ohne `--club`: Der Verein kommt aus
+der Anmeldung. **Freigeben kannst du nie.** Legt ein Zug eine Freigabe an, steht ihr Link in
+`approval_refs[].approval_url`; den meldest du an den Menschen und arbeitest weiter.
 
 ```bash
-comvenio automation list --club <id> --json                   # --kind club|personal, --function <kennung>
-comvenio automation create --club <id> --function weekly_preview.create --name "Wochenvorschau Fußball"   --department <abteilung> --args '{"department_id":"<abteilung>"}' --schedule weekly:FR:17:00   --approval objection_window --objection-hours 4 --json      # --kind personal für „nur für mich“
-comvenio automation show <id> --runs --club <id> --json       # Stand und Verlauf
-comvenio automation run <id> --club <id> --json               # jetzt ausführen (Lauf-ID)
-comvenio automation pause|resume|delete <id> --club <id>      # Version holt der Befehl selbst
+comvenio login                                                # einmal, im Browser
+comvenio whoami --json                                        # Verein und Scopes der Anmeldung
+comvenio agent chat "<frage>" --json                          # session_id + response + run_refs + approval_refs
+comvenio agent chat "<rückfrage>" --session <session-id> --json   # dieselbe Unterhaltung fortsetzen
 ```
+
+`comvenio function`, `comvenio automation` und `comvenio agent approval` gibt es im CLI nicht
+mehr: Funktionen stehen in der Web-App im Admin-Reiter „Fähigkeiten & Routinen“, Automationen
+unter „Automatisierungen“, Freigaben unter „Mein Agent“, Spur „Braucht dich“. Ein Aufruf endet
+mit `USAGE_ERROR` und nennt diesen Ort.
 
 Vollständiger Ablauf (Zustände, was du meldest, Grenzen): Skill `club-agent-lokal` in
 `comvenio-tools/workspace-config/skills/club-agent-lokal/SKILL.md`.

@@ -1,68 +1,50 @@
 import type { CAC } from "cac";
 
 import { loadState } from "../auth.ts";
+import { PublicCliError } from "../errors.ts";
 import { output } from "../format.ts";
 import { createClient } from "../http.ts";
 import { requireClubId } from "../util/club.ts";
 import { evidenceApprovalId, readAgentEvidence } from "../util/agent-evidence.ts";
+import type { CliConnectorClient } from "../mcp/client.ts";
+import { connector } from "./action.ts";
+import { removedCommandError } from "./removed.ts";
 
 type AgentChatOptions = {
   club?: string;
   session?: string;
-  state?: string;
   json?: boolean;
 };
 
-type ApprovalRef = { approval_id: string; state: string; approval_url?: string };
+/** An approval request a chat turn created or touched; decided in web or app only (D-AF-16). */
+export type ApprovalRef = { approval_id: string; state?: string; approval_url?: string };
 
-type RunRef = { run_id: string; kind?: string; state?: string | null };
+/** A run a chat turn created or advanced (command run, plan run). */
+export type RunRef = { run_id: string; kind?: string; state?: string | null };
 
-type ClubAgentChatResponse = {
+/** The answer of cv_club_agent_converse as `agent chat --json` prints it (K2 DC-5). */
+export type ClubAgentChatResponse = {
   session_id: string;
   response: string;
-  approval_refs?: ApprovalRef[];
-  run_refs?: RunRef[];
+  run_refs: RunRef[];
+  approval_refs: ApprovalRef[];
 };
 
-/** Agent-Funktionen K1 (Strang 01 §11): an approval request as the ai-service returns it. */
-export type AgentApproval = {
-  id: string;
-  capability_id: string;
-  capability_title: string;
-  arguments_summary: { label: string; value?: unknown }[];
-  target_summary?: string | null;
-  source: string;
-  source_title?: string | null;
-  mode: string;
-  created_at: string;
-  expires_at: string;
-  state: string;
-  expired_reason?: string | null;
-  decision_kind?: string | null;
-  decided_at?: string | null;
-  reason?: string | null;
-  run?: { id?: string | null; state?: string | null; error?: string | null;
-    verification?: { status: "verified" | "failed" | "unknown" } | null;
-    result_summary?: string | null;
-  } | null;
-  can_decide: boolean;
-  approval_url: string;
-};
+/** Connector tool behind `agent chat` (Geräte-Token-Abbau K2, D-GTA-03). */
+export const CLUB_AGENT_TOOL = "cv_club_agent_converse";
+const CLUB_AGENT_SCOPE = "club.read";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-export function buildClubAgentChatPayload(input: {
+/**
+ * Tool arguments of cv_club_agent_converse. Club and user come from the OAuth
+ * grant on the gateway; the CLI never sends them.
+ */
+export function buildClubAgentConverseArguments(input: {
   message: string;
-  clubId: string;
   sessionId?: string;
-}): {
-  message: string;
-  club_id: string;
-  context_type: "club_agent_dm";
-  surface: "cli";
-  session_id?: string;
-} {
+}): { message: string; session_id?: string } {
   const message = input.message.trim();
   if (!message) throw new Error("agent chat benötigt eine Nachricht.");
   if (message.length > 4000) {
@@ -73,49 +55,89 @@ export function buildClubAgentChatPayload(input: {
   }
   return {
     message,
-    club_id: input.clubId,
-    context_type: "club_agent_dm",
-    surface: "cli",
     ...(input.sessionId ? { session_id: input.sessionId } : {}),
   };
 }
 
-export const AGENT_ACTIONS = ["chat", "approval", "evidence"] as const;
+export const AGENT_ACTIONS = ["chat", "evidence"] as const;
 
-/** Resolve `agent <action> [...message]` to the chat message (throws on unknown action). */
+/** Resolve `agent <action> [...message]` to the chat message (throws on unknown or removed action). */
 export function resolveAgentChatMessage(action: string, words: string[] | undefined): string {
+  if (action === "approval") throw removedCommandError("agent approval");
   if (action !== "chat") {
     throw new Error(`Unbekannte agent-Aktion "${action}". Erlaubt: ${AGENT_ACTIONS.join(", ")}.`);
   }
   return (words ?? []).join(" ");
 }
 
-export const APPROVAL_ACTIONS = ["list", "show", "approve", "reject"] as const;
-type ApprovalAction = (typeof APPROVAL_ACTIONS)[number];
-
-/** `agent approval <list|show|approve|reject> [id]` (CLI-16). */
-export function resolveApprovalCommand(words: string[] | undefined): { action: ApprovalAction; id?: string } {
-  const [action, id, ...rest] = words ?? [];
-  if (!APPROVAL_ACTIONS.includes(action as ApprovalAction)) {
-    throw new Error(`agent approval braucht eine Aktion: ${APPROVAL_ACTIONS.join(", ")}.`);
-  }
-  if (rest.length > 0) throw new Error("agent approval nimmt höchstens eine Kennung.");
-  if (action === "list") {
-    if (id) throw new Error("agent approval list nimmt keine Kennung (Filter: --state).");
-    return { action };
-  }
-  if (!id || !UUID_PATTERN.test(id)) {
-    throw new Error(`agent approval ${action} braucht die Kennung der Freigabe (UUID).`);
-  }
-  return { action: action as ApprovalAction, id };
+function object(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
 }
 
-export function approvalListState(state: string | undefined): "open" | "decided" | "all" {
-  const value = state ?? "open";
-  if (value !== "open" && value !== "decided" && value !== "all") {
-    throw new Error("--state muss open, decided oder all sein.");
+/** Reads the tool answer; references come from their fields, never from the text (§17). */
+export function parseClubAgentAnswer(value: Record<string, unknown>): ClubAgentChatResponse {
+  if (typeof value.session_id !== "string" || typeof value.response !== "string") {
+    throw new PublicCliError(
+      "UPSTREAM_UNAVAILABLE",
+      "Die Antwort des Club-Agenten ist unvollständig.",
+    );
   }
-  return value;
+  const runRefs = (Array.isArray(value.run_refs) ? value.run_refs : [])
+    .map(object)
+    .filter((ref): ref is Record<string, unknown> => typeof ref?.run_id === "string")
+    .map((ref) => ({
+      run_id: ref.run_id as string,
+      ...(typeof ref.kind === "string" ? { kind: ref.kind } : {}),
+      ...(typeof ref.state === "string" || ref.state === null ? { state: ref.state as string | null } : {}),
+    }));
+  const approvalRefs = (Array.isArray(value.approval_refs) ? value.approval_refs : [])
+    .map(object)
+    .filter((ref): ref is Record<string, unknown> => typeof ref?.approval_id === "string")
+    .map((ref) => ({
+      approval_id: ref.approval_id as string,
+      ...(typeof ref.state === "string" ? { state: ref.state } : {}),
+      ...(typeof ref.approval_url === "string" ? { approval_url: ref.approval_url } : {}),
+    }));
+  return {
+    session_id: value.session_id,
+    response: value.response,
+    run_refs: runRefs,
+    approval_refs: approvalRefs,
+  };
+}
+
+/**
+ * One chat turn over the connector (`/cli` channel, OAuth). The scope is
+ * checked locally first; a tool missing from the list means the club agent is
+ * not available for this club (CLUB_AGENT_NOT_READY), not a typo.
+ */
+export async function runAgentChat(input: {
+  client: Pick<CliConnectorClient, "listTools" | "callTool">;
+  granted_scopes: readonly string[];
+  message: string;
+  sessionId?: string;
+}): Promise<ClubAgentChatResponse> {
+  const args = buildClubAgentConverseArguments({
+    message: input.message,
+    ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+  });
+  if (!input.granted_scopes.includes(CLUB_AGENT_SCOPE)) {
+    throw new PublicCliError(
+      "SCOPE_REQUIRED",
+      "Für den Club-Agenten fehlt der Anmeldung ein Scope.",
+      { required_scopes: [CLUB_AGENT_SCOPE] },
+    );
+  }
+  const tools = await input.client.listTools();
+  if (!tools.some((tool) => tool.name === CLUB_AGENT_TOOL)) {
+    throw new PublicCliError(
+      "CLUB_AGENT_NOT_READY",
+      "Der Club-Agent ist für deinen Verein über diese Anmeldung nicht verfügbar.",
+    );
+  }
+  return parseClubAgentAnswer(await input.client.callTool(CLUB_AGENT_TOOL, args));
 }
 
 const STATE_LABELS: Record<string, string> = {
@@ -126,53 +148,26 @@ const STATE_LABELS: Record<string, string> = {
   superseded: "ersetzt",
 };
 
-function approvalLine(a: AgentApproval): string {
-  const target = a.target_summary ? ` — ${a.target_summary}` : "";
-  return `${STATE_LABELS[a.state] ?? a.state} · ${a.capability_title}${target}\n  ${a.id} · ${a.approval_url}`;
-}
-
-export function formatApprovalList(items: AgentApproval[]): string {
-  if (items.length === 0) return "Keine Freigaben.";
-  return items.map(approvalLine).join("\n");
-}
-
-export function formatApproval(a: AgentApproval): string {
-  const lines = [
-    `${a.capability_title} (${STATE_LABELS[a.state] ?? a.state})`,
-    ...(a.target_summary ? [`Ziel: ${a.target_summary}`] : []),
-    ...a.arguments_summary.map((line) => `  ${line.label}${line.value != null ? `: ${String(line.value)}` : ""}`),
-    `Quelle: ${a.source_title ?? a.source} · Art: ${a.mode}`,
-    a.state === "open"
-      ? `Frist: ${a.expires_at}`
-      : `Entschieden: ${a.decided_at ?? "–"} (${a.decision_kind ?? a.expired_reason ?? "–"})`,
-    ...(a.reason ? [`Grund: ${a.reason}`] : []),
-    ...(a.run?.verification?.status === "unknown"
-      ? [a.run.result_summary || "Die Wirkung konnte noch nicht bestätigt werden. Die Aktion wird nicht automatisch wiederholt."]
-      : a.run?.verification?.status === "failed"
-        ? [a.run.result_summary || "Die überprüfte Änderung entspricht nicht dem erwarteten Ergebnis."]
-        : a.run?.state ? [`Lauf: ${a.run.state}${a.run.error ? ` (${a.run.error})` : ""}`] : []),
-    `Link: ${a.approval_url}`,
-  ];
-  return lines.join("\n");
-}
-
-/** approve/reject never decide from the terminal (D-AF-16): they only point to web/app. */
-export function decisionLinkText(action: "approve" | "reject", a: AgentApproval): string {
-  if (a.state !== "open") {
-    return `Diese Freigabe ist bereits ${STATE_LABELS[a.state] ?? a.state}.\nLink: ${a.approval_url}`;
-  }
-  const verb = action === "approve" ? "Freigeben" : "Ablehnen";
-  return `Freigaben entscheidest du in Web oder App, nicht im Terminal.\nZum ${verb}: ${a.approval_url}`;
-}
-
+/** Text answer: the reply, one line per approval link and per run, then the session (DC-8). */
 export function formatChatResponse(response: ClubAgentChatResponse): string {
-  const refs = (response.approval_refs ?? [])
+  const refs = response.approval_refs
     .filter((ref) => ref.approval_url)
-    .map((ref) => `Freigabe (${STATE_LABELS[ref.state] ?? ref.state}): ${ref.approval_url}`);
-  const runs = (response.run_refs ?? []).map(
-    (ref) => `Lauf ${ref.kind === "plan_run" ? "Routine" : "Kommando"} ${ref.run_id}: ${ref.state ?? "–"}`,
+    .map((ref) => `Freigabe (${STATE_LABELS[ref.state ?? "open"] ?? ref.state}): ${ref.approval_url}`);
+  const runs = response.run_refs.map(
+    (ref) => `Lauf ${ref.kind === "plan_run" ? "Routine" : "Kommando"} ${ref.run_id}: ${ref.state === "succeeded" ? "ausgeführt — Wirkung nicht separat bestätigt" : ref.state ?? "–"}`,
   );
-  return [response.response, "", ...refs, ...runs, `Session: ${response.session_id}`].join("\n");
+  const text = response.response.trim();
+  return [...(text ? [text, ""] : []), ...refs, ...runs, `Session: ${response.session_id}`].join("\n");
+}
+
+/**
+ * The club agent opens a new conversation instead of failing when --session
+ * names none of the person's conversations; say so rather than pretend the
+ * turn continued the old one (K2 DC-3, TC-06).
+ */
+export function sessionLostHint(requested: string | undefined, response: ClubAgentChatResponse): string | null {
+  if (!requested || requested.toLowerCase() === response.session_id.toLowerCase()) return null;
+  return `Hinweis: Zur Session ${requested} gibt es keine Unterhaltung; der Club-Agent hat eine neue begonnen (Session: ${response.session_id}).`;
 }
 
 export function registerAgentCommands(cli: CAC): void {
@@ -181,14 +176,12 @@ export function registerAgentCommands(cli: CAC): void {
   cli
     .command(
       "agent <action> [...message]",
-      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen; approval list|show|approve|reject [id] — Freigaben lesen, entschieden wird nur per Link in Web/App; evidence <id> — Prüfbeleg einer Freigabe lesen",
+      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen (über die Anmeldung mit comvenio login); Freigaben entscheidest du nur per Link in Web oder App; evidence <id> — vorhandenen DEV-Prüfbeleg lesen",
     )
-    .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option(
       "--session <id>",
       "Session-ID der vorherigen Antwort für Rückfragen und Korrekturen (ein getipptes „ja“ gibt nichts frei)",
     )
-    .option("--state <state>", "approval list: open (Voreinstellung), decided oder all")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, words: string[], opts: AgentChatOptions) => {
       if (action === "evidence") {
@@ -198,52 +191,21 @@ export function registerAgentCommands(cli: CAC): void {
         output(result, opts.json, () => "Gespräch, Freigabe, Ausführung und Nachlese sind miteinander verknüpft.");
         return;
       }
-      if (action === "approval") {
-        await runApprovalCommand(words, opts);
-        return;
-      }
       const message = resolveAgentChatMessage(action, words);
+      if (opts.club !== undefined) {
+        throw new Error("--club gilt für agent chat nicht: Der Verein kommt aus der Anmeldung (comvenio login).");
+      }
+      const client = await connector("Der Club-Agent braucht");
       const state = await loadState();
-      const clubId = requireClubId(state, opts.club);
-      const client = createClient(state);
-      const response = await client.post<ClubAgentChatResponse>(
-        "ai",
-        "/chat/?streaming=false",
-        buildClubAgentChatPayload({
-          message,
-          clubId,
-          sessionId: opts.session,
-        }),
-        { timeoutMs: 120_000 },
-      );
-      // --json passes approval_refs and run_refs through unchanged (Strang 01 §11).
+      const response = await runAgentChat({
+        client,
+        granted_scopes: state.oauth?.scopes ?? [],
+        message,
+        ...(opts.session ? { sessionId: opts.session } : {}),
+      });
+      const lost = sessionLostHint(opts.session, response);
+      // stderr keeps --json machine-readable.
+      if (lost) console.error(lost);
       output(response, opts.json, () => formatChatResponse(response));
     });
-}
-
-/** Reads approval requests; approve/reject only print the direct link (D-AF-16, CLI-16). */
-async function runApprovalCommand(words: string[] | undefined, opts: AgentChatOptions): Promise<void> {
-  const command = resolveApprovalCommand(words);
-  const listState = command.action === "list" ? approvalListState(opts.state) : undefined;
-  const state = await loadState();
-  const clubId = requireClubId(state, opts.club);
-  const client = createClient(state);
-  if (command.action === "list") {
-    const list = await client.get<{ items: AgentApproval[] }>(
-      "ai",
-      `/club-agents/${clubId}/approvals?state=${listState}`,
-    );
-    output(list, opts.json, () => formatApprovalList(list.items));
-    return;
-  }
-  const approval = await client.get<AgentApproval>("ai", `/club-agents/${clubId}/approvals/${command.id}`);
-  if (command.action === "show") {
-    output(approval, opts.json, () => formatApproval(approval));
-    return;
-  }
-  output(
-    { approval_id: approval.id, state: approval.state, approval_url: approval.approval_url },
-    opts.json,
-    () => decisionLinkText(command.action as "approve" | "reject", approval),
-  );
 }

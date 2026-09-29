@@ -91,6 +91,8 @@ const designSettings = z.object({
   custom_template_config: z.object({
     // club-service keeps font_pair free (extension keys stay); the web offers more pairs than these names.
     font_pair: z.string().trim().min(1).max(40).optional(),
+    // The public site hides header and navigation for a landing page (web PublicClubApp).
+    landing: z.boolean().optional(),
     spacing: z.enum(["compact", "normal", "spacious"]).optional(),
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),
@@ -184,6 +186,7 @@ const designSettingsRead = designSettings.extend({
   quicklist_mode: freeName.nullable().optional(),
   custom_template_config: z.object({
     font_pair: freeName.optional(),
+    landing: z.boolean().optional(),
     spacing: freeName.optional(),
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),

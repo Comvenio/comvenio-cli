@@ -35,6 +35,24 @@ describe("ComvenioApiClient", () => {
     expect(client.timeout_ms).toBe(15000);
   });
 
+  test("a request may extend its timeout for slow LLM turns; the budget stays capped", async () => {
+    const seen: number[] = [];
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async (_url, init) => {
+        const started = Date.now();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        seen.push(Date.now() - started);
+        if ((init as RequestInit).signal?.aborted) throw new DOMException("aborted", "AbortError");
+        return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" } });
+      } },
+    );
+    // 40 ms work fits a 1 s budget.
+    expect(await client.request({ method: "POST", service: "ai", path: "/chat/", body: {}, context: cliContext, timeout_ms: 1_000 })).toEqual({ ok: true });
+    // A 10 ms budget aborts the same work.
+    await expect(client.request({ method: "POST", service: "ai", path: "/chat/", body: {}, context: cliContext, timeout_ms: 10 })).rejects.toBeDefined();
+  });
+
   test("rejects invalid configuration before network access", async () => {
     let fetchCalls = 0;
     const client = createComvenioApiClient(

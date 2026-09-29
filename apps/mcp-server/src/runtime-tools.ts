@@ -157,10 +157,54 @@ const clubAgentUpstreamSchema = z.object({
   session_id: uuid,
   response: z.string().min(1).max(100_000),
 }).passthrough();
+// Geräte-Token-Abbau K2 (§4.2): the runs and approval requests of the chat turn,
+// additive next to session_id and response. Decisions stay in web or app (D-AF-16).
+const clubAgentRunRefSchema = z.object({
+  run_id: uuid,
+  kind: z.string().min(1).max(64),
+  state: z.string().max(64).nullable().optional(),
+}).strict();
+const clubAgentApprovalRefSchema = z.object({
+  approval_id: uuid,
+  state: z.string().min(1).max(64),
+  approval_url: z.string().url().max(2048).optional(),
+}).strict();
 const clubAgentConversationOutputSchema = z.object({
   session_id: uuid,
   response: z.string().min(1).max(100_000),
+  run_refs: z.array(clubAgentRunRefSchema).max(50).default([]),
+  approval_refs: z.array(clubAgentApprovalRefSchema).max(50).default([]),
 }).strict();
+
+/**
+ * Copies the known fields of the upstream references and drops malformed
+ * entries: the turn itself already happened, so one bad reference must not
+ * turn the answer into an error. Unknown upstream fields never pass.
+ */
+function clubAgentRefs(upstream: Record<string, unknown>): {
+  run_refs?: z.infer<typeof clubAgentRunRefSchema>[];
+  approval_refs?: z.infer<typeof clubAgentApprovalRefSchema>[];
+} {
+  const pick = <T extends z.ZodTypeAny>(value: unknown, schema: T, keys: readonly string[]) =>
+    (Array.isArray(value) ? value : [])
+      .map((entry) => {
+        if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return null;
+        const known = Object.fromEntries(keys
+          .filter((key) => Object.hasOwn(entry, key) && (entry as Record<string, unknown>)[key] !== undefined)
+          .map((key) => [key, (entry as Record<string, unknown>)[key]]));
+        const parsed = schema.safeParse(known);
+        return parsed.success ? parsed.data as z.infer<T> : null;
+      })
+      .filter((entry): entry is z.infer<T> => entry !== null)
+      .slice(0, 50);
+  const runRefs = pick(upstream.run_refs, clubAgentRunRefSchema, ["run_id", "kind", "state"]);
+  const approvalRefs = pick(upstream.approval_refs, clubAgentApprovalRefSchema, ["approval_id", "state", "approval_url"]);
+  // Omitted when empty: a turn without references answers exactly as before (TC-08).
+  return {
+    ...(runRefs.length > 0 ? { run_refs: runRefs } : {}),
+    ...(approvalRefs.length > 0 ? { approval_refs: approvalRefs } : {}),
+  };
+}
 
 const PROTECTED_TOOLS = Object.freeze([
   { tool_name: "cv_whoami_read", required_scopes: ["club.read"] },
@@ -1085,6 +1129,8 @@ export function createRuntimeServer(input: {
                 service: "ai",
                 path: "/chat/",
                 query: { streaming: "false" },
+                // A club agent turn can call tools; 15 s cut normal turns off (K2).
+                timeout_ms: 90_000,
                 body: {
                   message: parsed.message,
                   club_id: clubId,
@@ -1098,7 +1144,8 @@ export function createRuntimeServer(input: {
             const output = {
               session_id: response.session_id,
               response: response.response,
-            } satisfies z.infer<typeof clubAgentConversationOutputSchema>;
+              ...clubAgentRefs(response),
+            } satisfies z.input<typeof clubAgentConversationOutputSchema>;
             return toMcpResult(createProviderNeutralResult(
               input.context.request,
               output,
@@ -1132,6 +1179,20 @@ export function createRuntimeServer(input: {
                   input.context.request,
                   "validation_failed",
                   "Die Anfrage an den Club-Agenten konnte nicht verarbeitet werden.",
+                );
+              }
+              if (error.code === "NOT_FOUND") {
+                return protectedToolError(
+                  input.context.request,
+                  "not_found",
+                  "Zu dieser session_id gibt es keine Unterhaltung mit dem Club-Agenten; beginne eine neue ohne session_id.",
+                );
+              }
+              if (error.code === "UPSTREAM_TIMEOUT") {
+                return protectedToolError(
+                  input.context.request,
+                  "upstream_timeout",
+                  "Der Club-Agent hat nicht rechtzeitig geantwortet; die Nachricht kann trotzdem angekommen sein. Sende sie nicht ungeprüft ein zweites Mal.",
                 );
               }
             }

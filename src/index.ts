@@ -53,8 +53,7 @@ import { registerIngredientCategoryCommands } from "./commands/ingredient-catego
 import { registerShoppingCommands } from "./commands/shopping.ts";
 import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
-import { registerFunctionCommands } from "./commands/function.ts";
-import { registerAutomationCommands } from "./commands/automation.ts";
+import { removedCommandError, removedTopLevelCommand } from "./commands/removed.ts";
 import { registerActionCommands } from "./commands/action.ts";
 import { registerZoneCommands } from "./commands/zone.ts";
 import { registerHelpCommand } from "./commands/help.ts";
@@ -378,8 +377,6 @@ registerWeeklyPreviewCommands(cli);
 registerShoppingCommands(cli);
 registerRoleCommands(cli);
 registerAgentCommands(cli);
-registerFunctionCommands(cli);
-registerAutomationCommands(cli);
 registerActionCommands(cli);
 registerZoneCommands(cli);
 registerHelpCommand(cli);
@@ -391,6 +388,9 @@ cli.version(cliVersion(pkg.version));
 async function main() {
   try {
     cli.parse(process.argv, { run: false });
+    // Removed commands are not registered; name the web app instead of exiting silently.
+    const removed = cli.matchedCommand ? null : removedTopLevelCommand(cli.args);
+    if (removed) throw removedCommandError(removed);
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.
