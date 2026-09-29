@@ -31,6 +31,7 @@ import { MemoryJobInputStore } from "../src/jobs/input-store.ts";
 import {
   HttpJobActorTokenPort,
   JobActorRevokedError,
+  JobActorUnavailableError,
   type JobActorPort,
 } from "../src/jobs/job-actor.ts";
 import { MemoryJobQueue } from "../src/jobs/memory-queue.ts";
@@ -157,8 +158,14 @@ async function seedCleanFile(metadata: MemoryFileMetadataStore, input: {
 
 function fakeObjects(): QuarantineObjectPort {
   return {
-    async createPresignedUpload() { return { url: "https://quarantine.test/put" }; },
+    async createPresignedUpload(input) {
+      return {
+        url: "https://quarantine.test/put",
+        required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) },
+      };
+    },
     async inspect() { throw new Error("not used"); },
+    async release() {},
     async delete() {},
     async promoteClean(input) { return { object_key: `mcp-clean/${input.file_id}` }; },
     async createPresignedDownload(input) {
@@ -377,6 +384,19 @@ describe("K15b job start (D-CAI-023)", () => {
     await expect(startUploadJob(state.platform, uploadInput({ filename: "andere-datei.pdf" })))
       .rejects.toMatchObject({ code: "CONFLICT" });
   });
+
+  test("fixes the binding expiry once; an idempotent restart keeps it", async () => {
+    const state = setup();
+    const before = Date.now();
+    const first = await startUploadJob(state.platform);
+    const stored = (await state.inputs.get(first.job_id))?.binding_expires_at;
+    const expiresAt = Date.parse(stored ?? "");
+    expect(expiresAt).toBeGreaterThan(before);
+    expect(expiresAt - before).toBeLessThanOrEqual(24 * 60 * 60 * 1_000);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await startUploadJob(state.platform);
+    expect((await state.inputs.get(first.job_id))?.binding_expires_at).toBe(stored!);
+  });
 });
 
 describe("K15b executor cai.data.06.upload", () => {
@@ -392,10 +412,19 @@ describe("K15b executor cai.data.06.upload", () => {
     expect(state.backendCalls[0]?.body).toMatchObject({ club_id: clubId, filename: secretFilename, expected_size: fileBytes.byteLength });
     expect(state.transfers.map((transfer) => transfer.method)).toEqual(["GET", "PUT"]);
     expect((await state.metadata.getFile(sourceFileId))?.state).toBe("consumed");
+    // One actor for the run plus a fresh one before each side effect: consume, presign, PUT, finalize.
+    expect(state.actorRequests).toHaveLength(5);
     expect(await state.inputs.get(job.job_id)).toBeNull();
 
     // A second run of the same job (BullMQ retry) cannot consume again.
-    await state.inputs.put({ job_id: job.job_id, action_id: "cai.data.06.upload", operation: "upload", input: { club_id: clubId, ...uploadInput() }, context }, 60_000);
+    await state.inputs.put({
+      job_id: job.job_id,
+      action_id: "cai.data.06.upload",
+      operation: "upload",
+      input: { club_id: clubId, ...uploadInput() },
+      context,
+      binding_expires_at: new Date(Date.now() + 60_000).toISOString(),
+    }, 60_000);
     const again = await runJob(state, job.job_id);
     expect(again).toBeInstanceOf(UnrecoverableError);
     expect(state.backendCalls).toHaveLength(2);
@@ -449,6 +478,119 @@ describe("K15b executor cai.data.06.upload", () => {
   });
 });
 
+describe("K15b effective club rights (finding 1)", () => {
+  test("file actions need the club rights of the file profiles, not only the scopes", async () => {
+    const withRights = (permissions: Record<string, boolean>) =>
+      new SnapshotFileAuthorization(async () => ({ ...snapshotFor(), permissions }));
+    const none = withRights({});
+    await expect(none.reauthorize({ context, action: "upload_start", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    await expect(none.reauthorize({ context, action: "upload_complete", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    await expect(none.reauthorize({ context, action: "file_get", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    await expect(none.reauthorize({ context, action: "file_consume", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+
+    const reader = withRights({ read_files: true });
+    await expect(reader.reauthorize({ context, action: "file_get", purpose: "job_result" })).resolves.toEqual({ capability_version: "cap-v1" });
+    await expect(reader.reauthorize({ context, action: "upload_start", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+    await expect(reader.reauthorize({ context, action: "file_consume", purpose: "club_file" })).rejects.toMatchObject({ code: "PERMISSION_DENIED" });
+
+    // Any right of the file_write profile suffices, e.g. news editors.
+    const newsEditor = withRights({ manage_news: true });
+    await expect(newsEditor.reauthorize({ context, action: "upload_start", purpose: "news_asset" })).resolves.toEqual({ capability_version: "cap-v1" });
+  });
+
+  test("the worker evaluates a fresh snapshot with changed version before consuming", async () => {
+    const state = setup({ snapshot: { ...snapshotFor(), capability_version: "cap-v2", permissions: { read_files: true } } });
+    await seedCleanFile(state.metadata);
+    const job = await startUploadJob(state.platform);
+    expect(await runJob(state, job.job_id)).toBeInstanceOf(UnrecoverableError);
+    expect(state.backendCalls).toHaveLength(0);
+    expect((await state.metadata.getFile(sourceFileId))?.state).toBe("clean");
+
+    // With the rights still present, a newer capability version alone does not block the job.
+    const granted = setup({ snapshot: { ...snapshotFor(), capability_version: "cap-v2" } });
+    await seedCleanFile(granted.metadata);
+    const grantedJob = await startUploadJob(granted.platform);
+    expect(await runJob(granted, grantedJob.job_id)).toBeNull();
+  });
+});
+
+describe("K15b revocation before every side effect (finding 2)", () => {
+  function revokingAfter(state: ReturnType<typeof setup>, allowed: number): void {
+    let calls = 0;
+    state.useActors({
+      async exchange(input) {
+        state.actorRequests.push(structuredClone(input));
+        calls += 1;
+        if (calls > allowed) throw new JobActorRevokedError();
+        return { access_token: "job-actor-token-0123456789", expires_in: 300 };
+      },
+    });
+  }
+
+  test("a grant revoked after the actor check stops the job before the consumption", async () => {
+    const state = setup();
+    await seedCleanFile(state.metadata);
+    revokingAfter(state, 1);
+    const job = await startUploadJob(state.platform);
+    expect(await runJob(state, job.job_id)).toBeInstanceOf(UnrecoverableError);
+    expect((await state.metadata.getFile(sourceFileId))?.state).toBe("clean");
+    expect(state.backendCalls).toHaveLength(0);
+    expect(state.transfers).toHaveLength(0);
+  });
+
+  test("a grant revoked after presign-upload stops the job before the PUT and the finalize", async () => {
+    const state = setup();
+    await seedCleanFile(state.metadata);
+    revokingAfter(state, 3);
+    const job = await startUploadJob(state.platform);
+    expect(await runJob(state, job.job_id)).toBeInstanceOf(UnrecoverableError);
+    expect(state.backendCalls.map((call) => call.path)).toEqual(["/files/presign-upload"]);
+    expect(state.transfers.map((transfer) => transfer.method)).toEqual(["GET"]);
+  });
+
+  test("the binding expiry is fixed at job start and reused by every attempt", async () => {
+    const state = setup();
+    await seedCleanFile(state.metadata);
+    const job = await startUploadJob(state.platform);
+    const stored = (await state.inputs.get(job.job_id))?.binding_expires_at;
+    expect(typeof stored).toBe("string");
+
+    // First attempt: the auth-service is unavailable, nothing consumed, BullMQ retries.
+    let first = true;
+    state.useActors({
+      async exchange(input) {
+        state.actorRequests.push(structuredClone(input));
+        if (first) {
+          first = false;
+          throw new JobActorUnavailableError();
+        }
+        return { access_token: "job-actor-token-0123456789", expires_in: 300 };
+      },
+    });
+    const retry = await runJob(state, job.job_id);
+    expect(retry).toBeInstanceOf(Error);
+    expect(retry).not.toBeInstanceOf(UnrecoverableError);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(await runJob(state, job.job_id)).toBeNull();
+    expect(state.actorRequests.length).toBeGreaterThan(1);
+    for (const request of state.actorRequests) expect(request.expires_at).toBe(stored!);
+  });
+
+  test("an envelope without a binding expiry is refused", async () => {
+    const state = setup();
+    await seedCleanFile(state.metadata);
+    const job = await startUploadJob(state.platform);
+    const envelope = await state.inputs.get(job.job_id);
+    await state.inputs.delete(job.job_id);
+    const legacy: Record<string, unknown> = { ...envelope! };
+    delete legacy.binding_expires_at;
+    await state.inputs.put(legacy as unknown as NonNullable<typeof envelope>, 60_000);
+    expect(await runJob(state, job.job_id)).toBeInstanceOf(UnrecoverableError);
+    expect(state.actorRequests).toHaveLength(0);
+    expect((await state.metadata.getFile(sourceFileId))?.state).toBe("clean");
+  });
+});
+
 describe("K15b job actor exchange", () => {
   test("signs the job binding with HMAC-SHA256 over the agreed fields", async () => {
     const requests: Array<{ url: string; init: RequestInit }> = [];
@@ -478,7 +620,7 @@ describe("K15b job actor exchange", () => {
     expect((requests[0]?.init.headers as Record<string, string>)["x-internal-api-key"]).toBe("test-internal-key");
     const body = JSON.parse(String(requests[0]?.init.body));
     const expected = createHmac("sha256", bindingSecret)
-      .update(`${jobId}|cai.data.06.upload|${grantId}|${subjectId}|${clubId}|${expiresAt}`)
+      .update(`${jobId}|cai.data.06.upload|${grantId}|${subjectId}|${clubId}|${expiresAt}|files.import files.write`)
       .digest("hex");
     expect(body).toEqual({
       grant_id: grantId,

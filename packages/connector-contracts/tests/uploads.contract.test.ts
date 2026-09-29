@@ -108,10 +108,17 @@ function fixture(options: {
   let inspection = options.inspection ?? safeInspection();
   let scan = options.scan ?? "clean";
   let deleted = 0;
+  let released = 0;
   let authorizations = 0;
   const objects: QuarantineObjectPort = {
-    async createPresignedUpload() { return { url: "https://upload.example.test/one-time" }; },
+    async createPresignedUpload(input) {
+      return {
+        url: "https://upload.example.test/one-time",
+        required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) },
+      };
+    },
     async inspect() { return structuredClone(inspection); },
+    async release() { released++; },
     async delete() { deleted++; },
     async promoteClean({ file_id }) { return { object_key: `mcp-clean/${file_id}` }; },
     async createPresignedDownload() {
@@ -136,6 +143,7 @@ function fixture(options: {
     setInspection(value: StoredObjectInspection) { inspection = value; },
     setScan(value: "clean" | "infected" | "unavailable") { scan = value; },
     deleted() { return deleted; },
+    released() { return released; },
     authorizations() { return authorizations; },
   };
 }
@@ -179,7 +187,7 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       owner_subject_id: subjectId,
       state: "pending",
       upload_url: "https://upload.example.test/one-time",
-      required_headers: { "Content-Type": "application/pdf" },
+      required_headers: { "Content-Type": "application/pdf", "Content-Length": "1024" },
       file_id: null,
     });
     expect(JSON.stringify(pending)).not.toContain("mcp-quarantine");
@@ -191,6 +199,8 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       completion: { size_bytes: 1_024, sha256: sha },
     });
     expect(clean).toMatchObject({ state: "clean", file_id: fileId, upload_url: null, required_headers: null });
+    // The local inspection copy is released after the completion, whatever its outcome.
+    expect(setup.released()).toBe(1);
     const reference = await getTool.execute({ context, club_id: clubId, file_id: clean.file_id! });
     expect(CONNECTOR_FILE_REFERENCE_SCHEMA.parse(reference)).toEqual(reference);
     expect(reference).toMatchObject({

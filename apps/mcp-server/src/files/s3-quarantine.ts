@@ -1,8 +1,18 @@
 import { createHash } from "node:crypto";
+import { mkdtemp, open, rm, type FileHandle } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { UPLOAD_HANDLE_TTL_SECONDS, type ConnectorUploadMime, type UUID } from "@comvenio/connector-contracts";
+import {
+  MAX_CONNECTOR_FILE_SIZE_BYTES,
+  UPLOAD_HANDLE_TTL_SECONDS,
+  type ConnectorUploadMime,
+  type UploadRequiredHeaders,
+  type UUID,
+} from "@comvenio/connector-contracts";
 
-import { inspectStoredObject } from "./object-inspection.ts";
+import { inspectStoredObject, UNINSPECTED_SHA256, type InspectableObject } from "./object-inspection.ts";
+import { encodeS3Path, presignSigV4 } from "./sigv4-presign.ts";
 import type { FileClock, QuarantineObjectPort, StoredObjectInspection } from "./types.ts";
 
 export interface S3QuarantineConfig {
@@ -13,17 +23,24 @@ export interface S3QuarantineConfig {
   secretAccessKey: string;
   /** Prefix for promoted clean objects; must differ from the quarantine prefix. */
   cleanPrefix?: string;
+  /**
+   * Adds a signed `If-None-Match: *` to the upload URL, so the object can be
+   * created at most once. Off by default: not every S3-compatible storage
+   * supports conditional writes (MCP_UPLOAD_S3_CONDITIONAL_PUT).
+   */
+  conditionalPut?: boolean;
 }
 
 /** Minimal storage surface the store needs; Bun.S3Client in production, in-memory in tests. */
 export interface QuarantineObjectBackend {
   size(objectKey: string): Promise<number>;
   stream(objectKey: string): ReadableStream<Uint8Array>;
-  /** Returns the bytes in [start, end). */
-  read(objectKey: string, start: number, end: number): Promise<Uint8Array>;
   write(objectKey: string, source: AsyncIterable<Uint8Array>, options: { content_type: string; content_disposition: string }): Promise<void>;
   delete(objectKey: string): Promise<void>;
-  presign(objectKey: string, options: { method: "GET" | "PUT"; expires_in_seconds: number; content_type?: string }): string;
+  /** Presigned GET (downloads of promoted clean objects). */
+  presignGet(objectKey: string, options: { expires_in_seconds: number }): string;
+  /** Presigned PUT whose signature covers exactly these request headers (SigV4 signed headers). */
+  presignPut(objectKey: string, options: { expires_in_seconds: number; signed_headers: Readonly<Record<string, string>> }): string;
 }
 
 const QUARANTINE_PREFIX = "mcp-quarantine";
@@ -32,9 +49,12 @@ const UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 const QUARANTINE_KEY = new RegExp(`^${QUARANTINE_PREFIX}/(${UUID_PATTERN})/(${UUID_PATTERN})$`, "iu");
 const UUID_ONLY = new RegExp(`^${UUID_PATTERN}$`, "iu");
 export const MAX_PINNED_INSPECTIONS = 10_000;
+/** Prefix of the private per-inspection directories below os.tmpdir(). */
+export const LOCAL_COPY_PREFIX = "comvenio-mcp-inspect-";
+const LOCAL_READ_CHUNK_BYTES = 64 * 1024;
 const SYSTEM_CLOCK: FileClock = { now: () => new Date() };
 
-export function createBunS3Backend(config: S3QuarantineConfig): QuarantineObjectBackend {
+export function createBunS3Backend(config: S3QuarantineConfig, clock: FileClock = SYSTEM_CLOCK): QuarantineObjectBackend {
   const client = new Bun.S3Client({
     endpoint: config.endpoint,
     region: config.region,
@@ -42,15 +62,15 @@ export function createBunS3Backend(config: S3QuarantineConfig): QuarantineObject
     accessKeyId: config.accessKeyId,
     secretAccessKey: config.secretAccessKey,
   });
+  // Path-style object URL, as Bun.S3Client addresses the bucket with a custom endpoint.
+  const endpoint = new URL(config.endpoint);
+  const base = `${endpoint.origin}${endpoint.pathname.replace(/\/+$/u, "")}`;
   return {
     async size(objectKey) {
       return (await client.file(objectKey).stat()).size;
     },
     stream(objectKey) {
       return client.file(objectKey).stream();
-    },
-    async read(objectKey, start, end) {
-      return new Uint8Array(await client.file(objectKey).slice(start, end).arrayBuffer());
     },
     async write(objectKey, source, options) {
       const writer = client.file(objectKey).writer({ type: options.content_type, contentDisposition: options.content_disposition });
@@ -65,11 +85,20 @@ export function createBunS3Backend(config: S3QuarantineConfig): QuarantineObject
     async delete(objectKey) {
       await client.file(objectKey).delete();
     },
-    presign(objectKey, options) {
-      return client.file(objectKey).presign({
-        method: options.method,
-        expiresIn: options.expires_in_seconds,
-        ...(options.content_type ? { type: options.content_type } : {}),
+    presignGet(objectKey, options) {
+      return client.file(objectKey).presign({ method: "GET", expiresIn: options.expires_in_seconds });
+    },
+    presignPut(objectKey, options) {
+      // Bun's presign cannot sign content-length, so the PUT is signed here (SigV4, UNSIGNED-PAYLOAD).
+      return presignSigV4({
+        method: "PUT",
+        url: `${base}${encodeS3Path([config.bucket, objectKey])}`,
+        region: config.region,
+        access_key_id: config.accessKeyId,
+        secret_access_key: config.secretAccessKey,
+        expires_in_seconds: options.expires_in_seconds,
+        now: clock.now(),
+        signed_headers: options.signed_headers,
       });
     },
   };
@@ -80,6 +109,8 @@ interface PinnedInspection {
   size_bytes: number;
   mime_type: ConnectorUploadMime;
   expires_at_ms: number;
+  /** Private directory holding the one local copy; null for objects above the size limit (never copied). */
+  local_dir: string | null;
 }
 
 function assertHttps(url: string): string {
@@ -98,21 +129,82 @@ function assertConfig(config: S3QuarantineConfig): void {
   }
 }
 
+function localFile(dir: string): string {
+  return join(dir, "object");
+}
+
+async function removeLocalCopy(dir: string | null): Promise<void> {
+  if (dir) await rm(dir, { recursive: true, force: true });
+}
+
+/** Streams a local file in bounded chunks and closes it on end, error and cancel. */
+function localStream(path: string): ReadableStream<Uint8Array> {
+  let handle: FileHandle | null = null;
+  let position = 0;
+  const close = async () => {
+    const current = handle;
+    handle = null;
+    await current?.close().catch(() => undefined);
+  };
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        handle ??= await open(path, "r");
+        const buffer = new Uint8Array(LOCAL_READ_CHUNK_BYTES);
+        const { bytesRead } = await handle.read(buffer, 0, buffer.byteLength, position);
+        if (bytesRead === 0) {
+          await close();
+          controller.close();
+          return;
+        }
+        position += bytesRead;
+        controller.enqueue(buffer.subarray(0, bytesRead));
+      } catch (error) {
+        await close();
+        throw error;
+      }
+    },
+    async cancel() {
+      await close();
+    },
+  });
+}
+
+async function localRead(path: string, start: number, end: number): Promise<Uint8Array> {
+  const length = Math.max(0, end - start);
+  if (length === 0) return new Uint8Array(0);
+  const handle = await open(path, "r");
+  try {
+    const buffer = new Uint8Array(length);
+    const { bytesRead } = await handle.read(buffer, 0, length, start);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
+}
+
 /**
  * Production QuarantineObjectPort on S3-compatible storage (G.3). Objects under mcp-quarantine/ are
- * never downloadable; promotion copies exactly the inspected bytes (hash-pinned) to the clean prefix.
+ * never downloadable. inspect() reads the quarantined object exactly once into a private, size-bounded
+ * local copy; hash, format detection, ZIP inspection, the malware scan (readInspected) and the
+ * promotion all read that one copy, so every check judges the same bytes. The hash pin stays as an
+ * additional check on every later read of the copy.
  */
 export class S3QuarantineObjectStore implements QuarantineObjectPort {
   readonly #backend: QuarantineObjectBackend;
   readonly #clock: FileClock;
   readonly #cleanPrefix: string;
+  readonly #conditionalPut: boolean;
+  readonly #tempRoot: string;
   readonly #pins = new Map<string, PinnedInspection>();
 
-  constructor(config: S3QuarantineConfig, options: { backend?: QuarantineObjectBackend; clock?: FileClock } = {}) {
+  constructor(config: S3QuarantineConfig, options: { backend?: QuarantineObjectBackend; clock?: FileClock; temp_dir?: string } = {}) {
     assertConfig(config);
-    this.#backend = options.backend ?? createBunS3Backend(config);
     this.#clock = options.clock ?? SYSTEM_CLOCK;
+    this.#backend = options.backend ?? createBunS3Backend(config, this.#clock);
     this.#cleanPrefix = config.cleanPrefix ?? DEFAULT_CLEAN_PREFIX;
+    this.#conditionalPut = config.conditionalPut === true;
+    this.#tempRoot = options.temp_dir ?? tmpdir();
   }
 
   async createPresignedUpload(input: {
@@ -120,45 +212,78 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     mime_type: ConnectorUploadMime;
     size_bytes: number;
     expires_in_seconds: number;
-  }): Promise<{ url: string }> {
+  }): Promise<{ url: string; required_headers: UploadRequiredHeaders }> {
     this.#quarantineKey(input.object_key);
-    const url = this.#backend.presign(input.object_key, {
-      method: "PUT",
+    if (!Number.isInteger(input.size_bytes) || input.size_bytes < 1 || input.size_bytes > MAX_CONNECTOR_FILE_SIZE_BYTES) {
+      throw new Error("The declared upload size is invalid.");
+    }
+    // Signed headers: the storage refuses a PUT with another length or type (and, if enabled, an overwrite).
+    const signedHeaders: Record<string, string> = {
+      "Content-Type": input.mime_type,
+      "Content-Length": String(input.size_bytes),
+    };
+    if (this.#conditionalPut) signedHeaders["If-None-Match"] = "*";
+    const requiredHeaders: UploadRequiredHeaders = this.#conditionalPut
+      ? { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes), "If-None-Match": "*" }
+      : { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) };
+    const url = this.#backend.presignPut(input.object_key, {
       expires_in_seconds: input.expires_in_seconds,
-      content_type: input.mime_type,
+      signed_headers: signedHeaders,
     });
-    return { url: assertHttps(url) };
+    return { url: assertHttps(url), required_headers: requiredHeaders };
   }
 
   async inspect(input: { object_key: string; declared_filename: string; declared_mime_type: ConnectorUploadMime }): Promise<StoredObjectInspection> {
     const key = input.object_key;
     this.#quarantineKey(key);
-    const size = await this.#backend.size(key);
-    const inspection = await inspectStoredObject({
-      object: {
-        size,
-        stream: () => this.#backend.stream(key),
-        read: (start, end) => this.#backend.read(key, start, end),
-      },
-      declared_filename: input.declared_filename,
-      declared_mime_type: input.declared_mime_type,
-    });
-    this.#pin(key, {
-      sha256: inspection.sha256,
-      size_bytes: inspection.size_bytes,
-      mime_type: input.declared_mime_type,
-      expires_at_ms: this.#clock.now().getTime() + UPLOAD_HANDLE_TTL_SECONDS * 1_000,
-    });
-    return inspection;
+    await this.release({ object_key: key });
+    const copy = await this.#copyOnce(key);
+    try {
+      const object: InspectableObject = copy.dir
+        ? {
+          size: copy.size,
+          stream: () => localStream(localFile(copy.dir!)),
+          read: (start, end) => localRead(localFile(copy.dir!), start, Math.min(end, copy.size)),
+        }
+        : {
+          // Above the hard limit: never copied, never read; the inspection reports it as oversized.
+          size: copy.size,
+          stream: () => { throw new Error("Oversized objects are never read."); },
+          read: async () => { throw new Error("Oversized objects are never read."); },
+        };
+      const inspection = await inspectStoredObject({
+        object,
+        declared_filename: input.declared_filename,
+        declared_mime_type: input.declared_mime_type,
+      });
+      this.#pin(key, {
+        sha256: inspection.sha256,
+        size_bytes: inspection.size_bytes,
+        mime_type: input.declared_mime_type,
+        expires_at_ms: this.#clock.now().getTime() + UPLOAD_HANDLE_TTL_SECONDS * 1_000,
+        local_dir: inspection.sha256 === UNINSPECTED_SHA256 ? null : copy.dir,
+      });
+      if (inspection.sha256 === UNINSPECTED_SHA256) await removeLocalCopy(copy.dir);
+      return inspection;
+    } catch (error) {
+      await removeLocalCopy(copy.dir);
+      throw error;
+    }
   }
 
   /**
-   * Streams the quarantined object and fails at the end if the bytes differ from the last inspection.
-   * Intended as the read callback of the malware scanner, so a replaced object is never reported clean.
+   * Streams the inspected local copy and fails at the end if its bytes differ from the inspection.
+   * Intended as the read callback of the malware scanner, so the scan judges exactly the inspected bytes.
    */
   readInspected(objectKey: string): AsyncIterable<Uint8Array> {
     this.#quarantineKey(objectKey);
-    return this.#verifiedChunks(objectKey, this.#requirePin(objectKey));
+    return this.#verifiedChunks(this.#requirePin(objectKey));
+  }
+
+  async release(input: { object_key: string }): Promise<void> {
+    const pin = this.#pins.get(input.object_key);
+    this.#pins.delete(input.object_key);
+    await removeLocalCopy(pin?.local_dir ?? null);
   }
 
   async delete(input: { object_key: string }): Promise<void> {
@@ -166,7 +291,7 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     if (!QUARANTINE_KEY.test(key) && !key.startsWith(`${this.#cleanPrefix}/`)) {
       throw new Error("Only quarantine or clean connector objects can be deleted.");
     }
-    this.#pins.delete(key);
+    await this.release({ object_key: key });
     await this.#backend.delete(key);
   }
 
@@ -176,7 +301,7 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     const pin = this.#requirePin(input.quarantine_object_key);
     const target = `${this.#cleanPrefix}/${clubId}/${input.file_id}`;
     try {
-      await this.#backend.write(target, this.#verifiedChunks(input.quarantine_object_key, pin), {
+      await this.#backend.write(target, this.#verifiedChunks(pin), {
         content_type: pin.mime_type,
         // Delivery is always a download, never inline rendering (passivation of SVG/HTML on delivery).
         content_disposition: "attachment",
@@ -185,7 +310,7 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
       await this.#backend.delete(target).catch(() => undefined);
       throw error;
     }
-    this.#pins.delete(input.quarantine_object_key);
+    await this.release({ object_key: input.quarantine_object_key });
     return { object_key: target };
   }
 
@@ -193,7 +318,7 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     if (!input.object_key.startsWith(`${this.#cleanPrefix}/`)) {
       throw new Error("Only promoted clean objects can be downloaded.");
     }
-    const url = this.#backend.presign(input.object_key, { method: "GET", expires_in_seconds: input.expires_in_seconds });
+    const url = this.#backend.presignGet(input.object_key, { expires_in_seconds: input.expires_in_seconds });
     const expiresAt = new Date(this.#clock.now().getTime() + input.expires_in_seconds * 1_000).toISOString();
     return { url: assertHttps(url), expires_at: expiresAt };
   }
@@ -205,32 +330,78 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     return match[1];
   }
 
+  /**
+   * Reads the object once into a new private directory (unique name, mode 0600 file). Stops and
+   * discards the copy as soon as the hard size limit is exceeded; such an object is never copied.
+   */
+  async #copyOnce(objectKey: string): Promise<{ dir: string | null; size: number }> {
+    const declaredSize = await this.#backend.size(objectKey);
+    if (declaredSize > MAX_CONNECTOR_FILE_SIZE_BYTES) return { dir: null, size: declaredSize };
+    const dir = await mkdtemp(join(this.#tempRoot, LOCAL_COPY_PREFIX));
+    let size = 0;
+    try {
+      const file = await open(localFile(dir), "wx", 0o600);
+      const reader = this.#backend.stream(objectKey).getReader();
+      let finished = false;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) {
+            finished = true;
+            break;
+          }
+          size += value.byteLength;
+          if (size > MAX_CONNECTOR_FILE_SIZE_BYTES) break;
+          await file.write(value);
+        }
+      } finally {
+        if (!finished) await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
+        await file.close();
+      }
+    } catch (error) {
+      await removeLocalCopy(dir);
+      throw error;
+    }
+    if (size > MAX_CONNECTOR_FILE_SIZE_BYTES) {
+      await removeLocalCopy(dir);
+      return { dir: null, size };
+    }
+    return { dir, size };
+  }
+
   #pin(objectKey: string, pin: PinnedInspection): void {
     const now = this.#clock.now().getTime();
     for (const [key, value] of this.#pins) {
-      if (value.expires_at_ms <= now) this.#pins.delete(key);
+      if (value.expires_at_ms <= now) this.#drop(key, value);
     }
-    this.#pins.delete(objectKey);
+    const previous = this.#pins.get(objectKey);
+    if (previous) this.#drop(objectKey, previous);
     while (this.#pins.size >= MAX_PINNED_INSPECTIONS) {
-      const oldest = this.#pins.keys().next();
+      const oldest = this.#pins.entries().next();
       if (oldest.done) break;
-      this.#pins.delete(oldest.value);
+      this.#drop(oldest.value[0], oldest.value[1]);
     }
     this.#pins.set(objectKey, pin);
   }
 
-  #requirePin(objectKey: string): PinnedInspection {
-    const pin = this.#pins.get(objectKey);
-    if (!pin || pin.expires_at_ms <= this.#clock.now().getTime()) {
-      throw new Error("The quarantine object has no current inspection.");
-    }
-    return pin;
+  #drop(objectKey: string, pin: PinnedInspection): void {
+    this.#pins.delete(objectKey);
+    void removeLocalCopy(pin.local_dir).catch(() => undefined);
   }
 
-  async *#verifiedChunks(objectKey: string, pin: PinnedInspection): AsyncGenerator<Uint8Array> {
+  #requirePin(objectKey: string): PinnedInspection & { local_dir: string } {
+    const pin = this.#pins.get(objectKey);
+    if (!pin || pin.expires_at_ms <= this.#clock.now().getTime() || !pin.local_dir) {
+      throw new Error("The quarantine object has no current inspection.");
+    }
+    return pin as PinnedInspection & { local_dir: string };
+  }
+
+  async *#verifiedChunks(pin: PinnedInspection & { local_dir: string }): AsyncGenerator<Uint8Array> {
     const hash = createHash("sha256");
     let size = 0;
-    const reader = this.#backend.stream(objectKey).getReader();
+    const reader = localStream(localFile(pin.local_dir)).getReader();
     let finished = false;
     try {
       for (;;) {
@@ -240,17 +411,17 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
           break;
         }
         size += value.byteLength;
-        if (size > pin.size_bytes) throw new Error("Quarantine object changed after inspection.");
+        if (size > pin.size_bytes) throw new Error("Inspected copy changed after inspection.");
         hash.update(value);
         yield value;
       }
     } finally {
-      // Early exit (consumer aborted or size exceeded): release the underlying connection.
+      // Early exit (consumer aborted or size exceeded): release the file handle.
       if (!finished) await reader.cancel().catch(() => undefined);
       reader.releaseLock();
     }
     if (size !== pin.size_bytes || hash.digest("hex") !== pin.sha256) {
-      throw new Error("Quarantine object changed after inspection.");
+      throw new Error("Inspected copy changed after inspection.");
     }
   }
 }

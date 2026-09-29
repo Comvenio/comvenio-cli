@@ -4,6 +4,7 @@ export * from "./object-inspection.ts";
 export * from "./redis-store.ts";
 export * from "./s3-quarantine.ts";
 export * from "./service.ts";
+export * from "./sigv4-presign.ts";
 export * from "./tools.ts";
 export * from "./types.ts";
 export * from "./validation.ts";

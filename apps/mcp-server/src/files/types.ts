@@ -5,6 +5,7 @@ import type {
   UploadCompleteRequest,
   UploadHandle,
   UploadPurpose,
+  UploadRequiredHeaders,
   UUID,
 } from "@comvenio/connector-contracts";
 
@@ -90,13 +91,24 @@ export interface FileMetadataStore {
 }
 
 export interface QuarantineObjectPort {
+  /**
+   * One-time PUT URL signed for exactly the declared size and type; the
+   * returned headers are the signed ones the client must send unchanged.
+   */
   createPresignedUpload(input: {
     object_key: string;
     mime_type: ConnectorUploadMime;
     size_bytes: number;
     expires_in_seconds: number;
-  }): Promise<{ url: string }>;
+  }): Promise<{ url: string; required_headers: UploadRequiredHeaders }>;
+  /**
+   * Reads the quarantined object exactly once into a private local copy and
+   * inspects that copy; the malware scan and the promotion use the same copy
+   * until release().
+   */
   inspect(input: { object_key: string; declared_filename: string; declared_mime_type: ConnectorUploadMime }): Promise<StoredObjectInspection>;
+  /** Drops the local copy and the inspection of the object; safe to call repeatedly. */
+  release(input: { object_key: string }): Promise<void>;
   delete(input: { object_key: string }): Promise<void>;
   promoteClean(input: { quarantine_object_key: string; file_id: UUID }): Promise<{ object_key: string }>;
   createPresignedDownload(input: { object_key: string; expires_in_seconds: number }): Promise<{ url: string; expires_at: string }>;

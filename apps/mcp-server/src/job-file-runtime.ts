@@ -4,7 +4,7 @@ import type { Worker } from "bullmq";
 import { domainToolName } from "./domain-runtime.ts";
 import { ClamdMalwareScanner, type ClamdScannerConfig } from "./files/clamd-scanner.ts";
 import { RedisFileMetadataStore } from "./files/redis-store.ts";
-import { S3QuarantineObjectStore, createBunS3Backend, type S3QuarantineConfig } from "./files/s3-quarantine.ts";
+import { S3QuarantineObjectStore, type S3QuarantineConfig } from "./files/s3-quarantine.ts";
 import type { MalwareScannerPort, QuarantineObjectPort } from "./files/types.ts";
 import { HttpCapabilityContextResolver } from "./http/upstreams.ts";
 import type { ReadinessDependency } from "./http/types.ts";
@@ -35,12 +35,11 @@ export interface JobFileAdapterFactories {
 }
 
 export const DEFAULT_JOB_FILE_ADAPTERS: JobFileAdapterFactories = Object.freeze({
-  quarantine: (config: S3QuarantineConfig) =>
-    new S3QuarantineObjectStore(config, { backend: createBunS3Backend(config) }),
+  quarantine: (config: S3QuarantineConfig) => new S3QuarantineObjectStore(config),
   scanner: (config: ClamdScannerConfig, objects: ReturnType<JobFileAdapterFactories["quarantine"]>) => {
     const readInspected = objects.readInspected?.bind(objects);
     if (!readInspected) throw new Error("Der Quarantänespeicher liefert keine hash-gepinnten Scan-Bytes.");
-    // Hash pinning: the scanner reads exactly the bytes the inspection hashed.
+    // The scanner reads the inspected local copy; the hash pin re-checks it on every read.
     return new ClamdMalwareScanner(config, (objectKey) => readInspected(objectKey));
   },
 });

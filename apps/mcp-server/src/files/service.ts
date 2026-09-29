@@ -64,13 +64,15 @@ function safeObjectKey(clubId: UUID, uploadId: UUID): string {
   return `mcp-quarantine/${clubId}/${uploadId}`;
 }
 
-function assertActiveMetadata(record: InternalUploadRecord): asserts record is InternalUploadRecord & {
+type ActiveUploadRecord = InternalUploadRecord & {
   filename: string;
   mime_type: NonNullable<InternalUploadRecord["mime_type"]>;
   size_bytes: number;
   purpose: NonNullable<InternalUploadRecord["purpose"]>;
   object_key: string;
-} {
+};
+
+function assertActiveMetadata(record: InternalUploadRecord): asserts record is ActiveUploadRecord {
   if (!record.filename || !record.mime_type || record.size_bytes === null || !record.purpose || !record.object_key) {
     throw new Error("Aktive Uploadmetadaten sind unvollständig.");
   }
@@ -102,12 +104,17 @@ export class ConnectorFileService {
       size_bytes: request.size_bytes,
       expires_in_seconds: UPLOAD_HANDLE_TTL_SECONDS,
     });
+    // The URL must be bound to exactly the declared type and size.
+    if (presigned.required_headers["Content-Type"] !== request.mime_type
+      || presigned.required_headers["Content-Length"] !== String(request.size_bytes)) {
+      throw new Error("Die Upload-URL ist nicht an Typ und Größe gebunden.");
+    }
     const handle = UPLOAD_HANDLE_SCHEMA.parse({
       upload_id: uploadId,
       club_id: binding.club_id,
       owner_subject_id: binding.subject_id,
       upload_url: presigned.url,
-      required_headers: { "Content-Type": request.mime_type },
+      required_headers: presigned.required_headers,
       state: "pending",
       expires_at: after(now, UPLOAD_HANDLE_TTL_SECONDS),
       file_id: null,
@@ -154,6 +161,21 @@ export class ConnectorFileService {
       throw createConnectorError({ code: "PERMISSION_DENIED", message: "Die Dateiberechtigung hat sich seit dem Uploadstart geändert.", request_id: binding.context.request_id, retryable: false });
     }
 
+    // Inspection, scan and promotion all work on the one local copy taken by inspect().
+    const objectKey = record.object_key;
+    try {
+      return await this.#inspectScanPromote(record, binding, authorized.capability_version, parsed.completion);
+    } finally {
+      await this.objects.release({ object_key: objectKey }).catch(() => undefined);
+    }
+  }
+
+  async #inspectScanPromote(
+    record: ActiveUploadRecord,
+    binding: ReturnType<typeof bound>,
+    capabilityVersion: string,
+    completion: FileUploadCompleteInput["completion"],
+  ): Promise<UploadHandle> {
     const inspection = await this.objects.inspect({
       object_key: record.object_key,
       declared_filename: record.filename,
@@ -163,8 +185,8 @@ export class ConnectorFileService {
       inspection,
       declared_mime_type: record.mime_type,
       declared_size_bytes: record.size_bytes,
-      completion_size_bytes: parsed.completion.size_bytes,
-      completion_sha256: parsed.completion.sha256,
+      completion_size_bytes: completion.size_bytes,
+      completion_sha256: completion.sha256,
     });
     if (rejection) return this.#reject(record, rejection, inspection.sha256);
 
@@ -191,7 +213,7 @@ export class ConnectorFileService {
       oauth_grant_id: binding.oauth_grant_id,
       owner_subject_id: binding.subject_id,
       club_id: binding.club_id,
-      capability_version: authorized.capability_version,
+      capability_version: capabilityVersion,
       name: record.filename,
       mime_type: record.mime_type,
       size_bytes: inspection.size_bytes,

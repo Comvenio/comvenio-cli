@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
+import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
 import { MAX_CONNECTOR_FILE_SIZE_BYTES, type ConnectorUploadMime } from "@comvenio/connector-contracts";
 
@@ -9,6 +12,8 @@ import {
   ClamdMalwareScanner,
   S3QuarantineObjectStore,
   UNINSPECTED_SHA256,
+  createBunS3Backend,
+  presignSigV4,
   extensionMatches,
   inspectStoredObject,
   parseClamdResponse,
@@ -403,6 +408,9 @@ describe("ZIP inspection", () => {
 
 class MemoryBackend implements QuarantineObjectBackend {
   readonly objects = new Map<string, { data: Uint8Array; content_type?: string; content_disposition?: string }>();
+  readonly streamed: string[] = [];
+  /** Called after each stream() of a key; lets a test replace the object between reads. */
+  afterStream: ((key: string) => void) | null = null;
 
   #get(key: string): Uint8Array {
     const object = this.objects.get(key);
@@ -411,17 +419,24 @@ class MemoryBackend implements QuarantineObjectBackend {
   }
 
   async size(key: string) { return this.#get(key).byteLength; }
-  stream(key: string) { return streamOf(this.#get(key)); }
-  async read(key: string, start: number, end: number) { return this.#get(key).slice(start, end); }
+  stream(key: string) {
+    this.streamed.push(key);
+    const stream = streamOf(this.#get(key));
+    this.afterStream?.(key);
+    return stream;
+  }
   async write(key: string, source: AsyncIterable<Uint8Array>, options: { content_type: string; content_disposition: string }) {
     const chunks: Uint8Array[] = [];
     for await (const chunk of source) chunks.push(chunk);
     this.objects.set(key, { data: bytes(...chunks), ...options });
   }
   async delete(key: string) { this.objects.delete(key); }
-  presign(key: string, options: { method: "GET" | "PUT"; expires_in_seconds: number; content_type?: string }) {
-    const type = options.content_type ? `&type=${encodeURIComponent(options.content_type)}` : "";
-    return `https://objects.example.test/${key}?method=${options.method}&expires=${options.expires_in_seconds}${type}`;
+  presignGet(key: string, options: { expires_in_seconds: number }) {
+    return `https://objects.example.test/${key}?method=GET&expires=${options.expires_in_seconds}`;
+  }
+  presignPut(key: string, options: { expires_in_seconds: number; signed_headers: Readonly<Record<string, string>> }) {
+    const signed = new URLSearchParams(options.signed_headers).toString();
+    return `https://objects.example.test/${key}?method=PUT&expires=${options.expires_in_seconds}&${signed}`;
   }
 }
 
@@ -435,12 +450,32 @@ const CONFIG: S3QuarantineConfig = {
 
 const FIXED_CLOCK: FileClock = { now: () => new Date("2026-09-29T10:00:00.000Z") };
 
-function store() {
+const tempDirs: string[] = [];
+
+async function store(config: S3QuarantineConfig = CONFIG) {
   const backend = new MemoryBackend();
-  return { backend, objects: new S3QuarantineObjectStore(CONFIG, { backend, clock: FIXED_CLOCK }) };
+  const temp = await mkdtemp(join(tmpdir(), "files-adapters-test-"));
+  tempDirs.push(temp);
+  return {
+    backend,
+    temp,
+    localCopies: () => readdir(temp),
+    objects: new S3QuarantineObjectStore(config, { backend, clock: FIXED_CLOCK, temp_dir: temp }),
+    async cleanup() { await rm(temp, { recursive: true, force: true }); },
+  };
 }
 
 const PNG = bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "image-body");
+
+afterAll(async () => {
+  await Promise.all(tempDirs.map((dir) => rm(dir, { recursive: true, force: true })));
+});
+
+async function drain(source: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of source) chunks.push(chunk);
+  return bytes(...chunks);
+}
 
 describe("S3QuarantineObjectStore", () => {
   test("rejects insecure configuration", () => {
@@ -448,57 +483,160 @@ describe("S3QuarantineObjectStore", () => {
     expect(() => new S3QuarantineObjectStore({ ...CONFIG, cleanPrefix: "mcp-quarantine" }, { backend: new MemoryBackend() })).toThrow();
   });
 
-  test("presigns uploads only inside the quarantine prefix, bound to the MIME type", async () => {
-    const { objects } = store();
-    const { url } = await objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: PNG.byteLength, expires_in_seconds: 900 });
-    expect(url).toContain("method=PUT");
-    expect(url).toContain(`type=${encodeURIComponent("image/png")}`);
+  test("signs the upload URL for exactly the declared size and type and returns those headers", async () => {
+    const { objects } = await store();
+    const { url, required_headers } = await objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: PNG.byteLength, expires_in_seconds: 900 });
+    expect(required_headers).toEqual({ "Content-Type": "image/png", "Content-Length": String(PNG.byteLength) });
+    const signed = new URL(url).searchParams;
+    expect(signed.get("method")).toBe("PUT");
+    expect(signed.get("Content-Type")).toBe("image/png");
+    expect(signed.get("Content-Length")).toBe(String(PNG.byteLength));
+    expect(signed.has("If-None-Match")).toBe(false);
     await expect(objects.createPresignedUpload({ object_key: "mcp-clean/x", mime_type: "image/png", size_bytes: 1, expires_in_seconds: 900 })).rejects.toThrow();
+    await expect(objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: MAX_CONNECTOR_FILE_SIZE_BYTES + 1, expires_in_seconds: 900 })).rejects.toThrow();
   });
 
-  test("promotes exactly the inspected bytes as an attachment", async () => {
-    const { backend, objects } = store();
+  test("conditional PUT signs If-None-Match only when configured", async () => {
+    const { objects } = await store({ ...CONFIG, conditionalPut: true });
+    const { url, required_headers } = await objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: 10, expires_in_seconds: 900 });
+    expect(required_headers).toEqual({ "Content-Type": "image/png", "Content-Length": "10", "If-None-Match": "*" });
+    expect(new URL(url).searchParams.get("If-None-Match")).toBe("*");
+  });
+
+  test("the Bun backend signs content-length, content-type and host into a path-style PUT URL", () => {
+    const backend = createBunS3Backend(CONFIG, FIXED_CLOCK);
+    const headers = { "Content-Type": "image/png", "Content-Length": "18" };
+    const url = new URL(backend.presignPut(QUARANTINE_KEY, { expires_in_seconds: 900, signed_headers: headers }));
+    expect(`${url.origin}${url.pathname}`).toBe(`https://objects.example.test/connector-files/${QUARANTINE_KEY}`);
+    expect(url.searchParams.get("X-Amz-SignedHeaders")).toBe("content-length;content-type;host");
+    expect(url.searchParams.get("X-Amz-Expires")).toBe("900");
+    const other = new URL(backend.presignPut(QUARANTINE_KEY, { expires_in_seconds: 900, signed_headers: { ...headers, "Content-Length": "19" } }));
+    expect(other.searchParams.get("X-Amz-Signature")).not.toBe(url.searchParams.get("X-Amz-Signature"));
+  });
+
+  test("promotes exactly the inspected bytes as an attachment and removes the local copy", async () => {
+    const { backend, objects, localCopies } = await store();
     backend.objects.set(QUARANTINE_KEY, { data: PNG });
     const inspection = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
     expect(inspection.detected_mime_type).toBe("image/png");
+    expect(await localCopies()).toHaveLength(1);
     const promoted = await objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE });
     expect(promoted.object_key).toBe(`mcp-clean/${CLUB}/${FILE}`);
     const clean = backend.objects.get(promoted.object_key);
     expect(clean?.data).toEqual(PNG);
     expect(clean?.content_type).toBe("image/png");
     expect(clean?.content_disposition).toBe("attachment");
+    expect(await localCopies()).toHaveLength(0);
   });
 
-  test("refuses promotion without inspection or after the object was replaced", async () => {
-    const { backend, objects } = store();
+  test("reads the object exactly once: a replacement after the read changes neither scan nor promotion", async () => {
+    const { backend, objects } = await store();
+    const original = buildZip([{ name: "a.txt", data: encoder.encode("original") }]);
+    const swapped = buildZip([{ name: "b.txt", data: encoder.encode("swapped!") }]);
+    backend.objects.set(QUARANTINE_KEY, { data: original });
+    // The uploader replaces the object right after the first read.
+    backend.afterStream = (key) => backend.objects.set(key, { data: swapped });
+    const inspection = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "archive.zip", declared_mime_type: "application/zip" });
+    expect(inspection.sha256).toBe(createHash("sha256").update(original).digest("hex"));
+    expect(inspection.zip?.entry_count).toBe(1);
+
+    expect(await drain(objects.readInspected(QUARANTINE_KEY))).toEqual(original);
+    const promoted = await objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE });
+    expect(backend.objects.get(promoted.object_key)?.data).toEqual(original);
+    expect(backend.streamed).toEqual([QUARANTINE_KEY]);
+  });
+
+  test("refuses promotion without inspection, after release and after the local copy was altered", async () => {
+    const { backend, objects, temp, localCopies } = await store();
     backend.objects.set(QUARANTINE_KEY, { data: PNG });
     await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
 
     await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
-    backend.objects.set(QUARANTINE_KEY, { data: bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "swapped!!!") });
+    await objects.release({ object_key: QUARANTINE_KEY });
+    expect(await localCopies()).toHaveLength(0);
+    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
+
+    // The hash pin stays as an additional check on the local copy.
+    await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
+    const [dir] = await localCopies();
+    await writeFile(join(temp, dir!, "object"), bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "swapped!!!"));
     await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
     expect(backend.objects.has(`mcp-clean/${CLUB}/${FILE}`)).toBe(false);
+    await expect(drain(objects.readInspected(QUARANTINE_KEY))).rejects.toThrow();
+  });
 
-    const scanned: Uint8Array[] = [];
-    await expect((async () => {
-      for await (const chunk of objects.readInspected(QUARANTINE_KEY)) scanned.push(chunk);
-    })()).rejects.toThrow();
+  test("objects above the hard limit are never copied or read", async () => {
+    const { backend, objects, localCopies } = await store();
+    backend.objects.set(QUARANTINE_KEY, { data: PNG });
+    backend.size = async () => MAX_CONNECTOR_FILE_SIZE_BYTES + 1;
+    const inspection = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
+    expect(inspection.sha256).toBe(UNINSPECTED_SHA256);
+    expect(backend.streamed).toEqual([]);
+    expect(await localCopies()).toHaveLength(0);
+    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
   });
 
   test("downloads only clean objects with a computed expiry", async () => {
-    const { objects } = store();
+    const { objects } = await store();
     await expect(objects.createPresignedDownload({ object_key: QUARANTINE_KEY, expires_in_seconds: 300 })).rejects.toThrow();
     const download = await objects.createPresignedDownload({ object_key: `mcp-clean/${CLUB}/${FILE}`, expires_in_seconds: 300 });
     expect(download.url).toContain("method=GET");
     expect(download.expires_at).toBe("2026-09-29T10:05:00.000Z");
   });
 
-  test("deletes quarantine objects and rejects foreign keys", async () => {
-    const { backend, objects } = store();
+  test("deletes quarantine objects with their local copy and rejects foreign keys", async () => {
+    const { backend, objects, localCopies } = await store();
     backend.objects.set(QUARANTINE_KEY, { data: PNG });
+    await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
     await objects.delete({ object_key: QUARANTINE_KEY });
     expect(backend.objects.has(QUARANTINE_KEY)).toBe(false);
+    expect(await localCopies()).toHaveLength(0);
     await expect(objects.delete({ object_key: "other/key" })).rejects.toThrow();
+  });
+});
+
+describe("SigV4 query presigning", () => {
+  test("matches the AWS reference example for a presigned GET", () => {
+    // AWS S3 documentation, "Authenticating Requests: Using Query Parameters (AWS Signature Version 4)".
+    const url = presignSigV4({
+      method: "GET",
+      url: "https://examplebucket.s3.amazonaws.com/test.txt",
+      region: "us-east-1",
+      access_key_id: "AKIAIOSFODNN7EXAMPLE",
+      secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      expires_in_seconds: 86_400,
+      now: new Date("2013-05-24T00:00:00.000Z"),
+    });
+    expect(url).toBe(
+      "https://examplebucket.s3.amazonaws.com/test.txt"
+      + "?X-Amz-Algorithm=AWS4-HMAC-SHA256"
+      + "&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20130524%2Fus-east-1%2Fs3%2Faws4_request"
+      + "&X-Amz-Date=20130524T000000Z"
+      + "&X-Amz-Expires=86400"
+      + "&X-Amz-SignedHeaders=host"
+      + "&X-Amz-Signature=aeeed9bbccd4d02ee5c0109b86d86835f995330da4c265957d157751f604d404",
+    );
+  });
+
+  test("every signed header value is part of the signature", () => {
+    const base = {
+      method: "PUT" as const,
+      url: "https://objects.example.test/bucket/key",
+      region: "auto",
+      access_key_id: "test-access-key",
+      secret_access_key: "test-secret-key",
+      expires_in_seconds: 900,
+      now: new Date("2026-09-29T10:00:00.000Z"),
+    };
+    const signature = (headers: Record<string, string>) =>
+      new URL(presignSigV4({ ...base, signed_headers: headers })).searchParams.get("X-Amz-Signature");
+    const reference = signature({ "Content-Type": "image/png", "Content-Length": "10" });
+    expect(signature({ "Content-Type": "image/png", "Content-Length": "11" })).not.toBe(reference);
+    expect(signature({ "Content-Type": "image/gif", "Content-Length": "10" })).not.toBe(reference);
+    expect(signature({ "Content-Type": "image/png", "Content-Length": "10", "If-None-Match": "*" })).not.toBe(reference);
+    expect(signature({ "Content-Length": "10", "Content-Type": "image/png" })).toBe(reference);
+    expect(() => presignSigV4({ ...base, url: "http://objects.example.test/bucket/key" })).toThrow();
+    expect(() => presignSigV4({ ...base, signed_headers: { "Content-Type": "a\r\nx: y" } })).toThrow();
   });
 });
 
