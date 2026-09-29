@@ -177,7 +177,7 @@ describe("CLI sign-in from the environment (TC-09)", () => {
     expect(urls).toEqual(["https://apidev.comvenio.app/auth/oauth/token"]);
     expect(first.machineGrant).toBe(true);
     expect(first.authMode).toBe("oauth");
-    expect(first.hasDeviceToken).toBe(false);
+    expect(first).not.toHaveProperty("token");
     expect(first.connectorToken).toBe("machine-access-token");
     expect(first.oauth).toEqual({
       clientId: CLIENT_ID,

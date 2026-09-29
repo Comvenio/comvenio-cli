@@ -314,7 +314,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (read, change with confirmation) · Scopes: `meeting.read`, `meeting.write`
 - `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (read, change, change with confirmation) · Scopes: `meeting.read`, `meeting.write`
 - `cai.meeting.11.attachment_list_add_remove` — list, add, remove (read, change with confirmation) · Scopes: `meeting.read`, `meeting.write`, `files.write`
-- Fields and values: `comvenio schema meeting --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"meeting"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
@@ -334,5 +334,5 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `OUTCOME_UNKNOWN` — a critical action (delete, phase transition, vote, resolution) was not clearly
   confirmed after `action confirm`; check the current state with a read before retrying. See
   `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — an old, classic command (`comvenio meeting …`) no longer works; use the matching
-  action instead. See `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — a command the CLI no longer has; find the matching action with
+  `comvenio action list`. See `comvenio help fehler USAGE_ERROR`.

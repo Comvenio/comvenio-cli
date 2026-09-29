@@ -46,7 +46,6 @@ jobs:
 
       - name: Verify repository-local contracts
         run: |
-          bun run gen:coverage:check
           bun run check:docs
           bun run gen:openai-submission:check
           bun run gen:anthropic-submission:draft:check

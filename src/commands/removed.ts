@@ -1,23 +1,7 @@
 import { LoginOptionError } from "../auth.ts";
 import { PublicCliError } from "../errors.ts";
 
-/**
- * The command surface of the CLI after the device-token removal
- * (geraetetoken-abbau master §0.4). `comvenio --help` registers exactly these
- * top-level commands, `comvenio help` lists them; everything else ends with
- * USAGE_ERROR (04-cli-token-pfad-entfernen DC-3).
- */
-export const COMMAND_SURFACE = [
-  { command: "login", usage: "login [--scopes <csv>]" },
-  { command: "logout", usage: "logout" },
-  { command: "whoami", usage: "whoami" },
-  { command: "action", usage: "action list|call|confirm" },
-  { command: "agent", usage: "agent chat <nachricht>" },
-  { command: "finance", usage: "finance …" },
-  { command: "help", usage: "help [thema]" },
-] as const;
-
-export const SURFACE_COMMANDS: readonly string[] = COMMAND_SURFACE.map((entry) => entry.command);
+export { COMMAND_SURFACE, SURFACE_COMMANDS } from "./surface.ts";
 
 /**
  * Commands the CLI no longer carries (Geräte-Token-Abbau K2, D-GTA-03). They
@@ -54,7 +38,7 @@ export function removedCommandError(command: RemovedCommand): PublicCliError {
 export const CLASSIC_COMMANDS = [
   "booking", "club", "data", "event", "homepage", "ingredient", "ingredient-category",
   "meeting", "member", "menu", "news", "object", "plan", "recipe", "role", "schema",
-  "shopping", "sponsor", "task", "team", "teams", "template", "tournament", "verify",
+  "shopping", "sponsor", "task", "task-zones", "team", "teams", "template", "tournament", "verify",
   "weekly-preview", "zone",
 ] as const;
 

@@ -251,7 +251,7 @@ cli
     console.log("Abgemeldet. OAuth-Credentials und CLI-State wurden entfernt.");
   });
 
-// The command surface of master §0.4 (COMMAND_SURFACE in commands/removed.ts);
+// The command surface of master §0.4 (COMMAND_SURFACE in commands/surface.ts);
 // login and logout are registered above.
 registerWhoamiCommand(cli);
 registerActionCommands(cli);

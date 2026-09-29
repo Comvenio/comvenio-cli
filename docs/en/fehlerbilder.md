@@ -57,7 +57,7 @@ article under `fehler/` with meaning, typical causes and solution.
 
 | Message (excerpt) | Cause | Correct path |
 |---|---|---|
-| `Error OAUTH_ONLY` (formerly: "This classic command does not run through the OAuth sign-in") | A classic command under the browser sign-in. | `comvenio action list` → the matching action with `comvenio action call <id> --input '{…}'`. If none exists: report it as a wish through the issue form. |
+| `Error USAGE_ERROR` with "… gibt es im CLI nicht mehr." (formerly: `Error OAUTH_ONLY`) | A classic command the CLI no longer has. | `comvenio action list` → the matching action with `comvenio action call <id> --input '{…}'`. If none exists: report it as a wish through the issue form. |
 | `Error SCOPE_REQUIRED` (formerly: "… not available in your current club and permission context.") | The sign-in is missing the named scope — for example a write scope for an action that requires confirmation. | Run the displayed `comvenio login --scopes …` command; it includes the previous and the missing scopes. |
 | `Error PERMISSION_DENIED` | The scopes are correct, but the role in the club does not allow the action. | An administrator of the club grants the permission. |
 | `Error ACTION_NOT_LISTED` | The action is not in this connection's tool list. Can also be temporary **right after a new release**. | Check `comvenio action list`; after a new release, wait a minute and retry. |

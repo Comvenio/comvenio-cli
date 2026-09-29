@@ -13,7 +13,7 @@ Mit den `event`-Actions verwaltest du Veranstaltungen deines Vereins vollständi
 
 ## Voraussetzungen und Rechte
 
-Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Felder und Eingaben siehst du auch offline, ohne Anmeldung: `comvenio schema event --json`, `comvenio schema plan --json` und `comvenio help veranstaltungen`. Was du tatsächlich darfst, bestimmt zusätzlich deine Rolle im Verein — das Recht wird ausschließlich serverseitig geprüft.
+Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche Scopes sie brauchen, zeigt `comvenio action list --json`. Die Felder eines Bereichs zeigt `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}'`; offline, ohne Anmeldung, hilft `comvenio help veranstaltungen`. Was du tatsächlich darfst, bestimmt zusätzlich deine Rolle im Verein — das Recht wird ausschließlich serverseitig geprüft.
 
 | Operation | Recht oder Regel |
 |---|---|
@@ -369,7 +369,7 @@ Geländeplan-Zone:
 - `cai.event.26.instance_previous_next_compare_clone_next` — previous, next, compare, clone_next (lesen, ändern) · Scopes: `event.read`, `event.write`
 - `cai.event.27.child_list_create_invitation_summary` — list, create, invitation_summary (lesen, ändern) · Scopes: `event.read`, `event.write`
 - `cai.event.28.menu_list_assign_unassign` — list, assign, unassign (lesen, ändern, ändern mit Bestätigung) · Scopes: `event.read`, `event.write`
-- Felder und Werte: `comvenio schema event --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **plan**
 
@@ -398,4 +398,4 @@ Geländeplan-Zone:
 - `CONFLICT` — ein Bereich, eine Ressource oder ein Termin lässt die Aktion im aktuellen Zustand nicht zu. Siehe `comvenio help fehler CONFLICT`.
 - `CONFIRMATION_REQUIRED` — eine kritische Action wie das Löschen eines Bereichs braucht zuerst `comvenio action confirm` mit der Vorschau. Siehe `comvenio help fehler CONFIRMATION_REQUIRED`.
 - `OUTCOME_UNKNOWN` — eine schreibende Action hat nach der Bestätigung nicht rechtzeitig geantwortet; Stand prüfen statt wiederholen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — nur wenn ein alter, klassischer Befehl statt einer Action verwendet wird. Siehe `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — auch, wenn ein Befehl aufgerufen wird, den es im CLI nicht mehr gibt; `comvenio action list` zeigt die passende Action. Siehe `comvenio help fehler USAGE_ERROR`.

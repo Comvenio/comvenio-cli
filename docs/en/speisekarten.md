@@ -234,7 +234,7 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 - `cai.ingredient.03.create` — create (change) · Scopes: `supply.write`
 - `cai.ingredient.04.update` — update (change) · Scopes: `supply.write`
 - `cai.ingredient.05.delete` — delete (change with confirmation) · Scopes: `supply.write`
-- Fields and values: `comvenio schema ingredient --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"ingredient"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **ingredient-category**
 
@@ -249,7 +249,7 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 - `cai.ingredient-category.09.assign` — assign (change) · Scopes: `supply.write`
 - `cai.ingredient-category.10.unassign` — unassign (change with confirmation) · Scopes: `supply.write`
 - `cai.ingredient-category.11.init` — initialize (change with confirmation) · Scopes: `supply.write`
-- Fields and values: `comvenio schema ingredient-category --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"ingredient-category"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **shopping**
 
@@ -276,7 +276,7 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 - `cai.shopping.procurement.template_deactivate` — deactivate (change with confirmation) · Scopes: `club.write`
 - `cai.shopping.procurement.template_update` — update (change with confirmation) · Scopes: `club.write`
 - `cai.shopping.procurement.templates` — list (read) · Scopes: `club.read`
-- Fields and values: `comvenio schema shopping --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"shopping"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **template**
 
@@ -295,7 +295,7 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 - `cai.menu.08.style` — style (change) · Scopes: `supply.write`
 - `cai.menu.09.apply` — apply (change with confirmation) · Scopes: `supply.write`
 - `cai.menu.10.export` — export (change) · Scopes: `supply.read`, `files.export`
-- Fields and values: `comvenio schema menu --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"menu"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

@@ -300,7 +300,7 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `cai.booking.10.participant_list_show_add_add_groups_update_remove` — list, show, add, add_groups, update, remove (read, change, change with confirmation) · Scopes: `booking.read`, `booking.write`
 - `cai.booking.11.link_list_club_add_remove` — list, club, add, remove (read, change, change with confirmation) · Scopes: `booking.read`, `booking.write`
 - `cai.booking.12.stats_object_guests` — object, guests (read) · Scopes: `booking.read`
-- Fields and values: `comvenio schema booking --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"booking"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **object**
 
@@ -313,7 +313,7 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `cai.object.07.room_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
 - `cai.object.08.booking_rule_list_show_create_bulk_update_delete` — list, list_object, show, create, bulk, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
 - `cai.object.09.task_rule_list_show_create_update_delete` — list, list_object, show, create, update, delete (read, change, change with confirmation) · Scopes: `object.read`, `object.write`
-- Fields and values: `comvenio schema object --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"object"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
@@ -332,5 +332,5 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `OUTCOME_UNKNOWN` — a critical action (create, update, approve, delete) was not clearly confirmed
   after `action confirm`; check the current state with a read before retrying. See
   `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — an old, classic command (`comvenio object …`, `comvenio booking …`) no longer works;
-  use the matching action instead. See `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — a command the CLI no longer has; find the matching action with
+  `comvenio action list`. See `comvenio help fehler USAGE_ERROR`.

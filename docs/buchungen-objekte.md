@@ -303,7 +303,7 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `cai.booking.10.participant_list_show_add_add_groups_update_remove` — list, show, add, add_groups, update, remove (lesen, ändern, ändern mit Bestätigung) · Scopes: `booking.read`, `booking.write`
 - `cai.booking.11.link_list_club_add_remove` — list, club, add, remove (lesen, ändern, ändern mit Bestätigung) · Scopes: `booking.read`, `booking.write`
 - `cai.booking.12.stats_object_guests` — object, guests (lesen) · Scopes: `booking.read`
-- Felder und Werte: `comvenio schema booking --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"booking"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **object**
 
@@ -316,7 +316,7 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `cai.object.07.room_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `object.read`, `object.write`
 - `cai.object.08.booking_rule_list_show_create_bulk_update_delete` — list, list_object, show, create, bulk, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `object.read`, `object.write`
 - `cai.object.09.task_rule_list_show_create_update_delete` — list, list_object, show, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `object.read`, `object.write`
-- Felder und Werte: `comvenio schema object --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"object"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler
@@ -336,5 +336,5 @@ comvenio action call cai.booking.12.stats_object_guests \
 - `OUTCOME_UNKNOWN` — eine kritische Action (Anlegen, Ändern, Genehmigen, Löschen) wurde nach
   `action confirm` nicht eindeutig bestätigt; vor einer Wiederholung erst mit einem Lesebefehl den
   Stand prüfen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — ein alter, klassischer Befehl (`comvenio object …`, `comvenio booking …`) läuft nicht
-  mehr; die entsprechende Action verwenden. Siehe `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — ein Befehl, den es im CLI nicht mehr gibt; mit `comvenio action list` die
+  passende Action suchen. Siehe `comvenio help fehler USAGE_ERROR`.

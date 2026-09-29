@@ -362,5 +362,5 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
 - `OUTCOME_UNKNOWN` — a critical action (set status, start, reset, delete, confirm draw, commit
   schedule) was not clearly confirmed after `action confirm`; check the current state with a read
   before retrying. See `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — an old, classic command (`comvenio tournament …`) no longer works; use the matching
-  action instead. See `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — a command the CLI no longer has; find the matching action with
+  `comvenio action list`. See `comvenio help fehler USAGE_ERROR`.

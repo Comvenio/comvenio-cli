@@ -48,8 +48,8 @@ explicit approval.
 ### Reading contracts and current state
 
 ```bash
-comvenio schema homepage --json > homepage-schema.json
-comvenio schema design --json > design-schema.json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}' --json > homepage-schema.json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"design"}' --json > design-schema.json
 comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 ```
 
@@ -447,7 +447,7 @@ app.
 - `cai.homepage.02.apply` — apply (change with confirmation) · Scopes: `club.write`
 - `cai.homepage.03.show` — private, public (read) · Scopes: `club.read`, `public.read`
 - `cai.homepage.04.screenshot` — screenshot (read) · Scopes: `club.write`
-- Fields and values: `comvenio schema homepage --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
@@ -465,6 +465,6 @@ app.
 - `CONFLICT` — the page was already changed between reading and writing;
   read the current state again and decide anew.
   `comvenio help fehler CONFLICT`.
-- `OAUTH_ONLY` — an old command (for example `homepage slot`,
-  `homepage tree`) does not run with the current sign-in.
-  `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — an old command (for example `homepage slot`,
+  `homepage tree`) no longer exists in the CLI.
+  `comvenio help fehler USAGE_ERROR`.

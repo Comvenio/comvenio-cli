@@ -232,7 +232,8 @@ comvenio action confirm \
 
 `cai.club.05.design` merges the design settings in `design_settings`: fields
 left out are kept. The full set of fields — colors, font, spacing, custom
-CSS, header — is in the schema: `comvenio schema design --json`.
+CSS, header — is in the schema:
+`comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"design"}'`.
 
 ```bash
 comvenio action call cai.club.05.design \
@@ -242,19 +243,6 @@ comvenio action call cai.club.05.design \
 
 Before every design change, use the homepage preview and check afterward.
 The complete workflow for the public page is in the club homepage article.
-
-### Loading a public club logo
-
-A club's logo is public. `club logo --slug` loads it without signing in, using the
-slug of the club's public page, and saves it to a file; the output names club ID,
-name and club colour. Only what the public club page shows anyway is read.
-
-```bash
-comvenio club logo --slug sv-motzing --out sv-motzing.png --json
-```
-
-Unknown slug or a club without a logo → stops with a message. `--env dev` reads the
-test environment.
 
 ### Maintaining the club logo
 
@@ -341,8 +329,8 @@ comvenio action call cai.club.08.department_add \
 - `OUTCOME_UNKNOWN` — `action confirm` (for example on `department_delete`)
   ended with a timeout or server error; do not retry, check the current
   state first. `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — an old command does not run with the current sign-in; use
-  the matching action instead. `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — also a command the CLI no longer has; use the matching
+  action instead. `comvenio help fehler USAGE_ERROR`.
 - `CLUB_SELECTION_REQUIRED` — no club is assigned to the current connection.
   `comvenio help fehler CLUB_SELECTION_REQUIRED`.
 - `ACTION_NOT_LISTED` — the action is currently not in the enabled list;

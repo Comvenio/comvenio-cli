@@ -9,7 +9,7 @@ import {
   resolveCliLang,
   toPublicError,
 } from "../src/errors.ts";
-import { HttpError, OAuthOnlyError } from "../src/http.ts";
+import { unknownCommandError } from "../src/commands/removed.ts";
 import { ConnectorClientError } from "../src/mcp/client.ts";
 
 const requestId = "11111111-1111-4111-8111-111111111111";
@@ -65,10 +65,11 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(rendered.next_command).toBe("comvenio action list");
   });
 
-  test("classic command under OAuth is OAUTH_ONLY with a pointer to action list", () => {
-    const rendered = toPublicError(new OAuthOnlyError("klassisch"), { lang: "de" });
-    expect(rendered.code).toBe("OAUTH_ONLY");
-    expect(rendered.next_command).toBe("comvenio action list");
+  test("a removed classic command is USAGE_ERROR with a pointer to action list (geraetetoken-abbau-04 DC-3)", () => {
+    const rendered = toPublicError(unknownCommandError("member"), { lang: "de" });
+    expect(rendered.code).toBe("USAGE_ERROR");
+    expect(rendered.detail).toContain("„comvenio member“ gibt es im CLI nicht mehr.");
+    expect(rendered.detail).toContain("comvenio action list");
   });
 
   test("TC-03: an unexpected error is UNKNOWN_ERROR with an ID and without its internal text", () => {
@@ -111,20 +112,14 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(formatCliError(rendered).split("\n")[1]).toBe("  Der Erinnerungszeitpunkt muss in der Zukunft liegen.");
   });
 
-  test("HTTP errors of classic commands never show the URL", () => {
-    const rendered = toPublicError(new HttpError(404, "{}", "https://api.comvenio.app/club-service/x"), { lang: "de" });
-    expect(rendered.code).toBe("NOT_FOUND");
-    expect(formatCliError(rendered)).not.toContain("club-service");
-  });
-
   test("TC-04: --lang and LANG select English, default is German", () => {
     expect(langArgument(["action", "list", "--lang", "en"])).toBe("en");
     expect(langArgument(["--lang=en"])).toBe("en");
     expect(resolveCliLang(["--lang", "en"], {})).toBe("en");
     expect(resolveCliLang([], { LANG: "en_US.UTF-8" })).toBe("en");
     expect(resolveCliLang([], {})).toBe("de");
-    const english = toPublicError(new OAuthOnlyError("x"), { lang: "en" });
-    expect(formatCliError(english)).toStartWith("Error OAUTH_ONLY: This command");
-    expect(formatCliError(english)).toContain("More: comvenio help fehler OAUTH_ONLY");
+    const english = toPublicError(new PublicCliError("ACTION_NOT_LISTED", "x"), { lang: "en" });
+    expect(formatCliError(english)).toStartWith("Error ACTION_NOT_LISTED: This action");
+    expect(formatCliError(english)).toContain("More: comvenio help fehler ACTION_NOT_LISTED");
   });
 });

@@ -4,12 +4,14 @@
  *
  * Every article carries a small frontmatter (id, kategorie, domaenen,
  * stichwoerter). From it `gen:docs` builds docs/index.json and the section
- * "Befehle und Actions", which is generated from the coverage registry and
- * the schema files, never written by hand. `check:docs` fails on every gap.
+ * "Befehle und Actions", which is generated from the connector actions and
+ * the domain schemas of cai.schema.02, never written by hand. `check:docs`
+ * fails on every gap.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { K12_SCHEMA_DOMAINS } from "../apps/mcp-server/src/tools/content-homepage-news-data/schema-registry.ts";
 import type { InventoryAction } from "./action-inventory.ts";
 
 export type Lang = "de" | "en";
@@ -28,9 +30,9 @@ const GEN_START = "<!-- gen:docs befehle -->";
 const KATEGORIEN = new Set(["thema", "fehler", "uebersicht"]);
 const GEN_END = "<!-- /gen:docs -->";
 
-// Files in docs/ that are no customer articles: the template, the generated
-// coverage report and the developer checklist for new connector actions.
-export const NON_ARTICLES = new Set(["_vorlage.md", "coverage.md", "connector-aktion-hinzufuegen.md"]);
+// Files in docs/ that are no customer articles: the template and the
+// developer checklist for new connector actions.
+export const NON_ARTICLES = new Set(["_vorlage.md", "connector-aktion-hinzufuegen.md"]);
 
 export interface Frontmatter {
   id: string;
@@ -51,43 +53,6 @@ export interface Article {
 export interface Finding {
   file: string;
   reason: string;
-}
-
-interface RegistryDomain {
-  id: string;
-  status: string;
-  actions: string[];
-  docs: string[];
-}
-
-/** Top-level commands the CLI registers (`.command("zone …")`) → source text of the registering file. */
-export function topLevelCommands(root: string): Map<string, string> {
-  const commands = new Map<string, string>();
-  for (const dir of ["src/commands", "src"]) {
-    const base = join(root, dir);
-    if (!existsSync(base)) continue;
-    for (const name of readdirSync(base).filter((file) => file.endsWith(".ts"))) {
-      const text = readFileSync(join(base, name), "utf8");
-      for (const match of text.matchAll(/\.command\(\s*["'`]([a-z][a-z0-9-]*)/gu)) commands.set(match[1]!, text);
-    }
-  }
-  return commands;
-}
-
-/**
- * The full command of one registry entry. The registry lists subcommands
- * without their top-level command ("list" under "team"), but some entries are
- * top-level commands of their own ("task-zones" under "zone", "function"
- * under "agent"). A word is a subcommand when the domain's own source handles
- * it as a quoted verb ("plan" in finance); otherwise a registered top-level
- * command of that name stands for itself.
- */
-export function registryCommand(domain: string, action: string, commands: ReadonlyMap<string, string>): string {
-  const head = action.split(" ")[0]!;
-  if (head === domain) return action;
-  const ownSource = commands.get(domain) ?? "";
-  if (commands.has(head) && !ownSource.includes(`"${head}"`)) return action;
-  return `${domain} ${action}`;
 }
 
 interface CatalogEntry {
@@ -151,13 +116,6 @@ export function readArticles(root: string): Article[] {
   return articles;
 }
 
-function readRegistry(root: string): RegistryDomain[] {
-  const registry = JSON.parse(readFileSync(join(root, "src/coverage/domains.json"), "utf8")) as {
-    domains: RegistryDomain[];
-  };
-  return registry.domains;
-}
-
 function readCatalog(root: string): Record<string, CatalogEntry> {
   return JSON.parse(readFileSync(join(root, "docs/fehler/katalog.json"), "utf8")) as Record<string, CatalogEntry>;
 }
@@ -181,6 +139,9 @@ export function actionTopic(action: InventoryAction): string {
   return action.domain === "teams" ? "team" : action.domain;
 }
 
+// Domains whose field schema the connector serves through cai.schema.02.
+const SCHEMA_DOMAINS: ReadonlySet<string> = new Set<string>(K12_SCHEMA_DOMAINS);
+
 /** The generated block of "Befehle und Actions": the connector actions of the article's domains. */
 export function commandsBlock(root: string, domains: readonly string[], lang: Lang, inventory: readonly InventoryAction[]): string {
   const lines: string[] = [GEN_START];
@@ -199,10 +160,11 @@ export function commandsBlock(root: string, domains: readonly string[], lang: La
       const scopes = [...new Set(action.operations.flatMap((operation) => operation.scopes))].map((scope) => `\`${scope}\``).join(", ");
       lines.push(`- \`${action.action_id}\` — ${operations} (${label})${scopes ? ` · Scopes: ${scopes}` : ""}`);
     }
-    if (existsSync(join(root, "src/schema", `${id}.json`))) {
+    if (SCHEMA_DOMAINS.has(id)) {
+      const call = `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"${id}"}'`;
       lines.push(lang === "de"
-        ? `- Felder und Werte: \`comvenio schema ${id} --json\` (\`club_id\` setzt die Anmeldung — nie in \`--input\`)`
-        : `- Fields and values: \`comvenio schema ${id} --json\` (the sign-in sets \`club_id\` — never in \`--input\`)`);
+        ? `- Felder und Werte: \`${call}\` (\`club_id\` setzt die Anmeldung — nie in \`--input\`)`
+        : `- Fields and values: \`${call}\` (the sign-in sets \`club_id\` — never in \`--input\`)`);
     }
   }
   lines.push(GEN_END);
@@ -310,8 +272,7 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
   const findings: Finding[] = [];
   const articles = readArticles(root);
   const byPath = new Map(articles.map((article) => [article.path, article]));
-  const registry = readRegistry(root);
-  const commands = topLevelCommands(root);
+  const catalog = readCatalog(root);
 
   for (const article of articles) {
     if (!article.frontmatter) {
@@ -358,22 +319,7 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
     });
   }
 
-  // Each domain needs a German topic article that the registry points to and
-  // that names the domain; an article may only claim domains that point to it.
   const topics = articles.filter((article) => article.lang === "de" && article.frontmatter?.kategorie === "thema");
-  for (const domain of registry) {
-    const documented = topics.some((article) =>
-      domain.docs.includes(article.path) && article.frontmatter!.domaenen.includes(domain.id));
-    if (!documented) {
-      findings.push({ file: "src/coverage/domains.json", reason: `Domäne ohne Artikel: ${domain.id}` });
-    }
-    for (const action of domain.actions) {
-      const head = registryCommand(domain.id, action, commands).split(" ")[0]!;
-      if (!commands.has(head)) {
-        findings.push({ file: "src/coverage/domains.json", reason: `Befehl nicht registriert: comvenio ${head} (${domain.id})` });
-      }
-    }
-  }
   // Every connector action must show up in some article's generated block.
   const claimed = new Set(topics.flatMap((article) => article.frontmatter!.domaenen));
   for (const topic of new Set(inventory.map(actionTopic))) {
@@ -381,18 +327,20 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
       findings.push({ file: "scripts/docs-lib.ts", reason: `Actions ohne Artikel: ${topic}` });
     }
   }
-  const byId = new Map(registry.map((domain) => [domain.id, domain]));
-  for (const article of topics) {
-    for (const id of article.frontmatter!.domaenen) {
-      const domain = byId.get(id);
-      if (!domain) findings.push({ file: article.path, reason: `Unbekannte Domäne: ${id}` });
-      else if (!domain.docs.includes(article.path)) {
-        findings.push({ file: article.path, reason: `Registry verweist für ${id} nicht auf diesen Artikel` });
+  // A help pointer to an error code must name a code of the catalog: after a
+  // code is removed (OAUTH_ONLY, geraetetoken-abbau-04) no article may still
+  // send the reader there.
+  for (const article of articles) {
+    article.raw.split("\n").forEach((line, index) => {
+      for (const match of line.matchAll(/comvenio help fehler ([A-Z][A-Z0-9_]*)/gu)) {
+        if (!Object.hasOwn(catalog, match[1]!)) {
+          findings.push({ file: `${article.path}:${index + 1}`, reason: `Unbekannter Fehlercode: ${match[1]}` });
+        }
       }
-    }
+    });
   }
 
-  for (const code of Object.keys(readCatalog(root))) {
+  for (const code of Object.keys(catalog)) {
     for (const [lang, dir] of [["de", "docs/fehler"], ["en", "docs/en/fehler"]] as const) {
       const path = `${dir}/${errorSlug(code)}.md`;
       const article = byPath.get(path);
@@ -401,6 +349,15 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
         findings.push({ file: path, reason: "kategorie muss fehler sein" });
       }
     }
+  }
+
+  // An error page without its code in the catalog describes an error the CLI
+  // can no longer raise (e.g. oauth-only after the device-token removal).
+  const slugs = new Set(Object.keys(catalog).map(errorSlug));
+  for (const article of articles) {
+    if (article.frontmatter?.kategorie !== "fehler") continue;
+    const slug = article.path.replace(/^docs\/(?:en\/)?fehler\//u, "").replace(/\.md$/u, "");
+    if (!slugs.has(slug)) findings.push({ file: article.path, reason: `Fehlerseite ohne Fehlercode im Katalog: ${slug}` });
   }
 
   for (const [path, expected] of generateDocs(root, inventory)) {

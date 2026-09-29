@@ -267,7 +267,7 @@ comvenio action call cai.data.35.export_members_bookings --input '{"operation":"
 - `cai.data.33.paper_update` — update (change) · Scopes: `content.write`
 - `cai.data.34.paper_delete` — delete (change with confirmation) · Scopes: `content.write`
 - `cai.data.35.export_members_bookings` — members, bookings (change with confirmation) · Scopes: `member.read.details`, `files.export`, `booking.read`
-- Fields and values: `comvenio schema data --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"data"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
