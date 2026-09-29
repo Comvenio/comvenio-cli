@@ -279,6 +279,12 @@ export class ConnectorFileService {
       completion_started_at: null,
     };
     if (!await this.metadata.finalizeUpload({ expected: held, upload: finalized, file })) {
+      // A lost guard may still be our own write (e.g. a replayed command): only a file record
+      // from another inspection proves a takeover, and only then is our promoted object removed.
+      const stored = await this.metadata.getFile(fileId);
+      if (stored && stored.inspection_id === inspection.inspection_id && stored.object_key === promoted.object_key) {
+        return finalized.handle;
+      }
       // Another completion took the upload over meanwhile; it owns the outcome.
       await this.objects.delete({ object_key: promoted.object_key }).catch(() => undefined);
       return this.#currentHandle(record.handle.upload_id, binding);

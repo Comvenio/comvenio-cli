@@ -196,6 +196,18 @@ async function startAndComplete(setup = fixture()) {
 }
 
 describe("K15 upload, quarantine and file-reference contract", () => {
+  test("a finalize whose own write already landed (replayed command) keeps the file", async () => {
+    const setup = fixture();
+    const original = setup.metadata.finalizeUpload.bind(setup.metadata);
+    // Models ioredis resending the EVAL after a reconnect: the first run wrote, the answer got lost.
+    setup.metadata.finalizeUpload = async (input) => { await original(input); return false; };
+    const { clean } = await startAndComplete(setup);
+    expect(clean.state).toBe("clean");
+    expect(clean.file_id).not.toBeNull();
+    expect(setup.deleted()).toBe(0);
+    expect(await setup.metadata.getFile(clean.file_id!)).not.toBeNull();
+  });
+
   test("TC-01/TC-02: validates all entities and completes the safe lifecycle", async () => {
     const setup = fixture();
     const startTool = new FileUploadStartTool(setup.service);

@@ -49,7 +49,13 @@ redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4], 'XX')
 return 1
 `;
 
-const FINALIZE_UPLOAD_LUA = `${UPLOAD_GUARD_LUA}
+// A resent EVAL (ioredis replays unanswered commands after a reconnect) finds its own
+// result already stored; that is success, not a lost race.
+const FINALIZE_REPLAY_LUA = `
+if redis.call('GET', KEYS[1]) == ARGV[3] and redis.call('GET', KEYS[2]) == ARGV[5] then return 1 end
+`;
+
+const FINALIZE_UPLOAD_LUA = `${FINALIZE_REPLAY_LUA}${UPLOAD_GUARD_LUA}
 if redis.call('EXISTS', KEYS[2]) == 1 then return -1 end
 redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4], 'XX')
 redis.call('SET', KEYS[2], ARGV[5], 'EX', ARGV[6], 'NX')
