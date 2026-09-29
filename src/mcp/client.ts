@@ -30,6 +30,14 @@ export function connectorToolActionId(tool: ConnectorTool): string | null {
     : null;
 }
 
+/** DNS failure or refused connection: the request was never sent. */
+export function connectionNeverOpened(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = (error as { code?: unknown }).code;
+  const text = `${typeof code === "string" ? code : ""} ${error.message}`;
+  return /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ConnectionRefused|getaddrinfo/u.test(text);
+}
+
 export class ConnectorClientError extends Error {
   constructor(
     message: string,
@@ -112,7 +120,9 @@ export class CliConnectorClient {
 
   async #requestOnce(method: string, params?: JsonObject): Promise<JsonObject> {
     const id = randomUUID();
-    const response = await this.#fetch(this.#endpoint, {
+    let response: Response;
+    try {
+      response = await this.#fetch(this.#endpoint, {
       method: "POST",
       headers: {
         Accept: "application/json, text/event-stream",
@@ -125,8 +135,22 @@ export class CliConnectorClient {
         id,
         method,
         ...(params ? { params } : {}),
-      }),
-    });
+        }),
+      });
+    } catch (error) {
+      // The request never reached the connector (name not resolvable,
+      // connection refused): nothing can have run, so this is a plain
+      // UPSTREAM_UNAVAILABLE, not an unknown error. Anything else — a timeout
+      // after sending included — stays as it is.
+      if (connectionNeverOpened(error)) {
+        throw new ConnectorClientError("Der Comvenio-Connector ist nicht erreichbar.", {
+          error: "upstream_unavailable",
+          code: "UPSTREAM_UNAVAILABLE",
+          retryable: true,
+        });
+      }
+      throw error;
+    }
     const raw = await response.text();
     let payload: JsonRpcResponse;
     try {
@@ -210,8 +234,21 @@ export class CliConnectorClient {
     });
   }
 
-  whoami(): Promise<JsonObject> {
-    return this.callTool("cv_whoami_read", {});
+  async whoami(): Promise<JsonObject> {
+    try {
+      return await this.callTool("cv_whoami_read", {});
+    } catch (error) {
+      // The connector hides a tool whose scope the grant lacks; tools/call
+      // then answers "Tool … not found". For whoami that means club.read is
+      // missing — say so instead of an unknown error.
+      if (error instanceof ConnectorClientError && /cv_whoami_read not found/u.test(error.message)) {
+        throw new ConnectorClientError(error.message, {
+          error: "insufficient_scope",
+          required_scopes: ["club.read"],
+        });
+      }
+      throw error;
+    }
   }
 
   confirm(input: {

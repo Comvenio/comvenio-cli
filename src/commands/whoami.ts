@@ -17,6 +17,20 @@ type MeResponse = {
  * Best-effort: a valid state file already proves login, so if the user-service
  * is unreachable we still report clubId/environment from the local state.
  */
+/**
+ * The user line. The connector answers whoami without personal data (only
+ * club, scopes and version), so on the OAuth path name and e-mail are unknown
+ * — say whose sign-in it is instead of printing placeholders.
+ */
+export function userLine(payload: { name: string | null; userId: string | null; email: string | null; machineGrant: boolean }): string {
+  if (payload.name || payload.email) {
+    return `${payload.name ?? payload.userId ?? "—"}${payload.email ? ` <${payload.email}>` : ""}`;
+  }
+  return payload.machineGrant
+    ? "Maschinen-Grant (handelt mit den Rechten der Person, die ihn angelegt hat)"
+    : "über die OAuth-Verbindung angemeldet (Name und E-Mail überträgt der Connector nicht)";
+}
+
 export function registerWhoamiCommand(cli: CAC): void {
   cli
     .command("whoami", "Aktuellen Login anzeigen (Name, Club, Umgebung)")
@@ -85,10 +99,11 @@ export function registerWhoamiCommand(cli: CAC): void {
         return;
       }
 
-      console.log(
-        `User:     ${payload.name ?? payload.userId ?? "?"} <${payload.email ?? "?"}>`,
-      );
+      console.log(`User:     ${userLine(payload)}`);
       console.log(`Club:     ${payload.clubId ?? "—"}`);
+      if (Array.isArray(payload.scopes) && payload.scopes.length > 0) {
+        console.log(`Scopes:   ${payload.scopes.join(", ")}`);
+      }
       console.log(`Umgebung: ${payload.environment}`);
       console.log(`Gateway:  ${payload.gatewayBaseUrl}`);
       console.log(
