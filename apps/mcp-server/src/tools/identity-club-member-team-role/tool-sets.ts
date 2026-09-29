@@ -119,7 +119,7 @@ export abstract class K7ToolSet {
     return this.listDefinitions().filter((definition) => {
       if (definition.publication_state !== "implemented") return false;
       if (definition.execution_gate === "write_safety" && !this.#dependencies.write_safety) return false;
-      if (definition.execution_gate === "job" && !this.#dependencies.job_starter) return false;
+      if (definition.execution_gate === "job" && !this.#dependencies.job_starter?.supports(definition.action_id, "execute")) return false;
       const decision = this.#visibility.evaluate({
         tool: {
           tool_name: definition.action_id,

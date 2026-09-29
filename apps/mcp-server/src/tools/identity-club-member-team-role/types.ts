@@ -163,6 +163,8 @@ export interface K7WriteSafetyPort {
 }
 
 export interface K7JobStartPort {
+  /** True only for an operation with a registered background executor; others stay hidden (D-CAI-023). */
+  supports(action_id: string, operation: string): boolean;
   start(request: K7MutationRequest): Promise<JsonValue>;
 }
 

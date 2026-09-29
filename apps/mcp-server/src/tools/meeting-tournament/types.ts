@@ -111,6 +111,8 @@ export interface K9WriteSafetyPort {
 }
 
 export interface K9JobStartPort {
+  /** True only for an operation with a registered background executor; others stay hidden (D-CAI-023). */
+  supports(action_id: string, operation: string): boolean;
   start(request: K9MutationRequest): Promise<JsonValue>;
 }
 

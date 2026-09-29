@@ -96,7 +96,7 @@ function encryptionKey(value: Uint8Array): Buffer {
   return key;
 }
 
-function sealJson(value: JsonValue, key: Buffer, aad: string): string {
+export function sealJson(value: JsonValue, key: Buffer, aad: string): string {
   const nonce = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, nonce);
   cipher.setAAD(Buffer.from(aad, "utf8"));
@@ -113,7 +113,7 @@ function sealJson(value: JsonValue, key: Buffer, aad: string): string {
   ].join(".");
 }
 
-function openJson(value: unknown, key: Buffer, aad: string): JsonValue {
+export function openJson(value: unknown, key: Buffer, aad: string): JsonValue {
   if (typeof value !== "string") {
     throw new Error("Der verschlüsselte Shared State ist beschädigt.");
   }

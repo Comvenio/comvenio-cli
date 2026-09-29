@@ -119,6 +119,8 @@ export interface K8WriteSafetyPort {
 }
 
 export interface K8JobStartPort {
+  /** True only for an operation with a registered background executor; others stay hidden (D-CAI-023). */
+  supports(action_id: string, operation: string): boolean;
   start(request: K8MutationRequest): Promise<JsonValue>;
 }
 

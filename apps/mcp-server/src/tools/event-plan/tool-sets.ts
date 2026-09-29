@@ -140,7 +140,7 @@ export abstract class K8ToolSet {
       if (definition.publication_state !== "implemented") return [];
       const operations = Object.fromEntries(Object.values(definition.operations).filter((operation) => {
         if ((operation.execution_gate === "write_safety" || operation.execution_gate === "event_confirmation") && !this.#dependencies.write_safety) return false;
-        if (operation.execution_gate === "job" && !this.#dependencies.job_starter) return false;
+        if (operation.execution_gate === "job" && !this.#dependencies.job_starter?.supports(definition.action_id, operation.operation)) return false;
         return visibilityDecision(this.#visibility, definition.action_id, operation, context, input.capability_snapshot, input.provider_tool_updates ?? "dynamic").visible;
       }).map((operation) => [operation.operation, operation]));
       return Object.keys(operations).length ? [{ ...definition, operations }] : [];
