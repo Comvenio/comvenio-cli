@@ -209,6 +209,19 @@ comvenio action call cai.club.05.design \
 Before every design change, use the homepage preview and check afterward.
 The complete workflow for the public page is in the club homepage article.
 
+### Loading a public club logo
+
+A club's logo is public. `club logo --slug` loads it without signing in, using the
+slug of the club's public page, and saves it to a file; the output names club ID,
+name and club colour. Only what the public club page shows anyway is read.
+
+```bash
+comvenio club logo --slug sv-motzing --out sv-motzing.png --json
+```
+
+Unknown slug or a club without a logo → stops with a message. `--env dev` reads the
+test environment.
+
 ### Maintaining the club logo
 
 Not yet available as an action — do this in the web app. The most recently
