@@ -10,6 +10,7 @@ import { registerActionCommands } from "../src/commands/action.ts";
 import {
   EXTENSION_MIME,
   UPLOAD_EXTENSIONS,
+  formatFileUploadResult,
   mimeForFilename,
   pollDelayMs,
   readUploadFile,
@@ -23,6 +24,14 @@ const UPLOAD_ID = "11111111-1111-4111-8111-111111111111";
 const FILE_ID = "22222222-2222-4222-8222-222222222222";
 const JOB_ID = "33333333-3333-4333-8333-333333333333";
 const EVENT_ID = "44444444-4444-4444-8444-444444444444";
+const DATASHARE_FILE_ID = "88888888-8888-4888-8888-888888888888";
+const DATASHARE_RESULT = {
+  kind: "datashare_file",
+  file_id: DATASHARE_FILE_ID,
+  filename: "flyer.jpg",
+  content_type: "image/jpeg",
+  size_bytes: 7,
+};
 const UPLOAD_URL = "https://uploads.example.test/quarantine/object?signature=abc";
 const ALL_SCOPES = ["club.read", "files.import", "files.write"];
 
@@ -234,6 +243,35 @@ describe("action call cai.data.06.upload --file: flow", () => {
       file: { source_file_id: FILE_ID, filename: "flyer.jpg", content_type: "image/jpeg", size_bytes: 7, sha256 },
       idempotency_key: "77777777-7777-4777-8777-777777777777",
     });
+  });
+
+  test("succeeded: the DataShare file ID from the job result is returned and printed", async () => {
+    const path = localFile("flyer.jpg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]));
+    const { client } = fakeClient({ jobStatus: [job("succeeded", { result: DATASHARE_RESULT })] });
+    const result = await runFileUpload({ path, input: EVENT_INPUT, idempotency_key: "77777777-7777-4777-8777-777777777777" }, {
+      client, granted_scopes: ALL_SCOPES, fetch: fakePut().fetchImpl, sleep: recordingSleep().sleep,
+    });
+    // --json prints this object as is: `result` carries the DataShare file, `file` the local facts.
+    expect(result.result).toEqual(DATASHARE_RESULT);
+    expect(result.file).toMatchObject({ source_file_id: FILE_ID });
+    expect(JSON.parse(JSON.stringify(result)).result).toEqual(DATASHARE_RESULT);
+    const text = formatFileUploadResult(result);
+    expect(text).toContain(`Vereinsablage: Datei-ID ${DATASHARE_FILE_ID} — flyer.jpg (image/jpeg, 7 Bytes)`);
+    expect(text).toContain(`Hintergrundauftrag: ${JOB_ID} — succeeded`);
+  });
+
+  test("succeeded without a job result: result is null and the text points to cai.data.01.list", async () => {
+    const path = localFile("flyer.jpg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]));
+    for (const reported of [undefined, null, { ...DATASHARE_RESULT, kind: "connector_file" }, { ...DATASHARE_RESULT, file_id: 42 }]) {
+      const { client } = fakeClient({ jobStatus: [job("succeeded", reported === undefined ? {} : { result: reported })] });
+      const result = await runFileUpload({ path, input: EVENT_INPUT }, {
+        client, granted_scopes: ALL_SCOPES, fetch: fakePut().fetchImpl, sleep: recordingSleep().sleep,
+      });
+      expect(result.result).toBeNull();
+      const text = formatFileUploadResult(result);
+      expect(text).toContain("cai.data.01.list");
+      expect(text).not.toContain(DATASHARE_FILE_ID);
+    }
   });
 
   test("the scan takes a while: complete is repeated with the poll sequence until clean", async () => {

@@ -42,6 +42,20 @@ Jede Datei kann einem fachlichen Kontext zugeordnet werden: `none`, `club`, `dep
    - Es überträgt die Datei in einen geschützten Zwischenspeicher. Dort prüft Comvenio Größe, Prüfsumme, Dateityp und Schadsoftware (Virenscan); erst eine saubere Datei wird weitergegeben.
    - Es legt die Datei im gewählten Kontext der Vereinsablage ab. Das läuft als Hintergrundauftrag; das CLI wartet, bis er fertig ist, und gibt das Ergebnis aus (mit `--json` maschinenlesbar).
 
+   Das Ergebnis nennt die **Datei-ID der Vereinsablage** samt Name, Typ und Größe. Mit dieser ID arbeitest du danach weiter, zum Beispiel mit `cai.data.02.show`, `cai.data.09.move` oder `cai.data.10.visibility`. Mit `--json` steht sie im Feld `result`:
+
+   ```json
+   "result": {
+     "kind": "datashare_file",
+     "file_id": "<file-id>",
+     "filename": "flyer.jpg",
+     "content_type": "image/jpeg",
+     "size_bytes": 48213
+   }
+   ```
+
+   `file.source_file_id` ist dagegen nur die ID der geprüften Zwischendatei; sie ist nach dem Upload verbraucht. Meldet ein älterer Server keine Datei-ID (`result` ist `null`), findest du die Datei mit `cai.data.01.list`.
+
    `source_file_id`, `filename`, `content_type` und `expected_size` setzt das CLI selbst — diese Felder nicht zusätzlich in `--input` angeben. `--file` gibt es nur für `cai.data.06.upload`.
 4. Grenzen und Voraussetzungen: höchstens 200 MB je Datei; erlaubt sind gängige Bild-, Dokument-, Tabellen-, Präsentations-, Audio- und Videoformate sowie ZIP-Archive. Die Anmeldung braucht die Scopes `files.write` und `files.import`. Hochladen vom eigenen Rechner geht nur, solange der Server es für deinen Verein eingeschaltet hat — sonst meldet das CLI `UPLOAD_NOT_ENABLED`, und die Datei wird in der Web-App hochgeladen.
 5. Ein begonnener Upload gilt 15 Minuten. Wird der Befehl vorher abgebrochen (zum Beispiel mit Strg+C) oder dauert die Übertragung länger, verfällt er (`UPLOAD_TIMEOUT`); dann denselben Befehl neu starten. Lehnt die Prüfung die Datei ab, nennt `UPLOAD_REJECTED` den Grund, zum Beispiel `MALWARE` oder `MIME_MISMATCH`.

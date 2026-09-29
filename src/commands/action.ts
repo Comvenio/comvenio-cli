@@ -13,6 +13,7 @@ import {
 import {
   FILE_UPLOAD_ACTION_ID,
   assertNoFileDerivedFields,
+  formatFileUploadResult,
   runFileUpload,
 } from "./action-file-upload.ts";
 
@@ -103,15 +104,7 @@ async function uploadFile(options: Options): Promise<void> {
         if (!options.json) console.error(message);
       },
     });
-    output(result, options.json, () => {
-      const file = result.file as Record<string, unknown>;
-      const job = result.job as Record<string, unknown>;
-      return [
-        `Hochgeladen: ${String(file.filename)} (${String(file.content_type)}, ${String(file.size_bytes)} Bytes)`,
-        `Hintergrundauftrag: ${String(job.job_id)} — ${String(job.state)}`,
-        `Idempotenzschlüssel: ${String(result.idempotency_key)}`,
-      ].join("\n");
-    });
+    output(result, options.json, () => formatFileUploadResult(result));
   } finally {
     process.removeListener("SIGINT", onInterrupt);
   }

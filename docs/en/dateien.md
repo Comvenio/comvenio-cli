@@ -42,6 +42,20 @@ Every file can be assigned to a business context: `none`, `club`, `department`, 
    - It transfers the file into protected interim storage. There Comvenio checks size, checksum, file type and malware (virus scan); only a clean file is passed on.
    - It stores the file in the chosen context of the club's file storage. This runs as a background job; the CLI waits until it has finished and prints the result (machine-readable with `--json`).
 
+   The result names the **file ID in the club's file storage** together with name, type and size. Use this ID for any further step, for example with `cai.data.02.show`, `cai.data.09.move` or `cai.data.10.visibility`. With `--json` it is in the `result` field:
+
+   ```json
+   "result": {
+     "kind": "datashare_file",
+     "file_id": "<file-id>",
+     "filename": "flyer.jpg",
+     "content_type": "image/jpeg",
+     "size_bytes": 48213
+   }
+   ```
+
+   `file.source_file_id`, by contrast, is only the ID of the checked interim file; it is used up by the upload. If an older server does not report a file ID (`result` is `null`), find the file with `cai.data.01.list`.
+
    The CLI sets `source_file_id`, `filename`, `content_type` and `expected_size` itself — do not also pass these fields in `--input`. `--file` exists only for `cai.data.06.upload`.
 4. Limits and requirements: at most 200 MB per file; common image, document, spreadsheet, presentation, audio and video formats as well as ZIP archives are allowed. The sign-in needs the scopes `files.write` and `files.import`. Uploading from your own computer works only while the server has enabled it for your club — otherwise the CLI reports `UPLOAD_NOT_ENABLED`, and the file is uploaded in the web app.
 5. A started upload is valid for 15 minutes. If the command is interrupted before that (for example with Ctrl+C) or the transfer takes longer, it expires (`UPLOAD_TIMEOUT`); then start the same command again. If the check rejects the file, `UPLOAD_REJECTED` names the reason, for example `MALWARE` or `MIME_MISMATCH`.

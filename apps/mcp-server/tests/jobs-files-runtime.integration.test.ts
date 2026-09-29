@@ -25,6 +25,7 @@ import type {
 import type { StatelessTransportContext } from "../src/http/types.ts";
 import { SnapshotFileAuthorization } from "../src/jobs/authorization.ts";
 import { DATA_UPLOAD_EXECUTOR } from "../src/jobs/data-upload-executor.ts";
+import { projectBullJob } from "../src/jobs/bullmq.ts";
 import { JobExecutorRegistry } from "../src/jobs/executors.ts";
 import { FairUseService, MemoryFairUseStore, bundledRateLimitConfig } from "../src/jobs/fair-use.ts";
 import { MemoryJobInputStore } from "../src/jobs/input-store.ts";
@@ -428,6 +429,48 @@ describe("K15b executor cai.data.06.upload", () => {
     const again = await runJob(state, job.job_id);
     expect(again).toBeInstanceOf(UnrecoverableError);
     expect(state.backendCalls).toHaveLength(2);
+  });
+
+  test("the worker returns the DataShare file as job result; only the job owner reads it", async () => {
+    const state = setup();
+    await seedCleanFile(state.metadata);
+    const job = await startUploadJob(state.platform);
+    const record = await state.queue.get(job.job_id);
+    if (!record) throw new Error("job missing");
+    const outcome = await state.processor().process({ record, async reportProgress() {} });
+    const expected = {
+      kind: "datashare_file",
+      file_id: contentFileId,
+      filename: secretFilename,
+      content_type: "application/pdf",
+      size_bytes: fileBytes.byteLength,
+    };
+    // Only the minimized fields: no club, visibility, context, object key, URL or hash.
+    expect(outcome).toEqual({ result_file_id: null, result: expected, error_code: null });
+
+    // BullMQ persists the processor's return value; the completed job projects it onto the handle.
+    const projected = projectBullJob(record, {
+      progress: 100,
+      processedOn: Date.parse("2026-09-29T10:00:00.000Z"),
+      finishedOn: Date.parse("2026-09-29T10:00:05.000Z"),
+      returnvalue: outcome,
+    }, "completed");
+    expect(projected.handle).toMatchObject({ state: "succeeded", result_file_id: null, result: expected });
+    // Before completion, and for a record stored before the field existed, the result stays null.
+    const legacy = structuredClone(record) as { handle: Record<string, unknown> };
+    delete legacy.handle.result;
+    expect(projectBullJob(legacy as unknown as typeof record, { progress: 40, returnvalue: outcome }, "active").handle.result).toBeNull();
+
+    await state.queue.complete(job.job_id, outcome, new Date().toISOString());
+    const owner = state.platform.bind({ context, capability_snapshot: snapshotFor(), call: () => undefined });
+    expect(await owner.jobs.status({ context, club_id: clubId, job_id: job.job_id })).toMatchObject({
+      state: "succeeded",
+      result: expected,
+    });
+    const foreignContext = { ...context, subject_id: "27272727-2727-4727-8727-272727272727" };
+    const foreign = state.platform.bind({ context: foreignContext, capability_snapshot: snapshotFor(), call: () => undefined });
+    await expect(foreign.jobs.status({ context: foreignContext, club_id: clubId, job_id: job.job_id }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   test("a file of another club is refused before anything is consumed", async () => {

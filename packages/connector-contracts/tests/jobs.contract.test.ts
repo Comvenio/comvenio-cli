@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   ASYNC_JOB_HANDLE_SCHEMA,
+  ASYNC_JOB_RESULT_SCHEMA,
   RATE_LIMIT_CONFIG_SCHEMA,
   MemoryAtomicSafetyStore,
   WriteSafetyService,
@@ -155,6 +156,7 @@ describe("K15 jobs and fair-use contract", () => {
       state: "queued",
       progress_percent: 0,
       result_file_id: null,
+      result: null,
     });
 
     await setup.queue.update(started.job_id, {
@@ -177,6 +179,7 @@ describe("K15 jobs and fair-use contract", () => {
       state: "succeeded",
       progress_percent: 100,
       result_file_id: resultFileId,
+      result: null,
       error_code: null,
     });
     expect(setup.authorizationCalls()).toBe(3);
@@ -282,5 +285,49 @@ describe("K15 jobs and fair-use contract", () => {
     expect(expired.state).toBe("expired");
     await expect(setup.service.cancel({ context, club_id: clubId, job_id: first.job_id }))
       .rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("TC-07: the job result is a strict, minimal DataShare file reference", async () => {
+    const dataShareFile = {
+      kind: "datashare_file",
+      file_id: resultFileId,
+      filename: "flyer.jpg",
+      content_type: "image/jpeg",
+      size_bytes: 48_213,
+    } as const;
+    expect(ASYNC_JOB_RESULT_SCHEMA.parse(dataShareFile)).toEqual(dataShareFile);
+    // No object keys, URLs, hashes or other extra fields; no unknown kind; no empty file.
+    for (const extra of [
+      { object_key: "club/x.jpg" },
+      { download_url: "https://s3.example.test/x" },
+      { sha256: "a".repeat(64) },
+      { club_id: clubId },
+    ]) {
+      expect(ASYNC_JOB_RESULT_SCHEMA.safeParse({ ...dataShareFile, ...extra }).success).toBe(false);
+    }
+    expect(ASYNC_JOB_RESULT_SCHEMA.safeParse({ ...dataShareFile, kind: "connector_file" }).success).toBe(false);
+    expect(ASYNC_JOB_RESULT_SCHEMA.safeParse({ ...dataShareFile, size_bytes: 0 }).success).toBe(false);
+    expect(ASYNC_JOB_RESULT_SCHEMA.safeParse({ ...dataShareFile, file_id: "not-a-uuid" }).success).toBe(false);
+
+    const setup = fixture();
+    const started = await setup.service.start(startRequest());
+    // A handle stored before the field existed parses with result = null; result_file_id is unchanged.
+    const legacy: Record<string, unknown> = { ...started };
+    delete legacy.result;
+    expect(ASYNC_JOB_HANDLE_SCHEMA.parse(legacy)).toEqual({ ...started, result: null });
+    expect(ASYNC_JOB_HANDLE_SCHEMA.parse({ ...started, result: dataShareFile }).result).toEqual(dataShareFile);
+    expect(ASYNC_JOB_HANDLE_SCHEMA.safeParse({ ...started, result: { ...dataShareFile, object_key: "x" } }).success).toBe(false);
+
+    await setup.queue.complete(started.job_id, { result_file_id: null, result: dataShareFile, error_code: null }, "2026-07-21T12:00:05.000Z");
+    expect(await setup.service.status({ context, club_id: clubId, job_id: started.job_id })).toMatchObject({
+      state: "succeeded",
+      result_file_id: null,
+      result: dataShareFile,
+    });
+    // Another subject or grant never sees the result.
+    await expect(setup.service.status({ context: { ...context, subject_id: otherSubjectId }, club_id: clubId, job_id: started.job_id }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(setup.service.status({ context: { ...context, oauth_grant_id: "88888888-8888-4888-8888-888888888888" }, club_id: clubId, job_id: started.job_id }))
+      .rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

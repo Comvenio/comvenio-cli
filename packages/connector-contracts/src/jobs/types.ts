@@ -8,6 +8,17 @@ export type JobState =
   | "cancelled"
   | "expired";
 
+/** File the job stored in the club's DataShare (Vereinsablage); no keys, URLs or hashes. */
+export interface DataShareFileJobResult {
+  kind: "datashare_file";
+  file_id: UUID;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+}
+
+export type AsyncJobResult = DataShareFileJobResult;
+
 export interface AsyncJobHandle {
   job_id: UUID;
   subject_id: UUID;
@@ -20,6 +31,7 @@ export interface AsyncJobHandle {
   finished_at: string | null;
   expires_at: string;
   result_file_id: UUID | null;
+  result: AsyncJobResult | null;
   error_code: ConnectorError["code"] | null;
 }
 

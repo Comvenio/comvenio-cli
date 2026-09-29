@@ -1,5 +1,5 @@
 import type { ComvenioApiClient } from "@comvenio/comvenio-client";
-import type { JsonValue, OAuthScope } from "@comvenio/connector-contracts";
+import type { AsyncJobResult, JsonValue, OAuthScope } from "@comvenio/connector-contracts";
 
 import type { ConnectorFileService } from "../files/service.ts";
 import type { FileMetadataStore, QuarantineObjectPort } from "../files/types.ts";
@@ -37,6 +37,12 @@ export interface JobExecutor {
   readonly fair_use_bucket: "import_export" | "heavy_job";
   readonly cancellable: boolean;
   execute(context: JobExecutionContext): Promise<JsonValue>;
+  /**
+   * Projects the executor's output onto the public job result. Only
+   * minimized, non-secret fields may leave here; without it the job result
+   * stays null.
+   */
+  projectResult?(output: JsonValue): AsyncJobResult | null;
 }
 
 function key(actionId: string, operation: string): string {

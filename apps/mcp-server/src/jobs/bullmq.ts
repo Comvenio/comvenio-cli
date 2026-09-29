@@ -26,6 +26,41 @@ function stateFromBull(state: BullJobState | "unknown"): AsyncJobHandle["state"]
   return "queued";
 }
 
+/** The parts of a BullMQ job the public handle is projected from. */
+export interface BullJobSnapshot {
+  progress: unknown;
+  processedOn?: number | null;
+  finishedOn?: number | null;
+  returnvalue?: JobProcessorResult | null;
+}
+
+/**
+ * Projects a stored record onto BullMQ's view of the job. The worker's return
+ * value is the only place the executor's result is persisted; it becomes the
+ * public result once the job is completed.
+ */
+export function projectBullJob(
+  stored: InternalJobRecord,
+  job: BullJobSnapshot,
+  state: BullJobState | "unknown",
+): InternalJobRecord {
+  const record = clone(stored);
+  const progress = typeof job.progress === "number" && Number.isInteger(job.progress)
+    ? Math.min(100, Math.max(0, job.progress))
+    : record.handle.progress_percent;
+  record.handle = ASYNC_JOB_HANDLE_SCHEMA.parse({
+    ...record.handle,
+    state: stateFromBull(state),
+    progress_percent: progress,
+    started_at: job.processedOn ? new Date(job.processedOn).toISOString() : record.handle.started_at,
+    finished_at: job.finishedOn ? new Date(job.finishedOn).toISOString() : record.handle.finished_at,
+    result_file_id: state === "completed" ? job.returnvalue?.result_file_id ?? null : record.handle.result_file_id,
+    result: state === "completed" ? job.returnvalue?.result ?? null : record.handle.result ?? null,
+    error_code: state === "failed" ? job.returnvalue?.error_code ?? "UPSTREAM_UNAVAILABLE" : null,
+  });
+  return record;
+}
+
 export class BullMqJobQueue implements JobQueuePort {
   readonly queue: Queue<BullJobData, JobProcessorResult>;
   #activeCanceller: ((jobId: UUID) => boolean) | null = null;
@@ -99,21 +134,7 @@ export class BullMqJobQueue implements JobQueuePort {
   async close(): Promise<void> { await this.queue.close(); }
 
   async #project(job: Job<BullJobData, JobProcessorResult>): Promise<InternalJobRecord> {
-    const record = clone(job.data.record);
-    const state = await job.getState();
-    const progress = typeof job.progress === "number" && Number.isInteger(job.progress)
-      ? Math.min(100, Math.max(0, job.progress))
-      : record.handle.progress_percent;
-    record.handle = ASYNC_JOB_HANDLE_SCHEMA.parse({
-      ...record.handle,
-      state: stateFromBull(state),
-      progress_percent: progress,
-      started_at: job.processedOn ? new Date(job.processedOn).toISOString() : record.handle.started_at,
-      finished_at: job.finishedOn ? new Date(job.finishedOn).toISOString() : record.handle.finished_at,
-      result_file_id: state === "completed" ? job.returnvalue?.result_file_id ?? null : record.handle.result_file_id,
-      error_code: state === "failed" ? job.returnvalue?.error_code ?? "UPSTREAM_UNAVAILABLE" : null,
-    });
-    return record;
+    return projectBullJob(job.data.record, job, await job.getState());
   }
 
   #metadataKey(jobId: UUID): string { return `mcp:job:${jobId}`; }
