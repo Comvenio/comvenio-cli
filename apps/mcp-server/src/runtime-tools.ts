@@ -35,6 +35,8 @@ import {
 } from "./domain-runtime.ts";
 import type { DomainStateStore } from "./domain-state-store.ts";
 import { HELP_TOOL_COPY, HELP_TOOL_HINT, HELP_TOOL_NAME, registerHelpTool } from "./help-tool.ts";
+import { JOB_FILE_PROTECTED_TOOLS, registerJobFileTools } from "./job-file-tools.ts";
+import type { JobFilePlatform } from "./jobs/platform.ts";
 import { PublicAccessPolicy } from "./public/policy.ts";
 import { PublicResponseRedactor } from "./public/redaction.ts";
 import { PUBLIC_INPUT_SCHEMAS } from "./public/schemas.ts";
@@ -410,8 +412,14 @@ export function publishedRuntimeCatalog(
 export function createRuntimeAccessPolicy(
   environment: OAuthEnvironment,
   releaseScope: ConnectorReleaseScope = "personal_productivity_v1",
+  jobFilesEnabled = false,
 ): PublicToolSubset {
-  return new PublicToolSubset(createRuntimeToolCatalog(environment, releaseScope));
+  const catalog = createRuntimeToolCatalog(environment, releaseScope);
+  // The K15 platform tools exist only with the uploads-and-jobs group; their
+  // scopes feed the OAuth challenge, not the published review catalog.
+  return new PublicToolSubset(jobFilesEnabled && releaseScope === "full_connector_v1"
+    ? { ...catalog, protected_tools: [...catalog.protected_tools, ...JOB_FILE_PROTECTED_TOOLS] }
+    : catalog);
 }
 
 function anonymousContext(context: RequestContext): RequestContext {
@@ -812,6 +820,8 @@ export function createRuntimeServer(input: {
   club_agent_functions?: readonly AgentFunctionDescriptor[];
   domain_state_store: DomainStateStore;
   release_scope?: ConnectorReleaseScope;
+  /** Uploads and jobs (K15); null or absent while the configuration group is off. */
+  job_files?: JobFilePlatform | null;
 }): McpServer {
   const server = new McpServer({ name: "comvenio-mcp-server", version: "1.0.0" });
   const advertisedSecuritySchemes = new Map<string, readonly ToolSecurityScheme[]>();
@@ -1016,7 +1026,17 @@ export function createRuntimeServer(input: {
           public_origin: input.public_origin,
           state_store: input.domain_state_store,
           advertised_security_schemes: advertisedSecuritySchemes,
+          job_files: input.job_files ?? null,
         });
+        const jobFileTools = domainRuntime.job_binding
+          ? registerJobFileTools({
+              server,
+              context: input.context.request,
+              public_origin: input.public_origin,
+              binding: domainRuntime.job_binding,
+              advertised_security_schemes: advertisedSecuritySchemes,
+            })
+          : [];
         const widgetRuntime = registerFullWidgetRuntime({
           server,
           client: apiClient,
@@ -1032,6 +1052,7 @@ export function createRuntimeServer(input: {
         domainTools = [
           ...widgetRuntime.tools,
           ...domainRuntime.tools,
+          ...jobFileTools,
         ].sort((left, right) => left.name.localeCompare(right.name));
       }
       if (clubAgentReleased) {

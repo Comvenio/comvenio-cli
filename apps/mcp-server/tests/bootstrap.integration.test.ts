@@ -103,6 +103,17 @@ describe("production MCP process bootstrap", () => {
         "mcp-review.comvenio.app",
       ],
       allowed_origins: ["https://chatgpt.com", "https://claude.ai"],
+      jobs_files: null,
+      jobs_files_missing: [
+        "JOB_BINDING_SECRET",
+        "MCP_CLAMD_HOST",
+        "MCP_CLAMD_PORT",
+        "MCP_UPLOAD_S3_ACCESS_KEY_ID",
+        "MCP_UPLOAD_S3_BUCKET",
+        "MCP_UPLOAD_S3_ENDPOINT",
+        "MCP_UPLOAD_S3_REGION",
+        "MCP_UPLOAD_S3_SECRET_ACCESS_KEY",
+      ],
     });
     expect(clientPins.contract_version).toBe("1.0.0");
     expect(clientPins.release_state).toBe("BLOCKED");

@@ -470,6 +470,7 @@ function k7Dependencies(client: ComvenioApiClient): K7ExecutionDependencies {
       async execute(_request, mutation) { return mutation(); },
     },
     job_starter: {
+      supports() { return true; },
       async start() {
         return { job_id: "99999999-9999-4999-8999-999999999999", status: "queued" };
       },
@@ -724,7 +725,7 @@ function k8Dependencies(client: ComvenioApiClient): K8ExecutionDependencies {
   return {
     client,
     write_safety: { async execute(_request, mutation) { return mutation(); } },
-    job_starter: { async start() { return { job_id: "99999999-9999-4999-8999-999999999999", status: "queued" }; } },
+    job_starter: { supports() { return true; }, async start() { return { job_id: "99999999-9999-4999-8999-999999999999", status: "queued" }; } },
   };
 }
 
@@ -870,7 +871,7 @@ function k9Dependencies(client: ComvenioApiClient): K9ExecutionDependencies {
   return {
     client,
     write_safety: { async execute(_request, mutation) { return mutation(); } },
-    job_starter: { async start() { return { job_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", status: "queued" }; } },
+    job_starter: { supports() { return true; }, async start() { return { job_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", status: "queued" }; } },
   };
 }
 
@@ -1155,6 +1156,7 @@ function k11Dependencies(client: ComvenioApiClient): K11ExecutionDependencies {
     client,
     write_safety: { async execute(_request, mutation) { return mutation(); } },
     job_starter: {
+      supports() { return true; },
       async start() {
         return {
           job_id: "19191919-1919-4919-8919-191919191919",
@@ -1354,6 +1356,7 @@ function k12Dependencies(client: ComvenioApiClient): K12ExecutionDependencies {
     client,
     write_safety: { async execute(_request, mutation) { return mutation(); } },
     job_starter: {
+      supports() { return true; },
       async start() {
         return { job_id: "24242424-2424-4424-8424-242424242424", status: "queued", file: { file_id: "25252525-2525-4525-8525-252525252525", name: "ergebnis.pdf", mime_type: "application/pdf" } };
       },
@@ -1489,7 +1492,7 @@ function k13Dependencies(client: ComvenioApiClient): K13ExecutionDependencies {
   return {
     client,
     write_safety: { async execute(_request, mutation) { return mutation(); } },
-    job_starter: { async start() { return { job_id: "36363636-3636-4636-8636-363636363636", status: "queued", file: { file_id: "37373737-3737-4737-8737-373737373737", name: "sponsorvertrag.pdf", mime_type: "application/pdf" } }; } },
+    job_starter: { supports() { return true; }, async start() { return { job_id: "36363636-3636-4636-8636-363636363636", status: "queued", file: { file_id: "37373737-3737-4737-8737-373737373737", name: "sponsorvertrag.pdf", mime_type: "application/pdf" } }; } },
   };
 }
 

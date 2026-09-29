@@ -25,6 +25,13 @@ import {
 } from "./http/upstreams.ts";
 import type { McpRuntimeOptions, ReadinessDependency } from "./http/types.ts";
 import {
+  startJobFilePlatform,
+  type JobFileAdapterFactories,
+  type JobsFilesConfig,
+  type RunningJobFilePlatform,
+} from "./job-file-runtime.ts";
+import type { JobFilePlatform } from "./jobs/platform.ts";
+import {
   createRuntimeAccessPolicy,
   createRuntimeServer,
 } from "./runtime-tools.ts";
@@ -49,6 +56,14 @@ export interface McpProcessEnvironment {
   PORT?: string;
   RAILWAY_PUBLIC_DOMAIN?: string;
   REDIS_URL?: string;
+  MCP_UPLOAD_S3_ENDPOINT?: string;
+  MCP_UPLOAD_S3_REGION?: string;
+  MCP_UPLOAD_S3_BUCKET?: string;
+  MCP_UPLOAD_S3_ACCESS_KEY_ID?: string;
+  MCP_UPLOAD_S3_SECRET_ACCESS_KEY?: string;
+  MCP_CLAMD_HOST?: string;
+  MCP_CLAMD_PORT?: string;
+  JOB_BINDING_SECRET?: string;
 }
 
 export interface McpProcessConfig {
@@ -69,6 +84,75 @@ export interface McpProcessConfig {
   cimd_client_pins: unknown;
   allowed_hosts: string[];
   allowed_origins: string[];
+  /** Uploads and jobs (K15); null unless every value of the group is set. */
+  jobs_files: JobsFilesConfig | null;
+  /** Names (never values) of the group's variables that are missing. */
+  jobs_files_missing: string[];
+}
+
+/** Variables of the "uploads and jobs" group besides the shared-state Redis and key. */
+export const JOBS_FILES_VARIABLES = Object.freeze([
+  "MCP_UPLOAD_S3_ENDPOINT",
+  "MCP_UPLOAD_S3_REGION",
+  "MCP_UPLOAD_S3_BUCKET",
+  "MCP_UPLOAD_S3_ACCESS_KEY_ID",
+  "MCP_UPLOAD_S3_SECRET_ACCESS_KEY",
+  "MCP_CLAMD_HOST",
+  "MCP_CLAMD_PORT",
+  "JOB_BINDING_SECRET",
+] as const);
+
+function plainValue(value: string, field: string, maxLength = 2_048): string {
+  if (value !== value.trim() || value.length > maxLength || /[\u0000-\u001f\u007f]/u.test(value)) {
+    throw new Error(`${field} ist ungültig.`);
+  }
+  return value;
+}
+
+/**
+ * All or nothing: with a missing value the group stays off and the runtime
+ * behaves as before (no file tools, job actions hidden). A present but
+ * malformed value is a configuration error. Values never enter messages.
+ */
+function jobsFilesConfig(
+  input: McpProcessEnvironment,
+  sharedStateRedis: string | null,
+  sharedStateEncryption: string | null,
+): { config: JobsFilesConfig | null; missing: string[] } {
+  const missing: string[] = JOBS_FILES_VARIABLES.filter((name) => {
+    const value = input[name];
+    return value === undefined || value.trim() === "";
+  });
+  if (!sharedStateRedis) missing.push("MCP_SHARED_STATE_REDIS_URL");
+  if (!sharedStateEncryption) missing.push("MCP_SHARED_STATE_ENCRYPTION_KEY");
+  if (missing.length > 0 || !sharedStateRedis || !sharedStateEncryption) {
+    return { config: null, missing: missing.sort() };
+  }
+  const endpoint = httpsUrl(input.MCP_UPLOAD_S3_ENDPOINT, "MCP_UPLOAD_S3_ENDPOINT", false);
+  const clamdHost = plainValue(input.MCP_CLAMD_HOST!, "MCP_CLAMD_HOST", 253);
+  if (!/^[A-Za-z0-9.-]+$/u.test(clamdHost)) throw new Error("MCP_CLAMD_HOST ist ungültig.");
+  const clamdPort = Number(input.MCP_CLAMD_PORT);
+  if (!Number.isInteger(clamdPort) || clamdPort < 1 || clamdPort > 65_535) {
+    throw new Error("MCP_CLAMD_PORT muss eine ganze Zahl zwischen 1 und 65535 sein.");
+  }
+  const bindingSecret = plainValue(input.JOB_BINDING_SECRET!, "JOB_BINDING_SECRET", 512);
+  if (bindingSecret.length < 32) throw new Error("JOB_BINDING_SECRET ist ungültig.");
+  return {
+    config: {
+      redis_url: sharedStateRedis,
+      encryption_key: sharedStateEncryption,
+      quarantine: {
+        endpoint,
+        region: plainValue(input.MCP_UPLOAD_S3_REGION!, "MCP_UPLOAD_S3_REGION", 64),
+        bucket: plainValue(input.MCP_UPLOAD_S3_BUCKET!, "MCP_UPLOAD_S3_BUCKET", 255),
+        accessKeyId: plainValue(input.MCP_UPLOAD_S3_ACCESS_KEY_ID!, "MCP_UPLOAD_S3_ACCESS_KEY_ID", 256),
+        secretAccessKey: plainValue(input.MCP_UPLOAD_S3_SECRET_ACCESS_KEY!, "MCP_UPLOAD_S3_SECRET_ACCESS_KEY", 512),
+      },
+      clamd: { host: clamdHost, port: clamdPort },
+      job_binding_secret: bindingSecret,
+    },
+    missing: [],
+  };
 }
 
 function csv(value: string | undefined): string[] {
@@ -260,6 +344,7 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
       "Shared-State-Redis und Verschlüsselungsschlüssel müssen gemeinsam konfiguriert sein.",
     );
   }
+  const jobsFiles = jobsFilesConfig(input, sharedStateRedis, sharedStateEncryption);
   const configuredHosts = csv(input[`${prefix}_ALLOWED_HOSTS`]);
   const railwayHost = input.RAILWAY_PUBLIC_DOMAIN?.trim();
   const allowedHosts = [...new Set([
@@ -285,6 +370,8 @@ export function readMcpProcessConfig(input: McpProcessEnvironment): McpProcessCo
     cimd_client_pins: parsePins(input.MCP_CIMD_CLIENT_PINS_JSON),
     allowed_hosts: allowedHosts,
     allowed_origins: csv(input[`${prefix}_ALLOWED_ORIGINS`]),
+    jobs_files: jobsFiles.config,
+    jobs_files_missing: jobsFiles.missing,
   };
 }
 
@@ -292,8 +379,10 @@ function runtimeReadiness(input: {
   config: McpProcessConfig;
   registrations: PinnedProviderRegistrationResolver;
   state_store: DomainStateStore;
+  job_files_readiness?: readonly ReadinessDependency[];
 }): ReadinessDependency[] {
   return [
+    ...(input.job_files_readiness ?? []),
     { name: "catalog", required: true, check: async () => true },
     {
       name: "auth",
@@ -324,6 +413,7 @@ function runtimeServerFactory(
   config: McpProcessConfig,
   stateStore: DomainStateStore,
   agentCapabilities: HttpAgentCapabilityResolver,
+  jobFiles: JobFilePlatform | null,
 ): McpRuntimeOptions["server_factory"] {
   return async (context) => {
     const exposesClubAgent = config.release_scope === "club_agent_bridge_v1"
@@ -357,6 +447,7 @@ function runtimeServerFactory(
       club_agent_functions: releasedAgentFunctions,
       domain_state_store: stateStore,
       release_scope: config.release_scope,
+      job_files: jobFiles,
     });
     return server;
   };
@@ -365,6 +456,7 @@ function runtimeServerFactory(
 export function createMcpDeploymentCandidate(
   config: McpProcessConfig,
   stateStore?: DomainStateStore,
+  jobFiles?: RunningJobFilePlatform | null,
 ): McpHttpServer {
   const domainStateStore = stateStore
     ?? (config.environment === "development"
@@ -415,16 +507,19 @@ export function createMcpDeploymentCandidate(
     access_policy: createRuntimeAccessPolicy(
       config.environment,
       config.release_scope,
+      Boolean(jobFiles),
     ),
     server_factory: runtimeServerFactory(
       config,
       domainStateStore,
       agentCapabilities,
+      jobFiles?.platform ?? null,
     ),
     readiness_dependencies: runtimeReadiness({
       config,
       registrations,
       state_store: domainStateStore,
+      job_files_readiness: jobFiles?.readiness ?? [],
     }),
     telemetry: new ConsoleTelemetrySink(),
   });
@@ -432,10 +527,16 @@ export function createMcpDeploymentCandidate(
 
 export async function startMcpDeploymentCandidate(
   input: McpProcessEnvironment,
+  options: {
+    job_file_adapters?: JobFileAdapterFactories;
+    on_lifecycle_event?: (event: Record<string, string>) => void;
+  } = {},
 ): Promise<{
   server: McpHttpServer;
   config: McpProcessConfig;
   state_store: DomainStateStore;
+  /** Stops the job worker and closes its Redis connections; a no-op when the group is off. */
+  close_background: () => Promise<void>;
 }> {
   const config = readMcpProcessConfig(input);
   const stateStore = config.shared_state_redis_url
@@ -449,14 +550,37 @@ export async function startMcpDeploymentCandidate(
       },
     ), Buffer.from(config.shared_state_encryption_key, "base64url"))
     : new InMemoryDomainStateStore();
+  let jobFiles: RunningJobFilePlatform | null = null;
   try {
     if (!await stateStore.ready()) {
       throw new Error("Der gemeinsame MCP-Zustandsspeicher ist nicht bereit.");
     }
-    const server = createMcpDeploymentCandidate(config, stateStore);
+    if (config.jobs_files) {
+      jobFiles = await startJobFilePlatform({
+        config: config.jobs_files,
+        api_base_url: config.api_base_url,
+        auth_base_url: config.auth_base_url,
+        internal_api_key: config.internal_api_key,
+        ...(options.job_file_adapters ? { adapters: options.job_file_adapters } : {}),
+        ...(options.on_lifecycle_event ? { on_lifecycle_event: options.on_lifecycle_event } : {}),
+      });
+    }
+    options.on_lifecycle_event?.({
+      event: "comvenio_mcp_jobs_files",
+      state: jobFiles ? "enabled" : "disabled",
+      missing: config.jobs_files_missing.join(","),
+    });
+    const server = createMcpDeploymentCandidate(config, stateStore, jobFiles);
     await server.listen(config.port, config.host);
-    return { server, config, state_store: stateStore };
+    const running = jobFiles;
+    return {
+      server,
+      config,
+      state_store: stateStore,
+      close_background: async () => { await running?.close(); },
+    };
   } catch (error) {
+    await jobFiles?.close();
     await stateStore.close();
     throw error;
   }

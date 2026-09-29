@@ -9,6 +9,11 @@ export interface RailwayDeploymentConfig {
   readiness_path: "/ready";
   secret_namespace: "MCP_DEV" | "MCP_PROD";
   required_secret_names: readonly string[];
+  /**
+   * Groups that are all-or-nothing: the feature is on only when every name is
+   * set (K15 uploads and jobs also need the shared-state Redis and key).
+   */
+  optional_secret_groups: Readonly<Record<"jobs_files", readonly string[]>>;
   rollback: {
     strategy: "railway_previous_successful_deployment";
     readiness_gate_required: true;
@@ -42,6 +47,18 @@ function deployment(environment: OAuthEnvironment): RailwayDeploymentConfig {
       `${prefix}_ALLOWED_ORIGINS`,
       `${prefix}_ALLOWED_HOSTS`,
     ],
+    optional_secret_groups: {
+      jobs_files: [
+        "JOB_BINDING_SECRET",
+        "MCP_CLAMD_HOST",
+        "MCP_CLAMD_PORT",
+        "MCP_UPLOAD_S3_ACCESS_KEY_ID",
+        "MCP_UPLOAD_S3_BUCKET",
+        "MCP_UPLOAD_S3_ENDPOINT",
+        "MCP_UPLOAD_S3_REGION",
+        "MCP_UPLOAD_S3_SECRET_ACCESS_KEY",
+      ],
+    },
     rollback: {
       strategy: "railway_previous_successful_deployment",
       readiness_gate_required: true,
