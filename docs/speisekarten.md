@@ -268,14 +268,14 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 - `cai.shopping.13.purchased` — set (ändern) · Scopes: `supply.write`
 - `cai.shopping.14.generate_from_recipe` — generate (ändern) · Scopes: `supply.write`, `files.export`
 - `cai.shopping.15.generate_from_menu` — generate (ändern) · Scopes: `supply.write`, `files.export`
-- `cai.shopping.procurement.activate` — activate (ändern) · Scopes: `supply.write`
-- `cai.shopping.procurement.add` — add (ändern) · Scopes: `supply.write`
-- `cai.shopping.procurement.list` — list (lesen) · Scopes: `supply.read`
-- `cai.shopping.procurement.purchase` — purchase (ändern mit Bestätigung) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_create` — create (ändern) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_deactivate` — deactivate (ändern) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_update` — update (ändern) · Scopes: `supply.write`
-- `cai.shopping.procurement.templates` — list (lesen) · Scopes: `supply.read`
+- `cai.shopping.procurement.activate` — activate (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.add` — add (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.list` — list (lesen) · Scopes: `club.read`
+- `cai.shopping.procurement.purchase` — purchase (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.template_create` — create (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.template_deactivate` — deactivate (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.template_update` — update (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.shopping.procurement.templates` — list (lesen) · Scopes: `club.read`
 - Felder und Werte: `comvenio schema shopping --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **template**

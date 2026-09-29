@@ -36,6 +36,13 @@ function operation(input: {
 }
 const read = (name: string, path: string, permission: PermissionProfile = "supply_read") => operation({ name, permission, method: "GET", path });
 const write = (name: string, method: ComvenioHttpMethod, path: string, permission: PermissionProfile, critical = false) => operation({ name, permission, method, path, ...(critical ? { risk: "critical_write" as const } : {}) });
+// Procurement shares the canonical cv_fn authorization boundary. Supply still
+// evaluates its role-or-active-assignment rule; every mutation needs approval.
+const procurement = (name: string, method: ComvenioHttpMethod, path: string) => operation({
+  name, method, path, permission: "authenticated",
+  scopes: [method === "GET" ? "club.read" : "club.write"],
+  risk: method === "GET" ? "read" : "critical_write",
+});
 const job = (name: string, scopes: OAuthScope[], permission: PermissionProfile, routes: K11BackendRoute[]) => operation({ name, permission, scopes, risk: "reversible_write", gate: "job", routes });
 function action(action_id: K11ActionId, domain: K11Domain, source_action: string, operations: K11OperationDefinition[]): K11ActionDefinition {
   return { action_id, domain, source_action, source_path: `src/commands/${domain}.ts`, operations: Object.freeze(Object.fromEntries(operations.map((item) => [item.operation, item]))), publication_state: "implemented", blocker: null };
@@ -87,14 +94,14 @@ export const K11_ACTION_DEFINITIONS: Readonly<Record<K11ActionId, K11ActionDefin
   "cai.shopping.15.generate_from_menu": action("cai.shopping.15.generate_from_menu", "shopping", "generate-from-menu", [job("generate", ["supply.write", "files.export"], "shopping_manage", [route("POST", "/shopping/club/{club_id}/generate-from-menu/{menu_id}")])]),
   // Supply remains the sole authorization gate for facility procurement:
   // active task assignees may mutate without a cached Shopping permission.
-  "cai.shopping.procurement.list": action("cai.shopping.procurement.list", "shopping", "procurement-list", [read("list", "/procurement/ongoing", "authenticated")]),
-  "cai.shopping.procurement.templates": action("cai.shopping.procurement.templates", "shopping", "procurement-templates", [read("list", "/procurement/templates", "authenticated")]),
-  "cai.shopping.procurement.activate": action("cai.shopping.procurement.activate", "shopping", "procurement-activate", [write("activate", "POST", "/procurement/templates/{template_id}/activate", "authenticated")]),
-  "cai.shopping.procurement.add": action("cai.shopping.procurement.add", "shopping", "procurement-add", [write("add", "POST", "/procurement/items", "authenticated")]),
-  "cai.shopping.procurement.purchase": action("cai.shopping.procurement.purchase", "shopping", "procurement-purchase", [write("purchase", "PATCH", "/procurement/items/{item_id}/purchase", "authenticated", true)]),
-  "cai.shopping.procurement.template_create": action("cai.shopping.procurement.template_create", "shopping", "procurement-template-create", [write("create", "POST", "/procurement/templates", "authenticated")]),
-  "cai.shopping.procurement.template_update": action("cai.shopping.procurement.template_update", "shopping", "procurement-template-update", [write("update", "PATCH", "/procurement/templates/{template_id}", "authenticated")]),
-  "cai.shopping.procurement.template_deactivate": action("cai.shopping.procurement.template_deactivate", "shopping", "procurement-template-deactivate", [write("deactivate", "PATCH", "/procurement/templates/{template_id}", "authenticated")]),
+  "cai.shopping.procurement.list": action("cai.shopping.procurement.list", "shopping", "procurement-list", [procurement("list", "GET", "/procurement/ongoing")]),
+  "cai.shopping.procurement.templates": action("cai.shopping.procurement.templates", "shopping", "procurement-templates", [procurement("list", "GET", "/procurement/templates")]),
+  "cai.shopping.procurement.activate": action("cai.shopping.procurement.activate", "shopping", "procurement-activate", [procurement("activate", "POST", "/procurement/templates/{template_id}/activate")]),
+  "cai.shopping.procurement.add": action("cai.shopping.procurement.add", "shopping", "procurement-add", [procurement("add", "POST", "/procurement/items")]),
+  "cai.shopping.procurement.purchase": action("cai.shopping.procurement.purchase", "shopping", "procurement-purchase", [procurement("purchase", "PATCH", "/procurement/items/{item_id}/purchase")]),
+  "cai.shopping.procurement.template_create": action("cai.shopping.procurement.template_create", "shopping", "procurement-template-create", [procurement("create", "POST", "/procurement/templates")]),
+  "cai.shopping.procurement.template_update": action("cai.shopping.procurement.template_update", "shopping", "procurement-template-update", [procurement("update", "PATCH", "/procurement/templates/{template_id}")]),
+  "cai.shopping.procurement.template_deactivate": action("cai.shopping.procurement.template_deactivate", "shopping", "procurement-template-deactivate", [procurement("deactivate", "PATCH", "/procurement/templates/{template_id}")]),
 
   "cai.template.01.dish": action("cai.template.01.dish", "template", "dish", [read("list", "/global-dish-templates/", "authenticated"), read("show", "/global-dish-templates/{template_id}", "authenticated")]),
   "cai.template.02.ingredient": action("cai.template.02.ingredient", "template", "ingredient", [read("list", "/global-ingredient-templates/", "authenticated"), read("show", "/global-ingredient-templates/{template_id}", "authenticated")]),

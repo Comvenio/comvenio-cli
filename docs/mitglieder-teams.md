@@ -323,27 +323,27 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 - `cai.team.01.list` — list (lesen) · Scopes: `club.read`
 - `cai.team.02.show` — show (lesen) · Scopes: `club.read`
-- `cai.team.03.create` — create (ändern) · Scopes: `admin.write`
-- `cai.team.04.update` — update (ändern) · Scopes: `admin.write`
+- `cai.team.03.create` — create (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.team.04.update` — update (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.team.05.delete` — delete (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.team.06.member_list_add_update_remove` — member list|add|update|remove (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.team.07.resource_list_add_update_remove` — resource list|add|update|remove (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.teams.01.list` — list (lesen) · Scopes: `club.read`
 - `cai.teams.02.show` — show (lesen) · Scopes: `club.read`
-- `cai.teams.03.create` — create (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.04.update` — update (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.05.archive` — archive (ändern mit Bestätigung) · Scopes: `admin.write`
+- `cai.teams.03.create` — create (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.04.update` — update (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.05.archive` — archive (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.teams.06.season_list` — season list (lesen) · Scopes: `club.read`
-- `cai.teams.07.season_create` — season create (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.08.season_correct` — season update (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.09.season_activate` — season activate (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.10.season_complete` — season complete (ändern mit Bestätigung) · Scopes: `admin.write`
+- `cai.teams.07.season_create` — season create (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.08.season_correct` — season update (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.09.season_activate` — season activate (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.10.season_complete` — season complete (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.teams.11.roster_list` — roster show (lesen) · Scopes: `club.read`
-- `cai.teams.12.roster_add` — roster add (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.13.roster_update` — roster update (ändern mit Bestätigung) · Scopes: `admin.write`
-- `cai.teams.14.roster_remove` — roster remove (ändern mit Bestätigung) · Scopes: `admin.write`
+- `cai.teams.12.roster_add` — roster add (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.13.roster_update` — roster update (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.14.roster_remove` — roster remove (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.teams.15.roster_carry_over_preview` — roster carry-over --preview (lesen) · Scopes: `club.read`
-- `cai.teams.16.roster_carry_over` — roster carry-over (ändern mit Bestätigung) · Scopes: `admin.write`
+- `cai.teams.16.roster_carry_over` — roster carry-over (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.teams.17.competition_list` — competition list (lesen) · Scopes: `club.read`
 - `cai.teams.18.competition_create` — competition create (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.teams.19.competition_update` — competition update (ändern mit Bestätigung) · Scopes: `admin.write`
@@ -358,7 +358,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.teams.28.clarification_list` — sync clarifications (lesen) · Scopes: `club.read`
 - `cai.teams.29.clarification_resolve` — sync resolve (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.teams.30.termin_list` — termin list (lesen) · Scopes: `club.read`
-- `cai.teams.31.termin_create` — termin create (ändern mit Bestätigung) · Scopes: `admin.write`
+- `cai.teams.31.termin_create` — termin create (ändern mit Bestätigung) · Scopes: `club.write`
 - Felder und Werte: `comvenio schema team --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 

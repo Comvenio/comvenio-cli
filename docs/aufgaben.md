@@ -156,7 +156,7 @@ Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Not
 
 **task**
 
-- `cai.task.01.list` — list, mine (lesen) · Scopes: `task.read`
+- `cai.task.01.list` — list, mine (lesen) · Scopes: `task.read`, `club.read`
 - `cai.task.02.show` — show (lesen) · Scopes: `task.read`
 - `cai.task.03.show_subtasks` — show (lesen) · Scopes: `task.read`
 - `cai.task.04.show_chain` — show (lesen) · Scopes: `task.read`
@@ -169,7 +169,7 @@ Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Not
 - `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
 - `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
 - `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
-- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung) · Scopes: `club.read`, `task.write`
 - Felder und Werte: `comvenio schema task --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 

@@ -244,3 +244,9 @@ describe("TC-05: removed commands name the place in the web app", () => {
     expect(removedTopLevelCommand(["agent", "chat"])).toBeNull();
   });
 });
+
+test("chat run status does not attest a separately verified effect", () => {
+  const text = formatChatResponse({session_id: "session", response: "", approval_refs: [],
+    run_refs: [{run_id: "run", state: "succeeded"}]});
+  expect(text).toContain("Wirkung nicht separat bestätigt");
+});

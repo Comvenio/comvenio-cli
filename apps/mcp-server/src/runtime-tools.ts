@@ -768,6 +768,10 @@ export function agentFunctionToolName(capabilityId: string): string {
   return `cv_fn_${capabilityId.replace(/\./gu, "_")}`.slice(0, 64);
 }
 
+export function agentFunctionScope(riskLevel: number): OAuthScope {
+  return riskLevel >= 1 ? "club.write" : "club.read";
+}
+
 function registerAgentFunctionTools(input: {
   server: McpServer;
   functions: readonly AgentFunctionDescriptor[];
@@ -787,7 +791,7 @@ function registerAgentFunctionTools(input: {
     }
     const name = agentFunctionToolName(fn.capability_id);
     if (registered.includes(name)) continue;
-    const scope: OAuthScope = fn.risk_level >= 1 ? "club.write" : "club.read";
+    const scope = agentFunctionScope(fn.risk_level);
     const securitySchemes = oauthSecuritySchemes([scope]);
     input.advertised_security_schemes.set(name, securitySchemes);
     registerAppTool(input.server, name, {

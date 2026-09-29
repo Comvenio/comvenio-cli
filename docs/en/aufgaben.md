@@ -156,7 +156,7 @@ Deleting or reordering checklist calls, deleting a context, note or assignment, 
 
 **task**
 
-- `cai.task.01.list` — list, mine (read) · Scopes: `task.read`
+- `cai.task.01.list` — list, mine (read) · Scopes: `task.read`, `club.read`
 - `cai.task.02.show` — show (read) · Scopes: `task.read`
 - `cai.task.03.show_subtasks` — show (read) · Scopes: `task.read`
 - `cai.task.04.show_chain` — show (read) · Scopes: `task.read`
@@ -169,7 +169,7 @@ Deleting or reordering checklist calls, deleting a context, note or assignment, 
 - `cai.task.11.context_list_show_create_update_delete` — list, show, create, update, delete (read, change, change with confirmation) · Scopes: `task.read`, `task.write`
 - `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (read, change, change with confirmation) · Scopes: `task.read`, `task.write`
 - `cai.task.13.note_list_add_update_delete` — list, add, update, delete (read, change, change with confirmation) · Scopes: `task.read`, `task.write`
-- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (read, change, change with confirmation) · Scopes: `task.read`, `task.write`
+- `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (read, change, change with confirmation) · Scopes: `club.read`, `task.write`
 - Fields and values: `comvenio schema task --json` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 

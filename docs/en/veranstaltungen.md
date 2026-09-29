@@ -111,7 +111,7 @@ Key values: `event_type` (`party`, `meeting`, `excursion`, `training`, `competit
 
 ### Maintain sponsors, design, copy, DJ and external match schedule
 
-1. Create sponsor master data through the sponsoring actions (see the separate article); linking it to the event runs through `comvenio action call cai.event.18.sponsor_and_sponsor_program_workflows --input '{"operation":"link_add","event_id":"<event-id>","link":{"sponsor_id":"<sponsor-id>","tier":"gold"}}'`.
+1. Create sponsor master data through the sponsoring actions (see the separate article); linking it to the event runs through `comvenio action call cai.event.18.sponsor_and_sponsor_program_workflows --input '{"operation":"link_add","event_id":"<event-id>","link":{"advertiser_id":"<advertiser-id>","tier":"gold"}}'`.
 2. Link a sponsor to a program item: `--input '{"operation":"program_add","link_id":"<sponsor-link-id>","item_id":"<program-item-id>"}'`.
 3. Set the event theme: `comvenio action call cai.event.22.design_theme_and_asset_workflows --input '{"operation":"theme_set","event_id":"<event-id>","theme":{"primary_color":"#123456","accent_color":"#f59e0b","font_family":"Inter"}}'`. Upload an asset (critical, upload the file through the file actions first): `--input '{"operation":"asset_upload","event_id":"<event-id>","file_id":"<file-id>","asset_type":"FLYER"}'`, then `comvenio action confirm …`; removing an asset is also critical with `operation=asset_delete`.
 4. Merge public-hub copy per key: `comvenio action call cai.event.23.copy_set_reset --input '{"operation":"set","event_id":"<event-id>","values":{"hero_kicker":"Vereinsfest","program_title":"Unser Programm"}}'`; reset a single key (critical): `--input '{"operation":"reset","event_id":"<event-id>","key":"program_title"}'`.

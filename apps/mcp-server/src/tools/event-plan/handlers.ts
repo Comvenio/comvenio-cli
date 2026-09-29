@@ -181,7 +181,7 @@ simple(tag, "clear", "DELETE", by("/events/tags/assign/by-event/", "event_id"), 
 
 const sponsor = "cai.event.18.sponsor_and_sponsor_program_workflows" as const;
 simple(sponsor, "link_list", "GET", by("/events/", "event_id", "/sponsor-links"));
-simple(sponsor, "link_add", "POST", by("/events/", "event_id", "/sponsor-links"), { body: nested("link") });
+simple(sponsor, "link_add", "POST", by("/events/", "event_id", "/sponsor-links"), { body: nested("link", (input) => ({ club_id: string(input, "club_id") })) });
 simple(sponsor, "link_delete", "DELETE", by("/events/sponsor-links/", "link_id"), { deleted_id: "link_id" });
 simple(sponsor, "tier_list", "GET", by("/events/", "event_id", "/sponsor-tier-mappings"));
 simple(sponsor, "tier_add", "POST", by("/events/", "event_id", "/sponsor-tier-mappings"), { body: nested("mapping") });
