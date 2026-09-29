@@ -494,7 +494,7 @@ dokumentiert, keine erfundene Aussage.
 - `sponsors` — Sponsoren- und Partnerlogos als Raster, Laufband oder Karussell. Datenquelle: feste Eingabe im Formular (Name/Logo/Website je Sponsor); wird stattdessen im Formular auf hinterlegte Werbepartner verwiesen, holt das Widget deren öffentliche Sponsorendaten (Firmenname, Logo, Website, Verifiziert-Kennzeichen) automatisch. Macht öffentlich: Firmendaten der Sponsoren (Name, Logo, Website) — keine Personendaten. Passt zu: Startseite, Vereinsseite
 - `countdown` — Countdown bis zu einem festen Zieldatum. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Veranstaltungsseite
 - `club_history` — Vereinschronik als Zeitstrahl mit Jahreseinträgen. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Vereinsseite, Über-uns-Seite
-- `contact_form` — Kontaktformular für Anfragen von Besucherinnen und Besuchern. Datenquelle: Eingabe der anfragenden Person im Formular (Name, E-Mail, Nachricht, Einwilligung). Macht öffentlich: Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein (club-service); die Anfrage wird dort von der Vereinsverwaltung bearbeitet. Passt zu: Kontaktseite, Startseite
+- `contact_form` — Kontaktformular für Anfragen von Besucherinnen und Besuchern. Datenquelle: Eingabe der anfragenden Person im Formular (Name, E-Mail, Nachricht, Einwilligung). Macht öffentlich: Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein; die Anfrage wird dort von der Vereinsverwaltung bearbeitet. Passt zu: Kontaktseite, Startseite
 
 **news**
 

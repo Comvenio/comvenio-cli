@@ -317,10 +317,12 @@ describe("Herkunft der Config-Felder", () => {
     // Prompt noch trug.
     const felder = Object.values(homepage.widgets as Record<string, { config?: unknown[] }>)
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
-    expect(felder).toBe(561);
+    // 540 since comvenio-cli-doku 06 (2026-09-29): 21 fields no widget reads were removed
+    // (config_not_read_by_widget), one of them with a value set.
+    expect(felder).toBe(540);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;
-    expect(mitWerten).toBe(139);
+    expect(mitWerten).toBe(138);
   });
 });

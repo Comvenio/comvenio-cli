@@ -4577,8 +4577,8 @@
           "en": "Input from the enquiring person in the form (name, email, message, consent)."
         },
         "macht_oeffentlich": {
-          "de": "Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein (club-service); die Anfrage wird dort von der Vereinsverwaltung bearbeitet.",
-          "en": "Sends the submitting person's name, email address, message and the timestamp of their given consent to the club (club service); the club administration then processes the enquiry there."
+          "de": "Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein; die Anfrage wird dort von der Vereinsverwaltung bearbeitet.",
+          "en": "Sends the submitting person's name, email address, message and the timestamp of their given consent to the club; the club administration then processes the enquiry there."
         },
         "passt_zu": {
           "de": [

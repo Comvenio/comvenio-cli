@@ -477,7 +477,7 @@ invented claim.
 - `sponsors` — Sponsor and partner logos as a grid, marquee or carousel. Data source: fixed form input (name/logo/website per sponsor); if the form instead references stored advertising partners, the widget automatically fetches their public sponsor data (company name, logo, website, verified flag). Makes public: Sponsor company data (name, logo, website) — no personal data. Fits: Homepage, Club page
 - `countdown` — Countdown to a fixed target date. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Event page
 - `club_history` — Club history as a timeline of year entries. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Club page, About page
-- `contact_form` — Contact form for enquiries from visitors. Data source: Input from the enquiring person in the form (name, email, message, consent). Makes public: Sends the submitting person's name, email address, message and the timestamp of their given consent to the club (club service); the club administration then processes the enquiry there. Fits: Contact page, Homepage
+- `contact_form` — Contact form for enquiries from visitors. Data source: Input from the enquiring person in the form (name, email, message, consent). Makes public: Sends the submitting person's name, email address, message and the timestamp of their given consent to the club; the club administration then processes the enquiry there. Fits: Contact page, Homepage
 
 **news**
 

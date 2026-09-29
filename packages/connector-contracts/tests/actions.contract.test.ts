@@ -1391,7 +1391,7 @@ describe("K12 homepage, schema, verify, data and news adapter contract", () => {
     expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(57);
     expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(57);
     const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
-    expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 4, schema: 2, verify: 6, data: 35, news: 9 });
+    expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 5, schema: 2, verify: 6, data: 35, news: 9 });
     expect(sets.schema.coverage_status).toBe("core-partial");
     expect(sets.schema.listDefinitions().every((definition) => definition.coverage_status === "core-partial")).toBe(true);
   });

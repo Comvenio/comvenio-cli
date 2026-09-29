@@ -13,7 +13,7 @@ import { convertLiveTabs, type BulkTab } from "../src/tools/content-homepage-new
 import { K12_ACTION_DEFINITIONS } from "../src/tools/content-homepage-news-data/definitions.ts";
 import { createK12ToolSets } from "../src/tools/content-homepage-news-data/tool-sets.ts";
 
-function tab(slug: string, html: string, slots: Record<string, unknown> = {}): JsonValue {
+function tab(slug: string, html: string, slots: Record<string, JsonValue> = {}): JsonValue {
   return {
     label: slug,
     slug,
