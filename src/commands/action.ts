@@ -51,11 +51,12 @@ function parseInput(options: Options): Record<string, unknown> {
 }
 
 // Auch vom finance-Befehl genutzt: Dort ist die OAuth-Anmeldung der Standardweg.
-export async function connector(): Promise<CliConnectorClient> {
+// `agent chat` uses the same path; `subject` names the caller in the sign-in hint.
+export async function connector(subject = "Actions brauchen"): Promise<CliConnectorClient> {
   const state = await loadState();
   if (state.authMode !== "oauth" || !state.oauth?.resource) {
     throw new AuthError(
-      "Actions brauchen eine Anmeldung über den Browser. "
+      `${subject} eine Anmeldung über den Browser. `
       + 'Führe "comvenio login" aus.',
     );
   }

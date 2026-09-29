@@ -44,7 +44,7 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 | `plan` | `covered` | list<br>show<br>create<br>update<br>delete<br>zone list|create|update|delete|link|unlink<br>table create|duplicate|update|delete<br>marker create|update|delete<br>guest list|add|update|delete<br>detail<br>export<br>illustrate<br>compose | Keine bekannte Kernlücke. |
 | `tournament` | `covered` | series-list<br>series-show<br>series-create<br>series-update<br>series-delete<br>execution-create<br>execution-link<br>list<br>show<br>update<br>delete<br>status<br>participants<br>mannschaft<br>participant<br>participant-withdraw<br>participant-reinstate<br>participant-remove<br>start<br>matches<br>matches-clear<br>reset<br>redraw<br>standings<br>preview<br>draw<br>draw-confirm<br>schedule-generate<br>match-schedule<br>match-delete<br>match-result<br>deadline | Keine bekannte Kernlücke. |
 | `sponsor` | `covered` | list<br>show<br>add<br>update<br>delete<br>logo<br>product-list<br>product-add<br>product-update<br>product-delete<br>contract-list<br>contract-add<br>contract-update<br>contract-delete<br>assignment-list<br>assign<br>assignment-update<br>cancel<br>doc-list<br>doc-upload<br>responsible-list<br>responsible-add<br>responsible-update<br>responsible-remove | Keine bekannte Kernlücke. |
-| `agent` | `core-partial` | chat<br>approval<br>function | Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions. |
+| `agent` | `core-partial` | chat | Die dialogische Nutzung des Club-Agenten ist über den Connector abgedeckt (agent chat, Anmeldung mit comvenio login); Freigaben, Funktionen, Automationen, Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory werden in Web-App und App bedient. |
 | `finance` | `core-partial` | plan list|show|create|update|close|reopen|copy<br>position list|create|show|update|delete|import-shopping<br>summary (je Plan und je Abteilung)<br>entry list|create|show|update|delete|approve | Welle 2: Dashboard, Kassenbericht (Entwurf/Einreichen/Freigeben/Ablehnen), Steuerbericht (reports.py) Welle 3 (lesend): Event-Finanzen, Supply-Bruecke, Sponsoring-Deal Investitionsplanung (investment_plans, funding_sources, investment_scenarios, investment_feasibility) Stripe: Connect, Rechnungen, Auszahlungen, Abos, Kunden, Checkout |
 | `weekly-preview` | `core-partial` | create<br>list<br>template list<br>template show<br>template set<br>template delete | template preview (lokales PNG) folgt mit dem Render-Dienst der Wochenvorschau (K2-Bildteil). |
 | `zone` | `covered` | set list<br>set create<br>set update<br>set delete<br>list<br>create<br>update<br>estimate<br>delete<br>import<br>overview<br>task-zones<br>task-zones add<br>task-zones remove | Keine bekannte Kernlücke. |
@@ -429,14 +429,16 @@ Diese Datei ist eine eigenständige, offline lesbare Workflow-Coverage. Sie wird
 ## agent
 
 - Status: `core-partial`
-- Actions: `chat`, `approval`, `function`
+- Actions: `chat`
+- Entfernte/gesperrte Actions: `approval`, `function`, `automation`
 - Wichtige Lücken:
-  - Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions.
+  - Die dialogische Nutzung des Club-Agenten ist über den Connector abgedeckt (agent chat, Anmeldung mit comvenio login); Freigaben, Funktionen, Automationen, Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory werden in Web-App und App bedient.
 - Bewusste Ausschlüsse:
-  - agent approval approve|reject entscheidet nicht: Freigaben und Dauerfreigaben entstehen nur mit einer Sitzung in Web oder App (D-AF-16, D-AF-18); das Terminal gibt den Direktlink aus.
-  - Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.
-  - Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft.
-- Geprüfte Quellen: `src/commands/agent.ts`, `src/commands/function.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
+  - agent approval, function und automation sind im CLI entfallen (Geräte-Token-Abbau K2, D-GTA-03); ein Aufruf endet mit USAGE_ERROR und nennt den Ort in der Web-App.
+  - Freigaben entscheidet nie das Terminal (D-AF-16): agent chat gibt je Freigabe den Direktlink (approval_url) aus.
+  - Einfache Datenabfragen sollen direkte deterministische Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.
+  - Der CLI-Client übergibt weder Verein noch user_id noch Berechtigungen; Verein, Identität und Rechte leitet der Connector aus der OAuth-Anmeldung ab.
+- Geprüfte Quellen: `src/commands/agent.ts`, `src/commands/removed.ts`, `apps/mcp-server/src/runtime-tools.ts`, `Backend/Microservice-Backend/ai-service/app/routes/chat.py`, `Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/`
 - Weiterführende Doku: `docs/club-agent.md`
 
 ## finance

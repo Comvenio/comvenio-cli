@@ -728,6 +728,101 @@ describe("Remote MCP runtime", () => {
     }
   });
 
+  test("Geräte-Token-Abbau K2 TC-02/TC-08: the /cli channel receives run_refs and approval_refs additively", async () => {
+    const conversationId = "12121212-1212-4212-8212-121212121212";
+    const runId = "56565656-5656-4565-8565-565656565656";
+    const approvalId = "67676767-6767-4676-8676-676767676767";
+    const approvalUrl = `https://comvenio.app/club/${clubId}?agentSurface=member&approval=${approvalId}`;
+    const bodies: Array<Record<string, unknown>> = [];
+    const api = Bun.serve({
+      hostname: "127.0.0.1",
+      port: 0,
+      async fetch(request) {
+        const url = new URL(request.url);
+        if (request.method === "POST" && url.pathname === "/ai/chat/") {
+          const body = await request.json() as Record<string, unknown>;
+          bodies.push(body);
+          if (body.session_id === "23232323-2323-4232-8232-232323232323") {
+            return Response.json({ detail: "Session not found" }, { status: 404 });
+          }
+          return Response.json({
+            session_id: conversationId,
+            response: "Die Wochenvorschau ist angelegt und wartet auf deine Freigabe.",
+            agent_card: { internal_trace: "Darf nicht über den MCP ausgegeben werden." },
+            run_refs: [
+              { run_id: runId, kind: "command_run", state: "awaiting_approval" },
+              { run_id: "kein-lauf", kind: "command_run", state: "running" },
+            ],
+            approval_refs: [
+              { approval_id: approvalId, state: "open", approval_url: approvalUrl, decision_requires_app: true },
+              { state: "open" },
+            ],
+          });
+        }
+        return Response.json({ error: "unexpected_request" }, { status: 404 });
+      },
+    });
+    const server = new McpHttpServer(runtimeOptions({
+      access_policy: createRuntimeAccessPolicy("development", "club_agent_bridge_v1"),
+      server_factory: (requestContext) => createRuntimeServer({
+        domain_state_store: new InMemoryDomainStateStore(),
+        environment: "development",
+        api_base_url: `http://127.0.0.1:${api.port}`,
+        public_origin: "https://mcpdev.comvenio.app",
+        context: requestContext,
+        club_agent_capabilities: [releasedAgentCapability],
+        release_scope: "club_agent_bridge_v1",
+      }),
+    }));
+    const address = await server.listen(0, "127.0.0.1");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    try {
+      const call = await postCli(baseUrl, {
+        jsonrpc: "2.0",
+        id: "cli-agent-chat",
+        method: "tools/call",
+        params: {
+          name: "cv_club_agent_converse",
+          arguments: { message: "Lege die Wochenvorschau an." },
+        },
+      }, "cli-token");
+      expect(call.status).toBe(200);
+      const result = await call.json() as any;
+      expect(result.result.isError).not.toBe(true);
+      // Known fields only; malformed references are dropped, the turn stays an answer.
+      expect(result.result.structuredContent).toEqual({
+        session_id: conversationId,
+        response: "Die Wochenvorschau ist angelegt und wartet auf deine Freigabe.",
+        run_refs: [{ run_id: runId, kind: "command_run", state: "awaiting_approval" }],
+        approval_refs: [{ approval_id: approvalId, state: "open", approval_url: approvalUrl }],
+      });
+      expect(JSON.stringify(result)).not.toContain("internal_trace");
+      expect(JSON.stringify(result)).not.toContain("decision_requires_app");
+      expect(bodies[0]).toEqual({
+        message: "Lege die Wochenvorschau an.",
+        club_id: clubId,
+        context_type: "club_agent_dm",
+        surface: "mcp",
+      });
+
+      const unknownSession = await postCli(baseUrl, {
+        jsonrpc: "2.0",
+        id: "cli-agent-chat-unknown-session",
+        method: "tools/call",
+        params: {
+          name: "cv_club_agent_converse",
+          arguments: { message: "Weiter", session_id: "23232323-2323-4232-8232-232323232323" },
+        },
+      }, "cli-token");
+      const failed = await unknownSession.json() as any;
+      expect(failed.result.isError).toBe(true);
+      expect(failed.result.structuredContent).toMatchObject({ error: "not_found", code: "NOT_FOUND" });
+    } finally {
+      expect(await server.drain()).toBe(true);
+      await api.stop(true);
+    }
+  });
+
   test("exposes released functions as tools and calls the one write path (Agent-Funktionen K2)", async () => {
     const calls: Array<{ path: string; authorized: boolean; body: Record<string, unknown> }> = [];
     const api = Bun.serve({

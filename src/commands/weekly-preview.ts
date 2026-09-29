@@ -62,7 +62,7 @@ export function buildCreateBody(
 
 /** A timeout does not mean the server stopped: say how to look and how to repeat safely. */
 export function createTimeoutHint(idempotencyKey: string): string {
-  return "Zeitgrenze erreicht — der Server arbeitet eventuell weiter. Stand: comvenio function runs weekly_preview.create. "
+  return "Zeitgrenze erreicht — der Server arbeitet eventuell weiter. Stand: in der Web-App unter „Fähigkeiten & Routinen“. "
     + `Wiederholen ohne zweiten Lauf: --idempotency-key ${idempotencyKey}`;
 }
 
