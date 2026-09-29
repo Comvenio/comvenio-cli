@@ -9,6 +9,10 @@ Die Einträge folgen
 
 ### Fixed
 
+- `cai.homepage.02.apply` nimmt das Feld `slots` am Baustein `custom_html`
+  an — die benannten Slots des neuen Gerüstformats. Bisher lehnte das
+  Eingabeschema jede Seite im neuen Format ab, weil das Feld in der
+  Widget-Registry fehlte. Aktive Inhalte in Slots bleiben gesperrt.
 - Scheitert die Anmeldung mit einem Maschinen-Grant (`AUTH_REQUIRED`), nennt
   das CLI nicht mehr `comvenio login`, sondern nur den Weg über die
   Vereinseinstellungen › Automation.
@@ -21,6 +25,26 @@ Die Einträge folgen
 
 ### Added
 
+- Neue Action `cai.homepage.05.convert` (Scope `club.write`, lesend): wandelt
+  die Homepage-Gerüste des angemeldeten Vereins vom alten Format
+  (`data-widget-slot`) in benannte Slots um — der Algorithmus des
+  entfallenen Befehls `homepage convert` unverändert, jetzt Teil desselben
+  Werkzeugs wie `cai.homepage.01-04`. Antwort: `tabs` (direkt für
+  `cai.homepage.02.apply` verwendbar), dazu ein Bericht (`umgewandelt`,
+  `offene_stellen`, `katalogklassen_verschoben`, `befunde`, `hinweise`).
+  Liest dazu den Stilkatalog (`design_settings.styles`) des Vereins, damit
+  Katalogklassen in Slot-Stile wandern. Nichts wird angewendet — das bleibt
+  `cai.homepage.02.apply` mit `clear_existing: true` nach ausdrücklicher
+  Freigabe. Idempotent: ein zweiter Lauf auf bereits
+  umgewandelten Gerüsten meldet einen leeren Bericht.
+- `gen:schema` liest — sobald vorhanden — Widget- und Vorlagen-Erklärungen aus
+  `widget-erklaerungen.json` (Frontend/web-page, neben `widget-felder.json`)
+  und schreibt sie als `beschreibung` je Widget und `template_beschreibung`
+  je Vorlage in `src/schema/homepage.json`. `gen:docs` erzeugt daraus in
+  `docs/homepage.md`/`docs/en/homepage.md` die neuen Abschnitte „Widgets“ und
+  „Vorlagen“; `check:docs` meldet jedes Widget ohne Erklärung einzeln. Die
+  Quelldatei existiert im Frontend noch nicht — bis dahin zeigen beide
+  Abschnitte ehrlich eine offene Stelle statt erfundenen Texts.
 - Anmeldung ohne Browser mit einem Maschinen-Grant des Vereins: Sind
   `COMVENIO_CLIENT_ID` und `COMVENIO_CLIENT_SECRET` gesetzt, holen `whoami` und
   `action list|call|confirm` per Client-Credentials einen kurzlebigen Zugang und

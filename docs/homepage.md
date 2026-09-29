@@ -220,9 +220,17 @@ die Seite als Baum von Überschrift, Text, Bild und Knopf komponieren.
   nicht vorgesehen. Eine Section mit mehrspaltigem Layout und passender
   Breitenangabe wirkt gleichwertig als Reihe.
 - Ein bestehendes Gerüst im älteren Format — festem Text und Bildern direkt im
-  HTML statt in Slots — bleibt lesbar. Das erkannte Format je Reiter und eine
-  Umstellung ins neue Format sind noch nicht als Action verfügbar — in der
-  Web-App erledigen.
+  HTML statt in Slots — bleibt lesbar. Das erkannte Format je Reiter zeigt
+  noch keine Action — in der Web-App erledigen. Die Umstellung ins neue
+  Format selbst läuft über `cai.homepage.05.convert`: liest die aktuelle
+  Live-Struktur, wandelt jedes Gerüst um und liefert `tabs` direkt für
+  `cai.homepage.02.apply` sowie einen Bericht (`umgewandelt`, `offene_stellen`,
+  `katalogklassen_verschoben`, `befunde`). Klassen aus dem Stilkatalog des
+  Vereins (`design_settings.styles`) werden dabei in Slot-Stile verschoben.
+  Nichts wird angewendet — die `tabs` gehen unverändert an
+  `cai.homepage.01.preview` und danach an `cai.homepage.02.apply` mit
+  `clear_existing: true` (sonst entstehen die Reiter doppelt), nach
+  ausdrücklicher Freigabe.
 - Ein Gerüst mit festem Text oder Bild außerhalb eines Slots, ohne
   eindeutigen Slot-Namen, ohne Bereichsbeschriftung, mit unbekanntem Stil oder
   mit mehr als einer Hauptüberschrift wird beim Schreiben abgelehnt.
@@ -464,8 +472,150 @@ erledigen.
 - `cai.homepage.02.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.homepage.03.show` — private, public (lesen) · Scopes: `club.read`, `public.read`
 - `cai.homepage.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
+- `cai.homepage.05.convert` — convert (lesen) · Scopes: `club.write`
 - Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
+
+## Widgets
+
+Jedes Widget aus dem Homepage-Schema mit Kennung, Zweck, Datenquelle, was es
+öffentlich macht und wofür es sich eignet — nach Kategorie gruppiert. Eine
+offene Stelle statt einer Erklärung bedeutet: Das Widget ist noch nicht
+dokumentiert, keine erfundene Aussage.
+
+<!-- gen:docs widgets -->
+
+**inhalt**
+
+- `hero` — Großflächiger Titelbereich am Seitenanfang mit Überschrift, Hintergrund und Handlungsaufforderung. Datenquelle: Text und Hintergrund aus dem Formular; wenn aktiviert zusätzlich aggregierte Comvenio-Kennzahlen des Vereins (Mitgliederzahl, Anzahl kommender Events, Gründungsjahr aus den Vereinsstammdaten). Macht öffentlich: Die eingegebenen Texte und, wenn zugeschaltet, nur aggregierte Zahlen (Gesamtmitgliederzahl, Anzahl kommender Events) — keine Namen oder Einzeldaten. Passt zu: Startseite
+- `description` — Fließtext-, Zitat- oder Hinweisblock für freien Vereinstext. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Vereinsseite, beliebige Seite
+- `custom_html` — Eingebettetes HTML-Fragment für freie Gestaltung, die kein anderes Widget abdeckt. Datenquelle: feste Eingabe im Formular (rohes HTML durch die Vereinsadministration). Macht öffentlich: Genau das eingegebene HTML — kann durch die Administration beliebige Inhalte einbetten; das Widget selbst liest keine Comvenio-Daten. Passt zu: beliebige Seite
+- `stats` — Kennzahlen-Kacheln (z. B. Mitgliederzahl, Abteilungen, Events) als Karten oder Raster. Datenquelle: Je Kachel wählbar: feste Eingabe im Formular oder automatisch aus Comvenio-Daten (Gesamtmitgliederzahl, Anzahl Abteilungen, Events dieses Jahres) über die öffentlichen Zähl-Endpunkte. Macht öffentlich: Nur aggregierte Zahlen (z. B. Gesamtmitgliederzahl) — keine Namen oder Einzeldaten. Passt zu: Startseite, Vereinsseite
+- `cta` — Auffälliger Aufruf-zum-Handeln-Block mit ein oder zwei Buttons. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `contact` — Kontaktkarte mit Adresse, Telefon, E-Mail, Öffnungszeiten und Social-Links. Datenquelle: feste Eingabe im Formular Macht öffentlich: Die im Formular eingetragenen Kontaktdaten des Vereins; personenbezogene Angaben nur, wenn die Administration selbst welche einträgt (z. B. eine private Telefonnummer statt einer Vereinsnummer). Passt zu: Startseite, Vereinsseite, Kontaktseite
+- `legal_notice` — Impressum und rechtliche Angaben des Vereins. Datenquelle: feste Eingabe im Formular Macht öffentlich: Die eingetragenen rechtlichen Vereinsangaben (Name, Anschrift, vertretungsberechtigte Person, Registereintrag) — vom Verein bewusst zur Veröffentlichung bestimmt (Impressumspflicht). Passt zu: Impressumsseite, beliebige Seite
+- `faq` — Häufig gestellte Fragen als Akkordeon, Raster, Zweispalter oder Suchliste. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Vereinsseite
+- `sponsors` — Sponsoren- und Partnerlogos als Raster, Laufband oder Karussell. Datenquelle: feste Eingabe im Formular (Name/Logo/Website je Sponsor); wird stattdessen im Formular auf hinterlegte Werbepartner verwiesen, holt das Widget deren öffentliche Sponsorendaten (Firmenname, Logo, Website, Verifiziert-Kennzeichen) automatisch. Macht öffentlich: Firmendaten der Sponsoren (Name, Logo, Website) — keine Personendaten. Passt zu: Startseite, Vereinsseite
+- `countdown` — Countdown bis zu einem festen Zieldatum. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Veranstaltungsseite
+- `club_history` — Vereinschronik als Zeitstrahl mit Jahreseinträgen. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Vereinsseite, Über-uns-Seite
+- `contact_form` — Kontaktformular für Anfragen von Besucherinnen und Besuchern. Datenquelle: Eingabe der anfragenden Person im Formular (Name, E-Mail, Nachricht, Einwilligung). Macht öffentlich: Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein; die Anfrage wird dort von der Vereinsverwaltung bearbeitet. Passt zu: Kontaktseite, Startseite
+
+**news**
+
+- `news` — Liste der neuesten Vereinsnachrichten. Datenquelle: Comvenio-News-Daten des Vereins (öffentlich freigegebene Beiträge), optional gefiltert nach Abteilung. Macht öffentlich: Titel, Anrisstext/Bild und, wenn aktiviert, Autor der veröffentlichten News-Beiträge — nur was die Redaktion bereits als News veröffentlicht hat. Passt zu: Startseite, Newsseite
+- `news_highlight` — Ein einzelner hervorgehobener News-Beitrag in großer Darstellung. Datenquelle: Comvenio-News-Daten (der im Formular gewählte News-Beitrag, optional gefiltert nach Abteilung). Macht öffentlich: Titel, Text/Bild und Autor des gewählten News-Beitrags — wie beim Widget news. Passt zu: Startseite, Newsseite
+- `ticker` — Laufband mit wechselnden Kurzmeldungen aus Events, News und Geburtstagen. Datenquelle: Öffentliche Comvenio-Daten: kommende Events, News und Geburtstage — jede Quelle einzeln zuschaltbar. Macht öffentlich: Wie bei den Einzel-Widgets: Events und News wie dort; Geburtstage nur für Mitglieder mit erteilter Freigabe, dann nur Vorname und Tag/Monat ohne Geburtsjahr. Passt zu: Startseite, beliebige Seite
+
+**veranstaltungen**
+
+- `events_list` — Liste kommender oder vergangener Vereinstermine. Datenquelle: Comvenio-Event-Daten (öffentliche Terminreihe des Vereins), optional gefiltert nach Abteilung. Macht öffentlich: Titel, Datum und Ort der öffentlichen Termine — keine Teilnehmerlisten. Passt zu: Startseite, Veranstaltungsseite, Abteilungsseite
+- `event_highlight` — Ein einzelner hervorgehobener Termin mit optionalem Live-Countdown. Datenquelle: Comvenio-Event-Daten: das im Formular gewählte Event, oder eine gewählte Terminserie, bei der automatisch der nächste zukünftige öffentliche Termin angezeigt wird. Macht öffentlich: Titel, Datum/Zeit und Ort des gewählten Termins. Passt zu: Startseite, Veranstaltungsseite
+- `event_hub_embed` — Bettet die vollständige öffentliche Event-Detailseite (Event-Hub) eines Termins ein — Programm, Bilder und Anmeldung inklusive. Datenquelle: Comvenio-Event-Daten über den öffentlichen Event-Hub (intern baut dieses Widget auf demselben Baustein wie die Vorlage "Event mit Programm" auf und liest das im Formular gewählte Event aus derselben Konfiguration). Macht öffentlich: Alles, was der eingebettete Event-Hub öffentlich zeigt: Titel, Zeitraum, Ort, Programm, öffentliche Bilder und der Anmeldestatus der eingeloggten Person — keine Daten anderer Teilnehmender. Passt zu: Veranstaltungsseite
+- `event_calendar` — Monatskalender mit den Vereinsterminen. Datenquelle: Comvenio-Event-Daten (öffentliche Termine), optional gefiltert nach Abteilung. Macht öffentlich: Titel, Datum und Ort der öffentlichen Termine — keine Teilnehmerlisten. Passt zu: Veranstaltungsseite, Abteilungsseite
+- `event_program` — Ablaufplan eines einzelnen Events als Zeitstrahl oder Karten. Datenquelle: Im Vereinsbereich (angemeldet): die Ablaufplan-Einträge des im Formular gewählten Events. Auf der öffentlichen Website lädt der Baustein derzeit keine Daten. Macht öffentlich: Derzeit nichts: Öffentlich erscheint nur die Überschrift mit „Noch kein Ablaufplan vorhanden.“ Für eine öffentliche Seite den Ablauf besser als Text oder im Gerüst pflegen. Passt zu: Veranstaltungsseite
+- `event_rsvp` — Zu-/Absage-Baustein für ein Event; angemeldete Mitglieder sehen und ändern ihren eigenen Anmeldestatus. Datenquelle: Comvenio-Event-Daten: Titel und Datum des im Formular gewählten Events; im Vereinsbereich zusätzlich die Einladung der angemeldeten Person. Macht öffentlich: Überschrift, Untertitel und Datum des Events sowie den Hinweis, sich zur Rückmeldung anzumelden. Der eigene Status erscheint nur im Vereinsbereich, nie Angaben zu anderen Mitgliedern. Passt zu: Veranstaltungsseite
+- `training_schedule` — Trainings-/Übungsplan als Tabelle oder Zeitstrahl. Datenquelle: Vorrangig feste Eingabe im Formular (entries je Trainingstermin); ist auf der öffentlichen Seite kein Eintrag gepflegt, zeigt es ersatzweise die öffentlichen, wiederkehrenden Comvenio-Trainingstermine des Vereins. Macht öffentlich: Die eingetragenen bzw. öffentlichen Trainingszeiten und -orte — keine Teilnehmerlisten. Passt zu: Abteilungsseite, Veranstaltungsseite
+- `special_event_promo` — Bettet die vollständige öffentliche Event-Detailseite (Event-Hub) eines Termins ein — Programm, Bilder, News und Anmeldung. Datenquelle: Comvenio-Event-Daten über den öffentlichen Event-Hub zum im Formular gewählten Event; der Hub holt seine Daten selbst über die öffentlichen Comvenio-Endpunkte. Macht öffentlich: Alles, was der Event-Hub öffentlich zeigt: Titel, Zeitraum, Ort, Programm, öffentliche Bilder und der Anmeldestatus der eingeloggten Person — keine Daten anderer Teilnehmender. Passt zu: Veranstaltungsseite
+- `feature_grid` — Kachelraster mit Symbol, Beschriftung und Erläuterung je Kachel (z. B. Programmpunkte oder Leistungsmerkmale). Datenquelle: feste Eingabe im Formular; ohne eigene Einträge zeigt das Widget eine feste Demo-Belegung. Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Veranstaltungsseite
+- `department_calendar` — Kalender einer Abteilung mit Terminen, Training, Buchungen und Sitzungen. Datenquelle: feste Eingabe im Formular (Termine je Eintrag mit Titel, Datum, Art); ein Feld zum Filtern nach Abteilung ist im Formular vorhanden, wird vom Widget aber derzeit nicht ausgewertet. Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Abteilungsseite
+
+**mitglieder**
+
+- `team` — Vorstand/Team einer Gruppe mit Foto, Name und Funktion. Datenquelle: Comvenio-Mitgliederdaten: öffentliche Vorstands-/Funktionsdaten der im Formular gewählten Gruppe, optional gefiltert nach Abteilung. Macht öffentlich: Vor- und Nachname sowie Funktion(en) der Vorstands-/Funktionsträger:innen dieser Gruppe, wenn aktiviert auch Profilbild — keine Kontaktdaten wie E-Mail oder Telefon, sofern nicht separat freigegeben. Passt zu: Vereinsseite, Abteilungsseite, Über-uns-Seite
+- `org_chart` — Organigramm des Vereins mit Abteilungen und Funktionsträger:innen. Datenquelle: Comvenio-Mitgliederdaten: öffentlicher Organisationsbaum, Positionen und Abteilungen des Vereins, optional ab einer im Formular gewählten Wurzel-Abteilung. Macht öffentlich: Vor- und Nachname sowie Funktion der Personen in Vorstands-/Leitungspositionen und die Abteilungsstruktur — keine Kontaktdaten. Passt zu: Vereinsseite, Über-uns-Seite
+- `birthdays` — Liste anstehender Mitglieder-Geburtstage. Datenquelle: Comvenio-Mitgliederdaten: öffentliche Geburtstage — nur Mitglieder, die die Veröffentlichung ihres Geburtstags ausdrücklich erlaubt haben. Macht öffentlich: Nur Vorname sowie Tag und Monat (kein Geburtsjahr, kein Nachname) der Mitglieder mit erteilter Freigabe. Passt zu: Startseite, Vereinsseite
+- `birthday_highlight` — Feierlich gestaltete Hervorhebung des nächsten Geburtstags. Datenquelle: Comvenio-Mitgliederdaten: öffentliche Geburtstage — nur Mitglieder mit erteilter Freigabe. Macht öffentlich: Nur Vorname sowie Tag und Monat (kein Geburtsjahr, kein Nachname); wenn aktiviert zusätzlich das erreichte Alter als "Meilenstein"-Abzeichen, ebenfalls nur für Mitglieder mit erteilter Freigabe. Passt zu: Startseite
+- `honors_showcase` — Ehrungen und Auszeichnungen von Mitgliedern als Zeitstrahl, Raster oder Vitrine. Datenquelle: Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt. Macht öffentlich: Öffentlich die im Formular eingetragenen Ehrungen: Name der geehrten Person, Titel, Art, Datum und Beschreibung; fehlende Angaben ergänzt der Baustein mit Standardwerten („Ehrung“, „Mitglied“). Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge zeigt der Baustein öffentlich einen Leerzustand. Passt zu: Vereinsseite, Startseite
+- `membership_form` — Formular für einen digitalen Mitgliedsantrag. Datenquelle: Eingabe der interessierten Person im Formular (Name, Kontaktdaten, gewählte Abteilung, Nachricht). Macht öffentlich: Derzeit nichts: Das Widget zeigt beim Absenden ausdrücklich eine Fehlermeldung, dass noch kein digitaler Antragsweg eingerichtet ist, und übermittelt oder speichert die eingegebenen Daten nicht. Passt zu: Startseite, Vereinsseite
+- `honor_wall` — Ehrentafel mit Mitgliederehrungen, alternative Darstellung zu honors_showcase. Datenquelle: Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt. Macht öffentlich: Öffentlich die im Formular eingetragenen Ehrungen: Name der geehrten Person, Titel, Art, Datum und Beschreibung; fehlende Angaben ergänzt der Baustein mit Standardwerten („Ehrung“, „Mitglied“). Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge zeigt der Baustein öffentlich einen Leerzustand. Passt zu: Vereinsseite, Startseite
+
+**medien**
+
+- `image` — Einzelnes Bild oder eine einzelne Datei mit Bildunterschrift. Datenquelle: Eine im Formular ausgewählte Datei aus dem öffentlichen Dateibereich des Vereins oder eine externe Bild-URL, wahlweise das aktuelle Vereinslogo. Macht öffentlich: Nur bereits als öffentlich markierte, fertige Dateien bzw. das eingetragene Bild — keine internen/privaten Dateien. Passt zu: beliebige Seite
+- `image_gallery` — Bildergalerie als Raster, Mauerwerk, Karussell oder Filmstreifen. Datenquelle: Je nach im Formular gewählter Quelle: ausgewählte Dateien aus dem Dateibereich, Bilder eines gewählten Events, Bilder der letzten drei öffentlichen Events, ein Ordner aus dem Dateibereich, externe Bild-URLs oder öffentliche Vereinsbilder. Macht öffentlich: Nur bereits als öffentlich markierte Bilder der gewählten Quelle. Passt zu: Medienseite, Startseite, Veranstaltungsseite
+- `video` — Eingebettetes Video mit Vorschaubild. Datenquelle: feste Eingabe im Formular (Video-URL, z. B. YouTube/Vimeo/MP4, und Vorschaubild-URL). Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Medienseite, beliebige Seite
+- `background_video` — Video oder Bild als Vollbild-Hintergrundsektion mit Text darüber. Datenquelle: feste Eingabe im Formular (Video-/Bild-URL oder hochgeladene Datei-ID, Texte). Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite
+- `files` — Liste von Dateien zum Download (z. B. Satzung, Formulare). Datenquelle: Im Formular ausgewählte Dateien aus dem öffentlichen Dateibereich des Vereins. Macht öffentlich: Dateiname, Typ, Größe und ggf. Beschreibung der ausgewählten, bereits öffentlich markierten Dateien — deren Inhalt liegt in der Verantwortung der Vereinsadministration. Passt zu: Vereinsseite, beliebige Seite
+- `gallery_slideshow` — Automatisch wechselnde Bilderschau (Diashow) mit Übergangseffekt. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Medienseite, Startseite
+
+**buchung**
+
+- `booking_highlight` — Hervorgehobene buchbare Objekte (z. B. Plätze, Räume) mit Kurzinfo. Datenquelle: Im Vereinsbereich (angemeldet): die Objekte des Vereins, eingeschränkt auf die im Formular gewählten Objekte und die Anzahl. Auf der öffentlichen Website: alle öffentlichen Objekt-Highlights des Vereins — Auswahl und Anzahl aus dem Formular wirken dort derzeit nicht. Macht öffentlich: Name und Beschreibung jedes öffentlichen Objekt-Highlights, bei gesponserten Objekten das Sponsoren-Label — keine Namen der Buchenden. Passt zu: Startseite, Buchungsseite
+- `menu_display` — Speisekarte/Angebot zu einem Event oder Anlass. Datenquelle: Comvenio-Verpflegungsdaten: das öffentliche Vereinsmenü. Macht öffentlich: Gerichte/Getränke mit Beschreibung und, wenn aktiviert, Preis — keine Personendaten. Passt zu: Veranstaltungsseite, Startseite
+
+**extern**
+
+- `instagram` — Eingebetteter Instagram-Feed oder -Link. Datenquelle: Externe Einbettung des angegebenen Instagram-Konto/Links — keine Comvenio-Daten; die Inhalte lädt und zeigt Instagram direkt im Browser der Besucherin oder des Besuchers. Macht öffentlich: Nichts von Comvenio; Instagram selbst erhält beim Laden des Embeds technische Angaben des Browsers (z. B. IP-Adresse) gemäß den Datenschutzbestimmungen von Instagram/Meta. Passt zu: Startseite, Social-Media-Seite
+- `facebook` — Eingebettete Facebook-Seite oder Facebook-Link. Datenquelle: Externe Einbettung der angegebenen Facebook-Seite/Links — keine Comvenio-Daten. Macht öffentlich: Nichts von Comvenio; Facebook/Meta selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen von Meta. Passt zu: Startseite, Social-Media-Seite
+- `fupa_widget` — Eingebettetes FuPa-Sport-Widget (Ergebnisse/Tabelle). Datenquelle: Externe Einbettung des von FuPa bereitgestellten Widget-Skripts über die angegebene widgetId — keine Comvenio-Daten. Macht öffentlich: Nichts von Comvenio; FuPa selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen von FuPa. Passt zu: Sportseite, Abteilungsseite
+- `bfv_widget` — Eingebettetes BFV-Sport-Widget (Ergebnisse/Tabelle des Bayerischen Fußball-Verbands). Datenquelle: Externe Einbettung des vom BFV bereitgestellten Widget-Skripts über die im Formular angegebene Adresse — keine Comvenio-Daten. Macht öffentlich: Nichts von Comvenio; der BFV selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen des BFV. Passt zu: Sportseite, Abteilungsseite
+
+**layout**
+
+- `divider` — Grafischer Trenner zwischen zwei Abschnitten (Welle, Berg, Zickzack u. a.). Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `spacer` — Leerraum bzw. dekorativer Zwischenraum zwischen Abschnitten. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `parallax_section` — Bildsektion mit Parallax-/Zoom-/Fixiert-Effekt und optionalem Text/CTA. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, beliebige Seite
+- `gradient_section` — Farbverlauf-/Mesh-Sektion mit optionalem Text. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `decorative_element` — Rein dekoratives Element (Formen, Konfetti, Abzeichen, Zitat) ohne eigene Inhalte. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `heading` — Grundbaustein: einzelne Überschrift als benannter Slot. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `text` — Grundbaustein: einzelner Textabschnitt als benannter Slot. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+- `link` — Grundbaustein: einzelner Link/Button als benannter Slot. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+
+**community**
+
+- `testimonials` — Stimmen/Zitate von Mitgliedern, Eltern oder Partnern als Karussell, Raster oder Stapel. Datenquelle: feste Eingabe im Formular (Zitat, Verfasserin/Verfasser, Rolle, Bild, Bewertung je Eintrag). Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — nennt sie dort einen Namen, macht sie ihn damit bewusst öffentlich; das Widget liest keine Comvenio-Mitgliederdaten automatisch. Passt zu: Startseite, Vereinsseite
+- `logo_marquee` — Laufband mit Partner-/Kooperationslogos. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Vereinsseite
+- `image_text_split` — Bild neben Text mit Überschrift und optionalem Button. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, beliebige Seite
+- `forum_highlight` — Vorschau der neuesten öffentlichen Forenbeiträge. Datenquelle: Comvenio-Forendaten: öffentliche Themen und Themenbereiche des Vereinsforums — ein bewusst öffentlich zugänglicher Bereich. Macht öffentlich: Titel, Textanriss und Statistik (Antworten, Aufrufe) der öffentlichen Beiträge; als Autorenangabe zeigt das Widget nur die ersten acht Zeichen der internen Nutzer-Kennung, keinen Klarnamen. Passt zu: Startseite, Vereinsseite
+- `chat_preview` — Vorschau einiger Chat-/Forennachrichten mit Link zum vollständigen Chat. Datenquelle: feste Eingabe im Formular (Nachrichten je Eintrag: Text, Absender, Zeit); ein im Formular gewählter Themenbereich steuert nur, wohin der Link "Zum Chat" für eingeloggte Mitglieder führt, liefert aber selbst keine Live-Nachrichten. Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — keine echten, aktuellen Chatnachrichten. Passt zu: Startseite, Vereinsseite
+
+**sport**
+
+- `tournament_highlight` — Turnier-Spielstand, Spielplan oder Tabelle. Datenquelle: feste Eingabe im Formular (Spiele/Tabelle je Eintrag); optional Bezug auf ein im Formular gewähltes Comvenio-Turnier. Macht öffentlich: Nur die eingetragenen Spiel-/Tabellendaten (Mannschaftsnamen, Ergebnisse) — keine Personendaten einzelner Spieler:innen. Passt zu: Sportseite, Abteilungsseite
+- `sport_api` — Sportdaten eines externen Anbieters (Tabelle, Ergebnisse, nächstes Spiel) oder ein eingebettetes Anbieter-Widget. Datenquelle: Je nach im Formular gewähltem Anbieter: entweder feste Eingabe im Formular (Tabelle/Ergebnisse) oder eine externe Einbettung von FuPa/BFV/nuLiga über die jeweils angegebene Adresse — keine Comvenio-Daten. Macht öffentlich: Bei fester Eingabe nur die eingetragenen Daten; bei externer Einbettung erhält der jeweilige Anbieter beim Laden technische Angaben des Browsers gemäß dessen eigenen Datenschutzbestimmungen. Passt zu: Sportseite, Abteilungsseite
+- `live_match_ticker` — Live-Spielstand-Ticker für ein laufendes Turnier. Datenquelle: feste Eingabe im Formular (Spiele je Eintrag) oder, bei einem im Formular gewählten Comvenio-Turnier, dessen Live-Turnierdaten mit optionaler Hervorhebung des eigenen Teams. Macht öffentlich: Mannschaftsnamen und Spielstände — keine Personendaten einzelner Spieler:innen. Passt zu: Sportseite, Abteilungsseite
+
+**live-daten**
+
+- `member_counter` — Zähler für Mitgliederzahl und Abteilungen. Datenquelle: Comvenio-Mitgliederdaten — auf der öffentlichen Seite zeigt das Widget jedoch bewusst keine Daten: es blendet nur den Hinweis "Nur für eingeloggte Mitglieder sichtbar." ein, die Abfrage ist dort deaktiviert. Macht öffentlich: Nichts — auf der öffentlichen Seite erscheint nur der Hinweistext, keine Zahl. Passt zu: nur intern (Admin-Vorschau)
+- `department_showcase` — Übersicht der Vereinsabteilungen. Datenquelle: Comvenio-Abteilungsdaten — die Abfrage ist auf der öffentlichen Seite jedoch deaktiviert (enabled: !isPublic); dort zeigt das Widget immer den Leerzustand "Keine Abteilungen". Macht öffentlich: Nichts — auf der öffentlichen Seite lädt das Widget derzeit keine Abteilungsdaten und zeigt nur den Leerzustand. Passt zu: nur intern (Admin-Vorschau)
+- `next_training` — Nächster anstehender Trainingstermin. Datenquelle: Comvenio-Event-Daten: der öffentliche nächste Trainingstermin, optional gefiltert nach Abteilung. Macht öffentlich: Titel, Ort und Zeit des nächsten öffentlichen Trainings — keine Teilnehmerlisten. Passt zu: Startseite, Abteilungsseite
+- `booking_calendar` — Belegungskalender eines buchbaren Objekts. Datenquelle: Im Vereinsbereich (angemeldet): die aktiven Objekte des Vereins, vorgewählt das Objekt aus dem Formular. Auf der öffentlichen Website zeigt der Baustein derzeit keine Objekte. Macht öffentlich: Derzeit nichts: Öffentlich erscheint „Keine buchbaren Objekte“. Für Besucher ohne Anmeldung eignet sich booking_highlight. Passt zu: Buchungsseite
+- `meeting_decisions` — Liste von Sitzungsbeschlüssen mit Abstimmungsergebnis. Datenquelle: feste Eingabe im Formular Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt (Titel, Sitzung, Datum, Status, ggf. Stimmenzahlen) — keine automatische Comvenio-Anbindung an echte Sitzungen. Passt zu: Vereinsseite
+- `quick_links` — Liste schneller Links/Kacheln zu wichtigen Zielen. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, beliebige Seite
+- `poll` — Einfache Umfrage mit Antwortoptionen. Datenquelle: feste Eingabe im Formular (Frage, Antwortoptionen, ggf. feste Startstimmenzahl je Option). Macht öffentlich: Nichts Personenbezogenes: Eine abgegebene Stimme wird nur lokal im Browser der abstimmenden Person gehalten (kein Comvenio-Backend, keine Speicherung, kein Bezug zur Person) und geht beim Neuladen der Seite wieder verloren. Passt zu: Startseite, Vereinsseite
+
+**interaktion**
+
+- `recipe_highlight` — Hervorgehobenes Rezept (z. B. Vereinsheim-Küche). Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Vereinsseite
+- `task_overview` — Aufgabenliste mit Erledigt-Status. Datenquelle: feste Eingabe im Formular Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — keine automatische Comvenio-Anbindung an das echte Aufgaben-System. Passt zu: Vereinsseite, Abteilungsseite
+- `activity_feed` — Chronologischer Feed jüngster Vereinsaktivitäten (Events, Turniere, News). Datenquelle: Comvenio-Daten: der öffentliche, aggregierte Vereins-Feed aus Events, Turnieren und News. Macht öffentlich: Titel, Zeitpunkt und ggf. Bild der jeweiligen Events/Turniere/News — trotz des Namens keine Aktivitäten einzelner Mitglieder (kein Beitritt, kein Login o. Ä.). Passt zu: Startseite, Vereinsseite
+- `member_spotlight` — Vorgestelltes Mitglied mit Foto, Rolle und Zitat. Datenquelle: feste Eingabe im Formular (Name, Bild, Abteilung, Mitglied-seit, Zitat). Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — mit dem Einverständnis des vorgestellten Mitglieds, keine automatische Comvenio-Mitgliederdatenanbindung. Passt zu: Startseite, Vereinsseite
+- `newsletter_signup` — Anmeldeformular für einen Newsletter. Datenquelle: Eingabe der besuchenden Person (Name/E-Mail) im Formular. Macht öffentlich: Derzeit nichts: Das Formular zeigt nach dem Absenden nur eine Erfolgsmeldung, ohne die eingegebenen Daten irgendwohin zu senden oder zu speichern — es ist noch kein Versand-/Speicher-Endpunkt angebunden. Passt zu: Startseite, Vereinsseite
+- `social_feed` — Kachelraster mit Social-Media-Beiträgen. Datenquelle: feste Eingabe im Formular Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — keine echte Anbindung an Instagram/Facebook/X, anders als die Widgets instagram/facebook. Passt zu: Startseite, Social-Media-Seite
+- `weather` — Wetteranzeige (z. B. für Außenanlagen/Sportplatz). Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Abteilungsseite
+
+**werbung**
+
+- `ad_banner` — Werbebanner-Platzhalter an einer definierten Position. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: beliebige Seite
+<!-- /gen:docs widgets -->
+
+## Vorlagen
+
+Alle acht Design-Vorlagen (`cai.club.05.design`, Feld `homepage_template`) mit
+Kurzbeschreibung.
+
+<!-- gen:docs vorlagen -->
+
+- `elegance` — Editoriale, raffinierte Vorlage — schlicht, modern, elegant.
+- `sport` — Kraftvolle, dunkle, athletische Vorlage — bold und energetisch.
+- `community` — Warme, einladende, menschliche Vorlage.
+- `minimal` — Puristische, textfokussierte Vorlage — weniger ist mehr.
+- `festlich` — Traditionsbewusste, prestigeträchtige Vorlage für Events und Jubiläen.
+- `modern` — Zeitgemäße Vorlage mit Gradient-Akzenten und Wow-Faktor.
+- `classic` — Bewährte, verlässliche, traditionell-strukturierte Vorlage — die sichere Wahl.
+- `flex` — Generische, vollständig konfigurationsgesteuerte Vorlage ohne fest einprogrammiertes Design — jedes Aussehen entsteht aus der Konfiguration, nicht aus neuem Code (Verallgemeinerung der vereinsspezifischen Motzing-Vorlage).
+<!-- /gen:docs vorlagen -->
 
 ## Fehler
 

@@ -342,7 +342,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Großflächiger Titelbereich am Seitenanfang mit Überschrift, Hintergrund und Handlungsaufforderung.",
+          "en": "Large title area at the top of the page with headline, background and call-to-action."
+        },
+        "datenquelle": {
+          "de": "Text und Hintergrund aus dem Formular; wenn aktiviert zusätzlich aggregierte Comvenio-Kennzahlen des Vereins (Mitgliederzahl, Anzahl kommender Events, Gründungsjahr aus den Vereinsstammdaten).",
+          "en": "Text and background from the form; if enabled, also aggregated Comvenio figures for the club (member count, number of upcoming events, founding year from the club's master data)."
+        },
+        "macht_oeffentlich": {
+          "de": "Die eingegebenen Texte und, wenn zugeschaltet, nur aggregierte Zahlen (Gesamtmitgliederzahl, Anzahl kommender Events) — keine Namen oder Einzeldaten.",
+          "en": "The entered texts and, if switched on, only aggregate numbers (total member count, number of upcoming events) — no names or individual records."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite"
+          ],
+          "en": [
+            "Homepage"
+          ]
+        }
+      }
     },
     "description": {
       "config": [
@@ -394,12 +417,42 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Fließtext-, Zitat- oder Hinweisblock für freien Vereinstext.",
+          "en": "Prose, quote or callout block for free-form club text."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page",
+            "any page"
+          ]
+        }
+      }
     },
     "custom_html": {
       "config": [
         {
           "name": "html"
+        },
+        {
+          "name": "slots"
         },
         {
           "name": "show_title"
@@ -426,7 +479,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Eingebettetes HTML-Fragment für freie Gestaltung, die kein anderes Widget abdeckt.",
+          "en": "Embedded HTML fragment for free-form design not covered by another widget."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (rohes HTML durch die Vereinsadministration).",
+          "en": "fixed input in the widget form (raw HTML entered by the club administration)."
+        },
+        "macht_oeffentlich": {
+          "de": "Genau das eingegebene HTML — kann durch die Administration beliebige Inhalte einbetten; das Widget selbst liest keine Comvenio-Daten.",
+          "en": "Exactly the entered HTML — the administration can embed arbitrary content through it; the widget itself does not read any Comvenio data."
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "stats": {
       "config": [
@@ -488,7 +564,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Kennzahlen-Kacheln (z. B. Mitgliederzahl, Abteilungen, Events) als Karten oder Raster.",
+          "en": "Metric tiles (e.g. member count, departments, events) as cards or a grid."
+        },
+        "datenquelle": {
+          "de": "Je Kachel wählbar: feste Eingabe im Formular oder automatisch aus Comvenio-Daten (Gesamtmitgliederzahl, Anzahl Abteilungen, Events dieses Jahres) über die öffentlichen Zähl-Endpunkte.",
+          "en": "Selectable per tile: fixed form input, or automatically from Comvenio data (total member count, number of departments, events this year) via the public count endpoints."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur aggregierte Zahlen (z. B. Gesamtmitgliederzahl) — keine Namen oder Einzeldaten.",
+          "en": "Only aggregate numbers (e.g. total member count) — no names or individual records."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "cta": {
       "config": [
@@ -539,7 +640,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Auffälliger Aufruf-zum-Handeln-Block mit ein oder zwei Buttons.",
+          "en": "Prominent call-to-action block with one or two buttons."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "contact": {
       "config": [
@@ -589,7 +713,34 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Kontaktkarte mit Adresse, Telefon, E-Mail, Öffnungszeiten und Social-Links.",
+          "en": "Contact card with address, phone, email, opening hours and social links."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "Die im Formular eingetragenen Kontaktdaten des Vereins; personenbezogene Angaben nur, wenn die Administration selbst welche einträgt (z. B. eine private Telefonnummer statt einer Vereinsnummer).",
+          "en": "The club's contact details entered in the form; personal data only if the administration enters some itself (e.g. a private phone number instead of a club number)."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite",
+            "Kontaktseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page",
+            "Contact page"
+          ]
+        }
+      }
     },
     "legal_notice": {
       "status": "legacy_optional",
@@ -659,7 +810,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Impressum und rechtliche Angaben des Vereins.",
+          "en": "Legal notice (imprint) and legal information for the club."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "Die eingetragenen rechtlichen Vereinsangaben (Name, Anschrift, vertretungsberechtigte Person, Registereintrag) — vom Verein bewusst zur Veröffentlichung bestimmt (Impressumspflicht).",
+          "en": "The entered legal club details (name, address, legal representative, register entry) — deliberately published by the club to meet its legal disclosure duty."
+        },
+        "passt_zu": {
+          "de": [
+            "Impressumsseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Legal notice page",
+            "any page"
+          ]
+        }
+      }
     },
     "faq": {
       "config": [
@@ -684,7 +860,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Häufig gestellte Fragen als Akkordeon, Raster, Zweispalter oder Suchliste.",
+          "en": "Frequently asked questions as an accordion, grid, two-column list or searchable list."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "sponsors": {
       "config": [
@@ -722,7 +923,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Sponsoren- und Partnerlogos als Raster, Laufband oder Karussell.",
+          "en": "Sponsor and partner logos as a grid, marquee or carousel."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Name/Logo/Website je Sponsor); wird stattdessen im Formular auf hinterlegte Werbepartner verwiesen, holt das Widget deren öffentliche Sponsorendaten (Firmenname, Logo, Website, Verifiziert-Kennzeichen) automatisch.",
+          "en": "fixed form input (name/logo/website per sponsor); if the form instead references stored advertising partners, the widget automatically fetches their public sponsor data (company name, logo, website, verified flag)."
+        },
+        "macht_oeffentlich": {
+          "de": "Firmendaten der Sponsoren (Name, Logo, Website) — keine Personendaten.",
+          "en": "Sponsor company data (name, logo, website) — no personal data."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "countdown": {
       "config": [
@@ -748,7 +974,32 @@
         {
           "name": "show_event_date"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Countdown bis zu einem festen Zieldatum.",
+          "en": "Countdown to a fixed target date."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Event page"
+          ]
+        }
+      }
     },
     "club_history": {
       "config": [
@@ -780,7 +1031,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Vereinschronik als Zeitstrahl mit Jahreseinträgen.",
+          "en": "Club history as a timeline of year entries."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Über-uns-Seite"
+          ],
+          "en": [
+            "Club page",
+            "About page"
+          ]
+        }
+      }
     },
     "news": {
       "config": [
@@ -860,7 +1136,32 @@
         {
           "name": "department_id"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "news",
+        "zweck": {
+          "de": "Liste der neuesten Vereinsnachrichten.",
+          "en": "List of the club's latest news articles."
+        },
+        "datenquelle": {
+          "de": "Comvenio-News-Daten des Vereins (öffentlich freigegebene Beiträge), optional gefiltert nach Abteilung.",
+          "en": "The club's Comvenio news data (publicly released articles), optionally filtered by department."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Anrisstext/Bild und, wenn aktiviert, Autor der veröffentlichten News-Beiträge — nur was die Redaktion bereits als News veröffentlicht hat.",
+          "en": "Title, teaser text/image and, if enabled, the author of published news articles — only what the editors have already published as news."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Newsseite"
+          ],
+          "en": [
+            "Homepage",
+            "News page"
+          ]
+        }
+      }
     },
     "news_highlight": {
       "config": [
@@ -878,14 +1179,33 @@
         },
         {
           "name": "department_id"
-        },
-        {
-          "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_title"
-      ]
+      "beschreibung": {
+        "kategorie": "news",
+        "zweck": {
+          "de": "Ein einzelner hervorgehobener News-Beitrag in großer Darstellung.",
+          "en": "A single highlighted news article in a large presentation."
+        },
+        "datenquelle": {
+          "de": "Comvenio-News-Daten (der im Formular gewählte News-Beitrag, optional gefiltert nach Abteilung).",
+          "en": "Comvenio news data (the news article chosen in the form, optionally filtered by department)."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Text/Bild und Autor des gewählten News-Beitrags — wie beim Widget news.",
+          "en": "Title, text/image and author of the chosen news article — same as the news widget."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Newsseite"
+          ],
+          "en": [
+            "Homepage",
+            "News page"
+          ]
+        }
+      }
     },
     "ticker": {
       "config": [
@@ -932,14 +1252,33 @@
         },
         {
           "name": "pause_on_hover"
-        },
-        {
-          "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_title"
-      ]
+      "beschreibung": {
+        "kategorie": "news",
+        "zweck": {
+          "de": "Laufband mit wechselnden Kurzmeldungen aus Events, News und Geburtstagen.",
+          "en": "Marquee ticker cycling through short items from events, news and birthdays."
+        },
+        "datenquelle": {
+          "de": "Öffentliche Comvenio-Daten: kommende Events, News und Geburtstage — jede Quelle einzeln zuschaltbar.",
+          "en": "Public Comvenio data: upcoming events, news and birthdays — each source can be switched on separately."
+        },
+        "macht_oeffentlich": {
+          "de": "Wie bei den Einzel-Widgets: Events und News wie dort; Geburtstage nur für Mitglieder mit erteilter Freigabe, dann nur Vorname und Tag/Monat ohne Geburtsjahr.",
+          "en": "Same as the individual widgets: events and news as there; birthdays only for members who opted in, showing only first name and day/month without the birth year."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Homepage",
+            "any page"
+          ]
+        }
+      }
     },
     "events_list": {
       "config": [
@@ -978,7 +1317,34 @@
         {
           "name": "department_id"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Liste kommender oder vergangener Vereinstermine.",
+          "en": "List of upcoming or past club events."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten (öffentliche Terminreihe des Vereins), optional gefiltert nach Abteilung.",
+          "en": "Comvenio event data (the club's public event series), optionally filtered by department."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Datum und Ort der öffentlichen Termine — keine Teilnehmerlisten.",
+          "en": "Title, date and location of public events — no attendee lists."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Veranstaltungsseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Event page",
+            "Department page"
+          ]
+        }
+      }
     },
     "event_highlight": {
       "config": [
@@ -1053,7 +1419,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Ein einzelner hervorgehobener Termin mit optionalem Live-Countdown.",
+          "en": "A single highlighted event with an optional live countdown."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten: das im Formular gewählte Event, oder eine gewählte Terminserie, bei der automatisch der nächste zukünftige öffentliche Termin angezeigt wird.",
+          "en": "Comvenio event data: the event chosen in the form, or a chosen recurring series whose next upcoming public occurrence is shown automatically."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Datum/Zeit und Ort des gewählten Termins.",
+          "en": "Title, date/time and location of the chosen event."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Event page"
+          ]
+        }
+      }
     },
     "event_hub_embed": {
       "config": [
@@ -1062,9 +1453,6 @@
         },
         {
           "name": "height"
-        },
-        {
-          "name": "show_title"
         },
         {
           "name": "design_preset",
@@ -1081,17 +1469,36 @@
         }
       ],
       "config_not_read_by_widget": [
-        "event_id",
-        "show_title"
-      ]
+        "event_id"
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Bettet die vollständige öffentliche Event-Detailseite (Event-Hub) eines Termins ein — Programm, Bilder und Anmeldung inklusive.",
+          "en": "Embeds the full public event detail page (event hub) of one event — including programme, images and RSVP."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten über den öffentlichen Event-Hub (intern baut dieses Widget auf demselben Baustein wie die Vorlage \"Event mit Programm\" auf und liest das im Formular gewählte Event aus derselben Konfiguration).",
+          "en": "Comvenio event data via the public event hub (internally this widget builds on the same building block as the \"event with programme\" widget and reads the event chosen in the form from the same configuration)."
+        },
+        "macht_oeffentlich": {
+          "de": "Alles, was der eingebettete Event-Hub öffentlich zeigt: Titel, Zeitraum, Ort, Programm, öffentliche Bilder und der Anmeldestatus der eingeloggten Person — keine Daten anderer Teilnehmender.",
+          "en": "Everything the embedded event hub shows publicly: title, time span, location, programme, public images and the logged-in visitor's own RSVP status — no data about other attendees."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Event page"
+          ]
+        }
+      }
     },
     "event_calendar": {
       "config": [
         {
           "name": "show_title"
-        },
-        {
-          "name": "days_ahead"
         },
         {
           "name": "week_start",
@@ -1104,9 +1511,31 @@
           "name": "department_id"
         }
       ],
-      "config_not_read_by_widget": [
-        "days_ahead"
-      ]
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Monatskalender mit den Vereinsterminen.",
+          "en": "Monthly calendar of club events."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten (öffentliche Termine), optional gefiltert nach Abteilung.",
+          "en": "Comvenio event data (public events), optionally filtered by department."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Datum und Ort der öffentlichen Termine — keine Teilnehmerlisten.",
+          "en": "Title, date and location of public events — no attendee lists."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Event page",
+            "Department page"
+          ]
+        }
+      }
     },
     "event_program": {
       "config": [
@@ -1125,14 +1554,31 @@
         },
         {
           "name": "show_area"
-        },
-        {
-          "name": "show_responsible"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_responsible"
-      ]
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Ablaufplan eines einzelnen Events als Zeitstrahl oder Karten.",
+          "en": "Running order of a single event as a timeline or cards."
+        },
+        "datenquelle": {
+          "de": "Im Vereinsbereich (angemeldet): die Ablaufplan-Einträge des im Formular gewählten Events. Auf der öffentlichen Website lädt der Baustein derzeit keine Daten.",
+          "en": "In the members area (logged in): the programme items of the event chosen in the form. On the public website the block currently loads no data."
+        },
+        "macht_oeffentlich": {
+          "de": "Derzeit nichts: Öffentlich erscheint nur die Überschrift mit „Noch kein Ablaufplan vorhanden.“ Für eine öffentliche Seite den Ablauf besser als Text oder im Gerüst pflegen.",
+          "en": "Currently nothing: publicly only the heading with “Noch kein Ablaufplan vorhanden.” (no running order yet) appears. For a public page, maintain the running order as text or in the skeleton instead."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Event page"
+          ]
+        }
+      }
     },
     "event_rsvp": {
       "config": [
@@ -1151,7 +1597,30 @@
         {
           "name": "waitlist_label"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Zu-/Absage-Baustein für ein Event; angemeldete Mitglieder sehen und ändern ihren eigenen Anmeldestatus.",
+          "en": "RSVP block for an event; logged-in members see and change their own invitation status."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten: Titel und Datum des im Formular gewählten Events; im Vereinsbereich zusätzlich die Einladung der angemeldeten Person.",
+          "en": "Comvenio event data: title and date of the event chosen in the form; in the members area also the logged-in person's own invitation."
+        },
+        "macht_oeffentlich": {
+          "de": "Überschrift, Untertitel und Datum des Events sowie den Hinweis, sich zur Rückmeldung anzumelden. Der eigene Status erscheint nur im Vereinsbereich, nie Angaben zu anderen Mitgliedern.",
+          "en": "The event's headline, subtitle and date plus a prompt to log in to respond. The own status appears only in the members area, never information about other members."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Event page"
+          ]
+        }
+      }
     },
     "training_schedule": {
       "config": [
@@ -1181,14 +1650,62 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Trainings-/Übungsplan als Tabelle oder Zeitstrahl.",
+          "en": "Training schedule as a table or timeline."
+        },
+        "datenquelle": {
+          "de": "Vorrangig feste Eingabe im Formular (entries je Trainingstermin); ist auf der öffentlichen Seite kein Eintrag gepflegt, zeigt es ersatzweise die öffentlichen, wiederkehrenden Comvenio-Trainingstermine des Vereins.",
+          "en": "Primarily fixed form input (entries per training slot); on the public page, if no entry is configured, it falls back to the club's public recurring Comvenio training sessions."
+        },
+        "macht_oeffentlich": {
+          "de": "Die eingetragenen bzw. öffentlichen Trainingszeiten und -orte — keine Teilnehmerlisten.",
+          "en": "The entered or public training times and locations — no attendee lists."
+        },
+        "passt_zu": {
+          "de": [
+            "Abteilungsseite",
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Department page",
+            "Event page"
+          ]
+        }
+      }
     },
     "special_event_promo": {
       "config": [
         {
           "name": "event_id"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Bettet die vollständige öffentliche Event-Detailseite (Event-Hub) eines Termins ein — Programm, Bilder, News und Anmeldung.",
+          "en": "Embeds the full public event detail page (event hub) of one event — programme, images, news and RSVP."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten über den öffentlichen Event-Hub zum im Formular gewählten Event; der Hub holt seine Daten selbst über die öffentlichen Comvenio-Endpunkte.",
+          "en": "Comvenio event data via the public event hub for the event chosen in the form; the hub fetches its own data via Comvenio's public endpoints."
+        },
+        "macht_oeffentlich": {
+          "de": "Alles, was der Event-Hub öffentlich zeigt: Titel, Zeitraum, Ort, Programm, öffentliche Bilder und der Anmeldestatus der eingeloggten Person — keine Daten anderer Teilnehmender.",
+          "en": "Everything the event hub shows publicly: title, time span, location, programme, public images and the logged-in visitor's own RSVP status — no data about other attendees."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Event page"
+          ]
+        }
+      }
     },
     "feature_grid": {
       "config": [
@@ -1213,7 +1730,32 @@
         {
           "name": "title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Kachelraster mit Symbol, Beschriftung und Erläuterung je Kachel (z. B. Programmpunkte oder Leistungsmerkmale).",
+          "en": "Tile grid with an icon, label and detail text per tile (e.g. programme highlights or features)."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular; ohne eigene Einträge zeigt das Widget eine feste Demo-Belegung.",
+          "en": "fixed form input; without any entries the widget shows a fixed set of demo tiles."
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Event page"
+          ]
+        }
+      }
     },
     "team": {
       "config": [
@@ -1301,7 +1843,34 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Vorstand/Team einer Gruppe mit Foto, Name und Funktion.",
+          "en": "A group's board/team with photo, name and role."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Mitgliederdaten: öffentliche Vorstands-/Funktionsdaten der im Formular gewählten Gruppe, optional gefiltert nach Abteilung.",
+          "en": "Comvenio member data: public governance/officer data of the group chosen in the form, optionally filtered by department."
+        },
+        "macht_oeffentlich": {
+          "de": "Vor- und Nachname sowie Funktion(en) der Vorstands-/Funktionsträger:innen dieser Gruppe, wenn aktiviert auch Profilbild — keine Kontaktdaten wie E-Mail oder Telefon, sofern nicht separat freigegeben.",
+          "en": "First and last name plus role(s) of that group's officers, and — if enabled — a profile photo; no contact details such as email or phone unless separately released."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Abteilungsseite",
+            "Über-uns-Seite"
+          ],
+          "en": [
+            "Club page",
+            "Department page",
+            "About page"
+          ]
+        }
+      }
     },
     "org_chart": {
       "config": [
@@ -1330,7 +1899,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Organigramm des Vereins mit Abteilungen und Funktionsträger:innen.",
+          "en": "Club organisation chart with departments and officers."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Mitgliederdaten: öffentlicher Organisationsbaum, Positionen und Abteilungen des Vereins, optional ab einer im Formular gewählten Wurzel-Abteilung.",
+          "en": "Comvenio member data: the club's public organisation tree, positions and departments, optionally starting from a root department chosen in the form."
+        },
+        "macht_oeffentlich": {
+          "de": "Vor- und Nachname sowie Funktion der Personen in Vorstands-/Leitungspositionen und die Abteilungsstruktur — keine Kontaktdaten.",
+          "en": "First and last name plus role of people in board/leadership positions, and the department structure — no contact details."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Über-uns-Seite"
+          ],
+          "en": [
+            "Club page",
+            "About page"
+          ]
+        }
+      }
     },
     "birthdays": {
       "config": [
@@ -1361,7 +1955,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Liste anstehender Mitglieder-Geburtstage.",
+          "en": "List of upcoming member birthdays."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Mitgliederdaten: öffentliche Geburtstage — nur Mitglieder, die die Veröffentlichung ihres Geburtstags ausdrücklich erlaubt haben.",
+          "en": "Comvenio member data: public birthdays — only members who have explicitly opted in to publishing their birthday."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur Vorname sowie Tag und Monat (kein Geburtsjahr, kein Nachname) der Mitglieder mit erteilter Freigabe.",
+          "en": "Only the first name plus day and month (no birth year, no last name) of members who opted in."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "birthday_highlight": {
       "config": [
@@ -1386,7 +2005,30 @@
         {
           "name": "max_display"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Feierlich gestaltete Hervorhebung des nächsten Geburtstags.",
+          "en": "Celebratory highlight of the next upcoming birthday."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Mitgliederdaten: öffentliche Geburtstage — nur Mitglieder mit erteilter Freigabe.",
+          "en": "Comvenio member data: public birthdays — only members who opted in."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur Vorname sowie Tag und Monat (kein Geburtsjahr, kein Nachname); wenn aktiviert zusätzlich das erreichte Alter als \"Meilenstein\"-Abzeichen, ebenfalls nur für Mitglieder mit erteilter Freigabe.",
+          "en": "Only the first name plus day and month (no birth year, no last name); if enabled, also the age reached as a milestone badge — again only for members who opted in."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite"
+          ],
+          "en": [
+            "Homepage"
+          ]
+        }
+      }
     },
     "honors_showcase": {
       "config": [
@@ -1403,34 +2045,40 @@
           ]
         },
         {
-          "name": "show_member_name"
-        },
-        {
-          "name": "show_date"
-        },
-        {
           "name": "featured_honor_index"
         },
         {
           "name": "max_honors"
         },
         {
-          "name": "animation_style",
-          "values": [
-            "stagger",
-            "reveal",
-            "none"
-          ]
-        },
-        {
           "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_member_name",
-        "show_date",
-        "animation_style"
-      ]
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Ehrungen und Auszeichnungen von Mitgliedern als Zeitstrahl, Raster oder Vitrine.",
+          "en": "Member honours and awards as a timeline, grid or spotlight display."
+        },
+        "datenquelle": {
+          "de": "Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt.",
+          "en": "In the members area (logged in): confirmed honours from Comvenio member data. On the public website: only the honours entered by hand in the form — the public honours data is currently not displayed there."
+        },
+        "macht_oeffentlich": {
+          "de": "Öffentlich die im Formular eingetragenen Ehrungen: Name der geehrten Person, Titel, Art, Datum und Beschreibung; fehlende Angaben ergänzt der Baustein mit Standardwerten („Ehrung“, „Mitglied“). Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge zeigt der Baustein öffentlich einen Leerzustand.",
+          "en": "Publicly the honours entered in the form: the honoured person's name, title, type, date and description; missing details are filled with defaults (“Ehrung”, “Mitglied”). This is personal data — only enter what the club deliberately publishes as recognition. Without entries the block shows an empty state on the public site."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Startseite"
+          ],
+          "en": [
+            "Club page",
+            "Homepage"
+          ]
+        }
+      }
     },
     "image": {
       "config": [
@@ -1511,14 +2159,31 @@
         },
         {
           "name": "file_description"
-        },
-        {
-          "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_title"
-      ]
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Einzelnes Bild oder eine einzelne Datei mit Bildunterschrift.",
+          "en": "A single image or file with a caption."
+        },
+        "datenquelle": {
+          "de": "Eine im Formular ausgewählte Datei aus dem öffentlichen Dateibereich des Vereins oder eine externe Bild-URL, wahlweise das aktuelle Vereinslogo.",
+          "en": "A file selected in the form from the club's public file area, or an external image URL, or optionally the club's current logo."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur bereits als öffentlich markierte, fertige Dateien bzw. das eingetragene Bild — keine internen/privaten Dateien.",
+          "en": "Only files already marked public and finished, or the entered image — no internal/private files."
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "image_gallery": {
       "config": [
@@ -1562,14 +2227,35 @@
             "carousel",
             "filmstrip"
           ]
-        },
-        {
-          "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_title"
-      ]
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Bildergalerie als Raster, Mauerwerk, Karussell oder Filmstreifen.",
+          "en": "Image gallery as a grid, masonry layout, carousel or filmstrip."
+        },
+        "datenquelle": {
+          "de": "Je nach im Formular gewählter Quelle: ausgewählte Dateien aus dem Dateibereich, Bilder eines gewählten Events, Bilder der letzten drei öffentlichen Events, ein Ordner aus dem Dateibereich, externe Bild-URLs oder öffentliche Vereinsbilder.",
+          "en": "Depending on the source chosen in the form: selected files from the file area, images of a chosen event, images from the last three public events, a folder from the file area, external image URLs, or public club images."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur bereits als öffentlich markierte Bilder der gewählten Quelle.",
+          "en": "Only images already marked public from the chosen source."
+        },
+        "passt_zu": {
+          "de": [
+            "Medienseite",
+            "Startseite",
+            "Veranstaltungsseite"
+          ],
+          "en": [
+            "Media page",
+            "Homepage",
+            "Event page"
+          ]
+        }
+      }
     },
     "video": {
       "config": [
@@ -1597,7 +2283,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Eingebettetes Video mit Vorschaubild.",
+          "en": "Embedded video with a poster image."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Video-URL, z. B. YouTube/Vimeo/MP4, und Vorschaubild-URL).",
+          "en": "fixed form input (video URL, e.g. YouTube/Vimeo/MP4, and poster image URL)."
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Medienseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Media page",
+            "any page"
+          ]
+        }
+      }
     },
     "background_video": {
       "config": [
@@ -1678,7 +2389,30 @@
         {
           "name": "news_ticker"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Video oder Bild als Vollbild-Hintergrundsektion mit Text darüber.",
+          "en": "Video or image as a full-bleed background section with text overlaid."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Video-/Bild-URL oder hochgeladene Datei-ID, Texte).",
+          "en": "fixed form input (video/image URL or uploaded file id, texts)."
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite"
+          ],
+          "en": [
+            "Homepage"
+          ]
+        }
+      }
     },
     "files": {
       "config": [
@@ -1719,7 +2453,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Liste von Dateien zum Download (z. B. Satzung, Formulare).",
+          "en": "List of downloadable files (e.g. bylaws, forms)."
+        },
+        "datenquelle": {
+          "de": "Im Formular ausgewählte Dateien aus dem öffentlichen Dateibereich des Vereins.",
+          "en": "Files selected in the form from the club's public file area."
+        },
+        "macht_oeffentlich": {
+          "de": "Dateiname, Typ, Größe und ggf. Beschreibung der ausgewählten, bereits öffentlich markierten Dateien — deren Inhalt liegt in der Verantwortung der Vereinsadministration.",
+          "en": "File name, type, size and description of the selected files already marked public — their content is the club administration's own responsibility."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Club page",
+            "any page"
+          ]
+        }
+      }
     },
     "booking_highlight": {
       "config": [
@@ -1752,7 +2511,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "buchung",
+        "zweck": {
+          "de": "Hervorgehobene buchbare Objekte (z. B. Plätze, Räume) mit Kurzinfo.",
+          "en": "Highlighted bookable objects (e.g. courts, rooms) with a short description."
+        },
+        "datenquelle": {
+          "de": "Im Vereinsbereich (angemeldet): die Objekte des Vereins, eingeschränkt auf die im Formular gewählten Objekte und die Anzahl. Auf der öffentlichen Website: alle öffentlichen Objekt-Highlights des Vereins — Auswahl und Anzahl aus dem Formular wirken dort derzeit nicht.",
+          "en": "In the members area (logged in): the club's objects, limited to the objects and count chosen in the form. On the public website: all of the club's public object highlights — selection and count from the form currently have no effect there."
+        },
+        "macht_oeffentlich": {
+          "de": "Name und Beschreibung jedes öffentlichen Objekt-Highlights, bei gesponserten Objekten das Sponsoren-Label — keine Namen der Buchenden.",
+          "en": "Name and description of each public object highlight and, for sponsored objects, the sponsor label — no names of the people booking."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Buchungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Booking page"
+          ]
+        }
+      }
     },
     "menu_display": {
       "config": [
@@ -1801,7 +2585,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "buchung",
+        "zweck": {
+          "de": "Speisekarte/Angebot zu einem Event oder Anlass.",
+          "en": "Menu/offering for an event or occasion."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Verpflegungsdaten: das öffentliche Vereinsmenü.",
+          "en": "Comvenio catering data: the club's public menu."
+        },
+        "macht_oeffentlich": {
+          "de": "Gerichte/Getränke mit Beschreibung und, wenn aktiviert, Preis — keine Personendaten.",
+          "en": "Dishes/drinks with description and, if enabled, price — no personal data."
+        },
+        "passt_zu": {
+          "de": [
+            "Veranstaltungsseite",
+            "Startseite"
+          ],
+          "en": [
+            "Event page",
+            "Homepage"
+          ]
+        }
+      }
     },
     "instagram": {
       "config": [
@@ -1830,7 +2639,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "extern",
+        "zweck": {
+          "de": "Eingebetteter Instagram-Feed oder -Link.",
+          "en": "Embedded Instagram feed or link."
+        },
+        "datenquelle": {
+          "de": "Externe Einbettung des angegebenen Instagram-Konto/Links — keine Comvenio-Daten; die Inhalte lädt und zeigt Instagram direkt im Browser der Besucherin oder des Besuchers.",
+          "en": "External embed of the given Instagram account/link — no Comvenio data; Instagram itself loads and displays the content directly in the visitor's browser."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts von Comvenio; Instagram selbst erhält beim Laden des Embeds technische Angaben des Browsers (z. B. IP-Adresse) gemäß den Datenschutzbestimmungen von Instagram/Meta.",
+          "en": "Nothing from Comvenio; Instagram itself receives technical browser data (e.g. IP address) when the embed loads, per Instagram/Meta's own privacy policy."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Social-Media-Seite"
+          ],
+          "en": [
+            "Homepage",
+            "Social media page"
+          ]
+        }
+      }
     },
     "facebook": {
       "config": [
@@ -1859,7 +2693,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "extern",
+        "zweck": {
+          "de": "Eingebettete Facebook-Seite oder Facebook-Link.",
+          "en": "Embedded Facebook page or Facebook link."
+        },
+        "datenquelle": {
+          "de": "Externe Einbettung der angegebenen Facebook-Seite/Links — keine Comvenio-Daten.",
+          "en": "External embed of the given Facebook page/link — no Comvenio data."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts von Comvenio; Facebook/Meta selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen von Meta.",
+          "en": "Nothing from Comvenio; Facebook/Meta itself receives technical browser data when the embed loads, per Meta's own privacy policy."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Social-Media-Seite"
+          ],
+          "en": [
+            "Homepage",
+            "Social media page"
+          ]
+        }
+      }
     },
     "fupa_widget": {
       "config": [
@@ -1899,7 +2758,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "extern",
+        "zweck": {
+          "de": "Eingebettetes FuPa-Sport-Widget (Ergebnisse/Tabelle).",
+          "en": "Embedded FuPa sports widget (results/table)."
+        },
+        "datenquelle": {
+          "de": "Externe Einbettung des von FuPa bereitgestellten Widget-Skripts über die angegebene widgetId — keine Comvenio-Daten.",
+          "en": "External embed of the widget script provided by FuPa via the given widgetId — no Comvenio data."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts von Comvenio; FuPa selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen von FuPa.",
+          "en": "Nothing from Comvenio; FuPa itself receives technical browser data when the embed loads, per FuPa's own privacy policy."
+        },
+        "passt_zu": {
+          "de": [
+            "Sportseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Sports page",
+            "Department page"
+          ]
+        }
+      }
     },
     "bfv_widget": {
       "config": [
@@ -1931,7 +2815,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "extern",
+        "zweck": {
+          "de": "Eingebettetes BFV-Sport-Widget (Ergebnisse/Tabelle des Bayerischen Fußball-Verbands).",
+          "en": "Embedded BFV sports widget (results/table of the Bavarian Football Association)."
+        },
+        "datenquelle": {
+          "de": "Externe Einbettung des vom BFV bereitgestellten Widget-Skripts über die im Formular angegebene Adresse — keine Comvenio-Daten.",
+          "en": "External embed of the widget script provided by BFV via the address given in the form — no Comvenio data."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts von Comvenio; der BFV selbst erhält beim Laden des Embeds technische Angaben des Browsers gemäß den Datenschutzbestimmungen des BFV.",
+          "en": "Nothing from Comvenio; BFV itself receives technical browser data when the embed loads, per BFV's own privacy policy."
+        },
+        "passt_zu": {
+          "de": [
+            "Sportseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Sports page",
+            "Department page"
+          ]
+        }
+      }
     },
     "divider": {
       "config": [
@@ -1967,7 +2876,30 @@
         {
           "name": "opacity"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Grafischer Trenner zwischen zwei Abschnitten (Welle, Berg, Zickzack u. a.).",
+          "en": "Decorative divider between two sections (wave, mountain, zigzag, etc.)."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "spacer": {
       "config": [
@@ -1994,7 +2926,30 @@
         {
           "name": "opacity"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Leerraum bzw. dekorativer Zwischenraum zwischen Abschnitten.",
+          "en": "Blank or decorative spacing between sections."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "parallax_section": {
       "config": [
@@ -2056,7 +3011,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Bildsektion mit Parallax-/Zoom-/Fixiert-Effekt und optionalem Text/CTA.",
+          "en": "Image section with a parallax/zoom/fixed effect and optional text/CTA."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Homepage",
+            "any page"
+          ]
+        }
+      }
     },
     "gradient_section": {
       "config": [
@@ -2097,7 +3077,30 @@
         {
           "name": "show_text"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Farbverlauf-/Mesh-Sektion mit optionalem Text.",
+          "en": "Gradient/mesh section with optional text."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "decorative_element": {
       "config": [
@@ -2172,7 +3175,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Rein dekoratives Element (Formen, Konfetti, Abzeichen, Zitat) ohne eigene Inhalte.",
+          "en": "Purely decorative element (shapes, confetti, badges, quote) without its own content data."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "testimonials": {
       "config": [
@@ -2242,7 +3268,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Stimmen/Zitate von Mitgliedern, Eltern oder Partnern als Karussell, Raster oder Stapel.",
+          "en": "Testimonials/quotes from members, parents or partners as a carousel, grid or stack."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Zitat, Verfasserin/Verfasser, Rolle, Bild, Bewertung je Eintrag).",
+          "en": "fixed form input (quote, author, role, image, rating per entry)."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt — nennt sie dort einen Namen, macht sie ihn damit bewusst öffentlich; das Widget liest keine Comvenio-Mitgliederdaten automatisch.",
+          "en": "Only what the club administration enters here manually — if it names someone, that is a deliberate choice to publish that name; the widget does not read any Comvenio member data automatically."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "logo_marquee": {
       "config": [
@@ -2270,7 +3321,32 @@
             "right"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Laufband mit Partner-/Kooperationslogos.",
+          "en": "Marquee of partner/cooperation logos."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "image_text_split": {
       "config": [
@@ -2297,7 +3373,32 @@
             "image-top"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Bild neben Text mit Überschrift und optionalem Button.",
+          "en": "Image beside text with a heading and an optional button."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Homepage",
+            "any page"
+          ]
+        }
+      }
     },
     "forum_highlight": {
       "config": [
@@ -2321,7 +3422,32 @@
             "none"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Vorschau der neuesten öffentlichen Forenbeiträge.",
+          "en": "Preview of the latest public forum posts."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Forendaten: öffentliche Themen und Themenbereiche des Vereinsforums — ein bewusst öffentlich zugänglicher Bereich.",
+          "en": "Comvenio forum data: public threads and boards of the club forum — a deliberately publicly accessible area."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Textanriss und Statistik (Antworten, Aufrufe) der öffentlichen Beiträge; als Autorenangabe zeigt das Widget nur die ersten acht Zeichen der internen Nutzer-Kennung, keinen Klarnamen.",
+          "en": "Title, text preview and stats (replies, views) of the public posts; as the author it shows only the first eight characters of the internal user id, never a real name."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "tournament_highlight": {
       "config": [
@@ -2342,9 +3468,6 @@
           "name": "own_team_name"
         },
         {
-          "name": "show_live_indicator"
-        },
-        {
           "name": "show_standings"
         },
         {
@@ -2360,9 +3483,31 @@
           "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "show_live_indicator"
-      ]
+      "beschreibung": {
+        "kategorie": "sport",
+        "zweck": {
+          "de": "Turnier-Spielstand, Spielplan oder Tabelle.",
+          "en": "Tournament scoreboard, fixture list or standings table."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Spiele/Tabelle je Eintrag); optional Bezug auf ein im Formular gewähltes Comvenio-Turnier.",
+          "en": "fixed form input (matches/standings per entry); optionally references a Comvenio tournament chosen in the form."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur die eingetragenen Spiel-/Tabellendaten (Mannschaftsnamen, Ergebnisse) — keine Personendaten einzelner Spieler:innen.",
+          "en": "Only the entered match/standings data (team names, results) — no personal data of individual players."
+        },
+        "passt_zu": {
+          "de": [
+            "Sportseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Sports page",
+            "Department page"
+          ]
+        }
+      }
     },
     "sport_api": {
       "config": [
@@ -2387,40 +3532,16 @@
           ]
         },
         {
-          "name": "team_id"
-        },
-        {
-          "name": "league_id"
-        },
-        {
           "name": "league_name"
         },
         {
           "name": "own_team_name"
         },
         {
-          "name": "widget_type"
-        },
-        {
           "name": "embed_url"
         },
         {
           "name": "embed_height"
-        },
-        {
-          "name": "show_team_logo"
-        },
-        {
-          "name": "show_league_name"
-        },
-        {
-          "name": "show_standings"
-        },
-        {
-          "name": "show_last_results"
-        },
-        {
-          "name": "show_next_match"
         },
         {
           "name": "max_entries"
@@ -2491,16 +3612,31 @@
           ]
         }
       ],
-      "config_not_read_by_widget": [
-        "team_id",
-        "league_id",
-        "widget_type",
-        "show_team_logo",
-        "show_league_name",
-        "show_standings",
-        "show_last_results",
-        "show_next_match"
-      ]
+      "beschreibung": {
+        "kategorie": "sport",
+        "zweck": {
+          "de": "Sportdaten eines externen Anbieters (Tabelle, Ergebnisse, nächstes Spiel) oder ein eingebettetes Anbieter-Widget.",
+          "en": "Sports data from an external provider (table, results, next match) or an embedded provider widget."
+        },
+        "datenquelle": {
+          "de": "Je nach im Formular gewähltem Anbieter: entweder feste Eingabe im Formular (Tabelle/Ergebnisse) oder eine externe Einbettung von FuPa/BFV/nuLiga über die jeweils angegebene Adresse — keine Comvenio-Daten.",
+          "en": "Depending on the provider chosen in the form: either fixed form input (table/results), or an external embed of FuPa/BFV/nuLiga via the given address — no Comvenio data."
+        },
+        "macht_oeffentlich": {
+          "de": "Bei fester Eingabe nur die eingetragenen Daten; bei externer Einbettung erhält der jeweilige Anbieter beim Laden technische Angaben des Browsers gemäß dessen eigenen Datenschutzbestimmungen.",
+          "en": "With fixed input, only the entered data; with an external embed, that provider receives technical browser data when it loads, per its own privacy policy."
+        },
+        "passt_zu": {
+          "de": [
+            "Sportseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Sports page",
+            "Department page"
+          ]
+        }
+      }
     },
     "member_counter": {
       "config": [
@@ -2533,7 +3669,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Zähler für Mitgliederzahl und Abteilungen.",
+          "en": "Counter for member count and departments."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Mitgliederdaten — auf der öffentlichen Seite zeigt das Widget jedoch bewusst keine Daten: es blendet nur den Hinweis \"Nur für eingeloggte Mitglieder sichtbar.\" ein, die Abfrage ist dort deaktiviert.",
+          "en": "Comvenio member data — but on the public page the widget deliberately shows no data at all: it only displays \"Only visible to logged-in members.\", with the query disabled there."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts — auf der öffentlichen Seite erscheint nur der Hinweistext, keine Zahl.",
+          "en": "Nothing — the public page only shows the notice text, no number."
+        },
+        "passt_zu": {
+          "de": [
+            "nur intern (Admin-Vorschau)"
+          ],
+          "en": [
+            "internal only (admin preview)"
+          ]
+        }
+      }
     },
     "department_showcase": {
       "config": [
@@ -2546,9 +3705,6 @@
         },
         {
           "name": "show_member_count"
-        },
-        {
-          "name": "show_contact"
         },
         {
           "name": "icons"
@@ -2570,9 +3726,29 @@
           ]
         }
       ],
-      "config_not_read_by_widget": [
-        "show_contact"
-      ]
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Übersicht der Vereinsabteilungen.",
+          "en": "Overview of the club's departments."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Abteilungsdaten — die Abfrage ist auf der öffentlichen Seite jedoch deaktiviert (enabled: !isPublic); dort zeigt das Widget immer den Leerzustand \"Keine Abteilungen\".",
+          "en": "Comvenio department data — but the query is disabled on the public page (enabled: !isPublic); there the widget always shows the empty state \"No departments\"."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts — auf der öffentlichen Seite lädt das Widget derzeit keine Abteilungsdaten und zeigt nur den Leerzustand.",
+          "en": "Nothing — on the public page the widget currently loads no department data and only shows the empty state."
+        },
+        "passt_zu": {
+          "de": [
+            "nur intern (Admin-Vorschau)"
+          ],
+          "en": [
+            "internal only (admin preview)"
+          ]
+        }
+      }
     },
     "next_training": {
       "config": [
@@ -2595,7 +3771,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Nächster anstehender Trainingstermin.",
+          "en": "The next upcoming training session."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten: der öffentliche nächste Trainingstermin, optional gefiltert nach Abteilung.",
+          "en": "Comvenio event data: the public next training session, optionally filtered by department."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Ort und Zeit des nächsten öffentlichen Trainings — keine Teilnehmerlisten.",
+          "en": "Title, location and time of the next public training session — no attendee lists."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Department page"
+          ]
+        }
+      }
     },
     "booking_calendar": {
       "config": [
@@ -2621,7 +3822,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Belegungskalender eines buchbaren Objekts.",
+          "en": "Availability calendar of a bookable object."
+        },
+        "datenquelle": {
+          "de": "Im Vereinsbereich (angemeldet): die aktiven Objekte des Vereins, vorgewählt das Objekt aus dem Formular. Auf der öffentlichen Website zeigt der Baustein derzeit keine Objekte.",
+          "en": "In the members area (logged in): the club's active objects, preselected with the object from the form. On the public website the block currently shows no objects."
+        },
+        "macht_oeffentlich": {
+          "de": "Derzeit nichts: Öffentlich erscheint „Keine buchbaren Objekte“. Für Besucher ohne Anmeldung eignet sich booking_highlight.",
+          "en": "Currently nothing: publicly it shows “Keine buchbaren Objekte” (no bookable objects). For visitors who are not logged in, use booking_highlight."
+        },
+        "passt_zu": {
+          "de": [
+            "Buchungsseite"
+          ],
+          "en": [
+            "Booking page"
+          ]
+        }
+      }
     },
     "meeting_decisions": {
       "config": [
@@ -2657,7 +3881,30 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Liste von Sitzungsbeschlüssen mit Abstimmungsergebnis.",
+          "en": "List of meeting decisions with the vote outcome."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt (Titel, Sitzung, Datum, Status, ggf. Stimmenzahlen) — keine automatische Comvenio-Anbindung an echte Sitzungen.",
+          "en": "Only what the club administration enters here manually (title, meeting name, date, status, vote counts if any) — no automatic Comvenio connection to real meetings."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite"
+          ],
+          "en": [
+            "Club page"
+          ]
+        }
+      }
     },
     "quick_links": {
       "config": [
@@ -2688,7 +3935,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Liste schneller Links/Kacheln zu wichtigen Zielen.",
+          "en": "List of quick links/tiles to important destinations."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "beliebige Seite"
+          ],
+          "en": [
+            "Homepage",
+            "any page"
+          ]
+        }
+      }
     },
     "poll": {
       "config": [
@@ -2720,7 +3992,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "live-daten",
+        "zweck": {
+          "de": "Einfache Umfrage mit Antwortoptionen.",
+          "en": "Simple poll with answer options."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Frage, Antwortoptionen, ggf. feste Startstimmenzahl je Option).",
+          "en": "fixed form input (question, answer options, optional fixed starting vote count per option)."
+        },
+        "macht_oeffentlich": {
+          "de": "Nichts Personenbezogenes: Eine abgegebene Stimme wird nur lokal im Browser der abstimmenden Person gehalten (kein Comvenio-Backend, keine Speicherung, kein Bezug zur Person) und geht beim Neuladen der Seite wieder verloren.",
+          "en": "Nothing personal: a cast vote is only held locally in the voter's own browser (no Comvenio backend, no storage, no link to the person) and is lost again on page reload."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "recipe_highlight": {
       "config": [
@@ -2765,7 +4062,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Hervorgehobenes Rezept (z. B. Vereinsheim-Küche).",
+          "en": "Highlighted recipe (e.g. clubhouse kitchen)."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "task_overview": {
       "config": [
@@ -2801,7 +4123,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Aufgabenliste mit Erledigt-Status.",
+          "en": "Task list with a done/open status."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt — keine automatische Comvenio-Anbindung an das echte Aufgaben-System.",
+          "en": "Only what the club administration enters here manually — no automatic Comvenio connection to the real task system."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Club page",
+            "Department page"
+          ]
+        }
+      }
     },
     "activity_feed": {
       "config": [
@@ -2830,7 +4177,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Chronologischer Feed jüngster Vereinsaktivitäten (Events, Turniere, News).",
+          "en": "Chronological feed of recent club activity (events, tournaments, news)."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Daten: der öffentliche, aggregierte Vereins-Feed aus Events, Turnieren und News.",
+          "en": "Comvenio data: the club's public, aggregated feed of events, tournaments and news."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Zeitpunkt und ggf. Bild der jeweiligen Events/Turniere/News — trotz des Namens keine Aktivitäten einzelner Mitglieder (kein Beitritt, kein Login o. Ä.).",
+          "en": "Title, timestamp and image (if any) of the respective events/tournaments/news — despite its name, no activity of individual members (no join, no login, etc.)."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "member_spotlight": {
       "config": [
@@ -2872,7 +4244,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Vorgestelltes Mitglied mit Foto, Rolle und Zitat.",
+          "en": "Spotlighted member with photo, role and quote."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Name, Bild, Abteilung, Mitglied-seit, Zitat).",
+          "en": "fixed form input (name, image, department, member since, quote)."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt — mit dem Einverständnis des vorgestellten Mitglieds, keine automatische Comvenio-Mitgliederdatenanbindung.",
+          "en": "Only what the club administration enters here manually — with the spotlighted member's consent, no automatic Comvenio member-data connection."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "newsletter_signup": {
       "config": [
@@ -2908,7 +4305,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Anmeldeformular für einen Newsletter.",
+          "en": "Sign-up form for a newsletter."
+        },
+        "datenquelle": {
+          "de": "Eingabe der besuchenden Person (Name/E-Mail) im Formular.",
+          "en": "Input from the visitor (name/email) in the form."
+        },
+        "macht_oeffentlich": {
+          "de": "Derzeit nichts: Das Formular zeigt nach dem Absenden nur eine Erfolgsmeldung, ohne die eingegebenen Daten irgendwohin zu senden oder zu speichern — es ist noch kein Versand-/Speicher-Endpunkt angebunden.",
+          "en": "Currently nothing: after submitting, the form only shows a success message without sending or storing the entered data anywhere — no delivery/storage endpoint is connected yet."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "social_feed": {
       "config": [
@@ -2938,7 +4360,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Kachelraster mit Social-Media-Beiträgen.",
+          "en": "Tile grid of social-media-style posts."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt — keine echte Anbindung an Instagram/Facebook/X, anders als die Widgets instagram/facebook.",
+          "en": "Only what the club administration enters here manually — no real connection to Instagram/Facebook/X, unlike the instagram/facebook widgets."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Social-Media-Seite"
+          ],
+          "en": [
+            "Homepage",
+            "Social media page"
+          ]
+        }
+      }
     },
     "weather": {
       "config": [
@@ -2991,7 +4438,32 @@
             "neon"
           ]
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "interaktion",
+        "zweck": {
+          "de": "Wetteranzeige (z. B. für Außenanlagen/Sportplatz).",
+          "en": "Weather display (e.g. for outdoor facilities/sports ground)."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Department page"
+          ]
+        }
+      }
     },
     "live_match_ticker": {
       "config": [
@@ -3010,7 +4482,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "sport",
+        "zweck": {
+          "de": "Live-Spielstand-Ticker für ein laufendes Turnier.",
+          "en": "Live match ticker for an ongoing tournament."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Spiele je Eintrag) oder, bei einem im Formular gewählten Comvenio-Turnier, dessen Live-Turnierdaten mit optionaler Hervorhebung des eigenen Teams.",
+          "en": "fixed form input (matches per entry) or, if a Comvenio tournament is chosen in the form, that tournament's live data with optional highlighting of the club's own team."
+        },
+        "macht_oeffentlich": {
+          "de": "Mannschaftsnamen und Spielstände — keine Personendaten einzelner Spieler:innen.",
+          "en": "Team names and scores — no personal data of individual players."
+        },
+        "passt_zu": {
+          "de": [
+            "Sportseite",
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Sports page",
+            "Department page"
+          ]
+        }
+      }
     },
     "membership_form": {
       "config": [
@@ -3030,7 +4527,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Formular für einen digitalen Mitgliedsantrag.",
+          "en": "Form for a digital membership application."
+        },
+        "datenquelle": {
+          "de": "Eingabe der interessierten Person im Formular (Name, Kontaktdaten, gewählte Abteilung, Nachricht).",
+          "en": "Input from the interested person in the form (name, contact details, chosen department, message)."
+        },
+        "macht_oeffentlich": {
+          "de": "Derzeit nichts: Das Widget zeigt beim Absenden ausdrücklich eine Fehlermeldung, dass noch kein digitaler Antragsweg eingerichtet ist, und übermittelt oder speichert die eingegebenen Daten nicht.",
+          "en": "Currently nothing: on submission, the widget explicitly shows an error message that no digital application channel is set up yet, and it neither transmits nor stores the entered data."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "contact_form": {
       "config": [
@@ -3046,21 +4568,92 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "inhalt",
+        "zweck": {
+          "de": "Kontaktformular für Anfragen von Besucherinnen und Besuchern.",
+          "en": "Contact form for enquiries from visitors."
+        },
+        "datenquelle": {
+          "de": "Eingabe der anfragenden Person im Formular (Name, E-Mail, Nachricht, Einwilligung).",
+          "en": "Input from the enquiring person in the form (name, email, message, consent)."
+        },
+        "macht_oeffentlich": {
+          "de": "Sendet Name, E-Mail-Adresse, Nachricht und den Zeitpunkt der erteilten Einwilligung der ausfüllenden Person an den Verein; die Anfrage wird dort von der Vereinsverwaltung bearbeitet.",
+          "en": "Sends the submitting person's name, email address, message and the timestamp of their given consent to the club; the club administration then processes the enquiry there."
+        },
+        "passt_zu": {
+          "de": [
+            "Kontaktseite",
+            "Startseite"
+          ],
+          "en": [
+            "Contact page",
+            "Homepage"
+          ]
+        }
+      }
     },
     "heading": {
       "config": [
         {
           "name": "text"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Grundbaustein: einzelne Überschrift als benannter Slot.",
+          "en": "Basic building block: a single heading as a named slot."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "text": {
       "config": [
         {
           "name": "content"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Grundbaustein: einzelner Textabschnitt als benannter Slot.",
+          "en": "Basic building block: a single text paragraph as a named slot."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "link": {
       "config": [
@@ -3073,7 +4666,30 @@
         {
           "name": "new_tab"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "layout",
+        "zweck": {
+          "de": "Grundbaustein: einzelner Link/Button als benannter Slot.",
+          "en": "Basic building block: a single link/button as a named slot."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     },
     "gallery_slideshow": {
       "config": [
@@ -3093,15 +4709,37 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "medien",
+        "zweck": {
+          "de": "Automatisch wechselnde Bilderschau (Diashow) mit Übergangseffekt.",
+          "en": "Automatically advancing image slideshow with a transition effect."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Medienseite",
+            "Startseite"
+          ],
+          "en": [
+            "Media page",
+            "Homepage"
+          ]
+        }
+      }
     },
     "department_calendar": {
       "config": [
         {
           "name": "events"
-        },
-        {
-          "name": "department_id"
         },
         {
           "name": "show_events"
@@ -3119,9 +4757,29 @@
           "name": "show_title"
         }
       ],
-      "config_not_read_by_widget": [
-        "department_id"
-      ]
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Kalender einer Abteilung mit Terminen, Training, Buchungen und Sitzungen.",
+          "en": "A department's calendar of events, training, bookings and meetings."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Termine je Eintrag mit Titel, Datum, Art); ein Feld zum Filtern nach Abteilung ist im Formular vorhanden, wird vom Widget aber derzeit nicht ausgewertet.",
+          "en": "fixed form input (events per entry with title, date, type); a field for filtering by department exists in the form but is currently not evaluated by the widget."
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "Abteilungsseite"
+          ],
+          "en": [
+            "Department page"
+          ]
+        }
+      }
     },
     "chat_preview": {
       "config": [
@@ -3146,7 +4804,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Vorschau einiger Chat-/Forennachrichten mit Link zum vollständigen Chat.",
+          "en": "Preview of a few chat/forum messages with a link to the full chat."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular (Nachrichten je Eintrag: Text, Absender, Zeit); ein im Formular gewählter Themenbereich steuert nur, wohin der Link \"Zum Chat\" für eingeloggte Mitglieder führt, liefert aber selbst keine Live-Nachrichten.",
+          "en": "fixed form input (messages per entry: text, sender, time); a board chosen in the form only controls where the \"Go to chat\" link leads for logged-in members, but does not itself supply any live messages."
+        },
+        "macht_oeffentlich": {
+          "de": "Nur was die Vereinsadministration hier manuell einträgt — keine echten, aktuellen Chatnachrichten.",
+          "en": "Only what the club administration enters here manually — no real, live chat messages."
+        },
+        "passt_zu": {
+          "de": [
+            "Startseite",
+            "Vereinsseite"
+          ],
+          "en": [
+            "Homepage",
+            "Club page"
+          ]
+        }
+      }
     },
     "honor_wall": {
       "config": [
@@ -3166,7 +4849,32 @@
         {
           "name": "show_title"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "mitglieder",
+        "zweck": {
+          "de": "Ehrentafel mit Mitgliederehrungen, alternative Darstellung zu honors_showcase.",
+          "en": "Wall of honour listing member awards, an alternative presentation to honors_showcase."
+        },
+        "datenquelle": {
+          "de": "Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt.",
+          "en": "In the members area (logged in): confirmed honours from Comvenio member data. On the public website: only the honours entered by hand in the form — the public honours data is currently not displayed there."
+        },
+        "macht_oeffentlich": {
+          "de": "Öffentlich die im Formular eingetragenen Ehrungen: Name der geehrten Person, Titel, Art, Datum und Beschreibung; fehlende Angaben ergänzt der Baustein mit Standardwerten („Ehrung“, „Mitglied“). Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge zeigt der Baustein öffentlich einen Leerzustand.",
+          "en": "Publicly the honours entered in the form: the honoured person's name, title, type, date and description; missing details are filled with defaults (“Ehrung”, “Mitglied”). This is personal data — only enter what the club deliberately publishes as recognition. Without entries the block shows an empty state on the public site."
+        },
+        "passt_zu": {
+          "de": [
+            "Vereinsseite",
+            "Startseite"
+          ],
+          "en": [
+            "Club page",
+            "Homepage"
+          ]
+        }
+      }
     },
     "ad_banner": {
       "config": [
@@ -3184,7 +4892,30 @@
         {
           "name": "label"
         }
-      ]
+      ],
+      "beschreibung": {
+        "kategorie": "werbung",
+        "zweck": {
+          "de": "Werbebanner-Platzhalter an einer definierten Position.",
+          "en": "Advertising banner placeholder at a defined position."
+        },
+        "datenquelle": {
+          "de": "feste Eingabe im Formular",
+          "en": "fixed input in the widget form"
+        },
+        "macht_oeffentlich": {
+          "de": "nichts über die Eingabe hinaus",
+          "en": "nothing beyond what was entered"
+        },
+        "passt_zu": {
+          "de": [
+            "beliebige Seite"
+          ],
+          "en": [
+            "any page"
+          ]
+        }
+      }
     }
   },
   "interaction_contract": {
@@ -3252,13 +4983,13 @@
   },
   "config_sync": {
     "widgets_checked": 75,
-    "fields_checked": 561,
-    "widgets_with_unread_fields": 12,
-    "unread_fields": 22,
+    "fields_checked": 541,
+    "widgets_with_unread_fields": 1,
+    "unread_fields": 1,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 33,
-    "value_sets_unreadable": 106,
+    "value_sets_unreadable": 105,
     "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,
@@ -3373,5 +5104,39 @@
       "homepage convert --out home.json [--tab <slug>] [--styles styles.json] [--styles-out vorschlag.json]",
       "verify homepage --file home.json (R1-R6 vor dem Browserlauf)"
     ]
+  },
+  "template_beschreibung": {
+    "elegance": {
+      "de": "Editoriale, raffinierte Vorlage — schlicht, modern, elegant.",
+      "en": "Editorial, refined template — plain, modern, elegant."
+    },
+    "sport": {
+      "de": "Kraftvolle, dunkle, athletische Vorlage — bold und energetisch.",
+      "en": "Bold, dark, athletic template — powerful and energetic."
+    },
+    "community": {
+      "de": "Warme, einladende, menschliche Vorlage.",
+      "en": "Warm, welcoming, human template."
+    },
+    "minimal": {
+      "de": "Puristische, textfokussierte Vorlage — weniger ist mehr.",
+      "en": "Purist, text-focused template — less is more."
+    },
+    "festlich": {
+      "de": "Traditionsbewusste, prestigeträchtige Vorlage für Events und Jubiläen.",
+      "en": "Tradition-conscious, prestigious template for events and anniversaries."
+    },
+    "modern": {
+      "de": "Zeitgemäße Vorlage mit Gradient-Akzenten und Wow-Faktor.",
+      "en": "Contemporary template with gradient accents and a wow factor."
+    },
+    "classic": {
+      "de": "Bewährte, verlässliche, traditionell-strukturierte Vorlage — die sichere Wahl.",
+      "en": "Proven, reliable, traditionally structured template — the safe choice."
+    },
+    "flex": {
+      "de": "Generische, vollständig konfigurationsgesteuerte Vorlage ohne fest einprogrammiertes Design — jedes Aussehen entsteht aus der Konfiguration, nicht aus neuem Code (Verallgemeinerung der vereinsspezifischen Motzing-Vorlage).",
+      "en": "Generic, fully config-driven template with no hard-coded design — every look comes from configuration, never from new code (a generalisation of the club-specific Motzing template)."
+    }
   }
 }
