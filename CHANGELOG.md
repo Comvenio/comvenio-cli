@@ -76,6 +76,18 @@ Die Einträge folgen
 
 ### Removed
 
+- **Breaking:** Geräte-Token gibt es im CLI nicht mehr (Fristende 29.10.2026).
+  `login --device-token` und `--token` enden mit `USAGE_ERROR`; angemeldet wird
+  nur noch mit `comvenio login` im Browser, Skripte und Server nutzen einen
+  Maschinen-Grant (`COMVENIO_CLIENT_ID`/`COMVENIO_CLIENT_SECRET`). Ein
+  gespeicherter Geräte-Block wird beim ersten Start entfernt und einmal
+  gemeldet; eine OAuth-Verbindung bleibt.
+- Die klassischen Domänenbefehle (`club`, `member`, `event`, `homepage` und
+  weitere), der Legacy-Client, der Fehlercode `OAUTH_ONLY`, der Befehl
+  `schema` und die Coverage-Registry. Ein Aufruf endet mit `USAGE_ERROR` und
+  verweist auf `comvenio action list`. Das CLI kennt nur noch `login`,
+  `logout`, `whoami`, `action`, `agent chat`, `finance` und `help`.
+- Die Warnzeile zum Fristende aus der Übergangsversion.
 - `comvenio agent approval`, `comvenio function` und `comvenio automation`.
   Freigaben, Funktionen und Automationen bleiben in Web-App und App; ein Aufruf
   endet mit `USAGE_ERROR` und nennt den Ort in der Web-App.
