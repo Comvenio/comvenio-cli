@@ -1133,6 +1133,13 @@ describe("K10 booking, object and task adapter contract", () => {
     ]);
   });
 
+  test("club design accepts the landing flag the public site reads", () => {
+    const design = K7_ACTION_SCHEMAS["cai.club.05.design"].input;
+    expect(design.parse({ club_id: k7ClubId, design_settings: { custom_template_config: { landing: false } } }))
+      .toMatchObject({ design_settings: { custom_template_config: { landing: false } } });
+    expect(() => design.parse({ club_id: k7ClubId, design_settings: { custom_template_config: { landing: "no" } } })).toThrow();
+  });
+
   test("guest statistics are aggregate-only and omit guest/member identifiers", () => {
     const result = minimizeGuestStatistics({
       club_id: k7ClubId, total_guests: 2, total_fee: 10,
