@@ -4,6 +4,7 @@ import { loadState } from "../auth.ts";
 import { output } from "../format.ts";
 import { createClient } from "../http.ts";
 import { requireClubId } from "../util/club.ts";
+import { evidenceApprovalId, readAgentEvidence } from "../util/agent-evidence.ts";
 
 type AgentChatOptions = {
   club?: string;
@@ -79,7 +80,7 @@ export function buildClubAgentChatPayload(input: {
   };
 }
 
-export const AGENT_ACTIONS = ["chat", "approval"] as const;
+export const AGENT_ACTIONS = ["chat", "approval", "evidence"] as const;
 
 /** Resolve `agent <action> [...message]` to the chat message (throws on unknown action). */
 export function resolveAgentChatMessage(action: string, words: string[] | undefined): string {
@@ -180,7 +181,7 @@ export function registerAgentCommands(cli: CAC): void {
   cli
     .command(
       "agent <action> [...message]",
-      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen; approval list|show|approve|reject [id] — Freigaben lesen, entschieden wird nur per Link in Web/App",
+      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen; approval list|show|approve|reject [id] — Freigaben lesen, entschieden wird nur per Link in Web/App; evidence <id> — Prüfbeleg einer Freigabe lesen",
     )
     .option("--club <id>", "Club-ID (sonst aus dem State-File)")
     .option(
@@ -190,6 +191,13 @@ export function registerAgentCommands(cli: CAC): void {
     .option("--state <state>", "approval list: open (Voreinstellung), decided oder all")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, words: string[], opts: AgentChatOptions) => {
+      if (action === "evidence") {
+        const approvalId = evidenceApprovalId(words);
+        const state = await loadState();
+        const result = await readAgentEvidence(createClient(state), requireClubId(state, opts.club), approvalId);
+        output(result, opts.json, () => "Gespräch, Freigabe, Ausführung und Nachlese sind miteinander verknüpft.");
+        return;
+      }
       if (action === "approval") {
         await runApprovalCommand(words, opts);
         return;
