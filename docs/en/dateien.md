@@ -31,7 +31,20 @@ Every file can be assigned to a business context: `none`, `club`, `department`, 
 
 1. Determine the target context and, if needed, the sub-context (see above).
 2. For the contexts `club`, `none` and `department`, optionally choose a department via `department_id` — without it, the file lands in the club's **default department** and appears there in DataShare. Other contexts (`event`, `news`, `certificate`, …) follow their own server-side rules.
-3. The action does not transfer a file from your computer. `source_file_id` is the ID of a file that already sits in the club's file storage (uploaded in the web app; `cai.data.01.list` shows the ID). `filename`, `content_type` and `expected_size` must match that file. The limit is 200 MB. Uploading a file straight from your own computer: Not yet available as an action — do this in the web app.
+3. Pass the file from your own computer with `--file` and the remaining details (context, visibility, label) with `--input`:
+
+   ```bash
+   comvenio action call cai.data.06.upload --file ./flyer.jpg --input '{"context_type":"event","context_id":"<event-id>","visibility":"public"}' --json
+   ```
+
+   The CLI then does everything else in one command:
+   - It reads the file, determines the file type from the extension and computes size and checksum (SHA-256). An unknown extension or a file that is too large is rejected before anything is transferred.
+   - It transfers the file into protected interim storage. There Comvenio checks size, checksum, file type and malware (virus scan); only a clean file is passed on.
+   - It stores the file in the chosen context of the club's file storage. This runs as a background job; the CLI waits until it has finished and prints the result (machine-readable with `--json`).
+
+   The CLI sets `source_file_id`, `filename`, `content_type` and `expected_size` itself — do not also pass these fields in `--input`. `--file` exists only for `cai.data.06.upload`.
+4. Limits and requirements: at most 200 MB per file; common image, document, spreadsheet, presentation, audio and video formats as well as ZIP archives are allowed. The sign-in needs the scopes `files.write` and `files.import`. Uploading from your own computer works only while the server has enabled it for your club — otherwise the CLI reports `UPLOAD_NOT_ENABLED`, and the file is uploaded in the web app.
+5. A started upload is valid for 15 minutes. If the command is interrupted before that (for example with Ctrl+C) or the transfer takes longer, it expires (`UPLOAD_TIMEOUT`); then start the same command again. If the check rejects the file, `UPLOAD_REJECTED` names the reason, for example `MALWARE` or `MIME_MISMATCH`.
 
 ### Optimizing video for mobile autoplay
 
@@ -90,18 +103,14 @@ comvenio action call cai.data.05.download --input '{"file_id":"<file-id>","prefe
 ```
 
 ```bash
-comvenio action call cai.data.06.upload --input '{
-  "source_file_id": "<file-id>",
-  "filename": "bild.jpg",
-  "content_type": "image/jpeg",
-  "expected_size": 245000,
+comvenio action call cai.data.06.upload --file ./bild.jpg --input '{
   "context_type": "event",
   "context_id": "<event-id>",
   "sub_context_id": "<event-area-id>",
   "context_label": "gallery",
   "visibility": "public",
   "department_id": "<department-id>"
-}'
+}' --json
 ```
 
 ```bash

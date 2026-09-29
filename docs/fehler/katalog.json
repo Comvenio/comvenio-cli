@@ -227,6 +227,42 @@
     "next_command": null,
     "help": "fehler/upstream-unavailable"
   },
+  "UPLOAD_NOT_ENABLED": {
+    "de": {
+      "message": "Datei-Upload ist in diesem Verein/auf diesem Server noch nicht eingeschaltet.",
+      "cause": "Comvenio bietet das Hochladen vom eigenen Rechner für deine Verbindung gerade nicht an; bis es eingeschaltet ist, die Datei in der Web-App hochladen."
+    },
+    "en": {
+      "message": "File upload is not yet enabled for this club/on this server.",
+      "cause": "Comvenio does not currently offer uploads from your own computer for your connection; until it is enabled, upload the file in the web app."
+    },
+    "next_command": null,
+    "help": "fehler/upload-not-enabled"
+  },
+  "UPLOAD_REJECTED": {
+    "de": {
+      "message": "Die Datei wurde bei der Prüfung abgelehnt.",
+      "cause": "Größe, Prüfsumme, Dateityp oder Virenscan haben nicht gepasst; der Ablehnungsgrund steht in der Meldung. Die Datei prüfen und danach neu hochladen."
+    },
+    "en": {
+      "message": "The file was rejected during the check.",
+      "cause": "Size, checksum, file type or virus scan did not match; the rejection reason is shown in the message. Check the file and upload it again."
+    },
+    "next_command": null,
+    "help": "fehler/upload-rejected"
+  },
+  "UPLOAD_TIMEOUT": {
+    "de": {
+      "message": "Der Datei-Upload wurde nicht abgeschlossen.",
+      "cause": "Übertragung oder Prüfung wurde abgebrochen oder hat die Zeitgrenze überschritten. Ein nicht abgeschlossener Upload verfällt nach 15 Minuten; danach denselben Befehl neu starten."
+    },
+    "en": {
+      "message": "The file upload was not completed.",
+      "cause": "The transfer or the check was interrupted or exceeded the time limit. An unfinished upload expires after 15 minutes; then start the same command again."
+    },
+    "next_command": null,
+    "help": "fehler/upload-timeout"
+  },
   "CONFIG_INVALID": {
     "de": {
       "message": "Die Anfrage konnte nicht zugeordnet werden.",

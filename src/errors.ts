@@ -19,14 +19,24 @@ import { AuthError, LoginOptionError } from "./auth.ts";
 import { HttpError, OAuthOnlyError } from "./http.ts";
 import { ConnectorClientError } from "./mcp/client.ts";
 
-/** An error the CLI raises itself with a known public code. */
+/**
+ * An error the CLI raises itself with a known public code. `detail` is the
+ * CLI's own sentence shown under the catalog sentence; `required_scopes`
+ * feeds the login command of SCOPE_REQUIRED.
+ */
 export class PublicCliError extends Error {
+  readonly detail: string | undefined;
+  readonly required_scopes: readonly string[];
+
   constructor(
     readonly code: PublicErrorCode,
     message: string,
+    options: { detail?: string; required_scopes?: readonly string[] } = {},
   ) {
     super(message);
     this.name = "PublicCliError";
+    this.detail = options.detail;
+    this.required_scopes = options.required_scopes ?? [];
   }
 }
 
@@ -89,6 +99,8 @@ export function toPublicError(
 
   if (error instanceof PublicCliError) {
     code = error.code;
+    requiredScopes = [...error.required_scopes];
+    detail = error.detail;
   } else if (error instanceof ConnectorClientError) {
     const data = object(error.details);
     requestId = typeof data?.request_id === "string" ? data.request_id : null;

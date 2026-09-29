@@ -23,7 +23,7 @@ import {
 
 const SYSTEM_CLOCK: JobClock = { now: () => new Date() };
 
-function deterministicJobId(input: {
+export function deterministicJobId(input: {
   subject_id: UUID;
   club_id: UUID;
   tool_name: string;

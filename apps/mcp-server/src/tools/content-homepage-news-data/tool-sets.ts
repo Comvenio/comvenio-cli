@@ -53,7 +53,7 @@ export abstract class K12ToolSet {
     return this.listDefinitions().flatMap((definition) => {
       const operations = Object.fromEntries(Object.values(definition.operations).filter((operation) => {
         if (["write_safety", "confirmation"].includes(operation.execution_gate) && !this.#dependencies.write_safety) return false;
-        if (["job", "confirmed_job"].includes(operation.execution_gate) && !this.#dependencies.job_starter) return false;
+        if (["job", "confirmed_job"].includes(operation.execution_gate) && !this.#dependencies.job_starter?.supports(definition.action_id, operation.operation)) return false;
         if (definition.action_id === "cai.verify.01.url" && !this.#dependencies.verify_target_guard) return false;
         return visibilityDecision(this.#visibility, definition.action_id, operation, context, input.capability_snapshot, input.provider_tool_updates ?? "dynamic").visible;
       }).map((operation) => [operation.operation, operation]));

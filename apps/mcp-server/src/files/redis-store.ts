@@ -6,10 +6,13 @@ import type {
   FileMetadataStore,
   InternalConnectorFileRecord,
   InternalUploadRecord,
+  UploadCompletionGuard,
 } from "./types.ts";
 
 const FILE_TTL_SECONDS = 24 * 60 * 60;
 const REJECTED_UPLOAD_TTL_SECONDS = 24 * 60 * 60;
+/** A running completion keeps its record past expires_at, so it can still finish or reject. */
+const SCANNING_UPLOAD_TTL_SECONDS = 15 * 60;
 
 const CONSUME_FILE_LUA = `
 local encoded = redis.call('GET', KEYS[1])
@@ -30,13 +33,36 @@ redis.call('SET', KEYS[1], updated, 'KEEPTTL')
 return updated
 `;
 
-const FINALIZE_UPLOAD_LUA = `
-if redis.call('EXISTS', KEYS[1]) ~= 1 then return 0 end
-if redis.call('EXISTS', KEYS[2]) == 1 then return -1 end
-redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2], 'XX')
-redis.call('SET', KEYS[2], ARGV[3], 'EX', ARGV[4], 'NX')
+// Shared guard: the upload must still be in state ARGV[1] and held by completion ARGV[2]
+// ('' = none). A missing or JSON-null completion_id counts as none.
+const UPLOAD_GUARD_LUA = `
+local encoded = redis.call('GET', KEYS[1])
+if not encoded then return 0 end
+local record = cjson.decode(encoded)
+local owner = record.completion_id
+if owner == nil or owner == cjson.null then owner = '' end
+if record.handle.state ~= ARGV[1] or owner ~= ARGV[2] then return -2 end
+`;
+
+const COMPARE_AND_SET_UPLOAD_LUA = `${UPLOAD_GUARD_LUA}
+redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4], 'XX')
 return 1
 `;
+
+// A resent EVAL (ioredis replays unanswered commands after a reconnect) finds its own
+// result already stored; that is success, not a lost race.
+const FINALIZE_REPLAY_LUA = `
+if redis.call('GET', KEYS[1]) == ARGV[3] and redis.call('GET', KEYS[2]) == ARGV[5] then return 1 end
+`;
+
+const FINALIZE_UPLOAD_LUA = `${FINALIZE_REPLAY_LUA}${UPLOAD_GUARD_LUA}
+if redis.call('EXISTS', KEYS[2]) == 1 then return -1 end
+redis.call('SET', KEYS[1], ARGV[3], 'EX', ARGV[4], 'XX')
+redis.call('SET', KEYS[2], ARGV[5], 'EX', ARGV[6], 'NX')
+return 1
+`;
+
+const TERMINAL_UPLOAD_STATES = ["rejected", "expired", "clean", "consumed"];
 
 function secondsUntil(instant: string, minimum = 1): number {
   return Math.max(minimum, Math.ceil((Date.parse(instant) - Date.now()) / 1_000));
@@ -73,11 +99,24 @@ export class RedisFileMetadataStore implements FileMetadataStore {
 
   async updateUpload(record: InternalUploadRecord): Promise<void> {
     const key = this.#uploadKey(record.handle.upload_id);
-    const ttl = ["rejected", "expired", "clean", "consumed"].includes(record.handle.state)
-      ? REJECTED_UPLOAD_TTL_SECONDS
-      : secondsUntil(record.handle.expires_at);
-    const result = await this.redis.set(key, JSON.stringify(record), "EX", ttl, "XX");
+    const result = await this.redis.set(key, JSON.stringify(record), "EX", this.#uploadTtl(record), "XX");
     if (result !== "OK") throw new Error("Der Upload existiert nicht.");
+  }
+
+  async compareAndSetUpload(input: {
+    expected: UploadCompletionGuard;
+    record: InternalUploadRecord;
+  }): Promise<boolean> {
+    const result = await this.redis.eval(
+      COMPARE_AND_SET_UPLOAD_LUA,
+      1,
+      this.#uploadKey(input.record.handle.upload_id),
+      input.expected.state,
+      input.expected.completion_id ?? "",
+      JSON.stringify(input.record),
+      this.#uploadTtl(input.record),
+    );
+    return result === 1;
   }
 
   async createFile(record: InternalConnectorFileRecord): Promise<void> {
@@ -92,21 +131,26 @@ export class RedisFileMetadataStore implements FileMetadataStore {
   }
 
   async finalizeUpload(input: {
+    expected: UploadCompletionGuard;
     upload: InternalUploadRecord;
     file: InternalConnectorFileRecord;
-  }): Promise<void> {
+  }): Promise<boolean> {
     const result = await this.redis.eval(
       FINALIZE_UPLOAD_LUA,
       2,
       this.#uploadKey(input.upload.handle.upload_id),
       this.#fileKey(input.file.file_id),
+      input.expected.state,
+      input.expected.completion_id ?? "",
       JSON.stringify(input.upload),
       REJECTED_UPLOAD_TTL_SECONDS,
       JSON.stringify(input.file),
       Math.min(FILE_TTL_SECONDS, secondsUntil(input.file.expires_at)),
     );
     if (result === 0) throw new Error("Der Upload existiert nicht.");
+    if (result === -2) return false;
     if (result !== 1) throw new Error("Die Datei existiert bereits.");
+    return true;
   }
 
   async getFile(fileId: UUID): Promise<InternalConnectorFileRecord | null> {
@@ -132,6 +176,13 @@ export class RedisFileMetadataStore implements FileMetadataStore {
       input.now,
     );
     return parseRecord(typeof result === "string" ? result : null, "Die verbrauchten Dateimetadaten");
+  }
+
+  /** Terminal records outlive the upload URL, so a rejected upload stays closed until the URL expired. */
+  #uploadTtl(record: InternalUploadRecord): number {
+    if (TERMINAL_UPLOAD_STATES.includes(record.handle.state)) return REJECTED_UPLOAD_TTL_SECONDS;
+    if (record.handle.state === "scanning") return Math.max(SCANNING_UPLOAD_TTL_SECONDS, secondsUntil(record.handle.expires_at));
+    return secondsUntil(record.handle.expires_at);
   }
 
   #uploadKey(uploadId: UUID): string { return `${this.prefix}:upload:${uploadId}`; }

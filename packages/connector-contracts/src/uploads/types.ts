@@ -74,12 +74,24 @@ export interface UploadCreateRequest {
   purpose: UploadPurpose;
 }
 
+/**
+ * Headers the client must send with the one-time PUT, with exactly these
+ * values: the URL is signed for them, so the storage refuses another size or
+ * type. If-None-Match: * is always signed, so the object can be created at
+ * most once; the storage must support conditional creation.
+ */
+export interface UploadRequiredHeaders {
+  "Content-Type": ConnectorUploadMime;
+  "Content-Length": string;
+  "If-None-Match": "*";
+}
+
 export interface UploadHandle {
   upload_id: UUID;
   club_id: UUID;
   owner_subject_id: UUID;
   upload_url: string | null;
-  required_headers: { "Content-Type": ConnectorUploadMime } | null;
+  required_headers: UploadRequiredHeaders | null;
   state: UploadState;
   expires_at: string;
   file_id: UUID | null;

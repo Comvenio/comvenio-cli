@@ -43,7 +43,7 @@ export interface K13ActionSchemaContract { input: z.ZodType; output: z.ZodType; 
 export interface K13ExecutionRequest { action_id: K13ActionId; input: unknown; context: RequestContext; capability_snapshot: CapabilitySnapshot | null; }
 export interface K13MutationRequest { definition: K13ActionDefinition; operation: K13OperationDefinition; input: JsonValue; context: RequestContext; capability_snapshot: CapabilitySnapshot; }
 export interface K13WriteSafetyPort { execute(request: K13MutationRequest, mutation: () => Promise<JsonValue>): Promise<JsonValue>; }
-export interface K13JobStartPort { start(request: K13MutationRequest): Promise<JsonValue>; }
+export interface K13JobStartPort { supports(action_id: string, operation: string): boolean; start(request: K13MutationRequest): Promise<JsonValue>; }
 export interface K13ConfirmationPort {
   confirmOrPreview(request: { mutation: K13MutationRequest; subject: string; summary: string; effects: JsonValue[]; confirmation: { preview_id: string; confirmation_token: string } | null }, mutation: () => Promise<JsonValue>): Promise<JsonValue>;
 }

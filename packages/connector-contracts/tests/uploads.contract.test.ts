@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, test } from "bun:test";
 
 import {
@@ -11,6 +13,7 @@ import {
   MAX_ZIP_UNCOMPRESSED_BYTES,
   UPLOAD_CREATE_REQUEST_SCHEMA,
   UPLOAD_HANDLE_SCHEMA,
+  UPLOAD_HANDLE_TTL_SECONDS,
   type RequestContext,
 } from "@comvenio/connector-contracts";
 import {
@@ -23,6 +26,7 @@ import {
   type FileAuthorizationPort,
   type FileClock,
   type FileRandom,
+  type MalwareScannerPort,
   type QuarantineObjectPort,
   type StoredObjectInspection,
   type ZipInspection,
@@ -58,12 +62,11 @@ class MutableClock implements FileClock {
   advance(seconds: number): void { this.timestamp += seconds * 1_000; }
 }
 
+/** Fixed ids for upload and file first; completion ids afterwards are random. */
 class SequenceRandom implements FileRandom {
   constructor(private readonly values = [uploadId, fileId]) {}
   uuid(): string {
-    const value = this.values.shift();
-    if (!value) throw new Error("Keine Test-UUID mehr verfügbar.");
-    return value;
+    return this.values.shift() ?? randomUUID();
   }
 }
 
@@ -102,18 +105,43 @@ function safeInspection(overrides: Partial<StoredObjectInspection> = {}): Stored
 function fixture(options: {
   inspection?: StoredObjectInspection;
   scan?: "clean" | "infected" | "unavailable";
+  scanner?: MalwareScannerPort;
 } = {}) {
   const clock = new MutableClock();
   const metadata = new MemoryFileMetadataStore();
+  // `inspection` models the quarantine object as it is now; every inspect() takes its own copy.
   let inspection = options.inspection ?? safeInspection();
   let scan = options.scan ?? "clean";
-  let deleted = 0;
+  const deletedKeys: string[] = [];
+  const releasedIds: string[] = [];
+  const copies = new Map<string, StoredObjectInspection>();
+  const inspectionIds: string[] = [];
+  const promotedIds: string[] = [];
   let authorizations = 0;
   const objects: QuarantineObjectPort = {
-    async createPresignedUpload() { return { url: "https://upload.example.test/one-time" }; },
-    async inspect() { return structuredClone(inspection); },
-    async delete() { deleted++; },
-    async promoteClean({ file_id }) { return { object_key: `mcp-clean/${file_id}` }; },
+    async createPresignedUpload(input) {
+      return {
+        url: "https://upload.example.test/one-time",
+        required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes), "If-None-Match": "*" },
+      };
+    },
+    async inspect() {
+      const inspectionId = randomUUID();
+      copies.set(inspectionId, structuredClone(inspection));
+      inspectionIds.push(inspectionId);
+      return { ...structuredClone(inspection), inspection_id: inspectionId };
+    },
+    async release({ inspection_id }) {
+      releasedIds.push(inspection_id);
+      copies.delete(inspection_id);
+    },
+    async delete({ object_key }) { deletedKeys.push(object_key); },
+    async promoteClean({ inspection_id, file_id }) {
+      const copy = copies.get(inspection_id);
+      if (!copy) throw new Error("The inspection has no current local copy.");
+      promotedIds.push(inspection_id);
+      return { object_key: `mcp-clean/${file_id}`, inspection_id, sha256: copy.sha256, size_bytes: copy.size_bytes };
+    },
     async createPresignedDownload() {
       return { url: "https://download.example.test/short-lived", expires_at: new Date(clock.now().getTime() + 300_000).toISOString() };
     },
@@ -124,7 +152,7 @@ function fixture(options: {
   const service = new ConnectorFileService(
     metadata,
     objects,
-    { async scan() { return scan; } },
+    options.scanner ?? { async scan() { return scan; } },
     authorization,
     clock,
     new SequenceRandom(),
@@ -135,7 +163,13 @@ function fixture(options: {
     clock,
     setInspection(value: StoredObjectInspection) { inspection = value; },
     setScan(value: "clean" | "infected" | "unavailable") { scan = value; },
-    deleted() { return deleted; },
+    deleted() { return deletedKeys.length; },
+    deletedKeys() { return [...deletedKeys]; },
+    released() { return releasedIds.length; },
+    releasedIds() { return [...releasedIds]; },
+    inspectionIds() { return [...inspectionIds]; },
+    promotedIds() { return [...promotedIds]; },
+    liveCopies() { return [...copies.keys()]; },
     authorizations() { return authorizations; },
   };
 }
@@ -162,6 +196,18 @@ async function startAndComplete(setup = fixture()) {
 }
 
 describe("K15 upload, quarantine and file-reference contract", () => {
+  test("a finalize whose own write already landed (replayed command) keeps the file", async () => {
+    const setup = fixture();
+    const original = setup.metadata.finalizeUpload.bind(setup.metadata);
+    // Models ioredis resending the EVAL after a reconnect: the first run wrote, the answer got lost.
+    setup.metadata.finalizeUpload = async (input) => { await original(input); return false; };
+    const { clean } = await startAndComplete(setup);
+    expect(clean.state).toBe("clean");
+    expect(clean.file_id).not.toBeNull();
+    expect(setup.deleted()).toBe(0);
+    expect(await setup.metadata.getFile(clean.file_id!)).not.toBeNull();
+  });
+
   test("TC-01/TC-02: validates all entities and completes the safe lifecycle", async () => {
     const setup = fixture();
     const startTool = new FileUploadStartTool(setup.service);
@@ -179,7 +225,7 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       owner_subject_id: subjectId,
       state: "pending",
       upload_url: "https://upload.example.test/one-time",
-      required_headers: { "Content-Type": "application/pdf" },
+      required_headers: { "Content-Type": "application/pdf", "Content-Length": "1024", "If-None-Match": "*" },
       file_id: null,
     });
     expect(JSON.stringify(pending)).not.toContain("mcp-quarantine");
@@ -191,6 +237,8 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       completion: { size_bytes: 1_024, sha256: sha },
     });
     expect(clean).toMatchObject({ state: "clean", file_id: fileId, upload_url: null, required_headers: null });
+    // The local inspection copy is released after the completion, whatever its outcome.
+    expect(setup.released()).toBe(1);
     const reference = await getTool.execute({ context, club_id: clubId, file_id: clean.file_id! });
     expect(CONNECTOR_FILE_REFERENCE_SCHEMA.parse(reference)).toEqual(reference);
     expect(reference).toMatchObject({
@@ -255,7 +303,8 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       const pending = await setup.service.startUpload({ context, request: uploadRequest() });
       const rejected = await setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion });
       expect(rejected).toMatchObject({ state: "rejected", rejection_code: expected, upload_url: null });
-      expect(setup.deleted()).toBe(1);
+      // K15b: the quarantine object stays until the lifecycle rule removes it (URL stays one-time).
+      expect(setup.deleted()).toBe(0);
       expect(await setup.metadata.getUpload(pending.upload_id)).toMatchObject({
         filename: null,
         mime_type: null,
@@ -270,7 +319,7 @@ describe("K15 upload, quarantine and file-reference contract", () => {
     const infectedPending = await infected.service.startUpload({ context, request: uploadRequest() });
     expect(await infected.service.completeUpload({ context, club_id: clubId, upload_id: infectedPending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
       .toMatchObject({ state: "rejected", rejection_code: "MALWARE" });
-    expect(infected.deleted()).toBe(1);
+    expect(infected.deleted()).toBe(0);
 
     const html = fixture({ inspection: safeInspection({ detected_mime_type: "text/html", active_content_passivated: false }) });
     const htmlPending = await html.service.startUpload({ context, request: { ...uploadRequest(), filename: "seite.html", mime_type: "text/html" } });
@@ -355,5 +404,165 @@ describe("K15 upload, quarantine and file-reference contract", () => {
       upload_id: pending.upload_id,
       completion: { size_bytes: 1_024, sha256: sha },
     })).resolves.toMatchObject({ state: "clean", file_id: fileId });
+  });
+
+  test("K15b: parallel completions run exactly one inspection and promote the inspected version", async () => {
+    let releaseScan: (verdict: "clean" | "infected" | "unavailable") => void = () => undefined;
+    let scanStarted: () => void = () => undefined;
+    const started = new Promise<void>((resolve) => { scanStarted = resolve; });
+    const scanned: string[] = [];
+    const setup = fixture({
+      scanner: {
+        scan({ inspection_id }) {
+          scanned.push(inspection_id);
+          scanStarted();
+          return new Promise((resolve) => { releaseScan = resolve; });
+        },
+      },
+    });
+    const pending = await setup.service.startUpload({ context, request: uploadRequest() });
+    const first = setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } });
+    await started;
+
+    // The object is replaced by another file of the same size and a second completion follows.
+    const otherSha = "b".repeat(64);
+    setup.setInspection(safeInspection({ sha256: otherSha }));
+    const second = await setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: otherSha } });
+    expect(second).toMatchObject({ state: "scanning", file_id: null, upload_url: null });
+    const third = await setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } });
+    expect(third).toMatchObject({ state: "scanning" });
+    expect(setup.inspectionIds()).toHaveLength(1);
+    const [inspectionId] = setup.inspectionIds();
+    // The parallel calls neither inspected nor released anything.
+    expect(setup.liveCopies()).toEqual([inspectionId!]);
+    expect(setup.released()).toBe(0);
+
+    releaseScan("clean");
+    expect(await first).toMatchObject({ state: "clean", file_id: fileId });
+    expect(scanned).toEqual([inspectionId!]);
+    expect(setup.promotedIds()).toEqual([inspectionId!]);
+    expect(setup.releasedIds()).toEqual([inspectionId!]);
+    expect(await setup.metadata.getFile(fileId)).toMatchObject({ sha256: sha, inspection_id: inspectionId });
+  });
+
+  test("K15b: an abandoned completion cannot finalize over, or delete, the work of the completion that took over", async () => {
+    const verdicts: Array<(verdict: "clean" | "infected" | "unavailable") => void> = [];
+    const waiters: Array<() => void> = [];
+    const scanCalled = () => new Promise<void>((resolve) => { waiters.push(resolve); });
+    const setup = fixture({
+      scanner: {
+        scan() {
+          waiters.shift()?.();
+          return new Promise((resolve) => { verdicts.push(resolve); });
+        },
+      },
+    });
+    const pending = await setup.service.startUpload({ context, request: uploadRequest() });
+    const firstScan = scanCalled();
+    const first = setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } });
+    await firstScan;
+
+    // The first completion looks dead (lease over), a second one takes over.
+    setup.clock.advance(5 * 60 + 1);
+    const secondScan = scanCalled();
+    const second = setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } });
+    await secondScan;
+    const [firstId, secondId] = setup.inspectionIds();
+    expect(setup.liveCopies()).toEqual([firstId!, secondId!]);
+
+    verdicts[1]!("clean");
+    const clean = await second;
+    expect(clean.state).toBe("clean");
+    // The takeover got a fresh file id, so both completions never share a clean object.
+    expect(clean.file_id).not.toBe(fileId);
+    expect(setup.liveCopies()).toEqual([firstId!]);
+
+    verdicts[0]!("clean");
+    expect(await first).toEqual(clean);
+    // The loser removed only its own promoted object and its own copy.
+    expect(setup.deletedKeys()).toEqual([`mcp-clean/${fileId}`]);
+    expect(setup.releasedIds()).toEqual([secondId!, firstId!]);
+    expect(await setup.metadata.getFile(clean.file_id!)).toMatchObject({ inspection_id: secondId });
+    expect(await setup.metadata.getFile(fileId)).toBeNull();
+  });
+
+  test("K15b: an object replaced between two completions is judged and stored from the second inspection only", async () => {
+    const setup = fixture({ scan: "unavailable" });
+    const pending = await setup.service.startUpload({ context, request: uploadRequest() });
+    await expect(setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .rejects.toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+    // The failed completion handed the upload back unchanged.
+    expect((await setup.metadata.getUpload(pending.upload_id))?.handle).toEqual(pending);
+
+    const otherSha = "c".repeat(64);
+    setup.setInspection(safeInspection({ sha256: otherSha }));
+    setup.setScan("clean");
+    const clean = await setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: otherSha } });
+    expect(clean).toMatchObject({ state: "clean", file_id: fileId });
+    const [firstId, secondId] = setup.inspectionIds();
+    expect(setup.promotedIds()).toEqual([secondId!]);
+    expect(setup.releasedIds()).toEqual([firstId!, secondId!]);
+    expect(await setup.metadata.getFile(fileId)).toMatchObject({ sha256: otherSha, inspection_id: secondId });
+  });
+
+  test("K15b: a rejected or expired upload keeps its object until the URL expired and cannot be completed again", async () => {
+    const setup = fixture({ inspection: safeInspection({ sha256: "d".repeat(64) }) });
+    const pending = await setup.service.startUpload({ context, request: uploadRequest() });
+    expect(await setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .toMatchObject({ state: "rejected", rejection_code: "HASH_MISMATCH" });
+    expect(setup.deletedKeys()).toEqual([]);
+
+    // Even with a matching object afterwards, the upload stays closed, before and after URL expiry.
+    setup.setInspection(safeInspection());
+    await expect(setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .rejects.toMatchObject({ code: "CONFLICT" });
+    setup.clock.advance(UPLOAD_HANDLE_TTL_SECONDS + 1);
+    await expect(setup.service.completeUpload({ context, club_id: clubId, upload_id: pending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .rejects.toMatchObject({ code: "CONFLICT" });
+    expect(setup.inspectionIds()).toHaveLength(1);
+    expect(setup.deleted()).toBe(0);
+
+    const late = fixture();
+    const latePending = await late.service.startUpload({ context, request: uploadRequest() });
+    late.clock.advance(UPLOAD_HANDLE_TTL_SECONDS + 1);
+    expect(await late.service.completeUpload({ context, club_id: clubId, upload_id: latePending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .toMatchObject({ state: "expired", rejection_code: "EXPIRED" });
+    await expect(late.service.completeUpload({ context, club_id: clubId, upload_id: latePending.upload_id, completion: { size_bytes: 1_024, sha256: sha } }))
+      .rejects.toMatchObject({ code: "CONFLICT" });
+    expect(late.inspectionIds()).toHaveLength(0);
+    expect(late.deleted()).toBe(0);
+  });
+
+  test("K15b: the service refuses an upload URL that is not signed for one-time creation", async () => {
+    const setup = fixture();
+    const unconditional = new ConnectorFileService(
+      setup.metadata,
+      {
+        async createPresignedUpload(input) {
+          return { url: "https://upload.example.test/one-time", required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) } as never };
+        },
+        async inspect() { throw new Error("not used"); },
+        async release() {},
+        async delete() {},
+        async promoteClean() { throw new Error("not used"); },
+        async createPresignedDownload() { throw new Error("not used"); },
+      },
+      { async scan() { return "clean"; } },
+      { async reauthorize() { return { capability_version: "cap-v1" }; } },
+      setup.clock,
+      new SequenceRandom(),
+    );
+    await expect(unconditional.startUpload({ context, request: uploadRequest() })).rejects.toThrow();
+    expect(() => UPLOAD_HANDLE_SCHEMA.parse({
+      upload_id: uploadId,
+      club_id: clubId,
+      owner_subject_id: subjectId,
+      upload_url: "https://upload.example.test/one-time",
+      required_headers: { "Content-Type": "application/pdf", "Content-Length": "1024" },
+      state: "pending",
+      expires_at: "2026-07-21T12:15:00.000Z",
+      file_id: null,
+      rejection_code: null,
+    })).toThrow();
   });
 });

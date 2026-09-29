@@ -66,4 +66,7 @@ article under `fehler/` with meaning, typical causes and solution.
 | Asked for a token during login / value missing | Not needed. | Run `comvenio login` without a token. |
 | `--club is not allowed with OAuth` | `--club` was given to `comvenio login` — a usage error, not an expired sign-in. | Run `comvenio login` without `--club`; the club is chosen in the Comvenio consent screen and bound server-side. |
 | `Error OUTCOME_UNKNOWN` | A write action (for example `action confirm`) ended with a timeout (15-second limit) or server error — possibly after Comvenio had already carried it out. | **Do not retry**, or the entry may be created twice. Check the current state with the matching read action first. |
+| `Error UPLOAD_NOT_ENABLED` | `action call cai.data.06.upload --file …`: uploading from your own computer is not yet enabled for this club or on this server. | Upload the file in the web app; try again later. |
+| `Error UPLOAD_REJECTED` | The check (size, checksum, file type, virus scan) rejected the file; the addition names the reason, for example `MALWARE` or `MIME_MISMATCH`. | Check the file against the reason, then upload it again. |
+| `Error UPLOAD_TIMEOUT` | The upload was interrupted (Ctrl+C, connection) or not transferred and checked within 15 minutes — it has expired. | Start the same command again. |
 | `Error UNKNOWN_ERROR` | A case without a description. | Report it as a bug (issue form) with the request id and time. |

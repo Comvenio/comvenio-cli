@@ -10,7 +10,11 @@ import {
   connectorActionToolName,
   connectorToolActionId,
 } from "../mcp/client.ts";
-import { readJsonFile } from "../util/file.ts";
+import {
+  FILE_UPLOAD_ACTION_ID,
+  assertNoFileDerivedFields,
+  runFileUpload,
+} from "./action-file-upload.ts";
 
 type Options = {
   file?: string;
@@ -22,14 +26,14 @@ type Options = {
 };
 
 function parseInput(options: Options): Record<string, unknown> {
-  if (options.file && options.input) {
-    throw new Error("--file und --input dürfen nicht gemeinsam verwendet werden.");
+  let value: unknown = {};
+  if (options.input) {
+    try {
+      value = JSON.parse(options.input) as unknown;
+    } catch {
+      throw new Error("--input ist kein gültiges JSON.");
+    }
   }
-  const value = options.file
-    ? readJsonFile<unknown>(options.file)
-    : options.input
-      ? JSON.parse(options.input) as unknown
-      : {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Die Action-Eingabe muss ein JSON-Objekt sein.");
   }
@@ -73,13 +77,53 @@ export async function connector(): Promise<CliConnectorClient> {
   });
 }
 
+async function uploadFile(options: Options): Promise<void> {
+  if (typeof options.file !== "string" || options.file.length === 0) {
+    throw new Error("--file benötigt einen Dateipfad.");
+  }
+  const input = parseInput(options);
+  // Contradicting input fails before the sign-in is even read.
+  assertNoFileDerivedFields(input);
+  const client = await connector();
+  const state = await loadState();
+  // Ctrl+C ends the run with the hint what happens to the upload; a second one ends the process.
+  const controller = new AbortController();
+  const onInterrupt = () => controller.abort(new Error("interrupted"));
+  process.once("SIGINT", onInterrupt);
+  try {
+    const result = await runFileUpload({
+      path: options.file,
+      input,
+      ...(options.idempotencyKey ? { idempotency_key: options.idempotencyKey } : {}),
+    }, {
+      client,
+      granted_scopes: state.oauth?.scopes ?? [],
+      signal: controller.signal,
+      progress: (_phase, message) => {
+        if (!options.json) console.error(message);
+      },
+    });
+    output(result, options.json, () => {
+      const file = result.file as Record<string, unknown>;
+      const job = result.job as Record<string, unknown>;
+      return [
+        `Hochgeladen: ${String(file.filename)} (${String(file.content_type)}, ${String(file.size_bytes)} Bytes)`,
+        `Hintergrundauftrag: ${String(job.job_id)} — ${String(job.state)}`,
+        `Idempotenzschlüssel: ${String(result.idempotency_key)}`,
+      ].join("\n");
+    });
+  } finally {
+    process.removeListener("SIGINT", onInterrupt);
+  }
+}
+
 export function registerActionCommands(cli: CAC): void {
   cli
     .command(
       "action <verb> [actionId]",
       "Kanonische Comvenio-Capabilities sicher über den CLI-MCP-Kanal ausführen",
     )
-    .option("--file <path>", "Strikt typisierte Action-Eingabe als JSON-Datei")
+    .option("--file <path>", `Lokale Datei hochladen (nur für ${FILE_UPLOAD_ACTION_ID})`)
     .option("--input <json>", "Strikt typisierte Action-Eingabe als JSON-Objekt")
     .option("--idempotency-key <uuid>", "Stabiler Schlüssel für Schreibaktionen")
     .option("--preview-id <uuid>", "Vorschau-ID für action confirm")
@@ -90,6 +134,17 @@ export function registerActionCommands(cli: CAC): void {
       actionId: string | undefined,
       options: Options,
     ) => {
+      // --file is the upload source of cai.data.06.upload, nothing else.
+      if (options.file !== undefined && (verb !== "call" || actionId !== FILE_UPLOAD_ACTION_ID)) {
+        throw new Error(
+          `--file ist nur für "action call ${FILE_UPLOAD_ACTION_ID}" vorgesehen; `
+          + "die Action-Eingabe gehört in --input.",
+        );
+      }
+      if (verb === "call" && actionId === FILE_UPLOAD_ACTION_ID && options.file !== undefined) {
+        await uploadFile(options);
+        return;
+      }
       const client = await connector();
       if (verb === "list") {
         const actions = (await client.listTools())

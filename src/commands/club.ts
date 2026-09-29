@@ -291,7 +291,7 @@ export function buildClubDesignSettings(opts: Opts): Record<string, unknown> {
  * supplied keys change, everything else in design_settings is preserved.
  */
 // Public club logo without sign-in (app-qualitaet 22): club logos are always public
-// (Tom 2026-09-28). Reads only the public club summary and the public logo — nothing else.
+// (product decision 2026-09-28). Reads only the public club summary and the public logo — nothing else.
 export const PUBLIC_GATEWAY: Record<string, string> = {
   prod: "https://api.comvenio.app",
   dev: "https://apidev.comvenio.app",

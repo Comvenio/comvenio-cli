@@ -54,7 +54,7 @@ export interface K12ActionSchemaContract { input: z.ZodType; output: z.ZodType; 
 export interface K12ExecutionRequest { action_id: K12ActionId; input: unknown; context: RequestContext; capability_snapshot: CapabilitySnapshot | null; }
 export interface K12MutationRequest { definition: K12ActionDefinition; operation: K12OperationDefinition; input: JsonValue; context: RequestContext; capability_snapshot: CapabilitySnapshot; }
 export interface K12WriteSafetyPort { execute(request: K12MutationRequest, mutation: () => Promise<JsonValue>): Promise<JsonValue>; }
-export interface K12JobStartPort { start(request: K12MutationRequest): Promise<JsonValue>; }
+export interface K12JobStartPort { supports(action_id: string, operation: string): boolean; start(request: K12MutationRequest): Promise<JsonValue>; }
 export interface K12VerifyTargetGuard { assertSafe(targetUrl: string, context: RequestContext): Promise<void>; }
 export interface K12ConfirmationPort {
   confirmOrPreview(request: {

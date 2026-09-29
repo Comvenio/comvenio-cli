@@ -128,6 +128,33 @@ MCP_SHARED_STATE_ENCRYPTION_KEY=<separater, ungepaddeter 32-Byte-Base64URL-Schl�
 MCP_RELEASE_SCOPE=full_connector_v1
 ```
 
+### Datei-Uploads und Hintergrund-Jobs (optional, alles oder nichts)
+
+Uploads vom eigenen Rechner (`comvenio action call cai.data.06.upload --file …`)
+und die Job-Werkzeuge sind nur aktiv, wenn **alle** folgenden Variablen gesetzt
+sind; fehlt eine, bleiben sie unsichtbar und der Start meldet nur die Namen der
+fehlenden Variablen (D-CAI-023):
+
+```text
+MCP_UPLOAD_S3_ENDPOINT=<https-Endpunkt des S3-kompatiblen Speichers>
+MCP_UPLOAD_S3_REGION=<Region>
+MCP_UPLOAD_S3_BUCKET=<privater Quarantäne-Bucket>
+MCP_UPLOAD_S3_ACCESS_KEY_ID=<Schlüssel mit Lese-/Schreibrecht nur auf diesen Bucket>
+MCP_UPLOAD_S3_SECRET_ACCESS_KEY=<Secret>
+MCP_CLAMD_HOST=<interner Hostname des clamd-Dienstes>
+MCP_CLAMD_PORT=3310
+JOB_BINDING_SECRET=<mindestens 32 Zeichen, identisch im auth-service>
+```
+
+Betrieb: clamd mit `StreamMaxLength` von mindestens 200 MiB; am Bucket eine
+Lifecycle-Regel, die `mcp-quarantine/` nach einem Tag löscht; der Speicher muss
+path-style-Adressen (`endpoint/bucket/key`) annehmen und **bedingtes PUT**
+beherrschen: Jede Upload-URL ist mit `If-None-Match: *` signiert, damit sie das
+Objekt höchstens einmal anlegt. Ein Speicher ohne bedingtes PUT ist nicht
+zulässig. Abgelehnte oder abgelaufene Uploads löscht der Server nicht selbst —
+solange die Upload-URL gilt, würde ein Löschen sie wieder beschreibbar machen;
+die Lifecycle-Regel räumt sie auf.
+
 `MCP_CIMD_CLIENT_PINS_JSON.allowed_scopes` ist die maximale serverseitige
 Scope-Allowlist des gepinnten Clients, nicht die beim Login automatisch
 erteilte Auswahl. Für ChatGPT bleiben Basis- und Standard-Scope

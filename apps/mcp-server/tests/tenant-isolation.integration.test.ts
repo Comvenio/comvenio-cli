@@ -3335,7 +3335,7 @@ describe("K13 sponsor and marketing tenant/RBAC isolation", () => {
   });
 
   test("separates sponsor readers, managers and member-responsibility reads", () => {
-    const sponsor = createK13ToolSet({ client: adapterClient(async () => []), write_safety: { async execute(_request, mutation) { return mutation(); } }, job_starter: { async start() { return { job_id: sponsorId, status: "queued" }; } } });
+    const sponsor = createK13ToolSet({ client: adapterClient(async () => []), write_safety: { async execute(_request, mutation) { return mutation(); } }, job_starter: { supports() { return true; }, async start() { return { job_id: sponsorId, status: "queued" }; } } });
     const reader = { context: { ...context, scopes: ["sponsor.read", "sponsor.write", "member.read.basic"] as RequestContext["scopes"] }, capability_snapshot: { ...capabilitySnapshot, permissions: { view_sponsors: true } } };
     expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).toContain("cai.sponsor.01.list");
     expect(sponsor.listVisible(reader).map((definition) => definition.action_id)).not.toContain("cai.sponsor.03.add");

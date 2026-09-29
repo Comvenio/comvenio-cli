@@ -65,7 +65,7 @@ export interface K11ActionSchemaContract { input: z.ZodType; output: z.ZodType; 
 export interface K11ExecutionRequest { action_id: K11ActionId; input: unknown; context: RequestContext; capability_snapshot: CapabilitySnapshot | null; }
 export interface K11MutationRequest { definition: K11ActionDefinition; operation: K11OperationDefinition; input: JsonValue; context: RequestContext; capability_snapshot: CapabilitySnapshot; }
 export interface K11WriteSafetyPort { execute(request: K11MutationRequest, mutation: () => Promise<JsonValue>): Promise<JsonValue>; }
-export interface K11JobStartPort { start(request: K11MutationRequest): Promise<JsonValue>; }
+export interface K11JobStartPort { supports(action_id: string, operation: string): boolean; start(request: K11MutationRequest): Promise<JsonValue>; }
 export interface K11ConfirmationPreview extends Record<string, JsonValue> {
   preview_id: string; confirmation_token: string; action_id: K11ActionId; operation: string; subject: string; summary: string; effects: JsonValue[]; expires_at: string;
 }

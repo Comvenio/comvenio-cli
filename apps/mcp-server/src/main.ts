@@ -8,7 +8,9 @@ function writeLifecycleRecord(record: object): void {
 }
 
 try {
-  const started = await startMcpDeploymentCandidate(process.env);
+  const started = await startMcpDeploymentCandidate(process.env, {
+    on_lifecycle_event: writeLifecycleRecord,
+  });
 
   writeLifecycleRecord({
     event: "comvenio_mcp_started",
@@ -26,6 +28,7 @@ try {
     try {
       drained = await started.server.drain(20_000);
     } finally {
+      await started.close_background();
       await started.state_store.close();
     }
     writeLifecycleRecord({ event: "comvenio_mcp_stopped", signal, drained });

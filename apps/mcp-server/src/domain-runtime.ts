@@ -26,6 +26,10 @@ import {
   type DomainStateStore,
 } from "./domain-state-store.ts";
 import { HELP_TOOL_HINT } from "./help-tool.ts";
+import type {
+  JobFilePlatform,
+  JobFileRequestBinding,
+} from "./jobs/platform.ts";
 import { publicToolError } from "./public-tool-error.ts";
 import type { ToolSecurityScheme } from "./tool-security-schemes.ts";
 import {
@@ -167,6 +171,8 @@ export interface DomainToolSummary extends Record<string, JsonValue> {
 export interface DomainRuntimeRegistration {
   tools: DomainToolSummary[];
   blocked_action_ids: string[];
+  /** Jobs and files bound to this request; null while the uploads-and-jobs group is off. */
+  job_binding: JobFileRequestBinding | null;
 }
 
 export const FULL_CONNECTOR_REPLACEMENTS = Object.freeze({
@@ -277,6 +283,11 @@ class DomainWriteCoordinator {
 
   run<T>(context: DomainCallSafety, execute: () => Promise<T>): Promise<T> {
     return this.#calls.run(context, execute);
+  }
+
+  /** The safety data of the running tool call; the job starter derives the job identity from it. */
+  current(): DomainCallSafety | undefined {
+    return this.#calls.getStore();
   }
 
   async execute(
@@ -1086,8 +1097,18 @@ export function registerFullDomainRuntime(input: {
   public_origin: string;
   state_store: DomainStateStore;
   advertised_security_schemes: Map<string, readonly ToolSecurityScheme[]>;
+  job_files?: JobFilePlatform | null;
 }): DomainRuntimeRegistration {
   const writeCoordinator = new DomainWriteCoordinator(input.state_store);
+  // Without the uploads-and-jobs group no job_starter exists and every job action stays hidden.
+  const jobBinding = input.job_files?.bind({
+    context: input.context,
+    capability_snapshot: input.capability_snapshot,
+    call: () => writeCoordinator.current(),
+  }) ?? null;
+  const jobStarter = jobBinding
+    ? { job_starter: jobBinding.job_starter }
+    : {};
   const k7Confirmation = new K7ConfirmationCoordinator(input.state_store);
   const domainConfirmationRouter = new DomainConfirmationRouter(
     input.state_store,
@@ -1129,7 +1150,7 @@ export function registerFullDomainRuntime(input: {
     schemas: Readonly<Record<string, DomainSchemaContract>>;
   }> = [];
 
-  const k7 = createK7ToolSets({ client: input.client, write_safety: writeSafety });
+  const k7 = createK7ToolSets({ client: input.client, write_safety: writeSafety, ...jobStarter });
   groups.push({
     sets: Object.values(k7).map(asToolSet),
     definitions: definitionMap(K7_ACTION_DEFINITIONS),
@@ -1139,6 +1160,7 @@ export function registerFullDomainRuntime(input: {
     client: input.client,
     write_safety: writeSafety,
     event_confirmation: eventConfirmation,
+    ...jobStarter,
   });
   groups.push({
     sets: Object.values(k8).map(asToolSet),
@@ -1149,6 +1171,7 @@ export function registerFullDomainRuntime(input: {
     client: input.client,
     write_safety: writeSafety,
     agenda_confirmation: agendaConfirmation,
+    ...jobStarter,
   });
   groups.push({
     sets: Object.values(k9).map(asToolSet),
@@ -1169,6 +1192,7 @@ export function registerFullDomainRuntime(input: {
     client: input.client,
     write_safety: writeSafety,
     confirmation: supplyConfirmation,
+    ...jobStarter,
   });
   groups.push({
     sets: Object.values(k11).map(asToolSet),
@@ -1179,6 +1203,7 @@ export function registerFullDomainRuntime(input: {
     client: input.client,
     write_safety: writeSafety,
     confirmation: contentConfirmation,
+    ...jobStarter,
   });
   groups.push({
     sets: Object.values(k12).map(asToolSet),
@@ -1189,6 +1214,7 @@ export function registerFullDomainRuntime(input: {
     client: input.client,
     write_safety: writeSafety,
     confirmation: sponsorConfirmation,
+    ...jobStarter,
   });
   groups.push({
     sets: [asToolSet(k13)],
@@ -1524,5 +1550,6 @@ export function registerFullDomainRuntime(input: {
   return {
     tools: summaries.sort((left, right) => left.name.localeCompare(right.name)),
     blocked_action_ids: fullDomainCatalogSummary().blocked_action_ids,
+    job_binding: jobBinding,
   };
 }

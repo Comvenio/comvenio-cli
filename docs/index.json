@@ -665,6 +665,92 @@
       }
     },
     {
+      "id": "fehler/upload-not-enabled",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UPLOAD_NOT_ENABLED — Datei-Upload ist in diesem Verein/auf diesem Server noch nicht eingeschaltet.",
+        "en": "UPLOAD_NOT_ENABLED — File upload is not yet enabled for this club/on this server."
+      },
+      "stichwoerter": {
+        "de": [
+          "upload",
+          "datei",
+          "hochladen",
+          "eingeschaltet"
+        ],
+        "en": [
+          "upload",
+          "file",
+          "enabled"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/upload-not-enabled.md",
+        "en": "docs/en/fehler/upload-not-enabled.md"
+      }
+    },
+    {
+      "id": "fehler/upload-rejected",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UPLOAD_REJECTED — Die Datei wurde bei der Prüfung abgelehnt.",
+        "en": "UPLOAD_REJECTED — The file was rejected during the check."
+      },
+      "stichwoerter": {
+        "de": [
+          "upload",
+          "datei",
+          "virenscan",
+          "prüfsumme",
+          "dateityp",
+          "abgelehnt"
+        ],
+        "en": [
+          "upload",
+          "file",
+          "virus scan",
+          "checksum",
+          "file type",
+          "rejected"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/upload-rejected.md",
+        "en": "docs/en/fehler/upload-rejected.md"
+      }
+    },
+    {
+      "id": "fehler/upload-timeout",
+      "kategorie": "fehler",
+      "title": {
+        "de": "UPLOAD_TIMEOUT — Der Datei-Upload wurde nicht abgeschlossen.",
+        "en": "UPLOAD_TIMEOUT — The file upload was not completed."
+      },
+      "stichwoerter": {
+        "de": [
+          "upload",
+          "datei",
+          "abbruch",
+          "zeitüberschreitung",
+          "verfallen"
+        ],
+        "en": [
+          "upload",
+          "file",
+          "interrupted",
+          "timeout",
+          "expired"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/upload-timeout.md",
+        "en": "docs/en/fehler/upload-timeout.md"
+      }
+    },
+    {
       "id": "fehler/upstream-timeout",
       "kategorie": "fehler",
       "title": {
