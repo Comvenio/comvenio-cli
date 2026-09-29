@@ -1,4 +1,23 @@
+import { LoginOptionError } from "../auth.ts";
 import { PublicCliError } from "../errors.ts";
+
+/**
+ * The command surface of the CLI after the device-token removal
+ * (geraetetoken-abbau master §0.4). `comvenio --help` registers exactly these
+ * top-level commands, `comvenio help` lists them; everything else ends with
+ * USAGE_ERROR (04-cli-token-pfad-entfernen DC-3).
+ */
+export const COMMAND_SURFACE = [
+  { command: "login", usage: "login [--scopes <csv>]" },
+  { command: "logout", usage: "logout" },
+  { command: "whoami", usage: "whoami" },
+  { command: "action", usage: "action list|call|confirm" },
+  { command: "agent", usage: "agent chat <nachricht>" },
+  { command: "finance", usage: "finance …" },
+  { command: "help", usage: "help [thema]" },
+] as const;
+
+export const SURFACE_COMMANDS: readonly string[] = COMMAND_SURFACE.map((entry) => entry.command);
 
 /**
  * Commands the CLI no longer carries (Geräte-Token-Abbau K2, D-GTA-03). They
@@ -28,10 +47,63 @@ export function removedCommandError(command: RemovedCommand): PublicCliError {
 }
 
 /**
- * The removed top-level command of a call that matched no command, from the
- * positional arguments cac parsed (`agent approval` is handled by `agent`).
+ * The classic top-level commands that ran over the legacy client with a
+ * device token (04-cli-token-pfad-entfernen §4.2). Their work runs over the
+ * connector actions now; a call names the command and points there.
  */
-export function removedTopLevelCommand(args: readonly string[]): RemovedCommand | null {
+export const CLASSIC_COMMANDS = [
+  "booking", "club", "data", "event", "homepage", "ingredient", "ingredient-category",
+  "meeting", "member", "menu", "news", "object", "plan", "recipe", "role", "schema",
+  "shopping", "sponsor", "task", "team", "teams", "template", "tournament", "verify",
+  "weekly-preview", "zone",
+] as const;
+
+const CLASSIC = new Set<string>(CLASSIC_COMMANDS);
+
+const ACTION_HINT =
+  "„comvenio action list“ zeigt die Actions, die deine Anmeldung freigibt; "
+  + "ausgeführt wird mit „comvenio action call <action-id> --input '{…}'“. "
+  + "Was es als Action nicht gibt, erledigst du in der Web-App.";
+
+/**
+ * USAGE_ERROR for a top-level command outside the command surface. Never
+ * forwards to an action: a script calling an old command must fail visibly
+ * and name it (DC-3, DC-8).
+ */
+export function unknownCommandError(command: string): PublicCliError {
+  const sentence = CLASSIC.has(command)
+    ? `„comvenio ${command}“ gibt es im CLI nicht mehr.`
+    : `„comvenio ${command}“ ist kein Befehl des CLI.`;
+  return new PublicCliError("USAGE_ERROR", sentence, { detail: `${sentence} ${ACTION_HINT}` });
+}
+
+/**
+ * The error for a call that matched no registered command, from the
+ * positional arguments cac parsed, or null when there is nothing to reject
+ * (no positional argument, e.g. `comvenio --help`). `agent approval` is
+ * handled by `agent`.
+ */
+export function unmatchedCommandError(args: readonly string[]): PublicCliError | null {
   const head = args[0];
-  return head === "function" || head === "automation" ? head : null;
+  if (!head) return null;
+  if (head === "function" || head === "automation") return removedCommandError(head);
+  return unknownCommandError(head);
+}
+
+export const DEVICE_TOKEN_GONE =
+  "Geräte-Token gibt es nicht mehr — melde dich mit „comvenio login“ im Browser an. "
+  + "Für Skripte und CI legt ein Vereinsadmin einen Maschinen-Grant an "
+  + "(COMVENIO_CLIENT_ID und COMVENIO_CLIENT_SECRET).";
+
+/**
+ * `login --device-token` and its old alias `--token` are gone (§4.1, DC-3).
+ * cac keeps unknown options in the parsed options, so the check runs on them
+ * before the command; returns null when neither option was given.
+ */
+export function deviceTokenOptionError(
+  command: string | undefined,
+  options: Record<string, unknown>,
+): LoginOptionError | null {
+  if (command !== "login") return null;
+  return "deviceToken" in options || "token" in options ? new LoginOptionError(DEVICE_TOKEN_GONE) : null;
 }
