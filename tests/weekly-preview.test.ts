@@ -47,7 +47,9 @@ describe("weekly-preview create (Funktion)", () => {
 
   test("nennt nach einer Zeitgrenze den Schlüssel für eine sichere Wiederholung", () => {
     const hint = createTimeoutHint("weekly-preview-abc");
-    expect(hint).toContain("function runs weekly_preview.create");
+    expect(hint).toContain("Fähigkeiten & Routinen");
+    // `comvenio function` left the CLI (Geräte-Token-Abbau K2); the hint must not name it.
+    expect(hint).not.toContain("function runs");
     expect(hint).toContain("--idempotency-key weekly-preview-abc");
   });
 

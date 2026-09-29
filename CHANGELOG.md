@@ -34,6 +34,13 @@ Die Einträge folgen
 
 ### Changed
 
+- `comvenio agent chat` spricht über den Connector (`cv_club_agent_converse` am
+  CLI-Kanal) mit der Anmeldung aus `comvenio login`; `--club` entfällt, der
+  Verein kommt aus der Anmeldung. Die Antwort nennt je Freigabe den Link und je
+  Lauf den Stand, mit `--json` als `run_refs` und `approval_refs`.
+- `cv_club_agent_converse` liefert zusätzlich `run_refs` und `approval_refs`,
+  wenn ein Zug Läufe oder Freigaben berührt; `session_id` und `response`
+  bleiben unverändert.
 - Standard-MCP-Clients wie Claude und Codex können ohne den proprietären
   `X-Comvenio-Provider`-Header initialisieren. Authentifizierte Provider werden
   weiterhin aus dem geprüften OAuth-Principal abgeleitet; Client- und
@@ -54,3 +61,8 @@ Die Einträge folgen
   davon über `/ready` gesperrt, bis Katalog, OAuth und Capability-Gates erfüllt sind.
 - Das Paket ist gegen eine versehentliche Veröffentlichung bei npm geschützt.
 
+### Removed
+
+- `comvenio agent approval`, `comvenio function` und `comvenio automation`.
+  Freigaben, Funktionen und Automationen bleiben in Web-App und App; ein Aufruf
+  endet mit `USAGE_ERROR` und nennt den Ort in der Web-App.

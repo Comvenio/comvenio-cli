@@ -815,21 +815,26 @@
       "id": "agent",
       "status": "core-partial",
       "actions": [
-        "chat",
+        "chat"
+      ],
+      "removed_actions": [
         "approval",
-        "function"
+        "function",
+        "automation"
       ],
       "gaps": [
-        "Die dialogische Nutzung des Club-Agenten und das Lesen von Freigaben sind abgedeckt; administrative Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory fehlen noch als CLI-Actions."
+        "Die dialogische Nutzung des Club-Agenten ist über den Connector abgedeckt (agent chat, Anmeldung mit comvenio login); Freigaben, Funktionen, Automationen, Konfiguration, Skill-Pakete, Routinen, Watch-Rules, Journal und Memory werden in Web-App und App bedient."
       ],
       "intentional_exclusions": [
-        "agent approval approve|reject entscheidet nicht: Freigaben und Dauerfreigaben entstehen nur mit einer Sitzung in Web oder App (D-AF-16, D-AF-18); das Terminal gibt den Direktlink aus.",
-        "Einfache Datenabfragen sollen direkte deterministische CLI-/MCP-Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.",
-        "Der CLI-Client übergibt weder user_id noch Berechtigungen; Identität und RBAC werden serverseitig aus dem OAuth-Actor beziehungsweise dem expliziten Device-Token-Fallback geprüft."
+        "agent approval, function und automation sind im CLI entfallen (Geräte-Token-Abbau K2, D-GTA-03); ein Aufruf endet mit USAGE_ERROR und nennt den Ort in der Web-App.",
+        "Freigaben entscheidet nie das Terminal (D-AF-16): agent chat gibt je Freigabe den Direktlink (approval_url) aus.",
+        "Einfache Datenabfragen sollen direkte deterministische Actions verwenden; agent chat ist für Beratung, Planung und mehrstufige Aufgaben vorgesehen.",
+        "Der CLI-Client übergibt weder Verein noch user_id noch Berechtigungen; Verein, Identität und Rechte leitet der Connector aus der OAuth-Anmeldung ab."
       ],
       "source": [
         "src/commands/agent.ts",
-        "src/commands/function.ts",
+        "src/commands/removed.ts",
+        "apps/mcp-server/src/runtime-tools.ts",
         "Backend/Microservice-Backend/ai-service/app/routes/chat.py",
         "Backend/Microservice-Backend/ai-service/app/services/club_agent/decision_graph/"
       ],

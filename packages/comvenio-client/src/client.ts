@@ -18,6 +18,8 @@ export interface ComvenioApiRequest {
   context: RequestContext;
   query?: Record<string, string | string[]>;
   body?: JsonValue;
+  /** Longer budget for synchronous LLM turns; capped at MAX_REQUEST_TIMEOUT_MS. */
+  timeout_ms?: number;
 }
 
 export interface ComvenioApiBinary {
@@ -70,6 +72,7 @@ export interface ComvenioApiClientDependencies {
 }
 
 const REQUEST_TIMEOUT_MS = 15000 as const;
+const MAX_REQUEST_TIMEOUT_MS = 120_000;
 const MAX_ATTEMPTS = 3;
 const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
 const SERVICE_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -338,7 +341,8 @@ export function createComvenioApiClient(
         attempt++;
         const startedAt = now();
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        const budget = Math.min(Math.max(request.timeout_ms ?? REQUEST_TIMEOUT_MS, 1), MAX_REQUEST_TIMEOUT_MS);
+        const timer = setTimeout(() => controller.abort(), budget);
         try {
           const response = await fetchImpl(url, {
             method: request.method,
