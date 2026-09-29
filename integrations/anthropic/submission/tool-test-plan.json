@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
+  "tool_sync_version": "8de692827b36d4a94863b2b4f8e920be7973062052d56a542c138d432ba6a667",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -382,6 +382,36 @@
       "tool_name": "cv_club_12_weekly_preview_list",
       "happy_path_prompt": "Führe „Comvenio: Verein – weekly preview list“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Verein – weekly preview list“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_club_13_forum_board_list",
+      "happy_path_prompt": "Führe „Comvenio: Verein – forum board list“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Verein – forum board list“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_club_14_forum_thread_list",
+      "happy_path_prompt": "Führe „Comvenio: Verein – forum thread list“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Verein – forum thread list“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

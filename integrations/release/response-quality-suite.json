@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "suite": "ResponseQualitySuite",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
+  "runtime_tool_catalog_sha256": "8de692827b36d4a94863b2b4f8e920be7973062052d56a542c138d432ba6a667",
   "providers": [
     "openai",
     "anthropic"

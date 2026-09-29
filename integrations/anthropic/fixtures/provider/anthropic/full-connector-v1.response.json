@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
+  "runtime_tool_catalog_sha256": "8de692827b36d4a94863b2b4f8e920be7973062052d56a542c138d432ba6a667",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -488,6 +488,44 @@
     },
     {
       "tool_name": "cv_club_12_weekly_preview_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_club_13_forum_board_list",
+      "risk_class": "read",
+      "required_scopes": [
+        "club.read"
+      ],
+      "expected_outcome": "grounded_success_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": false,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "safe_repeat"
+      }
+    },
+    {
+      "tool_name": "cv_club_14_forum_thread_list",
       "risk_class": "read",
       "required_scopes": [
         "club.read"
