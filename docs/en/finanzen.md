@@ -38,8 +38,9 @@ shown by `comvenio action list --json`. For agents, `--json` is the binding outp
 5. Close a year: `comvenio finance plan-close --year <year>` (action:
    `cai.finance.05.plan_close`); add `--force` for open positions. After that, the service rejects
    changes to positions and entries — including reversing an automatic entry.
-6. Reopen a closed year: `comvenio finance plan-reopen --year <year> --reason "<reason>"`.
-   `--reason` is required (at least 3 characters); this step has no action yet.
+6. Reopen a closed year: only through Comvenio support. Reopening requires a platform role;
+   `comvenio finance plan-reopen` therefore stops with `USAGE_ERROR`, and there is no action for it.
+   Open a support ticket in the club (**My area** → **Support**) with the year and a reason.
 7. Copy a plan into a new year: `comvenio finance plan-copy <source-year> --year <target-year>`
    (action: `cai.finance.07.plan_copy`). Recurring positions are carried over automatically;
    one-off ones only with `--include-non-recurring` or via a selection in `--positions`. Positions
@@ -114,7 +115,6 @@ CLI rejects that instead of silently creating a 45-cent entry.
 ```bash
 comvenio finance plan-create --year 2026 --capital 500000 --notes "2026 budget"
 comvenio finance plan-close --year 2026 --force --notes "Year-end close"
-comvenio finance plan-reopen --year 2026 --reason "Supplementary entry for hall rent"
 comvenio finance plan-copy 2025 --year 2026 --include-non-recurring
 comvenio finance position-create --year 2026 --name "Summer party" --category Events --expense 120000
 comvenio finance entry-create <position-id> --description "Beverages" --expense 4550 --date 2026-07-01
@@ -158,16 +158,19 @@ an entry on an item — recognisable by the source sponsoring (`entry-list --sou
 
 **Why can a closed year no longer be changed?**
 Closing (`plan-close`) freezes the items and entries of that year so the figures that were reported
-do not shift afterwards. Every change ends with `CONFLICT`. For a late entry, reopen the year with
-`plan-reopen --year <year> --reason "<reason>"`; the reason stays on record.
+do not shift afterwards. Every change ends with `CONFLICT`. Only Comvenio support can reopen the
+year (platform role); `plan-reopen` stops with `USAGE_ERROR` in the CLI. For a late entry, open a
+support ticket with the year and a reason.
 
 **Why does the CLI reject `45.50`?**
 Amounts are cents. `45.50` looks like euros; rather than silently booking 45 cents, the CLI stops
-with `VALIDATION_FAILED`. The correct value is `4550`.
+with `USAGE_ERROR`. The correct value is `4550`.
 
-**Why do I have to pass `--year` on every command?**
-A club keeps several annual plans side by side and there is no default — so an entry never lands in
-the wrong year by accident.
+**Why do plan and item commands require `--year`?**
+A club keeps several annual plans side by side and there is no default — so an item never lands in
+the wrong year by accident. `plan-*`, `position-list`, `position-create` and `summary` need
+`--year`; entries (`entry-*`) and single items (`position-show`, `position-update`,
+`position-delete`) are addressed by their id and need no year.
 
 ## How it works in the web app
 

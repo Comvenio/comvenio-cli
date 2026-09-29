@@ -39,9 +39,10 @@ Ausgabeform.
 5. Jahr abschließen: `comvenio finance plan-close --year <jahr>` (Action:
    `cai.finance.05.plan_close`); bei offenen Posten zusätzlich `--force`. Danach weist der Dienst
    Änderungen an Positionen und Buchungen ab — auch das Stornieren einer automatischen Buchung.
-6. Abgeschlossenes Jahr wieder öffnen: `comvenio finance plan-reopen --year <jahr> --reason
-   "<Begründung>"`. `--reason` ist Pflicht (mindestens 3 Zeichen); für diesen Schritt gibt es noch
-   keine Action.
+6. Abgeschlossenes Jahr wieder öffnen: nur über den Comvenio-Support. Das Wiederöffnen verlangt
+   eine Plattformrolle; `comvenio finance plan-reopen` bricht deshalb mit `USAGE_ERROR` ab, und es
+   gibt keine Action dafür. Im Verein ein Support-Ticket (**Mein Bereich** → **Support**) mit Jahr
+   und Begründung öffnen.
 7. Plan in ein neues Jahr kopieren: `comvenio finance plan-copy <quelljahr> --year <zieljahr>`
    (Action: `cai.finance.07.plan_copy`). Wiederkehrende Posten werden von selbst übernommen;
    einmalige nur mit `--include-non-recurring` oder über eine Auswahl in `--positions`. Posten,
@@ -116,7 +117,6 @@ die CLI lehnt das ab, statt klaglos eine Buchung über 45 Cent anzulegen.
 ```bash
 comvenio finance plan-create --year 2026 --capital 500000 --notes "Haushalt 2026"
 comvenio finance plan-close --year 2026 --force --notes "Jahresabschluss"
-comvenio finance plan-reopen --year 2026 --reason "Nachtragsbuchung Hallenmiete"
 comvenio finance plan-copy 2025 --year 2026 --include-non-recurring
 comvenio finance position-create --year 2026 --name Sommerfest --category Feste --expense 120000
 comvenio finance entry-create <position-id> --description "Getränke" --expense 4550 --date 2026-07-01
@@ -161,17 +161,19 @@ Buchhaltung erst als Buchung an einem Posten — erkennbar an der Quelle Sponsor
 
 **Warum lässt sich ein abgeschlossenes Jahr nicht mehr ändern?**
 Der Abschluss (`plan-close`) friert Posten und Buchungen des Jahres ein, damit der Stand, über den
-berichtet wurde, nicht nachträglich wandert. Jede Änderung endet mit `CONFLICT`. Für eine
-Nachtragsbuchung das Jahr mit `plan-reopen --year <jahr> --reason "<Begründung>"` wieder öffnen;
-die Begründung bleibt nachvollziehbar.
+berichtet wurde, nicht nachträglich wandert. Jede Änderung endet mit `CONFLICT`. Wieder öffnen
+kann das Jahr nur der Comvenio-Support (Plattformrolle); `plan-reopen` bricht im CLI mit
+`USAGE_ERROR` ab. Für eine Nachtragsbuchung ein Support-Ticket mit Jahr und Begründung öffnen.
 
 **Warum lehnt die CLI `45.50` ab?**
 Beträge sind Cent. `45.50` sieht nach Euro aus; statt stillschweigend 45 Cent zu buchen, bricht die
-CLI mit `VALIDATION_FAILED` ab. Richtig ist `4550`.
+CLI mit `USAGE_ERROR` ab. Richtig ist `4550`.
 
-**Warum muss ich bei jedem Befehl `--year` angeben?**
-Ein Verein führt mehrere Jahrespläne nebeneinander, und es gibt keinen Vorgabewert — so landet
-eine Buchung nie versehentlich im falschen Jahr.
+**Warum verlangen Plan- und Postenbefehle `--year`?**
+Ein Verein führt mehrere Jahrespläne nebeneinander, und es gibt keinen Vorgabewert — so landet ein
+Posten nie versehentlich im falschen Jahr. `plan-*`, `position-list`, `position-create` und
+`summary` brauchen `--year`; Buchungen (`entry-*`) und einzelne Posten (`position-show`,
+`position-update`, `position-delete`) hängen an ihrer Kennung und brauchen kein Jahr.
 
 ## So geht's in der Web-App
 
