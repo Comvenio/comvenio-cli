@@ -196,8 +196,8 @@ describe("Comvenio connector inventory contract", () => {
     // +1 bereich-als-sicht-04 (cai.finance.39.budget_period),
     // +2 mannschaftstermine-05 over OAuth (cai.teams.30.termin_list, cai.teams.31.termin_create),
     // +2 Wochenvorschau over OAuth (cai.club.11.weekly_preview_create, cai.club.12.weekly_preview_list).
-    expect(directActionIds).toHaveLength(380);
-    expect(new Set(directActionIds).size).toBe(380);
+    expect(directActionIds).toHaveLength(381);
+    expect(new Set(directActionIds).size).toBe(381);
     expect(additiveActionIds).toEqual([
       // Wochenvorschau (ai-service): the classic command ran on the device token only.
       "cai.club.11.weekly_preview_create",
@@ -255,6 +255,11 @@ describe("Comvenio connector inventory contract", () => {
       // Kein Legacy-Gegenstueck: Der Weg vom Vorschau-Datensatz zum Bild
       // entstand erst, als ein entferntes Modell die Homepage bauen sollte.
       "cai.homepage.04.screenshot",
+      // Kein Legacy-Gegenstueck: `homepage convert` gab es im CLI, aber nie
+      // als eigene Action — der Befehl selbst entfiel mit K4, bevor er
+      // migriert wurde. cai.homepage.05.convert (comvenio-cli-doku 06 §4.3,
+      // 2026-09-29) uebernimmt seinen Algorithmus additiv ins Werkzeug.
+      "cai.homepage.05.convert",
       "cai.shopping.procurement.activate",
       "cai.shopping.procurement.add",
       "cai.shopping.procurement.list",
@@ -1372,18 +1377,19 @@ function k12Dependencies(client: ComvenioApiClient): K12ExecutionDependencies {
 }
 
 describe("K12 homepage, schema, verify, data and news adapter contract", () => {
-  test("TC-01/TC-02: exposes five toolsets and exactly 4/2/6/35/9 actions", () => {
-    // homepage: preview, apply, show — plus screenshot (2026-08-29). Die Zahl
-    // ist ein Riegel gegen unbemerkte Aktionen, kein Deckel: Wer eine
-    // hinzufuegt, zieht sie hier bewusst mit.
-    expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(4);
+  test("TC-01/TC-02: exposes five toolsets and exactly 5/2/6/35/9 actions", () => {
+    // homepage: preview, apply, show, screenshot (2026-08-29) — plus convert
+    // (comvenio-cli-doku 06 §4.3, 2026-09-29). Die Zahl ist ein Riegel gegen
+    // unbemerkte Aktionen, kein Deckel: Wer eine hinzufuegt, zieht sie hier
+    // bewusst mit.
+    expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(5);
     expect(K12_SCHEMA_ACTION_IDS).toHaveLength(2);
     expect(K12_VERIFY_ACTION_IDS).toHaveLength(6);
     expect(K12_DATA_ACTION_IDS).toHaveLength(35);
     expect(K12_NEWS_ACTION_IDS).toHaveLength(9);
-    expect(K12_ACTION_IDS).toHaveLength(56);
-    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(56);
-    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(56);
+    expect(K12_ACTION_IDS).toHaveLength(57);
+    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(57);
+    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(57);
     const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
     expect({ homepage: sets.homepage.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 4, schema: 2, verify: 6, data: 35, news: 9 });
     expect(sets.schema.coverage_status).toBe("core-partial");

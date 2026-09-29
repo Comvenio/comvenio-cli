@@ -464,8 +464,114 @@ erledigen.
 - `cai.homepage.02.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.homepage.03.show` — private, public (lesen) · Scopes: `club.read`, `public.read`
 - `cai.homepage.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
+- `cai.homepage.05.convert` — convert (lesen) · Scopes: `club.write`
 - Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
+
+## Widgets
+
+Jedes Widget aus dem Homepage-Schema mit Kennung, Zweck, Datenquelle, was es
+öffentlich macht und wofür es sich eignet — nach Kategorie gruppiert. Eine
+offene Stelle statt einer Erklärung bedeutet: Das Widget ist noch nicht
+dokumentiert, keine erfundene Aussage.
+
+<!-- gen:docs widgets -->
+
+**ohne Kategorie**
+
+- `hero` — offene Stelle — Erklärung fehlt
+- `description` — offene Stelle — Erklärung fehlt
+- `custom_html` — offene Stelle — Erklärung fehlt
+- `stats` — offene Stelle — Erklärung fehlt
+- `cta` — offene Stelle — Erklärung fehlt
+- `contact` — offene Stelle — Erklärung fehlt
+- `legal_notice` — offene Stelle — Erklärung fehlt
+- `faq` — offene Stelle — Erklärung fehlt
+- `sponsors` — offene Stelle — Erklärung fehlt
+- `countdown` — offene Stelle — Erklärung fehlt
+- `club_history` — offene Stelle — Erklärung fehlt
+- `news` — offene Stelle — Erklärung fehlt
+- `news_highlight` — offene Stelle — Erklärung fehlt
+- `ticker` — offene Stelle — Erklärung fehlt
+- `events_list` — offene Stelle — Erklärung fehlt
+- `event_highlight` — offene Stelle — Erklärung fehlt
+- `event_hub_embed` — offene Stelle — Erklärung fehlt
+- `event_calendar` — offene Stelle — Erklärung fehlt
+- `event_program` — offene Stelle — Erklärung fehlt
+- `event_rsvp` — offene Stelle — Erklärung fehlt
+- `training_schedule` — offene Stelle — Erklärung fehlt
+- `special_event_promo` — offene Stelle — Erklärung fehlt
+- `feature_grid` — offene Stelle — Erklärung fehlt
+- `team` — offene Stelle — Erklärung fehlt
+- `org_chart` — offene Stelle — Erklärung fehlt
+- `birthdays` — offene Stelle — Erklärung fehlt
+- `birthday_highlight` — offene Stelle — Erklärung fehlt
+- `honors_showcase` — offene Stelle — Erklärung fehlt
+- `image` — offene Stelle — Erklärung fehlt
+- `image_gallery` — offene Stelle — Erklärung fehlt
+- `video` — offene Stelle — Erklärung fehlt
+- `background_video` — offene Stelle — Erklärung fehlt
+- `files` — offene Stelle — Erklärung fehlt
+- `booking_highlight` — offene Stelle — Erklärung fehlt
+- `menu_display` — offene Stelle — Erklärung fehlt
+- `instagram` — offene Stelle — Erklärung fehlt
+- `facebook` — offene Stelle — Erklärung fehlt
+- `fupa_widget` — offene Stelle — Erklärung fehlt
+- `bfv_widget` — offene Stelle — Erklärung fehlt
+- `divider` — offene Stelle — Erklärung fehlt
+- `spacer` — offene Stelle — Erklärung fehlt
+- `parallax_section` — offene Stelle — Erklärung fehlt
+- `gradient_section` — offene Stelle — Erklärung fehlt
+- `decorative_element` — offene Stelle — Erklärung fehlt
+- `testimonials` — offene Stelle — Erklärung fehlt
+- `logo_marquee` — offene Stelle — Erklärung fehlt
+- `image_text_split` — offene Stelle — Erklärung fehlt
+- `forum_highlight` — offene Stelle — Erklärung fehlt
+- `tournament_highlight` — offene Stelle — Erklärung fehlt
+- `sport_api` — offene Stelle — Erklärung fehlt
+- `member_counter` — offene Stelle — Erklärung fehlt
+- `department_showcase` — offene Stelle — Erklärung fehlt
+- `next_training` — offene Stelle — Erklärung fehlt
+- `booking_calendar` — offene Stelle — Erklärung fehlt
+- `meeting_decisions` — offene Stelle — Erklärung fehlt
+- `quick_links` — offene Stelle — Erklärung fehlt
+- `poll` — offene Stelle — Erklärung fehlt
+- `recipe_highlight` — offene Stelle — Erklärung fehlt
+- `task_overview` — offene Stelle — Erklärung fehlt
+- `activity_feed` — offene Stelle — Erklärung fehlt
+- `member_spotlight` — offene Stelle — Erklärung fehlt
+- `newsletter_signup` — offene Stelle — Erklärung fehlt
+- `social_feed` — offene Stelle — Erklärung fehlt
+- `weather` — offene Stelle — Erklärung fehlt
+- `live_match_ticker` — offene Stelle — Erklärung fehlt
+- `membership_form` — offene Stelle — Erklärung fehlt
+- `contact_form` — offene Stelle — Erklärung fehlt
+- `heading` — offene Stelle — Erklärung fehlt
+- `text` — offene Stelle — Erklärung fehlt
+- `link` — offene Stelle — Erklärung fehlt
+- `gallery_slideshow` — offene Stelle — Erklärung fehlt
+- `department_calendar` — offene Stelle — Erklärung fehlt
+- `chat_preview` — offene Stelle — Erklärung fehlt
+- `honor_wall` — offene Stelle — Erklärung fehlt
+- `ad_banner` — offene Stelle — Erklärung fehlt
+<!-- /gen:docs widgets -->
+
+## Vorlagen
+
+Alle acht Design-Vorlagen (`cai.club.05.design`, Feld `homepage_template`) mit
+Kurzbeschreibung.
+
+<!-- gen:docs vorlagen -->
+
+- `elegance` — offene Stelle — Erklärung fehlt
+- `sport` — offene Stelle — Erklärung fehlt
+- `community` — offene Stelle — Erklärung fehlt
+- `minimal` — offene Stelle — Erklärung fehlt
+- `festlich` — offene Stelle — Erklärung fehlt
+- `modern` — offene Stelle — Erklärung fehlt
+- `classic` — offene Stelle — Erklärung fehlt
+- `flex` — offene Stelle — Erklärung fehlt
+<!-- /gen:docs vorlagen -->
 
 ## Fehler
 

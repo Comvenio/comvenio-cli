@@ -57,6 +57,11 @@ export const K12_ACTION_DEFINITIONS: Readonly<Record<K12ActionId, K12ActionDefin
   // denn der Aufruf startet einen Browser (fremde Rechenzeit).
   "cai.homepage.04.screenshot": action("cai.homepage.04.screenshot", "homepage", "screenshot", [operation({ name: "screenshot", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("POST", "club", "/home-config/{club_id}/preview/{preview_id}/screenshot", "read")] })]),
   "cai.homepage.03.show": action("cai.homepage.03.show", "homepage", "show", [read("private", "authenticated", ["club.read"], "club", "/home-config/{club_id}/tabs"), read("public", "authenticated", ["public.read"], "club", "/public/clubs/{club_id}/home")]),
+  // Ersetzt den entfallenen CLI-Befehl `homepage convert` (comvenio-cli-doku
+  // 06 §4.3): liest dieselbe Route wie cai.homepage.03.show private und
+  // wandelt lokal um — kein Schreiben, deshalb risk: "read". Scope und Profil
+  // wie cai.homepage.01.preview (DC-4): Teil desselben Design-Workflows.
+  "cai.homepage.05.convert": action("cai.homepage.05.convert", "homepage", "convert", [operation({ name: "convert", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("GET", "club", "/home-config/{club_id}/tabs", "read")] })]),
 
   "cai.schema.01.list_domains": action("cai.schema.01.list_domains", "schema", "list domains", [read("list", "authenticated", ["club.read"], "connector", "/schema")], "core-partial"),
   "cai.schema.02.show_domain_schema": action("cai.schema.02.show_domain_schema", "schema", "show domain schema", [read("show", "authenticated", ["club.read"], "connector", "/schema/{domain}")], "core-partial"),

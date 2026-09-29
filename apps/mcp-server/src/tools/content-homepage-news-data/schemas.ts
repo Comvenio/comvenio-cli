@@ -118,6 +118,10 @@ export const K12_ACTION_SCHEMAS: Readonly<Record<K12ActionId, K12ActionSchemaCon
   // liefe an der 30-Minuten-Gueltigkeit vorbei.
   "cai.homepage.04.screenshot": contract(single({ preview_id: uuid, viewports: z.array(z.enum(["desktop", "mobile"])).min(1).max(2).default(["desktop", "mobile"]), tab_slug: z.string().trim().max(100).nullable().optional(), settle_ms: z.number().int().min(0).max(10_000).default(1_500) })),
   "cai.homepage.03.show": contract(union([grouped("private", {}), grouped("public", {})])),
+  // Keine Eingabe außer club_id/department_id (D-DOK-17): die Action liest
+  // immer die aktuelle Live-Struktur, eine Datei- oder tabs-Eingabe gibt es
+  // nicht — sonst gäbe es zwei Wege, dieselbe Struktur zu übergeben.
+  "cai.homepage.05.convert": contract(single({})),
   "cai.schema.01.list_domains": contract(single({})),
   "cai.schema.02.show_domain_schema": contract(single({ domain: z.enum(K12_SCHEMA_DOMAINS) })),
   "cai.verify.01.url": contract(single({ target_url: externalHttpsUrl, ...verifyOptions })),

@@ -1,0 +1,22 @@
+{
+  "widgets": {
+    "hero": {
+      "kategorie": "inhalt",
+      "zweck": { "de": "Großer Aufmacher am Seitenanfang mit Überschrift und Knöpfen.", "en": "Large opening area at the top of the page with a heading and buttons." },
+      "datenquelle": { "de": "feste Eingabe im Formular", "en": "fixed input in the form" },
+      "macht_oeffentlich": { "de": "nichts über die Eingabe hinaus", "en": "nothing beyond the entered text" },
+      "passt_zu": { "de": ["Startseite"], "en": ["Home page"] }
+    },
+    "news": {
+      "kategorie": "inhalt",
+      "zweck": { "de": "Liste der aktuellen Vereinsnachrichten.", "en": "List of the club's current news." },
+      "datenquelle": { "de": "Comvenio-Vereinsnachrichten", "en": "Comvenio club news" },
+      "macht_oeffentlich": { "de": "Titel und Teaser der öffentlichen Nachrichten", "en": "title and teaser of the public news" },
+      "passt_zu": { "de": ["Startseite", "Nachrichtenseite"], "en": ["Home page", "News page"] }
+    }
+  },
+  "vorlagen": {
+    "modern": { "zweck": { "de": "Klare, moderne Flächen mit viel Weißraum.", "en": "Clean, modern surfaces with plenty of whitespace." } },
+    "flex": { "zweck": { "de": "Freie Anordnung ohne feste Vorgaben.", "en": "Free layout without fixed constraints." } }
+  }
+}

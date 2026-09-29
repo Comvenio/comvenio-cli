@@ -24,6 +24,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { parseErklaerungenJson, type ErklaerungenDeklaration } from "./homepage-erklaerungen.ts";
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const CLI_ROOT = resolve(SCRIPT_DIR, "..");
 const SCHEMA_DIR = join(CLI_ROOT, "src", "schema");
@@ -130,6 +132,10 @@ const HOMEPAGE_REGISTRY = "Frontend/web-page/src/components/ClubHome/widgets/ind
 // Die Quelle der Config-Felder. Liegt neben der Registry, damit sie beim
 // Bauen eines Widgets im Blick ist — Erklaerung in WIDGET-FELDER.md daneben.
 const HOMEPAGE_FELDER = "Frontend/web-page/src/components/ClubHome/widgets/widget-felder.json";
+// Widget- und Vorlagen-Erklaerungen fuer den Kundenartikel (comvenio-cli-doku
+// 06 §4.1/§4.2, D-DOK-Format widget-erklaerungen). Liegt neben widget-felder.json
+// im selben Repositorium, gelesen ueber dasselbe QUELL_UMLEITUNGEN-Muster.
+const HOMEPAGE_ERKLAERUNGEN = "Frontend/web-page/src/components/ClubHome/widgets/widget-erklaerungen.json";
 const HOMEPAGE_PROMPT =
   "Backend/Microservice-Backend/ai-service/app/prompts/homepage_system.py";
 const HOMEPAGE_SECTION_SCHEMA =
@@ -645,6 +651,35 @@ function leseFelderDeklaration(): Record<
   }
 }
 
+/**
+ * Widget- und Vorlagen-Erklaerungen fuer den Kundenartikel (comvenio-cli-doku
+ * 06 §4.1/§4.2), gelesen aus `widget-erklaerungen.json` neben der Registry.
+ * Typen und die reine Parsing-/Validierungslogik stehen in
+ * `homepage-erklaerungen.ts` — nicht hier, weil dieses Skript am Dateiende
+ * `process.exit(main())` unbedingt ausfuehrt; ein Test, der etwas VON HIER
+ * importiert, wuerde also den ganzen Lauf mit ausloesen.
+ *
+ * `null` bei fehlender oder unbrauchbarer Datei — AUSDRUECKLICH kein Abbruch:
+ * Die Quelldatei entsteht in einem eigenen Strang (Frontend/web-page) und
+ * existiert zum Zeitpunkt dieser Aenderung noch nicht. `genHomepage()` laesst
+ * `beschreibung`/`vorlagen_beschreibung` dann einfach weg, statt den ganzen
+ * Lauf zu verlieren — wie bei `leseFelderDeklaration()`.
+ */
+function leseErklaerungenDeklaration(): ErklaerungenDeklaration | null {
+  let roh: string;
+  try {
+    roh = readSource(HOMEPAGE_ERKLAERUNGEN);
+  } catch {
+    return null;
+  }
+  try {
+    return parseErklaerungenJson(roh);
+  } catch (fehler) {
+    console.error(`WARNUNG: ${HOMEPAGE_ERKLAERUNGEN} ist nicht lesbar (${(fehler as Error).message}). Erklaerungen werden nicht geschrieben.`);
+    return null;
+  }
+}
+
 function parsePromptConfigs(promptSrc: string): Record<
   string,
   Array<{ name: string; values?: string[] }>
@@ -777,6 +812,24 @@ function genHomepage(): unknown {
   const promptConfigs = deklariert ?? parsePromptConfigs(promptSrc);
   const feldQuelle = deklariert ? "widget-felder.json" : "homepage_system.py (Rueckfall)";
 
+  // Widget- und Vorlagen-Erklaerungen (comvenio-cli-doku 06 §4.1/§4.2): additiv,
+  // siehe leseErklaerungenDeklaration() — die Quelldatei entsteht in einem
+  // eigenen Strang (Frontend/web-page) und kann zum Zeitpunkt eines Laufs noch
+  // fehlen. Ohne sie bleibt `beschreibung`/`template_beschreibung` einfach weg.
+  const erklaerungen = leseErklaerungenDeklaration();
+  if (erklaerungen) {
+    const ohneErklaerung = kinds.filter((kind) => !(kind in erklaerungen.widgets));
+    if (ohneErklaerung.length > 0) {
+      console.log(`HINWEIS: ${ohneErklaerung.length} Widget-Art(en) fehlen in widget-erklaerungen.json: ` + ohneErklaerung.join(", "));
+    }
+    const fehlendeVorlagen = ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"].filter((id) => !(id in erklaerungen.vorlagen));
+    if (fehlendeVorlagen.length > 0) {
+      console.log(`HINWEIS: ${fehlendeVorlagen.length} Vorlage(n) fehlen in widget-erklaerungen.json: ` + fehlendeVorlagen.join(", "));
+    }
+  } else {
+    console.log(`HINWEIS: ${HOMEPAGE_ERKLAERUNGEN} fehlt oder ist nicht lesbar — beschreibung/template_beschreibung werden NICHT geschrieben.`);
+  }
+
   // Der Umfang wird gegen die Registry gehalten, nicht gegen sich selbst: Ein
   // Kind ohne Eintrag waere ueber MCP VOLLSTAENDIG gesperrt — jedes Feld
   // abgelehnt, ohne dass jemand es merkt. Die Registry ist die Wahrheit
@@ -896,6 +949,13 @@ function genHomepage(): unknown {
     } else {
       delete (eintrag as Record<string, unknown>).config_not_read_by_widget;
     }
+
+    // Erklaerung fuer den Kundenartikel (§4.1/§4.2): nur gesetzt, wenn die
+    // Quelldatei existiert UND das Widget dort steht — sonst bleibt das Feld
+    // weg (ehrlich, kein erfundener Text; check:docs meldet die Luecke).
+    const erklaerung = erklaerungen?.widgets[kind];
+    if (erklaerung) (eintrag as Record<string, unknown>).beschreibung = erklaerung;
+    else delete (eintrag as Record<string, unknown>).beschreibung;
 
     // Die Wertepruefung sitzt NACH dem Merge, nicht davor: Geprueft gehoert,
     // was das Schema behauptet — und das sind die gemergten Felder, nicht die
@@ -1042,6 +1102,12 @@ function genHomepage(): unknown {
       legacy_without_design_snapshot: "readable_until_ttl_with_live_design_warning",
     },
     templates: ["elegance", "sport", "community", "minimal", "festlich", "modern", "classic", "flex"],
+    // Kurzbeschreibung je Vorlage fuer den generierten Artikel-Abschnitt
+    // "Vorlagen" (§4.5); wie `beschreibung` nur gesetzt, wenn die Quelle
+    // gelesen werden konnte — sonst bleibt das Feld weg statt veraltet stehen.
+    ...(erklaerungen
+      ? { template_beschreibung: Object.fromEntries(Object.entries(erklaerungen.vorlagen).map(([id, e]) => [id, e.zweck])) }
+      : { template_beschreibung: undefined }),
     slots_contract: SLOTS_CONTRACT,
     widget_kinds: kinds,
     widgets: mergedWidgets,

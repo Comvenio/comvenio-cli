@@ -30,6 +30,14 @@ const GEN_START = "<!-- gen:docs befehle -->";
 const KATEGORIEN = new Set(["thema", "fehler", "uebersicht"]);
 const GEN_END = "<!-- /gen:docs -->";
 
+// Widgets/Vorlagen (comvenio-cli-doku 06 §4.2/§4.5): own marker pairs, own end
+// tag each, so several generated blocks can sit in the same article without
+// one's end swallowing into the next.
+const WIDGETS_START = "<!-- gen:docs widgets -->";
+const WIDGETS_END = "<!-- /gen:docs widgets -->";
+const VORLAGEN_START = "<!-- gen:docs vorlagen -->";
+const VORLAGEN_END = "<!-- /gen:docs vorlagen -->";
+
 // Files in docs/ that are no customer articles: the template and the
 // developer checklist for new connector actions.
 export const NON_ARTICLES = new Set(["_vorlage.md", "connector-aktion-hinzufuegen.md"]);
@@ -171,12 +179,94 @@ export function commandsBlock(root: string, domains: readonly string[], lang: La
   return lines.join("\n");
 }
 
-/** Replaces the generated block in an article; returns null when the markers are missing. */
-export function withCommandsBlock(raw: string, block: string): string | null {
-  const start = raw.indexOf(GEN_START);
-  const end = raw.indexOf(GEN_END);
+/** Replaces one generated block (by its own start/end marker pair) in an article; null when the markers are missing. */
+function withMarkedBlock(raw: string, startMarker: string, endMarker: string, block: string): string | null {
+  const start = raw.indexOf(startMarker);
+  const end = raw.indexOf(endMarker);
   if (start < 0 || end < start) return null;
-  return raw.slice(0, start) + block + raw.slice(end + GEN_END.length);
+  return raw.slice(0, start) + block + raw.slice(end + endMarker.length);
+}
+
+/** Replaces the generated "Befehle und Actions" block in an article; returns null when the markers are missing. */
+export function withCommandsBlock(raw: string, block: string): string | null {
+  return withMarkedBlock(raw, GEN_START, GEN_END, block);
+}
+
+interface HomepageWidgetEintrag {
+  config?: unknown;
+  beschreibung?: { kategorie: string; zweck: { de: string; en: string }; datenquelle: { de: string; en: string }; macht_oeffentlich: { de: string; en: string }; passt_zu: { de: string[]; en: string[] } };
+}
+interface HomepageSchema {
+  widget_kinds: string[];
+  widgets: Record<string, HomepageWidgetEintrag>;
+  templates: string[];
+  template_beschreibung?: Record<string, { de: string; en: string }>;
+}
+
+/**
+ * Reads `src/schema/homepage.json` from `root` — NOT a static import of the
+ * committed connector registry: `checkDocs`/`generateDocs` are exercised
+ * against throwaway fixture trees in tests (check-docs.test.ts), and a
+ * hard-wired import would leak the real 75-widget registry into every one of
+ * them. `null` when the fixture carries no homepage schema at all — the
+ * homepage-specific checks below then simply do nothing, same as a topic
+ * article without the `homepage` domain today.
+ */
+function readHomepageSchema(root: string): HomepageSchema | null {
+  const path = join(root, "src/schema/homepage.json");
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as HomepageSchema;
+  } catch {
+    return null;
+  }
+}
+
+const OFFENE_STELLE: Record<Lang, string> = { de: "offene Stelle — Erklärung fehlt", en: "open item — explanation missing" };
+
+/**
+ * The generated "Widgets" section (§4.2): one entry per widget of
+ * `WIDGET_REGISTRY`, grouped by `beschreibung.kategorie` — in registry order
+ * within a group, an widget without an explanation goes into its own group at
+ * the end so it stays visible instead of silently vanishing from the list.
+ */
+export function widgetsBlock(root: string, lang: Lang): string {
+  const schema = readHomepageSchema(root);
+  const gruppen = new Map<string, string[]>();
+  const ohneKategorie = lang === "de" ? "ohne Kategorie" : "uncategorized";
+  for (const kind of schema?.widget_kinds ?? []) {
+    const b = schema?.widgets[kind]?.beschreibung;
+    const kategorie = b?.kategorie ?? ohneKategorie;
+    const zeile = b
+      ? `- \`${kind}\` — ${b.zweck[lang]} ${lang === "de" ? "Datenquelle" : "Data source"}: ${b.datenquelle[lang]} ${lang === "de" ? "Macht öffentlich" : "Makes public"}: ${b.macht_oeffentlich[lang]} ${lang === "de" ? "Passt zu" : "Fits"}: ${b.passt_zu[lang].join(", ")}`
+      : `- \`${kind}\` — ${OFFENE_STELLE[lang]}`;
+    gruppen.set(kategorie, [...(gruppen.get(kategorie) ?? []), zeile]);
+  }
+  const lines: string[] = [WIDGETS_START];
+  for (const [kategorie, zeilen] of gruppen) {
+    lines.push("", `**${kategorie}**`, "", ...zeilen);
+  }
+  lines.push(WIDGETS_END);
+  return lines.join("\n");
+}
+
+/** The generated "Vorlagen" section (§4.5): all 8 templates, a short description each — an open item, not invented text, when the schema carries none. */
+export function vorlagenBlock(root: string, lang: Lang): string {
+  const schema = readHomepageSchema(root);
+  const lines: string[] = [VORLAGEN_START, ""];
+  for (const id of schema?.templates ?? []) {
+    const zweck = schema?.template_beschreibung?.[id]?.[lang];
+    lines.push(zweck ? `- \`${id}\` — ${zweck}` : `- \`${id}\` — ${OFFENE_STELLE[lang]}`);
+  }
+  lines.push(VORLAGEN_END);
+  return lines.join("\n");
+}
+
+export function withWidgetsBlock(raw: string, block: string): string | null {
+  return withMarkedBlock(raw, WIDGETS_START, WIDGETS_END, block);
+}
+export function withVorlagenBlock(raw: string, block: string): string | null {
+  return withMarkedBlock(raw, VORLAGEN_START, VORLAGEN_END, block);
 }
 
 export interface IndexEntry {
@@ -213,9 +303,17 @@ export function generateDocs(root: string, inventory: readonly InventoryAction[]
   const out = new Map<string, string>();
   for (const article of articles) {
     if (article.frontmatter?.kategorie !== "thema") continue;
-    const block = commandsBlock(root, article.frontmatter.domaenen, article.lang, inventory);
-    const next = withCommandsBlock(article.raw, block);
-    if (next !== null && next !== article.raw) out.set(article.path, next);
+    let next: string = article.raw;
+    const commands = withCommandsBlock(next, commandsBlock(root, article.frontmatter.domaenen, article.lang, inventory));
+    if (commands !== null) next = commands;
+    // Widgets/Vorlagen (§4.2/§4.5): only articles that actually carry the
+    // markers change — today that is homepage.md/en, data-driven rather than
+    // hard-coded to one article id.
+    const widgets = withWidgetsBlock(next, widgetsBlock(root, article.lang));
+    if (widgets !== null) next = widgets;
+    const vorlagen = withVorlagenBlock(next, vorlagenBlock(root, article.lang));
+    if (vorlagen !== null) next = vorlagen;
+    if (next !== article.raw) out.set(article.path, next);
   }
   const byId = new Map<string, Partial<Record<Lang, Article>>>();
   for (const article of articles) {
@@ -294,6 +392,19 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
     if (kategorie === "thema" && withCommandsBlock(article.raw, "") === null) {
       findings.push({ file: article.path, reason: "Erzeugter Abschnitt fehlt oder ist unvollständig (Marker gen:docs befehle … /gen:docs)" });
     }
+    // Widgets/Vorlagen (§4.2/§4.5): Pflicht fuer jeden Artikel, der die
+    // homepage-Domaene traegt — heute nur homepage.md/en.
+    if (kategorie === "thema" && article.frontmatter.domaenen.includes("homepage")) {
+      if (withWidgetsBlock(article.raw, "") === null) {
+        findings.push({ file: article.path, reason: "Erzeugter Abschnitt „Widgets“ fehlt oder ist unvollständig (Marker gen:docs widgets … /gen:docs widgets)" });
+      }
+      if (withVorlagenBlock(article.raw, "") === null) {
+        findings.push({ file: article.path, reason: "Erzeugter Abschnitt „Vorlagen“ fehlt oder ist unvollständig (Marker gen:docs vorlagen … /gen:docs vorlagen)" });
+      } else {
+        const eintraege = (vorlagenBlock(root, article.lang).match(/^- /gmu) ?? []).length;
+        if (eintraege < 8) findings.push({ file: article.path, reason: `Vorlagen-Abschnitt nennt nur ${eintraege} statt 8 Vorlagen` });
+      }
+    }
     const other = article.lang === "de"
       ? article.path.replace(/^docs\//u, "docs/en/")
       : article.path.replace(/^docs\/en\//u, "docs/");
@@ -364,6 +475,17 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
     const current = existsSync(join(root, path)) ? readFileSync(join(root, path), "utf8") : null;
     if (current !== expected) {
       findings.push({ file: path, reason: "Erzeugter Stand veraltet — bun run gen:docs" });
+    }
+  }
+
+  // Widget ohne Erklärung (§4.2, DC-3): je fehlendem Widget ein eigener Befund,
+  // damit der Ausfall benennbar bleibt statt in einer Sammelzeile zu
+  // verschwinden. Nur wenn die Wurzel ueberhaupt ein Homepage-Schema traegt —
+  // eine Fixture ohne `src/schema/homepage.json` hat dazu nichts zu sagen.
+  const homepageSchema = readHomepageSchema(root);
+  for (const kind of homepageSchema?.widget_kinds ?? []) {
+    if (!homepageSchema?.widgets[kind]?.beschreibung) {
+      findings.push({ file: "src/schema/homepage.json", reason: `Widget ohne Erklärung: ${kind}` });
     }
   }
   return findings;

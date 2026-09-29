@@ -6,8 +6,8 @@
   "generated_at": "2026-07-23T00:00:00.000Z",
   "evidence": {
     "release_scope": "full_connector_v1",
-    "published_tool_count": 402,
-    "runtime_tool_catalog_sha256": "0ccfa678e72c9ff708f078587d6b9ef59cf3e0ec0fb19f5818fcffaa4ec5c93e",
+    "published_tool_count": 403,
+    "runtime_tool_catalog_sha256": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
     "planned_action_count": 303,
     "planned_route_callsite_count": 572,
     "published_runtime_catalog_verified": false,
@@ -34,7 +34,7 @@
     "schema_version": "1.1.0",
     "suite": "ConnectorEvalSuite",
     "status": "blocked",
-    "evaluated_candidate_tool_count": 402,
+    "evaluated_candidate_tool_count": 403,
     "tested_tool_count": 0,
     "results": [],
     "blockers": [
@@ -45,7 +45,7 @@
     "schema_version": "1.0.0",
     "suite": "ResponseQualitySuite",
     "release_scope": "full_connector_v1",
-    "runtime_tool_catalog_sha256": "0ccfa678e72c9ff708f078587d6b9ef59cf3e0ec0fb19f5818fcffaa4ec5c93e",
+    "runtime_tool_catalog_sha256": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
     "providers": [
       "openai",
       "anthropic"

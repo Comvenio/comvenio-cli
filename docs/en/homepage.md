@@ -447,8 +447,114 @@ app.
 - `cai.homepage.02.apply` — apply (change with confirmation) · Scopes: `club.write`
 - `cai.homepage.03.show` — private, public (read) · Scopes: `club.read`, `public.read`
 - `cai.homepage.04.screenshot` — screenshot (read) · Scopes: `club.write`
+- `cai.homepage.05.convert` — convert (read) · Scopes: `club.write`
 - Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
+
+## Widgets
+
+Every widget from the homepage schema with its kind, purpose, data source,
+what it makes public and what it fits — grouped by category. An open item
+instead of an explanation means: the widget is not documented yet, not an
+invented claim.
+
+<!-- gen:docs widgets -->
+
+**uncategorized**
+
+- `hero` — open item — explanation missing
+- `description` — open item — explanation missing
+- `custom_html` — open item — explanation missing
+- `stats` — open item — explanation missing
+- `cta` — open item — explanation missing
+- `contact` — open item — explanation missing
+- `legal_notice` — open item — explanation missing
+- `faq` — open item — explanation missing
+- `sponsors` — open item — explanation missing
+- `countdown` — open item — explanation missing
+- `club_history` — open item — explanation missing
+- `news` — open item — explanation missing
+- `news_highlight` — open item — explanation missing
+- `ticker` — open item — explanation missing
+- `events_list` — open item — explanation missing
+- `event_highlight` — open item — explanation missing
+- `event_hub_embed` — open item — explanation missing
+- `event_calendar` — open item — explanation missing
+- `event_program` — open item — explanation missing
+- `event_rsvp` — open item — explanation missing
+- `training_schedule` — open item — explanation missing
+- `special_event_promo` — open item — explanation missing
+- `feature_grid` — open item — explanation missing
+- `team` — open item — explanation missing
+- `org_chart` — open item — explanation missing
+- `birthdays` — open item — explanation missing
+- `birthday_highlight` — open item — explanation missing
+- `honors_showcase` — open item — explanation missing
+- `image` — open item — explanation missing
+- `image_gallery` — open item — explanation missing
+- `video` — open item — explanation missing
+- `background_video` — open item — explanation missing
+- `files` — open item — explanation missing
+- `booking_highlight` — open item — explanation missing
+- `menu_display` — open item — explanation missing
+- `instagram` — open item — explanation missing
+- `facebook` — open item — explanation missing
+- `fupa_widget` — open item — explanation missing
+- `bfv_widget` — open item — explanation missing
+- `divider` — open item — explanation missing
+- `spacer` — open item — explanation missing
+- `parallax_section` — open item — explanation missing
+- `gradient_section` — open item — explanation missing
+- `decorative_element` — open item — explanation missing
+- `testimonials` — open item — explanation missing
+- `logo_marquee` — open item — explanation missing
+- `image_text_split` — open item — explanation missing
+- `forum_highlight` — open item — explanation missing
+- `tournament_highlight` — open item — explanation missing
+- `sport_api` — open item — explanation missing
+- `member_counter` — open item — explanation missing
+- `department_showcase` — open item — explanation missing
+- `next_training` — open item — explanation missing
+- `booking_calendar` — open item — explanation missing
+- `meeting_decisions` — open item — explanation missing
+- `quick_links` — open item — explanation missing
+- `poll` — open item — explanation missing
+- `recipe_highlight` — open item — explanation missing
+- `task_overview` — open item — explanation missing
+- `activity_feed` — open item — explanation missing
+- `member_spotlight` — open item — explanation missing
+- `newsletter_signup` — open item — explanation missing
+- `social_feed` — open item — explanation missing
+- `weather` — open item — explanation missing
+- `live_match_ticker` — open item — explanation missing
+- `membership_form` — open item — explanation missing
+- `contact_form` — open item — explanation missing
+- `heading` — open item — explanation missing
+- `text` — open item — explanation missing
+- `link` — open item — explanation missing
+- `gallery_slideshow` — open item — explanation missing
+- `department_calendar` — open item — explanation missing
+- `chat_preview` — open item — explanation missing
+- `honor_wall` — open item — explanation missing
+- `ad_banner` — open item — explanation missing
+<!-- /gen:docs widgets -->
+
+## Templates
+
+All eight design templates (`cai.club.05.design`, field `homepage_template`)
+with a short description.
+
+<!-- gen:docs vorlagen -->
+
+- `elegance` — open item — explanation missing
+- `sport` — open item — explanation missing
+- `community` — open item — explanation missing
+- `minimal` — open item — explanation missing
+- `festlich` — open item — explanation missing
+- `modern` — open item — explanation missing
+- `classic` — open item — explanation missing
+- `flex` — open item — explanation missing
+<!-- /gen:docs vorlagen -->
 
 ## Errors
 

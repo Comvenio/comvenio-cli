@@ -22,6 +22,7 @@
     "bullmq": "5.80.9",
     "express": "^5.2.1",
     "ioredis": "5.11.1",
+    "linkedom": "^0.18.13",
     "zod": "^4.4.3"
   },
   "devDependencies": {

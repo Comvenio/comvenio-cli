@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "0ccfa678e72c9ff708f078587d6b9ef59cf3e0ec0fb19f5818fcffaa4ec5c93e",
+  "tool_sync_version": "1d038b086c34e0cd02d7d149f6d29e7188d5a9a92dc3a51f731b1e012f6d7a1c",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -1972,6 +1972,21 @@
       "tool_name": "cv_homepage_04_screenshot",
       "happy_path_prompt": "Führe „Comvenio: Homepage – screenshot“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Homepage – screenshot“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_homepage_05_convert",
+      "happy_path_prompt": "Führe „Comvenio: Homepage – convert“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Homepage – convert“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",
