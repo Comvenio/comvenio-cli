@@ -123,7 +123,7 @@ export function registerJobFileTools(input: {
         openWorldHint: false,
       },
       _meta: { securitySchemes: structuredClone(securitySchemes) },
-    }, async (arguments_) => {
+    }, (async (arguments_: unknown) => {
       try {
         const parsed = inputSchema.parse(arguments_);
         const output = await run(parsed);
@@ -138,7 +138,8 @@ export function registerJobFileTools(input: {
         }
         return publicToolError(context, input.public_origin, error, tool.risk_class === "read" ? "read" : "write");
       }
-    });
+      // The generic schema pair defeats the SDK's callback inference; the result is built by result()/publicToolError().
+    }) as never);
   }
 
   register("cv_job_status_read", jobInputSchema, ASYNC_JOB_HANDLE_SCHEMA, async (parsed) =>

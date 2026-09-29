@@ -567,7 +567,7 @@ describe("ClamdMalwareScanner", () => {
       expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("clean");
       expect(daemon.state.command).toBe("zINSTREAM\0");
       expect(daemon.state.chunks).toEqual([4, 4, 2]);
-      expect(daemon.state.payload).toEqual(OBJECT);
+      expect(daemon.state.payload).toEqual(OBJECT as Uint8Array<ArrayBuffer>);
       expect(daemon.state.terminated).toBe(true);
     } finally {
       await daemon.close();

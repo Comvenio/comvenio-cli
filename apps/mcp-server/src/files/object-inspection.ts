@@ -195,7 +195,6 @@ async function classifyCompoundFile(reader: RandomAccessObject): Promise<string[
   };
 
   const names = new Set<string>();
-  const decoder = new TextDecoder("utf-16le");
   let sector: number | null = view.getUint32(48, true);
   for (let visited = 0; sector !== null && sector <= CFB_MAX_REGULAR_SECTOR && visited < MAX_CFB_DIRECTORY_SECTORS; visited += 1) {
     const start = offsetOf(sector);
@@ -206,7 +205,7 @@ async function classifyCompoundFile(reader: RandomAccessObject): Promise<string[
       const nameLength = sectorView.getUint16(entry + 64, true);
       const objectType = bytes[entry + 66];
       if (objectType === 0 || nameLength < 2 || nameLength > 64) continue;
-      names.add(decoder.decode(bytes.subarray(entry, entry + nameLength - 2)));
+      names.add(Buffer.from(bytes.subarray(entry, entry + nameLength - 2)).toString("utf16le"));
     }
     sector = await nextSector(sector);
   }

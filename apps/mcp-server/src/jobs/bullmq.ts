@@ -128,7 +128,8 @@ export class BullMqJobQueue implements JobQueuePort {
 
   async #writeMetadata(record: InternalJobRecord): Promise<void> {
     const redis = await this.queue.client;
-    // ioredis takes the expiry as positional arguments; an options object is not understood.
-    await redis.set(this.#metadataKey(record.handle.job_id), JSON.stringify(record), "EX", JOB_METADATA_TTL_SECONDS);
+    await redis.set(this.#metadataKey(record.handle.job_id), JSON.stringify(record), {
+      EX: JOB_METADATA_TTL_SECONDS,
+    });
   }
 }
