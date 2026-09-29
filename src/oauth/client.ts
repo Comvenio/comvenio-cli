@@ -2,7 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 
-import { OAUTH_SCOPE_VALUES, type OAuthScope } from "@comvenio/connector-contracts";
+import {
+  OAUTH_SCOPE_VALUES,
+  isMachineGrantScope,
+  type OAuthScope,
+} from "@comvenio/connector-contracts";
 
 import type { OAuthCredentials } from "./credential-store.ts";
 
@@ -331,6 +335,85 @@ export async function refreshOAuthCredentials(
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
     accessExpiresAt: Date.now() + token.expires_in * 1_000,
+  };
+}
+
+/** Client id and secret of a machine grant, as issued in the club settings (B3). */
+export type MachineGrantCredentials = {
+  clientId: string;
+  clientSecret: string;
+};
+
+/** A machine access token lives in memory only — there is no refresh token to keep. */
+export type MachineAccessToken = {
+  accessToken: string;
+  accessExpiresAt: number;
+  scopes: OAuthScope[];
+};
+
+export const MACHINE_CLIENT_ID_PREFIX = "cvg_client_";
+export const MACHINE_CLIENT_SECRET_PREFIX = "cvgs_";
+
+function machineTokenResponse(payload: Record<string, unknown>): {
+  access_token: string;
+  expires_in: number;
+  scopes: OAuthScope[];
+} {
+  // Same bounds as the interactive token; a refresh token is not expected
+  // (03-maschinen-grant §4.4) and is never kept if a server sends one.
+  if (
+    typeof payload.access_token !== "string"
+    || !payload.access_token
+    || payload.token_type !== "Bearer"
+    || typeof payload.expires_in !== "number"
+    || !Number.isInteger(payload.expires_in)
+    || payload.expires_in < 60
+    || payload.expires_in > 86_400
+    || typeof payload.scope !== "string"
+  ) {
+    throw new Error("Die OAuth-Tokenantwort ist ungültig.");
+  }
+  const scopes = payload.scope.split(" ").filter(Boolean);
+  if (
+    scopes.length === 0
+    || new Set(scopes).size !== scopes.length
+    || !scopes.every((scope) => isMachineGrantScope(scope))
+  ) {
+    // A blocked scope (D-GTA-07) on a machine token is a server fault; the
+    // CLI does not use such a token.
+    throw new Error("Die OAuth-Tokenantwort enthält unzulässige Scopes.");
+  }
+  return {
+    access_token: payload.access_token,
+    expires_in: payload.expires_in,
+    scopes: scopes as OAuthScope[],
+  };
+}
+
+/**
+ * Fetches a short-lived access token for a machine grant
+ * (`grant_type=client_credentials`, 03-maschinen-grant §4.4).
+ *
+ * The secret goes only into the form body of this request to the issuer; it
+ * is never logged, never put into a URL and never persisted.
+ */
+export async function fetchMachineAccessToken(
+  runtime: OAuthRuntime,
+  credentials: MachineGrantCredentials,
+): Promise<MachineAccessToken> {
+  const token = machineTokenResponse(await formPost(
+    `${runtime.issuer}/oauth/token`,
+    new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      resource: runtime.resource,
+    }),
+  ));
+  return {
+    accessToken: token.access_token,
+    accessExpiresAt: Date.now() + token.expires_in * 1_000,
+    scopes: token.scopes,
   };
 }
 

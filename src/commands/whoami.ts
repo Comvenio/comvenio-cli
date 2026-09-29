@@ -72,9 +72,12 @@ export function registerWhoamiCommand(cli: CAC): void {
         capabilityVersion: typeof connectorIdentity?.capability_version === "string"
           ? connectorIdentity.capability_version
           : null,
+        // A machine grant signs in from COMVENIO_CLIENT_ID/COMVENIO_CLIENT_SECRET
+        // and keeps nothing on disk — there is no state file to point at.
+        machineGrant: state.machineGrant === true,
         environment: state.environment,
         gatewayBaseUrl: state.gatewayBaseUrl,
-        stateFile: STATE_FILE,
+        stateFile: state.machineGrant ? null : STATE_FILE,
       };
 
       if (opts.json) {
@@ -88,6 +91,10 @@ export function registerWhoamiCommand(cli: CAC): void {
       console.log(`Club:     ${payload.clubId ?? "—"}`);
       console.log(`Umgebung: ${payload.environment}`);
       console.log(`Gateway:  ${payload.gatewayBaseUrl}`);
-      console.log(`State:    ${payload.stateFile}`);
+      console.log(
+        payload.machineGrant
+          ? "Anmeldung: Maschinen-Grant aus COMVENIO_CLIENT_ID (nur im Speicher)"
+          : `State:    ${payload.stateFile}`,
+      );
     });
 }

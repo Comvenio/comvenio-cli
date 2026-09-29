@@ -9,6 +9,13 @@ Die Einträge folgen
 
 ### Added
 
+- Anmeldung ohne Browser mit einem Maschinen-Grant des Vereins: Sind
+  `COMVENIO_CLIENT_ID` und `COMVENIO_CLIENT_SECRET` gesetzt, holen `whoami` und
+  `action list|call|confirm` per Client-Credentials einen kurzlebigen Zugang und
+  halten ihn nur im Speicher (keine Zustandsdatei, kein Zugangsdatenspeicher).
+  `COMVENIO_ENV=dev` wählt die Testumgebung. Fehlt eine der Variablen, endet der
+  Aufruf mit `AUTH_REQUIRED` und nennt sie. Der MCP-Gateway nimmt
+  Maschinen-Tokens nur am CLI-Kanal an und nie mit einem gesperrten Scope.
 - Geschütztes MCP-Tool `cv_my_tasks_read` für die eigenen, OAuth-gebundenen
   Aufgaben in einem expliziten Zeitfenster mit `task.read`, Backend-RBAC,
   Datenschutz-Minimierung und Scope-basiertem Verbergen bis zur erneuten

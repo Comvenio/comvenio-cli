@@ -63,7 +63,8 @@ export interface AgentFunctionDescriptor {
 export interface AuthenticatedConnectorPrincipal {
   subject_id: UUID;
   oauth_grant_id: UUID;
-  client_id: `https://${string}`;
+  /** Provider or CLI client (HTTPS id), or a machine grant (`cvg_client_…`). */
+  client_id: `https://${string}` | `cvg_client_${string}`;
   provider: ProviderId | null;
   club_id: UUID | null;
   scopes: OAuthScope[];
