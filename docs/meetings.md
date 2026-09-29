@@ -327,7 +327,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli` — list, list_protocol, show, history, create, update, approve, decline, delete (lesen, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
 - `cai.meeting.10.entry_list_show_show_agenda_create_update_delete` — list, show, show_agenda, create, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`
 - `cai.meeting.11.attachment_list_add_remove` — list, add, remove (lesen, ändern mit Bestätigung) · Scopes: `meeting.read`, `meeting.write`, `files.write`
-- Felder und Werte: `comvenio schema meeting --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"meeting"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler
@@ -348,5 +348,5 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `OUTCOME_UNKNOWN` — eine kritische Action (Löschen, Phasenwechsel, Abstimmung, Beschluss) wurde nach
   `action confirm` nicht eindeutig bestätigt; vor einer Wiederholung erst mit einem Lesebefehl den
   Stand prüfen. Siehe `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — ein alter, klassischer Befehl (`comvenio meeting …`) läuft nicht mehr; die
-  entsprechende Action verwenden. Siehe `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — ein Befehl, den es im CLI nicht mehr gibt; mit `comvenio action list` die
+  passende Action suchen. Siehe `comvenio help fehler USAGE_ERROR`.

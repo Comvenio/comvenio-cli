@@ -1,22 +1,7 @@
 import type { CAC } from "cac";
 import { loadState, STATE_FILE } from "../auth.ts";
-import { createClient, HttpError } from "../http.ts";
 import { CliConnectorClient } from "../mcp/client.ts";
 
-type MeResponse = {
-  id?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  full_name?: string;
-  main_club_id?: string;
-};
-
-/**
- * `comvenio whoami` — resolve the logged-in user via GET /user/users/me.
- * Best-effort: a valid state file already proves login, so if the user-service
- * is unreachable we still report clubId/environment from the local state.
- */
 /**
  * The user line. The connector answers whoami without personal data (only
  * club, scopes and version), so on the OAuth path name and e-mail are unknown
@@ -31,59 +16,36 @@ export function userLine(payload: { name: string | null; userId: string | null; 
     : "über die OAuth-Verbindung angemeldet (Name und E-Mail überträgt der Connector nicht)";
 }
 
+/**
+ * `comvenio whoami` — the OAuth connection (or the machine grant) and what the
+ * connector says about it: club, scopes, capability version.
+ */
 export function registerWhoamiCommand(cli: CAC): void {
   cli
-    .command("whoami", "Aktuellen Login anzeigen (Name, Club, Umgebung)")
+    .command("whoami", "Aktuelle Anmeldung anzeigen (Club, Umgebung, Scopes)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (opts: { json?: boolean }) => {
       const state = await loadState();
 
-      let user: MeResponse | null = null;
-      let connectorIdentity: Record<string, unknown> | null = null;
-      // `state.connectorToken` ohne Rueckfall: siehe action.ts — der
-      // Geraete-Token darf nie an den Connector. Fehlt er, wird die
-      // Connector-Auskunft ausgelassen statt mit dem falschen Token geholt;
-      // die Anzeige sagt dann ueber `connectorLogin`, woran es liegt.
-      if (state.authMode === "oauth" && state.oauth?.resource && state.connectorToken) {
-        connectorIdentity = await new CliConnectorClient({
-          endpoint: state.oauth.resource,
-          access_token: state.connectorToken,
-        }).whoami();
-      } else {
-        const client = createClient(state);
-        try {
-          user = await client.service<MeResponse>("user", "/users/me");
-        } catch (error) {
-          // A cached state file is not proof that the token is still valid. Keep the
-          // offline fallback for transient outages, but never hide auth failures.
-          if (error instanceof HttpError && (error.status === 401 || error.status === 403)) {
-            throw error;
-          }
-        }
-      }
-
-      const name =
-        user?.full_name ||
-        [user?.first_name, user?.last_name].filter(Boolean).join(" ").trim() ||
-        null;
+      const connectorIdentity = await new CliConnectorClient({
+        endpoint: state.oauth.resource,
+        access_token: state.connectorToken,
+      }).whoami();
 
       const payload = {
-        userId: user?.id ?? state.userId ?? null,
-        email: user?.email ?? state.userEmail ?? null,
-        name,
-        clubId: typeof connectorIdentity?.club_id === "string"
+        // The connector grant names no person; kept for scripts reading the old shape.
+        userId: null,
+        email: null,
+        name: null,
+        clubId: typeof connectorIdentity.club_id === "string"
           ? connectorIdentity.club_id
-          : state.clubId ?? user?.main_club_id ?? null,
+          : state.clubId ?? null,
         authMode: state.authMode,
-        // Beide Wege getrennt, weil sie jetzt nebeneinander bestehen können:
-        // Wer verbunden ist und trotzdem „kein Zugriff" sieht, soll hier
-        // erkennen, welcher der beiden fehlt.
-        connectorLogin: state.authMode === "oauth" && Boolean(state.connectorToken),
-        deviceToken: state.hasDeviceToken,
-        scopes: Array.isArray(connectorIdentity?.scopes)
+        connectorLogin: true,
+        scopes: Array.isArray(connectorIdentity.scopes)
           ? connectorIdentity.scopes
-          : state.oauth?.scopes ?? null,
-        capabilityVersion: typeof connectorIdentity?.capability_version === "string"
+          : state.oauth.scopes,
+        capabilityVersion: typeof connectorIdentity.capability_version === "string"
           ? connectorIdentity.capability_version
           : null,
         // A machine grant signs in from COMVENIO_CLIENT_ID/COMVENIO_CLIENT_SECRET

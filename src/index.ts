@@ -6,12 +6,12 @@ import {
   LoginOptionError,
   aufraeumenNachFehlschlag,
   clearAllAuthState,
-  clearConnectorState,
+  clearState,
   gleichesGateway,
   readStoredState,
+  removeDeviceBlock,
   STATE_FILE,
   writeConnectorLogin,
-  writeDeviceLogin,
   MACHINE_CLIENT_ID_ENV,
 } from "./auth.ts";
 import {
@@ -26,40 +26,12 @@ import {
 } from "./oauth/client.ts";
 import { CliConnectorClient } from "./mcp/client.ts";
 import { exitCodeFor, formatCliError, resolveCliLang, toPublicError } from "./errors.ts";
-import { createClient } from "./http.ts";
-import { warnDeviceTokenSunset } from "./device-sunset.ts";
 import { registerWhoamiCommand } from "./commands/whoami.ts";
-import { registerClubCommands } from "./commands/club.ts";
-import { registerMemberCommands } from "./commands/member.ts";
-import { registerTeamCommands } from "./commands/team.ts";
-import { registerTeamsCommands } from "./commands/teams.ts";
-import { registerEventCommands } from "./commands/event.ts";
-import { registerBookingCommands } from "./commands/booking.ts";
-import { registerObjectCommands } from "./commands/object.ts";
-import { registerTaskCommands } from "./commands/task.ts";
-import { registerRecipeCommands } from "./commands/recipe.ts";
-import { registerTemplateCommands } from "./commands/template.ts";
-import { registerMenuCommands } from "./commands/menu.ts";
-import { registerMeetingCommands } from "./commands/meeting.ts";
 import { registerFinanceCommands } from "./commands/finance.ts";
-import { registerHomepageCommands } from "./commands/homepage.ts";
-import { registerSchemaCommand } from "./commands/schema.ts";
-import { registerVerifyCommands } from "./commands/verify.ts";
-import { registerDataCommands } from "./commands/data.ts";
-import { registerNewsCommands } from "./commands/news.ts";
-import { registerPlanCommands } from "./commands/plan.ts";
-import { registerTournamentCommands } from "./commands/tournament.ts";
-import { registerSponsorCommands } from "./commands/sponsor.ts";
-import { registerIngredientCommands } from "./commands/ingredient.ts";
-import { registerIngredientCategoryCommands } from "./commands/ingredient-category.ts";
-import { registerShoppingCommands } from "./commands/shopping.ts";
-import { registerRoleCommands } from "./commands/role.ts";
 import { registerAgentCommands } from "./commands/agent.ts";
-import { removedCommandError, removedTopLevelCommand } from "./commands/removed.ts";
+import { deviceBlockRemovedNotice, deviceTokenOptionError, unmatchedCommandError } from "./commands/removed.ts";
 import { registerActionCommands } from "./commands/action.ts";
-import { registerZoneCommands } from "./commands/zone.ts";
 import { registerHelpCommand } from "./commands/help.ts";
-import { registerWeeklyPreviewCommands } from "./commands/weekly-preview.ts";
 import pkg from "../package.json" with { type: "json" };
 import { cliVersion } from "./build-info.ts";
 
@@ -68,7 +40,6 @@ import { cliVersion } from "./build-info.ts";
 const GATEWAY_BY_ENV: Record<string, string> = {
   prod: "https://api.comvenio.app",
   dev: "https://apidev.comvenio.app",
-  local: "http://localhost",
 };
 
 /**
@@ -110,8 +81,6 @@ async function widerrufeVerwaistenGrant(neuesGateway: string): Promise<void> {
 const cli = cac("comvenio");
 
 type LoginOpts = {
-  token?: string;
-  deviceToken?: string;
   env: string;
   club?: string;
   gateway?: string;
@@ -122,155 +91,89 @@ type LoginOpts = {
 
 cli
   .command("login", "Sicher über OAuth bei Comvenio anmelden")
-  .option("--device-token <token>", "Device-Token für Entwicklung/Automation (cvn_...)")
-  .option("--token <token>", "Veralteter Alias für --device-token")
-  .option("--env <env>", "prod | dev | local", { default: "prod" })
-  .option("--club <id>", "Club-ID überschreiben (sonst aus /users/me)")
+  .option("--env <env>", "prod | dev", { default: "prod" })
+  .option("--club <id>", "Nicht zulässig: Der Verein wird im Comvenio-Consent ausgewählt")
   .option("--gateway <url>", "Gateway-Basis überschreiben")
   .option("--connector <url>", "MCP-Connector-Origin überschreiben")
   .option("--scopes <csv>", "OAuth-Scopes einschränken, kommasepariert (ohne: alle)")
   .option("--json", "JSON-Ausgabe (maschinenlesbar)")
   .action(async (o: LoginOpts) => {
     if (!(o.env in GATEWAY_BY_ENV)) {
-      throw new LoginOptionError('Ungültige Umgebung. --env muss "prod", "dev" oder "local" sein.');
-    }
-    if (o.token && o.deviceToken && o.token !== o.deviceToken) {
-      throw new LoginOptionError("--token und --device-token dürfen nicht unterschiedliche Werte enthalten.");
+      throw new LoginOptionError('Ungültige Umgebung. --env muss "prod" oder "dev" sein.');
     }
 
     const gatewayBaseUrl = (
       o.gateway ??
       GATEWAY_BY_ENV[o.env]!
     ).replace(/\/+$/, "");
-    const deviceToken = o.deviceToken ?? o.token;
-    let runtime: ReturnType<typeof oauthRuntime> | undefined;
-    let oauthCredentials: Awaited<ReturnType<typeof loginWithOAuth>> | undefined;
-    let authMode: "oauth" | "device_token";
-    let clubId: string | undefined;
-    let userId: string | undefined;
-    let userEmail: string | undefined;
 
-    if (deviceToken) {
-      if (!deviceToken.startsWith("cvn_")) {
-        throw new LoginOptionError('Ungültiges Device-Token: Es muss mit "cvn_" beginnen.');
+    if (gatewayBaseUrl.startsWith("http://")) {
+      throw new LoginOptionError("OAuth benötigt ein öffentliches HTTPS-Gateway.");
+    }
+    if (o.club) {
+      throw new LoginOptionError(
+        "--club ist bei OAuth nicht zulässig. Der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden.",
+      );
+    }
+    // Ob es vorher eine Verbindung gab, entscheidet im Fehlerfall darueber,
+    // ob aufgeraeumt oder in Ruhe gelassen wird.
+    const bestandVorher = Boolean((() => {
+      try {
+        return readStoredState().connector;
+      } catch {
+        return null;
       }
-      if (o.connector || o.scopes) {
-        throw new LoginOptionError("--connector und --scopes gelten nur für OAuth.");
+    })());
+    const requestedScopes = o.scopes
+      ? o.scopes.split(/[,\s]+/u).map((value) => value.trim()).filter(Boolean) as OAuthScope[]
+      : undefined;
+    await widerrufeVerwaistenGrant(gatewayBaseUrl);
+    const runtime = oauthRuntime(gatewayBaseUrl, o.connector, requestedScopes);
+    if (!o.json) {
+      console.error("Browser wird für die sichere Comvenio-Anmeldung geöffnet …");
+    }
+    let oauthCredentials: Awaited<ReturnType<typeof loginWithOAuth>> | undefined;
+    let clubId: string | undefined;
+    try {
+      oauthCredentials = await loginWithOAuth(runtime);
+      const identity = await new CliConnectorClient({
+        endpoint: runtime.resource,
+        access_token: oauthCredentials.accessToken,
+      }).whoami();
+      clubId = typeof identity.club_id === "string"
+        ? identity.club_id
+        : undefined;
+      if (!clubId) {
+        throw new AuthError(
+          "Der OAuth-Grant enthält keinen eindeutig gebundenen Verein.",
+        );
       }
-      authMode = "device_token";
-      const probe = createClient({
-        token: deviceToken,
-        gatewayBaseUrl,
-        authMode: "device_token",
-      });
-      const me = await probe.service<{
-        id?: string;
-        email?: string;
-        main_club_id?: string;
-      }>("user", "/users/me");
-      clubId = o.club ?? me?.main_club_id;
-      userId = me?.id;
-      userEmail = me?.email;
-      // Wechselt das Gateway, verliert ein bestehender Connector-Block hier
-      // seine Gueltigkeit — dann wird der Grant VORHER widerrufen. Sonst
-      // bliebe er serverseitig aktiv, waehrend die Metadaten zu seinem
-      // Widerruf lokal verschwinden. Der Widerruf steht hier und nicht im
-      // Schreibweg, weil er Netz braucht und `auth.ts` netzfrei bleibt.
-      // Fremdvalidierung (2026-09-21), Befund 4.
-      await widerrufeVerwaistenGrant(gatewayBaseUrl);
-      // Schreibt NUR den Geraete-Block; ein bestehender Connector bleibt,
-      // solange er zum selben Gateway gehoert. Bis zum 2026-09-21 loeschte
-      // ein Geraete-Login die OAuth-Verbindung mit, so wie eine
-      // OAuth-Anmeldung den Geraete-Token loeschte — beide Richtungen
-      // desselben Fehlers, und der Grund war ein gemeinsames `authMode`.
-      const { connectorBleibt } = writeDeviceLogin({
-        token: deviceToken,
+      saveOAuthCredentials(oauthCredentials);
+      writeConnectorLogin({
         gatewayBaseUrl,
         environment: o.env,
         clubId,
-        userId,
-        userEmail,
+        connector: {
+          clientId: runtime.clientId,
+          resource: runtime.resource,
+          scopes: [...runtime.scopes],
+        },
       });
-      if (connectorBleibt) {
-        // Die Antwort muss dasselbe sagen wie `whoami` danach.
-        authMode = "oauth";
-        console.log("Die bestehende Connector-Verbindung bleibt erhalten — „comvenio action …“ funktioniert weiter.");
+    } catch (error) {
+      if (oauthCredentials) {
+        await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
       }
-    } else {
-      if (o.env === "local" || gatewayBaseUrl.startsWith("http://")) {
-        throw new LoginOptionError(
-          "OAuth benötigt ein öffentliches HTTPS-Gateway. Verwende lokal ausschließlich --device-token.",
-        );
+      // NUR aufraeumen, wenn dieser Versuch etwas angelegt hat. Ein im Browser
+      // abgebrochener WIEDERHOLUNGSversuch darf eine vorher funktionierende
+      // Verbindung nicht abmelden. Fremdvalidierung (2026-09-21), Befund 3:
+      // "der Login ist nicht transaktional".
+      if (aufraeumenNachFehlschlag(Boolean(oauthCredentials), bestandVorher) === "alles") {
+        clearOAuthCredentials();
+        clearState();
+      } else {
+        console.error("Die OAuth-Anmeldung ist fehlgeschlagen; die bestehende Verbindung bleibt unverändert.");
       }
-      if (o.club) {
-        throw new LoginOptionError(
-          "--club ist bei OAuth nicht zulässig. Der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden.",
-        );
-      }
-      // Ob es vorher eine Verbindung gab, entscheidet im Fehlerfall darueber,
-      // ob aufgeraeumt oder in Ruhe gelassen wird.
-      const bestandVorher = Boolean((() => {
-        try {
-          return readStoredState().connector;
-        } catch {
-          return null;
-        }
-      })());
-      const requestedScopes = o.scopes
-        ? o.scopes.split(/[,\s]+/u).map((value) => value.trim()).filter(Boolean) as OAuthScope[]
-        : undefined;
-      await widerrufeVerwaistenGrant(gatewayBaseUrl);
-      runtime = oauthRuntime(gatewayBaseUrl, o.connector, requestedScopes);
-      if (!o.json) {
-        console.error("Browser wird für die sichere Comvenio-Anmeldung geöffnet …");
-      }
-      authMode = "oauth";
-      try {
-        oauthCredentials = await loginWithOAuth(runtime);
-        const identity = await new CliConnectorClient({
-          endpoint: runtime.resource,
-          access_token: oauthCredentials.accessToken,
-        }).whoami();
-        clubId = typeof identity.club_id === "string"
-          ? identity.club_id
-          : undefined;
-        if (!clubId) {
-          throw new AuthError(
-            "Der OAuth-Grant enthält keinen eindeutig gebundenen Verein.",
-          );
-        }
-        saveOAuthCredentials(oauthCredentials);
-        const { geraetBleibt } = writeConnectorLogin({
-          gatewayBaseUrl,
-          environment: o.env,
-          clubId,
-          connector: {
-            clientId: runtime.clientId,
-            resource: runtime.resource,
-            scopes: [...runtime.scopes],
-          },
-        });
-        if (geraetBleibt && !o.json) {
-          console.log("Dein Geräte-Token bleibt erhalten — die klassischen Befehle funktionieren weiter.");
-        }
-      } catch (error) {
-        if (oauthCredentials) {
-          await revokeOAuthCredentials(runtime, oauthCredentials).catch(() => undefined);
-        }
-        // NUR aufraeumen, wenn dieser Versuch etwas angelegt hat. Vorher
-        // loeschte der Catch bedingungslos — ein im Browser abgebrochener
-        // WIEDERHOLUNGSversuch meldete damit eine vorher funktionierende
-        // Verbindung ab. Ein Login, der nichts geschrieben hat, darf nichts
-        // hinterlassen und nichts wegnehmen. Fremdvalidierung (2026-09-21),
-        // Befund 3: "der Login ist nicht transaktional".
-        if (aufraeumenNachFehlschlag(Boolean(oauthCredentials), bestandVorher) === "alles") {
-          clearOAuthCredentials();
-          clearConnectorState();
-        } else {
-          console.error("Die OAuth-Anmeldung ist fehlgeschlagen; die bestehende Verbindung bleibt unverändert.");
-        }
-        throw error;
-      }
+      throw error;
     }
 
     if (o.json) {
@@ -278,9 +181,10 @@ cli
         JSON.stringify(
           {
             ok: true,
-            authMode,
-            userId: userId ?? null,
-            email: userEmail ?? null,
+            authMode: "oauth",
+            // The connector grant names no person; kept for scripts reading the old shape.
+            userId: null,
+            email: null,
             clubId: clubId ?? null,
             environment: o.env,
             stateFile: STATE_FILE,
@@ -291,11 +195,7 @@ cli
       );
       return;
     }
-    console.log(
-      authMode === "oauth"
-        ? `OAuth-Verbindung für Verein ${clubId} hergestellt.`
-        : `Eingeloggt als ${userEmail ?? "?"} (Device-Token).`,
-    );
+    console.log(`OAuth-Verbindung für Verein ${clubId} hergestellt.`);
   });
 
 cli
@@ -351,36 +251,12 @@ cli
     console.log("Abgemeldet. OAuth-Credentials und CLI-State wurden entfernt.");
   });
 
+// The command surface of master §0.4 (COMMAND_SURFACE in commands/surface.ts);
+// login and logout are registered above.
 registerWhoamiCommand(cli);
-registerClubCommands(cli);
-registerMemberCommands(cli);
-registerTeamCommands(cli);
-registerTeamsCommands(cli);
-registerEventCommands(cli);
-registerBookingCommands(cli);
-registerObjectCommands(cli);
-registerTaskCommands(cli);
-registerRecipeCommands(cli);
-registerTemplateCommands(cli);
-registerMenuCommands(cli);
-registerMeetingCommands(cli);
-registerFinanceCommands(cli);
-registerHomepageCommands(cli);
-registerSchemaCommand(cli);
-registerVerifyCommands(cli);
-registerDataCommands(cli);
-registerNewsCommands(cli);
-registerPlanCommands(cli);
-registerTournamentCommands(cli);
-registerSponsorCommands(cli);
-registerIngredientCommands(cli);
-registerIngredientCategoryCommands(cli);
-registerWeeklyPreviewCommands(cli);
-registerShoppingCommands(cli);
-registerRoleCommands(cli);
-registerAgentCommands(cli);
 registerActionCommands(cli);
-registerZoneCommands(cli);
+registerAgentCommands(cli);
+registerFinanceCommands(cli);
 registerHelpCommand(cli);
 
 cli.option("--lang <lang>", "Sprache der Fehlermeldungen: de oder en (sonst LANG, sonst de)");
@@ -389,13 +265,29 @@ cli.version(cliVersion(pkg.version));
 
 async function main() {
   try {
+    const lang = resolveCliLang(process.argv.slice(2), process.env);
+    // First start after the update (04 §4.4, DC-1): a stored device token is
+    // dropped and named once on stderr, so --json output stays clean. A
+    // machine grant never touches the state file (03 §4.5).
+    if (!process.env[MACHINE_CLIENT_ID_ENV]) {
+      let removed = false;
+      try {
+        removed = removeDeviceBlock();
+      } catch {
+        // Best effort: the reader ignores a device block anyway.
+      }
+      if (removed) console.error(deviceBlockRemovedNotice(lang));
+    }
     cli.parse(process.argv, { run: false });
-    // Removed commands are not registered; name the web app instead of exiting silently.
-    const removed = cli.matchedCommand ? null : removedTopLevelCommand(cli.args);
-    if (removed) throw removedCommandError(removed);
-    // Device tokens run out (05-token-ausgabe-und-frist §4.6): one line on
-    // stderr per call, before the command, so --json output stays clean.
-    await warnDeviceTokenSunset(cli.matchedCommand?.name, resolveCliLang(process.argv.slice(2), process.env));
+    // --help and --version print and end without a command.
+    if (!cli.options.help && !cli.options.version) {
+      // Commands outside the surface are not registered; a call fails
+      // visibly with USAGE_ERROR and names the command (DC-3, DC-8).
+      const unmatched = cli.matchedCommand ? null : unmatchedCommandError(cli.args);
+      if (unmatched) throw unmatched;
+      const deviceOption = deviceTokenOptionError(cli.matchedCommand?.name, cli.options);
+      if (deviceOption) throw deviceOption;
+    }
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.

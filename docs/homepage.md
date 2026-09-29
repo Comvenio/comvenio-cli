@@ -49,8 +49,8 @@ ausdrückliche Freigabe.
 ### Verträge und Bestand lesen
 
 ```bash
-comvenio schema homepage --json > homepage-schema.json
-comvenio schema design --json > design-schema.json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}' --json > homepage-schema.json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"design"}' --json > design-schema.json
 comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
 ```
 
@@ -464,7 +464,7 @@ erledigen.
 - `cai.homepage.02.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.homepage.03.show` — private, public (lesen) · Scopes: `club.read`, `public.read`
 - `cai.homepage.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
-- Felder und Werte: `comvenio schema homepage --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler
@@ -483,5 +483,5 @@ erledigen.
 - `CONFLICT` — die Seite wurde zwischen Lesen und Schreiben bereits
   geändert; aktuellen Stand erneut lesen und neu entscheiden.
   `comvenio help fehler CONFLICT`.
-- `OAUTH_ONLY` — ein alter Befehl (etwa `homepage slot`, `homepage tree`)
-  läuft nicht über die aktuelle Anmeldung. `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — ein alter Befehl (etwa `homepage slot`, `homepage tree`)
+  gibt es im CLI nicht mehr. `comvenio help fehler USAGE_ERROR`.

@@ -92,14 +92,14 @@ with `comvenio help fehler <CODE>`.
 ### Querying schemas
 
 ```bash
-comvenio schema --json
-comvenio schema event --json
+comvenio action call cai.schema.01.list_domains --input '{}' --json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}' --json
 ```
 
-`schema` answers the question "which fields and values may I send?" for a
-given area — offline, without sign-in. Sending undocumented fields based on
-a guess is not supported — when in doubt, the matching schema is checked
-first.
+The schema actions answer the question "which fields and values may I send?"
+for a given area; `comvenio action list --json` names the input of every
+single action. Sending undocumented fields based on a guess is not
+supported — when in doubt, the matching schema is checked first.
 
 ### Read first, then change
 
@@ -164,7 +164,7 @@ There is no additional background call that invents content.
 Query the schema of an area, then read a task:
 
 ```bash
-comvenio schema task --json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"task"}' --json
 comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
@@ -233,7 +233,6 @@ comvenio action call cai.verify.01.url \
   error; do not retry, check the current state first.
   `comvenio help fehler OUTCOME_UNKNOWN`.
 - `USAGE_ERROR` — an argument or option is missing, does not fit together,
-  or has the wrong format. `comvenio help fehler USAGE_ERROR`.
-- `OAUTH_ONLY` — an old command does not run with the current sign-in; find
+  or has the wrong format — or the CLI no longer has the command; then find
   the matching action with `comvenio action list`.
-  `comvenio help fehler OAUTH_ONLY`.
+  `comvenio help fehler USAGE_ERROR`.

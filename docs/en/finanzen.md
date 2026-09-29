@@ -18,9 +18,10 @@ planned, recorded and reported on.
 Sign in with `comvenio login`; which actions your club has enabled and which scopes they need is
 shown by `comvenio action list --json`. For agents, `--json` is the binding output form.
 
-- `--club <club-id>` overrides the club from the local sign-in state.
+- The club comes from the sign-in; `--club <club-id>` is only a check and stops when it is not
+  the club of the sign-in.
 
-> **Not to be confused with:** `comvenio booking` is room booking, `comvenio sponsor` is the local
+> **Not to be confused with:** `cai.booking.*` is room booking, `cai.sponsor.*` is the local
 > sponsor. Neither has anything to do with accounting.
 
 ## Workflows

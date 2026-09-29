@@ -33,51 +33,19 @@ const LOGIN_HINT = 'Nicht eingeloggt. Führe "comvenio login" aus.';
 const EXPIRY_SKEW_MS = 30_000;
 
 /**
- * Die gespeicherte Anmeldung — ZWEI unabhängige Blöcke.
+ * Die gespeicherte Anmeldung: nur noch die OAuth-Verbindung.
  *
- * WARUM ES KEIN `authMode` MEHR GIBT: Bis zum 2026-09-21 trug die Datei ein
- * gemeinsames `authMode`, und das Feld `token` bedeutete je nach Modus zwei
- * verschiedene Dinge — mal den Geräte-Token, mal den OAuth-Access-Token. Zwei
- * Fremdvalidierungsrunden fanden sieben und dann neun Befunde, von denen
- * mindestens fünf aus den Reparaturen der jeweils vorigen Runde entstanden.
- * Darunter ein Bruch, bei dem der Geräte-Token an den Connector ging.
- *
- * Die Ursache war nicht die einzelne Fundstelle, sondern die Verschränkung.
- * Jetzt schreibt jeder Weg NUR seinen eigenen Block: Wer sich per OAuth
- * verbindet, fasst `device` nicht an; wer einen Geräte-Token setzt, fasst
- * `connector` nicht an. Damit fällt die ganze Fehlerklasse weg, statt einzeln
- * geflickt zu werden.
- *
- * Die GELESENE Form (`ComvenioCliState`) bleibt unverändert, damit die 27
- * Aufrufer von `loadState()` unberührt bleiben.
+ * Bis zum Geräte-Token-Abbau (geraetetoken-abbau-04) stand daneben ein
+ * Geräte-Block mit einem `cvn_`-Token für die klassischen Befehle. Den gibt es
+ * nicht mehr: Ein vorhandener Block wird beim ersten Start entfernt
+ * (`removeDeviceBlock`), und der Leser beachtet ihn nicht.
  */
 export type StoredComvenioCliState = {
   schemaVersion: 3;
-  /** Beide Wege reden mit demselben Gateway — deshalb steht es gemeinsam. */
   gatewayBaseUrl: string;
   environment: string;
-  /**
-   * Der `cvn_`-Token für die klassischen Befehle, MIT seiner Identität.
-   *
-   * `clubId` steht hier und nicht an der Wurzel: Ein Geräte-Login für
-   * Verein A kann neben einem OAuth-Grant für Verein B bestehen. Solange die
-   * Vereinskennung gemeinsam war, überschrieb der zweite Login sie — und die
-   * klassischen Befehle liefen danach mit dem Geräte-Token im Verein des
-   * Connectors. Dieselbe Klasse wie beim alten `token`-Feld: ein Feld, das
-   * zwei Dingen gehört. Fremdvalidierung zur neuen Form (2026-09-21),
-   * Befund 1.
-   */
-  device?: {
-    token: string; clubId?: string; userId?: string; userEmail?: string;
-    /**
-     * End of the device-token deadline as read from the user-service, kept
-     * for one day so the warning line (05-token-ausgabe-und-frist §4.6) does
-     * not cost a request per call. Not a secret.
-     */
-    sunsetAt?: string; sunsetCheckedAt?: string;
-  };
   /** Die OAuth-Metadaten; die Tokens selbst liegen im Credential-Store. */
-  connector?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
+  connector: { clientId: string; resource: string; scopes: string[]; clubId?: string };
 };
 
 export type ComvenioCliState = {
@@ -85,19 +53,11 @@ export type ComvenioCliState = {
   gatewayBaseUrl: string;
   environment: string;
   clubId?: string;
-  userId?: string;
-  userEmail?: string;
-  /**
-   * Der Token für die klassischen Befehle — der Geräte-Token, solange einer
-   * vorliegt. Sonst der OAuth-Access-Token, den `createClient` dann ablehnt.
-   */
-  token: string;
-  /** Nur für `comvenio action`; geht nie an einen Fachdienst. */
-  connectorToken?: string;
-  hasDeviceToken: boolean;
-  /** Für Aufrufer, die den alten Namen lesen. */
-  authMode: "device_token" | "oauth";
-  oauth?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
+  /** Der OAuth-Access-Token für den Connector; geht nie an einen Fachdienst. */
+  connectorToken: string;
+  /** Es gibt nur noch einen Anmeldeweg; das Feld bleibt für `whoami --json`. */
+  authMode: "oauth";
+  oauth: { clientId: string; resource: string; scopes: string[]; clubId?: string };
   /**
    * Signed in with a machine grant from COMVENIO_CLIENT_ID and
    * COMVENIO_CLIENT_SECRET (03-maschinen-grant §4.5): the token lives only in
@@ -126,15 +86,15 @@ function text(wert: unknown): string | undefined {
   return typeof wert === "string" && wert.length > 0 ? wert : undefined;
 }
 
-/** A parseable timestamp, or nothing: the sunset cache never carries free text. */
-function isoZeit(wert: unknown): string | undefined {
-  const t = text(wert);
-  return t && t.length <= 40 && !Number.isNaN(Date.parse(t)) ? t : undefined;
+function objekt(wert: unknown): Record<string, unknown> | null {
+  return wert !== null && typeof wert === "object" && !Array.isArray(wert)
+    ? (wert as Record<string, unknown>)
+    : null;
 }
 
-function leseConnector(roh: unknown): StoredComvenioCliState["connector"] {
-  if (roh === null || typeof roh !== "object" || Array.isArray(roh)) return undefined;
-  const o = roh as Record<string, unknown>;
+function leseConnector(roh: unknown): Omit<StoredComvenioCliState["connector"], "clubId"> | undefined {
+  const o = objekt(roh);
+  if (!o) return undefined;
   const clientId = text(o.clientId);
   const resource = text(o.resource);
   // Nicht-Strings in `scopes` fielen früher durch und landeten unverändert im
@@ -145,71 +105,70 @@ function leseConnector(roh: unknown): StoredComvenioCliState["connector"] {
 }
 
 /**
- * Liest die Datei und übersetzt die beiden Altformen mit.
- *
- * `schemaVersion` 1 (nur Gerät) und 2 (nur OAuth) werden NICHT verworfen —
- * niemand soll sich nach einem Update neu anmelden müssen. Sie hatten je
- * einen Weg; der wandert in seinen Block.
+ * Removes the device-token part of a raw state file (04 §9, DC-1): the
+ * `device` block of schema 3 and the root `cvn_` token of the old schema 1
+ * together with the identity that belonged to it. Everything else — above
+ * all the OAuth connection — stays as it is.
  */
-function parseStoredState(): StoredComvenioCliState {
+export function dropDeviceBlock(state: Record<string, unknown>): { state: Record<string, unknown>; removed: boolean } {
+  const rest = { ...state };
+  let removed = false;
+  if ("device" in rest) {
+    delete rest.device;
+    removed = true;
+  }
+  if (typeof rest.token === "string" && rest.token.startsWith("cvn_")) {
+    // Schema 1 kept the device identity at the root.
+    for (const name of ["token", "clubId", "userId", "userEmail"]) delete rest[name];
+    if (rest.authMode === "device_token") delete rest.authMode;
+    removed = true;
+  }
+  return { state: rest, removed };
+}
+
+/** The connection of a raw state file without device part, or nothing. */
+function connectorAusRoh(parsed: Record<string, unknown>): StoredComvenioCliState["connector"] | undefined {
+  // Die Altform 2 traegt `oauth` plus `authMode: "oauth"` und die
+  // Vereinskennung an der Wurzel.
+  const rohConnector = leseConnector(parsed.connector) ?? leseConnector(parsed.oauth);
+  if (!rohConnector) return undefined;
+  const clubId = text(objekt(parsed.connector)?.clubId ?? parsed.clubId);
+  return { ...rohConnector, ...(clubId ? { clubId } : {}) };
+}
+
+function leseDatei(): Record<string, unknown> {
   if (!existsSync(STATE_FILE)) {
     throw new AuthError(`State-File nicht gefunden: ${STATE_FILE}\n${LOGIN_HINT}`);
   }
-  let parsed: Record<string, unknown>;
+  let parsed: unknown;
   try {
     parsed = JSON.parse(readFileSync(STATE_FILE, "utf8"));
   } catch (error) {
     throw new AuthError(`State-File ist ungültig: ${(error as Error).message}`);
   }
+  const o = objekt(parsed);
+  if (!o) throw new AuthError(`State-File ist ungültig: kein Objekt. ${LOGIN_HINT}`);
+  return o;
+}
+
+/**
+ * Liest die Datei und übersetzt die Altform 2 (nur OAuth) mit — niemand soll
+ * sich nach einem Update neu anmelden müssen. Ein Geräte-Token zählt nicht
+ * mehr als Anmeldung, auch wenn er noch in der Datei steht.
+ */
+function parseStoredState(): StoredComvenioCliState {
+  const { state: parsed } = dropDeviceBlock(leseDatei());
   const gatewayBaseUrl = text(parsed.gatewayBaseUrl);
   if (!gatewayBaseUrl) {
     throw new AuthError(`Pflichtfeld "gatewayBaseUrl" fehlt. ${LOGIN_HINT}`);
   }
-
-  // Der Leser verlangt dasselbe wie der Schreiber: ein Geraete-Token ist ein
-  // `cvn_`. Vorher reichte ihm ein nichtleerer String — eine von Hand
-  // gebaute Datei mit `device: { token: "<OAuth-Token>" }` haette ihn als
-  // Bearer an die Fachdienste geschickt, obwohl der Schreiber genau diese
-  // Form zurueckweist. Asymmetrie zwischen Lesen und Schreiben ist genau die
-  // Luecke, die eine geschlossene Form vermeiden soll. Befund 2.
-  const geraeteBlock = typeof parsed.device === "object" && parsed.device !== null && !Array.isArray(parsed.device)
-    ? (parsed.device as Record<string, unknown>)
-    : null;
-  const geraeteToken = geraeteBlock ? text(geraeteBlock.token) : text(parsed.token);
-  const device = geraeteToken?.startsWith("cvn_")
-    ? {
-        token: geraeteToken,
-        // Aus dem Block, sonst aus der Altform an der Wurzel.
-        ...(text(geraeteBlock?.clubId ?? parsed.clubId) ? { clubId: text(geraeteBlock?.clubId ?? parsed.clubId) } : {}),
-        ...(text(geraeteBlock?.userId ?? parsed.userId) ? { userId: text(geraeteBlock?.userId ?? parsed.userId) } : {}),
-        ...(text(geraeteBlock?.userEmail ?? parsed.userEmail) ? { userEmail: text(geraeteBlock?.userEmail ?? parsed.userEmail) } : {}),
-        ...(isoZeit(geraeteBlock?.sunsetAt) ? { sunsetAt: isoZeit(geraeteBlock?.sunsetAt) } : {}),
-        ...(isoZeit(geraeteBlock?.sunsetCheckedAt) ? { sunsetCheckedAt: isoZeit(geraeteBlock?.sunsetCheckedAt) } : {}),
-      }
-    : undefined;
-
-  // Die Altform 2 traegt `oauth` plus `authMode: "oauth"`. Eine GEMISCHTE
-  // Altform (Geraete-Modus, aber `oauth` gesetzt) verlor den Connector still
-  // — jetzt wird er gelesen, denn eine Verbindung, die man nicht sieht, kann
-  // man auch nicht widerrufen. Befund 6.
-  const rohConnector = leseConnector(parsed.connector) ?? leseConnector(parsed.oauth);
-  const connector = rohConnector
-    ? {
-        ...rohConnector,
-        ...(text((parsed.connector as Record<string, unknown> | undefined)?.clubId ?? (device ? undefined : parsed.clubId))
-          ? { clubId: text((parsed.connector as Record<string, unknown> | undefined)?.clubId ?? parsed.clubId) }
-          : {}),
-      }
-    : undefined;
-
-  if (!device && !connector) throw new AuthError(LOGIN_HINT);
-
+  const connector = connectorAusRoh(parsed);
+  if (!connector) throw new AuthError(LOGIN_HINT);
   return {
     schemaVersion: 3,
     gatewayBaseUrl: gatewayBaseUrl.replace(/\/+$/u, ""),
     environment: text(parsed.environment) ?? "prod",
-    ...(device ? { device } : {}),
-    ...(connector ? { connector } : {}),
+    connector,
   };
 }
 
@@ -244,17 +203,15 @@ export function gleichesGateway(a: string, b: string): boolean {
 }
 
 function runtimeForState(state: StoredComvenioCliState): OAuthRuntime {
-  const connectorOrigin = state.connector?.resource
-    ? new URL(state.connector.resource).origin
-    : undefined;
+  const connectorOrigin = new URL(state.connector.resource).origin;
   const runtime = oauthRuntime(
     state.gatewayBaseUrl,
     connectorOrigin,
-    state.connector?.scopes as OAuthRuntime["scopes"],
+    state.connector.scopes as OAuthRuntime["scopes"],
   );
   if (
-    state.connector?.clientId !== runtime.clientId
-    || state.connector?.resource !== runtime.resource
+    state.connector.clientId !== runtime.clientId
+    || state.connector.resource !== runtime.resource
   ) {
     throw new AuthError("Der gespeicherte OAuth-Client passt nicht zur aktuellen Umgebung. Bitte erneut anmelden.");
   }
@@ -396,26 +353,14 @@ async function loadMachineState(machine: MachineGrantEnvironment): Promise<Comve
     schemaVersion: 3,
     gatewayBaseUrl: runtime.gatewayBaseUrl,
     environment: machine.environment,
-    // The classic commands reject this token (no device token): a machine
-    // grant only works through `comvenio action` and `whoami`.
-    token: token.accessToken,
     connectorToken: token.accessToken,
-    hasDeviceToken: false,
     authMode: "oauth",
     oauth: { clientId: machine.clientId, resource: runtime.resource, scopes: [...token.scopes] },
     machineGrant: true,
   };
 }
 
-/**
- * Der Zustand für den aufrufenden Befehl.
- *
- * Beide Wege stehen nebeneinander: `token` trägt den Geräte-Token, solange
- * einer vorliegt, `connectorToken` den OAuth-Access-Token. Das verletzt
- * `03-oauth-connection-lifecycle.md` §11 nicht — der verbietet, aus OAuth
- * einen Aktor-Token FÜRS CLI abzuleiten, nicht, einen unabhängig erworbenen
- * Geräte-Token zu behalten.
- */
+/** Der Zustand für den aufrufenden Befehl: die OAuth-Verbindung oder der Maschinen-Grant. */
 export async function loadState(): Promise<ComvenioCliState> {
   // A machine grant in the environment wins over a stored sign-in: a script
   // or CI job that sets both variables means exactly this grant, never the
@@ -423,57 +368,29 @@ export async function loadState(): Promise<ComvenioCliState> {
   const machine = machineGrantFromEnv();
   if (machine) return loadMachineState(machine);
   const state = parseStoredState();
-  const deviceToken = state.device?.token ?? null;
-  // Die Identitaet gehoert zu dem Weg, der gleich benutzt wird. `token`
-  // traegt den Geraete-Token, sobald einer vorliegt — also gilt auch dessen
-  // Verein. `comvenio action` braucht das nicht: Dort leitet der Dienst
-  // Verein, Benutzer und Scopes aus dem Grant ab (action.ts).
-  const identitaet = deviceToken ? state.device : state.connector;
-  const gemeinsam = {
-    schemaVersion: 3 as const,
+  const credentials = await resolveOAuthCredentials(state);
+  return {
+    schemaVersion: 3,
     gatewayBaseUrl: state.gatewayBaseUrl,
     environment: state.environment,
-    ...(identitaet?.clubId ? { clubId: identitaet.clubId } : {}),
-    ...(state.device?.userId ? { userId: state.device.userId } : {}),
-    ...(state.device?.userEmail ? { userEmail: state.device.userEmail } : {}),
-    ...(state.connector ? { oauth: state.connector } : {}),
-    authMode: (state.connector ? "oauth" : "device_token") as "oauth" | "device_token",
-  };
-
-  if (!state.connector) {
-    return { ...gemeinsam, token: deviceToken as string, hasDeviceToken: true };
-  }
-
-  let credentials: OAuthCredentials | null = null;
-  try {
-    credentials = await resolveOAuthCredentials(state);
-  } catch (error) {
-    // Ein abgelaufener oder widerrufener Grant reisst die klassischen Befehle
-    // nicht mit. Ohne Geräte-Token gibt es dagegen nichts zu retten.
-    if (!deviceToken) throw error;
-  }
-  return {
-    ...gemeinsam,
-    token: deviceToken ?? credentials!.accessToken,
-    ...(credentials ? { connectorToken: credentials.accessToken } : {}),
-    hasDeviceToken: deviceToken !== null,
+    ...(state.connector.clubId ? { clubId: state.connector.clubId } : {}),
+    connectorToken: credentials.accessToken,
+    authMode: "oauth",
+    oauth: state.connector,
   };
 }
 
 /** Was in der Datei stehen darf — alles andere wird beim Schreiben abgelehnt. */
 const ERLAUBTE_WURZELFELDER = new Set([
-  "schemaVersion", "gatewayBaseUrl", "environment", "device", "connector",
+  "schemaVersion", "gatewayBaseUrl", "environment", "connector",
 ]);
 
 /**
  * Schreibt die Datei und prüft vorher die STRUKTUR, nicht den Text.
  *
- * Die frühere Prüfung suchte Feldnamen per Regex und liess `AccessToken`,
- * `bearerToken` oder ein Secret unter einem erlaubten Namen durch. Hier ist
- * die Form geschlossen: Nur bekannte Felder, nur bekannte Typen. Der einzige
- * Ort für ein Geheimnis ist `device.token`, und der ist der Geräte-Token —
- * OAuth-Access- und Refresh-Tokens gehören in den Credential-Store des
- * Betriebssystems und kommen hier nie an.
+ * Die Form ist geschlossen: Nur bekannte Felder, nur bekannte Typen. In der
+ * Datei steht kein Geheimnis — OAuth-Access- und Refresh-Tokens gehören in den
+ * Credential-Store des Betriebssystems und kommen hier nie an.
  */
 function schreibeZustand(state: StoredComvenioCliState): void {
   for (const name of Object.keys(state)) {
@@ -484,38 +401,20 @@ function schreibeZustand(state: StoredComvenioCliState): void {
   if (!state.gatewayBaseUrl || !state.environment) {
     throw new AuthError("Gateway und Umgebung dürfen nicht leer sein.");
   }
-  if (state.device) {
-    const erlaubt = new Set(["token", "clubId", "userId", "userEmail", "sunsetAt", "sunsetCheckedAt"]);
-    for (const name of Object.keys(state.device)) {
-      if (!erlaubt.has(name)) throw new AuthError(`Unbekanntes Feld „device.${name}“.`);
-    }
-    if (typeof state.device.token !== "string" || !state.device.token.startsWith("cvn_")) {
-      throw new AuthError("Im Feld „device.token“ steht kein Geräte-Token.");
-    }
-    for (const name of ["sunsetAt", "sunsetCheckedAt"] as const) {
-      const wert = state.device[name];
-      if (wert !== undefined && isoZeit(wert) !== wert) {
-        throw new AuthError(`Das Feld „device.${name}“ ist kein Zeitpunkt.`);
-      }
+  const erlaubt = new Set(["clientId", "resource", "scopes", "clubId"]);
+  for (const name of Object.keys(state.connector ?? {})) {
+    if (!erlaubt.has(name)) {
+      throw new AuthError(`Unbekanntes Feld „connector.${name}“ — Tokens gehören in den Credential-Store.`);
     }
   }
-  if (state.connector) {
-    const erlaubt = new Set(["clientId", "resource", "scopes", "clubId"]);
-    for (const name of Object.keys(state.connector)) {
-      if (!erlaubt.has(name)) {
-        throw new AuthError(`Unbekanntes Feld „connector.${name}“ — Tokens gehören in den Credential-Store.`);
-      }
-    }
-    const { clientId, resource, scopes } = state.connector;
-    if (!clientId || !resource || typeof clientId !== "string" || typeof resource !== "string"
-      || !Array.isArray(scopes) || !scopes.every((s) => typeof s === "string" && s.length > 0)) {
-      throw new AuthError("Der Block „connector“ hat nicht die erwartete Form.");
-    }
+  const { clientId, resource, scopes } = state.connector ?? {};
+  if (!clientId || !resource || typeof clientId !== "string" || typeof resource !== "string"
+    || !Array.isArray(scopes) || !scopes.every((s) => typeof s === "string" && s.length > 0)) {
+    throw new AuthError("Der Block „connector“ hat nicht die erwartete Form.");
   }
-  // Letzter Riegel: Ein `cvn_` darf nur in `device.token` stehen.
-  const encoded = JSON.stringify({ ...state, device: undefined });
-  if (/cvn_/u.test(encoded)) {
-    throw new AuthError("Ein Geräte-Token darf nur in „device.token“ stehen.");
+  // Letzter Riegel: Ein Geräte-Token hat in der Datei nichts mehr verloren.
+  if (/cvn_/u.test(JSON.stringify(state))) {
+    throw new AuthError("Ein Geräte-Token darf nicht im CLI-State stehen.");
   }
   // Write next to the file and rename: a failed write (full disk, crash)
   // leaves the previous sign-in intact instead of a truncated file.
@@ -530,91 +429,56 @@ function schreibeZustand(state: StoredComvenioCliState): void {
   }
 }
 
-/** Der gespeicherte Stand, ohne zu werfen — für die beiden Schreibwege. */
-function bestehenderStand(): StoredComvenioCliState | null {
-  try {
-    return parseStoredState();
-  } catch {
-    return null;
-  }
-}
-
 export function readStoredState(): StoredComvenioCliState {
   return parseStoredState();
 }
 
 /**
- * Setzt den Geräte-Block — und lässt `connector` unangetastet.
+ * Entfernt einen Geräte-Block aus der Zustandsdatei — einmal, beim ersten
+ * Start nach dem Update (04 §4.4, DC-1, DC-8).
  *
- * Vorher löschte ein Geräte-Login die OAuth-Verbindung mit
- * (`clearOAuthCredentials` plus `oauth: undefined`). Dass beide Wege einander
- * nicht mehr überschreiben, ist der ganze Sinn dieser Form.
+ * - Geräte-Block und OAuth-Verbindung: die Verbindung bleibt, der Block geht.
+ * - nur Geräte-Block: die Datei geht; danach ist niemand angemeldet.
+ * - keine Datei, kein Geräte-Block, unlesbare Datei: nichts ändert sich.
+ *
+ * Gibt `true` zurück, wenn ein Block entfernt wurde — dann meldet der Aufrufer
+ * es einmal; beim nächsten Start ist nichts mehr zu entfernen.
  */
-export function writeDeviceLogin(input: {
-  token: string;
-  gatewayBaseUrl: string;
-  environment: string;
-  clubId?: string;
-  userId?: string;
-  userEmail?: string;
-}): { connectorBleibt: boolean } {
-  const alt = bestehenderStand();
-  // Der Connector bleibt nur, wenn er zum selben Gateway gehört — sonst wäre
-  // er nach dem Wechsel eine Karteileiche, die `runtimeForState` später
-  // verwirft und damit jeden Befehl blockiert.
-  const connector = alt?.connector && gleichesGateway(alt.gatewayBaseUrl, input.gatewayBaseUrl)
-    ? alt.connector
-    : undefined;
-  schreibeZustand({
-    schemaVersion: 3,
-    gatewayBaseUrl: input.gatewayBaseUrl.replace(/\/+$/u, ""),
-    environment: input.environment,
-    device: {
-      token: input.token,
-      ...(input.clubId ? { clubId: input.clubId } : {}),
-      ...(input.userId ? { userId: input.userId } : {}),
-      ...(input.userEmail ? { userEmail: input.userEmail } : {}),
-    },
-    ...(connector ? { connector } : {}),
-  });
-  return { connectorBleibt: Boolean(connector) };
+export function removeDeviceBlock(): boolean {
+  let roh: Record<string, unknown>;
+  try {
+    roh = leseDatei();
+  } catch {
+    return false;
+  }
+  const { state, removed } = dropDeviceBlock(roh);
+  if (!removed) return false;
+  const gatewayBaseUrl = text(state.gatewayBaseUrl);
+  const connector = connectorAusRoh(state);
+  if (gatewayBaseUrl && connector) {
+    schreibeZustand({
+      schemaVersion: 3,
+      gatewayBaseUrl: gatewayBaseUrl.replace(/\/+$/u, ""),
+      environment: text(state.environment) ?? "prod",
+      connector,
+    });
+  } else {
+    clearState();
+  }
+  return true;
 }
 
-/**
- * Remembers the device-token deadline next to the token (§4.6) and leaves
- * everything else as it is. Without a stored device token it does nothing.
- */
-export function rememberDeviceSunset(sunsetAt: string, checkedAt: string): void {
-  const alt = bestehenderStand();
-  if (!alt?.device) return;
-  schreibeZustand({ ...alt, device: { ...alt.device, sunsetAt, sunsetCheckedAt: checkedAt } });
-}
-
-/**
- * Setzt den Connector-Block — und lässt `device` unangetastet.
- *
- * Der Geräte-Token wird nur übernommen, wenn er zum selben Gateway gehört:
- * Sonst ginge er nach einem `--gateway`-Wechsel im Authorization-Header an
- * einen fremden Ursprung.
- */
+/** Setzt die OAuth-Verbindung. */
 export function writeConnectorLogin(input: {
   gatewayBaseUrl: string;
   environment: string;
   clubId?: string;
   connector: { clientId: string; resource: string; scopes: string[] };
-}): { geraetBleibt: boolean } {
-  const alt = bestehenderStand();
-  const device = alt?.device && gleichesGateway(alt.gatewayBaseUrl, input.gatewayBaseUrl)
-    ? alt.device
-    : undefined;
+}): void {
   schreibeZustand({
     schemaVersion: 3,
     gatewayBaseUrl: input.gatewayBaseUrl.replace(/\/+$/u, ""),
     environment: input.environment,
-    // Der Geraete-Block wandert UNVERAENDERT mit — samt seiner eigenen
-    // Vereinskennung. Vorher ueberschrieb der Connector-Login die gemeinsame
-    // `clubId`, und die klassischen Befehle liefen danach im falschen Verein.
-    ...(device ? { device } : {}),
     connector: {
       // Nur die bekannten Felder, damit ein Aufrufer nichts danebenlegen kann.
       clientId: input.connector.clientId,
@@ -622,29 +486,6 @@ export function writeConnectorLogin(input: {
       scopes: [...input.connector.scopes],
       ...(input.clubId ? { clubId: input.clubId } : {}),
     },
-  });
-  return { geraetBleibt: Boolean(device) };
-}
-
-/**
- * Entfernt NUR den Connector-Block.
- *
- * Für den Fehlerfall eines OAuth-Anmeldeversuchs: Was vorher da war, bleibt.
- * Vorher löschte der Catch die ganze Datei und nahm einen gültigen
- * Geräte-Login mit.
- */
-export function clearConnectorState(): void {
-  const alt = bestehenderStand();
-  if (!alt) return;
-  if (!alt.device) {
-    clearState();
-    return;
-  }
-  schreibeZustand({
-    schemaVersion: 3,
-    gatewayBaseUrl: alt.gatewayBaseUrl,
-    environment: alt.environment,
-    device: alt.device,
   });
 }
 

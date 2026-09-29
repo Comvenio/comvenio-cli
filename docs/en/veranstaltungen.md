@@ -13,7 +13,7 @@ With the `event` actions you manage your club's events end to end: from template
 
 ## Requirements and permissions
 
-Sign in with `comvenio login`; which actions your club has enabled and which scopes they need is shown by `comvenio action list --json`. You can also see fields and inputs offline, without signing in: `comvenio schema event --json`, `comvenio schema plan --json` and `comvenio help veranstaltungen`. What you can actually do also depends on your role in the club — permissions are checked server-side only.
+Sign in with `comvenio login`; which actions your club has enabled and which scopes they need is shown by `comvenio action list --json`. The fields of an area are shown by `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}'`; offline, without signing in, `comvenio help veranstaltungen` helps. What you can actually do also depends on your role in the club — permissions are checked server-side only.
 
 | Operation | Permission or rule |
 |---|---|
@@ -369,7 +369,7 @@ Site plan zone:
 - `cai.event.26.instance_previous_next_compare_clone_next` — previous, next, compare, clone_next (read, change) · Scopes: `event.read`, `event.write`
 - `cai.event.27.child_list_create_invitation_summary` — list, create, invitation_summary (read, change) · Scopes: `event.read`, `event.write`
 - `cai.event.28.menu_list_assign_unassign` — list, assign, unassign (read, change, change with confirmation) · Scopes: `event.read`, `event.write`
-- Fields and values: `comvenio schema event --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **plan**
 
@@ -398,4 +398,4 @@ Site plan zone:
 - `CONFLICT` — an area, resource or date does not allow the action in its current state. See `comvenio help fehler CONFLICT`.
 - `CONFIRMATION_REQUIRED` — a critical action such as deleting an area needs `comvenio action confirm` with the preview first. See `comvenio help fehler CONFIRMATION_REQUIRED`.
 - `OUTCOME_UNKNOWN` — a writing action did not answer in time after confirmation; check the current state instead of repeating. See `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — only when an old, classic command is used instead of an action. See `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — also when a command is called that the CLI no longer has; `comvenio action list` shows the matching action. See `comvenio help fehler USAGE_ERROR`.

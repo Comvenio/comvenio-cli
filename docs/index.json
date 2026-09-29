@@ -492,31 +492,6 @@
       }
     },
     {
-      "id": "fehler/oauth-only",
-      "kategorie": "fehler",
-      "title": {
-        "de": "OAUTH_ONLY — Dieser Befehl läuft nicht über die OAuth-Anmeldung.",
-        "en": "OAUTH_ONLY — This command does not run with the OAuth sign-in."
-      },
-      "stichwoerter": {
-        "de": [
-          "oauth",
-          "klassischer befehl",
-          "action"
-        ],
-        "en": [
-          "oauth",
-          "classic command",
-          "action"
-        ]
-      },
-      "domaenen": [],
-      "pfad": {
-        "de": "docs/fehler/oauth-only.md",
-        "en": "docs/en/fehler/oauth-only.md"
-      }
-    },
-    {
       "id": "fehler/outcome-unknown",
       "kategorie": "fehler",
       "title": {

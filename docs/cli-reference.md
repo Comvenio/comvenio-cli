@@ -93,14 +93,14 @@ verweist mit `comvenio help fehler <CODE>` auf ihren Artikel.
 ### Schemas abfragen
 
 ```bash
-comvenio schema --json
-comvenio schema event --json
+comvenio action call cai.schema.01.list_domains --input '{}' --json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"event"}' --json
 ```
 
-`schema` beantwortet die Frage „Welche Felder und Werte darf ich senden?" für
-einen Bereich — offline, ohne Anmeldung. Undokumentierte Felder aus
-Vermutung zu senden ist nicht vorgesehen — bei Unsicherheit wird zuerst das
-passende Schema geprüft.
+Die Schema-Actions beantworten die Frage „Welche Felder und Werte darf ich
+senden?" für einen Bereich; die Eingabe jeder einzelnen Action nennt
+`comvenio action list --json`. Undokumentierte Felder aus Vermutung zu senden
+ist nicht vorgesehen — bei Unsicherheit wird zuerst das passende Schema geprüft.
 
 ### Erst lesen, dann ändern
 
@@ -166,7 +166,7 @@ Es gibt dabei keinen zusätzlichen Hintergrund-Aufruf, der Inhalte erfindet.
 Schema eines Bereichs abrufen, dann eine Aufgabe lesen:
 
 ```bash
-comvenio schema task --json
+comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"task"}' --json
 comvenio action call cai.task.02.show --input '{"task_id":"<task-id>"}' --json
 ```
 
@@ -235,7 +235,6 @@ comvenio action call cai.verify.01.url \
   oder Serverfehler; nicht wiederholen, erst den Stand prüfen.
   `comvenio help fehler OUTCOME_UNKNOWN`.
 - `USAGE_ERROR` — ein Argument oder eine Option fehlt, passt nicht zusammen
-  oder hat das falsche Format. `comvenio help fehler USAGE_ERROR`.
-- `OAUTH_ONLY` — ein alter Befehl läuft nicht über die aktuelle Anmeldung;
-  mit `comvenio action list` die passende Action suchen.
-  `comvenio help fehler OAUTH_ONLY`.
+  oder hat das falsche Format — oder den Befehl gibt es im CLI nicht mehr;
+  dann mit `comvenio action list` die passende Action suchen.
+  `comvenio help fehler USAGE_ERROR`.

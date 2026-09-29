@@ -199,7 +199,7 @@ comvenio action call cai.sponsor.24.responsible_remove --input '{"responsible_id
 - `cai.sponsor.22.responsible_add` — add (change) · Scopes: `sponsor.write`
 - `cai.sponsor.23.responsible_update` — update (change) · Scopes: `sponsor.write`
 - `cai.sponsor.24.responsible_remove` — remove (change with confirmation) · Scopes: `sponsor.write`
-- Fields and values: `comvenio schema sponsor --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"sponsor"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

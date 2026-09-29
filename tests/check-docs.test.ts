@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import type { InventoryAction } from "../scripts/action-inventory.ts";
-import { checkDocs, generateDocs, registryCommand } from "../scripts/docs-lib.ts";
+import { checkDocs, generateDocs } from "../scripts/docs-lib.ts";
 
 // A tiny connector catalog: the generated section lists these actions.
 const INVENTORY: InventoryAction[] = [
@@ -62,15 +62,6 @@ afterEach(() => {
 describe("check:docs (02-inhalte-und-pruefung)", () => {
   test("a complete tree has no findings", () => {
     expect(checkDocs(fixture(), INVENTORY)).toEqual([]);
-  });
-
-  test("TC-01: a registry domain without article is named", () => {
-    const root = fixture();
-    write(root, "src/coverage/domains.json", JSON.stringify({ domains: [
-      { id: "team", status: "covered", actions: ["team list"], docs: [] },
-      { id: "zone", status: "covered", actions: ["zone list"], docs: [] },
-    ] }));
-    expect(checkDocs(root, INVENTORY)).toContainEqual({ file: "src/coverage/domains.json", reason: "Domäne ohne Artikel: zone" });
   });
 
   test("TC-02: an error code without article fails", () => {
@@ -169,16 +160,6 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     expect(reasons).toContain("Sprachfassungen weichen ab (kategorie): docs/en/teams.md");
   });
 
-  test("TC-01: a domain claimed by an article the registry does not point to does not count", () => {
-    const root = fixture();
-    write(root, "src/coverage/domains.json", JSON.stringify({
-      domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/andere.md"] }],
-    }));
-    const reasons = checkDocs(root, INVENTORY).map((finding) => finding.reason);
-    expect(reasons).toContain("Domäne ohne Artikel: team");
-    expect(reasons).toContain("Registry verweist für team nicht auf diesen Artikel");
-  });
-
   test("TC-05: forbidden content in the frontmatter and HTTP routes fail, self-service does not", () => {
     const root = fixture();
     write(root, "docs/teams.md", topic("de").replace("stichwoerter: [team]", "stichwoerter: [src/commands/team.ts]"));
@@ -201,34 +182,6 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     write(root, "docs/teams.md", topic("de", " Verein 00000000-4c2a-4b1d-9e3f-7a6b5c4d3e2f."));
     for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
     expect(checkDocs(root, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (echte Kennung (UUID))")).toBe(true);
-  });
-
-  test("registry entries resolve to the command the CLI really registers", () => {
-    const commands = new Map([
-      ["zone", 'cli.command("zone <verb>"); cli.command("task-zones <id>");'],
-      ["task-zones", 'cli.command("zone <verb>"); cli.command("task-zones <id>");'],
-      ["finance", 'if (action === "plan") {}'],
-      ["plan", ""],
-      ["agent", 'if (action === "chat") {}'],
-      ["function", ""],
-    ]);
-    expect(registryCommand("zone", "list", commands)).toBe("zone list");
-    expect(registryCommand("zone", "task-zones add", commands)).toBe("task-zones add");
-    expect(registryCommand("finance", "plan list", commands)).toBe("finance plan list");
-    expect(registryCommand("agent", "function", commands)).toBe("function");
-    expect(registryCommand("login", "login --device-token", commands)).toBe("login --device-token");
-  });
-
-  test("TC-06: a registry entry whose command the CLI does not register fails", () => {
-    const root = fixture();
-    write(root, "src/coverage/domains.json", JSON.stringify({
-      domains: [{ id: "team", status: "covered", actions: ["team list"], docs: ["docs/teams.md"] },
-        { id: "ghost", status: "covered", actions: ["ghost list"], docs: ["docs/teams.md"] }],
-    }));
-    expect(checkDocs(root, INVENTORY)).toContainEqual({
-      file: "src/coverage/domains.json",
-      reason: "Befehl nicht registriert: comvenio ghost (ghost)",
-    });
   });
 
   test("the index lists both languages and the error articles", () => {

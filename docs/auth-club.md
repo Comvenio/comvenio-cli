@@ -239,7 +239,7 @@ comvenio action confirm \
 `cai.club.05.design` führt die Design-Einstellungen in `design_settings`
 zusammen: nicht angegebene Felder bleiben erhalten. Die vollständigen Felder
 — Farben, Schrift, Abstand, eigenes CSS, Kopfzeile — stehen im Schema:
-`comvenio schema design --json`.
+`comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"design"}'`.
 
 ```bash
 comvenio action call cai.club.05.design \
@@ -250,20 +250,6 @@ comvenio action call cai.club.05.design \
 Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
 verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
 zur Vereins-Homepage.
-
-### Öffentliches Vereinslogo laden
-
-Das Logo eines Vereins ist öffentlich. `club logo --slug` lädt es ohne Anmeldung
-über den Slug der öffentlichen Vereinsseite und speichert es in einer Datei; die
-Ausgabe nennt Vereins-ID, Name und Vereinsfarbe. Gelesen wird nur, was die
-öffentliche Vereinsseite ohnehin zeigt.
-
-```bash
-comvenio club logo --slug sv-motzing --out sv-motzing.png --json
-```
-
-Unbekannter Slug oder Verein ohne Logo → Abbruch mit Meldung. `--env dev` liest
-die Testumgebung.
 
 ### Vereinslogo pflegen
 
@@ -350,8 +336,8 @@ comvenio action call cai.club.08.department_add \
 - `OUTCOME_UNKNOWN` — `action confirm` (etwa bei `department_delete`) endete
   mit Zeitüberschreitung oder Serverfehler; nicht wiederholen, erst den Stand
   prüfen. `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — ein alter Befehl läuft nicht über die Anmeldung; die
-  passende Action verwenden. `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — auch ein Befehl, den es im CLI nicht mehr gibt; die
+  passende Action verwenden. `comvenio help fehler USAGE_ERROR`.
 - `CLUB_SELECTION_REQUIRED` — der aktuellen Verbindung ist kein Verein
   zugeordnet. `comvenio help fehler CLUB_SELECTION_REQUIRED`.
 - `ACTION_NOT_LISTED` — die Action steht gerade nicht in der freigegebenen

@@ -13,6 +13,7 @@ import {
   search,
 } from "@comvenio/kundendoku";
 
+import { COMMAND_SURFACE } from "../commands/surface.ts";
 import { renderArticle, wrap } from "./render.ts";
 
 export { INDEX, search };
@@ -29,6 +30,7 @@ export interface HelpResult {
 
 const LABELS = {
   de: {
+    commands: "Befehle",
     topics: "Themen",
     overviews: "Übersichten",
     errors: "Fehlercodes",
@@ -42,6 +44,7 @@ const LABELS = {
     related: "Siehe auch",
   },
   en: {
+    commands: "Commands",
     topics: "Topics",
     overviews: "Overviews",
     errors: "Error codes",
@@ -86,6 +89,10 @@ function overview(lang: HelpLang, width: number): HelpResult {
   const overviews = INDEX.filter((entry) => entry.kategorie === "uebersicht");
   const errors = INDEX.filter((entry) => entry.kategorie === "fehler");
   const text = [
+    // The command surface (geraetetoken-abbau master §0.4) — nothing else.
+    labels.commands,
+    ...COMMAND_SURFACE.map((entry) => `  comvenio ${entry.usage[lang]}`),
+    "",
     labels.topics,
     ...listing(topics, lang, width),
     "",

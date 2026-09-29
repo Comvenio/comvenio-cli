@@ -19,9 +19,10 @@ Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche S
 brauchen, zeigt `comvenio action list --json`. Für Agenten ist `--json` die verbindliche
 Ausgabeform.
 
-- `--club <club-id>` überschreibt den Verein aus dem lokalen Anmeldestatus.
+- Der Verein kommt aus der Anmeldung; `--club <club-id>` dient nur der Kontrolle und bricht ab,
+  wenn er nicht der Verein der Anmeldung ist.
 
-> **Nicht verwechseln:** `comvenio booking` ist die Raumbuchung, `comvenio sponsor` der lokale
+> **Nicht verwechseln:** `cai.booking.*` ist die Raumbuchung, `cai.sponsor.*` der lokale
 > Sponsor. Mit der Buchhaltung hat beides nichts zu tun.
 
 ## Abläufe

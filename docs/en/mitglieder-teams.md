@@ -314,7 +314,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.member.19.period_add` — period-add (change) · Scopes: `admin.write`
 - `cai.member.20.period_update` — period-update (change) · Scopes: `admin.write`
 - `cai.member.21.period_delete` — period-delete (change with confirmation) · Scopes: `admin.write`
-- Fields and values: `comvenio schema member --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"member"}'` (the sign-in sets `club_id` — never in `--input`)
 
 **team**
 
@@ -356,7 +356,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.teams.29.clarification_resolve` — sync resolve (change with confirmation) · Scopes: `admin.write`
 - `cai.teams.30.termin_list` — termin list (read) · Scopes: `club.read`
 - `cai.teams.31.termin_create` — termin create (change with confirmation) · Scopes: `club.write`
-- Fields and values: `comvenio schema team --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"team"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors
@@ -375,5 +375,5 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `OUTCOME_UNKNOWN` — a critical action (delete, squad or resource-priority changes) was not clearly
   confirmed after `action confirm`; check the current state with a read before retrying. See
   `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — an old, classic command from this area (`comvenio member …`, `comvenio team …`) no
-  longer works; use the matching action instead. See `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — a command the CLI no longer has; find the matching action with
+  `comvenio action list`. See `comvenio help fehler USAGE_ERROR`.

@@ -136,7 +136,7 @@ comvenio action call cai.role.13.position_unlink --input '{"assignment_id":"<ass
 - `cai.role.12.position_link` — position-link (change) · Scopes: `admin.write`
 - `cai.role.13.position_unlink` — position-unlink (change with confirmation) · Scopes: `admin.write`
 - `cai.role.14.position_list` — position-list (read) · Scopes: `club.read`
-- Fields and values: `comvenio schema role --json` (the sign-in sets `club_id` — never in `--input`)
+- Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"role"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 
 ## Errors

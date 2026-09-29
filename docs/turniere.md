@@ -366,5 +366,5 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
   bestätigen, Spielplan verbindlich erzeugen) wurde nach `action confirm` nicht eindeutig bestätigt;
   vor einer Wiederholung erst mit einem Lesebefehl den Stand prüfen. Siehe
   `comvenio help fehler OUTCOME_UNKNOWN`.
-- `OAUTH_ONLY` — ein alter, klassischer Befehl (`comvenio tournament …`) läuft nicht mehr; die
-  entsprechende Action verwenden. Siehe `comvenio help fehler OAUTH_ONLY`.
+- `USAGE_ERROR` — ein Befehl, den es im CLI nicht mehr gibt; mit `comvenio action list` die
+  passende Action suchen. Siehe `comvenio help fehler USAGE_ERROR`.

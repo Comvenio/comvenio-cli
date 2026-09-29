@@ -47,12 +47,11 @@ werden ausschließlich im Gebiets-Editor der Web-App bearbeitet.
 **zone**
 
 - Noch keine Action — dieser Bereich läuft über die Web-App.
-- Felder und Werte: `comvenio schema zone --json` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler
 
 Für diesen Bereich gibt es keine `comvenio`-Befehle und damit keine eigenen CLI-Fehlercodes;
 Fehler beim Zeichnen oder Zuteilen zeigt der Gebiets-Editor der Web-App direkt an. Die älteren
-Zonenbefehle, die `--help` noch auflistet (`zone …`, `task-zones …`), laufen nicht über die
-Anmeldung und enden mit `OAUTH_ONLY`. Mehr: `comvenio help fehler OAUTH_ONLY`
+Zonenbefehle (`zone …`, `task-zones …`) gibt es im CLI nicht mehr; ein Aufruf endet mit
+`USAGE_ERROR`. Mehr: `comvenio help fehler USAGE_ERROR`

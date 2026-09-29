@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 /**
- * gen:schema — Generate `comvenio schema <domain> --json` data from the REAL
- * code sources instead of hand-maintained constants. Guards against drift:
+ * gen:schema — Generate the domain schemas that the connector action
+ * cai.schema.02.show_domain_schema serves (apps/mcp-server, schema-registry.ts)
+ * from the REAL code sources instead of hand-maintained constants. Guards against drift:
  * when someone changes a source (widget registry, an enum, a TS type), the
  * committed `src/schema/*.json` no longer matches and `--check` fails on CI.
  *

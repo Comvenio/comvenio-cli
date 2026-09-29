@@ -57,7 +57,7 @@ Ursachen und Lösung.
 
 | Meldung (Auszug) | Ursache | Richtig |
 |---|---|---|
-| `Fehler OAUTH_ONLY` (früher: „Dieser klassische Befehl läuft nicht über die OAuth-Anmeldung") | Klassischer Befehl unter der Browser-Anmeldung. | `comvenio action list` → passende Action mit `comvenio action call <id> --input '{…}'`. Gibt es keine: als Wunsch über das Issue-Formular melden. |
+| `Fehler USAGE_ERROR` mit „… gibt es im CLI nicht mehr." (früher: `Fehler OAUTH_ONLY`) | Ein klassischer Befehl, den das CLI nicht mehr hat. | `comvenio action list` → passende Action mit `comvenio action call <id> --input '{…}'`. Gibt es keine: als Wunsch über das Issue-Formular melden. |
 | `Fehler SCOPE_REQUIRED` (früher: „… in deinem aktuellen Vereins- und Rechtekontext nicht verfügbar.") | Der Anmeldung fehlt der genannte Scope — etwa ein Schreib-Scope für eine bestätigungspflichtige Action. | Den angezeigten Befehl `comvenio login --scopes …` ausführen; er enthält die bisherigen und die fehlenden Scopes. |
 | `Fehler PERMISSION_DENIED` | Die Scopes stimmen, aber die Rolle im Verein erlaubt die Aktion nicht. | Das Recht vergibt ein Administrator des Vereins. |
 | `Fehler ACTION_NOT_LISTED` | Die Action steht nicht in der Tool-Liste dieser Verbindung. **Direkt nach einer neuen Version** auch vorübergehend. | `comvenio action list` prüfen; nach einer neuen Version eine Minute warten und wiederholen. |

@@ -47,18 +47,6 @@
     "next_command": "comvenio action list",
     "help": "fehler/action-not-listed"
   },
-  "OAUTH_ONLY": {
-    "de": {
-      "message": "Dieser Befehl läuft nicht mit deiner Anmeldung.",
-      "cause": "Es ist ein älterer Befehl; mit der Anmeldung über comvenio login erledigst du dieselbe Aufgabe über eine Action."
-    },
-    "en": {
-      "message": "This command does not run with your sign-in.",
-      "cause": "It is an older command; with the sign-in through comvenio login you do the same task through an action."
-    },
-    "next_command": "comvenio action list",
-    "help": "fehler/oauth-only"
-  },
   "AUTH_REQUIRED": {
     "de": {
       "message": "Deine Anmeldung ist nicht mehr gültig.",

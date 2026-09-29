@@ -234,7 +234,7 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 - `cai.ingredient.03.create` — create (ändern) · Scopes: `supply.write`
 - `cai.ingredient.04.update` — update (ändern) · Scopes: `supply.write`
 - `cai.ingredient.05.delete` — delete (ändern mit Bestätigung) · Scopes: `supply.write`
-- Felder und Werte: `comvenio schema ingredient --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"ingredient"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **ingredient-category**
 
@@ -249,7 +249,7 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 - `cai.ingredient-category.09.assign` — assign (ändern) · Scopes: `supply.write`
 - `cai.ingredient-category.10.unassign` — unassign (ändern mit Bestätigung) · Scopes: `supply.write`
 - `cai.ingredient-category.11.init` — initialize (ändern mit Bestätigung) · Scopes: `supply.write`
-- Felder und Werte: `comvenio schema ingredient-category --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"ingredient-category"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **shopping**
 
@@ -276,7 +276,7 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 - `cai.shopping.procurement.template_deactivate` — deactivate (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.shopping.procurement.template_update` — update (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.shopping.procurement.templates` — list (lesen) · Scopes: `club.read`
-- Felder und Werte: `comvenio schema shopping --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"shopping"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 
 **template**
 
@@ -295,7 +295,7 @@ Die Einheiten heißen `gr`, `pc` und `portion` — nicht `g`, `piece` oder `serv
 - `cai.menu.08.style` — style (ändern) · Scopes: `supply.write`
 - `cai.menu.09.apply` — apply (ändern mit Bestätigung) · Scopes: `supply.write`
 - `cai.menu.10.export` — export (ändern) · Scopes: `supply.read`, `files.export`
-- Felder und Werte: `comvenio schema menu --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"menu"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler

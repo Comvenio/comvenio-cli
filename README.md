@@ -1,22 +1,22 @@
 # comvenio-cli
 
-Das offizielle Comvenio Club-CLI. Nutzer authentifizieren sich standardmäßig
+Das offizielle Comvenio Club-CLI. Nutzer authentifizieren sich ausschließlich
 über den Comvenio-OAuth-Flow im Systembrowser. Das CLI erhält dafür einen
 eigenen Public Client und die vom MCP getrennte Ressource
-`https://mcp.comvenio.app/cli`. Device-Tokens (`cvn_...`) bleiben als
-expliziter Fallback für Entwicklung und Automation erhalten.
+`https://mcp.comvenio.app/cli`. Skripte, CI und Server melden sich mit einem
+Maschinen-Grant an (`COMVENIO_CLIENT_ID`, `COMVENIO_CLIENT_SECRET`), den ein
+Vereinsadmin in den Vereinseinstellungen unter „Automation“ anlegt.
 
-Verfügbare Domänen: `club`, `member`, `team`, `event`, `booking`, `object`,
-`task`, `template`, `recipe`, `ingredient`, `ingredient-category`, `shopping`,
-`menu`, `homepage`, `role`, `plan` (Geländeplan),
-`tournament`, `sponsor`, `news` (Vereinsnews), `data` (Dateien/Galerie),
-`meeting`, `verify`, `schema`. Jeder Command kennt `--json` und `--help`.
+Befehle: `login`, `logout`, `whoami`, `action list|call|confirm`,
+`agent chat`, `finance` und `help`. Gearbeitet wird über die Actions des
+Connectors; `comvenio action list` zeigt, was die Anmeldung freigibt. Jeder
+Command kennt `--json` und `--help`. Die klassischen Domänenbefehle
+(`club`, `member`, `event`, … `schema`) gibt es nicht mehr; ein Aufruf endet
+mit `USAGE_ERROR` und dem Verweis auf `comvenio action list`.
 
 > Der Agent, der dieses CLI bedient, liest **`AGENTS.md`** — dort steht die
 > Domänensprache (Enums, Felder, Workflows) inkl. dem News- und Galerie-Workflow.
-> Die kompakte Gesamtübersicht steht in [`docs/cli-reference.md`](docs/cli-reference.md),
-> der verifizierte Abdeckungsstatus aller 26 Top-Level-Commands in
-> [`docs/coverage.md`](docs/coverage.md).
+> Die kompakte Gesamtübersicht steht in [`docs/cli-reference.md`](docs/cli-reference.md).
 
 Stack: **Bun + cac + TypeScript**.
 
@@ -249,18 +249,12 @@ comvenio login --scopes club.read,event.read    # nur benötigte Scopes anforder
 comvenio action list --json
 comvenio action call cai.event.01.list --input '{"range":{"from":"2026-07-24","to":"2026-08-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}' --json
 
-# Nur für Entwicklung/Automation: expliziter Device-Token-Fallback
-comvenio login --device-token cvn_... --env local
-
 # Aktuellen Login prüfen
 comvenio whoami
 comvenio whoami --json
 
-# Vereinsdaten anzeigen
-comvenio club info
-comvenio club info --json
-comvenio club settings --json
-comvenio club department-list --tree --json
+# Vereinseinstellungen lesen
+comvenio action call cai.club.03.settings --input '{}' --json
 
 # Abmelden (Grant widerrufen und lokalen Zustand entfernen)
 comvenio logout
@@ -268,10 +262,7 @@ comvenio logout
 
 OAuth-Aktionen laufen ausschließlich über den typisierten `/cli`-Connector.
 Verein, Benutzer, effektive Rechte und Backend-Actor werden serverseitig
-gebunden; der Actor-Token erreicht das CLI nie. Die bisherigen
-menschenfreundlichen Domänenbefehle bleiben für den Device-Token-
-Kompatibilitätsmodus erhalten. Ihre vollständige OAuth-Parität wird durch die
-kanonischen `action`-IDs bereitgestellt.
+gebunden; der Actor-Token erreicht das CLI nie.
 
 ### `--env`-Mapping
 
@@ -279,7 +270,6 @@ kanonischen `action`-IDs bereitgestellt.
 |------------------|-------------------------------|
 | `prod` (Default) | `https://api.comvenio.app`    |
 | `dev`            | `https://apidev.comvenio.app` |
-| `local`          | `http://localhost`            |
 
 `--gateway <url>` überschreibt die Basis direkt.
 

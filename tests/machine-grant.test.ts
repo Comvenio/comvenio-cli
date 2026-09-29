@@ -177,7 +177,7 @@ describe("CLI sign-in from the environment (TC-09)", () => {
     expect(urls).toEqual(["https://apidev.comvenio.app/auth/oauth/token"]);
     expect(first.machineGrant).toBe(true);
     expect(first.authMode).toBe("oauth");
-    expect(first.hasDeviceToken).toBe(false);
+    expect(first).not.toHaveProperty("token");
     expect(first.connectorToken).toBe("machine-access-token");
     expect(first.oauth).toEqual({
       clientId: CLIENT_ID,
@@ -317,6 +317,19 @@ describe("SCOPE_REQUIRED with a machine grant", () => {
     const rendered = toPublicError(error, { lang: "de", machine_grant: true });
     expect(rendered.next_command).toBeNull();
     expect(rendered.detail).toContain("event.write");
+    expect(rendered.detail).toContain("Automation");
+    expect(toPublicError(error, { lang: "de" }).next_command).toContain("comvenio login");
+  });
+});
+
+describe("AUTH_REQUIRED with a machine grant", () => {
+  test("names no comvenio login: a revoked or unknown grant is fixed in the club settings", async () => {
+    const { toPublicError } = await import("../src/errors.ts");
+    const { AuthError } = await import("../src/auth.ts");
+    const error = new AuthError("Der Maschinen-Grant ist unbekannt, widerrufen oder abgelaufen. Prüfe ihn in den Vereinseinstellungen unter „Automation“.");
+    const rendered = toPublicError(error, { lang: "de", machine_grant: true });
+    expect(rendered.code).toBe("AUTH_REQUIRED");
+    expect(rendered.next_command).toBeNull();
     expect(rendered.detail).toContain("Automation");
     expect(toPublicError(error, { lang: "de" }).next_command).toContain("comvenio login");
   });

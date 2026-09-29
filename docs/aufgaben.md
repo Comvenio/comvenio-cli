@@ -148,7 +148,7 @@ comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder
 comvenio action call cai.task.14.checklist_list_add_update_toggle_delete_reorder --input '{"operation":"reorder","task_id":"<task-id>","ordered_ids":["<item-id-1>","<item-id-2>"]}'
 ```
 
-Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Notiz oder Zuweisung und `bulk` sind `critical_write` und laufen über dieselbe Vorschau-/Bestätigungsfolge wie oben bei `cai.task.10.delete` gezeigt. Die geprüften Felder je Action zeigt zusätzlich `comvenio schema task --json`.
+Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Notiz oder Zuweisung und `bulk` sind `critical_write` und laufen über dieselbe Vorschau-/Bestätigungsfolge wie oben bei `cai.task.10.delete` gezeigt. Die geprüften Felder je Action zeigt zusätzlich `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"task"}'`.
 
 ## Befehle und Actions
 
@@ -170,7 +170,7 @@ Löschende und neusortierende Checklisten-Aufrufe, das Löschen von Context, Not
 - `cai.task.12.assignment_list_show_update_delete` — list, show, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
 - `cai.task.13.note_list_add_update_delete` — list, add, update, delete (lesen, ändern, ändern mit Bestätigung) · Scopes: `task.read`, `task.write`
 - `cai.task.14.checklist_list_add_update_toggle_delete_reorder` — list, add, update, toggle, delete, reorder (lesen, ändern, ändern mit Bestätigung) · Scopes: `club.read`, `task.write`
-- Felder und Werte: `comvenio schema task --json` (`club_id` setzt die Anmeldung — nie in `--input`)
+- Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"task"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 
 ## Fehler
