@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chmodSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -517,8 +517,17 @@ function schreibeZustand(state: StoredComvenioCliState): void {
   if (/cvn_/u.test(encoded)) {
     throw new AuthError("Ein Geräte-Token darf nur in „device.token“ stehen.");
   }
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { encoding: "utf8", mode: 0o600 });
-  if (process.platform !== "win32") chmodSync(STATE_FILE, 0o600);
+  // Write next to the file and rename: a failed write (full disk, crash)
+  // leaves the previous sign-in intact instead of a truncated file.
+  const temp = `${STATE_FILE}.${process.pid}.tmp`;
+  try {
+    writeFileSync(temp, JSON.stringify(state, null, 2), { encoding: "utf8", mode: 0o600 });
+    if (process.platform !== "win32") chmodSync(temp, 0o600);
+    renameSync(temp, STATE_FILE);
+  } catch (error) {
+    rmSync(temp, { force: true });
+    throw error;
+  }
 }
 
 /** Der gespeicherte Stand, ohne zu werfen — für die beiden Schreibwege. */
