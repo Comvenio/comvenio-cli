@@ -105,6 +105,19 @@ describe("cai.homepage.05.convert — Algorithmus (comvenio-cli-doku 06 §4.3)",
     expect(apply.safeParse(mit({ titel: { kind: "text", config: { html: "<script>alert(1)</script>" } } })).success).toBe(false);
   });
 
+  test("Befund R2-1: jeder Slot bekommt die geschlossene Feldliste seiner Art (wie sanitize_slot_entry im club-service)", () => {
+    const apply = K12_ACTION_SCHEMAS["cai.homepage.02.apply"].input;
+    const mit = (slots: JsonValue) => apply.safeParse({ club_id: "33333333-3333-4333-8333-333333333333", clear_existing: true, tabs: [{ label: "Start", slug: "start", position: 0, visibility_scope: "public", sections: [{ widgets: [{ kind: "custom_html", config: { html: '<section aria-label="Start"><h2 data-slot="titel"></h2></section>', slots } }] }] }] }).success;
+    expect(mit({ titel: { kind: "heading", config: { text: "Hallo" }, style: "gross" }, bild: { kind: "image", config: { url: "https://example.org/a.jpg", alt: "A" } } })).toBe(true);
+    expect(mit({ titel: { kind: "heading", config: { arbitrary_payload: "secret" } } })).toBe(false);
+    expect(mit({ titel: { kind: "gibt_es_nicht", config: {} } })).toBe(false);
+    expect(mit({ titel: { kind: "custom_html", config: { html: "<p></p>" } } })).toBe(false);
+    expect(mit({ Titel: { kind: "heading", config: { text: "x" } } })).toBe(false);
+    expect(mit({ titel: { kind: "heading", config: { text: "x" }, extra: 1 } })).toBe(false);
+    expect(mit({ titel: { kind: "heading", config: { text: "x" }, style: "Fett Rot" } })).toBe(false);
+    expect(mit([] as JsonValue)).toBe(false);
+  });
+
   test("Befund R1-7: eine leere Live-Seite liefert einen Hinweis statt eines stummen leeren Ergebnisses", () => {
     const { tabs, hinweise } = convertLiveTabs([]);
     expect(tabs).toEqual([]);
@@ -185,6 +198,15 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
     expect(value.bericht.katalogklassen_verschoben).toBeGreaterThan(0);
     expect(Array.isArray(value.tabs)).toBe(true);
     expect(Array.isArray(value.hinweise)).toBe(true);
+  });
+
+  test("Befund R2-2: Settings eines anderen Vereins brechen ab statt fremde Stil-Kennungen zu übernehmen", async () => {
+    const homepage = createK12ToolSets({
+      client: adapterClient(async (request) => request.path.endsWith("/settings")
+        ? { club_id: "44444444-4444-4444-8444-444444444444", design_settings: { styles: [] } }
+        : [tab("start", '<section aria-label="Start"><h2>Hallo</h2></section>')]),
+    }).homepage;
+    await expect(homepage.execute({ action_id: "cai.homepage.05.convert", input: { club_id: clubId }, context, capability_snapshot: capabilitySnapshot })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
   });
 
   test("nichts wird geschrieben: der Fake-Client sieht nur GET-Aufrufe", async () => {

@@ -46,8 +46,11 @@ add("cai.homepage.05.convert", "convert", async (input, context, client) => {
   // The style catalog moves matching classes into slot styles (comvenio-cli-doku 06 §4.3); without it the conversion still works.
   let styles: ReturnType<typeof stilKatalog> = [];
   let katalogHinweis: string | null = null;
-  try { styles = stilKatalog(await request(client, context, "GET", "club", `/clubs/${string(input, "club_id")}/settings`)); }
+  let settings: JsonValue = null;
+  try { settings = await request(client, context, "GET", "club", `/clubs/${string(input, "club_id")}/settings`); }
   catch { katalogHinweis = "Stilkatalog (design_settings.styles) nicht lesbar — Katalogklassen wurden nicht verschoben."; }
+  // A tenant mismatch aborts like on the live structure — never style ids of another club.
+  if (settings !== null) styles = stilKatalog(assertClub(settings, input, context));
   const { tabs, bericht, hinweise } = convertLiveTabs(live, { styles });
   if (katalogHinweis) hinweise.unshift(katalogHinweis);
   return JSON.parse(JSON.stringify({ tabs, bericht, hinweise })) as JsonValue;

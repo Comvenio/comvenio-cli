@@ -71,9 +71,37 @@ const widgetFields = Object.fromEntries(Object.values(K12_HOMEPAGE_REGISTRY.widg
  */
 const widgetFieldsByKind = new Map(Object.entries(K12_HOMEPAGE_REGISTRY.widgets).map(([kind, entry]) => [kind, new Set(entry.config.map((field) => field.name))]));
 const widgetConfig = z.object(widgetFields).strict();
+// Named slots of a custom_html skeleton (17-designer-struktur 02 §4.3) get the same closed field set per kind as a
+// standalone widget; mirrors sanitize_slot_entry in club-service (name pattern, entry keys, no nested custom_html).
+const SLOT_NAME = /^[a-z0-9][a-z0-9-]{0,62}$/u;
+const SLOT_ENTRY_KEYS = new Set(["kind", "config", "style"]);
+const MAX_SLOTS = 200;
+function checkFields(kind: string, config: Record<string, unknown>, ctx: z.RefinementCtx, path: (string | number)[]): void {
+  const allowed = widgetFieldsByKind.get(kind) ?? new Set<string>();
+  for (const key of Object.keys(config)) if (!allowed.has(key)) ctx.addIssue({ code: "custom", path: [...path, key], message: `Das Feld ist für ${kind} nicht freigegeben.` });
+}
+function checkSlots(slots: unknown, ctx: z.RefinementCtx): void {
+  const path = ["config", "slots"];
+  if (slots === null || typeof slots !== "object" || Array.isArray(slots)) { ctx.addIssue({ code: "custom", path, message: "config.slots muss ein Objekt sein." }); return; }
+  const entries = Object.entries(slots as Record<string, unknown>);
+  if (entries.length > MAX_SLOTS) ctx.addIssue({ code: "custom", path, message: `config.slots: höchstens ${MAX_SLOTS} Einträge.` });
+  for (const [name, entry] of entries) {
+    const at = [...path, name];
+    if (!SLOT_NAME.test(name)) ctx.addIssue({ code: "custom", path: at, message: "Slot-Name ungültig (a-z, 0-9, Bindestrich; max. 63)." });
+    if (entry === null || typeof entry !== "object" || Array.isArray(entry)) { ctx.addIssue({ code: "custom", path: at, message: "Slot-Eintrag muss ein Objekt sein." }); continue; }
+    const e = entry as Record<string, unknown>;
+    for (const key of Object.keys(e)) if (!SLOT_ENTRY_KEYS.has(key)) ctx.addIssue({ code: "custom", path: [...at, key], message: "Unbekanntes Feld im Slot-Eintrag." });
+    const kind = typeof e.kind === "string" ? e.kind : "";
+    if (kind === "custom_html" || !widgetFieldsByKind.has(kind)) { ctx.addIssue({ code: "custom", path: [...at, "kind"], message: `Unbekannte oder unzulässige Slot-Art '${kind}'.` }); continue; }
+    if (e.style !== undefined && e.style !== null && (typeof e.style !== "string" || !SLOT_NAME.test(e.style))) ctx.addIssue({ code: "custom", path: [...at, "style"], message: "style ist keine gültige Stil-Kennung." });
+    const config = e.config ?? {};
+    if (config === null || typeof config !== "object" || Array.isArray(config)) { ctx.addIssue({ code: "custom", path: [...at, "config"], message: "config muss ein Objekt sein." }); continue; }
+    checkFields(kind, config as Record<string, unknown>, ctx, [...at, "config"]);
+  }
+}
 const homepageWidget = z.object({ kind: z.enum(widgetKinds), title: z.string().max(200).nullable().optional(), config: widgetConfig.default({}), slot_index: z.number().int().min(0).max(100).default(0) }).strict().superRefine((value, ctx) => {
-  const allowed = widgetFieldsByKind.get(value.kind) ?? new Set<string>();
-  for (const key of Object.keys(value.config)) if (!allowed.has(key)) ctx.addIssue({ code: "custom", path: ["config", key], message: `Das Feld ist für ${value.kind} nicht freigegeben.` });
+  checkFields(value.kind, value.config, ctx, ["config"]);
+  if (value.kind === "custom_html" && value.config.slots !== undefined) checkSlots(value.config.slots, ctx);
   const serialized = JSON.stringify(value.config);
   if (/(?:[A-Za-z]:\\|file:\/\/|javascript\s*:|<\s*script|\son[a-z]+\s*=)/iu.test(serialized)) ctx.addIssue({ code: "custom", path: ["config"], message: "Lokale Pfade oder aktive Inhalte sind nicht erlaubt." });
 });
