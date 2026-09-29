@@ -148,7 +148,10 @@ export function toPublicError(
     };
   }
   const cleaned = detail ? cleanDetail(detail) : "";
-  return cleaned ? { ...rendered, detail: cleaned } : rendered;
+  // A machine grant cannot run `comvenio login`: the way out is the grant in the club
+  // settings (the detail line says so), never a browser sign-in.
+  const result = code === "AUTH_REQUIRED" && options.machine_grant ? { ...rendered, next_command: null } : rendered;
+  return cleaned ? { ...result, detail: cleaned } : result;
 }
 
 export function formatCliError(error: CliPublicError): string {

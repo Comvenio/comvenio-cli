@@ -321,3 +321,16 @@ describe("SCOPE_REQUIRED with a machine grant", () => {
     expect(toPublicError(error, { lang: "de" }).next_command).toContain("comvenio login");
   });
 });
+
+describe("AUTH_REQUIRED with a machine grant", () => {
+  test("names no comvenio login: a revoked or unknown grant is fixed in the club settings", async () => {
+    const { toPublicError } = await import("../src/errors.ts");
+    const { AuthError } = await import("../src/auth.ts");
+    const error = new AuthError("Der Maschinen-Grant ist unbekannt, widerrufen oder abgelaufen. Prüfe ihn in den Vereinseinstellungen unter „Automation“.");
+    const rendered = toPublicError(error, { lang: "de", machine_grant: true });
+    expect(rendered.code).toBe("AUTH_REQUIRED");
+    expect(rendered.next_command).toBeNull();
+    expect(rendered.detail).toContain("Automation");
+    expect(toPublicError(error, { lang: "de" }).next_command).toContain("comvenio login");
+  });
+});

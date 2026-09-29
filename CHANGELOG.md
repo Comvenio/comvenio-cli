@@ -9,6 +9,9 @@ Die Einträge folgen
 
 ### Fixed
 
+- Scheitert die Anmeldung mit einem Maschinen-Grant (`AUTH_REQUIRED`), nennt
+  das CLI nicht mehr `comvenio login`, sondern nur den Weg über die
+  Vereinseinstellungen › Automation.
 - `whoami` zeigt ohne übertragenen Namen nicht mehr „? <?>“, sondern wessen
   Anmeldung es ist (OAuth oder Maschinen-Grant), dazu die Scopes der Verbindung.
 - Fehlt einem Grant `club.read`, endet `whoami` mit `SCOPE_REQUIRED` samt Hinweis
@@ -85,7 +88,7 @@ Die Einträge folgen
 
 ### Removed
 
-- **Breaking:** Geräte-Token gibt es im CLI nicht mehr (Fristende 29.10.2026).
+- **Breaking:** Geräte-Token gibt es im CLI nicht mehr (ohne Frist, D-GTA-20).
   `login --device-token` und `--token` enden mit `USAGE_ERROR`; angemeldet wird
   nur noch mit `comvenio login` im Browser, Skripte und Server nutzen einen
   Maschinen-Grant (`COMVENIO_CLIENT_ID`/`COMVENIO_CLIENT_SECRET`). Ein
@@ -96,7 +99,7 @@ Die Einträge folgen
   `schema` und die Coverage-Registry. Ein Aufruf endet mit `USAGE_ERROR` und
   verweist auf `comvenio action list`. Das CLI kennt nur noch `login`,
   `logout`, `whoami`, `action`, `agent chat`, `finance` und `help`.
-- Die Warnzeile zum Fristende aus der Übergangsversion.
+- Die Warnzeile zum Fristende; die Frist entfiel.
 - `comvenio agent approval`, `comvenio function` und `comvenio automation`.
   Freigaben, Funktionen und Automationen bleiben in Web-App und App; ein Aufruf
   endet mit `USAGE_ERROR` und nennt den Ort in der Web-App.
