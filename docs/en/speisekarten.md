@@ -268,14 +268,14 @@ The units are `gr`, `pc` and `portion` — not `g`, `piece` or `serving`.
 - `cai.shopping.13.purchased` — set (change) · Scopes: `supply.write`
 - `cai.shopping.14.generate_from_recipe` — generate (change) · Scopes: `supply.write`, `files.export`
 - `cai.shopping.15.generate_from_menu` — generate (change) · Scopes: `supply.write`, `files.export`
-- `cai.shopping.procurement.activate` — activate (change) · Scopes: `supply.write`
-- `cai.shopping.procurement.add` — add (change) · Scopes: `supply.write`
-- `cai.shopping.procurement.list` — list (read) · Scopes: `supply.read`
-- `cai.shopping.procurement.purchase` — purchase (change with confirmation) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_create` — create (change) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_deactivate` — deactivate (change) · Scopes: `supply.write`
-- `cai.shopping.procurement.template_update` — update (change) · Scopes: `supply.write`
-- `cai.shopping.procurement.templates` — list (read) · Scopes: `supply.read`
+- `cai.shopping.procurement.activate` — activate (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.add` — add (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.list` — list (read) · Scopes: `club.read`
+- `cai.shopping.procurement.purchase` — purchase (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.template_create` — create (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.template_deactivate` — deactivate (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.template_update` — update (change with confirmation) · Scopes: `club.write`
+- `cai.shopping.procurement.templates` — list (read) · Scopes: `club.read`
 - Fields and values: `comvenio schema shopping --json` (the sign-in sets `club_id` — never in `--input`)
 
 **template**

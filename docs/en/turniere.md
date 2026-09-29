@@ -330,7 +330,7 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
 - `cai.tournament.17.participant_reinstate` — reinstate (change) · Scopes: `event.write`
 - `cai.tournament.18.participant_remove` — remove (change with confirmation) · Scopes: `event.write`
 - `cai.tournament.19.start` — start (change with confirmation) · Scopes: `event.write`
-- `cai.tournament.20.matches` — list (change) · Scopes: `event.write`
+- `cai.tournament.20.matches` — list (read) · Scopes: `event.read`
 - `cai.tournament.21.matches_clear` — clear (change with confirmation) · Scopes: `event.write`
 - `cai.tournament.22.reset` — reset (change with confirmation) · Scopes: `event.write`
 - `cai.tournament.23.redraw` — redraw (change with confirmation) · Scopes: `event.write`
