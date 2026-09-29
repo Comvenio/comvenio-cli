@@ -9,6 +9,10 @@ Die Einträge folgen
 
 ### Fixed
 
+- `cai.homepage.02.apply` nimmt das Feld `slots` am Baustein `custom_html`
+  an — die benannten Slots des neuen Gerüstformats. Bisher lehnte das
+  Eingabeschema jede Seite im neuen Format ab, weil das Feld in der
+  Widget-Registry fehlte. Aktive Inhalte in Slots bleiben gesperrt.
 - Scheitert die Anmeldung mit einem Maschinen-Grant (`AUTH_REQUIRED`), nennt
   das CLI nicht mehr `comvenio login`, sondern nur den Weg über die
   Vereinseinstellungen › Automation.
@@ -28,8 +32,10 @@ Die Einträge folgen
   Werkzeugs wie `cai.homepage.01-04`. Antwort: `tabs` (direkt für
   `cai.homepage.02.apply` verwendbar), dazu ein Bericht (`umgewandelt`,
   `offene_stellen`, `katalogklassen_verschoben`, `befunde`, `hinweise`).
-  Nichts wird angewendet — das bleibt `cai.homepage.02.apply` nach
-  ausdrücklicher Freigabe. Idempotent: ein zweiter Lauf auf bereits
+  Liest dazu den Stilkatalog (`design_settings.styles`) des Vereins, damit
+  Katalogklassen in Slot-Stile wandern. Nichts wird angewendet — das bleibt
+  `cai.homepage.02.apply` mit `clear_existing: true` nach ausdrücklicher
+  Freigabe. Idempotent: ein zweiter Lauf auf bereits
   umgewandelten Gerüsten meldet einen leeren Bericht.
 - `gen:schema` liest — sobald vorhanden — Widget- und Vorlagen-Erklärungen aus
   `widget-erklaerungen.json` (Frontend/web-page, neben `widget-felder.json`)

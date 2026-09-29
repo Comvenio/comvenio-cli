@@ -452,6 +452,9 @@
           "name": "html"
         },
         {
+          "name": "slots"
+        },
+        {
           "name": "show_title"
         },
         {
@@ -1560,12 +1563,12 @@
           "en": "Running order of a single event as a timeline or cards."
         },
         "datenquelle": {
-          "de": "Comvenio-Event-Daten: die Ablaufplan-Einträge des im Formular gewählten Events.",
-          "en": "Comvenio event data: the programme items of the event chosen in the form."
+          "de": "Im Vereinsbereich (angemeldet): die Ablaufplan-Einträge des im Formular gewählten Events. Auf der öffentlichen Website lädt der Baustein derzeit keine Daten.",
+          "en": "In the members area (logged in): the programme items of the event chosen in the form. On the public website the block currently loads no data."
         },
         "macht_oeffentlich": {
-          "de": "Titel, Uhrzeit und, wenn aktiviert, Bereich der einzelnen Programmpunkte — keine Namen von Verantwortlichen (das Feld dafür existiert im Schema, wird aber von diesem Widget nicht gelesen).",
-          "en": "Title, time and, if enabled, area of each programme item — no names of the people responsible (that field exists in the schema but is not read by this widget)."
+          "de": "Derzeit nichts: Öffentlich erscheint nur die Überschrift mit „Noch kein Ablaufplan vorhanden.“ Für eine öffentliche Seite den Ablauf besser als Text oder im Gerüst pflegen.",
+          "en": "Currently nothing: publicly only the heading with “Noch kein Ablaufplan vorhanden.” (no running order yet) appears. For a public page, maintain the running order as text or in the skeleton instead."
         },
         "passt_zu": {
           "de": [
@@ -1598,16 +1601,16 @@
       "beschreibung": {
         "kategorie": "veranstaltungen",
         "zweck": {
-          "de": "Zu-/Absage-Baustein für ein Event mit dem eigenen Anmeldestatus.",
-          "en": "RSVP block for an event showing the visitor's own invitation status."
+          "de": "Zu-/Absage-Baustein für ein Event; angemeldete Mitglieder sehen und ändern ihren eigenen Anmeldestatus.",
+          "en": "RSVP block for an event; logged-in members see and change their own invitation status."
         },
         "datenquelle": {
-          "de": "Comvenio-Event-Daten: die Einladung der eingeloggten Person zum im Formular gewählten Event.",
-          "en": "Comvenio event data: the logged-in person's own invitation to the event chosen in the form."
+          "de": "Comvenio-Event-Daten: Titel und Datum des im Formular gewählten Events; im Vereinsbereich zusätzlich die Einladung der angemeldeten Person.",
+          "en": "Comvenio event data: title and date of the event chosen in the form; in the members area also the logged-in person's own invitation."
         },
         "macht_oeffentlich": {
-          "de": "Nur die eigene Rückmeldung (zugesagt/Warteliste, ggf. Wartelistenposition) der eingeloggten Person — keine Angaben zu anderen Mitgliedern.",
-          "en": "Only the logged-in person's own response (accepted/waitlisted, waitlist position if applicable) — no information about other members."
+          "de": "Überschrift, Untertitel und Datum des Events sowie den Hinweis, sich zur Rückmeldung anzumelden. Der eigene Status erscheint nur im Vereinsbereich, nie Angaben zu anderen Mitgliedern.",
+          "en": "The event's headline, subtitle and date plus a prompt to log in to respond. The own status appears only in the members area, never information about other members."
         },
         "passt_zu": {
           "de": [
@@ -2058,12 +2061,12 @@
           "en": "Member honours and awards as a timeline, grid or spotlight display."
         },
         "datenquelle": {
-          "de": "Comvenio-Mitgliederdaten: öffentliche Ehrungen des Vereins.",
-          "en": "Comvenio member data: the club's public honours."
+          "de": "Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt.",
+          "en": "In the members area (logged in): confirmed honours from Comvenio member data. On the public website: only the honours entered by hand in the form — the public honours data is currently not displayed there."
         },
         "macht_oeffentlich": {
-          "de": "Vor- und Nachname der geehrten Person, Titel/Art der Ehrung, ggf. Jubiläumsjahre und Datum der Ehrung — das sind personenbezogene Daten, die der Verein bewusst als Ehrung veröffentlicht.",
-          "en": "First and last name of the honoured person, the honour's title/type, milestone years if applicable, and the date honoured — this is personal data the club deliberately publishes as recognition."
+          "de": "Öffentlich genau das, was im Formular eingetragen ist: Name der geehrten Person, Titel, Art, Datum und Beschreibung. Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge bleibt der Baustein öffentlich leer.",
+          "en": "Publicly exactly what is entered in the form: the honoured person's name, title, type, date and description. This is personal data — only enter what the club deliberately publishes as recognition. Without entries the block stays empty on the public site."
         },
         "passt_zu": {
           "de": [
@@ -2516,12 +2519,12 @@
           "en": "Highlighted bookable objects (e.g. courts, rooms) with a short description."
         },
         "datenquelle": {
-          "de": "Comvenio-Objektdaten: öffentliche Objekt-Highlights des Vereins, optional auf im Formular gewählte Objekte eingeschränkt.",
-          "en": "Comvenio object data: the club's public object highlights, optionally limited to objects chosen in the form."
+          "de": "Im Vereinsbereich (angemeldet): die Objekte des Vereins, eingeschränkt auf die im Formular gewählten Objekte und die Anzahl. Auf der öffentlichen Website: alle öffentlichen Objekt-Highlights des Vereins — Auswahl und Anzahl aus dem Formular wirken dort derzeit nicht.",
+          "en": "In the members area (logged in): the club's objects, limited to the objects and count chosen in the form. On the public website: all of the club's public object highlights — selection and count from the form currently have no effect there."
         },
         "macht_oeffentlich": {
-          "de": "Name, Art, Beschreibung des Objekts und ob eine Freigabe zur Buchung nötig ist — keine Namen der Buchenden.",
-          "en": "The object's name, type, description and whether booking needs approval — no names of the people booking."
+          "de": "Name und Beschreibung jedes öffentlichen Objekt-Highlights, bei gesponserten Objekten das Sponsoren-Label — keine Namen der Buchenden.",
+          "en": "Name and description of each public object highlight and, for sponsored objects, the sponsor label — no names of the people booking."
         },
         "passt_zu": {
           "de": [
@@ -3827,12 +3830,12 @@
           "en": "Availability calendar of a bookable object."
         },
         "datenquelle": {
-          "de": "Comvenio-Objektdaten: öffentliche Objekt-Highlights für das im Formular gewählte Objekt.",
-          "en": "Comvenio object data: public object highlights for the object chosen in the form."
+          "de": "Im Vereinsbereich (angemeldet): die aktiven Objekte des Vereins, vorgewählt das Objekt aus dem Formular. Auf der öffentlichen Website zeigt der Baustein derzeit keine Objekte.",
+          "en": "In the members area (logged in): the club's active objects, preselected with the object from the form. On the public website the block currently shows no objects."
         },
         "macht_oeffentlich": {
-          "de": "Name und Art des Objekts sowie ob eine Buchung freigabepflichtig ist — keine Namen der Buchenden oder Belegungsdetails einzelner Zeitfenster.",
-          "en": "The object's name and type, and whether booking needs approval — no names of the people booking or details of individual time slots."
+          "de": "Derzeit nichts: Öffentlich erscheint „Keine buchbaren Objekte“. Für Besucher ohne Anmeldung eignet sich booking_highlight.",
+          "en": "Currently nothing: publicly it shows “Keine buchbaren Objekte” (no bookable objects). For visitors who are not logged in, use booking_highlight."
         },
         "passt_zu": {
           "de": [
@@ -4854,12 +4857,12 @@
           "en": "Wall of honour listing member awards, an alternative presentation to honors_showcase."
         },
         "datenquelle": {
-          "de": "Comvenio-Mitgliederdaten: öffentliche Ehrungen des Vereins.",
-          "en": "Comvenio member data: the club's public honours."
+          "de": "Im Vereinsbereich (angemeldet): bestätigte Ehrungen aus den Comvenio-Mitgliederdaten. Auf der öffentlichen Website: nur die Ehrungen, die im Formular von Hand eingetragen sind — die öffentlichen Ehrungsdaten werden dort derzeit nicht angezeigt.",
+          "en": "In the members area (logged in): confirmed honours from Comvenio member data. On the public website: only the honours entered by hand in the form — the public honours data is currently not displayed there."
         },
         "macht_oeffentlich": {
-          "de": "Vor- und Nachname der geehrten Person, Titel/Art der Ehrung, ggf. Jubiläumsjahre und Datum — vom Verein bewusst als Ehrung veröffentlicht.",
-          "en": "First and last name of the honoured person, the honour's title/type, milestone years if applicable, and the date — deliberately published by the club as recognition."
+          "de": "Öffentlich genau das, was im Formular eingetragen ist: Name der geehrten Person, Titel, Art, Datum und Beschreibung. Das sind personenbezogene Daten — nur eintragen, was der Verein bewusst als Ehrung veröffentlicht. Ohne Einträge bleibt der Baustein öffentlich leer.",
+          "en": "Publicly exactly what is entered in the form: the honoured person's name, title, type, date and description. This is personal data — only enter what the club deliberately publishes as recognition. Without entries the block stays empty on the public site."
         },
         "passt_zu": {
           "de": [
@@ -4980,7 +4983,7 @@
   },
   "config_sync": {
     "widgets_checked": 75,
-    "fields_checked": 540,
+    "fields_checked": 541,
     "widgets_with_unread_fields": 1,
     "unread_fields": 1,
     "widgets_with_wrong_values": 0,

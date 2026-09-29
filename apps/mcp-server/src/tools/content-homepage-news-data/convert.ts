@@ -51,7 +51,6 @@ export interface BulkSection {
   title?: string | null;
   is_visible?: boolean;
   bg_image_url?: string | null;
-  spalten_breiten?: number[] | null;
   widgets: BulkWidget[];
 }
 export interface BulkTab {
@@ -368,7 +367,6 @@ export function liveTabsAlsBulk(value: JsonValue): { tabs: BulkTab[]; hinweise: 
         title: jsonString(s.title),
         is_visible: typeof s.is_visible === "boolean" ? s.is_visible : true,
         bg_image_url: jsonString(s.bg_image_url),
-        spalten_breiten: Array.isArray(s.spalten_breiten) ? (s.spalten_breiten as number[]) : null,
         widgets,
       };
       return section;
@@ -408,5 +406,18 @@ export function convertLiveTabs(value: JsonValue, optionen: { styles?: StyleEntr
     bericht.befunde.push(...b.befunde.map((f) => ({ ...f, tab: t.slug })));
     return tab;
   });
+  if (tabs.length === 0) hinweise.push("Die Live-Seite hat keine Reiter — nichts umzustellen; cai.homepage.02.apply verlangt mindestens einen Reiter.");
+  else hinweise.push("Übernehmen: tabs unverändert an cai.homepage.01.preview und danach an cai.homepage.02.apply mit clear_existing: true geben — ohne clear_existing entstehen die Reiter doppelt.");
   return { tabs, bericht, hinweise };
+}
+
+/** Style catalog from the club's design settings (`design_settings.styles`); malformed entries are skipped. */
+export function stilKatalog(settings: JsonValue): StyleEntry[] {
+  const design = jsonObject(jsonObject(settings).design_settings);
+  return jsonArray(design.styles).flatMap((raw) => {
+    const e = jsonObject(raw);
+    const fuer = jsonArray(e.fuer).filter((f): f is StyleEntry["fuer"][number] => f === "heading" || f === "text" || f === "link");
+    const id = jsonString(e.id), label = jsonString(e.label), klasse = jsonString(e.class);
+    return id && klasse && fuer.length > 0 ? [{ id, label: label ?? id, class: klasse, fuer }] : [];
+  });
 }

@@ -9,8 +9,9 @@ import type { JsonValue, RequestContext } from "@comvenio/connector-contracts";
 import type { ComvenioApiRequest } from "@comvenio/comvenio-client";
 import { describe, expect, test } from "bun:test";
 
-import { convertLiveTabs, type BulkTab } from "../src/tools/content-homepage-news-data/convert.ts";
+import { convertLiveTabs, stilKatalog, type BulkTab } from "../src/tools/content-homepage-news-data/convert.ts";
 import { K12_ACTION_DEFINITIONS } from "../src/tools/content-homepage-news-data/definitions.ts";
+import { K12_ACTION_SCHEMAS } from "../src/tools/content-homepage-news-data/schemas.ts";
 import { createK12ToolSets } from "../src/tools/content-homepage-news-data/tool-sets.ts";
 
 function tab(slug: string, html: string, slots: Record<string, JsonValue> = {}): JsonValue {
@@ -86,6 +87,37 @@ describe("cai.homepage.05.convert — Algorithmus (comvenio-cli-doku 06 §4.3)",
     expect(hinweise.some((h) => h.includes('"kontakt"') && h.includes("kein Gerüst"))).toBe(true);
     expect(bericht.umgewandelt).toBe(0);
   });
+
+  test("Befund R1-1: das Ergebnis passt in das strikte Eingabeschema von cai.homepage.02.apply", () => {
+    const html = '<section aria-label="Start"><div data-widget-slot="news" data-widget-config=\'{"limit":3}\'></div></section>';
+    const live: JsonValue = [{ ...(tab("start", html) as Record<string, JsonValue>), sections: [{ layout: "full", style_variant: "default", sort_order: 0, is_visible: true, spalten_breiten: [1, 2], widgets: [{ kind: "custom_html", title: null, config: { html, slots: {} }, slot_index: 0 }] }] }];
+    const { tabs, hinweise } = convertLiveTabs(live);
+    expect("spalten_breiten" in (tabs[0] as BulkTab).sections[0]!).toBe(false);
+    const parsed = K12_ACTION_SCHEMAS["cai.homepage.02.apply"].input.safeParse({ club_id: "33333333-3333-4333-8333-333333333333", tabs: JSON.parse(JSON.stringify(tabs)), clear_existing: true });
+    expect(parsed.success).toBe(true);
+    expect(hinweise.some((h) => h.includes("clear_existing: true"))).toBe(true);
+  });
+
+  test("Befund R1-1b: cai.homepage.02.apply nimmt benannte Slots an und lehnt aktive Inhalte darin ab", () => {
+    const apply = K12_ACTION_SCHEMAS["cai.homepage.02.apply"].input;
+    const mit = (slots: Record<string, JsonValue>) => ({ club_id: "33333333-3333-4333-8333-333333333333", clear_existing: true, tabs: [{ label: "Start", slug: "start", position: 0, visibility_scope: "public", sections: [{ widgets: [{ kind: "custom_html", config: { html: '<section aria-label="Start"><h2 data-slot="titel"></h2></section>', slots } }] }] }] });
+    expect(apply.safeParse(mit({ titel: { kind: "heading", config: { text: "Willkommen" } } })).success).toBe(true);
+    expect(apply.safeParse(mit({ titel: { kind: "text", config: { html: "<script>alert(1)</script>" } } })).success).toBe(false);
+  });
+
+  test("Befund R1-7: eine leere Live-Seite liefert einen Hinweis statt eines stummen leeren Ergebnisses", () => {
+    const { tabs, hinweise } = convertLiveTabs([]);
+    expect(tabs).toEqual([]);
+    expect(hinweise.some((h) => h.includes("keine Reiter"))).toBe(true);
+  });
+
+  test("Befund R1-2: Katalogklassen aus design_settings.styles werden verschoben", () => {
+    const styles = stilKatalog({ design_settings: { styles: [{ id: "gross", label: "Groß", class: "titel-gross", fuer: ["heading"] }, { id: "kaputt", fuer: [] }] } });
+    expect(styles.map((s) => s.id)).toEqual(["gross"]);
+    const html = '<section aria-label="Start"><h2 class="titel-gross">Willkommen</h2></section>';
+    expect(convertLiveTabs([tab("start", html)], { styles }).bericht.katalogklassen_verschoben).toBeGreaterThan(0);
+    expect(convertLiveTabs([tab("start", html)]).bericht.katalogklassen_verschoben).toBe(0);
+  });
 });
 
 describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
@@ -134,7 +166,8 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
     const homepage = createK12ToolSets({
       client: adapterClient(async (request) => {
         calls.push(request);
-        return [tab("start", html)];
+        if (request.path.endsWith("/settings")) return { club_id: clubId, design_settings: { styles: [{ id: "gross", label: "Groß", class: "titel-gross", fuer: ["heading"] }] } };
+        return [tab("start", '<section aria-label="Start"><h2 class="titel-gross">Willkommen</h2></section>' + html)];
       }),
     }).homepage;
 
@@ -145,17 +178,16 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
       capability_snapshot: capabilitySnapshot,
     });
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]!.method).toBe("GET");
-    expect(calls[0]!.path).toBe(`/home-config/${clubId}/tabs`);
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([`GET /home-config/${clubId}/tabs`, `GET /clubs/${clubId}/settings`]);
     expect(result.status).toBe("completed");
-    const value = result.result as { tabs: JsonValue[]; bericht: { umgewandelt: number }; hinweise: string[] };
+    const value = result.result as { tabs: JsonValue[]; bericht: { umgewandelt: number; katalogklassen_verschoben: number }; hinweise: string[] };
     expect(value.bericht.umgewandelt).toBeGreaterThan(0);
+    expect(value.bericht.katalogklassen_verschoben).toBeGreaterThan(0);
     expect(Array.isArray(value.tabs)).toBe(true);
     expect(Array.isArray(value.hinweise)).toBe(true);
   });
 
-  test("nichts wird geschrieben: der Fake-Client sieht nur den einen GET-Aufruf", async () => {
+  test("nichts wird geschrieben: der Fake-Client sieht nur GET-Aufrufe", async () => {
     let writes = 0;
     const homepage = createK12ToolSets({
       client: adapterClient(async (request) => {

@@ -2,7 +2,7 @@ import type { ComvenioApiClient, ComvenioHttpMethod } from "@comvenio/comvenio-c
 import { createConnectorError, type JsonValue, type RequestContext } from "@comvenio/connector-contracts";
 
 import { PublicResponseRedactor } from "../../public/redaction.ts";
-import { convertLiveTabs } from "./convert.ts";
+import { convertLiveTabs, stilKatalog } from "./convert.ts";
 import { boundedContentList, minimizeFile, minimizeNews, minimizePaper, redactContentValue } from "./privacy.ts";
 import { listK12Schemas, showK12Schema, type K12SchemaDomain } from "./schema-registry.ts";
 import type { K12ActionId } from "./types.ts";
@@ -43,7 +43,13 @@ simple("cai.homepage.03.show", "private", "GET", "club", (input) => `/home-confi
 add("cai.homepage.03.show", "public", async (input, context, client) => new PublicResponseRedactor().redact({ alias: "public_club_home", response: await request(client, context, "GET", "club", `/public/clubs/${string(input, "club_id")}/home`), request_id: context.request_id, expected_club_id: string(input, "club_id") }));
 add("cai.homepage.05.convert", "convert", async (input, context, client) => {
   const live = assertClub(await request(client, context, "GET", "club", `/home-config/${string(input, "club_id")}/tabs`), input, context);
-  const { tabs, bericht, hinweise } = convertLiveTabs(live);
+  // The style catalog moves matching classes into slot styles (comvenio-cli-doku 06 §4.3); without it the conversion still works.
+  let styles: ReturnType<typeof stilKatalog> = [];
+  let katalogHinweis: string | null = null;
+  try { styles = stilKatalog(await request(client, context, "GET", "club", `/clubs/${string(input, "club_id")}/settings`)); }
+  catch { katalogHinweis = "Stilkatalog (design_settings.styles) nicht lesbar — Katalogklassen wurden nicht verschoben."; }
+  const { tabs, bericht, hinweise } = convertLiveTabs(live, { styles });
+  if (katalogHinweis) hinweise.unshift(katalogHinweis);
   return JSON.parse(JSON.stringify({ tabs, bericht, hinweise })) as JsonValue;
 });
 
