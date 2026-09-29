@@ -67,7 +67,15 @@ export type StoredComvenioCliState = {
    * zwei Dingen gehört. Fremdvalidierung zur neuen Form (2026-09-21),
    * Befund 1.
    */
-  device?: { token: string; clubId?: string; userId?: string; userEmail?: string };
+  device?: {
+    token: string; clubId?: string; userId?: string; userEmail?: string;
+    /**
+     * End of the device-token deadline as read from the user-service, kept
+     * for one day so the warning line (05-token-ausgabe-und-frist §4.6) does
+     * not cost a request per call. Not a secret.
+     */
+    sunsetAt?: string; sunsetCheckedAt?: string;
+  };
   /** Die OAuth-Metadaten; die Tokens selbst liegen im Credential-Store. */
   connector?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
 };
@@ -116,6 +124,12 @@ export class LoginOptionError extends AuthError {
 
 function text(wert: unknown): string | undefined {
   return typeof wert === "string" && wert.length > 0 ? wert : undefined;
+}
+
+/** A parseable timestamp, or nothing: the sunset cache never carries free text. */
+function isoZeit(wert: unknown): string | undefined {
+  const t = text(wert);
+  return t && t.length <= 40 && !Number.isNaN(Date.parse(t)) ? t : undefined;
 }
 
 function leseConnector(roh: unknown): StoredComvenioCliState["connector"] {
@@ -169,6 +183,8 @@ function parseStoredState(): StoredComvenioCliState {
         ...(text(geraeteBlock?.clubId ?? parsed.clubId) ? { clubId: text(geraeteBlock?.clubId ?? parsed.clubId) } : {}),
         ...(text(geraeteBlock?.userId ?? parsed.userId) ? { userId: text(geraeteBlock?.userId ?? parsed.userId) } : {}),
         ...(text(geraeteBlock?.userEmail ?? parsed.userEmail) ? { userEmail: text(geraeteBlock?.userEmail ?? parsed.userEmail) } : {}),
+        ...(isoZeit(geraeteBlock?.sunsetAt) ? { sunsetAt: isoZeit(geraeteBlock?.sunsetAt) } : {}),
+        ...(isoZeit(geraeteBlock?.sunsetCheckedAt) ? { sunsetCheckedAt: isoZeit(geraeteBlock?.sunsetCheckedAt) } : {}),
       }
     : undefined;
 
@@ -469,12 +485,18 @@ function schreibeZustand(state: StoredComvenioCliState): void {
     throw new AuthError("Gateway und Umgebung dürfen nicht leer sein.");
   }
   if (state.device) {
-    const erlaubt = new Set(["token", "clubId", "userId", "userEmail"]);
+    const erlaubt = new Set(["token", "clubId", "userId", "userEmail", "sunsetAt", "sunsetCheckedAt"]);
     for (const name of Object.keys(state.device)) {
       if (!erlaubt.has(name)) throw new AuthError(`Unbekanntes Feld „device.${name}“.`);
     }
     if (typeof state.device.token !== "string" || !state.device.token.startsWith("cvn_")) {
       throw new AuthError("Im Feld „device.token“ steht kein Geräte-Token.");
+    }
+    for (const name of ["sunsetAt", "sunsetCheckedAt"] as const) {
+      const wert = state.device[name];
+      if (wert !== undefined && isoZeit(wert) !== wert) {
+        throw new AuthError(`Das Feld „device.${name}“ ist kein Zeitpunkt.`);
+      }
     }
   }
   if (state.connector) {
@@ -547,6 +569,16 @@ export function writeDeviceLogin(input: {
     ...(connector ? { connector } : {}),
   });
   return { connectorBleibt: Boolean(connector) };
+}
+
+/**
+ * Remembers the device-token deadline next to the token (§4.6) and leaves
+ * everything else as it is. Without a stored device token it does nothing.
+ */
+export function rememberDeviceSunset(sunsetAt: string, checkedAt: string): void {
+  const alt = bestehenderStand();
+  if (!alt?.device) return;
+  schreibeZustand({ ...alt, device: { ...alt.device, sunsetAt, sunsetCheckedAt: checkedAt } });
 }
 
 /**

@@ -27,6 +27,7 @@ import {
 import { CliConnectorClient } from "./mcp/client.ts";
 import { exitCodeFor, formatCliError, resolveCliLang, toPublicError } from "./errors.ts";
 import { createClient } from "./http.ts";
+import { warnDeviceTokenSunset } from "./device-sunset.ts";
 import { registerWhoamiCommand } from "./commands/whoami.ts";
 import { registerClubCommands } from "./commands/club.ts";
 import { registerMemberCommands } from "./commands/member.ts";
@@ -392,6 +393,9 @@ async function main() {
     // Removed commands are not registered; name the web app instead of exiting silently.
     const removed = cli.matchedCommand ? null : removedTopLevelCommand(cli.args);
     if (removed) throw removedCommandError(removed);
+    // Device tokens run out (05-token-ausgabe-und-frist §4.6): one line on
+    // stderr per call, before the command, so --json output stays clean.
+    await warnDeviceTokenSunset(cli.matchedCommand?.name, resolveCliLang(process.argv.slice(2), process.env));
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.
