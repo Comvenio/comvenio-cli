@@ -162,7 +162,12 @@ export class HttpIntrospectionPort implements IntrospectionPort {
       throw new Error(`Introspection fehlgeschlagen (${response.status}).`);
     }
     const result = await jsonResponse(response);
-    this.#cache.put(input.raw_token, result, this.#now());
+    // A machine-grant answer carries `client_kind` and a `cvg_client_…` id,
+    // which the shared cache validator rejects. Such tokens are introspected
+    // fresh on every call instead; the authenticator checks the answer.
+    const machineAnswer = result !== null && typeof result === "object" && !Array.isArray(result)
+      && Object.hasOwn(result, "client_kind");
+    if (!machineAnswer) this.#cache.put(input.raw_token, result, this.#now());
     return result;
   }
 }

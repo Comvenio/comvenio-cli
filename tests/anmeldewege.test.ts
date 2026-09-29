@@ -11,7 +11,7 @@
 // jeder Schreibweg fasst nur seinen eigenen an. Diese Datei hält beides fest:
 // die Unabhängigkeit und die Token-Grenze in BEIDE Richtungen.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -505,5 +505,34 @@ describe("stateHome", () => {
     expect(stateHome({ HOME: "/h", USERPROFILE: "C:\\u" })).toBe("/h");
     expect(stateHome({ USERPROFILE: "C:\\u" })).toBe("C:\\u");
     expect(stateHome({})).toBe(homedir());
+  });
+});
+
+// Review round 1, finding 5: the sunset cache rewrites the state file on an
+// ordinary call. A failed write must leave the sign-in as it was.
+describe("Zustandsdatei wird atomar geschrieben", () => {
+  const z = mitEigenemHeim("atomar");
+  const modul = (marke: string) => import(`../src/auth.ts?${marke}=${encodeURIComponent(z.heim)}`);
+
+  test("rememberDeviceSunset hält das Fristende am Geräte-Block", async () => {
+    const { rememberDeviceSunset } = await modul("s1");
+    schreibe(z.heim, { schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod", device: { token: GERAETE_TOKEN } });
+
+    rememberDeviceSunset("2026-10-29T00:00:00Z", "2026-10-10T12:00:00.000Z");
+
+    const danach = lies(z.heim);
+    expect(danach.device).toEqual({ token: GERAETE_TOKEN, sunsetAt: "2026-10-29T00:00:00Z", sunsetCheckedAt: "2026-10-10T12:00:00.000Z" });
+  });
+
+  test("ein gescheitertes Schreiben lässt die Anmeldung unversehrt", async () => {
+    const { rememberDeviceSunset } = await modul("s2");
+    const vorher = { schemaVersion: 3, gatewayBaseUrl: GATEWAY, environment: "prod", device: { token: GERAETE_TOKEN } };
+    schreibe(z.heim, vorher);
+    // A directory where the temporary file would go makes the write fail.
+    mkdirSync(`${pfadIn(z.heim)}.${process.pid}.tmp`);
+
+    expect(() => rememberDeviceSunset("2026-10-29T00:00:00Z", "2026-10-10T12:00:00.000Z")).toThrow();
+
+    expect(lies(z.heim)).toEqual(vorher);
   });
 });

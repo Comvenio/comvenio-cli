@@ -12,6 +12,7 @@ import {
   STATE_FILE,
   writeConnectorLogin,
   writeDeviceLogin,
+  MACHINE_CLIENT_ID_ENV,
 } from "./auth.ts";
 import {
   clearOAuthCredentials,
@@ -26,6 +27,7 @@ import {
 import { CliConnectorClient } from "./mcp/client.ts";
 import { exitCodeFor, formatCliError, resolveCliLang, toPublicError } from "./errors.ts";
 import { createClient } from "./http.ts";
+import { warnDeviceTokenSunset } from "./device-sunset.ts";
 import { registerWhoamiCommand } from "./commands/whoami.ts";
 import { registerClubCommands } from "./commands/club.ts";
 import { registerMemberCommands } from "./commands/member.ts";
@@ -391,6 +393,9 @@ async function main() {
     // Removed commands are not registered; name the web app instead of exiting silently.
     const removed = cli.matchedCommand ? null : removedTopLevelCommand(cli.args);
     if (removed) throw removedCommandError(removed);
+    // Device tokens run out (05-token-ausgabe-und-frist §4.6): one line on
+    // stderr per call, before the command, so --json output stays clean.
+    await warnDeviceTokenSunset(cli.matchedCommand?.name, resolveCliLang(process.argv.slice(2), process.env));
     await cli.runMatchedCommand();
   } catch (err) {
     // Errors always go to stderr so --json remains machine-readable.
@@ -404,6 +409,7 @@ async function main() {
     const rendered = toPublicError(err, {
       lang: resolveCliLang(argv, process.env),
       granted_scopes: grantedScopes,
+      machine_grant: Boolean(process.env[MACHINE_CLIENT_ID_ENV]),
     });
     if (process.env.COMVENIO_DEBUG === "1" && err instanceof Error && err.stack) console.error(err.stack);
     console.error(argv.includes("--json")

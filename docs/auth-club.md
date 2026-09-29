@@ -2,7 +2,7 @@
 id: auth-club
 kategorie: thema
 domaenen: [login, logout, whoami, action, club]
-stichwoerter: [login, anmeldung, verein, club, scopes, rechte]
+stichwoerter: [login, anmeldung, verein, club, scopes, rechte, maschinen-grant, automation, ci]
 ---
 
 # Anmeldung und Vereinskontext
@@ -81,6 +81,42 @@ Optionen:
 
 Die Datei `~/.comvenio-cli-state.json` darf grundsätzlich nie eingecheckt,
 protokolliert oder in einer Antwort ausgegeben werden.
+
+### Ohne Browser anmelden (Maschinen-Grant)
+
+Skripte, CI-Läufe und Server melden sich nicht über den Browser an, sondern
+mit einem Maschinen-Grant des Vereins. Ein Vereinsadmin mit dem Recht,
+Vereinseinstellungen zu verwalten, legt ihn in der Web-App unter
+Vereinseinstellungen → „Automation“ an: Name, wenige Scopes und ein Ablauf
+von 30, 90 oder 365 Tagen. Client-ID (`cvg_client_…`) und Secret (`cvgs_…`)
+werden genau einmal angezeigt.
+
+```bash
+export COMVENIO_CLIENT_ID=cvg_client_…
+export COMVENIO_CLIENT_SECRET=cvgs_…
+comvenio whoami --json
+comvenio action list --json
+```
+
+Sind beide Variablen gesetzt, holen `whoami` und `action list|call|confirm`
+damit einen kurzlebigen Zugang und halten ihn nur im Speicher; es wird nichts
+in die Datei `~/.comvenio-cli-state.json` oder den Zugangsdatenspeicher
+geschrieben, und die Variablen haben Vorrang vor einer gespeicherten
+Anmeldung. Das Secret wird nie als Argument angenommen, weil es sonst in der
+Shell-Historie stünde; im CI gehört es in die geschützten Geheimnisse des
+Laufs. Ein Grant für die Testumgebung braucht zusätzlich
+`COMVENIO_ENV=dev` (ohne Angabe gilt `prod`).
+
+Der Grant handelt mit den Rechten der Person, die ihn angelegt hat, und nie
+mit mehr als seinen Scopes; verliert sie Rechte, verliert der Grant sie mit.
+`admin.write`, `role.write`, `connector.grants` und `member.read.details`
+sind für Maschinen-Grants gesperrt. Kritische Actions verlangen auch hier den
+zweiten Schritt `action confirm`. Die übrigen Befehle ohne Action laufen mit
+einem Maschinen-Grant nicht.
+
+Ist ein Grant widerrufen oder abgelaufen oder wurde sein Secret erneuert,
+meldet die CLI `AUTH_REQUIRED`; fehlt eine der beiden Variablen, nennt die
+Meldung sie.
 
 ### Mit Actions arbeiten
 
@@ -298,6 +334,9 @@ comvenio action call cai.club.08.department_add \
 ## Fehler
 
 - `AUTH_REQUIRED` — die Anmeldung ist abgelaufen, wurde widerrufen oder fehlt.
+  Beim Maschinen-Grant: eine der Variablen `COMVENIO_CLIENT_ID` oder
+  `COMVENIO_CLIENT_SECRET` fehlt (die Meldung nennt sie), oder der Grant ist
+  widerrufen, abgelaufen oder hat ein neues Secret.
   `comvenio help fehler AUTH_REQUIRED`.
 - `SCOPE_REQUIRED` — der angeforderten Anmeldung fehlt der Scope für diese
   Aktion; der nächste Befehl zeigt die passende erneute Anmeldung.

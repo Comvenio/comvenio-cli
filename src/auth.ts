@@ -1,4 +1,5 @@
-import { chmodSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { chmodSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -9,8 +10,13 @@ import {
   type OAuthCredentials,
 } from "./oauth/credential-store.ts";
 import {
+  fetchMachineAccessToken,
+  MACHINE_CLIENT_ID_PREFIX,
+  MACHINE_CLIENT_SECRET_PREFIX,
   oauthRuntime,
   refreshOAuthCredentials,
+  type MachineAccessToken,
+  type MachineGrantCredentials,
   type OAuthRuntime,
 } from "./oauth/client.ts";
 import { profileSuffix } from "./profile.ts";
@@ -61,7 +67,15 @@ export type StoredComvenioCliState = {
    * zwei Dingen gehört. Fremdvalidierung zur neuen Form (2026-09-21),
    * Befund 1.
    */
-  device?: { token: string; clubId?: string; userId?: string; userEmail?: string };
+  device?: {
+    token: string; clubId?: string; userId?: string; userEmail?: string;
+    /**
+     * End of the device-token deadline as read from the user-service, kept
+     * for one day so the warning line (05-token-ausgabe-und-frist §4.6) does
+     * not cost a request per call. Not a secret.
+     */
+    sunsetAt?: string; sunsetCheckedAt?: string;
+  };
   /** Die OAuth-Metadaten; die Tokens selbst liegen im Credential-Store. */
   connector?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
 };
@@ -84,6 +98,13 @@ export type ComvenioCliState = {
   /** Für Aufrufer, die den alten Namen lesen. */
   authMode: "device_token" | "oauth";
   oauth?: { clientId: string; resource: string; scopes: string[]; clubId?: string };
+  /**
+   * Signed in with a machine grant from COMVENIO_CLIENT_ID and
+   * COMVENIO_CLIENT_SECRET (03-maschinen-grant §4.5): the token lives only in
+   * this process, nothing is read from or written to the state file or the
+   * credential store.
+   */
+  machineGrant?: true;
 };
 
 export class AuthError extends Error {
@@ -103,6 +124,12 @@ export class LoginOptionError extends AuthError {
 
 function text(wert: unknown): string | undefined {
   return typeof wert === "string" && wert.length > 0 ? wert : undefined;
+}
+
+/** A parseable timestamp, or nothing: the sunset cache never carries free text. */
+function isoZeit(wert: unknown): string | undefined {
+  const t = text(wert);
+  return t && t.length <= 40 && !Number.isNaN(Date.parse(t)) ? t : undefined;
 }
 
 function leseConnector(roh: unknown): StoredComvenioCliState["connector"] {
@@ -156,6 +183,8 @@ function parseStoredState(): StoredComvenioCliState {
         ...(text(geraeteBlock?.clubId ?? parsed.clubId) ? { clubId: text(geraeteBlock?.clubId ?? parsed.clubId) } : {}),
         ...(text(geraeteBlock?.userId ?? parsed.userId) ? { userId: text(geraeteBlock?.userId ?? parsed.userId) } : {}),
         ...(text(geraeteBlock?.userEmail ?? parsed.userEmail) ? { userEmail: text(geraeteBlock?.userEmail ?? parsed.userEmail) } : {}),
+        ...(isoZeit(geraeteBlock?.sunsetAt) ? { sunsetAt: isoZeit(geraeteBlock?.sunsetAt) } : {}),
+        ...(isoZeit(geraeteBlock?.sunsetCheckedAt) ? { sunsetCheckedAt: isoZeit(geraeteBlock?.sunsetCheckedAt) } : {}),
       }
     : undefined;
 
@@ -266,6 +295,118 @@ async function resolveOAuthCredentials(
   }
 }
 
+export const MACHINE_CLIENT_ID_ENV = "COMVENIO_CLIENT_ID";
+export const MACHINE_CLIENT_SECRET_ENV = "COMVENIO_CLIENT_SECRET";
+/** Optional: which Comvenio environment the machine grant belongs to (prod | dev). */
+export const MACHINE_ENVIRONMENT_ENV = "COMVENIO_ENV";
+
+// Only public HTTPS gateways; a machine grant is issued by the web app of
+// exactly one environment. Same addresses as `comvenio login --env`.
+const MACHINE_GATEWAY_BY_ENV: Record<string, string> = {
+  prod: "https://api.comvenio.app",
+  dev: "https://apidev.comvenio.app",
+};
+
+export type MachineGrantEnvironment = MachineGrantCredentials & {
+  environment: string;
+  gatewayBaseUrl: string;
+};
+
+/**
+ * Reads the machine grant from the environment (03-maschinen-grant §4.5, B3).
+ *
+ * There is deliberately no command-line option for the secret: an argument
+ * ends up in the shell history and in process listings. Returns null when
+ * neither variable is set; one of the two alone is an incomplete sign-in and
+ * names the missing variable (DC-3: AUTH_REQUIRED).
+ */
+export function machineGrantFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): MachineGrantEnvironment | null {
+  const clientId = env[MACHINE_CLIENT_ID_ENV];
+  const clientSecret = env[MACHINE_CLIENT_SECRET_ENV];
+  if (!clientId && !clientSecret) return null;
+  if (!clientId) {
+    throw new AuthError(
+      `${MACHINE_CLIENT_ID_ENV} fehlt: Für die Anmeldung mit einem Maschinen-Grant müssen `
+      + `${MACHINE_CLIENT_ID_ENV} und ${MACHINE_CLIENT_SECRET_ENV} gesetzt sein.`,
+    );
+  }
+  if (!clientSecret) {
+    throw new AuthError(
+      `${MACHINE_CLIENT_SECRET_ENV} fehlt: Für die Anmeldung mit einem Maschinen-Grant müssen `
+      + `${MACHINE_CLIENT_ID_ENV} und ${MACHINE_CLIENT_SECRET_ENV} gesetzt sein.`,
+    );
+  }
+  // Checked before anything goes over the wire. The error names the
+  // variable, never its value.
+  if (!clientId.startsWith(MACHINE_CLIENT_ID_PREFIX) || !/^[\x21-\x7e]+$/u.test(clientId)) {
+    throw new AuthError(
+      `${MACHINE_CLIENT_ID_ENV} ist keine Client-ID eines Maschinen-Grants (erwartet: ${MACHINE_CLIENT_ID_PREFIX}…).`,
+    );
+  }
+  if (!clientSecret.startsWith(MACHINE_CLIENT_SECRET_PREFIX) || !/^[\x21-\x7e]+$/u.test(clientSecret)) {
+    throw new AuthError(
+      `${MACHINE_CLIENT_SECRET_ENV} ist kein Secret eines Maschinen-Grants (erwartet: ${MACHINE_CLIENT_SECRET_PREFIX}…).`,
+    );
+  }
+  const environment = env[MACHINE_ENVIRONMENT_ENV] || "prod";
+  const gatewayBaseUrl = MACHINE_GATEWAY_BY_ENV[environment];
+  if (!gatewayBaseUrl) {
+    throw new LoginOptionError(`${MACHINE_ENVIRONMENT_ENV} muss "prod" oder "dev" sein.`);
+  }
+  return { clientId, clientSecret, environment, gatewayBaseUrl };
+}
+
+// The machine access token of this process. Keyed by a hash of grant and
+// gateway so a changed secret never reuses a token issued for the old one.
+let machineTokenCache: { key: string; token: MachineAccessToken } | null = null;
+
+function machineCacheKey(machine: MachineGrantEnvironment): string {
+  return createHash("sha256")
+    .update(`${machine.gatewayBaseUrl}\n${machine.clientId}\n${machine.clientSecret}`, "utf8")
+    .digest("hex");
+}
+
+/** Only for tests: forget the in-memory machine token. */
+export function resetMachineTokenCache(): void {
+  machineTokenCache = null;
+}
+
+async function loadMachineState(machine: MachineGrantEnvironment): Promise<ComvenioCliState> {
+  const runtime = oauthRuntime(machine.gatewayBaseUrl);
+  const key = machineCacheKey(machine);
+  let token = machineTokenCache?.key === key ? machineTokenCache.token : null;
+  if (!token || token.accessExpiresAt <= Date.now() + EXPIRY_SKEW_MS) {
+    try {
+      token = await fetchMachineAccessToken(runtime, machine);
+    } catch (error) {
+      machineTokenCache = null;
+      // invalid_client covers unknown client, wrong or rotated secret,
+      // revoked and expired grant alike (DC-3) — the hint names all of them.
+      throw new AuthError(
+        `Die Anmeldung mit ${MACHINE_CLIENT_ID_ENV} und ${MACHINE_CLIENT_SECRET_ENV} ist fehlgeschlagen `
+        + `(${(error as Error).message}). Der Maschinen-Grant ist unbekannt, widerrufen oder abgelaufen, `
+        + "oder das Secret wurde erneuert. Prüfe ihn in den Vereinseinstellungen unter „Automation“.",
+      );
+    }
+    machineTokenCache = { key, token };
+  }
+  return {
+    schemaVersion: 3,
+    gatewayBaseUrl: runtime.gatewayBaseUrl,
+    environment: machine.environment,
+    // The classic commands reject this token (no device token): a machine
+    // grant only works through `comvenio action` and `whoami`.
+    token: token.accessToken,
+    connectorToken: token.accessToken,
+    hasDeviceToken: false,
+    authMode: "oauth",
+    oauth: { clientId: machine.clientId, resource: runtime.resource, scopes: [...token.scopes] },
+    machineGrant: true,
+  };
+}
+
 /**
  * Der Zustand für den aufrufenden Befehl.
  *
@@ -276,6 +417,11 @@ async function resolveOAuthCredentials(
  * Geräte-Token zu behalten.
  */
 export async function loadState(): Promise<ComvenioCliState> {
+  // A machine grant in the environment wins over a stored sign-in: a script
+  // or CI job that sets both variables means exactly this grant, never the
+  // person who happens to be signed in on the machine.
+  const machine = machineGrantFromEnv();
+  if (machine) return loadMachineState(machine);
   const state = parseStoredState();
   const deviceToken = state.device?.token ?? null;
   // Die Identitaet gehoert zu dem Weg, der gleich benutzt wird. `token`
@@ -339,12 +485,18 @@ function schreibeZustand(state: StoredComvenioCliState): void {
     throw new AuthError("Gateway und Umgebung dürfen nicht leer sein.");
   }
   if (state.device) {
-    const erlaubt = new Set(["token", "clubId", "userId", "userEmail"]);
+    const erlaubt = new Set(["token", "clubId", "userId", "userEmail", "sunsetAt", "sunsetCheckedAt"]);
     for (const name of Object.keys(state.device)) {
       if (!erlaubt.has(name)) throw new AuthError(`Unbekanntes Feld „device.${name}“.`);
     }
     if (typeof state.device.token !== "string" || !state.device.token.startsWith("cvn_")) {
       throw new AuthError("Im Feld „device.token“ steht kein Geräte-Token.");
+    }
+    for (const name of ["sunsetAt", "sunsetCheckedAt"] as const) {
+      const wert = state.device[name];
+      if (wert !== undefined && isoZeit(wert) !== wert) {
+        throw new AuthError(`Das Feld „device.${name}“ ist kein Zeitpunkt.`);
+      }
     }
   }
   if (state.connector) {
@@ -365,8 +517,17 @@ function schreibeZustand(state: StoredComvenioCliState): void {
   if (/cvn_/u.test(encoded)) {
     throw new AuthError("Ein Geräte-Token darf nur in „device.token“ stehen.");
   }
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { encoding: "utf8", mode: 0o600 });
-  if (process.platform !== "win32") chmodSync(STATE_FILE, 0o600);
+  // Write next to the file and rename: a failed write (full disk, crash)
+  // leaves the previous sign-in intact instead of a truncated file.
+  const temp = `${STATE_FILE}.${process.pid}.tmp`;
+  try {
+    writeFileSync(temp, JSON.stringify(state, null, 2), { encoding: "utf8", mode: 0o600 });
+    if (process.platform !== "win32") chmodSync(temp, 0o600);
+    renameSync(temp, STATE_FILE);
+  } catch (error) {
+    rmSync(temp, { force: true });
+    throw error;
+  }
 }
 
 /** Der gespeicherte Stand, ohne zu werfen — für die beiden Schreibwege. */
@@ -417,6 +578,16 @@ export function writeDeviceLogin(input: {
     ...(connector ? { connector } : {}),
   });
   return { connectorBleibt: Boolean(connector) };
+}
+
+/**
+ * Remembers the device-token deadline next to the token (§4.6) and leaves
+ * everything else as it is. Without a stored device token it does nothing.
+ */
+export function rememberDeviceSunset(sunsetAt: string, checkedAt: string): void {
+  const alt = bestehenderStand();
+  if (!alt?.device) return;
+  schreibeZustand({ ...alt, device: { ...alt.device, sunsetAt, sunsetCheckedAt: checkedAt } });
 }
 
 /**

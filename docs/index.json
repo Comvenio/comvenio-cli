@@ -46,14 +46,20 @@
           "verein",
           "club",
           "scopes",
-          "rechte"
+          "rechte",
+          "maschinen-grant",
+          "automation",
+          "ci"
         ],
         "en": [
           "login",
           "sign-in",
           "club",
           "scopes",
-          "permissions"
+          "permissions",
+          "machine-grant",
+          "automation",
+          "ci"
         ]
       },
       "domaenen": [

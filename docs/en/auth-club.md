@@ -2,7 +2,7 @@
 id: auth-club
 kategorie: thema
 domaenen: [login, logout, whoami, action, club]
-stichwoerter: [login, sign-in, club, scopes, permissions]
+stichwoerter: [login, sign-in, club, scopes, permissions, machine-grant, automation, ci]
 ---
 
 # Sign-in and club context
@@ -80,6 +80,40 @@ Options:
 
 The file `~/.comvenio-cli-state.json` must, as a matter of principle, never
 be committed, logged or printed in a response.
+
+### Signing in without a browser (machine grant)
+
+Scripts, CI runs and servers do not sign in through the browser but with a
+machine grant of the club. A club admin with the permission to manage club
+settings creates it in the web app under club settings → "Automation": a
+name, a few scopes and an expiry of 30, 90 or 365 days. Client id
+(`cvg_client_…`) and secret (`cvgs_…`) are shown exactly once.
+
+```bash
+export COMVENIO_CLIENT_ID=cvg_client_…
+export COMVENIO_CLIENT_SECRET=cvgs_…
+comvenio whoami --json
+comvenio action list --json
+```
+
+When both variables are set, `whoami` and `action list|call|confirm` use them
+to get short-lived access and keep it in memory only; nothing is written to
+the file `~/.comvenio-cli-state.json` or to the credential store, and the
+variables take precedence over a stored sign-in. The secret is never accepted
+as an argument, because it would end up in the shell history; in CI it
+belongs in the protected secrets of the run. A grant for the test
+environment additionally needs `COMVENIO_ENV=dev` (default: `prod`).
+
+The grant acts with the rights of the person who created it and never with
+more than its scopes; if that person loses rights, the grant loses them too.
+`admin.write`, `role.write`, `connector.grants` and `member.read.details` are
+blocked for machine grants. Critical actions still require the second step
+`action confirm`. The other commands without an action do not run with a
+machine grant.
+
+If a grant has been revoked or has expired, or its secret was renewed, the
+CLI reports `AUTH_REQUIRED`; if one of the two variables is missing, the
+message names it.
 
 ### Working with actions
 
@@ -291,6 +325,9 @@ comvenio action call cai.club.08.department_add \
 ## Errors
 
 - `AUTH_REQUIRED` — the sign-in has expired, was revoked, or is missing.
+  With a machine grant: one of the variables `COMVENIO_CLIENT_ID` or
+  `COMVENIO_CLIENT_SECRET` is missing (the message names it), or the grant
+  was revoked, has expired or has a new secret.
   `comvenio help fehler AUTH_REQUIRED`.
 - `SCOPE_REQUIRED` — the requested sign-in is missing the scope for this
   action; the next command shows the matching sign-in to repeat.

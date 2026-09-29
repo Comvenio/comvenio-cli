@@ -500,6 +500,8 @@ export function createMcpDeploymentCandidate(
       registrations,
       actor_tokens: actorTokens,
       audience: config.cli_oauth_resource,
+      // Machine grants (client credentials per club) sign in here only.
+      accept_machine_clients: true,
     }),
     cli_resource: config.cli_oauth_resource,
     provider_resolver: new ExactProviderHintResolver(),

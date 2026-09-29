@@ -5,6 +5,7 @@ import {
 } from "@comvenio/auth";
 import {
   OAUTH_SCOPE_VALUES,
+  isMachineGrantScope,
   type OAuthScope,
 } from "@comvenio/connector-contracts";
 
@@ -18,6 +19,38 @@ import type {
 } from "./types.ts";
 
 const KNOWN_SCOPES = new Set<string>(OAUTH_SCOPE_VALUES);
+
+// Client id of a machine grant (03-maschinen-grant §4.4, DC-5).
+const MACHINE_CLIENT_ID = /^cvg_client_[A-Za-z0-9_-]{1,128}$/u;
+// The shared introspection validator pins provider and CLI clients to HTTPS
+// ids. A machine client id is checked here; the rest of the answer goes
+// through the same validator with this stand-in, so no field is checked less.
+const MACHINE_CLIENT_STAND_IN = "https://machine-grant.invalid/";
+
+/**
+ * Separates the machine marker from an introspection answer.
+ *
+ * An active introspection of a machine token carries the usual fields plus
+ * `client_kind: "machine"`, with the grant's `cvg_client_…` id as
+ * `client_id`. Every other answer passes through unchanged.
+ */
+export function splitMachineIntrospection(raw: unknown): {
+  result: unknown;
+  machine_client_id: `cvg_client_${string}` | null;
+} {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)
+    || !Object.hasOwn(raw, "client_kind")) {
+    return { result: raw, machine_client_id: null };
+  }
+  const { client_kind: clientKind, client_id: clientId, ...rest } = raw as Record<string, unknown>;
+  if (clientKind !== "machine" || typeof clientId !== "string" || !MACHINE_CLIENT_ID.test(clientId)) {
+    throw new Error("Die Introspection-Antwort ist ungültig.");
+  }
+  return {
+    result: { ...rest, client_id: MACHINE_CLIENT_STAND_IN },
+    machine_client_id: clientId as `cvg_client_${string}`,
+  };
+}
 
 export function extractBearerToken(
   authorization: string | undefined,
@@ -41,6 +74,7 @@ export class IntrospectionBearerAuthenticator {
   readonly #registrations: ProviderRegistrationResolver;
   readonly #actorTokens: ActorTokenPort;
   readonly #audience: HttpsUrl;
+  readonly #acceptMachineClients: boolean;
   readonly #now: () => Date;
 
   constructor(input: {
@@ -48,12 +82,18 @@ export class IntrospectionBearerAuthenticator {
     registrations: ProviderRegistrationResolver;
     actor_tokens: ActorTokenPort;
     audience: HttpsUrl;
+    /**
+     * Machine grants sign in only on the CLI channel (03-maschinen-grant
+     * §4.4); the provider connector keeps rejecting them.
+     */
+    accept_machine_clients?: boolean;
     now?: () => Date;
   }) {
     this.#introspection = input.introspection;
     this.#registrations = input.registrations;
     this.#actorTokens = input.actor_tokens;
     this.#audience = input.audience;
+    this.#acceptMachineClients = input.accept_machine_clients ?? false;
     this.#now = input.now ?? (() => new Date());
   }
 
@@ -81,8 +121,11 @@ export class IntrospectionBearerAuthenticator {
       });
     }
     let introspection;
+    let machineClientId: `cvg_client_${string}` | null = null;
     try {
-      introspection = validateIntrospectionResult(rawResult);
+      const split = splitMachineIntrospection(rawResult);
+      machineClientId = split.machine_client_id;
+      introspection = validateIntrospectionResult(split.result);
     } catch {
       throw runtimeError({
         code: "AUTH_REQUIRED",
@@ -101,18 +144,40 @@ export class IntrospectionBearerAuthenticator {
         retryable: false,
       });
     }
-    const registration = await this.#registrations.resolve(introspection.client_id);
-    if (!registration?.enabled || registration.client_id !== introspection.client_id) {
-      throw runtimeError({
-        code: "AUTH_REQUIRED",
-        message: "Der OAuth-Client ist nicht freigegeben.",
-        request_id: input.request_id,
-        retryable: false,
-      });
-    }
     const scopes = introspection.scope.split(" ") as OAuthScope[];
-    if (!scopes.every((scope) => KNOWN_SCOPES.has(scope)
-      && registration.allowed_scopes.includes(scope))) {
+    let provider: AuthenticatedConnectorPrincipal["provider"];
+    let scopesAllowed: boolean;
+    if (machineClientId !== null) {
+      // A machine grant has no provider registration: it is issued per club
+      // in the web app. It is accepted on the CLI channel only, always bound
+      // to a club and never with a blocked scope (D-GTA-07). Rights inside
+      // the club are still checked by the services against the person who
+      // created the grant (D-GTA-14, backend actor from the exchange below).
+      if (!this.#acceptMachineClients || introspection.club_id === null) {
+        throw runtimeError({
+          code: "AUTH_REQUIRED",
+          message: "Der OAuth-Client ist nicht freigegeben.",
+          request_id: input.request_id,
+          retryable: false,
+        });
+      }
+      provider = null;
+      scopesAllowed = scopes.every((scope) => isMachineGrantScope(scope));
+    } else {
+      const registration = await this.#registrations.resolve(introspection.client_id);
+      if (!registration?.enabled || registration.client_id !== introspection.client_id) {
+        throw runtimeError({
+          code: "AUTH_REQUIRED",
+          message: "Der OAuth-Client ist nicht freigegeben.",
+          request_id: input.request_id,
+          retryable: false,
+        });
+      }
+      provider = registration.provider;
+      scopesAllowed = scopes.every((scope) => KNOWN_SCOPES.has(scope)
+        && registration.allowed_scopes.includes(scope));
+    }
+    if (!scopesAllowed) {
       throw runtimeError({
         code: "AUTH_REQUIRED",
         message: "Der Bearer-Token enthält ungültige Berechtigungen.",
@@ -151,8 +216,8 @@ export class IntrospectionBearerAuthenticator {
     return {
       subject_id: introspection.sub,
       oauth_grant_id: introspection.grant_id,
-      client_id: introspection.client_id,
-      provider: registration.provider,
+      client_id: machineClientId ?? introspection.client_id,
+      provider,
       club_id: introspection.club_id,
       scopes: [...scopes].sort(),
       expires_at_epoch_seconds: introspection.exp,

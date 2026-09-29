@@ -9,6 +9,19 @@ Die Einträge folgen
 
 ### Added
 
+- Anmeldung ohne Browser mit einem Maschinen-Grant des Vereins: Sind
+  `COMVENIO_CLIENT_ID` und `COMVENIO_CLIENT_SECRET` gesetzt, holen `whoami` und
+  `action list|call|confirm` per Client-Credentials einen kurzlebigen Zugang und
+  halten ihn nur im Speicher (keine Zustandsdatei, kein Zugangsdatenspeicher).
+  `COMVENIO_ENV=dev` wählt die Testumgebung. Fehlt eine der Variablen, endet der
+  Aufruf mit `AUTH_REQUIRED` und nennt sie. Der MCP-Gateway nimmt
+  Maschinen-Tokens nur am CLI-Kanal an und nie mit einem gesperrten Scope.
+- Warnzeile für Geräte-Token: Läuft ein Aufruf mit gespeichertem Geräte-Token,
+  schreibt das CLI eine Zeile auf stderr mit dem Fristende („Dein Geräte-Token
+  läuft am TT.MM.JJJJ aus — stell auf comvenio login um.“). Das Datum kommt aus
+  dem Token-Status des Kontos und wird einen Tag in der Zustandsdatei gehalten;
+  `--json`-Ausgaben bleiben unverändert. Nach dem Fristende lehnt der Server
+  Geräte-Token ab.
 - Geschütztes MCP-Tool `cv_my_tasks_read` für die eigenen, OAuth-gebundenen
   Aufgaben in einem expliziten Zeitfenster mit `task.read`, Backend-RBAC,
   Datenschutz-Minimierung und Scope-basiertem Verbergen bis zur erneuten

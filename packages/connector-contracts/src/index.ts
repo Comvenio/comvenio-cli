@@ -69,6 +69,24 @@ export const OAUTH_SCOPE_VALUES = [
 
 export type OAuthScope = (typeof OAUTH_SCOPE_VALUES)[number];
 
+/**
+ * Scopes a machine grant (OAuth client credentials per club) never carries
+ * (D-GTA-07): roles, admin changes, connector grants and member details stay
+ * with people. The auth-service rejects them when a grant is created; the CLI
+ * and the MCP gateway reject a machine token that carries one anyway.
+ */
+export const MACHINE_GRANT_BLOCKED_SCOPES = [
+  "admin.write",
+  "role.write",
+  "connector.grants",
+  "member.read.details",
+] as const satisfies readonly OAuthScope[];
+
+export function isMachineGrantScope(scope: string): scope is OAuthScope {
+  return (OAUTH_SCOPE_VALUES as readonly string[]).includes(scope)
+    && !(MACHINE_GRANT_BLOCKED_SCOPES as readonly string[]).includes(scope);
+}
+
 export interface RequestContext {
   request_id: UUID;
   surface: ClientSurface;
