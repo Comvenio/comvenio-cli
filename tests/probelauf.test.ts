@@ -2,6 +2,9 @@
 // repeatability — against the committed articles and synthetic transcripts in
 // the stream-json format of `claude -p`. No session runs here (09 DC-7).
 import { describe, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
@@ -14,10 +17,12 @@ import {
   bekannteActions,
   berichtMarkdown,
   claudeArgumente,
+  cliHuelle,
   faqPaare,
   genannt,
   gruppiere,
   imSandbox,
+  istStabil,
   kernaussagen,
   klickAussagen,
   leseTranskript,
@@ -39,7 +44,7 @@ function aufgabe(id: string): Aufgabe {
   return gefunden;
 }
 
-type Aufruf = { name: string; input: Record<string, unknown>; ergebnis?: string; fehler?: boolean; abgelehnt?: boolean };
+type Aufruf = { name: string; input: Record<string, unknown>; ergebnis?: string; fehler?: boolean; abgelehnt?: boolean; ohneAntwort?: boolean };
 
 /** Builds a stream-json transcript: init, one tool call/result per entry, final result. */
 function transkript(aufrufe: Aufruf[], antwort: string, mcpStatus = "connected"): string {
@@ -47,7 +52,7 @@ function transkript(aufrufe: Aufruf[], antwort: string, mcpStatus = "connected")
   aufrufe.forEach((aufruf, index) => {
     const id = `toolu_${index}`;
     zeilen.push({ type: "assistant", message: { content: [{ type: "tool_use", id, name: aufruf.name, input: aufruf.input }] } });
-    zeilen.push({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: id, content: aufruf.ergebnis ?? "ok", is_error: aufruf.fehler ?? false }] } });
+    if (!aufruf.ohneAntwort) zeilen.push({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: id, content: aufruf.ergebnis ?? "ok", is_error: aufruf.fehler ?? false }] } });
   });
   const denials = aufrufe.flatMap((aufruf, index) => (aufruf.abgelehnt ? [{ tool_name: aufruf.name, tool_use_id: `toolu_${index}`, tool_input: aufruf.input }] : []));
   zeilen.push({ type: "result", subtype: "success", result: antwort, duration_ms: 4200, total_cost_usd: 0.03, permission_denials: denials });
@@ -174,7 +179,7 @@ describe("Messung (09 §4.3)", () => {
       `jq -r '.markdown' ${eigene} | sed -n '1,60p;243,335p'; `,
       "comvenio help finanzen 2>&1 | head -80; echo ------; comvenio help sponsoring",
     ]) {
-      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false })).toBe(true);
+      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false, beantwortet: true })).toBe(true);
     }
   });
 
@@ -191,9 +196,59 @@ describe("Messung (09 §4.3)", () => {
       "comvenio action list | sed -i s/a/b/ liste.txt",
       "comvenio action confirm abc",
       "comvenio help |",
+      // Fremdprüfung R1: file-reading and file-writing options of allowed commands.
+      `comvenio action call cai.data.06.upload --file /etc/hosts --input '{}'`,
+      "comvenio action call cai.data.06.upload --file=/etc/hosts",
+      "comvenio help | sed 'w /tmp/ausgabe'",
+      "comvenio help | sed -n 's/a/b/w /tmp/x'",
+      "comvenio help | sed -f/etc/skript",
+      "comvenio help | grep -f /etc/muster",
+      "comvenio help | grep --file=/etc/muster",
+      "jq -n env",
+      "jq -n '$ENV.HOME'",
+      "comvenio action list | jq --rawfile a /etc/hosts .",
+      "comvenio help | sort -o /tmp/x",
     ]) {
-      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false })).toBe(false);
+      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false, beantwortet: true })).toBe(false);
     }
+  });
+
+  test("DC-3: erlaubte Optionen der Filter bleiben in der Sandbox", () => {
+    for (const befehl of [
+      "comvenio help | sed -n '1,60p;243,335p'",
+      "comvenio help | sed 's/alt/neu/g'",
+      "comvenio help | grep -i -e budget -e posten",
+      "comvenio help | grep -A3 -m 5 Finance",
+      "comvenio help | head -n5",
+      "comvenio action list | jq --arg id x '.[] | select(.id == $id)'",
+      "comvenio action list | cut -d , -f 1 | sort -k 2 -t ' ' | uniq -c | wc -l",
+    ]) {
+      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false, beantwortet: true })).toBe(true);
+    }
+  });
+
+  test("DC-3: die CLI-Hülle sperrt --file, bevor das CLI startet", () => {
+    const verzeichnis = mkdtempSync(join(tmpdir(), "probelauf-huelle-"));
+    try {
+      const huelle = join(verzeichnis, "comvenio");
+      writeFileSync(huelle, cliHuelle("/bin/echo"), { mode: 0o755 });
+      const gesperrt = spawnSync(huelle, ["action", "call", "cai.data.06.upload", "--file", "/etc/hosts"], { encoding: "utf8" });
+      expect(gesperrt.status).toBe(2);
+      expect(gesperrt.stdout).toBe("");
+      expect(spawnSync(huelle, ["action", "call", "x", "--file=/etc/hosts"], { encoding: "utf8" }).status).toBe(2);
+      const frei = spawnSync(huelle, ["help", "it's"], { encoding: "utf8" });
+      expect(frei.status).toBe(0);
+      expect(frei.stdout).toBe("help it's\n");
+    } finally {
+      rmSync(verzeichnis, { recursive: true, force: true });
+    }
+  });
+
+  test("TC-01: ein erwarteter Aufruf ohne Antwort im Transkript ist NOT_MEASURED, nicht gelöst", () => {
+    const roh = transkript([bash(`comvenio action call cai.homepage.01.preview --input '{}'`, { ohneAntwort: true })], "…");
+    const ergebnis = werteAus(aufgabe("homepage.bau.hero-vorschau"), leseTranskript(roh), actions);
+    expect(ergebnis.geloest.status).toBe("NOT_MEASURED");
+    expect(ergebnis.geloest.wert).toBeNull();
   });
 
   test("TC-02: Finance-Fachfrage mit allen Kernaussagen ist gelöst, mit einem Teil teilweise", () => {
@@ -299,6 +354,15 @@ describe("Wiederholbarkeit (TC-06)", () => {
   test("gleicher Katalog und Doku-Stand: vergleichbar, Übereinstimmung aus gemeinsam bewerteten Aufgaben", () => {
     const vergleich = vergleiche(bericht(erster), bericht(erster));
     expect(vergleich).toMatchObject({ vergleichbar: true, paare: 2, gleich: 2, uebereinstimmung: { status: "DERIVED", wert: 1 } });
+    expect(istStabil(vergleich)).toBe(true);
+  });
+
+  test("stabil erst ab STABIL_AB und nur, wenn vergleichbar — für vergleich und --vergleich-mit", () => {
+    const basis = vergleiche(bericht(erster), bericht(erster));
+    expect(istStabil({ ...basis, uebereinstimmung: { status: "DERIVED", wert: 0.5 } })).toBe(false);
+    expect(istStabil({ ...basis, uebereinstimmung: { status: "DERIVED", wert: 0.8 } })).toBe(true);
+    expect(istStabil({ ...basis, vergleichbar: false })).toBe(false);
+    expect(istStabil({ ...basis, uebereinstimmung: { status: "NOT_MEASURED", wert: null, grund: "x" } as never })).toBe(false);
   });
 
   test("anderer Doku-Stand ist nicht vergleichbar, Abweichungen werden benannt", () => {

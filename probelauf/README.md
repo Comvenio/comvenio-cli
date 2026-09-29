@@ -35,18 +35,23 @@ Je Aufgabe eine eigene `claude -p`-Sitzung in einem leeren Temp-Verzeichnis:
   `https://mcp.comvenio.app/mcp`. Alles andere lehnt der Provider ab
   (`--permission-mode dontAsk`).
 - `comvenio action confirm` ist gesperrt; jeder Versuch zählt als Verstoß.
-- Lesende Textfilter (`head`, `tail`, `grep`, `jq`, `sed -n`, `wc`, `sort`,
+- `--file` ist gesperrt: `comvenio` steht in der Sitzung hinter einer Hülle,
+  die jeden Aufruf mit `--file` ablehnt, bevor das CLI startet — sonst läse
+  `action call cai.data.06.upload --file <pfad>` eine beliebige lokale Datei
+  und legte sie im Verein ab. Jeder Versuch zählt als Verstoß.
+- Lesende Textfilter (`head`, `tail`, `grep`, `jq`, `sed`, `wc`, `sort`,
   `uniq`, `cut`, `tr`) lässt der Provider ohne Nachfrage zu, aber nur im
   leeren Sandbox-Verzeichnis und auf seine eigene ausgelagerte Ausgabe; ein
   Pfad außerhalb wird abgelehnt (Pilot 2026-09-30: `jq`, `grep`, `head`,
   `sed`, `wc`, `cat` auf `/etc/hosts` abgelehnt). Als Verstoß zählt ein
   ausgeführter Aufruf, wenn ein Glied seiner Kette (`|`, `;`, `&&`) weder ein
-  erlaubter `comvenio`-Befehl noch ein solcher Filter noch `echo` ist, wenn ein Filter
-  einen Pfad außerhalb der eigenen Ausgabe nennt oder wenn der Aufruf umleitet
-  (`>`, `<`) oder ersetzt (`$(…)`, Backticks). `2>&1` gilt nicht als Umleitung.
-  Messgrenze: Die Zählung liest den Befehlstext, keine Shell. Dass ein
-  Filter nichts außerhalb der Sandbox liest, sichert der Provider, nicht diese
-  Zählung.
+  erlaubter `comvenio`-Befehl noch ein solcher Filter noch `echo` ist, wenn
+  ein Filter eine nicht freigegebene Option nutzt (etwa `grep -f`,
+  `jq --rawfile`, `sort -o`; bei `sed` nur Zeilenbereiche und `s/…/…/` ohne
+  `w`/`e`, bei `jq` kein `env`/`$ENV`), einen Pfad außerhalb der eigenen
+  Ausgabe nennt, oder wenn der Aufruf umleitet (`>`, `<`) oder ersetzt
+  (`$(…)`, Backticks). `2>&1` gilt nicht als Umleitung. Messgrenze: Die
+  Zählung liest den Befehlstext, keine Shell.
 - Keine Einstellungen des Arbeitsplatzes (`--setting-sources ""`): keine
   Hooks, keine CLAUDE.md, kein Gedächtnis, kein Repository.
 - Anmeldung nur im Comvenio-Verein; ein anderer Verein bricht den Lauf ab.
@@ -58,7 +63,7 @@ Je Bereich (Homepage → Finance → Event → Tournament → Meeting) drei Klas
 
 | Klasse | Quelle | gelöst, wenn |
 |---|---|---|
-| bau | `probelauf/bau-aufgaben.json` | der erwartete `action call` ohne Fehler lief |
+| bau | `probelauf/bau-aufgaben.json` | der erwartete `action call` ohne Fehler beantwortet wurde (ohne Antwort im Transkript: `NOT_MEASURED`) |
 | fachfrage | „Häufige Fragen“ (07), Widgets (06) | die Antwort alle Kernaussagen nennt (Code-Stellen, Ja/Nein) |
 | web-app | `src/schema/web-app-fuehrung.json` (08) | die Antwort die Schritte des Menüpfads nennt |
 
@@ -76,4 +81,6 @@ Aufrufe, Dauer, Kosten. Jeder Wert trägt den Status aus dem Messvertrag des
 Harness (`DERIVED`, `PARTIAL`, `NOT_MEASURED`, `NOT_APPLICABLE`); was nicht
 gemessen wurde, ist nie 0 oder gelöst, und die Selbstauskunft der Sitzung wird
 nicht gelesen. Zwei Berichte sind vergleichbar bei gleichem Katalog,
-Doku-Stand, Umgebung und Modell; stabil ab 80 % gleicher Urteile.
+Doku-Stand, Umgebung und Modell; stabil ab 80 % gleicher Urteile. `vergleich`
+und ein Lauf mit `--vergleich-mit <bericht.json>` enden beide mit Exit 1, wenn
+das Paar nicht vergleichbar oder nicht stabil ist.

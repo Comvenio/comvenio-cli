@@ -16,7 +16,7 @@
  * the Comvenio club; without it they are NOT_MEASURED, the rest still runs.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,15 +32,16 @@ import {
   bekannteActions,
   berichtMarkdown,
   claudeArgumente,
+  cliHuelle,
   ERLAUBTE_BEFEHLE,
   gruppiere,
+  istStabil,
   KLASSEN,
   leseTranskript,
   luecken,
   MCP_URL,
   mcpKonfiguration,
   prompt,
-  STABIL_AB,
   standardSatz,
   UMGEBUNGEN,
   vergleiche,
@@ -70,8 +71,7 @@ if (args[0] === "vergleich") {
   if (!a || !b) fehler("vergleich <bericht-a.json> <bericht-b.json>");
   const ergebnis = vergleiche(JSON.parse(readFileSync(a, "utf8")), JSON.parse(readFileSync(b, "utf8")));
   console.log(JSON.stringify(ergebnis, null, 2));
-  const stabil = ergebnis.vergleichbar && ergebnis.uebereinstimmung.wert !== null && ergebnis.uebereinstimmung.wert >= STABIL_AB;
-  process.exit(stabil ? 0 : 1);
+  process.exit(istStabil(ergebnis) ? 0 : 1);
 }
 
 const katalog: Katalog = baueKatalog(ROOT);
@@ -103,14 +103,15 @@ if (gewuenscht.length > 0) {
 }
 if (klasse) auswahl = auswahl.filter((aufgabe) => aufgabe.klasse === klasse);
 
-// The CLI under test: the public binary on PATH, or a candidate build handed in with --cli.
-const binDir = mkdtempSync(join(tmpdir(), "probelauf-bin-"));
+// The CLI under test: the public binary on PATH, or a candidate build handed in
+// with --cli — either way behind the wrapper that refuses --file (cliHuelle).
 const env: Record<string, string> = { ...(process.env as Record<string, string>) };
-if (cli) {
-  if (!existsSync(cli)) fehler(`--cli ${cli} existiert nicht`);
-  symlinkSync(resolve(cli), join(binDir, "comvenio"));
-  env.PATH = `${binDir}:${env.PATH ?? ""}`;
-}
+if (cli && !existsSync(cli)) fehler(`--cli ${cli} existiert nicht`);
+const echteCli = cli ? resolve(cli) : (env.PATH ?? "").split(":").map((dir) => join(dir, "comvenio")).find((pfad) => existsSync(pfad));
+if (!echteCli) fehler("comvenio nicht im PATH — installieren oder --cli <pfad> angeben");
+const binDir = mkdtempSync(join(tmpdir(), "probelauf-bin-"));
+writeFileSync(join(binDir, "comvenio"), cliHuelle(echteCli!), { mode: 0o755 });
+env.PATH = `${binDir}:${env.PATH ?? ""}`;
 
 function comvenio(...cliArgs: string[]): { ok: boolean; stdout: string } {
   const lauf = spawnSync("comvenio", cliArgs, { env, encoding: "utf8", timeout: 30_000 });
@@ -220,4 +221,6 @@ const vorher = option("--vergleich-mit");
 if (vorher) {
   const vergleich = vergleiche(JSON.parse(readFileSync(vorher, "utf8")), bericht);
   console.log(`probelauf: Vergleich — ${JSON.stringify(vergleich)}`);
+  // Same verdict as `probelauf vergleich` (TC-06): not comparable or below STABIL_AB fails the run.
+  if (!istStabil(vergleich)) process.exit(1);
 }

@@ -373,6 +373,25 @@ export function claudeArgumente(options: { prompt: string; modell: string; mcpCo
   ];
 }
 
+/**
+ * Shell wrapper placed as `comvenio` on the sandbox PATH: it refuses `--file`
+ * before the CLI starts, because `action call cai.data.06.upload --file <path>`
+ * would read any local file and store it in the club — the provider's prefix
+ * rule `Bash(comvenio action call:*)` cannot tell that apart.
+ */
+export function cliHuelle(echt: string): string {
+  const zitiert = `'${echt.replace(/'/gu, `'\\''`)}'`;
+  return [
+    "#!/bin/sh",
+    "# probelauf sandbox (comvenio-cli-doku 09 §4.1): no local file leaves the machine.",
+    'for arg in "$@"; do',
+    '  case "$arg" in --file|--file=*) echo "--file ist im Probelauf gesperrt (Sandbox)." >&2; exit 2;; esac',
+    "done",
+    `exec ${zitiert} "$@"`,
+    "",
+  ].join("\n");
+}
+
 export function mcpKonfiguration(): string {
   return JSON.stringify({ mcpServers: { comvenio: { type: "http", url: MCP_URL } } });
 }
@@ -409,6 +428,8 @@ export interface ToolAufruf {
   ergebnis: string;
   fehler: boolean;
   abgelehnt: boolean;
+  /** A tool_result arrived; without one, success and failure are both unknown. */
+  beantwortet: boolean;
 }
 
 export interface Transkript {
@@ -452,6 +473,7 @@ export function leseTranskript(jsonl: string): Transkript {
           ergebnis: "",
           fehler: false,
           abgelehnt: false,
+          beantwortet: false,
         });
       }
     } else if (event.type === "user") {
@@ -464,6 +486,7 @@ export function leseTranskript(jsonl: string): Transkript {
           : String(block.content ?? "");
         aufruf.ergebnis = inhalt;
         aufruf.fehler = block.is_error === true;
+        aufruf.beantwortet = true;
       }
     } else if (event.type === "result") {
       transkript.antwort = typeof event.result === "string" ? event.result : null;
@@ -491,9 +514,49 @@ export function istNachschlag(aufruf: ToolAufruf): boolean {
  * Read-only text filters a session may pipe CLI output through. The provider
  * lets them read files only inside the empty sandbox directory (pilot
  * 2026-09-30: `jq`, `grep`, `head`, `sed`, `wc`, `cat` on /etc/hosts denied,
- * `head` on a sandbox file and `… | head` allowed).
+ * `head` on a sandbox file and `… | head` allowed). The count below does not
+ * rely on that: only listed options pass, so no filter can read a script or
+ * pattern file, write a file or execute anything.
  */
-export const TEXTFILTER = ["head", "tail", "grep", "egrep", "jq", "sed", "wc", "sort", "uniq", "cut", "tr"] as const;
+interface FilterRegel {
+  /** Single-letter switches without value, combinable (`-inE`). */
+  schalter: string;
+  /** Single-letter options with one value, attached (`-n5`) or as next token. */
+  mitWert: string;
+  /** Long options with the number of values they take. */
+  lang?: Readonly<Record<string, number>>;
+  /** Leading operands that are expressions, not files (grep pattern, jq filter, sed script, tr sets). */
+  ausdruecke: number;
+  /** The option that carries the expression instead (`grep -e`, `sed -e`). */
+  ausdruckOption?: string;
+  /** `head -50` style counts. */
+  zahl?: boolean;
+}
+
+const GREP: FilterRegel = { schalter: "inEvcowFhHlxsqIz", mitWert: "ABCme", ausdruecke: 1, ausdruckOption: "e" };
+export const TEXTFILTER: Readonly<Record<string, FilterRegel>> = {
+  head: { schalter: "q", mitWert: "nc", ausdruecke: 0, zahl: true },
+  tail: { schalter: "qr", mitWert: "nc", ausdruecke: 0, zahl: true },
+  grep: GREP,
+  egrep: GREP,
+  jq: {
+    schalter: "rcjnseSaC",
+    mitWert: "",
+    lang: { "--raw-output": 0, "--compact-output": 0, "--slurp": 0, "--null-input": 0, "--sort-keys": 0, "--exit-status": 0, "--join-output": 0, "--arg": 2, "--argjson": 2 },
+    ausdruecke: 1,
+  },
+  sed: { schalter: "nE", mitWert: "e", ausdruecke: 1, ausdruckOption: "e" },
+  wc: { schalter: "lwcm", mitWert: "", ausdruecke: 0 },
+  sort: { schalter: "nrufhbdV", mitWert: "kt", ausdruecke: 0 },
+  uniq: { schalter: "cdui", mitWert: "fs", ausdruecke: 0 },
+  cut: { schalter: "s", mitWert: "dfcb", ausdruecke: 0 },
+  tr: { schalter: "dsc", mitWert: "", ausdruecke: Number.POSITIVE_INFINITY },
+};
+
+// sed: line ranges with p/d/q/= and s/…/…/ without the w or e flag — no r, w, e commands.
+const SED_TEIL = /^(?:(?:\d+|\$)(?:,(?:\d+|\$))?)?[pdq=]?$|^s\/(?:[^/\\]|\\.)*\/(?:[^/\\]|\\.)*\/[gIip0-9]*$/u;
+// jq: the environment and module loading reach beyond the piped text.
+const JQ_AUSSERHALB = /\benv\b|\$ENV|\binput_filename\b|\bimport\b|\binclude\b/u;
 
 // Large tool results are stored by the provider under
 // ~/.claude/projects/<encoded sandbox cwd>/ — reading them back is the
@@ -542,19 +605,54 @@ function segmente(befehl: string): string[][] | null {
   return ergebnis;
 }
 
-function istPfad(token: string): boolean {
-  return token.startsWith("/") || token.startsWith("~") || token.split("/").includes("..");
+/** A file operand stays inside: relative within the sandbox, or the session's own stored output. */
+function dateiImSandbox(pfad: string): boolean {
+  if (pfad.split("/").includes("..")) return false;
+  if (pfad.startsWith("/") || pfad.startsWith("~")) return EIGENE_AUSGABE.test(pfad);
+  return true;
 }
 
 function filterImSandbox(tokens: readonly string[]): boolean {
   const [name, ...rest] = tokens;
   // `echo ----` as a separator reads nothing (substitutions are rejected before).
   if (name === "echo") return true;
-  if (!(TEXTFILTER as readonly string[]).includes(name)) return false;
-  // Filters that write files leave the sandbox.
-  if (name === "sed" && rest.some((token) => /^-[a-zA-Z]*i/u.test(token) || token === "--in-place")) return false;
-  if (name === "sort" && rest.some((token) => /^-[a-zA-Z]*o/u.test(token) || token.startsWith("--output"))) return false;
-  return rest.filter(istPfad).every((pfad) => EIGENE_AUSGABE.test(pfad) && !pfad.split("/").includes(".."));
+  const regel = TEXTFILTER[name];
+  if (!regel) return false;
+  const ausdruecke: string[] = [];
+  const operanden: string[] = [];
+  let nurOperanden = false;
+  for (let i = 0; i < rest.length; i += 1) {
+    const token = rest[i]!;
+    if (nurOperanden || token === "-" || !token.startsWith("-")) {
+      operanden.push(token);
+    } else if (token === "--") {
+      nurOperanden = true;
+    } else if (token.startsWith("--")) {
+      const [option, angehaengt] = token.split(/=(.*)/su);
+      const werte = regel.lang?.[option!];
+      if (werte === undefined) return false;
+      if (angehaengt !== undefined && werte !== 1) return false;
+      i += angehaengt !== undefined ? 0 : werte;
+      if (i >= rest.length) return false;
+    } else if (regel.zahl && /^-\d+$/u.test(token)) {
+      continue;
+    } else {
+      for (let j = 1; j < token.length; j += 1) {
+        const zeichen = token[j]!;
+        if (regel.schalter.includes(zeichen)) continue;
+        if (!regel.mitWert.includes(zeichen)) return false;
+        const wert = token.length > j + 1 ? token.slice(j + 1) : rest[++i];
+        if (wert === undefined) return false;
+        if (zeichen === regel.ausdruckOption) ausdruecke.push(wert);
+        break;
+      }
+    }
+  }
+  const anzahl = ausdruecke.length > 0 ? 0 : regel.ausdruecke;
+  ausdruecke.push(...operanden.slice(0, anzahl));
+  if (name === "sed" && !ausdruecke.every((skript) => skript.split(/[;\n]/u).every((teil) => SED_TEIL.test(teil.trim())))) return false;
+  if (name === "jq" && ausdruecke.some((filter) => JQ_AUSSERHALB.test(filter))) return false;
+  return operanden.slice(anzahl).every(dateiImSandbox);
 }
 
 export function imSandbox(aufruf: ToolAufruf): boolean {
@@ -575,6 +673,8 @@ export function imSandbox(aufruf: ToolAufruf): boolean {
   // Every segment of a chain must stay inside: `comvenio help && cat …` does not.
   return teile.every((tokens) => {
     if (tokens[0] !== "comvenio") return filterImSandbox(tokens);
+    // --file reads a local file and uploads it (cai.data.06.upload) — never part of the probe.
+    if (tokens.some((token) => token === "--file" || token.startsWith("--file="))) return false;
     const segment = tokens.join(" ");
     return ERLAUBTE_BEFEHLE.some((erlaubt) => segment === erlaubt || segment.startsWith(`${erlaubt} `));
   });
@@ -645,9 +745,11 @@ function bewerteLoesung(aufgabe: Aufgabe, transkript: Transkript): { geloest: Me
     const muster = (aufgabe.befehle ?? []).map((quelle) => new RegExp(quelle, "u"));
     if (muster.length === 0) return { geloest: nichtGemessen("Bauaufgabe ohne erwarteten Befehl"), begruendung: "kein Befehl definiert" };
     const treffer = transkript.aufrufe.filter((aufruf) => aufruf.name === "Bash" && muster.some((regex) => regex.test(aufruf.befehl)));
-    const erfolgreich = treffer.filter((aufruf) => !aufruf.fehler && !aufruf.abgelehnt);
+    const beantwortet = treffer.filter((aufruf) => aufruf.beantwortet);
+    const erfolgreich = beantwortet.filter((aufruf) => !aufruf.fehler && !aufruf.abgelehnt);
     if (erfolgreich.length > 0) return { geloest: gemessen("ja"), begruendung: `erfolgreich: ${erfolgreich[0]!.befehl.slice(0, 120)}` };
-    if (treffer.length > 0) return { geloest: gemessen("teilweise"), begruendung: `richtiger Befehl, aber Fehler: ${treffer[0]!.ergebnis.slice(0, 120)}` };
+    if (beantwortet.length > 0) return { geloest: gemessen("teilweise"), begruendung: `richtiger Befehl, aber Fehler: ${beantwortet[0]!.ergebnis.slice(0, 120)}` };
+    if (treffer.length > 0) return { geloest: nichtGemessen("erwarteter Befehl ohne Antwort im Transkript"), begruendung: `ohne Antwort: ${treffer[0]!.befehl.slice(0, 120)}` };
     return { geloest: gemessen("nein"), begruendung: "erwarteter Befehl nicht aufgerufen" };
   }
   if (aufgabe.kernaussagen.length === 0) {
@@ -850,6 +952,11 @@ export interface Vergleich {
 
 /** Share of equal verdicts below which two runs on the same stand count as unstable. */
 export const STABIL_AB = 0.8;
+
+/** TC-06 verdict: comparable and at least STABIL_AB of the shared verdicts equal. */
+export function istStabil(vergleich: Vergleich): boolean {
+  return vergleich.vergleichbar && vergleich.uebereinstimmung.wert !== null && vergleich.uebereinstimmung.wert >= STABIL_AB;
+}
 
 /**
  * Compares two reports. Only runs on the same catalog, documentation stand,
