@@ -26,6 +26,8 @@ export const K7_ACTION_IDS = [
   "cai.club.10.department_delete",
   "cai.club.11.weekly_preview_create",
   "cai.club.12.weekly_preview_list",
+  "cai.club.13.forum_board_list",
+  "cai.club.14.forum_thread_list",
   "cai.member.01.list",
   "cai.member.02.show",
   "cai.member.03.add",
@@ -114,7 +116,7 @@ export type K7PublicationState = "implemented" | "blocked";
 export interface K7BackendRoute {
   route_id: `route.${number}` | null;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  service: "user" | "club" | "member" | "role" | "event" | "ai";
+  service: "user" | "club" | "member" | "role" | "event" | "ai" | "message";
   normalized_path_template: string;
   purpose: "read" | "mutation" | "preflight";
 }

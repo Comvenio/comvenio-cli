@@ -147,6 +147,17 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     action_id: "cai.club.12.weekly_preview_list", domain: "club", source_action: "weekly-preview-list", scopes: CLUB_READ,
     routes: [route(null, "GET", "ai", "/club-agents/{club_id}/weekly-previews")],
   }),
+  // Forum read access (Feature 55e553b2 K3): boards and threads of the club.
+  // The message-service decides visibility — private boards by grant, channel
+  // archive threads by the archived channel's read right.
+  "cai.club.13.forum_board_list": definition({
+    action_id: "cai.club.13.forum_board_list", domain: "club", source_action: "forum-board-list", scopes: CLUB_READ,
+    routes: [route(null, "GET", "message", "/forum/boards")],
+  }),
+  "cai.club.14.forum_thread_list": definition({
+    action_id: "cai.club.14.forum_thread_list", domain: "club", source_action: "forum-thread-list", scopes: CLUB_READ,
+    routes: [route(null, "GET", "message", "/forum/threads")],
+  }),
 
   "cai.member.01.list": definition({
     action_id: "cai.member.01.list", domain: "member", source_action: "list", scopes: MEMBER_BASIC,

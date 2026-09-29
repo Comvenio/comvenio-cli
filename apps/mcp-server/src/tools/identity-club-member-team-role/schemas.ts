@@ -14,6 +14,36 @@ const urlOrEmpty = z.union([z.string().url().max(2_048), z.literal("")]);
 const clubContext = z.object({ club_id: uuid }).strict();
 const entityContext = (field: string) => z.object({ club_id: uuid, [field]: uuid }).strict();
 const deleted = z.object({ deleted: z.literal(true), id: uuid }).strict();
+// Forum (message-service): GET /forum/boards?flat=true and GET /forum/threads.
+const forumText = (max: number) => z.string().max(max);
+const forumBoardOutput = z.object({
+  id: uuid,
+  parent_id: uuid.nullable().optional(),
+  department_id: uuid.nullable().optional(),
+  name: forumText(200),
+  description: forumText(4_000).nullable().optional(),
+  visibility: z.enum(["public", "members", "private"]),
+  is_locked: z.boolean(),
+  thread_count: z.number().int(),
+  last_thread_at: z.string().max(64).nullable().optional(),
+  linked_context_type: forumText(50).nullable().optional(),
+}).strip();
+const forumThreadOutput = z.object({
+  id: uuid,
+  board_id: uuid,
+  channel_id: uuid.nullable().optional(),
+  title: forumText(500),
+  visibility: z.enum(["public", "members", "private"]),
+  status: z.enum(["open", "closed", "pinned", "archived"]),
+  is_locked: z.boolean(),
+  linked_context_type: forumText(50).nullable().optional(),
+  linked_context_id: uuid.nullable().optional(),
+  transferred_from_channel_id: uuid.nullable().optional(),
+  transferred_from_context_type: forumText(50).nullable().optional(),
+  reply_count: z.number().int(),
+  last_reply_at: z.string().max(64).nullable().optional(),
+  created_at: z.string().max(64),
+}).strip();
 
 const clubProfileFields = {
   name: shortText.optional(),
@@ -712,6 +742,18 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.club.12.weekly_preview_list": contract(
     z.object({ club_id: uuid, plan_id: uuid, limit: z.number().int().min(1).max(100).default(20) }).strict(),
     z.array(weeklyPreviewSnapshotOutput),
+  ),
+
+  "cai.club.13.forum_board_list": contract(clubContext, z.array(forumBoardOutput)),
+  "cai.club.14.forum_thread_list": contract(
+    z.object({
+      club_id: uuid,
+      board_id: uuid,
+      status: z.enum(["open", "closed", "pinned", "archived"]).optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+      offset: z.number().int().min(0).default(0),
+    }).strict(),
+    z.array(forumThreadOutput),
   ),
 
   "cai.member.01.list": contract(z.object({ club_id: uuid, limit: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).default(0) }).strict(), z.object({ items: z.array(memberListItem), limit: z.number().int(), offset: z.number().int(), total: z.number().int().nullable() }).strict()),
