@@ -11,7 +11,7 @@ import {
   runAgentChat,
   sessionLostHint,
 } from "../src/commands/agent.ts";
-import { removedCommandError, removedTopLevelCommand } from "../src/commands/removed.ts";
+import { unmatchedCommandError } from "../src/commands/removed.ts";
 import { exitCodeFor, toPublicError } from "../src/errors.ts";
 import { CliConnectorClient } from "../src/mcp/client.ts";
 
@@ -233,15 +233,14 @@ describe("TC-05: removed commands name the place in the web app", () => {
     ] as const) {
       cli.parse(["bun", "comvenio", ...argv], { run: false });
       expect(cli.matchedCommand).toBeUndefined();
-      const removed = removedTopLevelCommand(cli.args);
-      expect(removed).toBe(argv[0]);
-      const failure = removedCommandError(removed!);
+      const failure = unmatchedCommandError(cli.args);
+      expect(failure).not.toBeNull();
       const rendered = toPublicError(failure, { lang: "de" });
       expect(rendered.code).toBe("USAGE_ERROR");
       expect(rendered.detail).toContain(place);
       expect(exitCodeFor(failure)).not.toBe(0);
     }
-    expect(removedTopLevelCommand(["agent", "chat"])).toBeNull();
+    expect(unmatchedCommandError([])).toBeNull();
   });
 });
 

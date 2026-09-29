@@ -1,9 +1,7 @@
 // `comvenio finance` über die OAuth-Anmeldung (2026-09-23).
 //
-// Die Browser-Anmeldung ist der Standardweg des CLI. Bis hierher galt sie nur
-// für `comvenio action …`; jeder finance-Befehl verlangte zusätzlich einen
-// Geräte-Token. Jetzt läuft `comvenio finance` bei einer OAuth-Verbindung über
-// die typisierten Connector-Aktionen (K14 und der vollständige Finance Hub,
+// Die Browser-Anmeldung ist der einzige Anmeldeweg des CLI (geraetetoken-abbau-04).
+// `comvenio finance` läuft über die typisierten Connector-Aktionen (K14 und der vollständige Finance Hub,
 // cai.finance.01–35) — dieselben Prüfungen wie für einen KI-Agenten: Verein und
 // Abteilung aus dem Grant, Vorprüfung fremder Kennungen, Bestätigung.
 //
@@ -151,7 +149,7 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
     case "plan-close":
       return { actionId: "cai.finance.05.plan_close", write: true, input: compact({ year: year(opts, action), force: opts.force === true, note: opts.notes }) };
     case "plan-reopen":
-      throw new Error("plan-reopen verlangt eine Plattformrolle und läuft nicht über die OAuth-Anmeldung. Ein MasterAdmin öffnet mit Geräte-Token: comvenio login --device-token …");
+      throw new Error("plan-reopen verlangt eine Plattformrolle und läuft nicht über die OAuth-Anmeldung des CLI.");
     case "plan-copy":
       return { actionId: "cai.finance.07.plan_copy", write: true, input: compact({ year: year(opts, action), source_year: Number(need(id, action, "Quelljahr")), include_non_recurring: opts.includeNonRecurring === true, position_ids: opts.positions ? opts.positions.split(",").map((part) => part.trim()).filter(Boolean) : undefined }) };
     case "position-list":
@@ -189,8 +187,8 @@ export function mapClassic(action: string, id: string | undefined, opts: Finance
       if (einnahme === (data.expense_cents != null)) throw new Error("finance entry-create: Genau eines von --revenue und --expense angeben.");
       return { actionId: "cai.finance.25.entry_correction", input: { operation: "entry_create", position_id: need(id, action, "Positions-ID"), data }, write: true };
     }
-    // belegerfassung-01/-03: the receipt inbox. Uploading a file is
-    // „finance beleg-hochladen“ (finance-beleg.ts), it needs the content-service.
+    // belegerfassung-01/-03: the receipt inbox. Uploading a file went over the
+    // device token to the content-service and left with it (geraetetoken-abbau-04).
     case "beleg-liste":
       return { actionId: "cai.finance.31.finance_views", input: compact({ operation: "receipt_inbox", status: opts.status }), write: false };
     case "beleg-show":
