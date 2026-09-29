@@ -439,7 +439,7 @@ describe("K15b executor cai.data.06.upload", () => {
     if (!record) throw new Error("job missing");
     const outcome = await state.processor().process({ record, async reportProgress() {} });
     const expected = {
-      kind: "datashare_file",
+      kind: "datashare_file" as const,
       file_id: contentFileId,
       filename: secretFilename,
       content_type: "application/pdf",
@@ -457,7 +457,7 @@ describe("K15b executor cai.data.06.upload", () => {
     }, "completed");
     expect(projected.handle).toMatchObject({ state: "succeeded", result_file_id: null, result: expected });
     // Before completion, and for a record stored before the field existed, the result stays null.
-    const legacy = structuredClone(record) as { handle: Record<string, unknown> };
+    const legacy = structuredClone(record) as unknown as { handle: Record<string, unknown> };
     delete legacy.handle.result;
     expect(projectBullJob(legacy as unknown as typeof record, { progress: 40, returnvalue: outcome }, "active").handle.result).toBeNull();
 
