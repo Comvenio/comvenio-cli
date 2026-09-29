@@ -10,12 +10,14 @@ import {
   type Katalog,
   BEREICHE,
   baueKatalog,
+  bewertbar,
   bekannteActions,
   berichtMarkdown,
   claudeArgumente,
   faqPaare,
   genannt,
   gruppiere,
+  imSandbox,
   kernaussagen,
   klickAussagen,
   leseTranskript,
@@ -69,8 +71,11 @@ describe("Katalog (AK-F-01)", () => {
     const ids = katalog.aufgaben.map((eintrag) => eintrag.id);
     expect(new Set(ids).size).toBe(ids.length);
     const satz = standardSatz(katalog);
-    const gruppen = new Set(katalog.aufgaben.map((eintrag) => `${eintrag.bereich}/${eintrag.klasse}`));
+    const gruppen = new Set(katalog.aufgaben.filter(bewertbar).map((eintrag) => `${eintrag.bereich}/${eintrag.klasse}`));
     expect(satz).toHaveLength(gruppen.size);
+    // A task without key statements (or a build task without commands) would only cost a session.
+    expect(satz.every(bewertbar)).toBe(true);
+    expect(katalog.aufgaben.some((eintrag) => !bewertbar(eintrag))).toBe(true);
     expect(standardSatz(baueKatalog(ROOT)).map((eintrag) => eintrag.id)).toEqual(satz.map((eintrag) => eintrag.id));
   });
 
@@ -154,6 +159,41 @@ describe("Messung (09 §4.3)", () => {
     expect(ergebnis.sandbox_verstoesse.wert).toHaveLength(2);
     expect(ergebnis.abgelehnt.wert).toBe(1);
     expect(ergebnis.geloest.wert).toBe("nein");
+  });
+
+  test("DC-3: CLI-Ausgabe durch Textfilter und die eigene ausgelagerte Ausgabe bleiben in der Sandbox", () => {
+    const eigene = "/Users/x/.claude/projects/-private-var-folders-yb-T-probelauf-Ab12cD/1f/tool-results/mcp-out.txt";
+    for (const befehl of [
+      "comvenio help 2>&1 | head -50",
+      "comvenio action list 2>&1 | grep -i -E 'finance|budget'",
+      "comvenio whoami; comvenio action list",
+      "comvenio help 2>&1 | head -60; comvenio whoami 2>&1 | head -20",
+      `jq -r '.markdown' ${eigene}`,
+      "comvenio action list | jq '.[] | .id' | sort | uniq",
+      "head -1 notiz.txt",
+      `jq -r '.markdown' ${eigene} | sed -n '1,60p;243,335p'; `,
+      "comvenio help finanzen 2>&1 | head -80; echo ------; comvenio help sponsoring",
+    ]) {
+      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false })).toBe(true);
+    }
+  });
+
+  test("DC-3: Filter auf fremde Pfade, Umleitungen und Ersetzungen verlassen die Sandbox", () => {
+    for (const befehl of [
+      "jq . /etc/hosts",
+      "grep -r token ~/.config",
+      "comvenio help | head -5 ../../geheim.txt",
+      "jq . /Users/x/.claude/projects/-Users-x-Harness-Studio/memory/MEMORY.md",
+      "jq . /Users/x/.claude/projects/-private-var-folders-T-probelauf-Ab12cD/../other/x.json",
+      "comvenio action list > liste.txt",
+      "comvenio help && ls /",
+      'grep "$(cat /etc/passwd)"',
+      "comvenio action list | sed -i s/a/b/ liste.txt",
+      "comvenio action confirm abc",
+      "comvenio help |",
+    ]) {
+      expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false })).toBe(false);
+    }
   });
 
   test("TC-02: Finance-Fachfrage mit allen Kernaussagen ist gelöst, mit einem Teil teilweise", () => {

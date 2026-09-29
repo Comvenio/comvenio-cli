@@ -297,11 +297,18 @@ export function baueKatalog(root: string): Katalog {
 /**
  * The standard set of a run: per area and class the task with the smallest
  * id hash — deterministic, so a second run on the same catalog asks the same
- * questions (TC-06), and it only moves when the catalog changes.
+ * questions (TC-06), and it only moves when the catalog changes. Only
+ * scoreable tasks: a question without key statements would cost a session
+ * and still end NOT_MEASURED.
  */
+export function bewertbar(aufgabe: Aufgabe): boolean {
+  // Mirrors bewerteLoesung: bau is scored by its commands, everything else by key statements.
+  return aufgabe.klasse === "bau" ? (aufgabe.befehle ?? []).length > 0 : aufgabe.kernaussagen.length > 0;
+}
+
 export function standardSatz(katalog: Katalog): Aufgabe[] {
   const wahl = new Map<string, { aufgabe: Aufgabe; schluessel: string }>();
-  for (const aufgabe of katalog.aufgaben) {
+  for (const aufgabe of katalog.aufgaben.filter(bewertbar)) {
     const gruppe = `${aufgabe.bereich}/${aufgabe.klasse}`;
     const schluessel = createHash("sha256").update(aufgabe.id).digest("hex");
     const bisher = wahl.get(gruppe);
@@ -480,7 +487,77 @@ export function istNachschlag(aufruf: ToolAufruf): boolean {
   return /^comvenio (help|schema|action list)\b/u.test(befehl) || /^comvenio\b.*(--help|-h)\b/u.test(befehl);
 }
 
-function imSandbox(aufruf: ToolAufruf): boolean {
+/**
+ * Read-only text filters a session may pipe CLI output through. The provider
+ * lets them read files only inside the empty sandbox directory (pilot
+ * 2026-09-30: `jq`, `grep`, `head`, `sed`, `wc`, `cat` on /etc/hosts denied,
+ * `head` on a sandbox file and `… | head` allowed).
+ */
+export const TEXTFILTER = ["head", "tail", "grep", "egrep", "jq", "sed", "wc", "sort", "uniq", "cut", "tr"] as const;
+
+// Large tool results are stored by the provider under
+// ~/.claude/projects/<encoded sandbox cwd>/ — reading them back is the
+// session's own output, not a foreign file.
+const EIGENE_AUSGABE = /^(?:~|\/[^\s]*?)\/\.claude\/projects\/[^/]*-probelauf-[A-Za-z0-9]{6}\//u;
+
+/** Splits a shell command at `|`, `||`, `&&`, `;`, `&` outside quotes; tokens without quotes. */
+function segmente(befehl: string): string[][] | null {
+  const ergebnis: string[][] = [[]];
+  let token = "";
+  let hatToken = false;
+  let quote: string | null = null;
+  const schliesseToken = () => {
+    if (hatToken) ergebnis[ergebnis.length - 1].push(token);
+    token = "";
+    hatToken = false;
+  };
+  for (let i = 0; i < befehl.length; i += 1) {
+    const zeichen = befehl[i];
+    if (quote) {
+      // Double quotes still expand `$(…)`, `$VAR` and backticks.
+      if (quote === '"' && (zeichen === "$" || zeichen === "`" || zeichen === "\\")) return null;
+      if (zeichen === quote) quote = null;
+      else token += zeichen;
+      continue;
+    }
+    if (zeichen === "'" || zeichen === '"') {
+      quote = zeichen;
+      hatToken = true;
+    } else if (/\s/u.test(zeichen)) {
+      schliesseToken();
+    } else if (zeichen === "|" || zeichen === "&" || zeichen === ";") {
+      schliesseToken();
+      if (befehl[i + 1] === zeichen) i += 1;
+      ergebnis.push([]);
+    } else if (zeichen === "`" || zeichen === "$" || zeichen === "<" || zeichen === ">" || zeichen === "\\") {
+      // Substitution, redirection or escapes: not evaluated, so not in the sandbox.
+      return null;
+    } else {
+      token += zeichen;
+      hatToken = true;
+    }
+  }
+  if (quote) return null;
+  schliesseToken();
+  return ergebnis;
+}
+
+function istPfad(token: string): boolean {
+  return token.startsWith("/") || token.startsWith("~") || token.split("/").includes("..");
+}
+
+function filterImSandbox(tokens: readonly string[]): boolean {
+  const [name, ...rest] = tokens;
+  // `echo ----` as a separator reads nothing (substitutions are rejected before).
+  if (name === "echo") return true;
+  if (!(TEXTFILTER as readonly string[]).includes(name)) return false;
+  // Filters that write files leave the sandbox.
+  if (name === "sed" && rest.some((token) => /^-[a-zA-Z]*i/u.test(token) || token === "--in-place")) return false;
+  if (name === "sort" && rest.some((token) => /^-[a-zA-Z]*o/u.test(token) || token.startsWith("--output"))) return false;
+  return rest.filter(istPfad).every((pfad) => EIGENE_AUSGABE.test(pfad) && !pfad.split("/").includes(".."));
+}
+
+export function imSandbox(aufruf: ToolAufruf): boolean {
   if (aufruf.name.endsWith("comvenio_hilfe")) return true;
   if (aufruf.name === "WebFetch") {
     try {
@@ -490,10 +567,17 @@ function imSandbox(aufruf: ToolAufruf): boolean {
     }
   }
   if (aufruf.name !== "Bash") return false;
-  const befehl = aufruf.befehl.trim();
-  // A chained command (`comvenio help && cat …`) leaves the sandbox even if it starts inside.
-  if (/[;&|`$<>]/u.test(befehl.replace(/'[^']*'|"[^"]*"/gu, ""))) return false;
-  return ERLAUBTE_BEFEHLE.some((erlaubt) => befehl === erlaubt || befehl.startsWith(`${erlaubt} `));
+  // Merging or dropping stderr reads nothing; every other redirection does.
+  // A trailing `;` ends the chain without a further command.
+  const befehl = aufruf.befehl.replace(/\s2>&1\b|\s2>\s*\/dev\/null\b/gu, " ").replace(/[\s;]+$/u, "").trim();
+  const teile = segmente(befehl);
+  if (!teile || teile.some((tokens) => tokens.length === 0)) return false;
+  // Every segment of a chain must stay inside: `comvenio help && cat …` does not.
+  return teile.every((tokens) => {
+    if (tokens[0] !== "comvenio") return filterImSandbox(tokens);
+    const segment = tokens.join(" ");
+    return ERLAUBTE_BEFEHLE.some((erlaubt) => segment === erlaubt || segment.startsWith(`${erlaubt} `));
+  });
 }
 
 export function istConfirm(aufruf: ToolAufruf): boolean {
