@@ -12,6 +12,7 @@ import {
   STATE_FILE,
   writeConnectorLogin,
   writeDeviceLogin,
+  MACHINE_CLIENT_ID_ENV,
 } from "./auth.ts";
 import {
   clearOAuthCredentials,
@@ -404,6 +405,7 @@ async function main() {
     const rendered = toPublicError(err, {
       lang: resolveCliLang(argv, process.env),
       granted_scopes: grantedScopes,
+      machine_grant: Boolean(process.env[MACHINE_CLIENT_ID_ENV]),
     });
     if (process.env.COMVENIO_DEBUG === "1" && err instanceof Error && err.stack) console.error(err.stack);
     console.error(argv.includes("--json")

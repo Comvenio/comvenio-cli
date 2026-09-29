@@ -309,3 +309,15 @@ describe("MCP gateway: machine tokens", () => {
     expect(splitMachineIntrospection(plain)).toEqual({ result: plain, machine_client_id: null });
   });
 });
+
+describe("SCOPE_REQUIRED with a machine grant", () => {
+  test("points to a new grant instead of a new sign-in", async () => {
+    const { toPublicError, PublicCliError } = await import("../src/errors.ts");
+    const error = new PublicCliError("SCOPE_REQUIRED", "scope missing", { required_scopes: ["event.write"] });
+    const rendered = toPublicError(error, { lang: "de", machine_grant: true });
+    expect(rendered.next_command).toBeNull();
+    expect(rendered.detail).toContain("event.write");
+    expect(rendered.detail).toContain("Automation");
+    expect(toPublicError(error, { lang: "de" }).next_command).toContain("comvenio login");
+  });
+});

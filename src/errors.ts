@@ -90,7 +90,7 @@ export function langArgument(argv: readonly string[]): string | undefined {
 
 export function toPublicError(
   error: unknown,
-  options: { lang: PublicErrorLang; granted_scopes?: readonly string[] },
+  options: { lang: PublicErrorLang; granted_scopes?: readonly string[]; machine_grant?: boolean },
 ): CliPublicError {
   let code: PublicErrorCode = "UNKNOWN_ERROR";
   let requestId: string | null = null;
@@ -152,6 +152,17 @@ export function toPublicError(
     required_scopes: requiredScopes,
     granted_scopes: options.granted_scopes ?? [],
   });
+  // A machine grant cannot sign in again with more scopes; a new grant carries them.
+  if (code === "SCOPE_REQUIRED" && options.machine_grant) {
+    const missing = requiredScopes.join(", ");
+    return {
+      ...rendered,
+      next_command: null,
+      detail: options.lang === "en"
+        ? `This machine grant lacks ${missing || "the required scope"}. Create a new grant with it in club settings › Automation.`
+        : `Diesem Maschinen-Grant fehlt ${missing || "der nötige Scope"}. Lege in den Vereinseinstellungen › Automation einen neuen Grant damit an.`,
+    };
+  }
   const cleaned = detail ? cleanDetail(detail) : "";
   return cleaned ? { ...rendered, detail: cleaned } : rendered;
 }
