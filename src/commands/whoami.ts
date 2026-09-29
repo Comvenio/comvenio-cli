@@ -8,7 +8,7 @@ import { CliConnectorClient } from "../mcp/client.ts";
  */
 export function registerWhoamiCommand(cli: CAC): void {
   cli
-    .command("whoami", "Aktuellen Login anzeigen (Name, Club, Umgebung)")
+    .command("whoami", "Aktuelle Anmeldung anzeigen (Club, Umgebung, Scopes)")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (opts: { json?: boolean }) => {
       const state = await loadState();

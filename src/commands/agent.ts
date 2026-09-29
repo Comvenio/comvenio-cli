@@ -3,9 +3,6 @@ import type { CAC } from "cac";
 import { loadState } from "../auth.ts";
 import { PublicCliError } from "../errors.ts";
 import { output } from "../format.ts";
-import { createClient } from "../http.ts";
-import { requireClubId } from "../util/club.ts";
-import { evidenceApprovalId, readAgentEvidence } from "../util/agent-evidence.ts";
 import type { CliConnectorClient } from "../mcp/client.ts";
 import { connector } from "./action.ts";
 import { removedCommandError } from "./removed.ts";
@@ -59,7 +56,7 @@ export function buildClubAgentConverseArguments(input: {
   };
 }
 
-export const AGENT_ACTIONS = ["chat", "evidence"] as const;
+export const AGENT_ACTIONS = ["chat"] as const;
 
 /** Resolve `agent <action> [...message]` to the chat message (throws on unknown or removed action). */
 export function resolveAgentChatMessage(action: string, words: string[] | undefined): string {
@@ -176,7 +173,7 @@ export function registerAgentCommands(cli: CAC): void {
   cli
     .command(
       "agent <action> [...message]",
-      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen (über die Anmeldung mit comvenio login); Freigaben entscheidest du nur per Link in Web oder App; evidence <id> — vorhandenen DEV-Prüfbeleg lesen",
+      "Club-Agent: chat <nachricht> — mit dem vereinseigenen Club-Agenten sprechen (über die Anmeldung mit comvenio login); Freigaben entscheidest du nur per Link in Web oder App",
     )
     .option(
       "--session <id>",
@@ -184,13 +181,6 @@ export function registerAgentCommands(cli: CAC): void {
     )
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (action: string, words: string[], opts: AgentChatOptions) => {
-      if (action === "evidence") {
-        const approvalId = evidenceApprovalId(words);
-        const state = await loadState();
-        const result = await readAgentEvidence(createClient(state), requireClubId(state, opts.club), approvalId);
-        output(result, opts.json, () => "Gespräch, Freigabe, Ausführung und Nachlese sind miteinander verknüpft.");
-        return;
-      }
       const message = resolveAgentChatMessage(action, words);
       if (opts.club !== undefined) {
         throw new Error("--club gilt für agent chat nicht: Der Verein kommt aus der Anmeldung (comvenio login).");
