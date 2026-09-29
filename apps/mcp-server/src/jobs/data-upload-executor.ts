@@ -76,7 +76,9 @@ function stringHeaders(value: Record<string, unknown>): Record<string, string> {
  * content-service (presign-upload -> PUT -> finalize) on behalf of the user.
  * The connector file is consumed once before the transfer; a failure after
  * that point ends the job without a retry, because the file cannot be
- * consumed a second time.
+ * consumed a second time. Immediately before each side effect (consumption,
+ * presign-upload, PUT, finalize) a fresh job actor is obtained, so a revoked
+ * grant stops the job before the next effect.
  */
 export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
   action_id: "cai.data.06.upload",
@@ -104,6 +106,8 @@ export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     }
     if (job.signal?.aborted) throw failure(context, "CONFLICT", "Der Job wurde abgebrochen.");
 
+    // The file authorization of the consumption resolves a fresh snapshot with this actor.
+    await job.freshActor();
     const consumed = await job.files.consumeCleanUpload({
       context,
       club_id: input.club_id,
@@ -130,7 +134,8 @@ export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     }
     await job.reportProgress(40);
 
-    const presigned = presignResponseSchema.safeParse(await job.client.request<JsonValue>({
+    const presignClient = await job.freshActor();
+    const presigned = presignResponseSchema.safeParse(await presignClient.request<JsonValue>({
       method: "POST",
       service: "content",
       path: "/files/presign-upload",
@@ -151,6 +156,8 @@ export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     if (!presigned.success) {
       throw failure(context, "UPSTREAM_UNAVAILABLE", "Der Fachservice hat keinen gültigen Upload vorbereitet.");
     }
+    // The PUT itself is not bound to the grant: check it once more right before the transfer.
+    await job.freshActor();
     await timed(job.signal, async (signal) => {
       const response = await job.fetch(presigned.data.upload_url, {
         method: "PUT",
@@ -165,7 +172,8 @@ export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     });
     await job.reportProgress(80);
 
-    const finalized = finalizeResponseSchema.safeParse(await job.client.request<JsonValue>({
+    const finalizeClient = await job.freshActor();
+    const finalized = finalizeResponseSchema.safeParse(await finalizeClient.request<JsonValue>({
       method: "POST",
       service: "content",
       path: `/files/${encodeURIComponent(presigned.data.file_id)}/finalize`,

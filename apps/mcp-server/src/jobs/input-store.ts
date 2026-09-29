@@ -17,6 +17,12 @@ export interface JobInputEnvelope {
   operation: string;
   input: JsonValue;
   context: RequestContext;
+  /**
+   * Expiry of the signed job binding, fixed once at job start. Every actor
+   * exchange of every attempt uses exactly this value, so a retry can never
+   * extend the job's authorization.
+   */
+  binding_expires_at: string;
 }
 
 export interface JobInputStore {
@@ -40,6 +46,8 @@ function envelopeFrom(value: JsonValue, jobId: UUID): JobInputEnvelope {
     || typeof record.action_id !== "string"
     || typeof record.operation !== "string"
     || !("input" in record)
+    || typeof record.binding_expires_at !== "string"
+    || !Number.isFinite(Date.parse(record.binding_expires_at))
     || record.context === null
     || typeof record.context !== "object"
     || Array.isArray(record.context)) {

@@ -11,9 +11,6 @@ import type { JobInputStore } from "./input-store.ts";
 import { JobActorRevokedError, type JobActorPort } from "./job-actor.ts";
 import type { InternalJobRecord, JobProcessorPort, JobProcessorResult } from "./types.ts";
 
-/** Lifetime of the signed job binding sent to the auth-service; far below the 24 h maximum. */
-const JOB_BINDING_LIFETIME_MS = 10 * 60 * 1_000;
-
 /**
  * Fixed, payload-free failure texts. BullMQ persists the message as
  * failedReason, so it must never carry input, file names or upstream answers.
@@ -48,13 +45,16 @@ function sameBinding(record: InternalJobRecord, envelope: Awaited<ReturnType<Job
     && context.subject_id === record.handle.subject_id
     && context.club_id === record.handle.club_id
     && context.oauth_grant_id === record.oauth_grant_id
-    && toolName(envelope.action_id) === record.handle.tool_name;
+    && toolName(envelope.action_id) === record.handle.tool_name
+    && Number.isFinite(Date.parse(envelope.binding_expires_at));
 }
 
 /**
  * Worker-side dispatcher by action_id and operation. Before any call to a
  * domain service it obtains a job actor (D-CAI-023); the actor is used only
- * for this run and never stored.
+ * for this run and never stored. The executor obtains a fresh actor again
+ * immediately before each side effect, always with the binding expiry fixed
+ * at job start.
  */
 export class DomainJobProcessor implements JobProcessorPort {
   readonly #fetch: FetchLike;
@@ -85,19 +85,20 @@ export class DomainJobProcessor implements JobProcessorPort {
     if (input.signal?.aborted) return fail("aborted");
 
     const context = envelope.context;
+    const exchange = async (): Promise<string> => (await this.dependencies.actors.exchange({
+      request_id: record.request_id,
+      job_id: jobId,
+      action_id: envelope.action_id,
+      grant_id: record.oauth_grant_id,
+      subject_id: record.handle.subject_id,
+      club_id: record.handle.club_id,
+      scopes: executor.required_scopes.filter((scope) => context.scopes.includes(scope)),
+      // Fixed at job start and stored with the input: a retry never extends it.
+      expires_at: envelope.binding_expires_at,
+    })).access_token;
     let token: string;
     try {
-      const actor = await this.dependencies.actors.exchange({
-        request_id: record.request_id,
-        job_id: jobId,
-        action_id: envelope.action_id,
-        grant_id: record.oauth_grant_id,
-        subject_id: record.handle.subject_id,
-        club_id: record.handle.club_id,
-        scopes: executor.required_scopes.filter((scope) => context.scopes.includes(scope)),
-        expires_at: new Date(this.#now().getTime() + JOB_BINDING_LIFETIME_MS).toISOString(),
-      });
-      token = actor.access_token;
+      token = await exchange();
     } catch (error) {
       if (error instanceof JobActorRevokedError) return fail("actor_revoked");
       // Nothing was consumed yet: BullMQ may retry with backoff.
@@ -105,21 +106,25 @@ export class DomainJobProcessor implements JobProcessorPort {
       throw new Error(RETRY);
     }
 
-    let snapshot: Promise<CapabilitySnapshot> | null = null;
+    // Every file authorization resolves a fresh snapshot with the latest actor, never a cached one.
     const files = new ConnectorFileService(
       this.dependencies.file_metadata,
       this.dependencies.objects,
       this.dependencies.scanner,
-      new SnapshotFileAuthorization(() => {
-        snapshot ??= this.dependencies.capabilities.resolve({ context, backend_actor_token: token });
-        return snapshot;
-      }, this.#now),
+      new SnapshotFileAuthorization(
+        () => this.dependencies.capabilities.resolve({ context, backend_actor_token: token }),
+        this.#now,
+      ),
     );
     try {
       await executor.execute({
         record,
         envelope,
-        client: this.dependencies.client_for(token),
+        freshActor: async () => {
+          if (input.signal?.aborted) throw new Error("aborted");
+          token = await exchange();
+          return this.dependencies.client_for(token);
+        },
         files,
         file_metadata: this.dependencies.file_metadata,
         objects: this.dependencies.objects,

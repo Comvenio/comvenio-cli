@@ -67,7 +67,11 @@ export const UPLOAD_HANDLE_SCHEMA = z.object({
   club_id: uuid,
   owner_subject_id: uuid,
   upload_url: z.string().url().refine((value) => new URL(value).protocol === "https:").nullable(),
-  required_headers: z.object({ "Content-Type": uploadMime }).strict().nullable(),
+  required_headers: z.object({
+    "Content-Type": uploadMime,
+    "Content-Length": z.string().regex(/^[1-9][0-9]{0,9}$/u),
+    "If-None-Match": z.literal("*").optional(),
+  }).strict().nullable(),
   state: UPLOAD_STATE_SCHEMA,
   expires_at: instant,
   file_id: uuid.nullable(),

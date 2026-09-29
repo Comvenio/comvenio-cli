@@ -22,6 +22,8 @@ export interface JobBindingInput {
   subject_id: UUID;
   club_id: UUID;
   expires_at: string;
+  /** Requested actor scopes; signed so a binding cannot be replayed with another selection. */
+  scopes: readonly OAuthScope[];
 }
 
 export interface JobActorRequest {
@@ -63,6 +65,7 @@ export function jobBindingMessage(input: JobBindingInput): string {
     input.subject_id,
     input.club_id,
     input.expires_at,
+    [...input.scopes].sort().join(" "),
   ].join("|");
 }
 
@@ -118,6 +121,7 @@ export class HttpJobActorTokenPort implements JobActorPort {
       subject_id: input.subject_id,
       club_id: input.club_id,
       expires_at: input.expires_at,
+      scopes: [...input.scopes].sort(),
     };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), EXCHANGE_TIMEOUT_MS);
@@ -135,7 +139,7 @@ export class HttpJobActorTokenPort implements JobActorPort {
           grant_id: input.grant_id,
           subject_id: input.subject_id,
           club_id: input.club_id,
-          scopes: [...input.scopes].sort(),
+          scopes: binding.scopes,
           job_binding: {
             job_id: binding.job_id,
             action_id: binding.action_id,

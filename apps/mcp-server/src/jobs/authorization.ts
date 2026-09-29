@@ -1,4 +1,4 @@
-import type { CapabilitySnapshot } from "@comvenio/auth";
+import { ToolVisibilityPolicy, type CapabilitySnapshot } from "@comvenio/auth";
 import {
   createConnectorError,
   normalizeRequestContext,
@@ -8,6 +8,7 @@ import {
 } from "@comvenio/connector-contracts";
 
 import type { FileAuthorizationPort } from "../files/types.ts";
+import { k12FilePermissionPolicy } from "../tools/content-homepage-news-data/definitions.ts";
 import type { JobExecutorRegistry } from "./executors.ts";
 import type { JobAuthorizationPort } from "./types.ts";
 
@@ -19,13 +20,13 @@ function denied(context: RequestContext, message: string): Error {
 
 /**
  * Checks that the capability snapshot belongs to the calling subject and club
- * and is still current; returns its capability_version.
+ * and is still current; returns it.
  */
-async function currentSnapshotVersion(
+async function currentSnapshot(
   source: CapabilitySnapshotSource,
   contextInput: RequestContext,
   now: () => Date,
-): Promise<string> {
+): Promise<CapabilitySnapshot> {
   const context = normalizeRequestContext(contextInput);
   const snapshot = await source();
   if (!snapshot
@@ -36,7 +37,15 @@ async function currentSnapshotVersion(
     || Date.parse(snapshot.expires_at) <= now().getTime()) {
     throw denied(context, "Der aktuelle Berechtigungskontext fehlt oder ist abgelaufen.");
   }
-  return String(snapshot.capability_version);
+  return snapshot;
+}
+
+async function currentSnapshotVersion(
+  source: CapabilitySnapshotSource,
+  contextInput: RequestContext,
+  now: () => Date,
+): Promise<string> {
+  return String((await currentSnapshot(source, contextInput, now)).capability_version);
 }
 
 function requireScopes(context: RequestContext, anyOf: readonly OAuthScope[]): void {
@@ -51,7 +60,9 @@ function requireScopes(context: RequestContext, anyOf: readonly OAuthScope[]): v
   }
 }
 
-const FILE_ACTION_SCOPES: Record<Parameters<FileAuthorizationPort["reauthorize"]>[0]["action"], readonly OAuthScope[]> = {
+type FileAction = Parameters<FileAuthorizationPort["reauthorize"]>[0]["action"];
+
+const FILE_ACTION_SCOPES: Record<FileAction, readonly OAuthScope[]> = {
   upload_start: ["files.write"],
   upload_complete: ["files.write"],
   file_get: ["files.read", "files.import", "files.export"],
@@ -59,10 +70,54 @@ const FILE_ACTION_SCOPES: Record<Parameters<FileAuthorizationPort["reauthorize"]
 };
 
 /**
+ * Club rights per file action, taken from the file profiles of the data
+ * actions (file_write for everything that stores or consumes, file_read for
+ * the reference). The profiles do not distinguish upload purposes, so every
+ * purpose (including job results) needs the same rights.
+ */
+const FILE_ACTION_PROFILES: Record<FileAction, "file_read" | "file_write"> = {
+  upload_start: "file_write",
+  upload_complete: "file_write",
+  file_get: "file_read",
+  file_consume: "file_write",
+};
+
+/**
+ * Evaluates the club rights of the action with the same policy evaluation as
+ * the tool visibility. Identity, club and expiry of the snapshot were checked
+ * before; the stored context of a job may carry an older capability_version,
+ * so the evaluation is bound to the snapshot's own version and decides only
+ * on the effective permissions and the department.
+ */
+function requireFilePermission(
+  context: RequestContext,
+  snapshot: CapabilitySnapshot,
+  action: FileAction,
+  now: () => Date,
+): void {
+  const decision = new ToolVisibilityPolicy(now).evaluate({
+    tool: {
+      tool_name: `connector_file:${action}`,
+      required_scopes: [],
+      permission_policy: k12FilePermissionPolicy(FILE_ACTION_PROFILES[action]),
+      is_public: false,
+    },
+    context: { ...context, capability_version: String(snapshot.capability_version) },
+    snapshot,
+    provider_tool_updates: "dynamic",
+    catalog_contains_tool: true,
+  });
+  if (!decision.authorized) {
+    throw denied(context, "Für diese Dateiaktion fehlen im Verein die erforderlichen Rechte.");
+  }
+}
+
+/**
  * Production FileAuthorizationPort: re-checks the file scopes of the action
- * against the request context and binds the result to the current
- * capability snapshot (request path: the snapshot resolved for this MCP
- * request; worker path: the snapshot resolved with the job actor).
+ * against the request context, then the club rights of the action against
+ * the current capability snapshot, and binds the result to that snapshot
+ * (request path: the snapshot resolved for this MCP request; worker path: a
+ * snapshot freshly resolved with the current job actor).
  */
 export class SnapshotFileAuthorization implements FileAuthorizationPort {
   constructor(
@@ -75,8 +130,11 @@ export class SnapshotFileAuthorization implements FileAuthorizationPort {
     action: "upload_start" | "upload_complete" | "file_get" | "file_consume";
     purpose?: UploadPurpose | "job_result";
   }): Promise<{ capability_version: string }> {
-    requireScopes(input.context, FILE_ACTION_SCOPES[input.action]);
-    return { capability_version: await currentSnapshotVersion(this.snapshot, input.context, this.now) };
+    const context = normalizeRequestContext(input.context);
+    requireScopes(context, FILE_ACTION_SCOPES[input.action]);
+    const snapshot = await currentSnapshot(this.snapshot, context, this.now);
+    requireFilePermission(context, snapshot, input.action, this.now);
+    return { capability_version: String(snapshot.capability_version) };
   }
 }
 

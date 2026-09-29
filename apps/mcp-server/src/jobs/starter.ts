@@ -13,6 +13,13 @@ import type { JobInputStore } from "./input-store.ts";
 import { AsyncJobService, deterministicJobId } from "./service.ts";
 import { JOB_METADATA_TTL_SECONDS } from "./types.ts";
 
+/**
+ * Lifetime of the signed job binding (D-CAI-023), fixed at job start and
+ * covering queue wait and every retry; far below the auth-service maximum
+ * of 24 h.
+ */
+export const JOB_BINDING_LIFETIME_MS = 60 * 60 * 1_000;
+
 /** The call-level safety data of the running domain tool call (action, operation, idempotency key). */
 export interface JobCallBinding {
   action_id: string;
@@ -66,6 +73,7 @@ export class DomainJobStarter {
     registry: JobExecutorRegistry;
     tool_name: (actionId: string) => string;
     call: () => JobCallBinding | undefined;
+    now?: () => Date;
   }) {}
 
   supports(actionId: string, operation: string): boolean {
@@ -103,12 +111,15 @@ export class DomainJobStarter {
       idempotency_key: call.idempotency_key,
     });
     // The input is stored before the enqueue, so the worker never sees a job without it.
+    // An existing envelope (idempotent retry) keeps its original binding expiry.
+    const now = (this.input.now ?? (() => new Date()))();
     const stored = await this.input.inputs.put({
       job_id: jobId,
       action_id: actionId,
       operation,
       input: structuredClone(request.input),
       context,
+      binding_expires_at: new Date(now.getTime() + JOB_BINDING_LIFETIME_MS).toISOString(),
     }, JOB_METADATA_TTL_SECONDS * 1_000);
     try {
       const handle = await this.input.jobs.start({

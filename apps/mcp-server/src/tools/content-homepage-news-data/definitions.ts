@@ -20,6 +20,14 @@ const permissions: Record<Profile, string[]> = {
 function policy(profile: Profile): PermissionPolicy {
   return { all_of: [], any_of: [...permissions[profile]], owner_or_self_allowed: false, department_scope: "optional", backend_audit_refs: [`k12:${profile}`] };
 }
+/**
+ * The permission policy of the file profiles, shared with the connector's own
+ * file actions (upload, file reference, job consumption) so that they require
+ * exactly the club rights of the data actions.
+ */
+export function k12FilePermissionPolicy(profile: "file_read" | "file_write"): PermissionPolicy {
+  return policy(profile);
+}
 function route(method: ComvenioHttpMethod, service: K12BackendRoute["service"], path: string, purpose?: K12BackendRoute["purpose"]): K12BackendRoute {
   return { method, service, normalized_path_template: path, purpose: purpose ?? (method === "GET" ? "read" : "mutation") };
 }

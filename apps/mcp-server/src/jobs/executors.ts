@@ -11,9 +11,15 @@ export type FetchLike = (input: string | URL | Request, init?: RequestInit) => P
 export interface JobExecutionContext {
   record: InternalJobRecord;
   envelope: JobInputEnvelope;
-  /** Backend client authenticated with the job actor of this run. */
-  client: ComvenioApiClient;
-  /** File service whose authorization is bound to the job actor's capability snapshot. */
+  /**
+   * Obtains a fresh job actor immediately before a side effect: the
+   * auth-service re-checks grant, revocation, binding and account on every
+   * call. Returns a backend client authenticated with that actor; throws when
+   * the actor is refused or unavailable, which ends the job. The file service
+   * below authorizes with a capability snapshot resolved for the latest actor.
+   */
+  freshActor(): Promise<ComvenioApiClient>;
+  /** File service whose authorization resolves a fresh capability snapshot with the latest job actor. */
   files: ConnectorFileService;
   file_metadata: FileMetadataStore;
   objects: QuarantineObjectPort;
