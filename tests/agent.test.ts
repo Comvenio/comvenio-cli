@@ -152,3 +152,11 @@ describe("agent chat run_refs (Strang 01 §11)", () => {
     expect(text.endsWith("Session: s1")).toBe(true);
   });
 });
+
+test("approval output does not present transport success as confirmed effect", () => {
+  const text = formatApproval(approval({ state: "approved", run: {
+    state: "succeeded", verification: { status: "unknown" },
+  } }));
+  expect(text).toContain("noch nicht bestätigt");
+  expect(text).not.toContain("Lauf: succeeded");
+});

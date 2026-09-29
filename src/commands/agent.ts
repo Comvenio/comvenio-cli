@@ -40,7 +40,10 @@ export type AgentApproval = {
   decision_kind?: string | null;
   decided_at?: string | null;
   reason?: string | null;
-  run?: { id?: string | null; state?: string | null; error?: string | null } | null;
+  run?: { id?: string | null; state?: string | null; error?: string | null;
+    verification?: { status: "verified" | "failed" | "unknown" } | null;
+    result_summary?: string | null;
+  } | null;
   can_decide: boolean;
   approval_url: string;
 };
@@ -142,7 +145,11 @@ export function formatApproval(a: AgentApproval): string {
       ? `Frist: ${a.expires_at}`
       : `Entschieden: ${a.decided_at ?? "–"} (${a.decision_kind ?? a.expired_reason ?? "–"})`,
     ...(a.reason ? [`Grund: ${a.reason}`] : []),
-    ...(a.run?.state ? [`Lauf: ${a.run.state}${a.run.error ? ` (${a.run.error})` : ""}`] : []),
+    ...(a.run?.verification?.status === "unknown"
+      ? [a.run.result_summary || "Die Wirkung konnte noch nicht bestätigt werden. Die Aktion wird nicht automatisch wiederholt."]
+      : a.run?.verification?.status === "failed"
+        ? [a.run.result_summary || "Die überprüfte Änderung entspricht nicht dem erwarteten Ergebnis."]
+        : a.run?.state ? [`Lauf: ${a.run.state}${a.run.error ? ` (${a.run.error})` : ""}`] : []),
     `Link: ${a.approval_url}`,
   ];
   return lines.join("\n");
