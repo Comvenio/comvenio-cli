@@ -1,6 +1,6 @@
 import type { UUID } from "@comvenio/connector-contracts";
 
-import type { InternalJobRecord, JobQueuePort } from "./types.ts";
+import type { InternalJobRecord, JobProcessorResult, JobQueuePort } from "./types.ts";
 
 export class MemoryJobQueue implements JobQueuePort {
   readonly #records = new Map<UUID, InternalJobRecord>();
@@ -29,6 +29,18 @@ export class MemoryJobQueue implements JobQueuePort {
 
   async readiness(): Promise<boolean> { return this.available; }
   async close(): Promise<void> {}
+
+  /** Mirrors BullMQ's completion: the processor's return value becomes the public result. */
+  async complete(jobId: UUID, outcome: JobProcessorResult, now: string): Promise<void> {
+    const record = this.#records.get(jobId);
+    if (!record) throw new Error("Der Testjob wurde nicht gefunden.");
+    record.handle.state = "succeeded";
+    record.handle.progress_percent = 100;
+    record.handle.finished_at = now;
+    record.handle.result_file_id = outcome.result_file_id;
+    record.handle.result = structuredClone(outcome.result ?? null);
+    record.handle.error_code = null;
+  }
 
   async update(jobId: UUID, update: Partial<InternalJobRecord["handle"]>): Promise<void> {
     const record = this.#records.get(jobId);

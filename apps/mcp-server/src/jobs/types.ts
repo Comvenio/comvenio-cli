@@ -2,6 +2,7 @@ import type { ConnectionOptions } from "bullmq";
 
 import type {
   AsyncJobHandle,
+  AsyncJobResult,
   ConnectorErrorCode,
   FairUseBucket,
   RateLimitConfig,
@@ -93,6 +94,8 @@ export interface BullMqJobQueueOptions {
 
 export interface JobProcessorResult {
   result_file_id: UUID | null;
+  /** Minimal, non-secret result projected by the executor; stored as the job's return value. */
+  result?: AsyncJobResult | null;
   error_code: ConnectorErrorCode | null;
 }
 

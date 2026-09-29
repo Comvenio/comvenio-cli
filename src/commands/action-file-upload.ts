@@ -5,7 +5,8 @@
 // Flow: read + hash locally -> cv_file_upload_start_write -> PUT the bytes to
 // the one-time upload URL -> cv_file_upload_complete_write (size, SHA-256,
 // type and virus scan) until "clean" -> cai.data.06.upload with the file ID
-// -> cv_job_status_read until the job has finished.
+// -> cv_job_status_read until the job has finished; its `result` names the
+// file ID in the club's DataShare (Vereinsablage).
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { basename } from "node:path";
@@ -269,9 +270,55 @@ function jobUnfinished(jobId: string, state: string): PublicCliError {
   return new PublicCliError("OUTCOME_UNKNOWN", detail, { detail });
 }
 
+/** The file the job stored in the club's DataShare (Vereinsablage), as the job status reports it. */
+export type DataShareFileResult = {
+  kind: "datashare_file";
+  file_id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+};
+
+/** Reads the job's `result`; anything but a complete DataShare file reference is null. */
+export function dataShareFileResult(job: Record<string, unknown>): DataShareFileResult | null {
+  const result = object(job.result);
+  if (
+    result?.kind !== "datashare_file"
+    || typeof result.file_id !== "string"
+    || typeof result.filename !== "string"
+    || typeof result.content_type !== "string"
+    || typeof result.size_bytes !== "number"
+  ) {
+    return null;
+  }
+  return {
+    kind: "datashare_file",
+    file_id: result.file_id,
+    filename: result.filename,
+    content_type: result.content_type,
+    size_bytes: result.size_bytes,
+  };
+}
+
+/** Human-readable summary of a finished upload (the non-JSON output). */
+export function formatFileUploadResult(result: Record<string, unknown>): string {
+  const file = object(result.file) ?? {};
+  const job = object(result.job) ?? {};
+  const stored = object(result.result);
+  return [
+    `Hochgeladen: ${String(file.filename)} (${String(file.content_type)}, ${String(file.size_bytes)} Bytes)`,
+    `Hintergrundauftrag: ${String(job.job_id)} — ${String(job.state)}`,
+    stored
+      ? `Vereinsablage: Datei-ID ${String(stored.file_id)} — ${String(stored.filename)} `
+        + `(${String(stored.content_type)}, ${String(stored.size_bytes)} Bytes)`
+      : "Vereinsablage: Der Server hat keine Datei-ID gemeldet; mit cai.data.01.list nachsehen.",
+    `Idempotenzschlüssel: ${String(result.idempotency_key)}`,
+  ].join("\n");
+}
+
 /**
- * Runs the whole upload. Returns the finished job together with the file
- * facts; throws a PublicCliError (or the connector's own error) otherwise.
+ * Runs the whole upload. Returns the finished job, the DataShare file it
+ * reports (`result`) and the local file facts; throws a PublicCliError (or the connector's own error) otherwise.
  */
 export async function runFileUpload(
   request: {
@@ -451,6 +498,8 @@ export async function runFileUpload(
     action_id: FILE_UPLOAD_ACTION_ID,
     status: "succeeded",
     job,
+    // The file in the club's DataShare; null when the server does not report it.
+    result: dataShareFileResult(job),
     file: {
       source_file_id: fileId,
       filename: file.filename,

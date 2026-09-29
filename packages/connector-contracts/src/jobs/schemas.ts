@@ -31,6 +31,22 @@ export const JOB_STATE_SCHEMA = z.enum([
   "expired",
 ]);
 
+/**
+ * Minimal, non-secret result of a finished job. Discriminated by `kind`;
+ * never carries object keys, URLs or hashes.
+ */
+export const DATASHARE_FILE_JOB_RESULT_SCHEMA = z.object({
+  kind: z.literal("datashare_file"),
+  file_id: uuid,
+  filename: z.string().trim().min(1).max(255),
+  content_type: z.string().max(255).regex(/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/iu),
+  size_bytes: z.number().int().positive(),
+}).strict();
+
+export const ASYNC_JOB_RESULT_SCHEMA = z.discriminatedUnion("kind", [
+  DATASHARE_FILE_JOB_RESULT_SCHEMA,
+]);
+
 export const ASYNC_JOB_HANDLE_SCHEMA = z.object({
   job_id: uuid,
   subject_id: uuid,
@@ -43,6 +59,8 @@ export const ASYNC_JOB_HANDLE_SCHEMA = z.object({
   finished_at: instant.nullable(),
   expires_at: instant,
   result_file_id: uuid.nullable(),
+  // Records stored before this field existed parse with result = null.
+  result: ASYNC_JOB_RESULT_SCHEMA.nullable().default(null),
   error_code: connectorErrorCode.nullable(),
 }).strict();
 

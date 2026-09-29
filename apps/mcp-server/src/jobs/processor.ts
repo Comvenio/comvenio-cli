@@ -1,12 +1,12 @@
 import type { CapabilitySnapshot } from "@comvenio/auth";
 import type { ComvenioApiClient } from "@comvenio/comvenio-client";
-import type { RequestContext } from "@comvenio/connector-contracts";
+import { ASYNC_JOB_RESULT_SCHEMA, type AsyncJobResult, type JsonValue, type RequestContext } from "@comvenio/connector-contracts";
 import { UnrecoverableError } from "bullmq";
 
 import { ConnectorFileService } from "../files/service.ts";
 import type { FileMetadataStore, MalwareScannerPort, QuarantineObjectPort } from "../files/types.ts";
 import { SnapshotFileAuthorization } from "./authorization.ts";
-import type { FetchLike, JobExecutorRegistry } from "./executors.ts";
+import type { FetchLike, JobExecutor, JobExecutorRegistry } from "./executors.ts";
 import type { JobInputStore } from "./input-store.ts";
 import { JobActorRevokedError, type JobActorPort } from "./job-actor.ts";
 import type { InternalJobRecord, JobProcessorPort, JobProcessorResult } from "./types.ts";
@@ -116,8 +116,9 @@ export class DomainJobProcessor implements JobProcessorPort {
         this.#now,
       ),
     );
+    let output: JsonValue;
     try {
-      await executor.execute({
+      output = await executor.execute({
         record,
         envelope,
         freshActor: async () => {
@@ -137,6 +138,26 @@ export class DomainJobProcessor implements JobProcessorPort {
       return fail(error instanceof Error ? error.name : "executor_failed");
     }
     await this.dependencies.inputs.delete(jobId);
-    return { result_file_id: null, error_code: null };
+    return { result_file_id: null, result: this.#result(executor, output, jobId, actionId), error_code: null };
+  }
+
+  /**
+   * The side effect already happened: an unusable projection must not turn a
+   * finished job into a failed one, so it is reported and the result stays null.
+   */
+  #result(
+    executor: JobExecutor,
+    output: JsonValue,
+    jobId: string,
+    actionId: string | null,
+  ): AsyncJobResult | null {
+    if (!executor.projectResult) return null;
+    try {
+      const projected = executor.projectResult(output);
+      return projected === null ? null : ASYNC_JOB_RESULT_SCHEMA.parse(projected);
+    } catch {
+      this.dependencies.on_failure?.({ job_id: jobId, action_id: actionId, reason: "result_invalid" });
+      return null;
+    }
   }
 }

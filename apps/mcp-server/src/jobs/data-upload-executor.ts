@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import {
   createConnectorError,
+  type AsyncJobResult,
   type JsonValue,
   type RequestContext,
 } from "@comvenio/connector-contracts";
@@ -193,5 +194,16 @@ export const DATA_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
       context_type: input.context_type,
       context_id: input.context_id ?? null,
     });
+  },
+  // Only the DataShare file facts reach the job owner; club, visibility and context stay internal.
+  projectResult(output: JsonValue): AsyncJobResult {
+    const uploaded = uploadResultSchema.parse(output);
+    return {
+      kind: "datashare_file",
+      file_id: uploaded.file_id,
+      filename: uploaded.filename,
+      content_type: uploaded.content_type,
+      size_bytes: uploaded.size_bytes,
+    };
   },
 });

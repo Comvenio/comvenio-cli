@@ -100,6 +100,7 @@ export class AsyncJobService {
         finished_at: null,
         expires_at: new Date(now.getTime() + JOB_METADATA_TTL_SECONDS * 1_000).toISOString(),
         result_file_id: null,
+        result: null,
         error_code: null,
       },
       request_id: context.request_id,
