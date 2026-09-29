@@ -3,8 +3,8 @@ import { connect, type Socket } from "node:net";
 import type { MalwareScannerPort } from "./types.ts";
 
 export type ClamdObjectSource = ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>;
-/** Reads the quarantined object for scanning, e.g. S3QuarantineObjectStore.readInspected. */
-export type ClamdObjectReader = (objectKey: string) => ClamdObjectSource | Promise<ClamdObjectSource>;
+/** Reads the local copy of one inspection for scanning, e.g. S3QuarantineObjectStore.readInspected. */
+export type ClamdObjectReader = (inspectionId: string) => ClamdObjectSource | Promise<ClamdObjectSource>;
 
 export interface ClamdScannerConfig {
   host: string;
@@ -83,7 +83,7 @@ export class ClamdMalwareScanner implements MalwareScannerPort {
     if (this.#timeoutMs <= 0 || this.#chunkBytes <= 0) throw new Error("clamd timeout and chunk size must be positive.");
   }
 
-  scan(input: { object_key: string }): Promise<ScanVerdict> {
+  scan(input: { inspection_id: string }): Promise<ScanVerdict> {
     return new Promise<ScanVerdict>((resolve) => {
       let settled = false;
       let response = "";
@@ -106,14 +106,14 @@ export class ClamdMalwareScanner implements MalwareScannerPort {
       // A reply without the NUL terminator still counts once the daemon closes the connection.
       socket.on("close", () => finish(response ? parseClamdResponse(response) : "unavailable"));
       socket.on("connect", () => {
-        this.#stream(socket, input.object_key, () => settled).catch(() => finish("unavailable"));
+        this.#stream(socket, input.inspection_id, () => settled).catch(() => finish("unavailable"));
       });
     });
   }
 
-  async #stream(socket: Socket, objectKey: string, isSettled: () => boolean): Promise<void> {
+  async #stream(socket: Socket, inspectionId: string, isSettled: () => boolean): Promise<void> {
     await writeAll(socket, new TextEncoder().encode("zINSTREAM\0"));
-    const source = await this.readObject(objectKey);
+    const source = await this.readObject(inspectionId);
     for await (const chunk of chunksOf(source)) {
       for (let offset = 0; offset < chunk.byteLength; offset += this.#chunkBytes) {
         if (isSettled()) return;

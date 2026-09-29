@@ -77,13 +77,13 @@ export interface UploadCreateRequest {
 /**
  * Headers the client must send with the one-time PUT, with exactly these
  * values: the URL is signed for them, so the storage refuses another size or
- * type. If-None-Match is present only where the storage supports conditional
- * creation (the object can then be written at most once).
+ * type. If-None-Match: * is always signed, so the object can be created at
+ * most once; the storage must support conditional creation.
  */
 export interface UploadRequiredHeaders {
   "Content-Type": ConnectorUploadMime;
   "Content-Length": string;
-  "If-None-Match"?: "*";
+  "If-None-Match": "*";
 }
 
 export interface UploadHandle {

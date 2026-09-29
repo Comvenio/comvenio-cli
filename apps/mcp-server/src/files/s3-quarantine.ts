@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdtemp, open, rm, type FileHandle } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +13,7 @@ import {
 
 import { inspectStoredObject, UNINSPECTED_SHA256, type InspectableObject } from "./object-inspection.ts";
 import { encodeS3Path, presignSigV4 } from "./sigv4-presign.ts";
-import type { FileClock, QuarantineObjectPort, StoredObjectInspection } from "./types.ts";
+import type { FileClock, ObjectInspectionResult, QuarantineObjectPort } from "./types.ts";
 
 export interface S3QuarantineConfig {
   endpoint: string;
@@ -23,12 +23,6 @@ export interface S3QuarantineConfig {
   secretAccessKey: string;
   /** Prefix for promoted clean objects; must differ from the quarantine prefix. */
   cleanPrefix?: string;
-  /**
-   * Adds a signed `If-None-Match: *` to the upload URL, so the object can be
-   * created at most once. Off by default: not every S3-compatible storage
-   * supports conditional writes (MCP_UPLOAD_S3_CONDITIONAL_PUT).
-   */
-  conditionalPut?: boolean;
 }
 
 /** Minimal storage surface the store needs; Bun.S3Client in production, in-memory in tests. */
@@ -105,6 +99,8 @@ export function createBunS3Backend(config: S3QuarantineConfig, clock: FileClock 
 }
 
 interface PinnedInspection {
+  /** Quarantine object the copy was taken from; only used to derive the club of the clean target. */
+  object_key: string;
   sha256: string;
   size_bytes: number;
   mime_type: ConnectorUploadMime;
@@ -186,15 +182,16 @@ async function localRead(path: string, start: number, end: number): Promise<Uint
 /**
  * Production QuarantineObjectPort on S3-compatible storage (G.3). Objects under mcp-quarantine/ are
  * never downloadable. inspect() reads the quarantined object exactly once into a private, size-bounded
- * local copy; hash, format detection, ZIP inspection, the malware scan (readInspected) and the
- * promotion all read that one copy, so every check judges the same bytes. The hash pin stays as an
- * additional check on every later read of the copy.
+ * local copy and returns a new inspection_id for it; hash, format detection, ZIP inspection, the
+ * malware scan (readInspected) and the promotion all read that one copy through its id, so every
+ * check judges the same bytes. Copies are indexed by inspection_id, never by object key: a second
+ * inspection of the same object gets its own copy and cannot replace or release another one. The
+ * hash pin stays as an additional check on every later read of the copy.
  */
 export class S3QuarantineObjectStore implements QuarantineObjectPort {
   readonly #backend: QuarantineObjectBackend;
   readonly #clock: FileClock;
   readonly #cleanPrefix: string;
-  readonly #conditionalPut: boolean;
   readonly #tempRoot: string;
   readonly #pins = new Map<string, PinnedInspection>();
 
@@ -203,7 +200,6 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     this.#clock = options.clock ?? SYSTEM_CLOCK;
     this.#backend = options.backend ?? createBunS3Backend(config, this.#clock);
     this.#cleanPrefix = config.cleanPrefix ?? DEFAULT_CLEAN_PREFIX;
-    this.#conditionalPut = config.conditionalPut === true;
     this.#tempRoot = options.temp_dir ?? tmpdir();
   }
 
@@ -217,15 +213,14 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     if (!Number.isInteger(input.size_bytes) || input.size_bytes < 1 || input.size_bytes > MAX_CONNECTOR_FILE_SIZE_BYTES) {
       throw new Error("The declared upload size is invalid.");
     }
-    // Signed headers: the storage refuses a PUT with another length or type (and, if enabled, an overwrite).
-    const signedHeaders: Record<string, string> = {
+    // Signed headers: the storage refuses a PUT with another length or type, and If-None-Match
+    // makes the URL create the object at most once (no overwrite while the URL is valid).
+    const requiredHeaders: UploadRequiredHeaders = {
       "Content-Type": input.mime_type,
       "Content-Length": String(input.size_bytes),
+      "If-None-Match": "*",
     };
-    if (this.#conditionalPut) signedHeaders["If-None-Match"] = "*";
-    const requiredHeaders: UploadRequiredHeaders = this.#conditionalPut
-      ? { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes), "If-None-Match": "*" }
-      : { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) };
+    const signedHeaders: Record<string, string> = { ...requiredHeaders };
     const url = this.#backend.presignPut(input.object_key, {
       expires_in_seconds: input.expires_in_seconds,
       signed_headers: signedHeaders,
@@ -233,10 +228,10 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     return { url: assertHttps(url), required_headers: requiredHeaders };
   }
 
-  async inspect(input: { object_key: string; declared_filename: string; declared_mime_type: ConnectorUploadMime }): Promise<StoredObjectInspection> {
+  async inspect(input: { object_key: string; declared_filename: string; declared_mime_type: ConnectorUploadMime }): Promise<ObjectInspectionResult> {
     const key = input.object_key;
     this.#quarantineKey(key);
-    await this.release({ object_key: key });
+    const inspectionId = randomUUID();
     const copy = await this.#copyOnce(key);
     try {
       const object: InspectableObject = copy.dir
@@ -256,7 +251,8 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
         declared_filename: input.declared_filename,
         declared_mime_type: input.declared_mime_type,
       });
-      this.#pin(key, {
+      this.#pin(inspectionId, {
+        object_key: key,
         sha256: inspection.sha256,
         size_bytes: inspection.size_bytes,
         mime_type: input.declared_mime_type,
@@ -264,7 +260,7 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
         local_dir: inspection.sha256 === UNINSPECTED_SHA256 ? null : copy.dir,
       });
       if (inspection.sha256 === UNINSPECTED_SHA256) await removeLocalCopy(copy.dir);
-      return inspection;
+      return { ...inspection, inspection_id: inspectionId };
     } catch (error) {
       await removeLocalCopy(copy.dir);
       throw error;
@@ -275,14 +271,13 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
    * Streams the inspected local copy and fails at the end if its bytes differ from the inspection.
    * Intended as the read callback of the malware scanner, so the scan judges exactly the inspected bytes.
    */
-  readInspected(objectKey: string): AsyncIterable<Uint8Array> {
-    this.#quarantineKey(objectKey);
-    return this.#verifiedChunks(this.#requirePin(objectKey));
+  readInspected(inspectionId: UUID): AsyncIterable<Uint8Array> {
+    return this.#verifiedChunks(this.#requirePin(inspectionId));
   }
 
-  async release(input: { object_key: string }): Promise<void> {
-    const pin = this.#pins.get(input.object_key);
-    this.#pins.delete(input.object_key);
+  async release(input: { inspection_id: UUID }): Promise<void> {
+    const pin = this.#pins.get(input.inspection_id);
+    this.#pins.delete(input.inspection_id);
     await removeLocalCopy(pin?.local_dir ?? null);
   }
 
@@ -291,14 +286,14 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     if (!QUARANTINE_KEY.test(key) && !key.startsWith(`${this.#cleanPrefix}/`)) {
       throw new Error("Only quarantine or clean connector objects can be deleted.");
     }
-    await this.release({ object_key: key });
+    // Local copies are left alone: they belong to their inspections and are released by them.
     await this.#backend.delete(key);
   }
 
-  async promoteClean(input: { quarantine_object_key: string; file_id: UUID }): Promise<{ object_key: string }> {
-    const clubId = this.#quarantineKey(input.quarantine_object_key);
+  async promoteClean(input: { inspection_id: UUID; file_id: UUID }): Promise<{ object_key: string; inspection_id: UUID; sha256: string; size_bytes: number }> {
     if (!UUID_ONLY.test(input.file_id)) throw new Error("Invalid file id for promotion.");
-    const pin = this.#requirePin(input.quarantine_object_key);
+    const pin = this.#requirePin(input.inspection_id);
+    const clubId = this.#quarantineKey(pin.object_key);
     const target = `${this.#cleanPrefix}/${clubId}/${input.file_id}`;
     try {
       await this.#backend.write(target, this.#verifiedChunks(pin), {
@@ -310,8 +305,9 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
       await this.#backend.delete(target).catch(() => undefined);
       throw error;
     }
-    await this.release({ object_key: input.quarantine_object_key });
-    return { object_key: target };
+    await this.release({ inspection_id: input.inspection_id });
+    // #verifiedChunks failed the write unless the promoted bytes hash to exactly these values.
+    return { object_key: target, inspection_id: input.inspection_id, sha256: pin.sha256, size_bytes: pin.size_bytes };
   }
 
   async createPresignedDownload(input: { object_key: string; expires_in_seconds: number }): Promise<{ url: string; expires_at: string }> {
@@ -370,30 +366,28 @@ export class S3QuarantineObjectStore implements QuarantineObjectPort {
     return { dir, size };
   }
 
-  #pin(objectKey: string, pin: PinnedInspection): void {
+  #pin(inspectionId: UUID, pin: PinnedInspection): void {
     const now = this.#clock.now().getTime();
-    for (const [key, value] of this.#pins) {
-      if (value.expires_at_ms <= now) this.#drop(key, value);
+    for (const [id, value] of this.#pins) {
+      if (value.expires_at_ms <= now) this.#drop(id, value);
     }
-    const previous = this.#pins.get(objectKey);
-    if (previous) this.#drop(objectKey, previous);
     while (this.#pins.size >= MAX_PINNED_INSPECTIONS) {
       const oldest = this.#pins.entries().next();
       if (oldest.done) break;
       this.#drop(oldest.value[0], oldest.value[1]);
     }
-    this.#pins.set(objectKey, pin);
+    this.#pins.set(inspectionId, pin);
   }
 
-  #drop(objectKey: string, pin: PinnedInspection): void {
-    this.#pins.delete(objectKey);
+  #drop(inspectionId: UUID, pin: PinnedInspection): void {
+    this.#pins.delete(inspectionId);
     void removeLocalCopy(pin.local_dir).catch(() => undefined);
   }
 
-  #requirePin(objectKey: string): PinnedInspection & { local_dir: string } {
-    const pin = this.#pins.get(objectKey);
+  #requirePin(inspectionId: UUID): PinnedInspection & { local_dir: string } {
+    const pin = this.#pins.get(inspectionId);
     if (!pin || pin.expires_at_ms <= this.#clock.now().getTime() || !pin.local_dir) {
-      throw new Error("The quarantine object has no current inspection.");
+      throw new Error("The inspection has no current local copy.");
     }
     return pin as PinnedInspection & { local_dir: string };
   }

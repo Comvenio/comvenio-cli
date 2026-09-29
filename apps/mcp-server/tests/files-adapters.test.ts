@@ -28,6 +28,7 @@ const CLUB = "11111111-1111-4111-8111-111111111111";
 const UPLOAD = "22222222-2222-4222-8222-222222222222";
 const FILE = "33333333-3333-4333-8333-333333333333";
 const QUARANTINE_KEY = `mcp-quarantine/${CLUB}/${UPLOAD}`;
+const INSPECTION = "55555555-5555-4555-8555-555555555555";
 
 const encoder = new TextEncoder();
 
@@ -483,24 +484,33 @@ describe("S3QuarantineObjectStore", () => {
     expect(() => new S3QuarantineObjectStore({ ...CONFIG, cleanPrefix: "mcp-quarantine" }, { backend: new MemoryBackend() })).toThrow();
   });
 
-  test("signs the upload URL for exactly the declared size and type and returns those headers", async () => {
+  test("signs the upload URL for exactly the declared size and type and for one-time creation", async () => {
     const { objects } = await store();
     const { url, required_headers } = await objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: PNG.byteLength, expires_in_seconds: 900 });
-    expect(required_headers).toEqual({ "Content-Type": "image/png", "Content-Length": String(PNG.byteLength) });
+    expect(required_headers).toEqual({ "Content-Type": "image/png", "Content-Length": String(PNG.byteLength), "If-None-Match": "*" });
     const signed = new URL(url).searchParams;
     expect(signed.get("method")).toBe("PUT");
     expect(signed.get("Content-Type")).toBe("image/png");
     expect(signed.get("Content-Length")).toBe(String(PNG.byteLength));
-    expect(signed.has("If-None-Match")).toBe(false);
+    // K15b: If-None-Match is mandatory, there is no configuration that turns it off.
+    expect(signed.get("If-None-Match")).toBe("*");
     await expect(objects.createPresignedUpload({ object_key: "mcp-clean/x", mime_type: "image/png", size_bytes: 1, expires_in_seconds: 900 })).rejects.toThrow();
     await expect(objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: MAX_CONNECTOR_FILE_SIZE_BYTES + 1, expires_in_seconds: 900 })).rejects.toThrow();
   });
 
-  test("conditional PUT signs If-None-Match only when configured", async () => {
-    const { objects } = await store({ ...CONFIG, conditionalPut: true });
+  test("K15b: every upload URL signs If-None-Match, whatever the configuration", async () => {
+    // A leftover config key from the former opt-in must not switch the condition off.
+    const { objects } = await store({ ...CONFIG, conditionalPut: false } as S3QuarantineConfig);
     const { url, required_headers } = await objects.createPresignedUpload({ object_key: QUARANTINE_KEY, mime_type: "image/png", size_bytes: 10, expires_in_seconds: 900 });
     expect(required_headers).toEqual({ "Content-Type": "image/png", "Content-Length": "10", "If-None-Match": "*" });
     expect(new URL(url).searchParams.get("If-None-Match")).toBe("*");
+  });
+
+  test("the Bun backend signs If-None-Match into the PUT signature", () => {
+    const backend = createBunS3Backend(CONFIG, FIXED_CLOCK);
+    const headers = { "Content-Type": "image/png", "Content-Length": "18", "If-None-Match": "*" };
+    const url = new URL(backend.presignPut(QUARANTINE_KEY, { expires_in_seconds: 900, signed_headers: headers }));
+    expect(url.searchParams.get("X-Amz-SignedHeaders")).toBe("content-length;content-type;host;if-none-match");
   });
 
   test("the Bun backend signs content-length, content-type and host into a path-style PUT URL", () => {
@@ -520,8 +530,8 @@ describe("S3QuarantineObjectStore", () => {
     const inspection = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
     expect(inspection.detected_mime_type).toBe("image/png");
     expect(await localCopies()).toHaveLength(1);
-    const promoted = await objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE });
-    expect(promoted.object_key).toBe(`mcp-clean/${CLUB}/${FILE}`);
+    const promoted = await objects.promoteClean({ inspection_id: inspection.inspection_id, file_id: FILE });
+    expect(promoted).toEqual({ object_key: `mcp-clean/${CLUB}/${FILE}`, inspection_id: inspection.inspection_id, sha256: inspection.sha256, size_bytes: PNG.byteLength });
     const clean = backend.objects.get(promoted.object_key);
     expect(clean?.data).toEqual(PNG);
     expect(clean?.content_type).toBe("image/png");
@@ -540,8 +550,8 @@ describe("S3QuarantineObjectStore", () => {
     expect(inspection.sha256).toBe(createHash("sha256").update(original).digest("hex"));
     expect(inspection.zip?.entry_count).toBe(1);
 
-    expect(await drain(objects.readInspected(QUARANTINE_KEY))).toEqual(original);
-    const promoted = await objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE });
+    expect(await drain(objects.readInspected(inspection.inspection_id))).toEqual(original);
+    const promoted = await objects.promoteClean({ inspection_id: inspection.inspection_id, file_id: FILE });
     expect(backend.objects.get(promoted.object_key)?.data).toEqual(original);
     expect(backend.streamed).toEqual([QUARANTINE_KEY]);
   });
@@ -549,20 +559,42 @@ describe("S3QuarantineObjectStore", () => {
   test("refuses promotion without inspection, after release and after the local copy was altered", async () => {
     const { backend, objects, temp, localCopies } = await store();
     backend.objects.set(QUARANTINE_KEY, { data: PNG });
-    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
+    await expect(objects.promoteClean({ inspection_id: "44444444-4444-4444-8444-444444444444", file_id: FILE })).rejects.toThrow();
 
-    await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
-    await objects.release({ object_key: QUARANTINE_KEY });
+    const released = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
+    await objects.release({ inspection_id: released.inspection_id });
     expect(await localCopies()).toHaveLength(0);
-    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
+    await expect(objects.promoteClean({ inspection_id: released.inspection_id, file_id: FILE })).rejects.toThrow();
 
     // The hash pin stays as an additional check on the local copy.
-    await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
+    const altered = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
     const [dir] = await localCopies();
     await writeFile(join(temp, dir!, "object"), bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "swapped!!!"));
-    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
+    await expect(objects.promoteClean({ inspection_id: altered.inspection_id, file_id: FILE })).rejects.toThrow();
     expect(backend.objects.has(`mcp-clean/${CLUB}/${FILE}`)).toBe(false);
-    await expect(drain(objects.readInspected(QUARANTINE_KEY))).rejects.toThrow();
+    await expect(drain(objects.readInspected(altered.inspection_id))).rejects.toThrow();
+  });
+
+  test("K15b: two inspections of one object keep separate copies; release and promotion touch only their own", async () => {
+    const { backend, objects, localCopies } = await store();
+    const first = buildZip([{ name: "a.txt", data: encoder.encode("first") }]);
+    const second = buildZip([{ name: "b.txt", data: encoder.encode("second") }]);
+    backend.objects.set(QUARANTINE_KEY, { data: first });
+    const a = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "a.zip", declared_mime_type: "application/zip" });
+    // The object is replaced and inspected a second time while the first inspection is still in use.
+    backend.objects.set(QUARANTINE_KEY, { data: second });
+    const b = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "a.zip", declared_mime_type: "application/zip" });
+    expect(a.inspection_id).not.toBe(b.inspection_id);
+    expect(await localCopies()).toHaveLength(2);
+
+    // The second inspection neither replaced nor removed the first copy.
+    expect(await drain(objects.readInspected(a.inspection_id))).toEqual(first);
+    await objects.release({ inspection_id: b.inspection_id });
+    expect(await localCopies()).toHaveLength(1);
+    const promoted = await objects.promoteClean({ inspection_id: a.inspection_id, file_id: FILE });
+    expect(promoted.sha256).toBe(a.sha256);
+    expect(backend.objects.get(promoted.object_key)?.data).toEqual(first);
+    await expect(objects.promoteClean({ inspection_id: b.inspection_id, file_id: FILE })).rejects.toThrow();
   });
 
   test("objects above the hard limit are never copied or read", async () => {
@@ -573,7 +605,7 @@ describe("S3QuarantineObjectStore", () => {
     expect(inspection.sha256).toBe(UNINSPECTED_SHA256);
     expect(backend.streamed).toEqual([]);
     expect(await localCopies()).toHaveLength(0);
-    await expect(objects.promoteClean({ quarantine_object_key: QUARANTINE_KEY, file_id: FILE })).rejects.toThrow();
+    await expect(objects.promoteClean({ inspection_id: inspection.inspection_id, file_id: FILE })).rejects.toThrow();
   });
 
   test("downloads only clean objects with a computed expiry", async () => {
@@ -584,12 +616,15 @@ describe("S3QuarantineObjectStore", () => {
     expect(download.expires_at).toBe("2026-09-29T10:05:00.000Z");
   });
 
-  test("deletes quarantine objects with their local copy and rejects foreign keys", async () => {
+  test("deletes quarantine objects without touching running inspections and rejects foreign keys", async () => {
     const { backend, objects, localCopies } = await store();
     backend.objects.set(QUARANTINE_KEY, { data: PNG });
-    await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
+    const inspection = await objects.inspect({ object_key: QUARANTINE_KEY, declared_filename: "logo.png", declared_mime_type: "image/png" });
     await objects.delete({ object_key: QUARANTINE_KEY });
     expect(backend.objects.has(QUARANTINE_KEY)).toBe(false);
+    // The local copy belongs to its inspection and is released by it.
+    expect(await localCopies()).toHaveLength(1);
+    await objects.release({ inspection_id: inspection.inspection_id });
     expect(await localCopies()).toHaveLength(0);
     await expect(objects.delete({ object_key: "other/key" })).rejects.toThrow();
   });
@@ -702,7 +737,7 @@ describe("ClamdMalwareScanner", () => {
     const daemon = await fakeClamd("ok");
     try {
       const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port: daemon.port, chunk_bytes: 4, timeout_ms: 2_000 }, () => streamOf(OBJECT, 10));
-      expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("clean");
+      expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("clean");
       expect(daemon.state.command).toBe("zINSTREAM\0");
       expect(daemon.state.chunks).toEqual([4, 4, 2]);
       expect(daemon.state.payload).toEqual(OBJECT as Uint8Array<ArrayBuffer>);
@@ -716,7 +751,7 @@ describe("ClamdMalwareScanner", () => {
     const daemon = await fakeClamd("found");
     try {
       const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port: daemon.port, timeout_ms: 2_000 }, () => streamOf(OBJECT));
-      expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("infected");
+      expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("infected");
     } finally {
       await daemon.close();
     }
@@ -726,7 +761,7 @@ describe("ClamdMalwareScanner", () => {
     const daemon = await fakeClamd("abort");
     try {
       const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port: daemon.port, timeout_ms: 2_000 }, () => streamOf(OBJECT));
-      expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("unavailable");
+      expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("unavailable");
     } finally {
       await daemon.close();
     }
@@ -736,7 +771,7 @@ describe("ClamdMalwareScanner", () => {
     const daemon = await fakeClamd("silent");
     try {
       const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port: daemon.port, timeout_ms: 150 }, () => streamOf(OBJECT));
-      expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("unavailable");
+      expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("unavailable");
     } finally {
       await daemon.close();
     }
@@ -747,7 +782,7 @@ describe("ClamdMalwareScanner", () => {
     const port = daemon.port;
     await daemon.close();
     const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port, timeout_ms: 2_000 }, () => streamOf(OBJECT));
-    expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("unavailable");
+    expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("unavailable");
   });
 
   test("a failing reader never sends the terminator and is unavailable", async () => {
@@ -758,7 +793,7 @@ describe("ClamdMalwareScanner", () => {
         throw new Error("object changed");
       }
       const scanner = new ClamdMalwareScanner({ host: "127.0.0.1", port: daemon.port, timeout_ms: 2_000 }, () => failing());
-      expect(await scanner.scan({ object_key: QUARANTINE_KEY })).toBe("unavailable");
+      expect(await scanner.scan({ inspection_id: INSPECTION })).toBe("unavailable");
       expect(daemon.state.terminated).toBe(false);
     } finally {
       await daemon.close();

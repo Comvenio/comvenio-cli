@@ -30,7 +30,7 @@ export interface JobsFilesConfig {
 
 /** Adapter construction, replaceable in tests. */
 export interface JobFileAdapterFactories {
-  quarantine(config: S3QuarantineConfig): QuarantineObjectPort & { readInspected?(objectKey: string): AsyncIterable<Uint8Array> };
+  quarantine(config: S3QuarantineConfig): QuarantineObjectPort & { readInspected?(inspectionId: string): AsyncIterable<Uint8Array> };
   scanner(config: ClamdScannerConfig, objects: ReturnType<JobFileAdapterFactories["quarantine"]>): MalwareScannerPort;
 }
 
@@ -39,8 +39,8 @@ export const DEFAULT_JOB_FILE_ADAPTERS: JobFileAdapterFactories = Object.freeze(
   scanner: (config: ClamdScannerConfig, objects: ReturnType<JobFileAdapterFactories["quarantine"]>) => {
     const readInspected = objects.readInspected?.bind(objects);
     if (!readInspected) throw new Error("Der Quarantänespeicher liefert keine hash-gepinnten Scan-Bytes.");
-    // The scanner reads the inspected local copy; the hash pin re-checks it on every read.
-    return new ClamdMalwareScanner(config, (objectKey) => readInspected(objectKey));
+    // The scanner reads the local copy of exactly this inspection; the hash pin re-checks it on every read.
+    return new ClamdMalwareScanner(config, (inspectionId) => readInspected(inspectionId));
   },
 });
 

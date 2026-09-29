@@ -4,7 +4,14 @@ import type {
   FileMetadataStore,
   InternalConnectorFileRecord,
   InternalUploadRecord,
+  UploadCompletionGuard,
 } from "./types.ts";
+
+function holds(record: InternalUploadRecord | undefined, expected: UploadCompletionGuard): boolean {
+  return record !== undefined
+    && record.handle.state === expected.state
+    && (record.completion_id ?? null) === expected.completion_id;
+}
 
 export class MemoryFileMetadataStore implements FileMetadataStore {
   readonly #uploads = new Map<UUID, InternalUploadRecord>();
@@ -25,19 +32,34 @@ export class MemoryFileMetadataStore implements FileMetadataStore {
     this.#uploads.set(record.handle.upload_id, structuredClone(record));
   }
 
+  async compareAndSetUpload(input: {
+    expected: UploadCompletionGuard;
+    record: InternalUploadRecord;
+  }): Promise<boolean> {
+    // Check and write happen without an await in between, so the swap is atomic.
+    const uploadId = input.record.handle.upload_id;
+    if (!holds(this.#uploads.get(uploadId), input.expected)) return false;
+    this.#uploads.set(uploadId, structuredClone(input.record));
+    return true;
+  }
+
   async createFile(record: InternalConnectorFileRecord): Promise<void> {
     if (this.#files.has(record.file_id)) throw new Error("Die Datei existiert bereits.");
     this.#files.set(record.file_id, structuredClone(record));
   }
 
   async finalizeUpload(input: {
+    expected: UploadCompletionGuard;
     upload: InternalUploadRecord;
     file: InternalConnectorFileRecord;
-  }): Promise<void> {
-    if (!this.#uploads.has(input.upload.handle.upload_id)) throw new Error("Der Upload existiert nicht.");
+  }): Promise<boolean> {
+    const current = this.#uploads.get(input.upload.handle.upload_id);
+    if (!current) throw new Error("Der Upload existiert nicht.");
+    if (!holds(current, input.expected)) return false;
     if (this.#files.has(input.file.file_id)) throw new Error("Die Datei existiert bereits.");
     this.#files.set(input.file.file_id, structuredClone(input.file));
     this.#uploads.set(input.upload.handle.upload_id, structuredClone(input.upload));
+    return true;
   }
 
   async getFile(fileId: UUID): Promise<InternalConnectorFileRecord | null> {

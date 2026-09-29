@@ -29,13 +29,21 @@ import type {
   InternalConnectorFileRecord,
   InternalUploadRecord,
   MalwareScannerPort,
+  ObjectInspectionResult,
   QuarantineObjectPort,
+  UploadCompletionGuard,
 } from "./types.ts";
 import { validateStoredObject } from "./validation.ts";
 
 const SYSTEM_CLOCK: FileClock = { now: () => new Date() };
 const SYSTEM_RANDOM: FileRandom = { uuid: () => randomUUID() };
 const DOWNLOAD_URL_TTL_SECONDS = 5 * 60;
+/**
+ * A completion in state `scanning` older than this is treated as abandoned (process died) and may
+ * be taken over. Taking over is safe at any time: the old completion no longer holds the upload,
+ * so it can neither finalize nor reject it, and its local copy is its own.
+ */
+const COMPLETION_LEASE_SECONDS = 5 * 60;
 
 function after(now: Date, seconds: number): string {
   return new Date(now.getTime() + seconds * 1_000).toISOString();
@@ -72,6 +80,10 @@ type ActiveUploadRecord = InternalUploadRecord & {
   object_key: string;
 };
 
+function guardOf(record: InternalUploadRecord): UploadCompletionGuard {
+  return { state: record.handle.state, completion_id: record.completion_id ?? null };
+}
+
 function assertActiveMetadata(record: InternalUploadRecord): asserts record is ActiveUploadRecord {
   if (!record.filename || !record.mime_type || record.size_bytes === null || !record.purpose || !record.object_key) {
     throw new Error("Aktive Uploadmetadaten sind unvollständig.");
@@ -104,10 +116,11 @@ export class ConnectorFileService {
       size_bytes: request.size_bytes,
       expires_in_seconds: UPLOAD_HANDLE_TTL_SECONDS,
     });
-    // The URL must be bound to exactly the declared type and size.
+    // The URL must be bound to exactly the declared type and size and create the object at most once.
     if (presigned.required_headers["Content-Type"] !== request.mime_type
-      || presigned.required_headers["Content-Length"] !== String(request.size_bytes)) {
-      throw new Error("Die Upload-URL ist nicht an Typ und Größe gebunden.");
+      || presigned.required_headers["Content-Length"] !== String(request.size_bytes)
+      || presigned.required_headers["If-None-Match"] !== "*") {
+      throw new Error("Die Upload-URL ist nicht an Typ, Größe und einmaliges Anlegen gebunden.");
     }
     const handle = UPLOAD_HANDLE_SCHEMA.parse({
       upload_id: uploadId,
@@ -154,33 +167,67 @@ export class ConnectorFileService {
     assertActiveMetadata(record);
     const authorized = await this.authorization.reauthorize({ context: binding.context, action: "upload_complete", purpose: record.purpose });
     if (record.handle.state === "clean" || record.handle.state === "consumed") return UPLOAD_HANDLE_SCHEMA.parse(record.handle);
-    if (Date.parse(record.handle.expires_at) <= this.clock.now().getTime()) {
-      return this.#reject(record, "EXPIRED");
+    const now = this.clock.now();
+    // A running completion owns the upload: a parallel or repeated call reports its state and
+    // never starts a second inspection.
+    if (record.handle.state === "scanning" && !this.#leaseExpired(record, now)) return UPLOAD_HANDLE_SCHEMA.parse(record.handle);
+    if (Date.parse(record.handle.expires_at) <= now.getTime()) {
+      return this.#reject(record, guardOf(record), "EXPIRED", binding);
     }
     if (authorized.capability_version !== record.capability_version) {
       throw createConnectorError({ code: "PERMISSION_DENIED", message: "Die Dateiberechtigung hat sich seit dem Uploadstart geändert.", request_id: binding.context.request_id, retryable: false });
     }
 
-    // Inspection, scan and promotion all work on the one local copy taken by inspect().
-    const objectKey = record.object_key;
+    // Claim the upload atomically (pending -> scanning, or takeover of an abandoned completion).
+    // Only the winner of this compare-and-set inspects, scans and promotes.
+    // State to hand back on a transient failure: the pending upload as it was (with its URL), or,
+    // after a takeover, an unowned `scanning` record that the next call may claim at once.
+    // A takeover gets a fresh file id, so the abandoned completion can never write to or delete
+    // the clean object of its successor.
+    const reopen: ActiveUploadRecord = {
+      ...record,
+      staged_file_id: record.handle.state === "pending" && record.staged_file_id ? record.staged_file_id : this.random.uuid(),
+      completion_id: null,
+      completion_started_at: null,
+    };
+    const claimed: ActiveUploadRecord = {
+      ...reopen,
+      handle: UPLOAD_HANDLE_SCHEMA.parse({ ...record.handle, upload_url: null, required_headers: null, state: "scanning" }),
+      completion_id: this.random.uuid(),
+      completion_started_at: now.toISOString(),
+    };
+    if (!await this.metadata.compareAndSetUpload({ expected: guardOf(record), record: claimed })) {
+      return this.#currentHandle(parsed.upload_id, binding);
+    }
+    const held = guardOf(claimed);
+
+    let inspection: ObjectInspectionResult | null = null;
     try {
-      return await this.#inspectScanPromote(record, binding, authorized.capability_version, parsed.completion);
+      inspection = await this.objects.inspect({
+        object_key: claimed.object_key,
+        declared_filename: claimed.filename,
+        declared_mime_type: claimed.mime_type,
+      });
+      return await this.#scanPromote(claimed, held, inspection, binding, authorized.capability_version, parsed.completion);
+    } catch (error) {
+      // Transient failure (scanner or storage): release the claim, but only while this completion
+      // still holds it, so a later call can retry.
+      await this.metadata.compareAndSetUpload({ expected: held, record: reopen }).catch(() => false);
+      throw error;
     } finally {
-      await this.objects.release({ object_key: objectKey }).catch(() => undefined);
+      // Releases only this completion's own local copy; parallel inspections keep theirs.
+      if (inspection) await this.objects.release({ inspection_id: inspection.inspection_id }).catch(() => undefined);
     }
   }
 
-  async #inspectScanPromote(
+  async #scanPromote(
     record: ActiveUploadRecord,
+    held: UploadCompletionGuard,
+    inspection: ObjectInspectionResult,
     binding: ReturnType<typeof bound>,
     capabilityVersion: string,
     completion: FileUploadCompleteInput["completion"],
   ): Promise<UploadHandle> {
-    const inspection = await this.objects.inspect({
-      object_key: record.object_key,
-      declared_filename: record.filename,
-      declared_mime_type: record.mime_type,
-    });
     const rejection = validateStoredObject({
       inspection,
       declared_mime_type: record.mime_type,
@@ -188,24 +235,23 @@ export class ConnectorFileService {
       completion_size_bytes: completion.size_bytes,
       completion_sha256: completion.sha256,
     });
-    if (rejection) return this.#reject(record, rejection, inspection.sha256);
+    if (rejection) return this.#reject(record, held, rejection, binding, inspection.sha256);
 
-    record.handle = UPLOAD_HANDLE_SCHEMA.parse({
-      ...record.handle,
-      upload_url: null,
-      required_headers: null,
-      state: "scanning",
-    });
-    record.staged_file_id ??= this.random.uuid();
-    await this.metadata.updateUpload(record);
-    const scan = await this.scanner.scan({ object_key: record.object_key });
+    const scan = await this.scanner.scan({ inspection_id: inspection.inspection_id });
     if (scan === "unavailable") {
       throw createConnectorError({ code: "UPSTREAM_UNAVAILABLE", message: "Die Sicherheitsprüfung ist vorübergehend nicht verfügbar.", request_id: binding.context.request_id, retryable: true, retry_after_seconds: 15 });
     }
-    if (scan === "infected") return this.#reject(record, "MALWARE", inspection.sha256);
+    if (scan === "infected") return this.#reject(record, held, "MALWARE", binding, inspection.sha256);
 
-    const fileId = record.staged_file_id;
-    const promoted = await this.objects.promoteClean({ quarantine_object_key: record.object_key, file_id: fileId });
+    const fileId = record.staged_file_id!;
+    const promoted = await this.objects.promoteClean({ inspection_id: inspection.inspection_id, file_id: fileId });
+    // The stored record and the promoted object must come from the same inspection.
+    if (promoted.inspection_id !== inspection.inspection_id
+      || promoted.sha256 !== inspection.sha256
+      || promoted.size_bytes !== inspection.size_bytes) {
+      await this.objects.delete({ object_key: promoted.object_key }).catch(() => undefined);
+      throw new Error("Die übernommene Datei stammt nicht aus der geprüften Inspektion.");
+    }
     const now = this.clock.now();
     const file: InternalConnectorFileRecord = {
       file_id: fileId,
@@ -216,23 +262,28 @@ export class ConnectorFileService {
       capability_version: capabilityVersion,
       name: record.filename,
       mime_type: record.mime_type,
-      size_bytes: inspection.size_bytes,
-      sha256: inspection.sha256,
+      size_bytes: promoted.size_bytes,
+      sha256: promoted.sha256,
       purpose: record.purpose,
       object_key: promoted.object_key,
+      inspection_id: inspection.inspection_id,
       state: "clean",
       created_at: now.toISOString(),
       expires_at: after(now, RESULT_FILE_TTL_SECONDS),
       consumed_at: null,
     };
-    record.handle = UPLOAD_HANDLE_SCHEMA.parse({
-      ...record.handle,
-      state: "clean",
-      file_id: fileId,
-      rejection_code: null,
-    });
-    await this.metadata.finalizeUpload({ upload: record, file });
-    return record.handle;
+    const finalized: InternalUploadRecord = {
+      ...record,
+      handle: UPLOAD_HANDLE_SCHEMA.parse({ ...record.handle, state: "clean", file_id: fileId, rejection_code: null }),
+      completion_id: null,
+      completion_started_at: null,
+    };
+    if (!await this.metadata.finalizeUpload({ expected: held, upload: finalized, file })) {
+      // Another completion took the upload over meanwhile; it owns the outcome.
+      await this.objects.delete({ object_key: promoted.object_key }).catch(() => undefined);
+      return this.#currentHandle(record.handle.upload_id, binding);
+    }
+    return finalized.handle;
   }
 
   async getFile(input: FileGetInput): Promise<ConnectorFileReference> {
@@ -283,25 +334,54 @@ export class ConnectorFileService {
     return consumed;
   }
 
-  async #reject(record: InternalUploadRecord, rejectionCode: UploadRejectionCode, rejectionSha256: string | null = null): Promise<UploadHandle> {
-    const objectKey = record.object_key;
-    record.handle = UPLOAD_HANDLE_SCHEMA.parse({
-      ...record.handle,
-      upload_url: null,
-      required_headers: null,
-      state: rejectionCode === "EXPIRED" ? "expired" : "rejected",
-      rejection_code: rejectionCode,
-    });
-    if (objectKey) await this.objects.delete({ object_key: objectKey });
-    record.filename = null;
-    record.mime_type = null;
-    record.size_bytes = null;
-    record.purpose = null;
-    record.object_key = null;
-    record.staged_file_id = null;
-    record.rejection_sha256 = rejectionSha256;
-    await this.metadata.updateUpload(record);
-    return record.handle;
+  /**
+   * Closes the upload for good (rejected/expired) while `expected` still holds it. The quarantine
+   * object is deliberately NOT deleted: the one-time URL is only one-time because If-None-Match
+   * finds the object in place; deleting it before the URL expires would make the URL writable
+   * again. The bucket lifecycle rule on mcp-quarantine/ (one day, far beyond the URL lifetime)
+   * removes it; the object is never downloadable meanwhile.
+   */
+  async #reject(
+    record: InternalUploadRecord,
+    expected: UploadCompletionGuard,
+    rejectionCode: UploadRejectionCode,
+    binding: ReturnType<typeof bound>,
+    rejectionSha256: string | null = null,
+  ): Promise<UploadHandle> {
+    const closed: InternalUploadRecord = {
+      ...record,
+      handle: UPLOAD_HANDLE_SCHEMA.parse({
+        ...record.handle,
+        upload_url: null,
+        required_headers: null,
+        state: rejectionCode === "EXPIRED" ? "expired" : "rejected",
+        rejection_code: rejectionCode,
+      }),
+      filename: null,
+      mime_type: null,
+      size_bytes: null,
+      purpose: null,
+      object_key: null,
+      staged_file_id: null,
+      rejection_sha256: rejectionSha256,
+      completion_id: null,
+      completion_started_at: null,
+    };
+    if (!await this.metadata.compareAndSetUpload({ expected, record: closed })) {
+      return this.#currentHandle(record.handle.upload_id, binding);
+    }
+    return closed.handle;
+  }
+
+  #leaseExpired(record: InternalUploadRecord, now: Date): boolean {
+    const started = record.completion_started_at ? Date.parse(record.completion_started_at) : Number.NaN;
+    return !Number.isFinite(started) || started + COMPLETION_LEASE_SECONDS * 1_000 <= now.getTime();
+  }
+
+  /** Current handle after a lost compare-and-set: the other completion's state wins. */
+  async #currentHandle(uploadId: UUID, binding: ReturnType<typeof bound>): Promise<UploadHandle> {
+    const current = await this.#ownedUpload(uploadId, binding);
+    return UPLOAD_HANDLE_SCHEMA.parse(current.handle);
   }
 
   async #ownedUpload(uploadId: UUID, binding: ReturnType<typeof bound>): Promise<InternalUploadRecord> {

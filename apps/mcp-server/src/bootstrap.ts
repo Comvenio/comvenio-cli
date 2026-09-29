@@ -61,8 +61,6 @@ export interface McpProcessEnvironment {
   MCP_UPLOAD_S3_BUCKET?: string;
   MCP_UPLOAD_S3_ACCESS_KEY_ID?: string;
   MCP_UPLOAD_S3_SECRET_ACCESS_KEY?: string;
-  /** Optional, outside the group: "true" signs If-None-Match: * into upload URLs (default off). */
-  MCP_UPLOAD_S3_CONDITIONAL_PUT?: string;
   MCP_CLAMD_HOST?: string;
   MCP_CLAMD_PORT?: string;
   JOB_BINDING_SECRET?: string;
@@ -103,12 +101,6 @@ export const JOBS_FILES_VARIABLES = Object.freeze([
   "MCP_CLAMD_PORT",
   "JOB_BINDING_SECRET",
 ] as const);
-
-function booleanFlag(value: string | undefined, field: string): boolean {
-  if (value === undefined || value.trim() === "" || value === "false") return false;
-  if (value === "true") return true;
-  throw new Error(`${field} muss true oder false sein.`);
-}
 
 function plainValue(value: string, field: string, maxLength = 2_048): string {
   if (value !== value.trim() || value.length > maxLength || /[\u0000-\u001f\u007f]/u.test(value)) {
@@ -155,7 +147,6 @@ function jobsFilesConfig(
         bucket: plainValue(input.MCP_UPLOAD_S3_BUCKET!, "MCP_UPLOAD_S3_BUCKET", 255),
         accessKeyId: plainValue(input.MCP_UPLOAD_S3_ACCESS_KEY_ID!, "MCP_UPLOAD_S3_ACCESS_KEY_ID", 256),
         secretAccessKey: plainValue(input.MCP_UPLOAD_S3_SECRET_ACCESS_KEY!, "MCP_UPLOAD_S3_SECRET_ACCESS_KEY", 512),
-        conditionalPut: booleanFlag(input.MCP_UPLOAD_S3_CONDITIONAL_PUT, "MCP_UPLOAD_S3_CONDITIONAL_PUT"),
       },
       clamd: { host: clamdHost, port: clamdPort },
       job_binding_secret: bindingSecret,

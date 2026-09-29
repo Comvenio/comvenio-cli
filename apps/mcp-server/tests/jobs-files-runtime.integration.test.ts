@@ -161,13 +161,13 @@ function fakeObjects(): QuarantineObjectPort {
     async createPresignedUpload(input) {
       return {
         url: "https://quarantine.test/put",
-        required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes) },
+        required_headers: { "Content-Type": input.mime_type, "Content-Length": String(input.size_bytes), "If-None-Match": "*" },
       };
     },
     async inspect() { throw new Error("not used"); },
     async release() {},
     async delete() {},
-    async promoteClean(input) { return { object_key: `mcp-clean/${input.file_id}` }; },
+    async promoteClean() { throw new Error("not used"); },
     async createPresignedDownload(input) {
       return { url: `https://quarantine.test/get/${encodeURIComponent(input.object_key)}`, expires_at: new Date(Date.now() + 300_000).toISOString() };
     },

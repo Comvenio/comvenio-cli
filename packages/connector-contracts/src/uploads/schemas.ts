@@ -70,7 +70,7 @@ export const UPLOAD_HANDLE_SCHEMA = z.object({
   required_headers: z.object({
     "Content-Type": uploadMime,
     "Content-Length": z.string().regex(/^[1-9][0-9]{0,9}$/u),
-    "If-None-Match": z.literal("*").optional(),
+    "If-None-Match": z.literal("*"),
   }).strict().nullable(),
   state: UPLOAD_STATE_SCHEMA,
   expires_at: instant,
