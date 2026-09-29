@@ -31,7 +31,20 @@ Jede Datei kann einem fachlichen Kontext zugeordnet werden: `none`, `club`, `dep
 
 1. Zielkontext und, falls nötig, Unterkontext bestimmen (siehe oben).
 2. Für die Kontexte `club`, `none` und `department` optional eine Abteilung über `department_id` wählen — ohne Angabe landet die Datei in der **Standard-Abteilung** des Vereins und erscheint dort im DataShare. Andere Kontexte (`event`, `news`, `certificate`, …) folgen eigenen Regeln des Servers.
-3. Die Action überträgt keine Datei von deinem Rechner. `source_file_id` ist die Kennung einer Datei, die schon in der Dateiablage des Vereins liegt (in der Web-App hochgeladen; die Kennung zeigt `cai.data.01.list`). `filename`, `content_type` und `expected_size` müssen zu dieser Datei passen. Das Limit beträgt 200 MB. Eine Datei direkt vom eigenen Rechner hochladen: Noch nicht als Action verfügbar — in der Web-App erledigen.
+3. Die Datei vom eigenen Rechner mit `--file` übergeben, die übrigen Angaben (Kontext, Sichtbarkeit, Beschriftung) mit `--input`:
+
+   ```bash
+   comvenio action call cai.data.06.upload --file ./flyer.jpg --input '{"context_type":"event","context_id":"<event-id>","visibility":"public"}' --json
+   ```
+
+   Das CLI erledigt dann alles Weitere in einem Befehl:
+   - Es liest die Datei, bestimmt den Dateityp aus der Endung und berechnet Größe und Prüfsumme (SHA-256). Eine unbekannte Endung oder eine zu große Datei wird abgelehnt, bevor etwas übertragen wird.
+   - Es überträgt die Datei in einen geschützten Zwischenspeicher. Dort prüft Comvenio Größe, Prüfsumme, Dateityp und Schadsoftware (Virenscan); erst eine saubere Datei wird weitergegeben.
+   - Es legt die Datei im gewählten Kontext der Vereinsablage ab. Das läuft als Hintergrundauftrag; das CLI wartet, bis er fertig ist, und gibt das Ergebnis aus (mit `--json` maschinenlesbar).
+
+   `source_file_id`, `filename`, `content_type` und `expected_size` setzt das CLI selbst — diese Felder nicht zusätzlich in `--input` angeben. `--file` gibt es nur für `cai.data.06.upload`.
+4. Grenzen und Voraussetzungen: höchstens 200 MB je Datei; erlaubt sind gängige Bild-, Dokument-, Tabellen-, Präsentations-, Audio- und Videoformate sowie ZIP-Archive. Die Anmeldung braucht die Scopes `files.write` und `files.import`. Hochladen vom eigenen Rechner geht nur, solange der Server es für deinen Verein eingeschaltet hat — sonst meldet das CLI `UPLOAD_NOT_ENABLED`, und die Datei wird in der Web-App hochgeladen.
+5. Ein begonnener Upload gilt 15 Minuten. Wird der Befehl vorher abgebrochen (zum Beispiel mit Strg+C) oder dauert die Übertragung länger, verfällt er (`UPLOAD_TIMEOUT`); dann denselben Befehl neu starten. Lehnt die Prüfung die Datei ab, nennt `UPLOAD_REJECTED` den Grund, zum Beispiel `MALWARE` oder `MIME_MISMATCH`.
 
 ### Video für mobiles Autoplay optimieren
 
@@ -91,18 +104,14 @@ comvenio action call cai.data.05.download --input '{"file_id":"<file-id>","prefe
 ```
 
 ```bash
-comvenio action call cai.data.06.upload --input '{
-  "source_file_id": "<file-id>",
-  "filename": "bild.jpg",
-  "content_type": "image/jpeg",
-  "expected_size": 245000,
+comvenio action call cai.data.06.upload --file ./bild.jpg --input '{
   "context_type": "event",
   "context_id": "<event-id>",
   "sub_context_id": "<event-area-id>",
   "context_label": "gallery",
   "visibility": "public",
   "department_id": "<department-id>"
-}'
+}' --json
 ```
 
 ```bash

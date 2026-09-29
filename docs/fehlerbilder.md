@@ -66,4 +66,7 @@ Ursachen und Lösung.
 | Beim Anmelden wird nach einem Token gefragt / der Wert fehlt | Nicht nötig. | `comvenio login` ohne Token ausführen. |
 | `--club ist bei OAuth nicht zulässig` | `--club` wurde bei `comvenio login` angegeben — ein Bedienfehler, keine abgelaufene Anmeldung. | `comvenio login` ohne `--club` ausführen; der Verein wird im Comvenio-Consent ausgewählt und serverseitig gebunden. |
 | `Fehler OUTCOME_UNKNOWN` | Eine schreibende Action (etwa `action confirm`) endete mit Zeitüberschreitung (Grenze 15 Sekunden) oder Serverfehler — womöglich nachdem Comvenio sie schon ausgeführt hatte. | **Nicht wiederholen**, sonst entsteht der Eintrag womöglich doppelt. Erst den Stand mit der passenden Lese-Action prüfen. |
+| `Fehler UPLOAD_NOT_ENABLED` | `action call cai.data.06.upload --file …`: Das Hochladen vom eigenen Rechner ist für diesen Verein oder auf diesem Server noch nicht eingeschaltet. | Die Datei in der Web-App hochladen; später erneut versuchen. |
+| `Fehler UPLOAD_REJECTED` | Die Prüfung (Größe, Prüfsumme, Dateityp, Virenscan) hat die Datei abgelehnt; der Zusatz nennt den Grund, etwa `MALWARE` oder `MIME_MISMATCH`. | Datei anhand des Grunds prüfen, dann neu hochladen. |
+| `Fehler UPLOAD_TIMEOUT` | Der Upload wurde abgebrochen (Strg+C, Verbindung) oder nicht innerhalb von 15 Minuten übertragen und geprüft — er ist verfallen. | Denselben Befehl neu starten. |
 | `Fehler UNKNOWN_ERROR` | Ein Fall ohne Beschreibung. | Als Fehlerbericht melden (Issue-Formular) mit Anfrage-ID und Uhrzeit. |
