@@ -578,7 +578,17 @@ function segmente(befehl: string): string[][] | null {
     const zeichen = befehl[i];
     if (quote) {
       // Double quotes still expand `$(…)`, `$VAR` and backticks.
-      if (quote === '"' && (zeichen === "$" || zeichen === "`" || zeichen === "\\")) return null;
+      if (quote === '"' && (zeichen === "$" || zeichen === "`")) return null;
+      if (quote === '"' && zeichen === "\\") {
+        // As bash reads it: `\` escapes only $ ` " \ and newline; before any
+        // other character both stay literal (`grep -E "finance\.(31|25)"`).
+        // Either way nothing is expanded.
+        const naechstes = befehl[i + 1];
+        if (naechstes === undefined) return null;
+        if (naechstes !== "\n") token += "$`\"\\".includes(naechstes) ? naechstes : `\\${naechstes}`;
+        i += 1;
+        continue;
+      }
       if (zeichen === quote) quote = null;
       else token += zeichen;
       continue;

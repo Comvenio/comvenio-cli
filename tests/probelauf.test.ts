@@ -178,6 +178,9 @@ describe("Messung (09 §4.3)", () => {
       "head -1 notiz.txt",
       `jq -r '.markdown' ${eigene} | sed -n '1,60p;243,335p'; `,
       "comvenio help finanzen 2>&1 | head -80; echo ------; comvenio help sponsoring",
+      // Probelauf 2026-09-30: a backslash in double quotes expands nothing.
+      'comvenio whoami; comvenio action list --json | grep -i -E "finance\\.(31|25)" | head',
+      'comvenio help | grep "Preis \\$5"',
     ]) {
       expect(imSandbox({ id: "t", name: "Bash", befehl, ergebnis: "", fehler: false, abgelehnt: false, beantwortet: true })).toBe(true);
     }
@@ -193,6 +196,8 @@ describe("Messung (09 §4.3)", () => {
       "comvenio action list > liste.txt",
       "comvenio help && ls /",
       'grep "$(cat /etc/passwd)"',
+      'comvenio help | grep "\\\\$(cat /etc/passwd)"',
+      'comvenio help | grep "a\\',
       "comvenio action list | sed -i s/a/b/ liste.txt",
       "comvenio action confirm abc",
       "comvenio help |",
