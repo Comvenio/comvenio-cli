@@ -5717,6 +5717,7 @@
       "tool_name": "cv_task_01_list",
       "risk_class": "read",
       "required_scopes": [
+        "club.read",
         "task.read"
       ],
       "expected_outcome": "grounded_success_or_actionable_denial",
@@ -5967,7 +5968,7 @@
       "tool_name": "cv_task_14_checklist_list_add_update_toggle_delete_reorder",
       "risk_class": "critical_write",
       "required_scopes": [
-        "task.read",
+        "club.read",
         "task.write"
       ],
       "expected_outcome": "confirmation_required_or_actionable_denial",
