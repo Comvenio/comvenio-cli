@@ -2,7 +2,9 @@
 
 Jeder Kundenartikel folgt einer der beiden Vorlagen. `bun run check:docs` prüft Frontmatter,
 Pflichtabschnitte, die englische Fassung und verbotene Inhalte; `bun run gen:docs` schreibt den
-Abschnitt „Befehle und Actions“ und `docs/index.json`.
+Abschnitt „Befehle und Actions“ und `docs/index.json`. Die Hub-Artikel (Homepage, Finanzen,
+Veranstaltungen, Turniere, Meetings) tragen zusätzlich den erzeugten Abschnitt „So geht's in der
+Web-App“ (Marker `gen:docs web-app`) direkt vor „Befehle und Actions“.
 
 - Deutsch: `docs/<id>.md`, Englisch: `docs/en/<id>.md` (gleiche `id`, eigene `stichwoerter`).
 - Fehlerartikel: `docs/fehler/<code>.md` und `docs/en/fehler/<code>.md`, Dateiname = Code klein mit

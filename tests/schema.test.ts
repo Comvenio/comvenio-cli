@@ -228,12 +228,14 @@ describe("source redirection per repository", () => {
   // Baum auf einem fremden Zweig, landet dessen Code im Schema — sichtbar
   // wird das nie, weil das Ergebnis plausibel aussieht. Die Schalter je
   // Repositorium sind der Ausweg; dieser Test haelt sie ehrlich.
-  const generator = readFileSync(
-    join(import.meta.dir, "..", "scripts", "gen-schema.ts"),
-    "utf8",
-  );
+  //
+  // Die Tabelle steht seit comvenio-cli-doku 08 in quellen.ts, geteilt von
+  // gen:schema und gen:web-app-fuehrung; gelesen wird sie gegen beide.
+  const script = (name: string) => readFileSync(join(import.meta.dir, "..", "scripts", name), "utf8");
+  const tabelle = script("quellen.ts");
+  const generator = script("gen-schema.ts") + script("gen-web-app-fuehrung.ts");
 
-  const umleitungen = [...generator.matchAll(
+  const umleitungen = [...tabelle.matchAll(
     /\{\s*prefix:\s*"([^"]+)",\s*env:\s*"([^"]+)"\s*\}/g,
   )].map((m) => ({ prefix: m[1], env: m[2] }));
 
@@ -242,12 +244,20 @@ describe("source redirection per repository", () => {
     expect(umleitungen.length).toBeGreaterThanOrEqual(2);
     expect(umleitungen.map((u) => u.env)).toContain("COMVENIO_AI_SERVICE_ROOT");
     expect(umleitungen.map((u) => u.env)).toContain("COMVENIO_WEBPAGE_ROOT");
+    expect(umleitungen.map((u) => u.env)).toContain("COMVENIO_TOOLS_ROOT");
+  });
+
+  test("no generator keeps a private copy of the table", () => {
+    // Zwei Tabellen waeren zwei Zugriffswege — genau die Klasse, die 08 FAQ
+    // ausschliesst: Ein Schalter, der nur in einer Kopie steht, leitet nur
+    // die Haelfte um.
+    expect(generator).not.toMatch(/QUELL_UMLEITUNGEN\s*[:=]/);
   });
 
   test("every switch points at a prefix the generator actually reads", () => {
     // Ein Schalter auf ein Praefix, das keine Quelle nutzt, ist ein
     // Versprechen ohne Wirkung: Wer ihn setzt, glaubt umgeleitet zu haben.
-    const quellen = [...generator.matchAll(/"((?:Frontend|Backend)\/[^"]+)"/g)]
+    const quellen = [...generator.matchAll(/"((?:Frontend|Backend|comvenio-tools)\/[^"]+)"/g)]
       .map((m) => m[1]);
 
     for (const { prefix, env } of umleitungen) {
@@ -261,7 +271,7 @@ describe("source redirection per repository", () => {
     // dass es einen Schalter gibt? Jedes davon vergiftet einen Lauf, sobald
     // sein Arbeitsbaum auf einem fremden Zweig steht.
     const repos = new Set(
-      [...generator.matchAll(/"(Backend\/Microservice-Backend\/[a-z-]+|Frontend\/[a-z-]+)\//g)]
+      [...generator.matchAll(/"(Backend\/Microservice-Backend\/[a-z-]+|Frontend\/[a-z-]+|comvenio-tools)\//g)]
         .map((m) => m[1] + "/"),
     );
     const ohneSchalter = [...repos].filter(

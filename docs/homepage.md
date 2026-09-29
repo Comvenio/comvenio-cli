@@ -462,6 +462,76 @@ Einen einzelnen Slot lesen und setzen sowie nur das Gerüst eines bestehenden
 Widgets austauschen sind noch nicht als Action verfügbar — in der Web-App
 erledigen.
 
+## So geht's in der Web-App
+
+<!-- gen:docs web-app -->
+
+### Homepage-Designer
+
+Menüpfad: Web-App → Homepage-Designer (offene Stelle — Menüpfad manuell ergänzen)
+
+Zweck: Wo steht was auf meiner Homepage, und wie ändere ich es, ohne HTML anzufassen und ohne dass Besucher Zwischenstände sehen?
+
+- Klick auf „Rückgängig“ oder Strg+Z → Der letzte Entwurfsschritt wird zurückgenommen
+- Klick auf „Wiederholen“ oder Strg+Umschalt+Z → Der zuletzt zurückgenommene Schritt wird wieder angewendet
+- Klick auf „1280“, „768“ oder „390“ → Die Leinwand rendert die Seite in dieser Breite und skaliert sie auf die verfügbare Fläche
+- Klick auf „Code“ → Öffnet oder schließt die Code-Ansicht unter der Leinwand
+- Klick auf „Im Fenster öffnen“ → Öffnet die Entwurfsvorschau in einem eigenen Browserfenster oder holt sie nach vorn (führt zu: „Entwurfsvorschau im zweiten Fenster“ (neues Fenster))
+- Klick auf „Verwerfen“ → Der Entwurf aller Reiter wird verworfen; Leinwand zeigt den Live-Stand
+- Klick auf „Veröffentlichen“ → Jeder geänderte Reiter wird als Ganzes veröffentlicht; vorher werden nur die geänderten Felder (CSS und/oder Tokens) nach Prüfung gegen ihre Basis in einem Schritt in die Vereinseinstellungen geschrieben (09)
+- Klick auf „Einfügen“ → Öffnet den Einfügen-Katalog in der rechten Spalte mit dem gewählten Knoten als Ziel
+- Rechtsklick oder Klick auf „…“ am Knoten → Öffnet das Menü mit Duplizieren, Nach oben, Nach unten, Einfügen danach, Löschen
+- Klick auf „Duplizieren“ im Menü oder im Formular → Kopie hinter dem Original; Slot-Namen werden eindeutig fortgezählt, Einträge kopiert
+- Klick auf „Löschen“ → Entfernt Element und zugehörige Slot-Einträge aus dem Entwurf
+- Ziehen eines Knotens im Baum → Verschiebt den Knoten an die Einfügestelle
+- Klick auf „Live-Stand laden“ → Verwirft den Entwurf des Reiters und übernimmt den bereits geladenen Live-Stand
+- Klick auf „Entwurf behalten“ im Hinweis → Führt den Entwurf mit dem bereits geladenen Live-Stand zusammen (TD-6): nur live Geändertes übernehmen, beidseitig Geändertes behalten, Hinzugefügtes übernehmen, live Entferntes entfernen
+- Klick auf „Neu laden“ in der Leinwand → Lädt die Leinwand neu und sendet den Entwurf erneut
+- Eingabe in die Felder des Formulars (Text, Beschriftung, Ziel, Widget-Einstellungen) → Ändert den Eintrag im Entwurf; Leinwand zeigt die Änderung sofort
+- Klick auf „Kopieren“ → Kopiert die Adresse in die Zwischenablage
+- Klick auf „Erneut laden“ → Lädt Reiter, Sektionen, Widgets und Einstellungen neu
+- Klick auf „Zur Ansicht“ → Verlässt den Designer (führt zu: zurück (Ansicht der Homepage im ClubHub))
+- Klick auf „Zum ersten Reiter“ → Wählt den ersten vorhandenen Reiter
+- Klick auf „Live-Stand laden“ in der Meldung → Verwirft den Entwurf des Reiters und lädt Reiter, Sektionen und Widgets neu; ein gelöschter Reiter verschwindet aus dem Baum
+- Klick auf „Hier weiterarbeiten“ → Dieser Tab wird der aktive Designer; der andere Tab wird schreibgeschützt
+- Tippen auf „Struktur“, „Vorschau“ oder „Code“ → Wechselt zwischen Baum, Leinwand und Code-Ansicht
+- Klick auf „Entwurf behalten“ → Führt den Entwurf nach TD-6 mit dem Live-Stand aus der Antwort zusammen; Ausgangsstand = Live-Stand
+- Klick auf „Live-Stand laden“ → Verwirft den Entwurf des Reiters und übernimmt den Live-Stand aus der Antwort
+- Klick auf „Abbrechen“ oder Escape → Schließt den Dialog ohne Änderung
+- Klick auf „Gerüst (HTML)“, „Stile (CSS)“ oder „Befunde“ → Wechselt den Inhalt der Code-Ansicht
+- Auswahl eines Gerüsts über dem Editor → Zeigt das HTML des gewählten Gerüsts
+- Eingabe im Editor → Ändert Gerüst-HTML bzw. Vereins-CSS im Entwurf; nach 300 ms Ruhe zeigen Leinwand und Fenster die Änderung
+- Klick auf „Erneut laden“ in der Code-Ansicht → Lädt den Editor erneut
+- Klick auf „Live übernehmen“ im Stile-Reiter → Ersetzt den CSS-Entwurf durch das Live-CSS
+- Klick auf „Entwurf behalten“ im Stile-Reiter → Setzt den Ausgangsstand des CSS-Entwurfs auf das Live-CSS; der Entwurf bleibt und überschreibt beim Veröffentlichen
+- Klick auf eine Vorlage oder Ziehen in die Leinwand → Fügt den Bereich der Vorlage am Ziel ein; Slot-Namen eindeutig
+- Klick auf „Überschrift“, „Text“ oder „Knopf“ oder Ziehen in die Leinwand → Fügt ein neues Element (h2, p, a) mit leerem Eintrag am Ziel ein; ohne Gerüst als eigenständiges Widget der Sektion
+- Klick auf einen Inhalt oder Ziehen in die Leinwand → Fügt ein Live-Widget als Slot am Ziel ein; ohne Gerüst als neues Widget der gewählten Sektion
+- Klick auf „Schließen“ oder Escape → Schließt den Katalog
+- Klick auf „Erneut laden“ im Katalog → Lädt die Einstellungen mit den Vorlagen neu
+- Klick auf „Design“ in der Werkzeugleiste → Die rechte Spalte zeigt das Design-Panel statt des Formulars; eine Auswahl in Baum oder Leinwand kehrt zum Formular zurück
+- Farbfeld wählen oder Hex-Wert eingeben bei einer Kernfarbe (Hauptfarbe, Akzent, Text auf Akzent, Hintergrund, Text, gedämpfter Text) oder einer weiteren Vereinsfarbe → Setzt die Rolle in tokens.palette des Design-Entwurfs; Leinwand und Fenster zeigen sie sofort; das Panel zählt als eine Änderung „Design“
+- Regler Rundung, Abstände, Schriftgröße oder Knopfgruppe Schatten bewegen → Setzt radius.md, spacing_scale, type_scale oder shadow_level im Design-Entwurf; die Seite zeigt es sofort
+- Klick auf „Auf Ausgangsstand zurücksetzen“ → Tokens im Entwurf wieder wie beim Öffnen bzw. letzten Laden (Basis); die Design-Änderung fällt aus dem Zähler
+- Klick auf „Rückgängig“ in der Umbau-Meldung → Nimmt den ganzen Zug samt Aufräumen in einem Schritt zurück — wie rueckgaengig in der Werkzeugleiste
+- Klick auf „Reihe auflösen“ im Formular der Reihe → Stellt die Elemente der Reihe untereinander an ihre Stelle; im Gerüst entfällt die Hülle, eine Sektion wird einspaltig (layout full, spalten_breiten null)
+
+### Entwurfsvorschau im zweiten Fenster
+
+Menüpfad: Web-App → Entwurfsvorschau im zweiten Fenster (offene Stelle — Menüpfad manuell ergänzen)
+
+Zweck: Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich sehe, Entwurf oder Live-Seite?
+
+- Umschalten von „Auswahl im Designer folgen“ → An: Fenster scrollt zur Auswahl des Designers und zeigt den Rahmen, Klicks wählen im Designer; aus: Fenster verhält sich wie die Seite
+- Klick auf „Neu verbinden“ → Sendet hallo und lädt ohne Antwort den Live-Stand neu
+- Klick auf „Live-Seite öffnen“ → Öffnet die veröffentlichte Homepage in einem neuen Tab (führt zu: wechselnd (öffentliche Homepage des Vereins im neuen Tab))
+- Klick auf ein Element im Fenster → Wählt den Knoten im Designer; Links werden nicht ausgelöst
+- Klick auf „Ersten Reiter zeigen“ → Zeigt den ersten Reiter der Homepage
+- Klick auf „Neu laden“ → Lädt den Live-Stand bzw. die Einstellungen neu
+- Ziehen des Bereichs oder Slots unter dem Zeiger im Fenster ohne vorheriges Wählen; am Etikett eines Bereichs der ganze Bereich → Sendet verschieben mit Rolle fenster an den gebundenen Designer; der Designer ändert den Entwurf, Leinwand und Fenster folgen
+
+<!-- /gen:docs web-app -->
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->

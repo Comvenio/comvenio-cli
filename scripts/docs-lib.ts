@@ -13,6 +13,7 @@ import { join, relative } from "node:path";
 
 import { K12_SCHEMA_DOMAINS } from "../apps/mcp-server/src/tools/content-homepage-news-data/schema-registry.ts";
 import type { InventoryAction } from "./action-inventory.ts";
+import type { Hub, WebAppFuehrung } from "./web-app-fuehrung.ts";
 
 export type Lang = "de" | "en";
 
@@ -50,6 +51,13 @@ const WIDGETS_START = "<!-- gen:docs widgets -->";
 const WIDGETS_END = "<!-- /gen:docs widgets -->";
 const VORLAGEN_START = "<!-- gen:docs vorlagen -->";
 const VORLAGEN_END = "<!-- /gen:docs vorlagen -->";
+// Web-app guide (comvenio-cli-doku 08 §4.4): one generated section per hub
+// article, one sub-heading per surface (D-DOK-18), placed before "Befehle und Actions".
+const WEBAPP_START = "<!-- gen:docs web-app -->";
+const WEBAPP_END = "<!-- /gen:docs web-app -->";
+export const WEBAPP_SECTION: Record<Lang, string> = { de: "So geht's in der Web-App", en: "How it works in the web app" };
+// Article domain → hub of the guide; an article may carry more domains (veranstaltungen: event, plan).
+const WEBAPP_HUB: Readonly<Record<string, Hub>> = { homepage: "homepage", finance: "finance", event: "event", tournament: "tournament", meeting: "meeting" };
 
 // Files in docs/ that are no customer articles: the template and the
 // developer checklist for new connector actions.
@@ -275,6 +283,78 @@ export function vorlagenBlock(root: string, lang: Lang): string {
   return lines.join("\n");
 }
 
+/**
+ * Reads `src/schema/web-app-fuehrung.json` (written by gen:web-app-fuehrung)
+ * from `root`. `null` when the tree carries none — the web-app checks then do
+ * nothing, same as the homepage schema for fixtures in tests.
+ */
+function readWebAppFuehrung(root: string): WebAppFuehrung | null {
+  const path = join(root, "src/schema/web-app-fuehrung.json");
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as WebAppFuehrung;
+  } catch {
+    return null;
+  }
+}
+
+function webAppHubs(domains: readonly string[]): Hub[] {
+  return [...new Set(domains.map((domain) => WEBAPP_HUB[domain]).filter((hub): hub is Hub => hub !== undefined))];
+}
+
+const WEBAPP_TEXT = {
+  de: {
+    folgt: "Web-App-Führung folgt, sobald UI-Spezifikationen mit Code-Ankern vorliegen.",
+    menue: "Menüpfad",
+    offen: "offene Stelle — Menüpfad manuell ergänzen",
+    zweck: "Zweck",
+    fuehrtZu: "führt zu",
+    hinweis: null,
+  },
+  en: {
+    folgt: "The web app guide follows as soon as interface specifications with code anchors are available.",
+    menue: "Menu path",
+    offen: "open item — add the menu path manually",
+    zweck: "Purpose",
+    fuehrtZu: "leads to",
+    // The specifications exist in German only; the web app itself is German.
+    hinweis: "The descriptions below come from the German interface specifications and quote the labels as the web app shows them.",
+  },
+} as const;
+
+/**
+ * The generated "So geht's in der Web-App" section (08 §4.3/§4.4): per surface
+ * menu path, purpose and the anchored actions (trigger → effect → leads to).
+ * A hub without anchored surfaces carries only the "follows" note (DC-8) —
+ * never an invented description.
+ */
+export function webAppBlock(root: string, domains: readonly string[], lang: Lang): string {
+  const fuehrung = readWebAppFuehrung(root);
+  const text = WEBAPP_TEXT[lang];
+  const flaechen = webAppHubs(domains).flatMap((hub) => fuehrung?.hubs[hub] ?? []);
+  const lines: string[] = [WEBAPP_START];
+  if (flaechen.length === 0) {
+    lines.push("", text.folgt);
+  } else {
+    if (text.hinweis) lines.push("", text.hinweis);
+    for (const flaeche of flaechen) {
+      lines.push("", `### ${flaeche.titel}`, "");
+      lines.push(`${text.menue}: ${flaeche.menuepfad}${flaeche.menuepfad_offen ? ` (${text.offen})` : ""}`);
+      if (flaeche.zweck) lines.push("", `${text.zweck}: ${flaeche.zweck}`);
+      lines.push("");
+      for (const aktion of flaeche.aktionen) {
+        lines.push(`- ${aktion.ausloeser} → ${aktion.wirkung}${aktion.fuehrt_zu ? ` (${text.fuehrtZu}: ${aktion.fuehrt_zu})` : ""}`);
+      }
+    }
+  }
+  lines.push("", WEBAPP_END);
+  return lines.join("\n");
+}
+
+export function withWebAppBlock(raw: string, block: string): string | null {
+  return withMarkedBlock(raw, WEBAPP_START, WEBAPP_END, block);
+}
+
 export function withWidgetsBlock(raw: string, block: string): string | null {
   return withMarkedBlock(raw, WIDGETS_START, WIDGETS_END, block);
 }
@@ -326,6 +406,8 @@ export function generateDocs(root: string, inventory: readonly InventoryAction[]
     if (widgets !== null) next = widgets;
     const vorlagen = withVorlagenBlock(next, vorlagenBlock(root, article.lang));
     if (vorlagen !== null) next = vorlagen;
+    const webApp = withWebAppBlock(next, webAppBlock(root, article.frontmatter.domaenen, article.lang));
+    if (webApp !== null) next = webApp;
     if (next !== article.raw) out.set(article.path, next);
   }
   const byId = new Map<string, Partial<Record<Lang, Article>>>();
@@ -366,6 +448,12 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   // Tom 2026-09-28: there are no device tokens any more — only OAuth and actions.
   [/ger(?:ä|ae)te-?token|device[- ]token/iu, "Geräte-Token"],
 ];
+
+/** The reason a customer text line is forbidden, or null — shared with the web-app guide, which drops such spec text. */
+export function kundentextVerstoss(line: string): string | null {
+  for (const [pattern, reason] of FORBIDDEN) if (pattern.test(line)) return reason;
+  return realUuid(line) ? "echte Kennung (UUID)" : null;
+}
 
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 
@@ -437,6 +525,16 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
       } else {
         const eintraege = (vorlagenBlock(root, article.lang).match(/^- /gmu) ?? []).length;
         if (eintraege < 8) findings.push({ file: article.path, reason: `Vorlagen-Abschnitt nennt nur ${eintraege} statt 8 Vorlagen` });
+      }
+    }
+    // Web-app guide (08 §4.4): required in every hub article, as soon as the
+    // tree carries a generated guide at all.
+    if (kategorie === "thema" && webAppHubs(article.frontmatter.domaenen).length > 0 && readWebAppFuehrung(root) !== null) {
+      if (!new Set(headings(article.body)).has(WEBAPP_SECTION[article.lang])) {
+        findings.push({ file: article.path, reason: `Pflichtabschnitt fehlt: ${WEBAPP_SECTION[article.lang]}` });
+      }
+      if (withWebAppBlock(article.raw, "") === null) {
+        findings.push({ file: article.path, reason: "Erzeugter Abschnitt „Web-App“ fehlt oder ist unvollständig (Marker gen:docs web-app … /gen:docs web-app)" });
       }
     }
     const other = article.lang === "de"

@@ -25,69 +25,17 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseErklaerungenJson, type ErklaerungenDeklaration } from "./homepage-erklaerungen.ts";
+// Workspace root and the per-repository switches (QUELL_UMLEITUNGEN) live in
+// quellen.ts, shared with gen:web-app-fuehrung (comvenio-cli-doku 08 §4.1).
+import { readSource } from "./quellen.ts";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const CLI_ROOT = resolve(SCRIPT_DIR, "..");
 const SCHEMA_DIR = join(CLI_ROOT, "src", "schema");
 
-/** Workspace root: env override, else one level above comvenio-cli. */
-const WORKSPACE = process.env.COMVENIO_WORKSPACE
-  ? resolve(process.env.COMVENIO_WORKSPACE)
-  : resolve(CLI_ROOT, "..");
-
 const CHECK_MODE = process.argv.includes("--check");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Umleitungen je Quell-Repositorium.
- *
- * Der Generator liest die ARBEITSBAEUME unter dem Workspace, nicht deren
- * main-Stand. Steht ein Baum auf einem fremden Zweig, schreibt ein Lauf
- * dessen Code ins Schema — und das Ergebnis sieht plausibel aus, weshalb es
- * niemand bemerkt.
- *
- * Am 2026-08-28 waere das beinahe passiert: Nach dem Merge dreier PRs meldete
- * der Lauf unveraendert 57 tote Felder, weil der ai-service auf
- * docs/data-model-wegweiser-main stand und web-page auf
- * docs/ui-spezifikationen — zehn abweichende ClubHome-Dateien, darunter
- * TickerWidget mit 116 Zeilen Unterschied. Es sah aus wie ein gescheiterter
- * Merge.
- *
- * Fuer den ai-service gab es schon einen Schalter, fuer web-page nicht.
- * Beide stehen jetzt in einer Tabelle: Ein weiteres Repositorium kostet eine
- * Zeile, und der Test unten haelt sie gegen die Pfade, die der Generator
- * tatsaechlich liest — ein Schalter auf ein Praefix, das niemand nutzt, waere
- * sonst ein Versprechen ohne Wirkung.
- */
-export const QUELL_UMLEITUNGEN: ReadonlyArray<{ prefix: string; env: string }> = [
-  { prefix: "Backend/Microservice-Backend/ai-service/", env: "COMVENIO_AI_SERVICE_ROOT" },
-  // widget_kinds.py — a new widget kind lands in club-service and web-page together.
-  { prefix: "Backend/Microservice-Backend/club-service/", env: "COMVENIO_CLUB_SERVICE_ROOT" },
-  { prefix: "Frontend/web-page/", env: "COMVENIO_WEBPAGE_ROOT" },
-];
-
-/** Resolve a workspace-relative path and read it, or throw a clear error. */
-function readSource(relPath: string): string {
-  let abs = join(WORKSPACE, relPath);
-  for (const { prefix, env } of QUELL_UMLEITUNGEN) {
-    const wurzel = process.env[env];
-    if (wurzel && relPath.startsWith(prefix)) {
-      abs = join(resolve(wurzel), relPath.slice(prefix.length));
-      break;
-    }
-  }
-  if (!existsSync(abs)) {
-    throw new Error(
-      `Quelle nicht gefunden: ${relPath}\n` +
-        `  erwartet unter: ${abs}\n` +
-        `  Workspace-Root: ${WORKSPACE}\n` +
-        `  Fuer isolierte Worktrees: COMVENIO_WORKSPACE, oder je Repositorium ` +
-        QUELL_UMLEITUNGEN.map((u) => u.env).join(" / ") + ".",
-    );
-  }
-  return readFileSync(abs, "utf8");
-}
 
 /** Forward-slash the relative source paths so the "source" field is OS-stable. */
 function slash(p: string): string {
