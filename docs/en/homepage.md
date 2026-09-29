@@ -207,8 +207,12 @@ can the page be composed as a tree of headings, text, images and buttons.
   equivalently as a row.
 - An existing skeleton in the older format — fixed text and images directly
   in the HTML instead of in slots — stays readable. The detected format per
-  tab and converting it to the new format are not yet available as an
-  action — do this in the web app.
+  tab does not show as an action yet — do this in the web app. Converting to
+  the new format itself runs through `cai.homepage.05.convert`: it reads the
+  current live structure, converts every skeleton and returns `tabs` ready
+  for `cai.homepage.02.apply`, plus a report (`umgewandelt`, `offene_stellen`,
+  `katalogklassen_verschoben`, `befunde`). Nothing is applied by this —
+  that stays `cai.homepage.02.apply` after explicit approval.
 - A skeleton with fixed text or an image outside a slot, without a unique
   slot name, without an area label, with an unknown style, or with more than
   one main heading is rejected when written.
@@ -460,83 +464,119 @@ invented claim.
 
 <!-- gen:docs widgets -->
 
-**uncategorized**
+**inhalt**
 
-- `hero` — open item — explanation missing
-- `description` — open item — explanation missing
-- `custom_html` — open item — explanation missing
-- `stats` — open item — explanation missing
-- `cta` — open item — explanation missing
-- `contact` — open item — explanation missing
-- `legal_notice` — open item — explanation missing
-- `faq` — open item — explanation missing
-- `sponsors` — open item — explanation missing
-- `countdown` — open item — explanation missing
-- `club_history` — open item — explanation missing
-- `news` — open item — explanation missing
-- `news_highlight` — open item — explanation missing
-- `ticker` — open item — explanation missing
-- `events_list` — open item — explanation missing
-- `event_highlight` — open item — explanation missing
-- `event_hub_embed` — open item — explanation missing
-- `event_calendar` — open item — explanation missing
-- `event_program` — open item — explanation missing
-- `event_rsvp` — open item — explanation missing
-- `training_schedule` — open item — explanation missing
-- `special_event_promo` — open item — explanation missing
-- `feature_grid` — open item — explanation missing
-- `team` — open item — explanation missing
-- `org_chart` — open item — explanation missing
-- `birthdays` — open item — explanation missing
-- `birthday_highlight` — open item — explanation missing
-- `honors_showcase` — open item — explanation missing
-- `image` — open item — explanation missing
-- `image_gallery` — open item — explanation missing
-- `video` — open item — explanation missing
-- `background_video` — open item — explanation missing
-- `files` — open item — explanation missing
-- `booking_highlight` — open item — explanation missing
-- `menu_display` — open item — explanation missing
-- `instagram` — open item — explanation missing
-- `facebook` — open item — explanation missing
-- `fupa_widget` — open item — explanation missing
-- `bfv_widget` — open item — explanation missing
-- `divider` — open item — explanation missing
-- `spacer` — open item — explanation missing
-- `parallax_section` — open item — explanation missing
-- `gradient_section` — open item — explanation missing
-- `decorative_element` — open item — explanation missing
-- `testimonials` — open item — explanation missing
-- `logo_marquee` — open item — explanation missing
-- `image_text_split` — open item — explanation missing
-- `forum_highlight` — open item — explanation missing
-- `tournament_highlight` — open item — explanation missing
-- `sport_api` — open item — explanation missing
-- `member_counter` — open item — explanation missing
-- `department_showcase` — open item — explanation missing
-- `next_training` — open item — explanation missing
-- `booking_calendar` — open item — explanation missing
-- `meeting_decisions` — open item — explanation missing
-- `quick_links` — open item — explanation missing
-- `poll` — open item — explanation missing
-- `recipe_highlight` — open item — explanation missing
-- `task_overview` — open item — explanation missing
-- `activity_feed` — open item — explanation missing
-- `member_spotlight` — open item — explanation missing
-- `newsletter_signup` — open item — explanation missing
-- `social_feed` — open item — explanation missing
-- `weather` — open item — explanation missing
-- `live_match_ticker` — open item — explanation missing
-- `membership_form` — open item — explanation missing
-- `contact_form` — open item — explanation missing
-- `heading` — open item — explanation missing
-- `text` — open item — explanation missing
-- `link` — open item — explanation missing
-- `gallery_slideshow` — open item — explanation missing
-- `department_calendar` — open item — explanation missing
-- `chat_preview` — open item — explanation missing
-- `honor_wall` — open item — explanation missing
-- `ad_banner` — open item — explanation missing
+- `hero` — Large title area at the top of the page with headline, background and call-to-action. Data source: Text and background from the form; if enabled, also aggregated Comvenio figures for the club (member count, number of upcoming events, founding year from the club's master data). Makes public: The entered texts and, if switched on, only aggregate numbers (total member count, number of upcoming events) — no names or individual records. Fits: Homepage
+- `description` — Prose, quote or callout block for free-form club text. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Club page, any page
+- `custom_html` — Embedded HTML fragment for free-form design not covered by another widget. Data source: fixed input in the widget form (raw HTML entered by the club administration). Makes public: Exactly the entered HTML — the administration can embed arbitrary content through it; the widget itself does not read any Comvenio data. Fits: any page
+- `stats` — Metric tiles (e.g. member count, departments, events) as cards or a grid. Data source: Selectable per tile: fixed form input, or automatically from Comvenio data (total member count, number of departments, events this year) via the public count endpoints. Makes public: Only aggregate numbers (e.g. total member count) — no names or individual records. Fits: Homepage, Club page
+- `cta` — Prominent call-to-action block with one or two buttons. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `contact` — Contact card with address, phone, email, opening hours and social links. Data source: fixed input in the widget form Makes public: The club's contact details entered in the form; personal data only if the administration enters some itself (e.g. a private phone number instead of a club number). Fits: Homepage, Club page, Contact page
+- `legal_notice` — Legal notice (imprint) and legal information for the club. Data source: fixed input in the widget form Makes public: The entered legal club details (name, address, legal representative, register entry) — deliberately published by the club to meet its legal disclosure duty. Fits: Legal notice page, any page
+- `faq` — Frequently asked questions as an accordion, grid, two-column list or searchable list. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Club page
+- `sponsors` — Sponsor and partner logos as a grid, marquee or carousel. Data source: fixed form input (name/logo/website per sponsor); if the form instead references stored advertising partners, the widget automatically fetches their public sponsor data (company name, logo, website, verified flag). Makes public: Sponsor company data (name, logo, website) — no personal data. Fits: Homepage, Club page
+- `countdown` — Countdown to a fixed target date. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Event page
+- `club_history` — Club history as a timeline of year entries. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Club page, About page
+- `contact_form` — Contact form for enquiries from visitors. Data source: Input from the enquiring person in the form (name, email, message, consent). Makes public: Sends the submitting person's name, email address, message and the timestamp of their given consent to the club (club service); the club administration then processes the enquiry there. Fits: Contact page, Homepage
+
+**news**
+
+- `news` — List of the club's latest news articles. Data source: The club's Comvenio news data (publicly released articles), optionally filtered by department. Makes public: Title, teaser text/image and, if enabled, the author of published news articles — only what the editors have already published as news. Fits: Homepage, News page
+- `news_highlight` — A single highlighted news article in a large presentation. Data source: Comvenio news data (the news article chosen in the form, optionally filtered by department). Makes public: Title, text/image and author of the chosen news article — same as the news widget. Fits: Homepage, News page
+- `ticker` — Marquee ticker cycling through short items from events, news and birthdays. Data source: Public Comvenio data: upcoming events, news and birthdays — each source can be switched on separately. Makes public: Same as the individual widgets: events and news as there; birthdays only for members who opted in, showing only first name and day/month without the birth year. Fits: Homepage, any page
+
+**veranstaltungen**
+
+- `events_list` — List of upcoming or past club events. Data source: Comvenio event data (the club's public event series), optionally filtered by department. Makes public: Title, date and location of public events — no attendee lists. Fits: Homepage, Event page, Department page
+- `event_highlight` — A single highlighted event with an optional live countdown. Data source: Comvenio event data: the event chosen in the form, or a chosen recurring series whose next upcoming public occurrence is shown automatically. Makes public: Title, date/time and location of the chosen event. Fits: Homepage, Event page
+- `event_hub_embed` — Embeds the full public event detail page (event hub) of one event — including programme, images and RSVP. Data source: Comvenio event data via the public event hub (internally this widget builds on the same building block as the "event with programme" widget and reads the event chosen in the form from the same configuration). Makes public: Everything the embedded event hub shows publicly: title, time span, location, programme, public images and the logged-in visitor's own RSVP status — no data about other attendees. Fits: Event page
+- `event_calendar` — Monthly calendar of club events. Data source: Comvenio event data (public events), optionally filtered by department. Makes public: Title, date and location of public events — no attendee lists. Fits: Event page, Department page
+- `event_program` — Running order of a single event as a timeline or cards. Data source: Comvenio event data: the programme items of the event chosen in the form. Makes public: Title, time and, if enabled, area of each programme item — no names of the people responsible (that field exists in the schema but is not read by this widget). Fits: Event page
+- `event_rsvp` — RSVP block for an event showing the visitor's own invitation status. Data source: Comvenio event data: the logged-in person's own invitation to the event chosen in the form. Makes public: Only the logged-in person's own response (accepted/waitlisted, waitlist position if applicable) — no information about other members. Fits: Event page
+- `training_schedule` — Training schedule as a table or timeline. Data source: Primarily fixed form input (entries per training slot); on the public page, if no entry is configured, it falls back to the club's public recurring Comvenio training sessions. Makes public: The entered or public training times and locations — no attendee lists. Fits: Department page, Event page
+- `special_event_promo` — Embeds the full public event detail page (event hub) of one event — programme, images, news and RSVP. Data source: Comvenio event data via the public event hub for the event chosen in the form; the hub fetches its own data via Comvenio's public endpoints. Makes public: Everything the event hub shows publicly: title, time span, location, programme, public images and the logged-in visitor's own RSVP status — no data about other attendees. Fits: Event page
+- `feature_grid` — Tile grid with an icon, label and detail text per tile (e.g. programme highlights or features). Data source: fixed form input; without any entries the widget shows a fixed set of demo tiles. Makes public: nothing beyond what was entered Fits: Homepage, Event page
+- `department_calendar` — A department's calendar of events, training, bookings and meetings. Data source: fixed form input (events per entry with title, date, type); a field for filtering by department exists in the form but is currently not evaluated by the widget. Makes public: nothing beyond what was entered Fits: Department page
+
+**mitglieder**
+
+- `team` — A group's board/team with photo, name and role. Data source: Comvenio member data: public governance/officer data of the group chosen in the form, optionally filtered by department. Makes public: First and last name plus role(s) of that group's officers, and — if enabled — a profile photo; no contact details such as email or phone unless separately released. Fits: Club page, Department page, About page
+- `org_chart` — Club organisation chart with departments and officers. Data source: Comvenio member data: the club's public organisation tree, positions and departments, optionally starting from a root department chosen in the form. Makes public: First and last name plus role of people in board/leadership positions, and the department structure — no contact details. Fits: Club page, About page
+- `birthdays` — List of upcoming member birthdays. Data source: Comvenio member data: public birthdays — only members who have explicitly opted in to publishing their birthday. Makes public: Only the first name plus day and month (no birth year, no last name) of members who opted in. Fits: Homepage, Club page
+- `birthday_highlight` — Celebratory highlight of the next upcoming birthday. Data source: Comvenio member data: public birthdays — only members who opted in. Makes public: Only the first name plus day and month (no birth year, no last name); if enabled, also the age reached as a milestone badge — again only for members who opted in. Fits: Homepage
+- `honors_showcase` — Member honours and awards as a timeline, grid or spotlight display. Data source: Comvenio member data: the club's public honours. Makes public: First and last name of the honoured person, the honour's title/type, milestone years if applicable, and the date honoured — this is personal data the club deliberately publishes as recognition. Fits: Club page, Homepage
+- `membership_form` — Form for a digital membership application. Data source: Input from the interested person in the form (name, contact details, chosen department, message). Makes public: Currently nothing: on submission, the widget explicitly shows an error message that no digital application channel is set up yet, and it neither transmits nor stores the entered data. Fits: Homepage, Club page
+- `honor_wall` — Wall of honour listing member awards, an alternative presentation to honors_showcase. Data source: Comvenio member data: the club's public honours. Makes public: First and last name of the honoured person, the honour's title/type, milestone years if applicable, and the date — deliberately published by the club as recognition. Fits: Club page, Homepage
+
+**medien**
+
+- `image` — A single image or file with a caption. Data source: A file selected in the form from the club's public file area, or an external image URL, or optionally the club's current logo. Makes public: Only files already marked public and finished, or the entered image — no internal/private files. Fits: any page
+- `image_gallery` — Image gallery as a grid, masonry layout, carousel or filmstrip. Data source: Depending on the source chosen in the form: selected files from the file area, images of a chosen event, images from the last three public events, a folder from the file area, external image URLs, or public club images. Makes public: Only images already marked public from the chosen source. Fits: Media page, Homepage, Event page
+- `video` — Embedded video with a poster image. Data source: fixed form input (video URL, e.g. YouTube/Vimeo/MP4, and poster image URL). Makes public: nothing beyond what was entered Fits: Media page, any page
+- `background_video` — Video or image as a full-bleed background section with text overlaid. Data source: fixed form input (video/image URL or uploaded file id, texts). Makes public: nothing beyond what was entered Fits: Homepage
+- `files` — List of downloadable files (e.g. bylaws, forms). Data source: Files selected in the form from the club's public file area. Makes public: File name, type, size and description of the selected files already marked public — their content is the club administration's own responsibility. Fits: Club page, any page
+- `gallery_slideshow` — Automatically advancing image slideshow with a transition effect. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Media page, Homepage
+
+**buchung**
+
+- `booking_highlight` — Highlighted bookable objects (e.g. courts, rooms) with a short description. Data source: Comvenio object data: the club's public object highlights, optionally limited to objects chosen in the form. Makes public: The object's name, type, description and whether booking needs approval — no names of the people booking. Fits: Homepage, Booking page
+- `menu_display` — Menu/offering for an event or occasion. Data source: Comvenio catering data: the club's public menu. Makes public: Dishes/drinks with description and, if enabled, price — no personal data. Fits: Event page, Homepage
+
+**extern**
+
+- `instagram` — Embedded Instagram feed or link. Data source: External embed of the given Instagram account/link — no Comvenio data; Instagram itself loads and displays the content directly in the visitor's browser. Makes public: Nothing from Comvenio; Instagram itself receives technical browser data (e.g. IP address) when the embed loads, per Instagram/Meta's own privacy policy. Fits: Homepage, Social media page
+- `facebook` — Embedded Facebook page or Facebook link. Data source: External embed of the given Facebook page/link — no Comvenio data. Makes public: Nothing from Comvenio; Facebook/Meta itself receives technical browser data when the embed loads, per Meta's own privacy policy. Fits: Homepage, Social media page
+- `fupa_widget` — Embedded FuPa sports widget (results/table). Data source: External embed of the widget script provided by FuPa via the given widgetId — no Comvenio data. Makes public: Nothing from Comvenio; FuPa itself receives technical browser data when the embed loads, per FuPa's own privacy policy. Fits: Sports page, Department page
+- `bfv_widget` — Embedded BFV sports widget (results/table of the Bavarian Football Association). Data source: External embed of the widget script provided by BFV via the address given in the form — no Comvenio data. Makes public: Nothing from Comvenio; BFV itself receives technical browser data when the embed loads, per BFV's own privacy policy. Fits: Sports page, Department page
+
+**layout**
+
+- `divider` — Decorative divider between two sections (wave, mountain, zigzag, etc.). Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `spacer` — Blank or decorative spacing between sections. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `parallax_section` — Image section with a parallax/zoom/fixed effect and optional text/CTA. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, any page
+- `gradient_section` — Gradient/mesh section with optional text. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `decorative_element` — Purely decorative element (shapes, confetti, badges, quote) without its own content data. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `heading` — Basic building block: a single heading as a named slot. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `text` — Basic building block: a single text paragraph as a named slot. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+- `link` — Basic building block: a single link/button as a named slot. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
+
+**community**
+
+- `testimonials` — Testimonials/quotes from members, parents or partners as a carousel, grid or stack. Data source: fixed form input (quote, author, role, image, rating per entry). Makes public: Only what the club administration enters here manually — if it names someone, that is a deliberate choice to publish that name; the widget does not read any Comvenio member data automatically. Fits: Homepage, Club page
+- `logo_marquee` — Marquee of partner/cooperation logos. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Club page
+- `image_text_split` — Image beside text with a heading and an optional button. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, any page
+- `forum_highlight` — Preview of the latest public forum posts. Data source: Comvenio forum data: public threads and boards of the club forum — a deliberately publicly accessible area. Makes public: Title, text preview and stats (replies, views) of the public posts; as the author it shows only the first eight characters of the internal user id, never a real name. Fits: Homepage, Club page
+- `chat_preview` — Preview of a few chat/forum messages with a link to the full chat. Data source: fixed form input (messages per entry: text, sender, time); a board chosen in the form only controls where the "Go to chat" link leads for logged-in members, but does not itself supply any live messages. Makes public: Only what the club administration enters here manually — no real, live chat messages. Fits: Homepage, Club page
+
+**sport**
+
+- `tournament_highlight` — Tournament scoreboard, fixture list or standings table. Data source: fixed form input (matches/standings per entry); optionally references a Comvenio tournament chosen in the form. Makes public: Only the entered match/standings data (team names, results) — no personal data of individual players. Fits: Sports page, Department page
+- `sport_api` — Sports data from an external provider (table, results, next match) or an embedded provider widget. Data source: Depending on the provider chosen in the form: either fixed form input (table/results), or an external embed of FuPa/BFV/nuLiga via the given address — no Comvenio data. Makes public: With fixed input, only the entered data; with an external embed, that provider receives technical browser data when it loads, per its own privacy policy. Fits: Sports page, Department page
+- `live_match_ticker` — Live match ticker for an ongoing tournament. Data source: fixed form input (matches per entry) or, if a Comvenio tournament is chosen in the form, that tournament's live data with optional highlighting of the club's own team. Makes public: Team names and scores — no personal data of individual players. Fits: Sports page, Department page
+
+**live-daten**
+
+- `member_counter` — Counter for member count and departments. Data source: Comvenio member data — but on the public page the widget deliberately shows no data at all: it only displays "Only visible to logged-in members.", with the query disabled there. Makes public: Nothing — the public page only shows the notice text, no number. Fits: internal only (admin preview)
+- `department_showcase` — Overview of the club's departments. Data source: Comvenio department data — but the query is disabled on the public page (enabled: !isPublic); there the widget always shows the empty state "No departments". Makes public: Nothing — on the public page the widget currently loads no department data and only shows the empty state. Fits: internal only (admin preview)
+- `next_training` — The next upcoming training session. Data source: Comvenio event data: the public next training session, optionally filtered by department. Makes public: Title, location and time of the next public training session — no attendee lists. Fits: Homepage, Department page
+- `booking_calendar` — Availability calendar of a bookable object. Data source: Comvenio object data: public object highlights for the object chosen in the form. Makes public: The object's name and type, and whether booking needs approval — no names of the people booking or details of individual time slots. Fits: Booking page
+- `meeting_decisions` — List of meeting decisions with the vote outcome. Data source: fixed input in the widget form Makes public: Only what the club administration enters here manually (title, meeting name, date, status, vote counts if any) — no automatic Comvenio connection to real meetings. Fits: Club page
+- `quick_links` — List of quick links/tiles to important destinations. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, any page
+- `poll` — Simple poll with answer options. Data source: fixed form input (question, answer options, optional fixed starting vote count per option). Makes public: Nothing personal: a cast vote is only held locally in the voter's own browser (no Comvenio backend, no storage, no link to the person) and is lost again on page reload. Fits: Homepage, Club page
+
+**interaktion**
+
+- `recipe_highlight` — Highlighted recipe (e.g. clubhouse kitchen). Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Club page
+- `task_overview` — Task list with a done/open status. Data source: fixed input in the widget form Makes public: Only what the club administration enters here manually — no automatic Comvenio connection to the real task system. Fits: Club page, Department page
+- `activity_feed` — Chronological feed of recent club activity (events, tournaments, news). Data source: Comvenio data: the club's public, aggregated feed of events, tournaments and news. Makes public: Title, timestamp and image (if any) of the respective events/tournaments/news — despite its name, no activity of individual members (no join, no login, etc.). Fits: Homepage, Club page
+- `member_spotlight` — Spotlighted member with photo, role and quote. Data source: fixed form input (name, image, department, member since, quote). Makes public: Only what the club administration enters here manually — with the spotlighted member's consent, no automatic Comvenio member-data connection. Fits: Homepage, Club page
+- `newsletter_signup` — Sign-up form for a newsletter. Data source: Input from the visitor (name/email) in the form. Makes public: Currently nothing: after submitting, the form only shows a success message without sending or storing the entered data anywhere — no delivery/storage endpoint is connected yet. Fits: Homepage, Club page
+- `social_feed` — Tile grid of social-media-style posts. Data source: fixed input in the widget form Makes public: Only what the club administration enters here manually — no real connection to Instagram/Facebook/X, unlike the instagram/facebook widgets. Fits: Homepage, Social media page
+- `weather` — Weather display (e.g. for outdoor facilities/sports ground). Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, Department page
+
+**werbung**
+
+- `ad_banner` — Advertising banner placeholder at a defined position. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: any page
 <!-- /gen:docs widgets -->
 
 ## Templates
@@ -546,14 +586,14 @@ with a short description.
 
 <!-- gen:docs vorlagen -->
 
-- `elegance` — open item — explanation missing
-- `sport` — open item — explanation missing
-- `community` — open item — explanation missing
-- `minimal` — open item — explanation missing
-- `festlich` — open item — explanation missing
-- `modern` — open item — explanation missing
-- `classic` — open item — explanation missing
-- `flex` — open item — explanation missing
+- `elegance` — Editorial, refined template — plain, modern, elegant.
+- `sport` — Bold, dark, athletic template — powerful and energetic.
+- `community` — Warm, welcoming, human template.
+- `minimal` — Purist, text-focused template — less is more.
+- `festlich` — Tradition-conscious, prestigious template for events and anniversaries.
+- `modern` — Contemporary template with gradient accents and a wow factor.
+- `classic` — Proven, reliable, traditionally structured template — the safe choice.
+- `flex` — Generic, fully config-driven template with no hard-coded design — every look comes from configuration, never from new code (a generalisation of the club-specific Motzing template).
 <!-- /gen:docs vorlagen -->
 
 ## Errors
