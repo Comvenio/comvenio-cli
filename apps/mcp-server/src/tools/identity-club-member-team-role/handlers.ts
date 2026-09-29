@@ -174,6 +174,19 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
     return request(client, context, "GET", "ai",
       `/club-agents/${string(input, "club_id")}/weekly-previews`, { query });
   },
+  async "cai.club.13.forum_board_list"(input, context, client) {
+    return request(client, context, "GET", "message", "/forum/boards", {
+      query: { club_id: string(input, "club_id"), flat: "true" },
+    });
+  },
+  async "cai.club.14.forum_thread_list"(input, context, client) {
+    const query: Record<string, string> = { board_id: string(input, "board_id") };
+    const values = record(input);
+    if (typeof values.limit === "number") query.limit = String(values.limit);
+    if (typeof values.offset === "number") query.offset = String(values.offset);
+    if (typeof values.status === "string") query.status = values.status;
+    return request(client, context, "GET", "message", "/forum/threads", { query });
+  },
 
   async "cai.member.01.list"(input, context, client) {
     const data = record(input);

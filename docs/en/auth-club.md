@@ -308,6 +308,8 @@ comvenio action call cai.club.08.department_add \
 - `cai.club.08.department_add` — department-add (change) · Scopes: `admin.write`
 - `cai.club.09.department_update` — department-update (change) · Scopes: `admin.write`
 - `cai.club.10.department_delete` — department-delete (change with confirmation) · Scopes: `admin.write`
+- `cai.club.13.forum_board_list` — forum-board-list (read) · Scopes: `club.read`
+- `cai.club.14.forum_thread_list` — forum-thread-list (read) · Scopes: `club.read`
 <!-- /gen:docs -->
 
 ## Errors
