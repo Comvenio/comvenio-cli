@@ -16,7 +16,6 @@ import {
 } from "@comvenio/connector-contracts";
 
 import { AuthError, LoginOptionError } from "./auth.ts";
-import { HttpError, OAuthOnlyError } from "./http.ts";
 import { ConnectorClientError } from "./mcp/client.ts";
 
 /**
@@ -68,16 +67,6 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
 
-function httpCode(status: number): PublicErrorCode {
-  if (status === 401) return "AUTH_REQUIRED";
-  if (status === 403) return "PERMISSION_DENIED";
-  if (status === 404) return "NOT_FOUND";
-  if (status === 409) return "CONFLICT";
-  if (status === 429) return "RATE_LIMITED";
-  if (status === 400 || status === 422) return "VALIDATION_FAILED";
-  return "UPSTREAM_UNAVAILABLE";
-}
-
 /** Reads the value of --lang from the raw arguments (also --lang=en). */
 export function langArgument(argv: readonly string[]): string | undefined {
   for (let index = 0; index < argv.length; index += 1) {
@@ -124,17 +113,12 @@ export function toPublicError(
           ...(typeof data?.retryable === "boolean" ? { retryable: data.retryable } : {}),
         });
     }
-  } else if (error instanceof OAuthOnlyError) {
-    code = "OAUTH_ONLY";
   } else if (error instanceof LoginOptionError) {
     code = "USAGE_ERROR";
     detail = error.message;
   } else if (error instanceof AuthError) {
     code = "AUTH_REQUIRED";
     detail = error.message;
-  } else if (error instanceof HttpError) {
-    // URL and body can name internal services; the public code says enough.
-    code = httpCode(error.status);
   } else if (error instanceof Error && error.name === "Error") {
     // Plain errors are argument and input checks of the command modules.
     code = "USAGE_ERROR";
@@ -177,7 +161,6 @@ export function formatCliError(error: CliPublicError): string {
 
 export function exitCodeFor(error: unknown): number {
   if (error instanceof AuthError) return 2;
-  if (error instanceof HttpError) return 3;
   return 1;
 }
 

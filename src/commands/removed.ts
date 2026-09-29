@@ -107,3 +107,10 @@ export function deviceTokenOptionError(
   if (command !== "login") return null;
   return "deviceToken" in options || "token" in options ? new LoginOptionError(DEVICE_TOKEN_GONE) : null;
 }
+
+/** The one-time line after a stored device token was dropped (DC-1). */
+export function deviceBlockRemovedNotice(lang: "de" | "en"): string {
+  return lang === "en"
+    ? "Device tokens are no longer supported — sign in with comvenio login."
+    : "Geräte-Token werden nicht mehr unterstützt — melde dich mit comvenio login an.";
+}
