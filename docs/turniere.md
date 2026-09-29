@@ -308,6 +308,53 @@ comvenio action call cai.tournament.32.deadline \
 comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tournament-id>"}' --json
 ```
 
+## Begriffe und Zusammenhänge
+
+- **Turnierserie** — der wiederkehrende Rahmen eines Turniers: Titel, Sportart, Format-Familie,
+  Vorlage, Teilnahmeart, berechtigter Bereich und Regeln. Eine Serie wird nicht gespielt.
+- **Ausführung** (Turnier) — eine konkrete Austragung aus einer Serie, mit Turniermodus, Zeitraum,
+  Anmeldeschluss und Teilnehmerzahl. Teilnehmer, Auslosung, Spiele und Tabelle gehören immer zu
+  einer Ausführung.
+- **Teilnehmer** — wer in einem Spiel antritt: eine Mannschaft, eine Einzelperson oder ein
+  Doppel/Paar, nicht zwingend ein festes Comvenio-Team.
+- **Auslosung** — teilt die Teilnehmer Gruppen oder Paarungen zu. Sie entsteht zuerst als
+  Auslosungs-Sitzung; erst die Bestätigung legt die Spiele an.
+- **Spielplan** — die Spiele einer Ausführung mit Zeit, Ort und Feld/Bahn; automatisch erzeugt
+  oder Spiel für Spiel gesetzt.
+- **Tabelle** — der aktuelle Stand, berechnet aus den erfassten Ergebnissen.
+- **Ergebnis-Deadline** — der Zeitpunkt, bis zu dem die Ergebnisse einer Phase erfasst sein
+  sollen, und die Richtlinie danach: manuell oder automatische Nichtwertung.
+- **Sonderwertung** — ein Ergebnis ohne reguläres Spiel: kampflos, Nichtantreten, Aufgabe oder
+  beiderseitige Nichtwertung; höchstens eine je Spiel.
+
+Zusammenhang: Turnierserie → Ausführung → Teilnehmer → Auslosung → Spielplan → Ergebnisse →
+Tabelle. Eine Ausführung kann mit einem Termin aus „Veranstaltungen“ verknüpft werden, ist aber
+selbst keine Veranstaltung.
+
+## Häufige Fragen
+
+**Was unterscheidet eine Serie von einer Ausführung?**
+Die Serie ist der Rahmen, der jedes Jahr gleich bleibt, etwa die „Vereins-Dartmeisterschaft“. Die
+Ausführung ist die konkrete Austragung, etwa „Vereins-Dartmeisterschaft 2026“. Gespielt, gelost und
+gewertet wird nur in der Ausführung.
+
+**Kann ich ein Turnier ohne Serie anlegen?**
+Nein. Ein Turnier entsteht immer als Ausführung einer Serie; einen zweiten, serienlosen Weg gibt es
+bewusst nicht. Für ein einmaliges Turnier legst du eine Serie an und daraus eine Ausführung.
+
+**Was passiert mit den Spielen, wenn ich neu auslose?**
+`redraw` setzt zurück, löscht alle bisherigen Spiele und bestätigt eine neue Auslosung in einem
+Schritt. Eine gewöhnliche Bestätigung (`draw_confirm`) ergänzt dagegen nur. Zurückgezogene
+Teilnehmer werden in keinem Fall erneut gezogen.
+
+**Was ist der Unterschied zwischen `cancel` und `walkover` beim Rückzug?**
+`cancel` nimmt den Teilnehmer annullierend heraus, gedacht vor einer Neuauslosung. `walkover`
+wertet seine Spiele zugunsten des Gegners. Ohne Angabe entscheidet der Turnierzustand.
+
+**Ist ein Turnier eine Veranstaltung?**
+Nein. Es kann mit einem Termin verknüpft werden, damit es im Kalender erscheint, wird aber
+ausschließlich über die `tournament`-Actions verwaltet.
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->

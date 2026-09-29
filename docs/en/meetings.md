@@ -297,6 +297,51 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
   --idempotency-key <key> --json
 ```
 
+## Concepts and how they connect
+
+- **Meeting series** — the recurring frame of a meeting, such as a department's board meeting,
+  with defaults for minutes type, approval requirement and minutes style.
+- **Minutes** (protocol) — the record of one meeting for a concrete event date. It passes through
+  phases from preparation through the meeting to the published fair copy.
+- **Agenda** — the items of a meeting with title, description and estimated duration; each item is
+  started, completed or skipped.
+- **Participant** — whoever takes part in the meeting, with role and attendance. Only participants
+  recorded as present may vote.
+- **Decision** — created on the agenda item currently being discussed, with title, kind and
+  start of validity; it can carry a vote with options.
+- **Vote** — the procedure on a decision: open, cast votes (directly, in bulk or by proxy), close,
+  view the result.
+- **Resolution** — a decision raised with a resolution number (`promote`). Resolutions can be found
+  club-wide, have a history and a status (new, accepted, rejected, expired).
+- **Fair copy** — the official version of the minutes, one entry per agenda item discussed; it is
+  only published once all reviewers have confirmed.
+
+How they connect: meeting series → minutes per date → agenda → decisions (with vote) →
+resolutions; finally fair copy and publication. The date itself is managed in "Events".
+
+## Frequently asked questions
+
+**What is the difference between a decision and a resolution?**
+A decision arises in the meeting on an agenda item, possibly with a vote. It only becomes a
+resolution through `promote` with a resolution number; only then does it appear in the club-wide
+list of resolutions with status and history.
+
+**Why can I not create a decision for a later agenda item?**
+A decision may only be created for the item currently being discussed. Start the item in the
+agenda first.
+
+**Why may a participant not vote?**
+Only participants recorded as present may vote. Set attendance through the participant action
+(`update`); `eligible` shows who may vote.
+
+**Why can the minutes not be published?**
+Publication requires that all reviewers have confirmed; already the step to "awaiting approval"
+requires a fair-copy entry for every item discussed. `validation` shows what is still missing.
+
+**Is a date with `event_type=meeting` already a meeting?**
+No. The date is in the calendar; agenda, decisions and resolutions only arise in the minutes
+created for that date.
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

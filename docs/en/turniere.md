@@ -305,6 +305,52 @@ comvenio action call cai.tournament.32.deadline \
 comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tournament-id>"}' --json
 ```
 
+## Concepts and how they connect
+
+- **Tournament series** — the recurring frame of a tournament: title, sport, format family,
+  template, participation mode, eligible scope and rules. A series is never played.
+- **Execution** (tournament) — one concrete edition of a series, with tournament mode, period,
+  registration deadline and number of participants. Participants, draw, matches and table always
+  belong to an execution.
+- **Participant** — whoever plays in a match: a team, an individual or a doubles pair, not
+  necessarily a fixed Comvenio team.
+- **Draw** — assigns participants to groups or pairings. It first arises as a draw session; only
+  the confirmation creates the matches.
+- **Schedule** — the matches of an execution with time, place and field/lane; generated
+  automatically or set match by match.
+- **Table** — the current standings, calculated from the recorded results.
+- **Result deadline** — the point in time by which the results of a phase should be recorded, and
+  the policy afterwards: manual or automatic no-contest.
+- **Special result** — a result without a regular match: walkover, no-show, retirement or mutual
+  no-contest; at most one per match.
+
+How they connect: tournament series → execution → participants → draw → schedule → results →
+table. An execution can be linked to a date from "Events", but is not an event itself.
+
+## Frequently asked questions
+
+**What is the difference between a series and an execution?**
+The series is the frame that stays the same every year, such as the "Club darts championship". The
+execution is the concrete edition, such as "Club darts championship 2026". Matches, draws and
+standings only exist in the execution.
+
+**Can I create a tournament without a series?**
+No. A tournament always arises as an execution of a series; there is deliberately no second path
+without a series. For a one-off tournament, create a series and an execution from it.
+
+**What happens to the matches when I draw again?**
+`redraw` resets, deletes all previous matches and confirms a new draw in one step. A regular
+confirmation (`draw_confirm`) only adds. Withdrawn participants are never drawn again.
+
+**What is the difference between `cancel` and `walkover` when withdrawing?**
+`cancel` takes the participant out by annulment, meant for before a new draw. `walkover`
+scores their matches in favour of the opponent. Without an explicit mode, the tournament state
+decides.
+
+**Is a tournament an event?**
+No. It can be linked to a date so it appears in the calendar, but it is managed exclusively
+through the `tournament` actions.
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

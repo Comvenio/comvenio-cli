@@ -310,6 +310,54 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
   --idempotency-key <schlüssel> --json
 ```
 
+## Begriffe und Zusammenhänge
+
+- **Meeting-Serie** — der wiederkehrende Rahmen einer Sitzung, etwa die Vorstandssitzung einer
+  Abteilung, mit Standardwerten für Protokolltyp, Genehmigungspflicht und Protokollstil.
+- **Protokoll** — die Aufzeichnung einer einzelnen Sitzung zu einem konkreten Veranstaltungstermin.
+  Es durchläuft Phasen von der Vorbereitung über die Sitzung bis zur veröffentlichten Reinschrift.
+- **Tagesordnung** — die Punkte einer Sitzung mit Titel, Beschreibung und geschätzter Dauer; jeder
+  Punkt wird gestartet, abgeschlossen oder übersprungen.
+- **Teilnehmer** — wer an der Sitzung beteiligt ist, mit Rolle und Anwesenheit. Nur anwesende
+  Teilnehmer sind stimmberechtigt.
+- **Entscheidung** — wird an einem gerade behandelten Tagesordnungspunkt angelegt, mit Titel, Art
+  und Gültigkeitsbeginn; sie kann eine Abstimmung mit Optionen tragen.
+- **Abstimmung** — das Verfahren an einer Entscheidung: öffnen, Stimmen abgeben (direkt, in
+  Sammlung oder per Vollmacht), schließen, Ergebnis einsehen.
+- **Beschluss** — eine Entscheidung, die mit Beschlussnummer erhoben wurde (`promote`). Beschlüsse
+  sind vereinsweit auffindbar, haben eine Historie und einen Status (neu, angenommen, abgelehnt,
+  abgelaufen).
+- **Reinschrift** — die offizielle Fassung des Protokolls, ein Eintrag je behandeltem
+  Tagesordnungspunkt; veröffentlicht wird sie erst nach Bestätigung aller Prüfer.
+
+Zusammenhang: Meeting-Serie → Protokoll je Termin → Tagesordnung → Entscheidungen (mit
+Abstimmung) → Beschlüsse; am Ende Reinschrift und Veröffentlichung. Den Termin selbst verwaltet
+„Veranstaltungen“.
+
+## Häufige Fragen
+
+**Was ist der Unterschied zwischen einer Entscheidung und einem Beschluss?**
+Eine Entscheidung entsteht in der Sitzung an einem Tagesordnungspunkt, gegebenenfalls mit
+Abstimmung. Zum Beschluss wird sie erst durch `promote` mit Beschlussnummer; erst dann erscheint
+sie in der vereinsweiten Beschlussliste mit Status und Historie.
+
+**Warum kann ich keine Entscheidung zu einem späteren Tagesordnungspunkt anlegen?**
+Eine Entscheidung darf nur für den Punkt angelegt werden, der gerade behandelt wird. Starte den
+Punkt zuerst in der Tagesordnung.
+
+**Warum darf ein Teilnehmer nicht abstimmen?**
+Stimmberechtigt sind nur Teilnehmer, die als anwesend erfasst sind. Setze die Anwesenheit über die
+Teilnehmer-Action (`update`); wer stimmberechtigt ist, zeigt `eligible`.
+
+**Warum lässt sich das Protokoll nicht veröffentlichen?**
+Die Veröffentlichung verlangt, dass alle Prüfer bestätigt haben; schon der Wechsel zu „wartet auf
+Freigabe“ verlangt einen Reinschrift-Eintrag zu jedem behandelten Punkt. `validation` zeigt, was
+noch fehlt.
+
+**Ist ein Termin mit `event_type=meeting` schon eine Sitzung?**
+Nein. Der Termin steht im Kalender; Tagesordnung, Entscheidungen und Beschlüsse entstehen erst im
+Protokoll, das zu diesem Termin angelegt wird.
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->

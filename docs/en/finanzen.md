@@ -122,6 +122,53 @@ comvenio finance entry-approve <entry-id> --notes "Receipt on file"
 comvenio finance summary --year 2026 --department <department-id>
 ```
 
+## Concepts and how they connect
+
+- **Annual plan** — the budget of one club year, addressed with `--year <year>`. It carries the
+  available capital (`--capital`) and all budget items of that year. A plan is open or closed;
+  once closed it no longer accepts changes to items or entries.
+- **Budget item** (position) — a planned income or expense within an annual plan, such as
+  "Summer party" in the category "Festivities". The planned value sits on the item; what actually
+  moved is shown by the entries on it.
+- **Entry** (booking) — an actual money movement on exactly one budget item: income or expense,
+  never both. An entry always hangs on an item, never directly on the annual plan.
+- **Approval** — confirmation of an entry by an authorised person (`entry-approve`). Approved
+  entries count as checked; corrections afterwards go through a reversal rather than a silent
+  edit.
+- **Department** (`department_id`) — assigns items and summaries to one part of the club, such as
+  the football department. Without a department an item belongs to the whole club;
+  `summary --department` evaluates only that department.
+- **Amounts in cents** — every amount is a whole number of cents: `4550` is €45.50. Capital,
+  planned values and entries all use the same unit.
+- **Recurring item** — an item that `plan-copy` carries into the next year on its own; one-off
+  items only on request.
+
+How they connect: annual plan → budget items → entries. The summary (`summary`) totals the items
+of one year, for the whole plan or per department.
+
+## Frequently asked questions
+
+**Does room booking (`cai.booking`) have anything to do with bookkeeping?**
+No. `cai.booking.*` reserves rooms and objects; an entry in bookkeeping is a money movement on a
+budget item and goes through `comvenio finance entry-*`.
+
+**Is a sponsor (`cai.sponsor`) the same as an income entry?**
+No. `cai.sponsor.*` maintains the club's sponsors. A sponsor's money only appears in bookkeeping as
+an entry on an item — recognisable by the source sponsoring (`entry-list --source-type`).
+
+**Why can a closed year no longer be changed?**
+Closing (`plan-close`) freezes the items and entries of that year so the figures that were reported
+do not shift afterwards. Every change ends with `CONFLICT`. For a late entry, reopen the year with
+`plan-reopen --year <year> --reason "<reason>"`; the reason stays on record.
+
+**Why does the CLI reject `45.50`?**
+Amounts are cents. `45.50` looks like euros; rather than silently booking 45 cents, the CLI stops
+with `VALIDATION_FAILED`. The correct value is `4550`.
+
+**Why do I have to pass `--year` on every command?**
+A club keeps several annual plans side by side and there is no default — so an entry never lands in
+the wrong year by accident.
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

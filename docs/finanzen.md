@@ -124,6 +124,55 @@ comvenio finance entry-approve <entry-id> --notes "Beleg liegt vor"
 comvenio finance summary --year 2026 --department <department-id>
 ```
 
+## Begriffe und Zusammenhänge
+
+- **Jahresplan** — der Haushalt eines Vereinsjahres, angesprochen über `--year <jahr>`. Er trägt
+  das verfügbare Kapital (`--capital`) und alle Budgetposten des Jahres. Ein Plan ist offen oder
+  abgeschlossen; abgeschlossen nimmt er keine Änderungen an Posten und Buchungen mehr an.
+- **Budgetposten** (Position) — eine geplante Einnahme oder Ausgabe innerhalb eines Jahresplans,
+  etwa „Sommerfest“ in der Kategorie „Feste“. Der Planwert steht am Posten; was tatsächlich
+  geflossen ist, zeigen die Buchungen daran.
+- **Buchung** (Eintrag) — ein tatsächlicher Geldfluss an genau einem Budgetposten: Einnahme oder
+  Ausgabe, nie beides. Eine Buchung hängt immer an einem Posten, nie direkt am Jahresplan.
+- **Freigabe** — die Bestätigung einer Buchung durch eine berechtigte Person
+  (`entry-approve`). Freigegebene Buchungen gelten als geprüft; Korrekturen laufen danach über
+  einen Storno statt über eine stille Änderung.
+- **Abteilung** (`department_id`) — ordnet Posten und Zusammenfassungen einem Teil des Vereins
+  zu, etwa der Fußballabteilung. Ohne Abteilung gilt der Posten für den Gesamtverein;
+  `summary --department` wertet nur diese Abteilung aus.
+- **Cent-Beträge** — jeder Betrag ist eine ganze Zahl in Cent: `4550` sind 45,50 €. Kapital,
+  Planwerte und Buchungen verwenden dieselbe Einheit.
+- **Wiederkehrender Posten** — ein Posten, den `plan-copy` in das nächste Jahr von selbst
+  übernimmt; einmalige Posten nur auf Wunsch.
+
+Zusammenhang: Jahresplan → Budgetposten → Buchungen. Die Zusammenfassung (`summary`) fasst die
+Posten eines Jahres zusammen, für den ganzen Plan oder je Abteilung.
+
+## Häufige Fragen
+
+**Hat die Raumbuchung (`cai.booking`) etwas mit der Buchhaltung zu tun?**
+Nein. `cai.booking.*` reserviert Räume und Objekte; eine Buchung in der Buchhaltung ist ein
+Geldfluss an einem Budgetposten und läuft über `comvenio finance entry-*`.
+
+**Ist ein Sponsor (`cai.sponsor`) dasselbe wie eine Einnahme-Buchung?**
+Nein. `cai.sponsor.*` pflegt die Sponsoren des Vereins. Geld eines Sponsors erscheint in der
+Buchhaltung erst als Buchung an einem Posten — erkennbar an der Quelle Sponsoring
+(`entry-list --source-type`).
+
+**Warum lässt sich ein abgeschlossenes Jahr nicht mehr ändern?**
+Der Abschluss (`plan-close`) friert Posten und Buchungen des Jahres ein, damit der Stand, über den
+berichtet wurde, nicht nachträglich wandert. Jede Änderung endet mit `CONFLICT`. Für eine
+Nachtragsbuchung das Jahr mit `plan-reopen --year <jahr> --reason "<Begründung>"` wieder öffnen;
+die Begründung bleibt nachvollziehbar.
+
+**Warum lehnt die CLI `45.50` ab?**
+Beträge sind Cent. `45.50` sieht nach Euro aus; statt stillschweigend 45 Cent zu buchen, bricht die
+CLI mit `VALIDATION_FAILED` ab. Richtig ist `4550`.
+
+**Warum muss ich bei jedem Befehl `--year` angeben?**
+Ein Verein führt mehrere Jahrespläne nebeneinander, und es gibt keinen Vorgabewert — so landet
+eine Buchung nie versehentlich im falschen Jahr.
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
