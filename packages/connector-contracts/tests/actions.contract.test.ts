@@ -312,8 +312,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 380,
-      published_domain_actions: 378,
+      discovered_actions: 381,
+      published_domain_actions: 379,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
