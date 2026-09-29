@@ -174,9 +174,19 @@ simple(taskRule, "create", "object", "POST", fixed("/object-task-rules/"), { bod
 simple(taskRule, "update", "object", "PATCH", by("/object-task-rules/", "rule_id"), { body: (i) => ({ id: i.rule_id!, club_id: i.club_id!, ...object(i, "changes") }) });
 simple(taskRule, "delete", "object", "DELETE", by("/object-task-rules/", "rule_id"), { deleted_id: "rule_id" });
 
+function taskListPage(value: JsonValue, input: JsonObject, context: RequestContext): JsonValue {
+  const checked = assertClub(value, input, context);
+  if (!Array.isArray(checked) || checked.some((item) => item === null || Array.isArray(item) || typeof item !== "object")) {
+    throw new Error("Der Fachservice hat keine gültige Aufgabenliste geliefert.");
+  }
+  const offset = Number(input.offset ?? 0);
+  const limit = Number(input.limit ?? 50);
+  return minimizeTaskRelations(checked.slice(offset, offset + limit));
+}
+
 const taskList = "cai.task.01.list" as const;
-simple(taskList, "list", "task", "GET", by("/tasks/by-club/", "club_id"), { response: (value, input, context) => minimizeTaskRelations(assertClub(value, input, context)) });
-simple(taskList, "mine", "task", "GET", by("/tasks/my-tasks/assigned/", "club_id"), { response: (value, input, context) => minimizeTaskRelations(assertClub(value, input, context)) });
+simple(taskList, "list", "task", "GET", by("/tasks/by-club/", "club_id"), { response: taskListPage });
+simple(taskList, "mine", "task", "GET", by("/tasks/my-tasks/assigned/", "club_id"), { response: taskListPage });
 for (const [actionId, suffix] of [["cai.task.02.show", ""], ["cai.task.03.show_subtasks", "/subtasks"], ["cai.task.04.show_chain", "/chain"]] as const) {
   simple(actionId, "show", "task", "GET", by("/tasks/", "task_id", suffix), { response: (value, input, context) => minimizeTaskRelations(assertClub(value, input, context)) });
 }
