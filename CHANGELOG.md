@@ -7,6 +7,15 @@ Die Einträge folgen
 
 ## [Unreleased]
 
+### Fixed
+
+- `whoami` zeigt ohne übertragenen Namen nicht mehr „? <?>“, sondern wessen
+  Anmeldung es ist (OAuth oder Maschinen-Grant), dazu die Scopes der Verbindung.
+- Fehlt einem Grant `club.read`, endet `whoami` mit `SCOPE_REQUIRED` samt Hinweis
+  statt mit `UNKNOWN_ERROR`.
+- Ist der Connector nicht erreichbar (Name nicht auflösbar, Verbindung
+  abgelehnt), lautet der Fehler `UPSTREAM_UNAVAILABLE` statt `UNKNOWN_ERROR`.
+
 ### Added
 
 - Anmeldung ohne Browser mit einem Maschinen-Grant des Vereins: Sind
