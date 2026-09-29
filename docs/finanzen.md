@@ -204,7 +204,7 @@ Zweck: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief je
 
 ### Bereichsbudget
 
-Menüpfad: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung
+Menüpfad: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?
 
@@ -215,7 +215,7 @@ Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, un
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menüpfad: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten
+Menüpfad: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -236,7 +236,7 @@ Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es
 
 ### Buchungen eines Kontos — prüfungssicher
 
-Menüpfad: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)
+Menüpfad: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2) (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?
 
@@ -345,7 +345,7 @@ Zweck: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über de
 
 ### Sektion Prüfung
 
-Menüpfad: Finance-Hub → Seitenleiste Überblick → Prüfung
+Menüpfad: Finance-Hub → Seitenleiste Überblick → Prüfung (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 

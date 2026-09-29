@@ -277,8 +277,9 @@ describe("Auflösen gegen den Code (08 §4.2/§4.3)", () => {
     const kasse = hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse")!;
     expect(kasse).toMatchObject({
       titel: "Kasse",
+      // A path from the purpose is only a placeholder (contract 08 DC-5).
       menuepfad: "Finance Hub → Kasse & Konten",
-      menuepfad_offen: false,
+      menuepfad_offen: true,
       zweck: "Was liegt in der Kasse, und wie buche ich einen Beleg?",
     });
     expect(kasse.aktionen).toEqual([

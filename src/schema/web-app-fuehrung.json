@@ -371,7 +371,7 @@
         "ui_spec_id": "comvenio/finance/bereichsbudget",
         "titel": "Bereichsbudget",
         "menuepfad": "Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung",
-        "menuepfad_offen": false,
+        "menuepfad_offen": true,
         "zweck": "Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?",
         "aktionen": [
           {
@@ -400,7 +400,7 @@
         "ui_spec_id": "comvenio/finance/buchhaltung-event-verknuepfung",
         "titel": "Buchhaltungs-Tab — Event-Verknüpfung",
         "menuepfad": "Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten",
-        "menuepfad_offen": false,
+        "menuepfad_offen": true,
         "zweck": "Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?",
         "aktionen": [
           {
@@ -479,7 +479,7 @@
         "ui_spec_id": "comvenio/finance/buchung-pruefungssicher",
         "titel": "Buchungen eines Kontos — prüfungssicher",
         "menuepfad": "Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)",
-        "menuepfad_offen": false,
+        "menuepfad_offen": true,
         "zweck": "Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?",
         "aktionen": [
           {
@@ -907,7 +907,7 @@
         "ui_spec_id": "comvenio/finance/pruefung",
         "titel": "Sektion Prüfung",
         "menuepfad": "Finance-Hub → Seitenleiste Überblick → Prüfung",
-        "menuepfad_offen": false,
+        "menuepfad_offen": true,
         "zweck": "Was sieht ein Prüfer in diesem Plan, und was fehlt noch?",
         "aktionen": [
           {

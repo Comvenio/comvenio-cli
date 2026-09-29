@@ -203,7 +203,7 @@ Purpose: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief 
 
 ### Bereichsbudget
 
-Menu path: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung
+Menu path: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung (open item — add the menu path manually)
 
 Purpose: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?
 
@@ -214,7 +214,7 @@ Purpose: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, 
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menu path: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten
+Menu path: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten (open item — add the menu path manually)
 
 Purpose: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -235,7 +235,7 @@ Purpose: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich 
 
 ### Buchungen eines Kontos — prüfungssicher
 
-Menu path: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)
+Menu path: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2) (open item — add the menu path manually)
 
 Purpose: Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?
 
@@ -344,7 +344,7 @@ Purpose: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über 
 
 ### Sektion Prüfung
 
-Menu path: Finance-Hub → Seitenleiste Überblick → Prüfung
+Menu path: Finance-Hub → Seitenleiste Überblick → Prüfung (open item — add the menu path manually)
 
 Purpose: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
