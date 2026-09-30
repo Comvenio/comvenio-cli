@@ -467,7 +467,7 @@ function headings(body: string): string[] {
 }
 
 /** Text of the `## <title>` section up to the next `## ` heading; null when absent. */
-function sectionBody(body: string, title: string): string | null {
+export function sectionBody(body: string, title: string): string | null {
   const lines = body.split("\n");
   const start = lines.findIndex((line) => line.trim() === `## ${title}`);
   if (start === -1) return null;

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "homepage.bau.hero-vorschau",
+    "bereich": "homepage",
+    "frage": "Stelle für die Startseite der Vereins-Homepage einen Titelbereich (Hero) mit der Überschrift „Willkommen beim Probelauf“ zusammen und bringe ihn bis zur Vorschau. Nicht veröffentlichen.",
+    "befehle": ["^comvenio action call\\b.*\\bcai\\.homepage\\.01\\.preview\\b"],
+    "fundstelle": "docs/homepage.md#vorschau-und-prüfung"
+  },
+  {
+    "id": "finance.bau.budgetposten",
+    "bereich": "finance",
+    "frage": "Lege im Jahresplan des laufenden Jahres einen Budgetposten „Probelauf 09“ als geplante Ausgabe über 10,00 € an. Nichts bestätigen, was eine Bestätigung verlangt.",
+    "befehle": ["^comvenio action call\\b.*\\bcai\\.finance\\.09\\.position_create\\b"],
+    "fundstelle": "docs/finanzen.md#budgetposten-führen",
+    "schreibt": true
+  },
+  {
+    "id": "event.bau.naechste-termine",
+    "bereich": "event",
+    "frage": "Welche Veranstaltungen des Vereins stehen als Nächstes an? Nenne Titel und Datum der nächsten drei.",
+    "befehle": ["^comvenio action call\\b.*\\bcai\\.event\\.01\\.list\\b"],
+    "fundstelle": "docs/veranstaltungen.md#abläufe"
+  },
+  {
+    "id": "tournament.bau.turnierstand",
+    "bereich": "tournament",
+    "frage": "Welche Turniere hat der Verein, und in welchem Status ist das zuletzt angelegte?",
+    "befehle": ["^comvenio action call\\b.*\\bcai\\.tournament\\.0[89]\\.(list|show)\\b"],
+    "fundstelle": "docs/turniere.md#abläufe"
+  },
+  {
+    "id": "meeting.bau.sitzungsserien",
+    "bereich": "meeting",
+    "frage": "Welche Sitzungsserien führt der Verein, und welche Protokolle gehören zur ersten davon?",
+    "befehle": ["^comvenio action call\\b.*\\bcai\\.meeting\\.0[12]\\.[a-z_]+\\b"],
+    "fundstelle": "docs/meetings.md#abläufe"
+  }
+]

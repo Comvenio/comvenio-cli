@@ -230,7 +230,13 @@ export function istMenuepfad(satz: string): boolean {
   return schritte.length >= 2 && !satz.includes(":") && schritte[0]!.split(/\s+/u).length <= 4;
 }
 
-function menuepfadVon(spec: Spezifikation): string | null {
+/**
+ * The arrow sentence of a purpose, used as the placeholder text. It is never a
+ * closed menu path: contract 08 DC-5 derives those only from source_paths and
+ * the surrounding navigation, and a purpose may name a tab the navigation calls
+ * differently ("Bereichsbudget" vs. "Budgetplanung").
+ */
+function menuepfadHinweisVon(spec: Spezifikation): string | null {
   for (const vertrag of vertraege(spec)) {
     if (typeof vertrag.purpose !== "string") continue;
     const satz = vertrag.purpose.split(/;\s|\.\s/u).find((teil) => teil.includes("→") && istMenuepfad(teil));
@@ -333,12 +339,11 @@ export function bauWebAppFuehrung(konzepte: string, webSrc: string): WebAppFuehr
       continue;
     }
     const name = titel.get(id) ?? id;
-    const pfad = menuepfadVon(spec);
     hubs[hub].push({
       ui_spec_id: id,
       titel: name,
-      menuepfad: pfad ?? `Web-App → ${name}`,
-      menuepfad_offen: pfad === null,
+      menuepfad: menuepfadHinweisVon(spec) ?? `Web-App → ${name}`,
+      menuepfad_offen: true,
       zweck: zweckVon(spec),
       aktionen,
     });

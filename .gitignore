@@ -14,3 +14,6 @@ apps/mcp-server/dist/
 
 # verify screenshots can show club pages — never commit them
 .comvenio-verify/
+
+# Probelauf (comvenio-cli-doku 09): transcripts and reports can show club data — never commit them
+probelauf/berichte/
