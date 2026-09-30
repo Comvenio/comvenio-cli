@@ -278,8 +278,8 @@
       {
         "ui_spec_id": "comvenio/finance/bereich-als-sicht",
         "titel": "Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget",
-        "menuepfad": "Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Budgetplanung",
+        "menuepfad_offen": false,
         "zweck": "Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?",
         "aktionen": [
           {
@@ -370,7 +370,7 @@
       {
         "ui_spec_id": "comvenio/finance/bereichsbudget",
         "titel": "Bereichsbudget",
-        "menuepfad": "Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung",
+        "menuepfad": "Web-App → Bereichsbudget",
         "menuepfad_offen": true,
         "zweck": "Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?",
         "aktionen": [
@@ -399,8 +399,8 @@
       {
         "ui_spec_id": "comvenio/finance/buchhaltung-event-verknuepfung",
         "titel": "Buchhaltungs-Tab — Event-Verknüpfung",
-        "menuepfad": "Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Buchhaltung",
+        "menuepfad_offen": false,
         "zweck": "Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?",
         "aktionen": [
           {
@@ -478,7 +478,7 @@
       {
         "ui_spec_id": "comvenio/finance/buchung-pruefungssicher",
         "titel": "Buchungen eines Kontos — prüfungssicher",
-        "menuepfad": "Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)",
+        "menuepfad": "Web-App → Buchungen eines Kontos — prüfungssicher",
         "menuepfad_offen": true,
         "zweck": "Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?",
         "aktionen": [
@@ -650,8 +650,8 @@
       {
         "ui_spec_id": "comvenio/finance/budget-organigramm",
         "titel": "Budget im Organigramm",
-        "menuepfad": "Web-App → Budget im Organigramm",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Budgetplanung",
+        "menuepfad_offen": false,
         "zweck": "Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?",
         "aktionen": [
           {
@@ -821,8 +821,8 @@
       {
         "ui_spec_id": "comvenio/finance/budget-saison",
         "titel": "Saison in der Budgetplanung",
-        "menuepfad": "Web-App → Saison in der Budgetplanung",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Budgetplanung",
+        "menuepfad_offen": false,
         "zweck": "Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?",
         "aktionen": [
           {
@@ -865,8 +865,8 @@
       {
         "ui_spec_id": "comvenio/finance/offene-punkte-und-struktur",
         "titel": "Offene Punkte und Struktur",
-        "menuepfad": "Web-App → Offene Punkte und Struktur",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Dashboard",
+        "menuepfad_offen": false,
         "zweck": "Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?",
         "aktionen": [
           {
@@ -906,8 +906,8 @@
       {
         "ui_spec_id": "comvenio/finance/pruefung",
         "titel": "Sektion Prüfung",
-        "menuepfad": "Finance-Hub → Seitenleiste Überblick → Prüfung",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Prüfung",
+        "menuepfad_offen": false,
         "zweck": "Was sieht ein Prüfer in diesem Plan, und was fehlt noch?",
         "aktionen": [
           {
@@ -1123,8 +1123,8 @@
       {
         "ui_spec_id": "comvenio/finance/uebersicht-nach-organigramm",
         "titel": "Übersicht nach Organigramm",
-        "menuepfad": "Web-App → Übersicht nach Organigramm",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Buchhaltung",
+        "menuepfad_offen": false,
         "zweck": "Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.",
         "aktionen": [
           {
@@ -1183,8 +1183,8 @@
       {
         "ui_spec_id": "comvenio/finanzen/belegerfassung",
         "titel": "Belegerfassung im Finance-Hub",
-        "menuepfad": "Web-App → Belegerfassung im Finance-Hub",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Belegerfassung",
+        "menuepfad_offen": false,
         "zweck": "Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.",
         "aktionen": [
           {
@@ -1272,8 +1272,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-anmeldung",
         "titel": "Abschnitt „Dabei sein\"",
-        "menuepfad": "Web-App → Abschnitt „Dabei sein\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Dabei sein",
+        "menuepfad_offen": false,
         "zweck": "Sich anmelden — offen für alle oder nur mit Einladung.",
         "aktionen": [
           {
@@ -1291,8 +1291,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-bereiche",
         "titel": "Abschnitt „Auf dem Fest\"",
-        "menuepfad": "Web-App → Abschnitt „Auf dem Fest\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Auf dem Fest",
+        "menuepfad_offen": false,
         "zweck": "Was gibt es auf dem Gelände — Bühnen, Stände, Treffpunkte?",
         "aktionen": [
           {
@@ -1306,8 +1306,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-gaestefeed",
         "titel": "Abschnitt „Momente\"",
-        "menuepfad": "Web-App → Abschnitt „Momente\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Momente",
+        "menuepfad_offen": false,
         "zweck": "Was Gäste vom Fest zeigen und erzählen.",
         "aktionen": [
           {
@@ -1320,8 +1320,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-galerie",
         "titel": "Abschnitt „Galerie\"",
-        "menuepfad": "Web-App → Abschnitt „Galerie\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Galerie",
+        "menuepfad_offen": false,
         "zweck": "Die Bilder vom Fest.",
         "aktionen": [
           {
@@ -1334,8 +1334,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-gelaendeplan",
         "titel": "Abschnitt „Geländeplan\"",
-        "menuepfad": "Web-App → Abschnitt „Geländeplan\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Geländeplan",
+        "menuepfad_offen": false,
         "zweck": "Wo ist was — und wo sitze ich?",
         "aktionen": [
           {
@@ -1358,8 +1358,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-news",
         "titel": "Abschnitt „Aktuelles\"",
-        "menuepfad": "Web-App → Abschnitt „Aktuelles\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Aktuelles",
+        "menuepfad_offen": false,
         "zweck": "Was gibt es Neues zur Veranstaltung?",
         "aktionen": [
           {
@@ -1372,8 +1372,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-programm",
         "titel": "Abschnitt „Programm\"",
-        "menuepfad": "Web-App → Abschnitt „Programm\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Programm",
+        "menuepfad_offen": false,
         "zweck": "Was findet wann statt?",
         "aktionen": [
           {
@@ -1392,8 +1392,8 @@
       {
         "ui_spec_id": "comvenio/event/abschnitt-uebersicht",
         "titel": "Abschnitt „Entdecken\"",
-        "menuepfad": "Web-App → Abschnitt „Entdecken\"",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Entdecken",
+        "menuepfad_offen": false,
         "zweck": "Der Einstieg: Was läuft gerade, was kommt gleich, und — bei einem Fest — welche Tage gibt es?",
         "aktionen": [
           {
@@ -1653,8 +1653,8 @@
       {
         "ui_spec_id": "comvenio/event/einstieg",
         "titel": "Event-Einstieg",
-        "menuepfad": "Web-App → Event-Einstieg",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen",
+        "menuepfad_offen": false,
         "zweck": "Entscheiden, welche der fünf Event-Oberflächen jemand zu sehen bekommt.",
         "aktionen": [
           {
@@ -1784,8 +1784,8 @@
       {
         "ui_spec_id": "comvenio/event/oeffentlicher-hub",
         "titel": "Öffentlicher Event-Hub",
-        "menuepfad": "Web-App → Öffentlicher Event-Hub",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen",
+        "menuepfad_offen": false,
         "zweck": "Die Veranstaltung so zeigen, wie Gäste sie sehen sollen — im Gewand der Veranstaltung, nicht der Plattform.",
         "aktionen": [
           {
@@ -1817,8 +1817,8 @@
       {
         "ui_spec_id": "comvenio/event/planer",
         "titel": "Event-Planer",
-        "menuepfad": "Web-App → Event-Planer",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen",
+        "menuepfad_offen": false,
         "zweck": "Der Arbeitsplatz für ein Fest. Er legt sich als eigene Ebene über die Anwendung (position: fixed, ganzer Bildschirm) und hält drei Dinge zusammen: die Kopfleiste mit Zustand und Aussenwegen, die Hierarchiekarte für den Festtag, und darunter Schiene plus den gewählten Abschnitt.",
         "aktionen": [
           {
@@ -1884,8 +1884,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-anmeldungen",
         "titel": "Planer — Teilnahme & Einladungen",
-        "menuepfad": "Web-App → Planer — Teilnahme & Einladungen",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Anmeldungen",
+        "menuepfad_offen": false,
         "zweck": "Wer sich angemeldet hat, wer eingeladen ist, wer noch antworten muss. Anmeldungen entstehen woanders (öffentlicher Auftritt); hier werden sie gesichtet, ihr Zustand geändert, ausgegeben — und Einladungen an Mitglieder verschickt.",
         "aktionen": [
           {
@@ -1928,8 +1928,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-aufgaben",
         "titel": "Planer — Aufgaben",
-        "menuepfad": "Web-App → Planer — Aufgaben",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Aufgaben",
+        "menuepfad_offen": false,
         "zweck": "Aufgaben eines Festes planen und ihren Stand steuern — in drei Ansichten (Tafel, Zeitstrahl, Kalender), gefiltert nach Festphase, zugeordnet zu Arbeitsorten und Menschen.",
         "aktionen": [
           {
@@ -1987,8 +1987,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-bereiche",
         "titel": "Planer — Bereiche",
-        "menuepfad": "Web-App → Planer — Bereiche",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Bereiche",
+        "menuepfad_offen": false,
         "zweck": "Arbeitsorte und Gewerke eines Fests anlegen — und als Rahmen für die Arbeit an einem einzelnen Ort dienen.",
         "aktionen": [
           {
@@ -2031,8 +2031,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-dashboard",
         "titel": "Planer — Dashboard",
-        "menuepfad": "Web-App → Planer — Dashboard",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Dashboard",
+        "menuepfad_offen": false,
         "zweck": "Der Einstieg: Was steht an, wie weit ist das Fest, und wo geht es weiter.",
         "aktionen": [
           {
@@ -2070,8 +2070,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-design-studio",
         "titel": "Planer — Design-Studio",
-        "menuepfad": "Web-App → Planer — Design-Studio",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Design-Studio",
+        "menuepfad_offen": false,
         "zweck": "Der Auftritt eines Festes: Farben, Schriften, Abstände, Titelbild, Flyer, die Reihenfolge der Blöcke im öffentlichen Hub und seine Texte. Alles wirkt auf denselben öffentlichen Auftritt.",
         "aktionen": [
           {
@@ -2169,8 +2169,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-festtage",
         "titel": "Planer — Festtage",
-        "menuepfad": "Web-App → Planer — Festtage",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Festtage",
+        "menuepfad_offen": false,
         "zweck": "Die einzelnen Tage eines mehrtägigen Fests anlegen, ihre Bereitschaft ablesen und von dort in die Arbeit springen.",
         "aktionen": [
           {
@@ -2208,8 +2208,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-gaeste-beitraege",
         "titel": "Planer — Gäste-Beiträge",
-        "menuepfad": "Web-App → Planer — Gäste-Beiträge",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Gäste-Beiträge",
+        "menuepfad_offen": false,
         "zweck": "Beiträge, die Gäste am Fest einstellen, prüfen: freigeben oder ausblenden.",
         "aktionen": [
           {
@@ -2232,8 +2232,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-galerie",
         "titel": "Planer — Galerie",
-        "menuepfad": "Web-App → Planer — Galerie",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Galerie",
+        "menuepfad_offen": false,
         "zweck": "Bilder des Fests sammeln und je Bild entscheiden, ob es öffentlich erscheint.",
         "aktionen": [
           {
@@ -2256,8 +2256,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-konfiguration",
         "titel": "Planer — Konfiguration",
-        "menuepfad": "Web-App → Planer — Konfiguration",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Konfiguration",
+        "menuepfad_offen": false,
         "zweck": "Modus, Sichtbarkeit, Anmeldung und aktive Werkzeuge des Fests — jede Sektion mit eigenem Speichern-Knopf.",
         "aktionen": [
           {
@@ -2285,8 +2285,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-kontakte",
         "titel": "Planer — Ansprechpartner",
-        "menuepfad": "Web-App → Planer — Ansprechpartner",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Kontakte",
+        "menuepfad_offen": false,
         "zweck": "Wer beim Fest ansprechbar ist — mit Rolle, Telefon, E-Mail, Zuordnung zu einem Arbeitsort, einer Dringlichkeitsstufe, Sichtbarkeit und freien Notizen. Ein Kontakt kann an ein Vereinsmitglied gebunden sein; dann kommen Name und Erreichbarkeit von dort.",
         "aktionen": [
           {
@@ -2329,8 +2329,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-liveticker",
         "titel": "Planer — Live-Regie",
-        "menuepfad": "Web-App → Planer — Live-Regie",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Live-Ticker",
+        "menuepfad_offen": false,
         "zweck": "Kurze Hinweise an Gäste senden, wichtige davon oben halten und den Verlauf der Durchführung sichern. Die Fläche heisst in der Oberfläche „Live-Regie\", nicht „Live-Ticker\" — der Abschnittsname in der Schiene lautet „Live-Ticker\".",
         "aktionen": [
           {
@@ -2388,8 +2388,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-musikwuensche",
         "titel": "Planer — Musikwünsche",
-        "menuepfad": "Web-App → Planer — Musikwünsche",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Musikwünsche",
+        "menuepfad_offen": false,
         "zweck": "Gäste wünschen sich Titel und stimmen darüber ab; hier wird die Warteschlange abgearbeitet und die Regeln dafür gesetzt.",
         "aktionen": [
           {
@@ -2457,8 +2457,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-news",
         "titel": "Planer — News",
-        "menuepfad": "Web-App → Planer — News",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → News & Activity",
+        "menuepfad_offen": false,
         "zweck": "Mitteilungen an die Teilnehmer schreiben, anpinnen und im Verlauf behalten.",
         "aktionen": [
           {
@@ -2496,8 +2496,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-programm",
         "titel": "Planer — Programm",
-        "menuepfad": "Web-App → Planer — Programm",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Programm",
+        "menuepfad_offen": false,
         "zweck": "Was wann und wo passiert — Programmpunkte je Arbeitsort, mit Zeiten, Bildern, Turnierbezug und Sponsoren.",
         "aktionen": [
           {
@@ -2555,8 +2555,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-ressourcen",
         "titel": "Planer — Ressourcen",
-        "menuepfad": "Web-App → Planer — Ressourcen",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Ressourcen",
+        "menuepfad_offen": false,
         "zweck": "Räume und Gebäude aus dem Vereinsbestand für das Fest reservieren und Arbeitsorten zuordnen.",
         "aktionen": [
           {
@@ -2584,8 +2584,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-schichtplan",
         "titel": "Planer — Einsatzplanung",
-        "menuepfad": "Web-App → Planer — Einsatzplanung",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Schichtplan",
+        "menuepfad_offen": false,
         "zweck": "Einsatzfenster je Arbeitsort planen und Menschen darauf verteilen. Die Fläche heisst in der Oberfläche „Wer arbeitet wann wo?\"; der Abschnittsname in der Schiene lautet „Schichtplan\".",
         "aktionen": [
           {
@@ -2638,8 +2638,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-schiene",
         "titel": "Planer-Schiene",
-        "menuepfad": "Web-App → Planer-Schiene",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen",
+        "menuepfad_offen": false,
         "zweck": "Die linke Leiste des Planers. Sie zeigt, wo man ist, in welcher Phase das Fest steckt, und führt zu den 21 Abschnitten.",
         "aktionen": [
           {
@@ -2667,8 +2667,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-speisekarte",
         "titel": "Planer — Speisekarte",
-        "menuepfad": "Web-App → Planer — Speisekarte",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Speisekarte",
+        "menuepfad_offen": false,
         "zweck": "Speisekarten des Vereins einem Fest zuordnen — und auf Arbeitsort-Ebene ihre Gerichte bearbeiten.",
         "aktionen": [
           {
@@ -2701,8 +2701,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-sponsoren",
         "titel": "Planer — Sponsoren",
-        "menuepfad": "Web-App → Planer — Sponsoren",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Sponsoren",
+        "menuepfad_offen": false,
         "zweck": "Sponsoren aus dem Vereinsbestand dem Fest zuordnen, ihnen eine Stufe geben — und aus den Sponsoring-Angeboten des Vereins sammelweise übernehmen.",
         "aktionen": [
           {
@@ -2735,8 +2735,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-stammdaten",
         "titel": "Planer — Stammdaten",
-        "menuepfad": "Web-App → Planer — Stammdaten",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Stammdaten",
+        "menuepfad_offen": false,
         "zweck": "Titel, Zeitraum, Ort, Beschreibung, Status und Sichtbarkeit — und, ganz unten, das Löschen der Veranstaltung.",
         "aktionen": [
           {
@@ -2769,8 +2769,8 @@
       {
         "ui_spec_id": "comvenio/event/planer-turniere",
         "titel": "Planer — Turniere",
-        "menuepfad": "Web-App → Planer — Turniere",
-        "menuepfad_offen": true,
+        "menuepfad": "Veranstaltungen → Veranstaltung öffnen → Turniere",
+        "menuepfad_offen": false,
         "zweck": "Turnierserien und ihre Ausführungen mit einem Fest verknüpfen — und von dort aus in den Turnier-Hub wechseln, wo sie tatsächlich verwaltet werden.",
         "aktionen": [
           {
@@ -2898,7 +2898,6 @@
     "comvenio/finance/uebersicht-nach-organigramm#buchung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
     "comvenio/finance/uebersicht-nach-organigramm#konto-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
     "comvenio/finance/uebersicht-nach-organigramm#veranstaltung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
-    "comvenio/web/gruendung-erscheinungsbild: kein Anker im Code",
-    "frontend/ui/melden-blockieren.md: Frontmatter nicht lesbar"
+    "comvenio/web/gruendung-erscheinungsbild: kein Anker im Code"
   ]
 }

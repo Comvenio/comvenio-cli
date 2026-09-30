@@ -378,7 +378,7 @@ The descriptions below come from the German interface specifications and quote t
 
 ### Abschnitt „Dabei sein"
 
-Menu path: Web-App → Abschnitt „Dabei sein" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Dabei sein
 
 Purpose: Sich anmelden — offen für alle oder nur mit Einladung.
 
@@ -387,7 +387,7 @@ Purpose: Sich anmelden — offen für alle oder nur mit Einladung.
 
 ### Abschnitt „Auf dem Fest"
 
-Menu path: Web-App → Abschnitt „Auf dem Fest" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Auf dem Fest
 
 Purpose: Was gibt es auf dem Gelände — Bühnen, Stände, Treffpunkte?
 
@@ -395,7 +395,7 @@ Purpose: Was gibt es auf dem Gelände — Bühnen, Stände, Treffpunkte?
 
 ### Abschnitt „Momente"
 
-Menu path: Web-App → Abschnitt „Momente" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Momente
 
 Purpose: Was Gäste vom Fest zeigen und erzählen.
 
@@ -403,7 +403,7 @@ Purpose: Was Gäste vom Fest zeigen und erzählen.
 
 ### Abschnitt „Galerie"
 
-Menu path: Web-App → Abschnitt „Galerie" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Galerie
 
 Purpose: Die Bilder vom Fest.
 
@@ -411,7 +411,7 @@ Purpose: Die Bilder vom Fest.
 
 ### Abschnitt „Geländeplan"
 
-Menu path: Web-App → Abschnitt „Geländeplan" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Geländeplan
 
 Purpose: Wo ist was — und wo sitze ich?
 
@@ -421,7 +421,7 @@ Purpose: Wo ist was — und wo sitze ich?
 
 ### Abschnitt „Aktuelles"
 
-Menu path: Web-App → Abschnitt „Aktuelles" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Aktuelles
 
 Purpose: Was gibt es Neues zur Veranstaltung?
 
@@ -429,7 +429,7 @@ Purpose: Was gibt es Neues zur Veranstaltung?
 
 ### Abschnitt „Programm"
 
-Menu path: Web-App → Abschnitt „Programm" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Programm
 
 Purpose: Was findet wann statt?
 
@@ -438,7 +438,7 @@ Purpose: Was findet wann statt?
 
 ### Abschnitt „Entdecken"
 
-Menu path: Web-App → Abschnitt „Entdecken" (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Entdecken
 
 Purpose: Der Einstieg: Was läuft gerade, was kommt gleich, und — bei einem Fest — welche Tage gibt es?
 
@@ -526,7 +526,7 @@ Purpose: Was die Gäste sich wünschen — und was davon gespielt wird.
 
 ### Event-Einstieg
 
-Menu path: Web-App → Event-Einstieg (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen
 
 Purpose: Entscheiden, welche der fünf Event-Oberflächen jemand zu sehen bekommt.
 
@@ -571,7 +571,7 @@ Purpose: Ein Gast scannt einen Code am Tisch und will einen Moment teilen.
 
 ### Öffentlicher Event-Hub
 
-Menu path: Web-App → Öffentlicher Event-Hub (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen
 
 Purpose: Die Veranstaltung so zeigen, wie Gäste sie sehen sollen — im Gewand der Veranstaltung, nicht der Plattform.
 
@@ -588,7 +588,7 @@ Purpose: Wo werden noch Leute gebraucht — und wie trage ich mich ein?
 
 ### Event-Planer
 
-Menu path: Web-App → Event-Planer (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen
 
 Purpose: Der Arbeitsplatz für ein Fest. Er legt sich als eigene Ebene über die Anwendung (position: fixed, ganzer Bildschirm) und hält drei Dinge zusammen: die Kopfleiste mit Zustand und Aussenwegen, die Hierarchiekarte für den Festtag, und darunter Schiene plus den gewählten Abschnitt.
 
@@ -606,7 +606,7 @@ Purpose: Der Arbeitsplatz für ein Fest. Er legt sich als eigene Ebene über die
 
 ### Planer — Teilnahme & Einladungen
 
-Menu path: Web-App → Planer — Teilnahme & Einladungen (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Anmeldungen
 
 Purpose: Wer sich angemeldet hat, wer eingeladen ist, wer noch antworten muss. Anmeldungen entstehen woanders (öffentlicher Auftritt); hier werden sie gesichtet, ihr Zustand geändert, ausgegeben — und Einladungen an Mitglieder verschickt.
 
@@ -620,7 +620,7 @@ Purpose: Wer sich angemeldet hat, wer eingeladen ist, wer noch antworten muss. A
 
 ### Planer — Aufgaben
 
-Menu path: Web-App → Planer — Aufgaben (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Aufgaben
 
 Purpose: Aufgaben eines Festes planen und ihren Stand steuern — in drei Ansichten (Tafel, Zeitstrahl, Kalender), gefiltert nach Festphase, zugeordnet zu Arbeitsorten und Menschen.
 
@@ -637,7 +637,7 @@ Purpose: Aufgaben eines Festes planen und ihren Stand steuern — in drei Ansich
 
 ### Planer — Bereiche
 
-Menu path: Web-App → Planer — Bereiche (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Bereiche
 
 Purpose: Arbeitsorte und Gewerke eines Fests anlegen — und als Rahmen für die Arbeit an einem einzelnen Ort dienen.
 
@@ -651,7 +651,7 @@ Purpose: Arbeitsorte und Gewerke eines Fests anlegen — und als Rahmen für die
 
 ### Planer — Dashboard
 
-Menu path: Web-App → Planer — Dashboard (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Dashboard
 
 Purpose: Der Einstieg: Was steht an, wie weit ist das Fest, und wo geht es weiter.
 
@@ -664,7 +664,7 @@ Purpose: Der Einstieg: Was steht an, wie weit ist das Fest, und wo geht es weite
 
 ### Planer — Design-Studio
 
-Menu path: Web-App → Planer — Design-Studio (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Design-Studio
 
 Purpose: Der Auftritt eines Festes: Farben, Schriften, Abstände, Titelbild, Flyer, die Reihenfolge der Blöcke im öffentlichen Hub und seine Texte. Alles wirkt auf denselben öffentlichen Auftritt.
 
@@ -689,7 +689,7 @@ Purpose: Der Auftritt eines Festes: Farben, Schriften, Abstände, Titelbild, Fly
 
 ### Planer — Festtage
 
-Menu path: Web-App → Planer — Festtage (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Festtage
 
 Purpose: Die einzelnen Tage eines mehrtägigen Fests anlegen, ihre Bereitschaft ablesen und von dort in die Arbeit springen.
 
@@ -702,7 +702,7 @@ Purpose: Die einzelnen Tage eines mehrtägigen Fests anlegen, ihre Bereitschaft 
 
 ### Planer — Gäste-Beiträge
 
-Menu path: Web-App → Planer — Gäste-Beiträge (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Gäste-Beiträge
 
 Purpose: Beiträge, die Gäste am Fest einstellen, prüfen: freigeben oder ausblenden.
 
@@ -712,7 +712,7 @@ Purpose: Beiträge, die Gäste am Fest einstellen, prüfen: freigeben oder ausbl
 
 ### Planer — Galerie
 
-Menu path: Web-App → Planer — Galerie (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Galerie
 
 Purpose: Bilder des Fests sammeln und je Bild entscheiden, ob es öffentlich erscheint.
 
@@ -722,7 +722,7 @@ Purpose: Bilder des Fests sammeln und je Bild entscheiden, ob es öffentlich ers
 
 ### Planer — Konfiguration
 
-Menu path: Web-App → Planer — Konfiguration (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Konfiguration
 
 Purpose: Modus, Sichtbarkeit, Anmeldung und aktive Werkzeuge des Fests — jede Sektion mit eigenem Speichern-Knopf.
 
@@ -733,7 +733,7 @@ Purpose: Modus, Sichtbarkeit, Anmeldung und aktive Werkzeuge des Fests — jede 
 
 ### Planer — Ansprechpartner
 
-Menu path: Web-App → Planer — Ansprechpartner (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Kontakte
 
 Purpose: Wer beim Fest ansprechbar ist — mit Rolle, Telefon, E-Mail, Zuordnung zu einem Arbeitsort, einer Dringlichkeitsstufe, Sichtbarkeit und freien Notizen. Ein Kontakt kann an ein Vereinsmitglied gebunden sein; dann kommen Name und Erreichbarkeit von dort.
 
@@ -747,7 +747,7 @@ Purpose: Wer beim Fest ansprechbar ist — mit Rolle, Telefon, E-Mail, Zuordnung
 
 ### Planer — Live-Regie
 
-Menu path: Web-App → Planer — Live-Regie (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Live-Ticker
 
 Purpose: Kurze Hinweise an Gäste senden, wichtige davon oben halten und den Verlauf der Durchführung sichern. Die Fläche heisst in der Oberfläche „Live-Regie", nicht „Live-Ticker" — der Abschnittsname in der Schiene lautet „Live-Ticker".
 
@@ -764,7 +764,7 @@ Purpose: Kurze Hinweise an Gäste senden, wichtige davon oben halten und den Ver
 
 ### Planer — Musikwünsche
 
-Menu path: Web-App → Planer — Musikwünsche (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Musikwünsche
 
 Purpose: Gäste wünschen sich Titel und stimmen darüber ab; hier wird die Warteschlange abgearbeitet und die Regeln dafür gesetzt.
 
@@ -783,7 +783,7 @@ Purpose: Gäste wünschen sich Titel und stimmen darüber ab; hier wird die Wart
 
 ### Planer — News
 
-Menu path: Web-App → Planer — News (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → News & Activity
 
 Purpose: Mitteilungen an die Teilnehmer schreiben, anpinnen und im Verlauf behalten.
 
@@ -796,7 +796,7 @@ Purpose: Mitteilungen an die Teilnehmer schreiben, anpinnen und im Verlauf behal
 
 ### Planer — Programm
 
-Menu path: Web-App → Planer — Programm (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Programm
 
 Purpose: Was wann und wo passiert — Programmpunkte je Arbeitsort, mit Zeiten, Bildern, Turnierbezug und Sponsoren.
 
@@ -813,7 +813,7 @@ Purpose: Was wann und wo passiert — Programmpunkte je Arbeitsort, mit Zeiten, 
 
 ### Planer — Ressourcen
 
-Menu path: Web-App → Planer — Ressourcen (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Ressourcen
 
 Purpose: Räume und Gebäude aus dem Vereinsbestand für das Fest reservieren und Arbeitsorten zuordnen.
 
@@ -824,7 +824,7 @@ Purpose: Räume und Gebäude aus dem Vereinsbestand für das Fest reservieren un
 
 ### Planer — Einsatzplanung
 
-Menu path: Web-App → Planer — Einsatzplanung (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Schichtplan
 
 Purpose: Einsatzfenster je Arbeitsort planen und Menschen darauf verteilen. Die Fläche heisst in der Oberfläche „Wer arbeitet wann wo?"; der Abschnittsname in der Schiene lautet „Schichtplan".
 
@@ -840,7 +840,7 @@ Purpose: Einsatzfenster je Arbeitsort planen und Menschen darauf verteilen. Die 
 
 ### Planer-Schiene
 
-Menu path: Web-App → Planer-Schiene (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen
 
 Purpose: Die linke Leiste des Planers. Sie zeigt, wo man ist, in welcher Phase das Fest steckt, und führt zu den 21 Abschnitten.
 
@@ -851,7 +851,7 @@ Purpose: Die linke Leiste des Planers. Sie zeigt, wo man ist, in welcher Phase d
 
 ### Planer — Speisekarte
 
-Menu path: Web-App → Planer — Speisekarte (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Speisekarte
 
 Purpose: Speisekarten des Vereins einem Fest zuordnen — und auf Arbeitsort-Ebene ihre Gerichte bearbeiten.
 
@@ -863,7 +863,7 @@ Purpose: Speisekarten des Vereins einem Fest zuordnen — und auf Arbeitsort-Ebe
 
 ### Planer — Sponsoren
 
-Menu path: Web-App → Planer — Sponsoren (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Sponsoren
 
 Purpose: Sponsoren aus dem Vereinsbestand dem Fest zuordnen, ihnen eine Stufe geben — und aus den Sponsoring-Angeboten des Vereins sammelweise übernehmen.
 
@@ -875,7 +875,7 @@ Purpose: Sponsoren aus dem Vereinsbestand dem Fest zuordnen, ihnen eine Stufe ge
 
 ### Planer — Stammdaten
 
-Menu path: Web-App → Planer — Stammdaten (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Stammdaten
 
 Purpose: Titel, Zeitraum, Ort, Beschreibung, Status und Sichtbarkeit — und, ganz unten, das Löschen der Veranstaltung.
 
@@ -887,7 +887,7 @@ Purpose: Titel, Zeitraum, Ort, Beschreibung, Status und Sichtbarkeit — und, ga
 
 ### Planer — Turniere
 
-Menu path: Web-App → Planer — Turniere (open item — add the menu path manually)
+Menu path: Veranstaltungen → Veranstaltung öffnen → Turniere
 
 Purpose: Turnierserien und ihre Ausführungen mit einem Fest verknüpfen — und von dort aus in den Turnier-Hub wechseln, wo sie tatsächlich verwaltet werden.
 

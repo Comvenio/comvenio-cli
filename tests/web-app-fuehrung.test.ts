@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 
 import { checkDocs, generateDocs, webAppBlock } from "../scripts/docs-lib.ts";
 import { readSource, resolveSource } from "../scripts/quellen.ts";
-import { bauWebAppFuehrung, istMenuepfad, kundentext, sammleAnker } from "../scripts/web-app-fuehrung.ts";
+import { bauWebAppFuehrung, klubEintraege, kundentext, registryLabels, sammleAnker } from "../scripts/web-app-fuehrung.ts";
 
 const roots: string[] = [];
 function tempRoot(prefix: string): string {
@@ -174,6 +174,35 @@ Auslöser  : Tipp auf ein Spiel
 Wirkung   : öffnet das Spiel
 `;
 
+/** Club sidebar as in src/types/navTabs.ts — a commented entry is no entry. */
+const NAV_TABS = `export const CLUB_ITEMS = [
+  { id: "home", label: "Home", icon: HomeIcon },
+  //{ id: "events", label: "Events", icon: EventIcon },
+  { id: "events", label: "Veranstaltungen", icon: EventIcon },
+  { id: "finance", label: "Finanzen", icon: AccountBalanceIcon },
+] as const;
+
+export const NEWS_ITEMS = [
+  { id: "list", label: "News", icon: ArticleIcon },
+] as const;
+`;
+
+/** Finance hub registry: groups first (no component), then lazy sections. */
+const FINANCE_REGISTRY = `export const FINANCE_SECTION_GROUPS = [
+  { key: "ueberblick", label: "Überblick" },
+];
+export const FINANCE_SECTION_REGISTRY = [
+  {
+    key: "kasse",
+    label: "Kassenbuch",
+    group: "ueberblick",
+    component: React.lazy(() =>
+      import("./KasseSection").catch(() => ({ default: ModulNichtGeladen })),
+    ),
+  },
+];
+`;
+
 /** A workspace with comvenio-tools and web-page, anchored like the real code. */
 function workspace(): string {
   const ws = tempRoot("web-app-ws-");
@@ -200,6 +229,9 @@ function workspace(): string {
     `const UI = "club/homepage-generator/designer";`,
     "export function W() { return <Button data-ui-spec={`${UI}#veroeffentlichen`} />; }",
   ].join("\n"));
+  // Navigation as the web app declares it: club sidebar and hub registry.
+  write(ws, `${web}/types/navTabs.ts`, NAV_TABS);
+  write(ws, `${web}/pages/main/FinanceHub/sectionRegistry.tsx`, FINANCE_REGISTRY);
   // A test naming an anchor proves nothing about the built element.
   write(ws, `${web}/pages/main/FinanceHub/Kasse.test.tsx`, `screen.getByTestId('x'); '[data-ui-spec="comvenio/finance/kasse#nicht-gebaut"]'`);
   return ws;
@@ -277,9 +309,10 @@ describe("Auflösen gegen den Code (08 §4.2/§4.3)", () => {
     const kasse = hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse")!;
     expect(kasse).toMatchObject({
       titel: "Kasse",
-      // A path from the purpose is only a placeholder (contract 08 DC-5).
-      menuepfad: "Finance Hub → Kasse & Konten",
-      menuepfad_offen: true,
+      // Closed: club sidebar entry and registry label (contract 08 DC-5) —
+      // the purpose says "Kasse & Konten", the navigation "Kassenbuch".
+      menuepfad: "Finanzen → Kassenbuch",
+      menuepfad_offen: false,
       zweck: "Was liegt in der Kasse, und wie buche ich einen Beleg?",
     });
     expect(kasse.aktionen).toEqual([
@@ -319,11 +352,38 @@ describe("Auflösen gegen den Code (08 §4.2/§4.3)", () => {
   });
 });
 
-describe("Menüpfad", () => {
-  test("ein Satz mit Pfeilen ist noch kein Menüpfad", () => {
-    expect(istMenuepfad("Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung")).toBe(true);
-    expect(istMenuepfad("Der Kassier will die Buchhaltung lesen: Verein → Veranstaltungen → Buchungen")).toBe(false);
-    expect(istMenuepfad("Wer die Buchhaltung pflegt und prüft, geht vom Verein → Veranstaltungen")).toBe(false);
+describe("Menüpfad aus der Navigation (08 §4.3)", () => {
+  test("Klub-Seitenleiste: nur CLUB_ITEMS, auskommentierte Einträge zählen nicht", () => {
+    expect([...klubEintraege(NAV_TABS)]).toEqual([["home", "Home"], ["events", "Veranstaltungen"], ["finance", "Finanzen"]]);
+  });
+
+  test("Registry: Label je Komponente, als Bezeichner oder als lazy import", () => {
+    expect([...registryLabels(FINANCE_REGISTRY)]).toEqual([["KasseSection", "Kassenbuch"]]);
+    const planer = `export const PLANNER_SECTION_REGISTRY = {
+  dashboard: { key: "dashboard", number: "01", defaultLabel: "Dashboard", group: "cockpit", component: PlannerDashboardPage },
+  news: { key: "news", number: "13", defaultLabel: "News & Activity", group: "kommunikation", component: PlannerNewsPage },
+};`;
+    expect([...registryLabels(planer)]).toEqual([["PlannerDashboardPage", "Dashboard"], ["PlannerNewsPage", "News & Activity"]]);
+  });
+
+  test("Planer-Seite unter EventPlanner: Seitenleiste, Einstieg und Registry-Label", () => {
+    const ws = workspace();
+    const web = "Frontend/web-page/src/pages/main/EventHub";
+    write(ws, `${web}/EventPlanner/sections/index.tsx`, `export const PLANNER_SECTION_REGISTRY = {
+  news: { key: "news", defaultLabel: "News & Activity", group: "kommunikation", component: PlannerNewsPage },
+};`);
+    write(ws, `${web}/EventPlanner/pages/PlannerNewsPage.tsx`, `<IconButton data-ui-spec={"comvenio/event/planer-news#anpinnen"} />`);
+    write(ws, "comvenio-tools/AI-docs/concepts/frontend/ui/event-planer-news.md", EVENT_SPEC.replace("EventHub/PlannerNewsPage.tsx", "EventHub/EventPlanner/pages/PlannerNewsPage.tsx"));
+    const news = bau(ws).hubs.event.find((f) => f.ui_spec_id === "comvenio/event/planer-news")!;
+    expect(news).toMatchObject({ menuepfad: "Veranstaltungen → Veranstaltung öffnen → News & Activity", menuepfad_offen: false });
+  });
+
+  test("ohne lesbare Navigation bleibt der Pfad offen und der Lauf sagt es", () => {
+    const ws = workspace();
+    rmSync(join(ws, "Frontend/web-page/src/types/navTabs.ts"));
+    const { hubs, hinweise } = bau(ws);
+    expect(hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse")).toMatchObject({ menuepfad: "Web-App → Kasse", menuepfad_offen: true });
+    expect(hinweise).toContain("Navigation: types/navTabs.ts nicht lesbar — Menüpfade bleiben offen");
   });
 });
 

@@ -31,6 +31,7 @@ import {
   prompt,
   standardSatz,
   vergleiche,
+  webAppAufgaben,
   werteAus,
 } from "../scripts/probelauf.ts";
 
@@ -111,6 +112,25 @@ describe("Katalog (AK-F-01)", () => {
     const aktion = (ausloeser: string) => ({ element: "e", ausloeser, wirkung: "w" });
     expect(klickAussagen([aktion("Klick auf „<Jahr>“"), aktion("Klick auf „Posten“ im Kopf"), aktion("Klick auf eine Bereichskarte")], "Sicht")).toEqual(["Posten", "Bereichskarte"]);
     expect(klickAussagen([aktion("Klick auf „Galerie“")], "Abschnitt Galerie")).toEqual([]);
+  });
+
+  test("Web-App: geschlossener Pfad wird geprüft, offener ist NOT_MEASURED statt Klickfrage (09 §4.2)", () => {
+    const aktionen = [{ element: "e", ausloeser: "Klick auf „Buchen“", wirkung: "bucht" }];
+    const flaeche = (titel: string, menuepfad: string, menuepfad_offen: boolean) => ({ ui_spec_id: `x/${titel}`, titel, menuepfad, menuepfad_offen, zweck: null, aktionen });
+    const fuehrung = {
+      version: 1 as const,
+      hubs: { homepage: [], event: [], tournament: [], meeting: [], finance: [flaeche("Kasse", "Finanzen → Kassenbuch", false), flaeche("Journal", "Web-App → Journal", true)] },
+      hinweise: [],
+    };
+    const { aufgaben, offen } = webAppAufgaben(fuehrung, "finance");
+    expect(offen).toBe(1);
+    const [geschlossen, ohnePfad] = aufgaben;
+    expect(geschlossen!.kernaussagen).toEqual(["Finanzen", "Kassenbuch", "Buchen"]);
+    // Same question as a closed path — the menu path is asked, not left out.
+    expect(ohnePfad!.frage).toContain("(Menüpfad)");
+    expect(ohnePfad!.kernaussagen).toEqual([]);
+    expect(bewertbar(ohnePfad!)).toBe(false);
+    expect(werteAus(ohnePfad!, leseTranskript(transkript([], "Finanzen → Journal")), actions).geloest.status).toBe("NOT_MEASURED");
   });
 });
 

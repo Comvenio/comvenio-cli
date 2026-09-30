@@ -184,7 +184,7 @@ an ihrer Kennung. Sie alle brauchen kein Jahr. `plan-reopen` bricht unabhängig 
 
 ### Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget
 
-Menüpfad: Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Budgetplanung
 
 Zweck: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?
 
@@ -207,7 +207,7 @@ Zweck: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief je
 
 ### Bereichsbudget
 
-Menüpfad: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Web-App → Bereichsbudget (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?
 
@@ -218,7 +218,7 @@ Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, un
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menüpfad: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Buchhaltung
 
 Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -239,7 +239,7 @@ Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es
 
 ### Buchungen eines Kontos — prüfungssicher
 
-Menüpfad: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2) (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Web-App → Buchungen eines Kontos — prüfungssicher (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?
 
@@ -282,7 +282,7 @@ Zweck: Was ist mit dieser Buchung — und was ist jetzt zu tun?
 
 ### Budget im Organigramm
 
-Menüpfad: Web-App → Budget im Organigramm (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Budgetplanung
 
 Zweck: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?
 
@@ -321,7 +321,7 @@ Zweck: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachges
 
 ### Saison in der Budgetplanung
 
-Menüpfad: Web-App → Saison in der Budgetplanung (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Budgetplanung
 
 Zweck: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?
 
@@ -335,7 +335,7 @@ Zweck: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinw
 
 ### Offene Punkte und Struktur
 
-Menüpfad: Web-App → Offene Punkte und Struktur (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Dashboard
 
 Zweck: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?
 
@@ -348,7 +348,7 @@ Zweck: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über de
 
 ### Sektion Prüfung
 
-Menüpfad: Finance-Hub → Seitenleiste Überblick → Prüfung (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Prüfung
 
 Zweck: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
@@ -395,7 +395,7 @@ Zweck: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
 ### Übersicht nach Organigramm
 
-Menüpfad: Web-App → Übersicht nach Organigramm (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Buchhaltung
 
 Zweck: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.
 
@@ -412,7 +412,7 @@ Zweck: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem O
 
 ### Belegerfassung im Finance-Hub
 
-Menüpfad: Web-App → Belegerfassung im Finance-Hub (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Belegerfassung
 
 Zweck: Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.
 

@@ -183,7 +183,7 @@ The descriptions below come from the German interface specifications and quote t
 
 ### Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget
 
-Menu path: Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget (open item — add the menu path manually)
+Menu path: Finanzen → Budgetplanung
 
 Purpose: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?
 
@@ -206,7 +206,7 @@ Purpose: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief 
 
 ### Bereichsbudget
 
-Menu path: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung (open item — add the menu path manually)
+Menu path: Web-App → Bereichsbudget (open item — add the menu path manually)
 
 Purpose: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?
 
@@ -217,7 +217,7 @@ Purpose: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, 
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menu path: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten (open item — add the menu path manually)
+Menu path: Finanzen → Buchhaltung
 
 Purpose: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -238,7 +238,7 @@ Purpose: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich 
 
 ### Buchungen eines Kontos — prüfungssicher
 
-Menu path: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2) (open item — add the menu path manually)
+Menu path: Web-App → Buchungen eines Kontos — prüfungssicher (open item — add the menu path manually)
 
 Purpose: Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?
 
@@ -281,7 +281,7 @@ Purpose: Was ist mit dieser Buchung — und was ist jetzt zu tun?
 
 ### Budget im Organigramm
 
-Menu path: Web-App → Budget im Organigramm (open item — add the menu path manually)
+Menu path: Finanzen → Budgetplanung
 
 Purpose: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?
 
@@ -320,7 +320,7 @@ Purpose: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachg
 
 ### Saison in der Budgetplanung
 
-Menu path: Web-App → Saison in der Budgetplanung (open item — add the menu path manually)
+Menu path: Finanzen → Budgetplanung
 
 Purpose: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?
 
@@ -334,7 +334,7 @@ Purpose: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hi
 
 ### Offene Punkte und Struktur
 
-Menu path: Web-App → Offene Punkte und Struktur (open item — add the menu path manually)
+Menu path: Finanzen → Dashboard
 
 Purpose: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?
 
@@ -347,7 +347,7 @@ Purpose: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über 
 
 ### Sektion Prüfung
 
-Menu path: Finance-Hub → Seitenleiste Überblick → Prüfung (open item — add the menu path manually)
+Menu path: Finanzen → Prüfung
 
 Purpose: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
@@ -394,7 +394,7 @@ Purpose: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
 ### Übersicht nach Organigramm
 
-Menu path: Web-App → Übersicht nach Organigramm (open item — add the menu path manually)
+Menu path: Finanzen → Buchhaltung
 
 Purpose: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.
 
@@ -411,7 +411,7 @@ Purpose: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem
 
 ### Belegerfassung im Finance-Hub
 
-Menu path: Web-App → Belegerfassung im Finance-Hub (open item — add the menu path manually)
+Menu path: Finanzen → Belegerfassung
 
 Purpose: Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.
 
