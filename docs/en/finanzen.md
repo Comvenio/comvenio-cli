@@ -47,8 +47,9 @@ shown by `comvenio action list --json`. For agents, `--json` is the binding outp
    whose event does not exist in the target year are reported under `unlinked_positions` — those
    still need linking.
 
-`--year <year>` is required for every `plan-*` command, for `position-list`/`position-create` and
-for `summary` — there is no default. `[id]` means the position or entry ID depending on the
+`--year <year>` is required for `plan-show`, `plan-create`, `plan-update`, `plan-close` and
+`plan-copy`, for `position-list`/`position-create` and for `summary` — there is no default.
+`plan-list` shows all years and needs none. `[id]` means the position or entry ID depending on the
 action, and for `plan-copy` it is the **source year**.
 
 ### Managing budget positions
@@ -166,11 +167,13 @@ support ticket with the year and a reason.
 Amounts are cents. `45.50` looks like euros; rather than silently booking 45 cents, the CLI stops
 with `USAGE_ERROR`. The correct value is `4550`.
 
-**Why do plan and item commands require `--year`?**
+**Why do some plan and item commands require `--year`?**
 A club keeps several annual plans side by side and there is no default — so an item never lands in
-the wrong year by accident. `plan-*`, `position-list`, `position-create` and `summary` need
-`--year`; entries (`entry-*`) and single items (`position-show`, `position-update`,
-`position-delete`) are addressed by their id and need no year.
+the wrong year by accident. `--year` is needed by the commands that address a year: `plan-show`,
+`plan-create`, `plan-update`, `plan-close`, `plan-copy`, `position-list`, `position-create` and
+`summary`. `plan-list` shows all years; entries (`entry-*`) and single items (`position-show`,
+`position-update`, `position-delete`, `position-import-shopping`) are addressed by their id. None
+of these needs a year. `plan-reopen` stops regardless (see above).
 
 ## How it works in the web app
 
@@ -480,8 +483,11 @@ Purpose: Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zu
 
 - `CONFLICT` — the year is closed; the service rejects changes to positions and entries until it
   is reopened. More: `comvenio help fehler CONFLICT`.
-- `VALIDATION_FAILED` — an amount is not in cents, an entry is neither income nor expense or both,
-  or a required field is missing. More: `comvenio help fehler VALIDATION_FAILED`.
+- `USAGE_ERROR` — the CLI checks before calling: an amount is not a whole number of cents (`45.50`),
+  an entry is neither income nor expense or both, `--year` or an id is missing. Nothing was sent.
+  More: `comvenio help fehler USAGE_ERROR`.
+- `VALIDATION_FAILED` — the service rejects the input, for example because a required field is
+  missing or a value does not fit. More: `comvenio help fehler VALIDATION_FAILED`.
 - `NOT_FOUND` — plan, position or entry are not known under the given identifier. More:
   `comvenio help fehler NOT_FOUND`.
 - `PERMISSION_DENIED` — the club role does not allow the accounting action. More:
