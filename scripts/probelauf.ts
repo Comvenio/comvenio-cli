@@ -596,8 +596,13 @@ function segmente(befehl: string): string[][] | null {
     if (zeichen === "'" || zeichen === '"') {
       quote = zeichen;
       hatToken = true;
-    } else if (/\s/u.test(zeichen)) {
+    } else if (zeichen === " " || zeichen === "\t") {
       schliesseToken();
+    } else if (/\s/u.test(zeichen) || "(){}!".includes(zeichen) || (zeichen === "#" && !hatToken)) {
+      // Fail-closed: an unquoted newline ends a command, parentheses and braces
+      // group, `!` negates, a leading `#` comments — syntax this reader does not
+      // model counts as outside the sandbox instead of being read as a word.
+      return null;
     } else if (zeichen === "|" || zeichen === "&" || zeichen === ";") {
       schliesseToken();
       if (befehl[i + 1] === zeichen) i += 1;

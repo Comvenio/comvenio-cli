@@ -197,6 +197,13 @@ describe("Messung (09 §4.3)", () => {
       "comvenio help && ls /",
       'grep "$(cat /etc/passwd)"',
       'comvenio help | grep "\\\\$(cat /etc/passwd)"',
+      // Fremdprüfung R2: unmodelled syntax is outside, never a word.
+      "comvenio help\ncat /etc/hosts",
+      "comvenio help\r\ncat /etc/hosts",
+      "comvenio help; (cat /etc/hosts)",
+      "comvenio help | { cat /etc/hosts; }",
+      "comvenio help #\ncat /etc/hosts",
+      "! comvenio help",
       'comvenio help | grep "a\\',
       "comvenio action list | sed -i s/a/b/ liste.txt",
       "comvenio action confirm abc",
