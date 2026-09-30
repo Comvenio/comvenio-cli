@@ -685,9 +685,12 @@ export function imSandbox(aufruf: ToolAufruf): boolean {
     }
   }
   if (aufruf.name !== "Bash") return false;
+  // A line break is a command boundary in bash; no cleanup below may erase it
+  // ("comvenio help\n2>&1 cat …" ran cat). Fail closed before touching the text.
+  if (/[\n\r]/u.test(aufruf.befehl)) return false;
   // Merging or dropping stderr reads nothing; every other redirection does.
   // A trailing `;` ends the chain without a further command.
-  const befehl = aufruf.befehl.replace(/\s2>&1\b|\s2>\s*\/dev\/null\b/gu, " ").replace(/[\s;]+$/u, "").trim();
+  const befehl = aufruf.befehl.replace(/[ \t]2>&1\b|[ \t]2>[ \t]*\/dev\/null\b/gu, " ").replace(/[ \t;]+$/u, "").trim();
   const teile = segmente(befehl);
   if (!teile || teile.some((tokens) => tokens.length === 0)) return false;
   // Every segment of a chain must stay inside: `comvenio help && cat …` does not.

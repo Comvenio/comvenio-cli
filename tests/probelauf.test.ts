@@ -223,6 +223,10 @@ describe("Messung (09 §4.3)", () => {
       "comvenio help; (cat /etc/hosts)",
       "comvenio help | { cat /etc/hosts; }",
       "comvenio help #\ncat /etc/hosts",
+      // Fremdprüfung R3: the stderr cleanup must not erase a line break.
+      "comvenio help\n2>&1 cat /etc/hosts",
+      "comvenio help\n2>/dev/null cat /etc/hosts",
+      "comvenio help 2>&1\ncat /etc/hosts",
       "! comvenio help",
       'comvenio help | grep "a\\',
       "comvenio action list | sed -i s/a/b/ liste.txt",
