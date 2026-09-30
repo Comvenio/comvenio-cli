@@ -184,7 +184,7 @@ an ihrer Kennung. Sie alle brauchen kein Jahr. `plan-reopen` bricht unabhängig 
 
 ### Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget
 
-Menüpfad: Finanzen → Budgetplanung
+Menüpfad: Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?
 
@@ -218,7 +218,7 @@ Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, un
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menüpfad: Finanzen → Buchhaltung
+Menüpfad: Web-App → Buchhaltungs-Tab — Event-Verknüpfung (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -282,7 +282,7 @@ Zweck: Was ist mit dieser Buchung — und was ist jetzt zu tun?
 
 ### Budget im Organigramm
 
-Menüpfad: Finanzen → Budgetplanung
+Menüpfad: Web-App → Budget im Organigramm (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?
 
@@ -321,7 +321,7 @@ Zweck: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachges
 
 ### Saison in der Budgetplanung
 
-Menüpfad: Finanzen → Budgetplanung
+Menüpfad: Web-App → Saison in der Budgetplanung (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?
 
@@ -335,7 +335,7 @@ Zweck: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinw
 
 ### Offene Punkte und Struktur
 
-Menüpfad: Finanzen → Dashboard
+Menüpfad: Web-App → Offene Punkte und Struktur (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?
 
@@ -395,7 +395,7 @@ Zweck: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
 ### Übersicht nach Organigramm
 
-Menüpfad: Finanzen → Buchhaltung
+Menüpfad: Web-App → Übersicht nach Organigramm (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.
 

@@ -147,14 +147,18 @@ function vertraege(spec: Spezifikation): Vertrag[] {
   return Array.isArray(liste) ? (liste.filter((v) => v && typeof v === "object") as Vertrag[]) : [];
 }
 
-/** The web-page path a surface lives at: the first contract page, else the first web-page source path. */
-function webPfad(spec: Spezifikation): string | null {
+/** Every web-page path a specification names, contract pages first. */
+function webPfade(spec: Spezifikation): string[] {
   const kandidaten = [
     ...vertraege(spec).map((v) => (typeof v.page === "string" ? v.page.replace(/^app-ref:/u, "") : "")),
     ...(Array.isArray(spec.frontmatter.source_paths) ? (spec.frontmatter.source_paths as unknown[]).map(String) : []),
   ];
-  const treffer = kandidaten.find((pfad) => pfad.startsWith(WEB_PREFIX));
-  return treffer ? treffer.slice(WEB_PREFIX.length) : null;
+  return [...new Set(kandidaten.filter((pfad) => pfad.startsWith(WEB_PREFIX)).map((pfad) => pfad.slice(WEB_PREFIX.length)))];
+}
+
+/** The web-page path a surface lives at: the first contract page, else the first web-page source path. */
+function webPfad(spec: Spezifikation): string | null {
+  return webPfade(spec)[0] ?? null;
 }
 
 export function hubVon(spec: { pfad: string; frontmatter: Record<string, unknown> } & { body?: string }): Hub | null {
@@ -222,29 +226,16 @@ function zweckVon(spec: Spezifikation): string | null {
 // ─── Menu paths ─────────────────────────────────────────────────────────────
 
 /**
- * Where the navigation of the web app leads (contract 08 §4.3, DC-5). The first
- * step is the club sidebar entry (CLUB_ITEMS), the last the section of a hub
- * registry whose component is the surface's web file. Between them, how the hub
- * is entered: an event opens from its list, and EventHubEntryRoute decides
- * between planner and public hub. `hub` files are the hub frame itself — its
- * path ends at the entry.
+ * Where the navigation of the web app leads (contract 08 §4.3, DC-5) — only
+ * paths without a condition. The first step is the club sidebar entry
+ * (CLUB_ITEMS), the second the section of a hub registry whose component the
+ * surface is. The event hub has no entry: EventHubEntryRoute decides by the
+ * event (parent → planner, public hub switched on → public hub, else the slim
+ * view), and planner sections hide at parent or child events; a path through it
+ * would hold for some events and be wrong for the others.
  */
-const NAVIGATION: ReadonlyArray<{ klubEintrag: string; einstieg: string[]; wurzel: string; registry: string; hub: string[] }> = [
-  { klubEintrag: "finance", einstieg: [], wurzel: "pages/main/FinanceHub/", registry: "pages/main/FinanceHub/sectionRegistry.tsx", hub: [] },
-  {
-    klubEintrag: "events",
-    einstieg: ["Veranstaltung öffnen"],
-    wurzel: "pages/main/EventHub/EventPlanner/",
-    registry: "pages/main/EventHub/EventPlanner/sections/index.tsx",
-    hub: ["pages/main/EventHub/EventHubEntryRoute.tsx", "pages/main/EventHub/EventPlanner/EventPlannerHub.tsx", "pages/main/EventHub/EventPlanner/EventPlannerSidebar.tsx"],
-  },
-  {
-    klubEintrag: "events",
-    einstieg: ["Veranstaltung öffnen"],
-    wurzel: "pages/main/EventHub/EventPublicHub/",
-    registry: "pages/main/EventHub/EventPublicHub/sections/index.tsx",
-    hub: ["pages/main/EventHub/EventPublicHub/EventPublicHub.tsx"],
-  },
+const NAVIGATION: ReadonlyArray<{ klubEintrag: string; wurzel: string; registry: string }> = [
+  { klubEintrag: "finance", wurzel: "pages/main/FinanceHub/", registry: "pages/main/FinanceHub/sectionRegistry.tsx" },
 ];
 const KLUB_NAVIGATION = "types/navTabs.ts";
 
@@ -271,11 +262,14 @@ export function klubEintraege(src: string): Map<string, string> {
 /**
  * Section label by component module name, from a hub registry: each entry opens
  * with `key: "…"` and names its label (`label` or `defaultLabel`) and its
- * component, either an identifier or a lazy `import("./<Modul>")`.
+ * component, either an identifier or a lazy `import("./<Modul>")`. A section
+ * off by default (`enabledByDefault: false`) shows only where a flag is set —
+ * no unconditional path.
  */
 export function registryLabels(src: string): Map<string, string> {
   const labels = new Map<string, string>();
   for (const eintrag of src.split(/\bkey:\s*"/u).slice(1)) {
+    if (/\benabledByDefault:\s*false\b/u.test(eintrag)) continue;
     const label = /\b(?:label|defaultLabel):\s*"([^"]+)"/u.exec(eintrag)?.[1];
     const komponente = /\bcomponent:\s*(?:React\.lazy\(\s*\(\)\s*=>\s*import\(\s*"\.\/(?:[\w-]+\/)*([\w-]+)"|([A-Z][\w$]*))/u.exec(eintrag);
     const modul = komponente?.[1] ?? komponente?.[2];
@@ -301,22 +295,35 @@ function leseNavigation(webSrc: string, hinweise: string[]): Navigation {
 }
 
 /**
- * The closed menu path of a surface, or null. Only what the navigation code
- * names counts; a path written into a contract purpose is prose and may name a
- * tab the navigation calls differently ("Bereichsbudget" vs. "Budgetplanung").
+ * The sections a specification names (contract pages and source paths) as
+ * web path → menu path. Only what the navigation code names counts; a path
+ * written into a contract purpose is prose and may name a tab the navigation
+ * calls differently ("Bereichsbudget" vs. "Budgetplanung").
  */
-function menuepfadVon(spec: Spezifikation, navigation: Navigation): string | null {
-  const web = webPfad(spec)?.replace(/^src\//u, "");
-  if (!web) return null;
-  const modul = /([\w-]+)\.[jt]sx?$/u.exec(web)?.[1];
-  for (const { eintrag, labels } of navigation.registries) {
-    const klub = navigation.klub.get(eintrag.klubEintrag);
-    if (!klub) continue;
-    if (eintrag.hub.includes(web)) return [klub, ...eintrag.einstieg].join(" → ");
-    const label = web.startsWith(eintrag.wurzel) && modul ? labels.get(modul) : undefined;
-    if (label) return [klub, ...eintrag.einstieg, label].join(" → ");
+function sectionsVon(spec: Spezifikation, navigation: Navigation): Map<string, string> {
+  const sections = new Map<string, string>();
+  for (const pfad of webPfade(spec)) {
+    const web = pfad.replace(/^src\//u, "");
+    const modul = /([\w-]+)\.[jt]sx?$/u.exec(web)?.[1];
+    for (const { eintrag, labels } of navigation.registries) {
+      const klub = navigation.klub.get(eintrag.klubEintrag);
+      const label = klub && modul && web.startsWith(eintrag.wurzel) ? labels.get(modul) : undefined;
+      if (label) sections.set(web, `${klub} → ${label}`);
+    }
   }
-  return null;
+  return sections;
+}
+
+/**
+ * The closed menu path of a surface, or null. Closed only when the surface is
+ * the section: it names exactly one section, and no other specification names
+ * that section too. Several specifications on one section are views inside it
+ * — reached by a switch or a drill-down, not by the menu alone.
+ */
+function menuepfadVon(sections: ReadonlyMap<string, string>, anzahlJeSection: ReadonlyMap<string, number>): string | null {
+  if (sections.size !== 1) return null;
+  const [[web, menuepfad]] = [...sections];
+  return anzahlJeSection.get(web!) === 1 ? menuepfad! : null;
 }
 
 interface Element {
@@ -393,6 +400,10 @@ export function bauWebAppFuehrung(konzepte: string, webSrc: string): WebAppFuehr
     const name = titelVon(spec);
     if (spec.frontmatter.ui_spec_id && name) titel.set(String(spec.frontmatter.ui_spec_id), name);
   }
+  // How many specifications name each section — counted over all of them, anchored or not.
+  const sections = new Map(specs.map((spec) => [spec, sectionsVon(spec, navigation)]));
+  const anzahlJeSection = new Map<string, number>();
+  for (const genannt of sections.values()) for (const web of genannt.keys()) anzahlJeSection.set(web, (anzahlJeSection.get(web) ?? 0) + 1);
   for (const spec of specs) {
     const hub = hubVon(spec);
     if (!hub) continue;
@@ -413,7 +424,7 @@ export function bauWebAppFuehrung(konzepte: string, webSrc: string): WebAppFuehr
       continue;
     }
     const name = titel.get(id) ?? id;
-    const menuepfad = menuepfadVon(spec, navigation);
+    const menuepfad = menuepfadVon(sections.get(spec)!, anzahlJeSection);
     hubs[hub].push({
       ui_spec_id: id,
       titel: name,

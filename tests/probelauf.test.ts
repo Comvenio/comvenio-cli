@@ -298,11 +298,16 @@ describe("Messung (09 §4.3)", () => {
     expect(nichts.geloest.wert).toBe("nein");
   });
 
-  test("TC-03: Weg zu einer Event-Fläche aus der Führung von 08", () => {
-    const web = katalog.aufgaben.find((eintrag) => eintrag.bereich === "event" && eintrag.klasse === "web-app" && eintrag.kernaussagen.length > 0);
+  test("TC-03: Weg zu einer Fläche aus der Führung von 08", () => {
+    // Event surfaces have no unconditional menu path (the entry depends on the
+    // event): they stay in the catalog, NOT_MEASURED. The check runs on a closed path.
+    const event = katalog.aufgaben.filter((eintrag) => eintrag.bereich === "event" && eintrag.klasse === "web-app");
+    expect(event.length).toBeGreaterThan(0);
+    expect(event.every((eintrag) => !bewertbar(eintrag))).toBe(true);
+    const web = katalog.aufgaben.find((eintrag) => eintrag.klasse === "web-app" && eintrag.kernaussagen.length > 0);
     expect(web).toBeDefined();
     const antwort = `Menüpfad: ${web!.kernaussagen.join(" → ")}. Quellen: Hilfe-Center`;
-    const ergebnis = werteAus(web!, leseTranskript(transkript([{ name: "WebFetch", input: { url: "https://www.comvenio.app/hilfe/events" } }], antwort)), actions);
+    const ergebnis = werteAus(web!, leseTranskript(transkript([{ name: "WebFetch", input: { url: "https://www.comvenio.app/hilfe/finanzen" } }], antwort)), actions);
     expect(ergebnis.geloest.wert).toBe("ja");
     expect(ergebnis.nachschlaege.wert).toBe(1);
     expect(ergebnis.sandbox_verstoesse.wert).toEqual([]);

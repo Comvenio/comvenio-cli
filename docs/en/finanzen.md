@@ -183,7 +183,7 @@ The descriptions below come from the German interface specifications and quote t
 
 ### Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget
 
-Menu path: Finanzen → Budgetplanung
+Menu path: Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget (open item — add the menu path manually)
 
 Purpose: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?
 
@@ -217,7 +217,7 @@ Purpose: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, 
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menu path: Finanzen → Buchhaltung
+Menu path: Web-App → Buchhaltungs-Tab — Event-Verknüpfung (open item — add the menu path manually)
 
 Purpose: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -281,7 +281,7 @@ Purpose: Was ist mit dieser Buchung — und was ist jetzt zu tun?
 
 ### Budget im Organigramm
 
-Menu path: Finanzen → Budgetplanung
+Menu path: Web-App → Budget im Organigramm (open item — add the menu path manually)
 
 Purpose: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?
 
@@ -320,7 +320,7 @@ Purpose: Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachg
 
 ### Saison in der Budgetplanung
 
-Menu path: Finanzen → Budgetplanung
+Menu path: Web-App → Saison in der Budgetplanung (open item — add the menu path manually)
 
 Purpose: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?
 
@@ -334,7 +334,7 @@ Purpose: Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hi
 
 ### Offene Punkte und Struktur
 
-Menu path: Finanzen → Dashboard
+Menu path: Web-App → Offene Punkte und Struktur (open item — add the menu path manually)
 
 Purpose: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?
 
@@ -394,7 +394,7 @@ Purpose: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
 ### Übersicht nach Organigramm
 
-Menu path: Finanzen → Buchhaltung
+Menu path: Web-App → Übersicht nach Organigramm (open item — add the menu path manually)
 
 Purpose: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.
 

@@ -366,7 +366,12 @@ describe("Menüpfad aus der Navigation (08 §4.3)", () => {
     expect([...registryLabels(planer)]).toEqual([["PlannerDashboardPage", "Dashboard"], ["PlannerNewsPage", "News & Activity"]]);
   });
 
-  test("Planer-Seite unter EventPlanner: Seitenleiste, Einstieg und Registry-Label", () => {
+  test("Registry: eine Section, die ohne Flag aus ist, hat keinen bedingungsfreien Pfad", () => {
+    const registry = FINANCE_REGISTRY.replace('group: "ueberblick",', 'group: "ueberblick",\n    featureFlag: "finance.cash",\n    enabledByDefault: false,');
+    expect([...registryLabels(registry)]).toEqual([]);
+  });
+
+  test("Planer-Seite unter EventPlanner bleibt offen: der Einstieg hängt von der Veranstaltung ab", () => {
     const ws = workspace();
     const web = "Frontend/web-page/src/pages/main/EventHub";
     write(ws, `${web}/EventPlanner/sections/index.tsx`, `export const PLANNER_SECTION_REGISTRY = {
@@ -375,7 +380,36 @@ describe("Menüpfad aus der Navigation (08 §4.3)", () => {
     write(ws, `${web}/EventPlanner/pages/PlannerNewsPage.tsx`, `<IconButton data-ui-spec={"comvenio/event/planer-news#anpinnen"} />`);
     write(ws, "comvenio-tools/AI-docs/concepts/frontend/ui/event-planer-news.md", EVENT_SPEC.replace("EventHub/PlannerNewsPage.tsx", "EventHub/EventPlanner/pages/PlannerNewsPage.tsx"));
     const news = bau(ws).hubs.event.find((f) => f.ui_spec_id === "comvenio/event/planer-news")!;
-    expect(news).toMatchObject({ menuepfad: "Veranstaltungen → Veranstaltung öffnen → News & Activity", menuepfad_offen: false });
+    expect(news).toMatchObject({ menuepfad: "Web-App → Planer — News", menuepfad_offen: true });
+  });
+
+  test("zwei Spezifikationen auf derselben Section sind Ansichten darin: beide offen", () => {
+    const ws = workspace();
+    // A second surface inside the cash section, reached by a drill-down there.
+    write(ws, "comvenio-tools/AI-docs/concepts/finance/kasse/ui/kasse-konto.md", JOURNAL_SPEC
+      .replace("comvenio/finance/journal", "comvenio/finance/kasse-konto")
+      .replace("# Journal", "# Konto in der Kasse")
+      .replace("FinanceHub/Journal.tsx", "FinanceHub/KasseSection.tsx\n  - Frontend/web-page/src/pages/main/FinanceHub/KontoDetail.tsx"));
+    write(ws, "Frontend/web-page/src/pages/main/FinanceHub/KontoDetail.tsx", `{/* ui-spec: comvenio/finance/kasse-konto#filtern */}`);
+    const { hubs } = bau(ws);
+    expect(hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse")).toMatchObject({ menuepfad: "Web-App → Kasse", menuepfad_offen: true });
+    expect(hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse-konto")).toMatchObject({ menuepfad_offen: true });
+  });
+
+  test("eine Spezifikation über zwei Sections hat keinen einen Pfad", () => {
+    const ws = workspace();
+    write(ws, "Frontend/web-page/src/pages/main/FinanceHub/sectionRegistry.tsx", FINANCE_REGISTRY.replace(/\];\n$/u, "") + `  {
+    key: "journal",
+    label: "Journal",
+    component: React.lazy(() => import("./JournalSection")),
+  },
+];
+`);
+    write(ws, "comvenio-tools/AI-docs/concepts/finance/kasse/ui/kasse.md", FINANCE_SPEC.replace(
+      "  - Frontend/web-page/src/pages/main/FinanceHub/KasseSection.tsx\n",
+      "  - Frontend/web-page/src/pages/main/FinanceHub/KasseSection.tsx\n  - Frontend/web-page/src/pages/main/FinanceHub/JournalSection.tsx\n",
+    ));
+    expect(bau(ws).hubs.finance.find((f) => f.ui_spec_id === "comvenio/finance/kasse")).toMatchObject({ menuepfad_offen: true });
   });
 
   test("ohne lesbare Navigation bleibt der Pfad offen und der Lauf sagt es", () => {
