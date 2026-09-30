@@ -38,29 +38,6 @@ Ein `403` bedeutet fehlendes Recht. Ein `404` kann bei nicht sichtbaren Daten ab
 
 ## Abläufe
 
-### Begriffe
-
-| Begriff | Bedeutung |
-|---|---|
-| Veranstaltung | Ein konkreter Termin. |
-| Vorlage | Ein Event mit `is_template=true`, das nicht als konkreter Termin gilt. |
-| Regeltermin | `RECURRING` + `AUTO`, zum Beispiel ein wöchentliches Training. |
-| Jährliches Event | `YEARLY_TEMPLATE` + `MANUAL`; der nächste konkrete Termin wird bewusst geplant. |
-| Dauertermin | Sammelbegriff für Regeltermine und jährliche Events. |
-| Parent-Event | Mehrtägiges Gesamtfest (`event_complexity=multi_day`); es muss öffentlich sein. |
-| Child-Event | Ein konkreter Festtag unter einem Parent-Event. |
-| Default-Area | Automatisch erzeugter allgemeiner Bereich eines Events; darf nicht gelöscht werden. |
-| EventArea | Echter Arbeitsbereich wie Bühne, Bar oder Küche. |
-| Attachment | Fachliche Verknüpfung eines bestehenden Datei-, News- oder Menü-Datensatzes mit einem Event. |
-
-Wichtige Werte: `event_type` (`party`, `meeting`, `excursion`, `training`, `competition`, `other`) ·
-`visibility_scope` (`public`, `member`, `private`, `department`, `invite_only`) ·
-`status` (`draft`, `planned`, `confirmed`, `archived`, `cancelled` — es gibt keinen Status `published`) ·
-`organizer_type` (`member`, `external`) · `event_complexity` (`simple`, `multi_day`) ·
-`invitation_status` (`invited`, `accepted`, `rejected`, `waitlist`) ·
-`club_invitation_status` (`pending`, `accepted`, `declined`, `cancelled`) ·
-`resource_target` (`object`, `room`, `building`).
-
 ### Vorlage, Serie und Termine materialisieren
 
 1. Vorlage anlegen: `comvenio action call cai.event.07.template_list_create_clone_instantiate --input '{"operation":"create","template":{"department_id":"<department-id>","title":"Darttraining","event_type":"training","visibility_scope":"member","organizer_type":"member","description":"Wöchentliches Training"}}'`.
@@ -335,6 +312,63 @@ Geländeplan-Zone:
 | Rein öffentliche Share-, Public-Hub- und Formularseiten | Sie verwalten den Club nicht; Admin-Funktionen haben eigene Actions. |
 | Kalender-Abos | Für diesen Weg ist der Anmeldevertrag noch nicht ausgelegt. Nicht per direktem Aufruf umgehen. |
 | Alte Geländeplan-Darstellung | Durch die aktuelle `plan`-Domäne ersetzt. |
+
+## Begriffe und Zusammenhänge
+
+- **Veranstaltung** — Ein konkreter Termin.
+- **Vorlage** — Ein Event mit `is_template=true`, das nicht als konkreter Termin gilt.
+- **Regeltermin** — `RECURRING` + `AUTO`, zum Beispiel ein wöchentliches Training.
+- **Jährliches Event** — `YEARLY_TEMPLATE` + `MANUAL`; der nächste konkrete Termin wird bewusst geplant.
+- **Dauertermin** — Sammelbegriff für Regeltermine und jährliche Events.
+- **Parent-Event** — Mehrtägiges Gesamtfest (`event_complexity=multi_day`); es muss öffentlich sein.
+- **Child-Event** — Ein konkreter Festtag unter einem Parent-Event.
+- **Default-Area** — Automatisch erzeugter allgemeiner Bereich eines Events; darf nicht gelöscht werden.
+- **EventArea** — Echter Arbeitsbereich wie Bühne, Bar oder Küche.
+- **Attachment** — Fachliche Verknüpfung eines bestehenden Datei-, News- oder Menü-Datensatzes mit einem Event.
+- **Serie** — die Regel, nach der aus einer Vorlage wiederkehrende Termine entstehen (RRULE in
+  `rrule`, etwa `FREQ=WEEKLY;BYDAY=WE`). Eine Serie selbst ist kein Termin; erst `materialize`
+  legt die konkreten Veranstaltungen für einen Zeitraum an.
+- **Bereich** — Oberbegriff für Default-Area und EventArea: der Ort innerhalb einer
+  Veranstaltung, an dem Mitglieder eingeteilt, Leitungen benannt und Notizen hinterlegt werden.
+
+Wichtige Werte: `event_type` (`party`, `meeting`, `excursion`, `training`, `competition`, `other`) ·
+`visibility_scope` (`public`, `member`, `private`, `department`, `invite_only`) ·
+`status` (`draft`, `planned`, `confirmed`, `archived`, `cancelled` — es gibt keinen Status `published`) ·
+`organizer_type` (`member`, `external`) · `event_complexity` (`simple`, `multi_day`) ·
+`invitation_status` (`invited`, `accepted`, `rejected`, `waitlist`) ·
+`club_invitation_status` (`pending`, `accepted`, `declined`, `cancelled`) ·
+`resource_target` (`object`, `room`, `building`).
+
+Zusammenhang: Vorlage → Serie → materialisierte Termine; ein Parent-Event bündelt Child-Events,
+und jede Veranstaltung trägt ihre Bereiche, ihr Programm, Einladungen und Anmeldungen.
+
+Abgrenzung: Ein **Turnier** ist keine Veranstaltung. Es wird im Artikel „Turniere“ als
+Ausführung einer Turnierserie angelegt und kann optional mit einem Termin verknüpft werden. Auch
+eine **Sitzung** mit Protokoll, Tagesordnung und Beschlüssen gehört nicht hierher, sondern zum
+Artikel „Meetings“; sie hängt an einem konkreten Veranstaltungstermin, ihr Inhalt lebt aber im
+Protokoll.
+
+## Häufige Fragen
+
+**Ist eine Vorlage schon ein Termin?**
+Nein. Eine Vorlage (`is_template=true`) beschreibt, wie ein Termin aussehen soll. Termine entstehen
+erst aus einer Serie mit `materialize` oder als einzelnes Event mit `cai.event.03.create`.
+
+**Warum finde ich keinen Status `published`?**
+Den gibt es nicht. Veröffentlichen (`cai.event.05.publish`) setzt `status=confirmed`; mit
+`make_public=true` wird die Veranstaltung zusätzlich öffentlich (`visibility_scope=public`).
+
+**Wo lege ich das Programm eines mehrtägigen Festes an?**
+Am jeweiligen Child-Event, also am Festtag. Das Parent-Event zeigt nur das Aggregat aller Festtage.
+
+**Ist ein Turnier eine Veranstaltung mit `event_type=competition`?**
+Nein. Turniere verwaltest du über die `tournament`-Actions als Ausführung einer Turnierserie.
+Ein Termin mit `event_type=competition` ist nur ein Kalendereintrag; eine Turnier-Ausführung lässt
+sich mit einem solchen Termin verknüpfen.
+
+**Darf ich die Default-Area löschen?**
+Nein. Sie entsteht automatisch mit jeder Veranstaltung und bleibt bestehen; eigene Bereiche wie
+Bühne oder Bar legst du zusätzlich als EventArea an.
 
 ## Befehle und Actions
 

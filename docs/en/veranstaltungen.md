@@ -38,29 +38,6 @@ A `403` means the permission is missing. A `404` can intentionally appear instea
 
 ## Workflows
 
-### Terms
-
-| Term | Meaning |
-|---|---|
-| Event | A concrete date. |
-| Template | An event with `is_template=true` that does not count as a concrete date. |
-| Recurring date | `RECURRING` + `AUTO`, for example a weekly training session. |
-| Yearly event | `YEARLY_TEMPLATE` + `MANUAL`; the next concrete date is deliberately planned. |
-| Standing event | Umbrella term for recurring dates and yearly events. |
-| Parent event | A multi-day overall festival (`event_complexity=multi_day`); it must be public. |
-| Child event | One concrete festival day under a parent event. |
-| Default area | An automatically created general area of an event; must not be deleted. |
-| EventArea | A real work area such as stage, bar or kitchen. |
-| Attachment | The business-level link of an existing file, news or menu record to an event. |
-
-Key values: `event_type` (`party`, `meeting`, `excursion`, `training`, `competition`, `other`) ·
-`visibility_scope` (`public`, `member`, `private`, `department`, `invite_only`) ·
-`status` (`draft`, `planned`, `confirmed`, `archived`, `cancelled` — there is no `published` status) ·
-`organizer_type` (`member`, `external`) · `event_complexity` (`simple`, `multi_day`) ·
-`invitation_status` (`invited`, `accepted`, `rejected`, `waitlist`) ·
-`club_invitation_status` (`pending`, `accepted`, `declined`, `cancelled`) ·
-`resource_target` (`object`, `room`, `building`).
-
 ### Materialize a template, series and dates
 
 1. Create a template: `comvenio action call cai.event.07.template_list_create_clone_instantiate --input '{"operation":"create","template":{"department_id":"<department-id>","title":"Darttraining","event_type":"training","visibility_scope":"member","organizer_type":"member","description":"Wöchentliches Training"}}'`.
@@ -335,6 +312,63 @@ Site plan zone:
 | Purely public share, public-hub and form pages | They do not manage the club; admin functions have their own actions. |
 | Calendar subscriptions | The sign-in contract is not yet built for this path. Do not bypass it with a direct call. |
 | Legacy site-plan view | Replaced by the current `plan` domain. |
+
+## Concepts and how they connect
+
+- **Event** — A concrete date.
+- **Template** — An event with `is_template=true` that does not count as a concrete date.
+- **Recurring date** — `RECURRING` + `AUTO`, for example a weekly training session.
+- **Yearly event** — `YEARLY_TEMPLATE` + `MANUAL`; the next concrete date is deliberately planned.
+- **Standing event** — Umbrella term for recurring dates and yearly events.
+- **Parent event** — A multi-day overall festival (`event_complexity=multi_day`); it must be public.
+- **Child event** — One concrete festival day under a parent event.
+- **Default area** — An automatically created general area of an event; must not be deleted.
+- **EventArea** — A real work area such as stage, bar or kitchen.
+- **Attachment** — The business-level link of an existing file, news or menu record to an event.
+- **Series** — the rule by which recurring dates arise from a template (RRULE in `rrule`, such as
+  `FREQ=WEEKLY;BYDAY=WE`). A series itself is not a date; only `materialize` creates the concrete
+  events for a time range.
+- **Area** — umbrella term for default area and EventArea: the place within an event where
+  members are assigned, leads are named and notes are kept.
+
+Key values: `event_type` (`party`, `meeting`, `excursion`, `training`, `competition`, `other`) ·
+`visibility_scope` (`public`, `member`, `private`, `department`, `invite_only`) ·
+`status` (`draft`, `planned`, `confirmed`, `archived`, `cancelled` — there is no `published` status) ·
+`organizer_type` (`member`, `external`) · `event_complexity` (`simple`, `multi_day`) ·
+`invitation_status` (`invited`, `accepted`, `rejected`, `waitlist`) ·
+`club_invitation_status` (`pending`, `accepted`, `declined`, `cancelled`) ·
+`resource_target` (`object`, `room`, `building`).
+
+How they connect: template → series → materialized dates; a parent event bundles child events,
+and every event carries its areas, programme, invitations and registrations.
+
+Distinction: a **tournament** is not an event. It is created in the article "Tournaments" as an
+execution of a tournament series and can optionally be linked to a date. A **meeting** with
+minutes, agenda and resolutions does not belong here either but to the article "Meetings"; it
+hangs on a concrete event date, but its content lives in the minutes.
+
+## Frequently asked questions
+
+**Is a template already a date?**
+No. A template (`is_template=true`) describes what a date should look like. Dates only arise from a
+series with `materialize` or as a single event with `cai.event.03.create`.
+
+**Why is there no `published` status?**
+There is none. Publishing (`cai.event.05.publish`) sets `status=confirmed`; with `make_public=true`
+the event also becomes public (`visibility_scope=public`).
+
+**Where do I add the programme of a multi-day festival?**
+On the respective child event, i.e. the festival day. The parent event only shows the aggregate of
+all festival days.
+
+**Is a tournament an event with `event_type=competition`?**
+No. Tournaments are managed through the `tournament` actions as an execution of a tournament
+series. A date with `event_type=competition` is only a calendar entry; a tournament execution can
+be linked to such a date.
+
+**May I delete the default area?**
+No. It is created automatically with every event and stays; your own areas such as stage or bar
+are added as EventArea.
 
 ## Commands and actions
 

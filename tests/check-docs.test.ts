@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import type { InventoryAction } from "../scripts/action-inventory.ts";
-import { checkDocs, generateDocs } from "../scripts/docs-lib.ts";
+import { checkDocs, FACHWISSEN_DOMAINS, FACHWISSEN_SECTIONS, generateDocs } from "../scripts/docs-lib.ts";
 
 // A tiny connector catalog: the generated section lists these actions.
 const INVENTORY: InventoryAction[] = [
@@ -33,6 +33,28 @@ function errorArticle(lang: "de" | "en"): string {
   const sections = lang === "de" ? ["Bedeutung", "Typische Ursachen", "Lösung"] : ["Meaning", "Typical causes", "Solution"];
   return `---\nid: fehler/not-found\nkategorie: fehler\nstichwoerter: [x]\n---\n\n# NOT_FOUND\n\n${
     sections.map((section) => `## ${section}\n\nText.\n`).join("\n")}`;
+}
+
+/**
+ * A hub article (comvenio-cli-doku 07): the topic sections plus "Begriffe und
+ * Zusammenhänge" and "Häufige Fragen" with `faqs` question/answer pairs,
+ * placed after "Beispiele"; `omit` drops one section.
+ */
+function hubTopic(lang: "de" | "en", faqs = 3, omit?: string): string {
+  const [begriffe, fragen] = FACHWISSEN_SECTIONS[lang];
+  const sections = lang === "de"
+    ? ["Wozu", "Voraussetzungen und Rechte", "Abläufe", "Beispiele", begriffe!, fragen!, "Befehle und Actions", "Fehler"]
+    : ["Purpose", "Requirements and permissions", "Workflows", "Examples", begriffe!, fragen!, "Commands and actions", "Errors"];
+  const body = sections.filter((section) => section !== omit).map((section) => {
+    if (section === "Befehle und Actions" || section === "Commands and actions") {
+      return `## ${section}\n\n<!-- gen:docs befehle -->\n<!-- /gen:docs -->\n`;
+    }
+    if (section === fragen) {
+      return `## ${section}\n\n${Array.from({ length: faqs }, (_, index) => `**Frage ${index + 1}?**\nAntwort.\n`).join("\n")}`;
+    }
+    return `## ${section}\n\nText.\n`;
+  }).join("\n");
+  return `---\nid: finanzen\nkategorie: thema\ndomaenen: [finance]\nstichwoerter: [finanzen]\n---\n\n# Finanzen\n\n${body}`;
 }
 
 /** A complete, valid documentation tree; each test breaks exactly one thing. */
@@ -182,6 +204,51 @@ describe("check:docs (02-inhalte-und-pruefung)", () => {
     write(root, "docs/teams.md", topic("de", " Verein 00000000-4c2a-4b1d-9e3f-7a6b5c4d3e2f."));
     for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
     expect(checkDocs(root, INVENTORY).some((finding) => finding.reason === "Verbotener Inhalt (echte Kennung (UUID))")).toBe(true);
+  });
+
+  describe("Begriffe und Häufige Fragen (comvenio-cli-doku 07)", () => {
+    function withHub(de: string, en = hubTopic("en")): string {
+      const root = fixture();
+      write(root, "docs/finanzen.md", de);
+      write(root, "docs/en/finanzen.md", en);
+      for (const [path, content] of generateDocs(root, INVENTORY)) write(root, path, content);
+      return root;
+    }
+
+    test("TC-01: the template names both sections in German and English", () => {
+      const vorlage = readFileSync(join(import.meta.dir, "../docs/_vorlage.md"), "utf8");
+      for (const section of [...FACHWISSEN_SECTIONS.de, ...FACHWISSEN_SECTIONS.en]) expect(vorlage).toContain(section);
+      expect(FACHWISSEN_SECTIONS).toEqual({
+        de: ["Begriffe und Zusammenhänge", "Häufige Fragen"],
+        en: ["Concepts and how they connect", "Frequently asked questions"],
+      });
+    });
+
+    test("a complete hub article has no findings", () => {
+      expect(checkDocs(withHub(hubTopic("de")), INVENTORY)).toEqual([]);
+    });
+
+    test("TC-02: a hub article without Häufige Fragen is a required-section finding", () => {
+      const findings = checkDocs(withHub(hubTopic("de", 3, "Häufige Fragen")), INVENTORY);
+      expect(findings).toContainEqual({ file: "docs/finanzen.md", reason: "Pflichtabschnitt fehlt: Häufige Fragen" });
+    });
+
+    test("TC-02: the English version is checked with its own headings", () => {
+      const findings = checkDocs(withHub(hubTopic("de"), hubTopic("en", 3, "Concepts and how they connect")), INVENTORY);
+      expect(findings).toContainEqual({ file: "docs/en/finanzen.md", reason: "Pflichtabschnitt fehlt: Concepts and how they connect" });
+    });
+
+    test("TC-06: fewer than three question/answer pairs fail", () => {
+      const findings = checkDocs(withHub(hubTopic("de", 2)), INVENTORY);
+      expect(findings).toContainEqual({ file: "docs/finanzen.md", reason: "Häufige Fragen nennen nur 2 statt 3 Frage-Antwort-Paare" });
+    });
+
+    test("TC-04: other topic articles, homepage included, do not need the sections", () => {
+      expect([...FACHWISSEN_DOMAINS].sort()).toEqual(["event", "finance", "meeting", "tournament"]);
+      expect(FACHWISSEN_DOMAINS.has("homepage")).toBe(false);
+      // The base fixture's team article has neither section and stays clean.
+      expect(checkDocs(fixture(), INVENTORY)).toEqual([]);
+    });
   });
 
   test("the index lists both languages and the error articles", () => {

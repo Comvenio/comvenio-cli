@@ -42,6 +42,15 @@ Anmeldung, nötige Scopes (`comvenio login --scopes …`), nötige Vereinsrolle.
 
 Vollständige Befehle mit Platzhaltern.
 
+## Begriffe und Zusammenhänge
+
+- **<Begriff>** — <Erklärung, wie er zu den anderen Begriffen dieses Artikels steht>
+
+## Häufige Fragen
+
+**<Frage>**
+<Antwort>
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->
@@ -53,7 +62,14 @@ Typische Fehlercodes dieses Themas mit Verweis auf `comvenio help fehler <CODE>`
 ```
 
 Englische Überschriften in derselben Reihenfolge: Purpose · Requirements and permissions ·
-Workflows · Examples · Commands and actions · Errors.
+Workflows · Examples · Concepts and how they connect · Frequently asked questions · Commands and
+actions · Errors.
+
+„Begriffe und Zusammenhänge“ und „Häufige Fragen“ sind Pflicht in den Artikeln der Hubs Finance,
+Event, Tournament und Meeting (Domänen `finance`, `event`, `tournament`, `meeting`); andere
+Themenartikel dürfen sie tragen. Begriffe: mindestens die Fachwörter, die der Artikel sonst ohne
+Erklärung benutzt. Häufige Fragen: mindestens drei Paare, jede Frage fett auf eigener Zeile, die
+Antwort darunter.
 
 ## Fehlerartikel
 

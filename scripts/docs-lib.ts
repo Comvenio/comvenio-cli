@@ -21,6 +21,19 @@ export const TOPIC_SECTIONS: Record<Lang, readonly string[]> = {
   en: ["Purpose", "Requirements and permissions", "Workflows", "Examples", "Commands and actions", "Errors"],
 };
 
+// Begriffe/FAQ (comvenio-cli-doku 07 §4.1): extra required sections of the
+// topic template, but only for the hub articles of these domains — the other
+// topic articles (and homepage.md, which carries widgets/templates instead,
+// 07 TC-04) stay valid without them. Placed after "Beispiele", before
+// "Befehle und Actions".
+export const FACHWISSEN_SECTIONS: Record<Lang, readonly string[]> = {
+  de: ["Begriffe und Zusammenhänge", "Häufige Fragen"],
+  en: ["Concepts and how they connect", "Frequently asked questions"],
+};
+export const FACHWISSEN_DOMAINS: ReadonlySet<string> = new Set(["finance", "event", "tournament", "meeting"]);
+// 07 TC-06: at least this many question/answer pairs under "Häufige Fragen".
+export const MIN_FAQ_PAIRS = 3;
+
 export const ERROR_SECTIONS: Record<Lang, readonly string[]> = {
   de: ["Bedeutung", "Typische Ursachen", "Lösung"],
   en: ["Meaning", "Typical causes", "Solution"],
@@ -365,6 +378,16 @@ function headings(body: string): string[] {
   return [...body.matchAll(/^## (.+)$/gmu)].map((match) => match[1]!.trim());
 }
 
+/** Text of the `## <title>` section up to the next `## ` heading; null when absent. */
+function sectionBody(body: string, title: string): string | null {
+  const lines = body.split("\n");
+  const start = lines.findIndex((line) => line.trim() === `## ${title}`);
+  if (start === -1) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => line.startsWith("## "));
+  return (end === -1 ? rest : rest.slice(0, end)).join("\n");
+}
+
 /** Every finding with file and reason; an empty list means the documentation is complete. */
 export function checkDocs(root: string, inventory: readonly InventoryAction[]): Finding[] {
   const findings: Finding[] = [];
@@ -387,6 +410,17 @@ export function checkDocs(root: string, inventory: readonly InventoryAction[]): 
       const present = new Set(headings(article.body));
       for (const section of required) {
         if (!present.has(section)) findings.push({ file: article.path, reason: `Pflichtabschnitt fehlt: ${section}` });
+      }
+    }
+    if (kategorie === "thema" && article.frontmatter.domaenen.some((domain) => FACHWISSEN_DOMAINS.has(domain))) {
+      const present = new Set(headings(article.body));
+      for (const section of FACHWISSEN_SECTIONS[article.lang]) {
+        if (!present.has(section)) findings.push({ file: article.path, reason: `Pflichtabschnitt fehlt: ${section}` });
+      }
+      const faq = sectionBody(article.body, FACHWISSEN_SECTIONS[article.lang][1]!);
+      const pairs = faq === null ? 0 : (faq.match(/^\*\*[^*\n]+\*\*\s*$/gmu) ?? []).length;
+      if (faq !== null && pairs < MIN_FAQ_PAIRS) {
+        findings.push({ file: article.path, reason: `Häufige Fragen nennen nur ${pairs} statt ${MIN_FAQ_PAIRS} Frage-Antwort-Paare` });
       }
     }
     if (kategorie === "thema" && withCommandsBlock(article.raw, "") === null) {
