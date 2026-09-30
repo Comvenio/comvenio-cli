@@ -49,8 +49,9 @@ Ausgabeform.
    deren Veranstaltung es im Zieljahr nicht gibt, meldet die Antwort unter `unlinked_positions` —
    die bleiben zu verknüpfen.
 
-`--year <jahr>` ist Pflicht bei allen `plan-*`, bei `position-list`/`position-create` und bei
-`summary` — es gibt keinen Vorgabewert. `[id]` bezeichnet je nach Aktion die Positions- oder
+`--year <jahr>` ist Pflicht bei `plan-show`, `plan-create`, `plan-update`, `plan-close` und
+`plan-copy`, bei `position-list`/`position-create` und bei `summary` — es gibt keinen
+Vorgabewert. `plan-list` zeigt alle Jahre und braucht keins. `[id]` bezeichnet je nach Aktion die Positions- oder
 Buchungs-ID, bei `plan-copy` das Quelljahr.
 
 ### Budgetposten führen
@@ -169,11 +170,13 @@ kann das Jahr nur der Comvenio-Support (Plattformrolle); `plan-reopen` bricht im
 Beträge sind Cent. `45.50` sieht nach Euro aus; statt stillschweigend 45 Cent zu buchen, bricht die
 CLI mit `USAGE_ERROR` ab. Richtig ist `4550`.
 
-**Warum verlangen Plan- und Postenbefehle `--year`?**
+**Warum verlangen manche Plan- und Postenbefehle `--year`?**
 Ein Verein führt mehrere Jahrespläne nebeneinander, und es gibt keinen Vorgabewert — so landet ein
-Posten nie versehentlich im falschen Jahr. `plan-*`, `position-list`, `position-create` und
-`summary` brauchen `--year`; Buchungen (`entry-*`) und einzelne Posten (`position-show`,
-`position-update`, `position-delete`) hängen an ihrer Kennung und brauchen kein Jahr.
+Posten nie versehentlich im falschen Jahr. `--year` brauchen die Befehle, die ein Jahr ansprechen:
+`plan-show`, `plan-create`, `plan-update`, `plan-close`, `plan-copy`, `position-list`,
+`position-create` und `summary`. `plan-list` zeigt alle Jahre; Buchungen (`entry-*`) und einzelne
+Posten (`position-show`, `position-update`, `position-delete`, `position-import-shopping`) hängen
+an ihrer Kennung. Sie alle brauchen kein Jahr. `plan-reopen` bricht unabhängig davon ab (siehe oben).
 
 ## So geht's in der Web-App
 
@@ -204,7 +207,7 @@ Zweck: Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief je
 
 ### Bereichsbudget
 
-Menüpfad: Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Web-App → Bereichsbudget (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?
 
@@ -215,7 +218,7 @@ Zweck: Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, un
 
 ### Buchhaltungs-Tab — Event-Verknüpfung
 
-Menüpfad: Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Web-App → Buchhaltungs-Tab — Event-Verknüpfung (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?
 
@@ -236,7 +239,7 @@ Zweck: Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es
 
 ### Buchungen eines Kontos — prüfungssicher
 
-Menüpfad: Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2) (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Web-App → Buchungen eines Kontos — prüfungssicher (offene Stelle — Menüpfad manuell ergänzen)
 
 Zweck: Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?
 
@@ -345,7 +348,7 @@ Zweck: Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über de
 
 ### Sektion Prüfung
 
-Menüpfad: Finance-Hub → Seitenleiste Überblick → Prüfung (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Prüfung
 
 Zweck: Was sieht ein Prüfer in diesem Plan, und was fehlt noch?
 
@@ -409,7 +412,7 @@ Zweck: Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem O
 
 ### Belegerfassung im Finance-Hub
 
-Menüpfad: Web-App → Belegerfassung im Finance-Hub (offene Stelle — Menüpfad manuell ergänzen)
+Menüpfad: Finanzen → Belegerfassung
 
 Zweck: Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.
 
@@ -481,8 +484,11 @@ Zweck: Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuor
 
 - `CONFLICT` — das Jahr ist abgeschlossen; Änderungen an Positionen und Buchungen weist der Dienst
   ab, bis es wieder geöffnet ist. Mehr: `comvenio help fehler CONFLICT`.
-- `VALIDATION_FAILED` — ein Betrag ist nicht in Cent, eine Buchung ist weder Einnahme noch Ausgabe
-  oder beides, oder ein Pflichtfeld fehlt. Mehr: `comvenio help fehler VALIDATION_FAILED`.
+- `USAGE_ERROR` — die CLI prüft vor dem Aufruf: ein Betrag ist keine ganze Zahl in Cent (`45.50`),
+  eine Buchung ist weder Einnahme noch Ausgabe oder beides, `--year` oder eine Kennung fehlt.
+  Nichts wurde gesendet. Mehr: `comvenio help fehler USAGE_ERROR`.
+- `VALIDATION_FAILED` — der Dienst lehnt die Eingabe ab, etwa weil ein Pflichtfeld fehlt oder ein
+  Wert nicht passt. Mehr: `comvenio help fehler VALIDATION_FAILED`.
 - `NOT_FOUND` — Plan, Posten oder Buchung sind unter der angegebenen Kennung nicht bekannt. Mehr:
   `comvenio help fehler NOT_FOUND`.
 - `PERMISSION_DENIED` — die Vereinsrolle erlaubt die Buchhaltungsaktion nicht. Mehr:

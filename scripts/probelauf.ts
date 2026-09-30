@@ -208,24 +208,29 @@ export function webAppAufgaben(fuehrung: WebAppFuehrung, bereich: Bereich): { au
   let offen = 0;
   let ohneAussage = 0;
   for (const flaeche of flaechen) {
-    if (flaeche.menuepfad_offen) offen += 1;
-    const schritte = flaeche.menuepfad_offen ? [] : menueSchritte(flaeche.menuepfad, flaeche.titel);
+    const aufgabe = {
+      id: `${bereich}.web-app.${slug(flaeche.titel)}`,
+      bereich,
+      klasse: "web-app" as const,
+      frage: `Ich bin in der Comvenio-Web-App angemeldet. Wie komme ich zur Fläche „${flaeche.titel}“ (Menüpfad), und was kann ich dort mit welchem Klick tun?`,
+      fundstelle: `docs/${ARTIKEL[bereich]}#so-gehts-in-der-web-app`,
+    };
+    // 09 §4.2 asks for the menu path. Without a closed one the answer cannot be
+    // checked — the task stays in the catalog without key statements, so it is
+    // NOT_MEASURED and never replaced by a question about clicks alone.
+    if (flaeche.menuepfad_offen) {
+      offen += 1;
+      aufgaben.push({ ...aufgabe, kernaussagen: [] });
+      continue;
+    }
+    const schritte = menueSchritte(flaeche.menuepfad, flaeche.titel);
     const klicks = klickAussagen(flaeche.aktionen, flaeche.titel);
-    // Neither a path nor a nameable click: the guide gives a session nothing to check against.
+    // Neither a path step nor a nameable click: the guide gives a session nothing to check against.
     if (schritte.length + klicks.length === 0) {
       ohneAussage += 1;
       continue;
     }
-    aufgaben.push({
-      id: `${bereich}.web-app.${slug(flaeche.titel)}`,
-      bereich,
-      klasse: "web-app",
-      frage: flaeche.menuepfad_offen
-        ? `Ich bin in der Comvenio-Web-App angemeldet. Was kann ich auf der Fläche „${flaeche.titel}“ mit welchem Klick tun?`
-        : `Ich bin in der Comvenio-Web-App angemeldet. Wie komme ich zur Fläche „${flaeche.titel}“ (Menüpfad), und was kann ich dort mit welchem Klick tun?`,
-      kernaussagen: [...schritte, ...klicks],
-      fundstelle: `docs/${ARTIKEL[bereich]}#so-gehts-in-der-web-app`,
-    });
+    aufgaben.push({ ...aufgabe, kernaussagen: [...schritte, ...klicks] });
   }
   return { aufgaben, offen, ohneAussage };
 }
@@ -276,7 +281,7 @@ export function baueKatalog(root: string): Katalog {
     aufgaben.push(...fragen);
 
     const web = fuehrung ? webAppAufgaben(fuehrung, bereich) : { aufgaben: [], offen: 0, ohneAussage: 0 };
-    if (web.offen > 0) luecken.push(`${bereich}: ${web.offen} Fläche(n) der Web-App-Führung ohne Menüpfad (08)`);
+    if (web.offen > 0) luecken.push(`${bereich}: ${web.offen} Fläche(n) der Web-App-Führung ohne Menüpfad — ihre Aufgaben sind NOT_MEASURED (08)`);
     if (web.ohneAussage > 0) luecken.push(`${bereich}: ${web.ohneAussage} Fläche(n) ohne Menüpfad und ohne benennbaren Klick — nicht prüfbar (08)`);
     if (web.aufgaben.length === 0) {
       // 09 DC-5 / TC-05: no guide → the class is left out, a known gap, not a failed session.
@@ -596,8 +601,13 @@ function segmente(befehl: string): string[][] | null {
     if (zeichen === "'" || zeichen === '"') {
       quote = zeichen;
       hatToken = true;
-    } else if (/\s/u.test(zeichen)) {
+    } else if (zeichen === " " || zeichen === "\t") {
       schliesseToken();
+    } else if (/\s/u.test(zeichen) || "(){}!".includes(zeichen) || (zeichen === "#" && !hatToken)) {
+      // Fail-closed: an unquoted newline ends a command, parentheses and braces
+      // group, `!` negates, a leading `#` comments — syntax this reader does not
+      // model counts as outside the sandbox instead of being read as a word.
+      return null;
     } else if (zeichen === "|" || zeichen === "&" || zeichen === ";") {
       schliesseToken();
       if (befehl[i + 1] === zeichen) i += 1;
@@ -675,9 +685,12 @@ export function imSandbox(aufruf: ToolAufruf): boolean {
     }
   }
   if (aufruf.name !== "Bash") return false;
+  // A line break is a command boundary in bash; no cleanup below may erase it
+  // ("comvenio help\n2>&1 cat …" ran cat). Fail closed before touching the text.
+  if (/[\n\r]/u.test(aufruf.befehl)) return false;
   // Merging or dropping stderr reads nothing; every other redirection does.
   // A trailing `;` ends the chain without a further command.
-  const befehl = aufruf.befehl.replace(/\s2>&1\b|\s2>\s*\/dev\/null\b/gu, " ").replace(/[\s;]+$/u, "").trim();
+  const befehl = aufruf.befehl.replace(/[ \t]2>&1\b|[ \t]2>[ \t]*\/dev\/null\b/gu, " ").replace(/[ \t;]+$/u, "").trim();
   const teile = segmente(befehl);
   if (!teile || teile.some((tokens) => tokens.length === 0)) return false;
   // Every segment of a chain must stay inside: `comvenio help && cat …` does not.

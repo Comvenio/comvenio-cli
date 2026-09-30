@@ -31,6 +31,7 @@ import {
   prompt,
   standardSatz,
   vergleiche,
+  webAppAufgaben,
   werteAus,
 } from "../scripts/probelauf.ts";
 
@@ -111,6 +112,25 @@ describe("Katalog (AK-F-01)", () => {
     const aktion = (ausloeser: string) => ({ element: "e", ausloeser, wirkung: "w" });
     expect(klickAussagen([aktion("Klick auf „<Jahr>“"), aktion("Klick auf „Posten“ im Kopf"), aktion("Klick auf eine Bereichskarte")], "Sicht")).toEqual(["Posten", "Bereichskarte"]);
     expect(klickAussagen([aktion("Klick auf „Galerie“")], "Abschnitt Galerie")).toEqual([]);
+  });
+
+  test("Web-App: geschlossener Pfad wird geprüft, offener ist NOT_MEASURED statt Klickfrage (09 §4.2)", () => {
+    const aktionen = [{ element: "e", ausloeser: "Klick auf „Buchen“", wirkung: "bucht" }];
+    const flaeche = (titel: string, menuepfad: string, menuepfad_offen: boolean) => ({ ui_spec_id: `x/${titel}`, titel, menuepfad, menuepfad_offen, zweck: null, aktionen });
+    const fuehrung = {
+      version: 1 as const,
+      hubs: { homepage: [], event: [], tournament: [], meeting: [], finance: [flaeche("Kasse", "Finanzen → Kassenbuch", false), flaeche("Journal", "Web-App → Journal", true)] },
+      hinweise: [],
+    };
+    const { aufgaben, offen } = webAppAufgaben(fuehrung, "finance");
+    expect(offen).toBe(1);
+    const [geschlossen, ohnePfad] = aufgaben;
+    expect(geschlossen!.kernaussagen).toEqual(["Finanzen", "Kassenbuch", "Buchen"]);
+    // Same question as a closed path — the menu path is asked, not left out.
+    expect(ohnePfad!.frage).toContain("(Menüpfad)");
+    expect(ohnePfad!.kernaussagen).toEqual([]);
+    expect(bewertbar(ohnePfad!)).toBe(false);
+    expect(werteAus(ohnePfad!, leseTranskript(transkript([], "Finanzen → Journal")), actions).geloest.status).toBe("NOT_MEASURED");
   });
 });
 
@@ -197,6 +217,17 @@ describe("Messung (09 §4.3)", () => {
       "comvenio help && ls /",
       'grep "$(cat /etc/passwd)"',
       'comvenio help | grep "\\\\$(cat /etc/passwd)"',
+      // Fremdprüfung R2: unmodelled syntax is outside, never a word.
+      "comvenio help\ncat /etc/hosts",
+      "comvenio help\r\ncat /etc/hosts",
+      "comvenio help; (cat /etc/hosts)",
+      "comvenio help | { cat /etc/hosts; }",
+      "comvenio help #\ncat /etc/hosts",
+      // Fremdprüfung R3: the stderr cleanup must not erase a line break.
+      "comvenio help\n2>&1 cat /etc/hosts",
+      "comvenio help\n2>/dev/null cat /etc/hosts",
+      "comvenio help 2>&1\ncat /etc/hosts",
+      "! comvenio help",
       'comvenio help | grep "a\\',
       "comvenio action list | sed -i s/a/b/ liste.txt",
       "comvenio action confirm abc",
@@ -267,11 +298,16 @@ describe("Messung (09 §4.3)", () => {
     expect(nichts.geloest.wert).toBe("nein");
   });
 
-  test("TC-03: Weg zu einer Event-Fläche aus der Führung von 08", () => {
-    const web = katalog.aufgaben.find((eintrag) => eintrag.bereich === "event" && eintrag.klasse === "web-app" && eintrag.kernaussagen.length > 0);
+  test("TC-03: Weg zu einer Fläche aus der Führung von 08", () => {
+    // Event surfaces have no unconditional menu path (the entry depends on the
+    // event): they stay in the catalog, NOT_MEASURED. The check runs on a closed path.
+    const event = katalog.aufgaben.filter((eintrag) => eintrag.bereich === "event" && eintrag.klasse === "web-app");
+    expect(event.length).toBeGreaterThan(0);
+    expect(event.every((eintrag) => !bewertbar(eintrag))).toBe(true);
+    const web = katalog.aufgaben.find((eintrag) => eintrag.klasse === "web-app" && eintrag.kernaussagen.length > 0);
     expect(web).toBeDefined();
     const antwort = `Menüpfad: ${web!.kernaussagen.join(" → ")}. Quellen: Hilfe-Center`;
-    const ergebnis = werteAus(web!, leseTranskript(transkript([{ name: "WebFetch", input: { url: "https://www.comvenio.app/hilfe/events" } }], antwort)), actions);
+    const ergebnis = werteAus(web!, leseTranskript(transkript([{ name: "WebFetch", input: { url: "https://www.comvenio.app/hilfe/finanzen" } }], antwort)), actions);
     expect(ergebnis.geloest.wert).toBe("ja");
     expect(ergebnis.nachschlaege.wert).toBe(1);
     expect(ergebnis.sandbox_verstoesse.wert).toEqual([]);

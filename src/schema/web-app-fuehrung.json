@@ -370,7 +370,7 @@
       {
         "ui_spec_id": "comvenio/finance/bereichsbudget",
         "titel": "Bereichsbudget",
-        "menuepfad": "Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung",
+        "menuepfad": "Web-App → Bereichsbudget",
         "menuepfad_offen": true,
         "zweck": "Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?",
         "aktionen": [
@@ -399,7 +399,7 @@
       {
         "ui_spec_id": "comvenio/finance/buchhaltung-event-verknuepfung",
         "titel": "Buchhaltungs-Tab — Event-Verknüpfung",
-        "menuepfad": "Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten",
+        "menuepfad": "Web-App → Buchhaltungs-Tab — Event-Verknüpfung",
         "menuepfad_offen": true,
         "zweck": "Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?",
         "aktionen": [
@@ -478,7 +478,7 @@
       {
         "ui_spec_id": "comvenio/finance/buchung-pruefungssicher",
         "titel": "Buchungen eines Kontos — prüfungssicher",
-        "menuepfad": "Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)",
+        "menuepfad": "Web-App → Buchungen eines Kontos — prüfungssicher",
         "menuepfad_offen": true,
         "zweck": "Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?",
         "aktionen": [
@@ -906,8 +906,8 @@
       {
         "ui_spec_id": "comvenio/finance/pruefung",
         "titel": "Sektion Prüfung",
-        "menuepfad": "Finance-Hub → Seitenleiste Überblick → Prüfung",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Prüfung",
+        "menuepfad_offen": false,
         "zweck": "Was sieht ein Prüfer in diesem Plan, und was fehlt noch?",
         "aktionen": [
           {
@@ -1183,8 +1183,8 @@
       {
         "ui_spec_id": "comvenio/finanzen/belegerfassung",
         "titel": "Belegerfassung im Finance-Hub",
-        "menuepfad": "Web-App → Belegerfassung im Finance-Hub",
-        "menuepfad_offen": true,
+        "menuepfad": "Finanzen → Belegerfassung",
+        "menuepfad_offen": false,
         "zweck": "Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.",
         "aktionen": [
           {
@@ -2898,7 +2898,6 @@
     "comvenio/finance/uebersicht-nach-organigramm#buchung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
     "comvenio/finance/uebersicht-nach-organigramm#konto-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
     "comvenio/finance/uebersicht-nach-organigramm#veranstaltung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
-    "comvenio/web/gruendung-erscheinungsbild: kein Anker im Code",
-    "frontend/ui/melden-blockieren.md: Frontmatter nicht lesbar"
+    "comvenio/web/gruendung-erscheinungsbild: kein Anker im Code"
   ]
 }
