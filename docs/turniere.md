@@ -355,6 +355,14 @@ wertet seine Spiele zugunsten des Gegners. Ohne Angabe entscheidet der Turnierzu
 Nein. Es kann mit einem Termin verknüpft werden, damit es im Kalender erscheint, wird aber
 ausschließlich über die `tournament`-Actions verwaltet.
 
+## So geht's in der Web-App
+
+<!-- gen:docs web-app -->
+
+Web-App-Führung folgt, sobald UI-Spezifikationen mit Code-Ankern vorliegen.
+
+<!-- /gen:docs web-app -->
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->

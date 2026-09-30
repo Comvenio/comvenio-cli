@@ -342,6 +342,14 @@ requires a fair-copy entry for every item discussed. `validation` shows what is 
 No. The date is in the calendar; agenda, decisions and resolutions only arise in the minutes
 created for that date.
 
+## How it works in the web app
+
+<!-- gen:docs web-app -->
+
+The web app guide follows as soon as interface specifications with code anchors are available.
+
+<!-- /gen:docs web-app -->
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

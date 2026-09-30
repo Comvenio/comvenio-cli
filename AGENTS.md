@@ -179,6 +179,14 @@ comvenio action confirm --preview-id … --confirmation-token … --idempotency-
 > danach `bun run gen:docs` (Befehlsliste und `docs/index.json`) und `bun run check:docs` —
 > die Prüfung läuft im CI und schlägt bei fehlender Domäne, Sprache, Pflichtabschnitt oder internen
 > Angaben (Quellpfade, Dienstnamen) fehl.
+>
+> **Web-App-Führung („So geht's in der Web-App“ in homepage, finanzen, veranstaltungen, turniere,
+> meetings):** entsteht aus den UI-Spezifikationen in comvenio-tools und ihren `data-ui-spec`-Ankern
+> in web-page. `bun run gen:web-app-fuehrung` liest beide Nachbar-Repositorien (Schalter
+> `COMVENIO_TOOLS_ROOT` / `COMVENIO_WEBPAGE_ROOT`, auf den Stand setzen, den die Führung beschreiben
+> soll) und schreibt `src/schema/web-app-fuehrung.json`; danach `bun run gen:docs`. `check:docs`
+> prüft nur gegen die eingecheckte Datei — CI braucht die Nachbar-Repositorien nicht. Eine Fläche
+> ohne Anker im Code erscheint nicht; der Lauf nennt sie als Hinweis.
 Jeder Command hat `--help` (`comvenio member --help` etc.) mit allen Optionen.
 
 ## Domänen-Konzepte & Enums (KEIN Raten — frag das Schema)

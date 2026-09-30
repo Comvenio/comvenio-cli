@@ -351,6 +351,14 @@ decides.
 No. It can be linked to a date so it appears in the calendar, but it is managed exclusively
 through the `tournament` actions.
 
+## How it works in the web app
+
+<!-- gen:docs web-app -->
+
+The web app guide follows as soon as interface specifications with code anchors are available.
+
+<!-- /gen:docs web-app -->
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

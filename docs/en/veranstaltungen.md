@@ -370,6 +370,552 @@ be linked to such a date.
 No. It is created automatically with every event and stays; your own areas such as stage or bar
 are added as EventArea.
 
+## How it works in the web app
+
+<!-- gen:docs web-app -->
+
+The descriptions below come from the German interface specifications and quote the labels as the web app shows them.
+
+### Abschnitt „Dabei sein"
+
+Menu path: Web-App → Abschnitt „Dabei sein" (open item — add the menu path manually)
+
+Purpose: Sich anmelden — offen für alle oder nur mit Einladung.
+
+- Ändern der Zahl der Begleitpersonen → setzt, wie viele mitkommen
+- Klick auf die Anmeldung → meldet an — mit Begleitpersonen und, falls vorhanden, dem Einladungsmerkmal
+
+### Abschnitt „Auf dem Fest"
+
+Menu path: Web-App → Abschnitt „Auf dem Fest" (open item — add the menu path manually)
+
+Purpose: Was gibt es auf dem Gelände — Bühnen, Stände, Treffpunkte?
+
+- Klick auf eine Bereichskarte → öffnet die Bereichsseite (leads to: „Bereich (öffentlich)“)
+
+### Abschnitt „Momente"
+
+Menu path: Web-App → Abschnitt „Momente" (open item — add the menu path manually)
+
+Purpose: Was Gäste vom Fest zeigen und erzählen.
+
+- Klick auf den Beitragsknopf → öffnet die Eingabe für einen Gästebeitrag
+
+### Abschnitt „Galerie"
+
+Menu path: Web-App → Abschnitt „Galerie" (open item — add the menu path manually)
+
+Purpose: Die Bilder vom Fest.
+
+- Klick auf ein Bild → öffnet die Grossansicht
+
+### Abschnitt „Geländeplan"
+
+Menu path: Web-App → Abschnitt „Geländeplan" (open item — add the menu path manually)
+
+Purpose: Wo ist was — und wo sitze ich?
+
+- Wahl eines Plans → zeigt diesen Plan
+- Klick auf eine Zone mit eigenem Detailplan → zeigt den Detailplan dieser Zone
+- Wahl eines Gastes in der Suche → hebt dessen Zone hervor und markiert die zugehörigen Tische
+
+### Abschnitt „Aktuelles"
+
+Menu path: Web-App → Abschnitt „Aktuelles" (open item — add the menu path manually)
+
+Purpose: Was gibt es Neues zur Veranstaltung?
+
+- Klick auf eine Beitragskarte → klappt den vollen Text auf
+
+### Abschnitt „Programm"
+
+Menu path: Web-App → Abschnitt „Programm" (open item — add the menu path manually)
+
+Purpose: Was findet wann statt?
+
+- Klick auf einen Programmpunkt → öffnet die Einzelheiten — Beschreibung und Partner
+- Klick auf den Verweis eines Programmpunkts → führt zum hinterlegten Ziel (leads to: wechselnd)
+
+### Abschnitt „Entdecken"
+
+Menu path: Web-App → Abschnitt „Entdecken" (open item — add the menu path manually)
+
+Purpose: Der Einstieg: Was läuft gerade, was kommt gleich, und — bei einem Fest — welche Tage gibt es?
+
+- Klick auf einen Festtag → öffnet die öffentliche Seite dieses Tages (leads to: „Öffentlicher Event-Hub“)
+
+### Planer — Arbeitsplatz eines Bereichs
+
+Menu path: Web-App → Planer — Arbeitsplatz eines Bereichs (open item — add the menu path manually)
+
+Purpose: Kein eigener Abschnitt der Schiene, sondern eine Ebene tiefer: Wer in „Bereiche" einen Arbeitsort öffnet, landet hier. Einbettung an genau einer Stelle — PlannerBereichePage.tsx:423.
+
+- der Knopf „Zurück zu Bereiche-Liste" → schliesst den Arbeitsplatz und zeigt wieder die Bereichsliste
+- ein Eintrag der Schiene → wechselt den Inhalt rechts; die Wahl liegt beim Aufrufer
+- „Speichern" → schreibt den Bereich; Zeiten nur, wenn er öffentlich ist, sonst werden beide auf leer gesetzt
+- „Lösch-Job starten" im rot umrandeten Block → reicht den Bereich an den Aufrufer weiter, der den Auftrag stellt
+- „Hinzufügen" nach Wahl eines Mitglieds → legt die Leitung an; die erste wird automatisch hauptverantwortlich
+- „Als Haupt setzen" an einer Zeile → macht diese Leitung zur hauptverantwortlichen
+- das Papierkorb-Zeichen → entfernt die Leitung ohne Rückfrage
+- „Zuweisen" → weist das gewählte Mitglied dem Bereich zu
+- das Papierkorb-Zeichen → hebt die Zuweisung auf, ohne Rückfrage
+- „Neue Person" — oder der Eintrag im leeren Suchergebnis („Keine passende Person — lege unten eine neue an.") → öffnet einen Dialog „Neue Person anlegen"; nach dem Anlegen wird die Person sofort diesem Bereich zugewiesen
+
+### Planer — Bereich: Live-Feed
+
+Menu path: Web-App → Planer — Bereich: Live-Feed (open item — add the menu path manually)
+
+Purpose: Kurze Meldungen während des Fests, die zu diesem einen Arbeitsort gehören — „Bier alle", „Auftritt verschiebt sich um zwanzig Minuten". Es ist kein Beitragswesen, sondern ein Funkkanal.
+
+- eines der Merkzeichen über dem Feld → ordnet die Meldung einer Art zu (Voreinstellung „info")
+- der Schalter neben den Kategorien → die Meldung wird beim Absenden gleich angepinnt
+- „Senden" → schreibt die Meldung in den Kanal und leert das Feld
+- das Pin-Zeichen an einer Meldung → pinnt sie an oder löst den Pin
+- das Papierkorb-Zeichen → entfernt die Meldung ohne Rückfrage
+
+### Planer — Bereich: Titelbild, Flyer und Galerie
+
+Menu path: Web-App → Planer — Bereich: Titelbild, Flyer und Galerie (open item — add the menu path manually)
+
+Purpose: Alles Bildmaterial, das nur zu diesem Arbeitsort gehört: ein Titelbild, beliebig viele Flyer (auch PDF) und die Galerie. Je Datei wird hier entschieden, ob sie im öffentlichen Hub erscheint.
+
+- „Alle teilen" → öffnet die Bereichsauswahl für Titelbild und alle Flyer zusammen
+- der Knopf am Titelbild, oder eine Datei darauf ziehen → ersetzt das bisherige Titelbild
+- der Teilen-Knopf am Titelbild → öffnet die Bereichsauswahl für dieses eine Bild
+- das Augen-Symbol → schaltet zwischen öffentlich und privat
+- das Papierkorb-Symbol → fragt nach und entfernt das Bild dann unwiderruflich
+- „Von diesem Bereich lösen" → nimmt dieses Bild aus diesem Bereich heraus, ohne es zu löschen
+- der Knopf oder Ziehen auf die Ablage → lädt eine oder mehrere Dateien; die Bereichsfrage kommt auch hier vorher
+- „Alle teilen" im Kopf der Flyer-Ablage → wendet sämtliche Flyer auf die gewählten Bereiche an
+- das Augen-Symbol an einer Kachel → schaltet diese Datei öffentlich oder privat
+- das Papierkorb-Symbol → fragt nach („*Dateiname* wird unwiderruflich entfernt.") und löscht dann
+- ein Klick auf ein Bild → zeigt es gross, mit einem Schliessen-Zeichen
+
+### Bereich (öffentlich)
+
+Menu path: Web-App → Bereich (öffentlich) (open item — add the menu path manually)
+
+Purpose: Was gibt es an dieser Bühne, an diesem Stand, in diesem Zelt?
+
+- Klick auf ein Bild oder einen Flyer → öffnet die Grossansicht
+
+### Musikwünsche (Gästeseite)
+
+Menu path: Web-App → Musikwünsche (Gästeseite) (open item — add the menu path manually)
+
+Purpose: Einen Titel wünschen — oder dem Wunsch eines anderen zustimmen.
+
+- Tippen im Suchfeld → sucht im Titelkatalog
+- Klick auf das Abspielzeichen eines Treffers → spielt die Hörprobe
+- Klick auf einen Katalogtreffer → legt den Wunsch an
+- Klick auf das Herz bei einem Wunsch → gibt eine Stimme oder nimmt sie zurück
+
+### DJ-Verwaltung
+
+Menu path: Web-App → DJ-Verwaltung (open item — add the menu path manually)
+
+Purpose: Was die Gäste sich wünschen — und was davon gespielt wird.
+
+- Umlegen eines der vier Schalter → speichert die Einstellung sofort
+- Klick auf die Zusage bei einem Wunsch → markiert den Titel als gespielt
+- Klick auf die Absage bei einem Wunsch → lehnt den Wunsch ab
+- Klick auf das Zurücksetzen → leert die Wunschliste des Festtags
+- Klick auf den Code-Knopf → zeigt den Code, über den Gäste zur Wunschseite kommen
+- Klick auf „Gästeseite öffnen" → zeigt, was die Gäste sehen (leads to: „Musikwünsche (Gästeseite)“)
+- Klick auf den Monitor-Weg → öffnet die Anzeige für den Bildschirm neben der DJ-Kabine (leads to: „Live-Monitor“)
+
+### Event-Einstieg
+
+Menu path: Web-App → Event-Einstieg (open item — add the menu path manually)
+
+Purpose: Entscheiden, welche der fünf Event-Oberflächen jemand zu sehen bekommt.
+
+- Betreten des öffentlichen Eingangs bei zusammengesetzter Veranstaltung, ohne Anmeldung, oder über einen der vier Sonderwege → zeigt den immersiven öffentlichen Hub (leads to: „Öffentlicher Event-Hub“)
+- Betreten des öffentlichen Eingangs bei einer einfachen Veranstaltung, angemeldet → zeigt die schlanke Detailansicht im Vereinsgewand (leads to: „Termin — die Ansicht im Vereinsgewand“)
+- Betreten des Verwaltungseingangs mit Berechtigung, bei zusammengesetzter Veranstaltung → zeigt den Event-Planer (leads to: „Event-Planer“)
+- Betreten des Verwaltungseingangs mit Berechtigung, bei einfacher Veranstaltung → zeigt die schlanke Verwaltungsansicht (leads to: „Termin verwalten“)
+- Betreten des Verwaltungseingangs einer Kind-Veranstaltung → leitet zur Verwaltung des Elternteils um (leads to: „Event-Einstieg“)
+- Betreten des Verwaltungseingangs ohne Verwaltungsrecht, aber mit Helfer-Zugang → leitet zum Helfer-Hub um (leads to: „Helfer-Hub“)
+- Betreten eines geschützten Eingangs ohne Anmeldung, oder ohne Verwaltungsrecht und ohne Helfer-Zugang → leitet auf die öffentliche Seite um (leads to: „Öffentlicher Event-Hub“)
+- Betreten des Helfer-Eingangs → zeigt den Helfer-Hub (leads to: „Helfer-Hub“)
+
+### Helfer-Hub
+
+Menu path: Web-App → Helfer-Hub (open item — add the menu path manually)
+
+Purpose: Was habe ich zu tun, wann, und wo?
+
+- Klick auf einen der drei Abschnitte → zeigt dessen Inhalt
+- Wahl einer Veranstaltung oder „alle" → schränkt Schichten und Aufgaben auf einen Festtag ein
+- Wahl einer Phase im Aufgabenabschnitt → zeigt nur Aufgaben dieser Phase
+- Klick auf den Weg zur öffentlichen Seite → verlässt den Helfer-Hub (leads to: „Öffentlicher Event-Hub“)
+- Klick auf den Weg zur Planung → öffnet die Verwaltung der Veranstaltung (leads to: „Event-Einstieg“)
+
+### Live-Monitor
+
+Menu path: Web-App → Live-Monitor (open item — add the menu path manually)
+
+Purpose: Eine Fläche, die niemand bedient: Sie läuft auf einem Beamer oder Fernseher und zeigt, was gerade passiert — Gästebeiträge, Live-Ticker und die Musikwarteschlange. Dunkler Grund, grosse Schrift, automatischer Wechsel.
+
+- die Umschalter „Rotation" und „Grid" → wechselt zwischen einem grossen Beitrag und bis zu drei nebeneinander
+- die Marken 1, 2, 3, 5, 10 hinter der Aufschrift „Letzte" → begrenzt, wie viele der neuesten Beiträge gezeigt werden
+- das Vollbildsymbol rechts → schaltet den Browser in den Vollbildmodus und zurück
+
+### Momente-Seite
+
+Menu path: Web-App → Momente-Seite (open item — add the menu path manually)
+
+Purpose: Ein Gast scannt einen Code am Tisch und will einen Moment teilen.
+
+- Klick auf den Beitragsknopf — oben rechts oder schwebend → öffnet die Eingabe
+
+### Öffentlicher Event-Hub
+
+Menu path: Web-App → Öffentlicher Event-Hub (open item — add the menu path manually)
+
+Purpose: Die Veranstaltung so zeigen, wie Gäste sie sehen sollen — im Gewand der Veranstaltung, nicht der Plattform.
+
+- Klick auf einen Eintrag der Schiene → rollt zum Abschnitt
+- Klick auf das Menüzeichen → öffnet die vollständige Abschnittsliste
+
+### Offene Schichten
+
+Menu path: Web-App → Offene Schichten (open item — add the menu path manually)
+
+Purpose: Wo werden noch Leute gebraucht — und wie trage ich mich ein?
+
+- Klick auf den Eintragen-Knopf einer Zeile → trägt die eigene Person für die Schicht ein
+
+### Event-Planer
+
+Menu path: Web-App → Event-Planer (open item — add the menu path manually)
+
+Purpose: Der Arbeitsplatz für ein Fest. Er legt sich als eigene Ebene über die Anwendung (position: fixed, ganzer Bildschirm) und hält drei Dinge zusammen: die Kopfleiste mit Zustand und Aussenwegen, die Hierarchiekarte für den Festtag, und darunter Schiene plus den gewählten Abschnitt.
+
+- Knopf „Zurück zum Verein" → verlässt den Planer und kehrt in den Vereinsbereich zurück
+- Knopf „Worker Hub" → verlässt den Planer und zeigt die Helferoberfläche (leads to: „Helfer-Hub“)
+- Knopf „Public-Vorschau" → öffnet die öffentliche Seite in einem neuen Fenster (leads to: „Öffentlicher Event-Hub“)
+- Knopf „Veröffentlichen" → setzt die Veranstaltung auf bestätigt — und bei einem mehrtägigen Elternteil zusätzlich alle Festtage, die noch Entwurf sind
+- Knopf „Mit veröffentlichen" → setzt alle Entwurfs-Festtage auf bestätigt
+- Lupensymbol rechts in der Kopfleiste → keine — der Knopf trägt keine Rückmeldung und tut nichts
+- Glockensymbol rechts in der Kopfleiste → keine — wie die Lupe ohne Rückmeldung und ohne Beschriftung
+- Kachel „Gesamtes Fest" in der Hierarchiekarte → hebt die Wahl des Festtags auf; die Abschnitte arbeiten danach auf dem Elternteil
+- eine der Tageskacheln → setzt den Festtag; die Abschnitte arbeiten danach auf diesem Kind
+- Knopf „Bereiche" über dem Inhalt → öffnet die Schiene als Schublade (leads to: „Planer-Schiene“)
+- Knopf „Zurück zu {Bereich}" → stellt Abschnitt, Festtag, Bereich und Unterbereich des vorigen Eintrags wieder her
+
+### Planer — Teilnahme & Einladungen
+
+Menu path: Web-App → Planer — Teilnahme & Einladungen (open item — add the menu path manually)
+
+Purpose: Wer sich angemeldet hat, wer eingeladen ist, wer noch antworten muss. Anmeldungen entstehen woanders (öffentlicher Auftritt); hier werden sie gesichtet, ihr Zustand geändert, ausgegeben — und Einladungen an Mitglieder verschickt.
+
+- eine der vier Marken „Alle Tage", „Tag 1", „Tag 2", „Tag 3" → keine. Der gewählte Wert wird ausschliesslich zur Einfärbung gelesen; die Anmeldungsliste kennt ihn nicht
+- Auswahlfeld mit vier Werten — Alle, Bestätigt, Abgesagt, Nur Einladungen → filtert die Tabelle
+- Knopf „CSV-Export" → erzeugt eine Datei mit sechs Spalten aus der gefilterten Ansicht und lädt sie herunter
+- Knopf „Mitglieder einladen" → öffnet den Dialog
+- Knopf im Dialog → legt je Mitglied eine Einladung an, dazu je Abteilung, Gruppe und Organ einen Sammelauftrag; leert danach die Auswahl und schliesst den Dialog
+- Aktionsschaltfläche an einer Anmeldezeile, dann Bestätigen oder Absagen → setzt den Zustand der Anmeldung
+- Knopf „Externe einladen" / „Einladen - mehrere Tage" → keine. Der Knopf ist gesperrt
+
+### Planer — Aufgaben
+
+Menu path: Web-App → Planer — Aufgaben (open item — add the menu path manually)
+
+Purpose: Aufgaben eines Festes planen und ihren Stand steuern — in drei Ansichten (Tafel, Zeitstrahl, Kalender), gefiltert nach Festphase, zugeordnet zu Arbeitsorten und Menschen.
+
+- Knopf „Aufgabe hinzufügen" → öffnet den Dialog, mit der gewählten Phase vorbelegt (in „Alle" und „Ohne Phase" bleibt sie leer)
+- die Leiste unter dem Kopf → schaltet den sichtbaren Datenbereich um; auch den Ladeweg — mit Auswahl drei Abrufe (Aufgaben, Zuweisungen, Kontext), ohne Auswahl zwei je Arbeitsort plus den Kontext
+- fünf Reiter — Alle, Vorbereitung, Live, Nachbereitung, Ohne Phase → filtert Tafel, Zeitstrahl, Kalender und drei der vier Kacheln
+- drei Knöpfe — Board, Zeithorizont, Kalender → wechselt zwischen tafel, zeitleiste und kalender
+- Titel oder Knopf „Details" an einer Karte, ein Eintrag auf dem Zeitstrahl, in einer Tagesgruppe oder im Kalender → ersetzt die ganze Fläche durch die Detailansicht („Aufgabe — Detailansicht“, eigene Spezifikation)
+- Stiftsymbol an einer Karte → öffnet den Dialog mit den Werten dieser Aufgabe
+- Papierkorb an einer Karte → löscht die Aufgabe sofort
+- einer der zwei Statusknöpfe an einer Karte → setzt den Status
+- „Erstellen" beziehungsweise „Speichern" → legt die Aufgabe an oder aktualisiert sie
+- zwei Wege — einen Menschen aus der Schiene auf eine Karte ziehen und ablegen, oder den Knopf „Zuweisen" an der Karte → weist zu — und fügt den Menschen zugleich dem Arbeitsort hinzu, wenn er noch nicht dort war
+
+### Planer — Bereiche
+
+Menu path: Web-App → Planer — Bereiche (open item — add the menu path manually)
+
+Purpose: Arbeitsorte und Gewerke eines Fests anlegen — und als Rahmen für die Arbeit an einem einzelnen Ort dienen.
+
+- Knopf im Kopf → öffnet den Anlege-Dialog
+- der Knopf im Schrittvorschlag → öffnet den Arbeitsplatz dieses Bereichs
+- ein Auswahlfeld an der Karte; ein Klick auf ein Namenskürzel entfernt die Zuweisung wieder → weist einen Menschen diesem Arbeitsort zu beziehungsweise nimmt ihn heraus
+- Stiftsymbol an einer Karte → öffnet den Dialog mit den Werten dieses Bereichs
+- der Bestätigungsknopf im Dialog → legt den Bereich an oder aktualisiert ihn
+- der Bestätigungsknopf im Kopier-Dialog → legt den Bereich in allen gewählten Festtagen an und überträgt, was angehakt ist; ein gleichnamiger Bereich wird wiederverwendet statt doppelt angelegt
+- Bestätigen im Löschdialog → stösst einen Auftrag an, der den Bereich samt verknüpfter Daten im Hintergrund entfernt; war er gerade geöffnet, kehrt die Fläche zur Übersicht zurück
+
+### Planer — Dashboard
+
+Menu path: Web-App → Planer — Dashboard (open item — add the menu path manually)
+
+Purpose: Der Einstieg: Was steht an, wie weit ist das Fest, und wo geht es weiter.
+
+- ein Knopf an einer Empfehlung → springt in den genannten Abschnitt
+- ein Knopf im Leitstand → springt in den betroffenen Abschnitt
+- Knopf im leeren „Festtage im Blick" → springt in den Abschnitt Festtage
+- eine Festtagszeile → wechselt auf diesen Festtag
+- Knopf an der Kontakttafel → springt in den Abschnitt Kontakte
+- ein Eintrag der Werkzeugliste → springt in den Abschnitt
+
+### Planer — Design-Studio
+
+Menu path: Web-App → Planer — Design-Studio (open item — add the menu path manually)
+
+Purpose: Der Auftritt eines Festes: Farben, Schriften, Abstände, Titelbild, Flyer, die Reihenfolge der Blöcke im öffentlichen Hub und seine Texte. Alles wirkt auf denselben öffentlichen Auftritt.
+
+- Knopf „Auftritt speichern" im Kopf → legt den Auftritt an oder aktualisiert ihn
+- Knopf „Public Preview" im Kopf → öffnet den öffentlichen Auftritt in einem neuen Tab
+- einer der sechs Reiter → tauscht den Inhaltsbereich aus
+- Feld „Stichwort" plus Knopf zum Hinzufügen → hängt ein Stichwort an; jedes erscheint als Marke mit Löschkreuz
+- Knopf im Reiter „Auftritt" → schlägt aus Stimmung und Stichworten einen Satz Farben und Formwerte vor
+- Knopf im Reiter „Auftritt", danach der Löschdialog → entfernt den Auftritt
+- eine der Stilvorgaben → bestimmt die Anmutung der erzeugten Bilder
+- Knopf „Hochladen" an einer der beiden Karten → ersetzt das Bild durch eine eigene Datei
+- Knopf an einer der beiden Karten → erzeugt das Bild aus Stimmung, Stichworten, Stilvorgabe und Zusatzwunsch
+- Papierkorb an einer der beiden Karten → löscht das Bild
+- eine der Phasen (vor dem Fest, live, danach) → zeigt die Reihenfolge für genau diese Phase
+- einen Block an seinem Griff ziehen → ändert die Reihenfolge im öffentlichen Hub
+- Schalter an einem Block → blendet ihn im öffentlichen Hub aus; sein Name erscheint durchgestrichen
+- Knopf → stellt die Voreinstellung dieser Phase wieder her
+- einer der Abschnittsreiter → wählt den Hub-Abschnitt, dessen Texte bearbeitet werden
+- eine der vier Phasen — vor dem Fest, live, danach, immer → wählt, für welche Phase der Text gilt
+- Knopf im Reiter „Public-Texte" → verwirft den eigenen Text für dieses Feld
+- Umschalter Desktop / Mobil → ändert die Breite der Live-Vorschau
+
+### Planer — Festtage
+
+Menu path: Web-App → Planer — Festtage (open item — add the menu path manually)
+
+Purpose: Die einzelnen Tage eines mehrtägigen Fests anlegen, ihre Bereitschaft ablesen und von dort in die Arbeit springen.
+
+- zwei Schaltflächen — „Einmal fürs Fest" und „Pro Festtag" → schreibt sofort am Gesamtfest, ohne Rückfrage
+- vier Knöpfe je Karte — der vorgeschlagene nächste Schritt und die drei festen „Bereiche", „Ablauf", „Aufgaben" → wechselt auf diesen Festtag und öffnet dort den genannten Abschnitt
+- Knopf im Kopf oder im Leerzustand → öffnet den Dialog mit vorgeschlagenen Zeiten — eine Stunde nach dem Ende des letzten Tages, dann acht Stunden lang; ohne vorherigen Tag ab dem Beginn des Fests
+- Stiftsymbol an einer Karte → öffnet denselben Dialog mit den Werten dieses Tages
+- „Hinzufügen" beziehungsweise „Speichern" → legt den Tag an oder aktualisiert ihn
+- Papierkorb an einer Karte → löscht den Tag samt seiner Planung
+
+### Planer — Gäste-Beiträge
+
+Menu path: Web-App → Planer — Gäste-Beiträge (open item — add the menu path manually)
+
+Purpose: Beiträge, die Gäste am Fest einstellen, prüfen: freigeben oder ausblenden.
+
+- vier anklickbare Marken — Alle, Zur Prüfung, Veröffentlicht, Ausgeblendet → schränkt die Liste ein; die Voreinstellung ist „Alle"
+- Knopf „Freigeben" → gibt den Beitrag frei und holt die Familie nach
+- Knopf „Ausblenden" an einem veröffentlichten Beitrag, „Ablehnen" an einem noch nicht veröffentlichten → dieselbe Aktion in beiden Fällen — nur die Beschriftung wechselt
+
+### Planer — Galerie
+
+Menu path: Web-App → Planer — Galerie (open item — add the menu path manually)
+
+Purpose: Bilder des Fests sammeln und je Bild entscheiden, ob es öffentlich erscheint.
+
+- drei Wege — Knopf im Kopf, Knopf im Schrittvorschlag, Knopf im Leerzustand; dazu Ziehen und Ablegen auf das Raster → lädt die Dateien nacheinander hoch — die neuen Bilder sind zunächst privat
+- Augensymbol an einer Kachel → schaltet dieses eine Bild um
+- Papierkorb an einer Kachel → entfernt das Bild unwiderruflich
+
+### Planer — Konfiguration
+
+Menu path: Web-App → Planer — Konfiguration (open item — add the menu path manually)
+
+Purpose: Modus, Sichtbarkeit, Anmeldung und aktive Werkzeuge des Fests — jede Sektion mit eigenem Speichern-Knopf.
+
+- der Speichern-Knopf dieser Karte → schreibt Titel, Zeitraum, Ort und Beschreibung
+- der Speichern-Knopf dieser Karte → schreibt die Sichtbarkeit — unter Umgehung der Typprüfung
+- der Speichern-Knopf dieser Karte → sendet Frist, Höchstzahl und die Begleitpersonen-Regel — die der Dienst verwirft. Die Meldung sagt trotzdem „gespeichert"
+- der Speichern-Knopf dieser Karte → schreibt das Merkmalsprofil
+
+### Planer — Ansprechpartner
+
+Menu path: Web-App → Planer — Ansprechpartner (open item — add the menu path manually)
+
+Purpose: Wer beim Fest ansprechbar ist — mit Rolle, Telefon, E-Mail, Zuordnung zu einem Arbeitsort, einer Dringlichkeitsstufe, Sichtbarkeit und freien Notizen. Ein Kontakt kann an ein Vereinsmitglied gebunden sein; dann kommen Name und Erreichbarkeit von dort.
+
+- Knopf „Ansprechpartner hinzufügen" im Kopfbereich → öffnet den Dialog ohne Vorbelegung
+- die Leiste unter dem Kopf → schaltet den sichtbaren Datenbereich um — Kennzahlen, Block und Kartenraster folgen der Wahl
+- Knopf an einer Gesamtfest-Karte → legt eine eigene Kopie dieses Kontakts für den Festtag an — mit Name, Rolle, Erreichbarkeit, Arbeitsort, Dringlichkeitsstufe und Sichtbarkeit
+- Stiftsymbol an einer Kontaktkarte → öffnet den Dialog mit den Werten dieses Kontakts
+- Papierkorb an einer Kontaktkarte → löscht den Kontakt
+- jeder Anschlag im Feld „Rolle / Funktion" — ein Auswahlfeld mit zwanzig Vorschlägen und freier Eingabe → setzt die Dringlichkeitsstufe neu — Notfall bei Ersthelfer, Sanitäter, Sicherheitsdienst, Feuerwehr oder Polizei; Wichtig bei Festleitung, Verantwortlichen, Bereichs- leitung, Festbüro, Ordner, Hausmeister, Technik, Schicht-, Einlass-, Catering- oder Barleitung
+- Bestätigen im Dialog → legt den Kontakt an oder aktualisiert ihn, samt Notizen
+
+### Planer — Live-Regie
+
+Menu path: Web-App → Planer — Live-Regie (open item — add the menu path manually)
+
+Purpose: Kurze Hinweise an Gäste senden, wichtige davon oben halten und den Verlauf der Durchführung sichern. Die Fläche heisst in der Oberfläche „Live-Regie", nicht „Live-Ticker" — der Abschnittsname in der Schiene lautet „Live-Ticker".
+
+- Knopf „Moments-QR" → öffnet den Dialog „Moment teilen — QR-Code & Link" mit dem QR-Code, über den Gäste eigene Momente beitragen
+- Knopf „Live-Monitor" → öffnet /club/<verein>/event/<fest>/monitor in einem neuen Tab
+- Knopf „Splitscreen (TV)" → öffnet denselben Monitor mit ?layout=split in einem neuen Tab — Momente links, Musikwünsche rechts
+- Knopf „Erneut versuchen" im Kanalzustand → setzt den Merker zurück; der Anlegeversuch läuft erneut
+- Knopf „Bild" → keine. Der Knopf ist dauerhaft gesperrt und ohne Klickverhalten — eine angekündigte, nicht gebaute Funktion. Er sieht aus wie die anderen Bedienelemente daneben
+- Knopf „Pinnen" / „Wird gepinnt" → merkt vor, dass die nächste Meldung angepinnt wird
+- eine der Kennzeichnungs-Marken → setzt die Art der Meldung; die gewählte wird farbig gefüllt
+- Knopf „Senden" → legt die Nachricht mit Kennzeichnung, Art „manual" und der Kennung des Kontexts an; war der Pin vorgemerkt, wird sie danach angepinnt
+- Pin-Knopf an einer Meldung → pinnt an oder löst den Pin
+- Papierkorb an einer Meldung → löscht die Meldung — ohne Rückfrage
+
+### Planer — Musikwünsche
+
+Menu path: Web-App → Planer — Musikwünsche (open item — add the menu path manually)
+
+Purpose: Gäste wünschen sich Titel und stimmen darüber ab; hier wird die Warteschlange abgearbeitet und die Regeln dafür gesetzt.
+
+- Knopf „DJ-Panel öffnen" → verlässt die Anwendung und öffnet die öffentliche Verwaltungsseite in einem neuen Fenster
+- Knopf „QR-Code & Link" → öffnet einen Dialog mit QR-Code und Adresse für die Gäste
+- Knopf „Playlist-Monitor" → verlässt die Anwendung und öffnet die Warteschlangen-Anzeige für einen eigenen Bildschirm
+- Schalter „Musikwünsche aktivieren" → schaltet das Merkmal des Fests — und beim Einschalten zugleich die Funktion selbst, falls die noch aus war
+- Schalter „Public-Seite anzeigen" → blendet die Seite ein oder aus, ohne das Merkmal zu ändern
+- Schalter „Wünsche offen" → Ist er zu, können Gäste nichts Neues einreihen
+- Schalter „Voting offen" → Ist er zu, bleibt die Reihenfolge sichtbar, aber Stimmen ändern sich nicht mehr
+- Schalter „Explicit erlauben" → erlaubt als anstössig gekennzeichnete Titel beim Vorschlagen
+- Plus und Minus an „Wünsche pro Gast" → begrenzt, wie viele offene Wünsche ein Gast gleichzeitig haben darf
+- Plus und Minus an „Cooldown (Minuten)" → legt fest, wie lange ein gespielter Titel gesperrt bleibt (0 schaltet die Sperre ab)
+- Knopf „Gespielt" an einer Zeile → nimmt den Titel aus der Warteschlange und trägt ihn unter „Bereits gespielt" ein — damit beginnt seine Wartezeit
+- Knopf „Ablehnen" an einer Zeile → nimmt den Wunsch aus der Warteschlange
+
+### Planer — News
+
+Menu path: Web-App → Planer — News (open item — add the menu path manually)
+
+Purpose: Mitteilungen an die Teilnehmer schreiben, anpinnen und im Verlauf behalten.
+
+- Nadelsymbol an einer Karte → hebt die Mitteilung nach oben und markiert sie
+- das Sendesymbol an der Karte, links neben der Nadel → macht den Entwurf zur veröffentlichten Mitteilung und setzt, falls noch keiner da ist, den Zeitpunkt auf jetzt
+- Papierkorb an einer Karte → löscht die Mitteilung
+- Knopf im Kopf, im Schrittvorschlag oder im Leerzustand → öffnet den Verfassen-Dialog — immer leer
+- Knopf „KI-Assistent" (leerer Entwurf) oder „KI optimieren" (vorhandenen Text überarbeiten) → öffnet den Schreibassistenten; sein Ergebnis fliesst in Titel, Inhalt und gegebenenfalls ein Titelbild zurück
+- der Bestätigungsknopf im Dialog → legt die Mitteilung an — als Entwurf oder veröffentlicht, je nach Schalter
+
+### Planer — Programm
+
+Menu path: Web-App → Planer — Programm (open item — add the menu path manually)
+
+Purpose: Was wann und wo passiert — Programmpunkte je Arbeitsort, mit Zeiten, Bildern, Turnierbezug und Sponsoren.
+
+- „Im Festtag bearbeiten" an einer Karte oder „Festtag Öffnen" im Ablaufblock → wechselt auf diesen Festtag und bleibt im Abschnitt Programm
+- Knopf „Programmpunkt" im Kopf, oder „Ersten Programmpunkt anlegen" im Leerzustand → öffnet den Dialog ohne Vorbelegung
+- die Leiste unter dem Kopf → schränkt Kacheln, Konflikterkennung und Ablauf auf einen Ort ein
+- zwei Knöpfe — „Line-up" und „Liste" → wechselt zwischen zeitleiste und liste
+- „Bild hochladen" für das Header-Visual, ebenso für den Flyer → legt die Datei ab und merkt sich ihre Kennung am Programmpunkt
+- das Feld „Turnier referenzieren" → bindet den Programmpunkt an ein Turnier — und schreibt beim Speichern dessen Zuordnung zum Fest, Beginn und Ende dorthin zurück
+- das Mehrfachfeld „Sponsoren" → verknüpft; legt dabei bei Bedarf eine Bereichs-Zuordnung an
+- Stiftsymbol an einer Karte → öffnet den Dialog mit den Werten dieses Punkts
+- „Erstellen" beziehungsweise „Speichern" → legt an oder aktualisiert — und bis zu zwei weitere Schreibvorgänge: die Sponsoren-Zuordnung, danach das Turnier
+- Papierkorb an einer Karte → löscht den Punkt sofort
+
+### Planer — Ressourcen
+
+Menu path: Web-App → Planer — Ressourcen (open item — add the menu path manually)
+
+Purpose: Räume und Gebäude aus dem Vereinsbestand für das Fest reservieren und Arbeitsorten zuordnen.
+
+- Knopf „Ressource verknüpfen" im Kopf → öffnet den Dialog, mit dem gewählten Arbeitsort vorbelegt
+- die Leiste unter dem Kopf → schränkt Kacheln, Schrittvorschlag und Liste auf einen Ort ein
+- Knopf „Verknüpfen" → legt die Verknüpfung an — ohne den gewählten Bereich
+- Papierkorb an einer Zeile → entfernt die Verknüpfung sofort
+
+### Planer — Einsatzplanung
+
+Menu path: Web-App → Planer — Einsatzplanung (open item — add the menu path manually)
+
+Purpose: Einsatzfenster je Arbeitsort planen und Menschen darauf verteilen. Die Fläche heisst in der Oberfläche „Wer arbeitet wann wo?"; der Abschnittsname in der Schiene lautet „Schichtplan".
+
+- Knopf „Als PDF teilen", danach eine von zwei Formen — „Als Tabelle" oder „Als Zeitstrahl" → erzeugt das Dokument in der gewählten Form
+- Knopf „Schicht hinzufügen" → öffnet den Dialog ohne Vorbelegung
+- die Arbeitsort-Leiste unter dem Kopf → schränkt die Anzeige auf einen Arbeitsort ein
+- Knopf in der Kopfzeile eines Arbeitsorts → öffnet den Dialog mit diesem Arbeitsort vorbelegt
+- zwei Wege — einen Menschen aus der Liste auf die Schicht ziehen und ablegen, oder ihn im Auswahlfeld der Schichtzeile wählen → weist ihn dieser Schicht zu
+- Löschkreuz an der Marke eines zugewiesenen Menschen → nimmt die Zuweisung zurück
+- Bestätigen im Dialog → legt die Schicht an oder aktualisiert sie
+- Stiftsymbol an einer Schichtzeile → öffnet den Dialog mit den Werten dieser Schicht
+- Papierkorb an einer Schichtzeile → löscht die Schicht
+
+### Planer-Schiene
+
+Menu path: Web-App → Planer-Schiene (open item — add the menu path manually)
+
+Purpose: Die linke Leiste des Planers. Sie zeigt, wo man ist, in welcher Phase das Fest steckt, und führt zu den 21 Abschnitten.
+
+- ein Eintrag der Liste → öffnet diesen Abschnitt; die Schiene bleibt stehen
+- Symbolknopf oben in der Schiene → wechselt zwischen 280 und 64 Pixel Breite
+- Fusszeile „Zurück zum Verein" (aufgeklappt) beziehungsweise ein Pfeilsymbol unten (eingeklappt) → verlässt den Planer und kehrt in den Vereinsbereich zurück
+- Fusszeile „Hilfe & Tipps" → öffnet die Hilfe
+
+### Planer — Speisekarte
+
+Menu path: Web-App → Planer — Speisekarte (open item — add the menu path manually)
+
+Purpose: Speisekarten des Vereins einem Fest zuordnen — und auf Arbeitsort-Ebene ihre Gerichte bearbeiten.
+
+- der anklickbare Hinweisstreifen „Speisekarten pflegen" → verlässt die Anwendung und öffnet den Versorgungsbereich des Vereins in einem neuen Fenster
+- Knopf „Speisekarte hinzufügen" im Kopf oder im Leerzustand → öffnet den Dialog
+- der Bestätigungsknopf im Dialog → weist die gewählte Karte zu — oder legt eine neue an und weist sie zu
+- Knopf „Vollständige Karte ansehen" über jeder Karte → öffnet die öffentliche Ansicht der Karte — mit Vereinslogo, ihrer Gestaltung und dem QR-Code
+- Papierkorb an einer Karte → nimmt die Zuweisung zurück
+
+### Planer — Sponsoren
+
+Menu path: Web-App → Planer — Sponsoren (open item — add the menu path manually)
+
+Purpose: Sponsoren aus dem Vereinsbestand dem Fest zuordnen, ihnen eine Stufe geben — und aus den Sponsoring-Angeboten des Vereins sammelweise übernehmen.
+
+- Knopf „Sponsor hinzufügen" im Kopf oder im Schrittvorschlag → öffnet den Dialog mit der Stufe „Partner" vorbelegt
+- die Leiste unter dem Kopf → schränkt Kacheln, Schrittvorschlag und Liste auf einen Ort ein
+- Knopf „Übernehmen" im Panel → legt für jeden Sponsor mit aktivem Angebot eine Verknüpfung an, mit der Stufe des Angebots; vorhandene bleiben
+- der Bestätigungsknopf im Dialog → legt die Verknüpfung an
+- Löschsymbol an einer Sponsorenkarte → nimmt die Zuordnung zurück
+
+### Planer — Stammdaten
+
+Menu path: Web-App → Planer — Stammdaten (open item — add the menu path manually)
+
+Purpose: Titel, Zeitraum, Ort, Beschreibung, Status und Sichtbarkeit — und, ganz unten, das Löschen der Veranstaltung.
+
+- jede Eingabe in einem Textfeld → merkt die Änderung vor, ohne zu speichern
+- das Verlassen eines Textfelds → schreibt die vorgemerkten Änderungen
+- das Feld „Status" → schreibt sofort, nicht erst beim Verlassen
+- das Feld „Sichtbarkeit" → schreibt sofort
+- Knopf „Veranstaltung löschen" beziehungsweise „Tag löschen" → stösst einen Auftrag an; das Löschen selbst passiert danach im Hintergrund
+
+### Planer — Turniere
+
+Menu path: Web-App → Planer — Turniere (open item — add the menu path manually)
+
+Purpose: Turnierserien und ihre Ausführungen mit einem Fest verknüpfen — und von dort aus in den Turnier-Hub wechseln, wo sie tatsächlich verwaltet werden.
+
+- Knopf „Tournament Hub" im Kopf → verlässt den Planer und öffnet den Turnierbereich des Vereins
+- Knopf „Serie erstellen" im Kopf → verlässt den Planer und öffnet das Anlegen einer Serie, mit diesem Fest vorbelegt
+- Knopf „Aufnehmen" → verknüpft die Serie mit dem Fest — und alle ihre noch unverknüpften Ausführungen gleich mit — und schaltet den Turnier-Abschnitt des Fests ein
+- Knopf „Festtag öffnen" → wechselt auf diesen Festtag, bleibt im Planer
+- Knopf „Turnier in Festtag erstellen" → verlässt den Planer und öffnet das Anlegen einer Serie, mit dem gewählten Festtag vorbelegt
+- Knopf „Programmpunkt" an einer Ausführung → legt einen Programmpunkt an — im Standard-Arbeitsort, und wenn es keinen gibt, im ersten beliebigen — und schreibt Zuordnung, Beginn und Ende ins Turnier zurück
+- Knopf „Kopplung entfernen" → löst die Ausführung vom Fest
+- Knopf „Planner" an einer Serienzeile → verlässt den Planer und öffnet die Serienplanung
+- Knopf „Public" an einer Ausführung → verlässt den Planer und öffnet die öffentliche Ansicht dieser Ausführung
+- Knopf „Verwalten" an einer Ausführung → verlässt den Planer und öffnet die Turnierverwaltung
+
+### Schichtplan (Helferansicht)
+
+Menu path: Web-App → Schichtplan (Helferansicht) (open item — add the menu path manually)
+
+Purpose: Wer arbeitet wann und wo — und wo ist noch Platz für mich?
+
+- Tippen im Suchfeld → zeigt nur passende Schichten
+- Umlegen des Schalters „nur meine" → zeigt nur die eigenen Schichten
+- Klick auf den Eintragen-Knopf einer Schicht → trägt die eigene Person ein
+- Klick auf den Austragen-Knopf einer eigenen Schicht → nimmt die eigene Zuweisung zurück
+- Wahl einer Ausgabeform — Tabelle oder Zeitschiene → erzeugt ein Dokument des Plans
+
+<!-- /gen:docs web-app -->
+
 ## Commands and actions
 
 <!-- gen:docs befehle -->

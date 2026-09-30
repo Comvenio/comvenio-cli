@@ -358,6 +358,14 @@ noch fehlt.
 Nein. Der Termin steht im Kalender; Tagesordnung, Entscheidungen und Beschlüsse entstehen erst im
 Protokoll, das zu diesem Termin angelegt wird.
 
+## So geht's in der Web-App
+
+<!-- gen:docs web-app -->
+
+Web-App-Führung folgt, sobald UI-Spezifikationen mit Code-Ankern vorliegen.
+
+<!-- /gen:docs web-app -->
+
 ## Befehle und Actions
 
 <!-- gen:docs befehle -->

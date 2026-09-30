@@ -26,6 +26,8 @@
     "gen:schema:check": "bun run scripts/gen-schema.ts --check",
     "gen:docs": "bun run scripts/gen-docs.ts",
     "gen:docs:check": "bun run scripts/gen-docs.ts --check",
+    "gen:web-app-fuehrung": "bun run scripts/gen-web-app-fuehrung.ts",
+    "gen:web-app-fuehrung:check": "bun run scripts/gen-web-app-fuehrung.ts --check",
     "check:docs": "bun run scripts/check-docs.ts",
     "gen:connector-inventory": "bun run scripts/import-connector-inventory.ts",
     "gen:connector-inventory:check": "bun run scripts/import-connector-inventory.ts --check",

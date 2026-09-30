@@ -1,0 +1,2904 @@
+{
+  "version": 1,
+  "hubs": {
+    "homepage": [
+      {
+        "ui_spec_id": "club/homepage-generator/designer",
+        "titel": "Homepage-Designer",
+        "menuepfad": "Web-App → Homepage-Designer",
+        "menuepfad_offen": true,
+        "zweck": "Wo steht was auf meiner Homepage, und wie ändere ich es, ohne HTML anzufassen und ohne dass Besucher Zwischenstände sehen?",
+        "aktionen": [
+          {
+            "element": "rueckgaengig",
+            "ausloeser": "Klick auf „Rückgängig“ oder Strg+Z",
+            "wirkung": "Der letzte Entwurfsschritt wird zurückgenommen"
+          },
+          {
+            "element": "wiederholen",
+            "ausloeser": "Klick auf „Wiederholen“ oder Strg+Umschalt+Z",
+            "wirkung": "Der zuletzt zurückgenommene Schritt wird wieder angewendet"
+          },
+          {
+            "element": "ansichtsbreite",
+            "ausloeser": "Klick auf „1280“, „768“ oder „390“",
+            "wirkung": "Die Leinwand rendert die Seite in dieser Breite und skaliert sie auf die verfügbare Fläche"
+          },
+          {
+            "element": "code-umschalten",
+            "ausloeser": "Klick auf „Code“",
+            "wirkung": "Öffnet oder schließt die Code-Ansicht unter der Leinwand"
+          },
+          {
+            "element": "fenster-oeffnen",
+            "ausloeser": "Klick auf „Im Fenster öffnen“",
+            "wirkung": "Öffnet die Entwurfsvorschau in einem eigenen Browserfenster oder holt sie nach vorn",
+            "fuehrt_zu": "„Entwurfsvorschau im zweiten Fenster“ (neues Fenster)"
+          },
+          {
+            "element": "verwerfen",
+            "ausloeser": "Klick auf „Verwerfen“",
+            "wirkung": "Der Entwurf aller Reiter wird verworfen; Leinwand zeigt den Live-Stand"
+          },
+          {
+            "element": "veroeffentlichen",
+            "ausloeser": "Klick auf „Veröffentlichen“",
+            "wirkung": "Jeder geänderte Reiter wird als Ganzes veröffentlicht; vorher werden nur die geänderten Felder (CSS und/oder Tokens) nach Prüfung gegen ihre Basis in einem Schritt in die Vereinseinstellungen geschrieben (09)"
+          },
+          {
+            "element": "einfuegen-oeffnen",
+            "ausloeser": "Klick auf „Einfügen“",
+            "wirkung": "Öffnet den Einfügen-Katalog in der rechten Spalte mit dem gewählten Knoten als Ziel"
+          },
+          {
+            "element": "knoten-kontextmenue",
+            "ausloeser": "Rechtsklick oder Klick auf „…“ am Knoten",
+            "wirkung": "Öffnet das Menü mit Duplizieren, Nach oben, Nach unten, Einfügen danach, Löschen"
+          },
+          {
+            "element": "knoten-duplizieren",
+            "ausloeser": "Klick auf „Duplizieren“ im Menü oder im Formular",
+            "wirkung": "Kopie hinter dem Original; Slot-Namen werden eindeutig fortgezählt, Einträge kopiert"
+          },
+          {
+            "element": "knoten-loeschen",
+            "ausloeser": "Klick auf „Löschen“",
+            "wirkung": "Entfernt Element und zugehörige Slot-Einträge aus dem Entwurf"
+          },
+          {
+            "element": "knoten-ziehen",
+            "ausloeser": "Ziehen eines Knotens im Baum",
+            "wirkung": "Verschiebt den Knoten an die Einfügestelle"
+          },
+          {
+            "element": "stand-live-laden",
+            "ausloeser": "Klick auf „Live-Stand laden“",
+            "wirkung": "Verwirft den Entwurf des Reiters und übernimmt den bereits geladenen Live-Stand"
+          },
+          {
+            "element": "stand-entwurf-behalten",
+            "ausloeser": "Klick auf „Entwurf behalten“ im Hinweis",
+            "wirkung": "Führt den Entwurf mit dem bereits geladenen Live-Stand zusammen (TD-6): nur live Geändertes übernehmen, beidseitig Geändertes behalten, Hinzugefügtes übernehmen, live Entferntes entfernen"
+          },
+          {
+            "element": "leinwand-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Leinwand",
+            "wirkung": "Lädt die Leinwand neu und sendet den Entwurf erneut"
+          },
+          {
+            "element": "baustein-felder",
+            "ausloeser": "Eingabe in die Felder des Formulars (Text, Beschriftung, Ziel, Widget-Einstellungen)",
+            "wirkung": "Ändert den Eintrag im Entwurf; Leinwand zeigt die Änderung sofort"
+          },
+          {
+            "element": "adresse-kopieren",
+            "ausloeser": "Klick auf „Kopieren“",
+            "wirkung": "Kopiert die Adresse in die Zwischenablage"
+          },
+          {
+            "element": "erneut-laden",
+            "ausloeser": "Klick auf „Erneut laden“",
+            "wirkung": "Lädt Reiter, Sektionen, Widgets und Einstellungen neu"
+          },
+          {
+            "element": "zur-ansicht",
+            "ausloeser": "Klick auf „Zur Ansicht“",
+            "wirkung": "Verlässt den Designer",
+            "fuehrt_zu": "zurück (Ansicht der Homepage im ClubHub)"
+          },
+          {
+            "element": "zum-ersten-reiter",
+            "ausloeser": "Klick auf „Zum ersten Reiter“",
+            "wirkung": "Wählt den ersten vorhandenen Reiter"
+          },
+          {
+            "element": "reiter-live-laden",
+            "ausloeser": "Klick auf „Live-Stand laden“ in der Meldung",
+            "wirkung": "Verwirft den Entwurf des Reiters und lädt Reiter, Sektionen und Widgets neu; ein gelöschter Reiter verschwindet aus dem Baum"
+          },
+          {
+            "element": "hier-weiterarbeiten",
+            "ausloeser": "Klick auf „Hier weiterarbeiten“",
+            "wirkung": "Dieser Tab wird der aktive Designer; der andere Tab wird schreibgeschützt"
+          },
+          {
+            "element": "mobil-reiter",
+            "ausloeser": "Tippen auf „Struktur“, „Vorschau“ oder „Code“",
+            "wirkung": "Wechselt zwischen Baum, Leinwand und Code-Ansicht"
+          },
+          {
+            "element": "entwurf-behalten",
+            "ausloeser": "Klick auf „Entwurf behalten“",
+            "wirkung": "Führt den Entwurf nach TD-6 mit dem Live-Stand aus der Antwort zusammen; Ausgangsstand = Live-Stand"
+          },
+          {
+            "element": "live-laden",
+            "ausloeser": "Klick auf „Live-Stand laden“",
+            "wirkung": "Verwirft den Entwurf des Reiters und übernimmt den Live-Stand aus der Antwort"
+          },
+          {
+            "element": "konflikt-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Schließt den Dialog ohne Änderung"
+          },
+          {
+            "element": "code-reiter",
+            "ausloeser": "Klick auf „Gerüst (HTML)“, „Stile (CSS)“ oder „Befunde“",
+            "wirkung": "Wechselt den Inhalt der Code-Ansicht"
+          },
+          {
+            "element": "geruest-auswahl",
+            "ausloeser": "Auswahl eines Gerüsts über dem Editor",
+            "wirkung": "Zeigt das HTML des gewählten Gerüsts"
+          },
+          {
+            "element": "code-editor",
+            "ausloeser": "Eingabe im Editor",
+            "wirkung": "Ändert Gerüst-HTML bzw. Vereins-CSS im Entwurf; nach 300 ms Ruhe zeigen Leinwand und Fenster die Änderung"
+          },
+          {
+            "element": "code-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Code-Ansicht",
+            "wirkung": "Lädt den Editor erneut"
+          },
+          {
+            "element": "css-live-uebernehmen",
+            "ausloeser": "Klick auf „Live übernehmen“ im Stile-Reiter",
+            "wirkung": "Ersetzt den CSS-Entwurf durch das Live-CSS"
+          },
+          {
+            "element": "css-entwurf-behalten",
+            "ausloeser": "Klick auf „Entwurf behalten“ im Stile-Reiter",
+            "wirkung": "Setzt den Ausgangsstand des CSS-Entwurfs auf das Live-CSS; der Entwurf bleibt und überschreibt beim Veröffentlichen"
+          },
+          {
+            "element": "vorlage-einfuegen",
+            "ausloeser": "Klick auf eine Vorlage oder Ziehen in die Leinwand",
+            "wirkung": "Fügt den Bereich der Vorlage am Ziel ein; Slot-Namen eindeutig"
+          },
+          {
+            "element": "baustein-einfuegen",
+            "ausloeser": "Klick auf „Überschrift“, „Text“ oder „Knopf“ oder Ziehen in die Leinwand",
+            "wirkung": "Fügt ein neues Element (h2, p, a) mit leerem Eintrag am Ziel ein; ohne Gerüst als eigenständiges Widget der Sektion"
+          },
+          {
+            "element": "inhalt-einfuegen",
+            "ausloeser": "Klick auf einen Inhalt oder Ziehen in die Leinwand",
+            "wirkung": "Fügt ein Live-Widget als Slot am Ziel ein; ohne Gerüst als neues Widget der gewählten Sektion"
+          },
+          {
+            "element": "katalog-schliessen",
+            "ausloeser": "Klick auf „Schließen“ oder Escape",
+            "wirkung": "Schließt den Katalog"
+          },
+          {
+            "element": "katalog-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ im Katalog",
+            "wirkung": "Lädt die Einstellungen mit den Vorlagen neu"
+          },
+          {
+            "element": "design-oeffnen",
+            "ausloeser": "Klick auf „Design“ in der Werkzeugleiste",
+            "wirkung": "Die rechte Spalte zeigt das Design-Panel statt des Formulars; eine Auswahl in Baum oder Leinwand kehrt zum Formular zurück"
+          },
+          {
+            "element": "design-farbe",
+            "ausloeser": "Farbfeld wählen oder Hex-Wert eingeben bei einer Kernfarbe (Hauptfarbe, Akzent, Text auf Akzent, Hintergrund, Text, gedämpfter Text) oder einer weiteren Vereinsfarbe",
+            "wirkung": "Setzt die Rolle in tokens.palette des Design-Entwurfs; Leinwand und Fenster zeigen sie sofort; das Panel zählt als eine Änderung „Design“"
+          },
+          {
+            "element": "design-regler",
+            "ausloeser": "Regler Rundung, Abstände, Schriftgröße oder Knopfgruppe Schatten bewegen",
+            "wirkung": "Setzt radius.md, spacing_scale, type_scale oder shadow_level im Design-Entwurf; die Seite zeigt es sofort"
+          },
+          {
+            "element": "design-zuruecksetzen",
+            "ausloeser": "Klick auf „Auf Ausgangsstand zurücksetzen“",
+            "wirkung": "Tokens im Entwurf wieder wie beim Öffnen bzw. letzten Laden (Basis); die Design-Änderung fällt aus dem Zähler"
+          },
+          {
+            "element": "umbau-rueckgaengig",
+            "ausloeser": "Klick auf „Rückgängig“ in der Umbau-Meldung",
+            "wirkung": "Nimmt den ganzen Zug samt Aufräumen in einem Schritt zurück — wie rueckgaengig in der Werkzeugleiste"
+          },
+          {
+            "element": "reihe-aufloesen",
+            "ausloeser": "Klick auf „Reihe auflösen“ im Formular der Reihe",
+            "wirkung": "Stellt die Elemente der Reihe untereinander an ihre Stelle; im Gerüst entfällt die Hülle, eine Sektion wird einspaltig (layout full, spalten_breiten null)"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "club/homepage-generator/entwurfsfenster",
+        "titel": "Entwurfsvorschau im zweiten Fenster",
+        "menuepfad": "Web-App → Entwurfsvorschau im zweiten Fenster",
+        "menuepfad_offen": true,
+        "zweck": "Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich sehe, Entwurf oder Live-Seite?",
+        "aktionen": [
+          {
+            "element": "folgen-schalter",
+            "ausloeser": "Umschalten von „Auswahl im Designer folgen“",
+            "wirkung": "An: Fenster scrollt zur Auswahl des Designers und zeigt den Rahmen, Klicks wählen im Designer; aus: Fenster verhält sich wie die Seite"
+          },
+          {
+            "element": "neu-verbinden",
+            "ausloeser": "Klick auf „Neu verbinden“",
+            "wirkung": "Sendet hallo und lädt ohne Antwort den Live-Stand neu"
+          },
+          {
+            "element": "live-seite-oeffnen",
+            "ausloeser": "Klick auf „Live-Seite öffnen“",
+            "wirkung": "Öffnet die veröffentlichte Homepage in einem neuen Tab",
+            "fuehrt_zu": "wechselnd (öffentliche Homepage des Vereins im neuen Tab)"
+          },
+          {
+            "element": "fenster-waehlen",
+            "ausloeser": "Klick auf ein Element im Fenster",
+            "wirkung": "Wählt den Knoten im Designer; Links werden nicht ausgelöst"
+          },
+          {
+            "element": "ersten-reiter-zeigen",
+            "ausloeser": "Klick auf „Ersten Reiter zeigen“",
+            "wirkung": "Zeigt den ersten Reiter der Homepage"
+          },
+          {
+            "element": "fenster-erneut-laden",
+            "ausloeser": "Klick auf „Neu laden“",
+            "wirkung": "Lädt den Live-Stand bzw. die Einstellungen neu"
+          },
+          {
+            "element": "fenster-ziehen",
+            "ausloeser": "Ziehen des Bereichs oder Slots unter dem Zeiger im Fenster ohne vorheriges Wählen; am Etikett eines Bereichs der ganze Bereich",
+            "wirkung": "Sendet verschieben mit Rolle fenster an den gebundenen Designer; der Designer ändert den Entwurf, Leinwand und Fenster folgen"
+          }
+        ]
+      }
+    ],
+    "finance": [
+      {
+        "ui_spec_id": "comvenio/finance/bereich-als-sicht",
+        "titel": "Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget",
+        "menuepfad": "Web-App → Bereich als Sicht — Knoten im eigenen Zeitraum, Zeitraum der Abteilung, Buchen mit Budget, Kontofreigabe und Journal mit Budget",
+        "menuepfad_offen": true,
+        "zweck": "Wie steht eine Abteilung in ihrem eigenen Zeitraum — und worauf lief jede Buchung?",
+        "aktionen": [
+          {
+            "element": "zeitraum-umschalter",
+            "ausloeser": "Klick auf „<Fenster des Zeitraums>“ oder „Haushaltsjahr <Jahr>“ im Kopf",
+            "wirkung": "Die Ansicht wechselt zwischen dem Fenster des Zeitraums und dem Haushaltsjahr; vorgewählt ist das laufende Fenster des Zeitraums."
+          },
+          {
+            "element": "zeitraum-wechseln",
+            "ausloeser": "Auswahl eines anderen Fensters im Feld „Zeitraum“ neben dem Umschalter",
+            "wirkung": "Die Ansicht zeigt das gewählte Fenster (z. B. App-Jahr 2025/26)."
+          },
+          {
+            "element": "fenster-posten-anlegen-oeffnen",
+            "ausloeser": "Klick auf „Posten“ im Kopf der Sicht",
+            "wirkung": "Der Dialog für einen Posten im Fenster öffnet sich."
+          },
+          {
+            "element": "fenster-posten-speichern",
+            "ausloeser": "Klick auf „Posten speichern“ im Dialog",
+            "wirkung": "Je berührtem Haushalt entsteht ein Teil mit dem Monatsanteil; neu oder beim Bearbeiten werden alle Teile gemeinsam geändert (D49)."
+          },
+          {
+            "element": "fenster-rahmen-setzen-oeffnen",
+            "ausloeser": "Klick auf „Rahmen setzen“ bzw. „Rahmen ändern“ im Kopf der Sicht",
+            "wirkung": "Der Rahmen-Dialog des Fensters öffnet sich (Anatomie wie der Saisonrahmen-Dialog).",
+            "fuehrt_zu": "Dialog Rahmen des Fensters"
+          },
+          {
+            "element": "fenster-rahmen-speichern",
+            "ausloeser": "Klick auf „Rahmen speichern“ im Rahmen-Dialog des Fensters",
+            "wirkung": "Der Rahmen des Knotens im Fenster wird gesetzt, als neue Version."
+          },
+          {
+            "element": "fenster-abrechnung-oeffnen",
+            "ausloeser": "Klick auf „Abrechnung“ im Kopf der Sicht",
+            "wirkung": "Die Abrechnung des Knotens im Fenster öffnet sich (Anatomie C3 der Organigramm-Spezifikation, dazu Ergebnis und Rahmenvorschlag).",
+            "fuehrt_zu": "Abrechnung des Fensters"
+          },
+          {
+            "element": "zeitraum-einstellen-oeffnen",
+            "ausloeser": "Klick auf „Weitere Aktionen“ › „Zeitraum der Abteilung“",
+            "wirkung": "Der Zeitraum-Dialog öffnet sich."
+          },
+          {
+            "element": "zeitraum-speichern",
+            "ausloeser": "Klick auf „Zeitraum speichern“ im Zeitraum-Dialog",
+            "wirkung": "Der Zeitraum der Abteilung wird gesetzt und gilt für ihre Unterknoten."
+          },
+          {
+            "element": "sicht-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ im Zustand error",
+            "wirkung": "Der Sichtbaum wird erneut abgefragt."
+          },
+          {
+            "element": "zurueck-zum-organigramm",
+            "ausloeser": "Klick auf „Organigramm“ in der Brotkrume",
+            "wirkung": "Das Organigramm erscheint wieder.",
+            "fuehrt_zu": "zurück (Organigramm)"
+          },
+          {
+            "element": "buchung-speichern",
+            "ausloeser": "Klick auf „Buchen“ im Dialog",
+            "wirkung": "Die Buchung entsteht im Haushalt auf dem gewählten Posten; bei „ungeplant“ auf dem Posten „Ungeplant · <Rubrik>“, der bei Bedarf entsteht."
+          },
+          {
+            "element": "freigabe-speichern",
+            "ausloeser": "Klick auf „Knoten freigeben“, Wahl des Knotens und „Freigeben“",
+            "wirkung": "Der Knoten und sein Teilbaum dürfen ab jetzt auf dieses Konto buchen."
+          },
+          {
+            "element": "freigabe-zuruecknehmen",
+            "ausloeser": "Klick auf „Zurücknehmen“ an einer Freigabe und Bestätigen in der Zeile",
+            "wirkung": "Der Knoten darf ab jetzt nicht mehr auf dieses Konto buchen; bestehende Buchungen bleiben."
+          },
+          {
+            "element": "filter-ungeplant",
+            "ausloeser": "Wahl von „ungeplant“ im Filter des Journals",
+            "wirkung": "Das Journal zeigt nur Buchungen auf Posten „Ungeplant“."
+          },
+          {
+            "element": "budget-oeffnen",
+            "ausloeser": "Klick auf die Budget-Angabe einer Zeile",
+            "wirkung": "Die Section Budgetplanung öffnet den Knoten der Buchung in seiner Sicht (Zeitraum oder Haushalt)."
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/bereichsbudget",
+        "titel": "Bereichsbudget",
+        "menuepfad": "Finance Hub → Reiter Bereichsbudget direkt nach Buchhaltung",
+        "menuepfad_offen": false,
+        "zweck": "Wie steht der Bereich im Zeitraum, was bleibt am Ende, wer trägt was, und was wurde beschlossen?",
+        "aktionen": [
+          {
+            "element": "finanzjahr-beginn-eingabe",
+            "ausloeser": "Auswahl von Tag und Monat „Finanzjahr beginnt am“",
+            "wirkung": "setzt den Beginn des Finanzjahrs des Vereins"
+          },
+          {
+            "element": "saisonjahr-beginn-eingabe",
+            "ausloeser": "Auswahl von Tag und Monat „Saisonjahr beginnt am“",
+            "wirkung": "setzt den Beginn des Saisonjahrs des Vereins"
+          },
+          {
+            "element": "finanzjahr-speichern",
+            "ausloeser": "Klick auf „Speichern“",
+            "wirkung": "speichert Beginn von Finanz- und Saisonjahr für den Verein"
+          },
+          {
+            "element": "finanzjahr-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Schließen",
+            "wirkung": "verwirft die Änderungen"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/buchhaltung-event-verknuepfung",
+        "titel": "Buchhaltungs-Tab — Event-Verknüpfung",
+        "menuepfad": "Finance Hub → Buchhaltung → Drill-Down bis zur Position oder zum Festival-Elternposten",
+        "menuepfad_offen": false,
+        "zweck": "Zu welchem Event gehört dieser Posten, stimmt das, und wie bringe ich es in Ordnung?",
+        "aktionen": [
+          {
+            "element": "konflikt-zur-position",
+            "ausloeser": "Klick auf „Zur Position“ an einer Positionszeile des Streifens",
+            "wirkung": "öffnet genau diese Position im Jahr ihres Plans — eine Leaf-Position mit ihrer Leaf-Ansicht, einen Elternposten mit seiner Teilposten-Tabelle; gesammelte Planwert-Änderungen werden vorher gesendet"
+          },
+          {
+            "element": "konflikt-erneut-pruefen",
+            "ausloeser": "Klick auf „Erneut prüfen“",
+            "wirkung": "fragt die Konfliktliste noch einmal an"
+          },
+          {
+            "element": "eventname-erneut-laden",
+            "ausloeser": "Klick auf „Erneut laden“ neben „Event: Name nicht abrufbar“",
+            "wirkung": "fragt die Eventauswahl des Vereins noch einmal an"
+          },
+          {
+            "element": "einkaufsliste-uebernehmen-oeffnen",
+            "ausloeser": "Klick auf „Aus Einkaufsliste übernehmen“",
+            "wirkung": "öffnet den bestehenden Einkaufslisten-Dialog (Vereins-Buchhaltung 09 §4.5)"
+          },
+          {
+            "element": "event-verknuepfen-oeffnen",
+            "ausloeser": "Klick auf „Verknüpfen“ (seit 04 für alle vier Arten)",
+            "wirkung": "öffnet die Auswahl von Event und Rolle für eine EVENT-Position oder einen EVENT-Elternposten ohne Event"
+          },
+          {
+            "element": "event-aendern-oeffnen",
+            "ausloeser": "Klick auf „Verknüpfung ändern“",
+            "wirkung": "öffnet die Auswahl mit dem aktuellen Event und der aktuellen Rolle, um umzuhängen oder die Rolle zu wechseln"
+          },
+          {
+            "element": "verknuepfung-loesen-oeffnen",
+            "ausloeser": "Klick auf „Verknüpfung lösen“",
+            "wirkung": "fragt vor dem Lösen der Verknüpfung nach; der Klick selbst ändert nichts"
+          },
+          {
+            "element": "zur-hauptposition",
+            "ausloeser": "Klick auf „Zur Hauptposition (Plan <Jahr>)“",
+            "wirkung": "öffnet die Hauptposition desselben Events im Jahr ihres Plans; gesammelte Planwert-Änderungen werden vorher gesendet"
+          },
+          {
+            "element": "event-auswahl",
+            "ausloeser": "Eingabe und Auswahl im Feld „Event“ (Suche über den Titel)",
+            "wirkung": "bestimmt das Event, mit dem die Position verknüpft werden soll"
+          },
+          {
+            "element": "rolle-auswahl",
+            "ausloeser": "Auswahl „Hauptposition“ oder „Vorverkauf“",
+            "wirkung": "legt fest, ob die Position der Posten des Eventjahrs ist oder der Vorverkauf im Plan davor"
+          },
+          {
+            "element": "verknuepfen-bestaetigen",
+            "ausloeser": "Klick auf „Verknüpfen“ bzw. „Speichern“, im abgeschlossenen Plan „Bestätigen und verknüpfen“ bzw. „Bestätigen und speichern“",
+            "wirkung": "verknüpft die Position mit dem gewählten Event in der gewählten Rolle oder hängt sie um; im abgeschlossenen Plan mit ausdrücklicher Bestätigung"
+          },
+          {
+            "element": "verknuepfen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Schließen des Dialogs",
+            "wirkung": "verwirft die Auswahl"
+          },
+          {
+            "element": "loesen-bestaetigen",
+            "ausloeser": "Klick auf „Verknüpfung lösen“, im abgeschlossenen Plan „Bestätigen und lösen“",
+            "wirkung": "löst die Verknüpfung; die Position bleibt ein Event-Posten ohne Event mit Rolle Hauptposition, keine Zahl ändert sich"
+          },
+          {
+            "element": "loesen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Schließen des Dialogs",
+            "wirkung": "bricht das Lösen ab"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/buchung-pruefungssicher",
+        "titel": "Buchungen eines Kontos — prüfungssicher",
+        "menuepfad": "Finance-Hub → Buchhaltung → Konto (Leaf-Ansicht aus A2)",
+        "menuepfad_offen": false,
+        "zweck": "Was ist auf diesem Konto gebucht, ist es fertig und belegt — und wie korrigiere ich es richtig?",
+        "aktionen": [
+          {
+            "element": "buchung-freigeben",
+            "ausloeser": "Klick auf „Freigeben“ unter dem Stand einer offenen Buchung",
+            "wirkung": "Die Buchung wird von einer zweiten Person freigegeben und damit festgeschrieben."
+          },
+          {
+            "element": "storno-oeffnen",
+            "ausloeser": "Klick auf „Stornieren“ im Zeilenmenü",
+            "wirkung": "Der Storno-Dialog öffnet sich; es wird nichts gesendet."
+          },
+          {
+            "element": "versionen-oeffnen",
+            "ausloeser": "Klick auf „Versionen“ im Zeilenmenü",
+            "wirkung": "Der Versionen-Dialog öffnet sich und lädt das Protokoll."
+          },
+          {
+            "element": "beleg-nachreichen-oeffnen",
+            "ausloeser": "Klick auf „Beleg nachreichen“ unter „fehlt“ oder im Zeilenmenü",
+            "wirkung": "Der Beleg-Dialog öffnet sich; es wird nichts gesendet."
+          },
+          {
+            "element": "buchungen-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Meldung des Zustands error",
+            "wirkung": "Die Buchungen der Position werden erneut abgerufen; geschrieben wird nichts."
+          },
+          {
+            "element": "zur-jahresuebersicht",
+            "ausloeser": "Klick auf „Zur Jahresübersicht“ im Kopf des Kontos oder im Satz des Zustands not_found",
+            "wirkung": "Die Jahresübersicht der Buchhaltung wird gezeigt; gesammelte Planwertänderungen werden vorher gesendet wie bei jedem Ebenenwechsel.",
+            "fuehrt_zu": "zurück (zur Jahresübersicht der Buchhaltung)"
+          },
+          {
+            "element": "buchung-erfassen",
+            "ausloeser": "Klick auf „Buchen“",
+            "wirkung": "Der Beleg wird hochgeladen, dann entsteht eine manuelle Buchung mit Nummer, Geldkonto und Beleg oder Eigenbeleg."
+          },
+          {
+            "element": "sphaere-aendern-oeffnen",
+            "ausloeser": "Klick auf „Sphäre ändern“",
+            "wirkung": "Der Sphären-Dialog öffnet sich; es wird nichts gesendet."
+          },
+          {
+            "element": "stornieren",
+            "ausloeser": "Klick auf „Stornieren“ im Dialog",
+            "wirkung": "Es entsteht eine Gegenbuchung mit umgekehrter Richtung auf demselben Konto und Geldkonto; die Buchung selbst bleibt unverändert."
+          },
+          {
+            "element": "storno-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zum Konto)"
+          },
+          {
+            "element": "versionen-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ im Dialog",
+            "wirkung": "Das Protokoll wird erneut abgerufen."
+          },
+          {
+            "element": "versionen-schliessen",
+            "ausloeser": "Klick auf „Schließen“ oder Escape",
+            "wirkung": "Der Dialog schließt.",
+            "fuehrt_zu": "zurück (zum Konto)"
+          },
+          {
+            "element": "beleg-anhaengen",
+            "ausloeser": "Klick auf „Beleg anhängen“",
+            "wirkung": "Die Datei wird in den Kontext finance_receipt des Plans hochgeladen und abgeschlossen, dann an die Buchung gehängt; die Buchung selbst ändert sich nicht."
+          },
+          {
+            "element": "beleg-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird angehängt.",
+            "fuehrt_zu": "zurück (zum Konto oder zum Prüferpaket)"
+          },
+          {
+            "element": "sphaere-speichern",
+            "ausloeser": "Klick auf „Sphäre ändern“ im Dialog",
+            "wirkung": "Die Position bekommt die gewählte Sphäre; keine Zahl ändert sich."
+          },
+          {
+            "element": "sphaere-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zum Konto)"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/buchungsdetail",
+        "titel": "Buchung im Detail",
+        "menuepfad": "Web-App → Buchung im Detail",
+        "menuepfad_offen": true,
+        "zweck": "Was ist mit dieser Buchung — und was ist jetzt zu tun?",
+        "aktionen": [
+          {
+            "element": "detail-oeffnen",
+            "ausloeser": "Klick auf die Journalnummer oder die Beschreibung einer Buchung in einer Liste der Buchhaltung (Kassenbericht, Kontenblatt, offene Punkte, Buchungen eines Knotens); nicht im Kontenblatt des Bereichsbudgets",
+            "wirkung": "Die Buchhaltung zeigt die Detailansicht dieser Buchung; die Liste bleibt als Rückweg gemerkt.",
+            "fuehrt_zu": "Detailansicht (diese Spezifikation)"
+          },
+          {
+            "element": "zurueck",
+            "ausloeser": "Klick auf „Zurück“ im Kopf der Detailansicht",
+            "wirkung": "Die Liste, aus der die Detailansicht geöffnet wurde, steht wieder da.",
+            "fuehrt_zu": "vorige Liste"
+          },
+          {
+            "element": "korrigieren",
+            "ausloeser": "Klick auf „Korrigieren“ in der Detailansicht",
+            "wirkung": "Der Korrektur-Dialog öffnet mit den Werten der Buchung."
+          },
+          {
+            "element": "korrektur-speichern",
+            "ausloeser": "Klick auf „Korrektur speichern“",
+            "wirkung": "Die Buchung wird geändert (PATCH mit nur den geänderten Feldern und dem Grund); eine offene Beanstandung wird CORRECTED; der Verlauf zeigt die neue Version."
+          },
+          {
+            "element": "korrektur-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Korrektur-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "stornieren",
+            "ausloeser": "Klick auf „Stornieren“ bzw. „Stornieren und neu buchen“",
+            "wirkung": "Die Buchung wird storniert (Gegenbuchung); eine offene Beanstandung wird REVERSED; auf Wunsch öffnet der Buchungsdialog mit vorbelegten Werten, der Posten ist wählbar."
+          },
+          {
+            "element": "uebertrag-stornieren",
+            "ausloeser": "Klick auf „Übertrag stornieren“",
+            "wirkung": "Der Dialog „Übertrag stornieren“ („Sektion Prüfung“) öffnet sich; stornieren nimmt beide Buchungen des Vorgangs zurück."
+          },
+          {
+            "element": "beleg-nachreichen",
+            "ausloeser": "Klick auf „Beleg nachreichen“",
+            "wirkung": "Der Beleg hängt an der Buchung; eine offene Beanstandung wird CORRECTED."
+          },
+          {
+            "element": "beanstanden",
+            "ausloeser": "Klick auf „Beanstanden“",
+            "wirkung": "Die Buchung trägt eine offene Beanstandung; Freigabe und Abschluss warten auf ihre Erledigung."
+          },
+          {
+            "element": "beanstandung-zurueckziehen",
+            "ausloeser": "Klick auf „Beanstandung zurückziehen“",
+            "wirkung": "Die Beanstandung wird WITHDRAWN und bleibt im Verlauf."
+          },
+          {
+            "element": "freigeben",
+            "ausloeser": "Klick auf „Freigeben“",
+            "wirkung": "Die Buchung ist freigegeben (zweite Person)."
+          },
+          {
+            "element": "event-oeffnen",
+            "ausloeser": "Klick auf „Zum Event“",
+            "wirkung": "Der Event-Hub öffnet dieses Event (Shortcut-System zwischen Hubs).",
+            "fuehrt_zu": "Event-Hub (Bestand)"
+          },
+          {
+            "element": "kassenbericht-korrigieren",
+            "ausloeser": "Klick auf „Korrigieren“ in der Zeile einer eigenen beanstandeten Buchung im Kassenbericht",
+            "wirkung": "Die Detailansicht der Buchung öffnet. Erlaubt allowed_actions.correct, öffnet der Korrektur-Dialog gleich mit; sonst ist „Stornieren und neu buchen“ hervorgehoben.",
+            "fuehrt_zu": "Detailansicht (diese Spezifikation)"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/budget-organigramm",
+        "titel": "Budget im Organigramm",
+        "menuepfad": "Web-App → Budget im Organigramm",
+        "menuepfad_offen": true,
+        "zweck": "Wie steht jeder Knoten des Organigramms im Rahmen — und wo muss nachgesteuert werden?",
+        "aktionen": [
+          {
+            "element": "plan-wahl",
+            "ausloeser": "Auswahl im Feld „Plan“",
+            "wirkung": "Das Organigramm zeigt den gewählten Vereinsplan; vorgewählt ist der Plan, dessen Zeitraum heute enthält."
+          },
+          {
+            "element": "knoten-aufklappen",
+            "ausloeser": "Klick auf den Pfeil vor einem Knoten mit Unterknoten",
+            "wirkung": "Die Unterknoten werden ein- oder ausgeblendet; Abteilungen mit Recht starten aufgeklappt."
+          },
+          {
+            "element": "knoten-oeffnen",
+            "ausloeser": "Klick auf den Namen eines Knotens",
+            "wirkung": "Die Knotenansicht mit Rahmen, Teilrahmen und Posten des Knotens öffnet sich."
+          },
+          {
+            "element": "abrechnung-oeffnen",
+            "ausloeser": "Klick auf „Abrechnung“",
+            "wirkung": "Die Abrechnung des Knotens mit Rahmenverlauf, Soll und Ist je Rubrik und je Unterknoten öffnet sich."
+          },
+          {
+            "element": "baum-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung des Organigramms",
+            "wirkung": "Das Organigramm wird erneut vom Finanzdienst abgerufen."
+          },
+          {
+            "element": "rahmen-aendern-oeffnen",
+            "ausloeser": "Klick auf „Rahmen ändern“ bzw. „Rahmen setzen“ am Kopf",
+            "wirkung": "Der Dialog für den Rahmen des Knotens öffnet sich."
+          },
+          {
+            "element": "teilrahmen-verteilen-oeffnen",
+            "ausloeser": "Klick auf „Teilrahmen“ im Kopf",
+            "wirkung": "Der Dialog zum Verteilen der Teilrahmen auf alle Unterknoten öffnet sich."
+          },
+          {
+            "element": "rubriken-oeffnen",
+            "ausloeser": "Klick auf „Rubriken“",
+            "wirkung": "Der Rubrikenkatalog der Abteilung öffnet sich."
+          },
+          {
+            "element": "posten-anlegen-oeffnen",
+            "ausloeser": "Klick auf „Posten“",
+            "wirkung": "Der Posten-Dialog öffnet sich leer mit dem Knoten vorbelegt."
+          },
+          {
+            "element": "posten-bearbeiten-oeffnen",
+            "ausloeser": "„Bearbeiten“ im Menü ⋮ eines Postens",
+            "wirkung": "Der Posten-Dialog öffnet sich vorbelegt."
+          },
+          {
+            "element": "posten-aufteilen-oeffnen",
+            "ausloeser": "„Aufteilen“ im Menü ⋮ eines Postens",
+            "wirkung": "Der Aufteilen-Dialog öffnet sich mit den bestehenden Unterposten."
+          },
+          {
+            "element": "posten-loeschen",
+            "ausloeser": "„Löschen“ im Menü ⋮ eines Postens",
+            "wirkung": "Der Posten wird mit seinen Unterposten aus dem Plan entfernt (weich gelöscht, 01 §4.5)."
+          },
+          {
+            "element": "zurueck-zum-organigramm",
+            "ausloeser": "Klick auf „Organigramm“ in der Brotkrume",
+            "wirkung": "Das Organigramm des Plans erscheint wieder.",
+            "fuehrt_zu": "zurück (Organigramm)"
+          },
+          {
+            "element": "knoten-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Knotenansicht",
+            "wirkung": "Die Knotenansicht wird erneut vom Finanzdienst abgerufen."
+          },
+          {
+            "element": "abrechnung-schliessen",
+            "ausloeser": "Klick auf „Zurück“ in der Brotkrume der Abrechnung",
+            "wirkung": "Die Ansicht vor der Abrechnung erscheint wieder.",
+            "fuehrt_zu": "zurück"
+          },
+          {
+            "element": "abrechnung-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Abrechnung",
+            "wirkung": "Die Abrechnung wird erneut vom Finanzdienst abgerufen."
+          },
+          {
+            "element": "stand-ablegen-oeffnen",
+            "ausloeser": "Klick auf „Stand ablegen“ rechts in der Brotkrume der Abrechnung",
+            "wirkung": "Der Dialog „Stand ablegen“ öffnet sich mit vorbelegter Bezeichnung."
+          },
+          {
+            "element": "stand-loeschen",
+            "ausloeser": "Klick auf „Löschen“ an einem Stand oder in der Meldung zur fehlenden Datei",
+            "wirkung": "Der Stand wird gelöscht und seine Datei weich entfernt."
+          },
+          {
+            "element": "staende-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Stände",
+            "wirkung": "Die Liste der Stände wird erneut abgerufen."
+          },
+          {
+            "element": "stand-ablegen-wiederholen",
+            "ausloeser": "Klick auf „Erneut ablegen“",
+            "wirkung": "Legt die bereits hochgeladene Datei ab, ohne sie ein zweites Mal hochzuladen."
+          },
+          {
+            "element": "stand-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Schließen des Dialogs",
+            "wirkung": "Schließt den Dialog; ist eine hochgeladene Datei nicht abgelegt, wird sie weich gelöscht."
+          },
+          {
+            "element": "rahmen-speichern",
+            "ausloeser": "Klick auf „Nachtrag speichern“ (aktiver Plan) oder „Rahmen speichern“ (Entwurf)",
+            "wirkung": "Der Rahmen des Knotens wird gesetzt; im aktiven Plan als Nachtrag mit Grund festgehalten."
+          },
+          {
+            "element": "rahmen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Rahmen-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "teilrahmen-speichern",
+            "ausloeser": "Klick auf „Teilrahmen speichern“",
+            "wirkung": "Für jeden geänderten Unterknoten wird der Rahmen gesetzt; im aktiven Plan als Nachtrag mit demselben Grund."
+          },
+          {
+            "element": "teilrahmen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Teilrahmen-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "posten-speichern",
+            "ausloeser": "Klick auf „Speichern“ im Posten-Dialog",
+            "wirkung": "Der Posten wird im Vereinsplan beim gewählten Knoten mit Rubrik angelegt oder geändert."
+          },
+          {
+            "element": "posten-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Posten-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "aufteilen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Aufteilen-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "rubrik-anlegen",
+            "ausloeser": "Klick auf „Rubrik“ mit Namenseingabe",
+            "wirkung": "Die Rubrik wird dem Katalog der Abteilung hinzugefügt."
+          },
+          {
+            "element": "rubrik-umbenennen",
+            "ausloeser": "Klick auf eine eigene Rubrik, Namen ändern, Enter",
+            "wirkung": "Die Rubrik heißt neu; alle Posten mit dieser Rubrik tragen den neuen Namen."
+          },
+          {
+            "element": "rubrik-loeschen",
+            "ausloeser": "Klick auf das Löschsymbol einer eigenen Rubrik",
+            "wirkung": "Die Rubrik wird aus dem Katalog entfernt."
+          },
+          {
+            "element": "rubriken-schliessen",
+            "ausloeser": "Klick auf „Fertig“ oder Escape im Rubriken-Dialog",
+            "wirkung": "Der Dialog schließt."
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/budget-saison",
+        "titel": "Saison in der Budgetplanung",
+        "menuepfad": "Web-App → Saison in der Budgetplanung",
+        "menuepfad_offen": true,
+        "zweck": "Wie steht jeder Knoten in seiner Saison — über die Haushaltsjahre hinweg, die sie berührt?",
+        "aktionen": [
+          {
+            "element": "sicht-umschalter",
+            "ausloeser": "Klick auf „Haushalt“ oder „Saison“ im Umschalter",
+            "wirkung": "Die Section zeigt den Haushaltsplan (Bestand) oder die Saison; bei Saison ersetzt die Saisonwahl die Planwahl."
+          },
+          {
+            "element": "saison-wahl",
+            "ausloeser": "Auswahl im Feld „Saison“",
+            "wirkung": "Kopf und Organigramm zeigen die gewählte Saison; vorgewählt ist die Saison, die heute enthält, sonst die jüngste."
+          },
+          {
+            "element": "haushalt-oeffnen",
+            "ausloeser": "Klick auf einen berührten Haushalt oder „Posten im Haushalt <Label>“ im Saisonkopf eines Knotens",
+            "wirkung": "Die Section wechselt in die Sicht Haushalt mit diesem Plan und, aus dem Saisonkopf, diesem Knoten."
+          },
+          {
+            "element": "saisonrahmen-oeffnen",
+            "ausloeser": "Klick auf „Saisonrahmen setzen“ am Saisonkopf oder in einer Kindzeile",
+            "wirkung": "Der Saisonrahmen-Dialog öffnet für diesen Knoten."
+          },
+          {
+            "element": "saisonrahmen-speichern",
+            "ausloeser": "Klick auf „Saisonrahmen speichern“",
+            "wirkung": "Der Saisonrahmen des Knotens wird gesetzt und als Version festgehalten."
+          },
+          {
+            "element": "saisonrahmen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape im Saisonrahmen-Dialog",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet."
+          },
+          {
+            "element": "vorschlag-uebernehmen",
+            "ausloeser": "Klick auf „Vorschlag übernehmen“ im Rahmen-Dialog des Haushalts",
+            "wirkung": "Das Betragsfeld des Rahmen-Dialogs zeigt den Vorschlag; gespeichert wird erst mit „Rahmen speichern“ bzw. „Nachtrag speichern“."
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/offene-punkte-und-struktur",
+        "titel": "Offene Punkte und Struktur",
+        "menuepfad": "Web-App → Offene Punkte und Struktur",
+        "menuepfad_offen": true,
+        "zweck": "Was ist in der Buchhaltung offen, und wie verteilt sich das Geld über den Verein?",
+        "aktionen": [
+          {
+            "element": "dashboard-offene-punkte-oeffnen",
+            "ausloeser": "Klick auf die Karte oder „Offene Punkte ansehen“",
+            "wirkung": "Die Buchhaltung öffnet mit der Ansicht „Offene Punkte“.",
+            "fuehrt_zu": "Buchhaltung, Ansicht Offene Punkte"
+          },
+          {
+            "element": "buchhaltung-ansicht",
+            "ausloeser": "Klick auf „Übersicht“, „Struktur“ oder „Offene Punkte“ im Kopf der Buchhaltung",
+            "wirkung": "Die Buchhaltung zeigt die gewählte Ansicht; Übersicht ist der Bestand."
+          },
+          {
+            "element": "offener-punkt-oeffnen",
+            "ausloeser": "Klick auf eine Zeile der offenen Punkte",
+            "wirkung": "Eine Buchung öffnet ihre Detailansicht, ein Kassenbericht seine Ansicht in der Buchhaltung.",
+            "fuehrt_zu": "Buchung im Detail („Buchung im Detail“) oder Kassenbericht (Bestand)"
+          },
+          {
+            "element": "umbuchung-bestaetigen",
+            "ausloeser": "Klick auf „Bestätigen“ an einem Punkt „Umbuchung zu bestätigen“",
+            "wirkung": "Die Umbuchung ist bestätigt und gebucht; der Punkt verschwindet."
+          },
+          {
+            "element": "umbuchung-ablehnen",
+            "ausloeser": "Klick auf „Ablehnen“ an einem Punkt „Umbuchung zu bestätigen“",
+            "wirkung": "Die Umbuchung ist abgelehnt; nichts wird gebucht; der Punkt verschwindet."
+          },
+          {
+            "element": "knoten-buchungen-oeffnen",
+            "ausloeser": "Klick auf einen Knoten in der Struktur",
+            "wirkung": "Unter dem Organigramm stehen die Buchungen des Teilbaums dieses Knotens."
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/pruefung",
+        "titel": "Sektion Prüfung",
+        "menuepfad": "Finance-Hub → Seitenleiste Überblick → Prüfung",
+        "menuepfad_offen": false,
+        "zweck": "Was sieht ein Prüfer in diesem Plan, und was fehlt noch?",
+        "aktionen": [
+          {
+            "element": "plan-waehlen",
+            "ausloeser": "Auswahl eines Plans in der Planwahl rechts im Kopf",
+            "wirkung": "Die Sektion zeigt den gewählten Plan; jeder Reiter lädt seine Daten für ihn."
+          },
+          {
+            "element": "reiter-wechseln",
+            "ausloeser": "Klick auf „Journal“, „Kasse & Konten“, „Sphären“ oder „Prüferpaket“",
+            "wirkung": "Der gewählte Reiter wird gezeigt; der Hub merkt ihn sich für den nächsten Besuch."
+          },
+          {
+            "element": "plaene-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Meldung des Rahmens",
+            "wirkung": "Die Pläne des Vereins werden erneut abgerufen."
+          },
+          {
+            "element": "zur-buchhaltung",
+            "ausloeser": "Klick auf „Zur Buchhaltung“ im Leersatz des Rahmens",
+            "wirkung": "Die Sektion Buchhaltung öffnet sich, dort beginnt der erste Plan.",
+            "fuehrt_zu": "wechselnd (Sektion Buchhaltung des Hubs)"
+          },
+          {
+            "element": "journal-filtern",
+            "ausloeser": "Klick auf „Alle“, „Ohne Beleg“ oder „Spät erfasst“, auf „Ohne Beleg zeigen“ oder „Spät erfasste zeigen“ im Streifen, oder Änderung von „Von“ und „Bis“",
+            "wirkung": "Das Journal wird mit Zeitraum und Filter ab Nummer 1 neu abgerufen."
+          },
+          {
+            "element": "journal-weitere-laden",
+            "ausloeser": "Klick auf „Weitere 200 laden“",
+            "wirkung": "Die nächsten 200 Buchungen werden abgerufen und unten angehängt."
+          },
+          {
+            "element": "journal-zur-buchung",
+            "ausloeser": "Klick auf eine Zeile des Journals",
+            "wirkung": "Die Buchhaltung öffnet das Konto der Buchung und hebt die Buchung hervor.",
+            "fuehrt_zu": "„Buchungen eines Kontos — prüfungssicher“"
+          },
+          {
+            "element": "journal-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Meldung des Journals",
+            "wirkung": "Die erste Seite des Journals wird erneut abgerufen."
+          },
+          {
+            "element": "geldkonto-anlegen-oeffnen",
+            "ausloeser": "Klick auf „Geldkonto“ im Kopf des Abgleichs oder im Leersatz",
+            "wirkung": "Der Dialog „Neues Geldkonto“ öffnet sich."
+          },
+          {
+            "element": "auszug-eintragen-oeffnen",
+            "ausloeser": "Klick auf „Auszug eintragen“ (Bank, Zahlungsanbieter) oder „Anfangsbestand“ (Kasse) in einer Zeile des Abgleichs",
+            "wirkung": "Der Dialog für Anfangsbestand und Auszug öffnet sich; bei einer Kasse ohne die Felder des Auszugs; bei einem abgeleiteten Anfangsbestand mit Stichtag und Anfangsbestand nur zum Lesen."
+          },
+          {
+            "element": "kassenbuch-konto-waehlen",
+            "ausloeser": "Auswahl in „Konto“ über dem Kassenbuch oder Klick auf „Kassenbuch“ in einer Zeile des Abgleichs",
+            "wirkung": "Das Kontobuch des gewählten Kontos wird abgerufen."
+          },
+          {
+            "element": "kassenbuch-monat-waehlen",
+            "ausloeser": "Auswahl in „Monat“ über dem Kassenbuch",
+            "wirkung": "Das geladene Kontobuch zeigt nur die Tage des gewählten Monats; die Anfangszeile nennt den Bestand davor."
+          },
+          {
+            "element": "kasse-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Meldung des Reiters",
+            "wirkung": "Abgleich und Kontobuch werden erneut abgerufen."
+          },
+          {
+            "element": "geldkonto-anlegen",
+            "ausloeser": "Klick auf „Anlegen“ im Dialog",
+            "wirkung": "Ein neues Geldkonto des Vereins entsteht; ab jetzt verlangt jede neue manuelle Buchung ein Geldkonto."
+          },
+          {
+            "element": "geldkonto-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zum Reiter Kasse & Konten)"
+          },
+          {
+            "element": "geld-umbuchen-oeffnen",
+            "ausloeser": "Klick auf „Geld umbuchen“ im Kopf der Karte „Abgleich der Geldkonten“",
+            "wirkung": "Der Dialog „Geld umbuchen“ öffnet sich."
+          },
+          {
+            "element": "uebertraege-konto-filter",
+            "ausloeser": "Wahl in „Konto: Alle | <Konto>“ im Kopf der Karte",
+            "wirkung": "Die Liste zeigt nur Überträge von oder nach dem gewählten Konto."
+          },
+          {
+            "element": "uebertrag-stornieren-oeffnen",
+            "ausloeser": "Klick auf „Stornieren“ in einer Zeile der Karte oder auf die Übertragszeile im Kassenbuch",
+            "wirkung": "Der Dialog „Übertrag stornieren“ öffnet sich."
+          },
+          {
+            "element": "uebertraege-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Karte",
+            "wirkung": "Die Überträge werden erneut abgerufen."
+          },
+          {
+            "element": "geld-umbuchen",
+            "ausloeser": "Klick auf „Umbuchen“ im Dialog",
+            "wirkung": "Zwei Buchungen auf „Geldtransit“ — Ausgabe am Von-Konto, Einnahme am Nach-Konto — als ein Übertrag."
+          },
+          {
+            "element": "geld-umbuchen-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zum Reiter Kasse & Konten)"
+          },
+          {
+            "element": "uebertrag-stornieren",
+            "ausloeser": "Klick auf „Stornieren“ im Dialog",
+            "wirkung": "Beide Buchungen des Übertrags werden gegengebucht; der Übertrag steht auf „Storniert“."
+          },
+          {
+            "element": "uebertrag-storno-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zur Karte, zum Kassenbuch oder zum Detail)"
+          },
+          {
+            "element": "anfangsbestand-speichern",
+            "ausloeser": "Klick auf „Speichern“ im Dialog",
+            "wirkung": "Anfangsbestand und Auszug des Kontos für diesen Plan werden gespeichert; Abgleich und Kassenbuch rechnen neu."
+          },
+          {
+            "element": "anfangsbestand-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gesendet.",
+            "fuehrt_zu": "zurück (zum Reiter Kasse & Konten)"
+          },
+          {
+            "element": "sphaere-zuordnen",
+            "ausloeser": "Auswahl in „Sphäre wählen“ in einer Zeile der Tabelle",
+            "wirkung": "Die Position bekommt die gewählte Sphäre; die Zeile verschwindet aus der Tabelle, die Kacheln rechnen neu."
+          },
+          {
+            "element": "sphaeren-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in der Meldung des Reiters",
+            "wirkung": "Der Bericht nach Sphären wird erneut abgerufen."
+          },
+          {
+            "element": "export-erstellen-oeffnen",
+            "ausloeser": "Klick auf „Export erstellen“ im Kopf der Export-Karte",
+            "wirkung": "Der Dialog „Export für die Betriebsprüfung“ öffnet sich."
+          },
+          {
+            "element": "export-herunterladen",
+            "ausloeser": "Klick auf „Herunterladen“ in der Zeile eines Stands",
+            "wirkung": "Die gespeicherten Bytes des Stands werden abgerufen und als ZIP gespeichert; die Oberfläche vergleicht die Prüfsumme mit dem sha256 des Stands aus AuditExportRead (die Kopfzeile X-Content-SHA256 gibt der Dienst per CORS nicht frei)."
+          },
+          {
+            "element": "ohne-beleg-nachreichen",
+            "ausloeser": "Klick auf „Beleg nachreichen“ in einer Zeile",
+            "wirkung": "Der Beleg-Dialog der Buchung öffnet sich über dem Prüferpaket; nach dem Anhängen verschwindet die Zeile aus der Liste."
+          },
+          {
+            "element": "ohne-beleg-alle-zeigen",
+            "ausloeser": "Klick auf „Alle zeigen“ unter der Liste",
+            "wirkung": "Alle Buchungen ohne Beleg und darunter die Eigenbelege mit Begründung werden gezeigt."
+          },
+          {
+            "element": "verfahrensdoku-bearbeiten-oeffnen",
+            "ausloeser": "Klick auf „Bearbeiten“ in der Karte Verfahrensdokumentation",
+            "wirkung": "Der Dialog „Vereinsteil — neue Fassung“ öffnet sich."
+          },
+          {
+            "element": "verfahrensdoku-pdf",
+            "ausloeser": "Klick auf „Als PDF“ in der Karte Verfahrensdokumentation",
+            "wirkung": "Im Browser entsteht ein PDF aus Systemteil und aktueller Fassung des Vereinsteils; leere Abschnitte stehen als „noch nicht beschrieben“."
+          },
+          {
+            "element": "verfahrensdoku-fruehere",
+            "ausloeser": "Klick auf „Frühere Fassungen“ und dann auf eine Fassung",
+            "wirkung": "Die gewählte Fassung wird abgerufen und als PDF mit dem heutigen Systemteil erzeugt."
+          },
+          {
+            "element": "prueferpaket-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ in einer Karte des Prüferpakets",
+            "wirkung": "Die Daten der Karte werden erneut abgerufen."
+          },
+          {
+            "element": "export-erstellen",
+            "ausloeser": "Klick auf „Export erstellen“ im Dialog",
+            "wirkung": "Der Dienst baut den Export nach dem Beschreibungsstandard und speichert ihn als unveränderlichen Stand."
+          },
+          {
+            "element": "export-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird erstellt.",
+            "fuehrt_zu": "zurück (zum Prüferpaket)"
+          },
+          {
+            "element": "verfahrensdoku-speichern",
+            "ausloeser": "Klick auf „Als Fassung <n> speichern“",
+            "wirkung": "Eine neue Fassung des Vereinsteils wird gespeichert; frühere bleiben unverändert."
+          },
+          {
+            "element": "verfahrensdoku-neu-laden",
+            "ausloeser": "Klick auf „Neu laden“ im Satz des Zustands conflict",
+            "wirkung": "Die neueste Fassung wird abgerufen; die eigenen Eingaben bleiben daneben sichtbar."
+          },
+          {
+            "element": "verfahrensdoku-abbrechen",
+            "ausloeser": "Klick auf „Abbrechen“ oder Escape",
+            "wirkung": "Der Dialog schließt, nichts wird gespeichert.",
+            "fuehrt_zu": "zurück (zum Prüferpaket)"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finance/uebersicht-nach-organigramm",
+        "titel": "Übersicht nach Organigramm",
+        "menuepfad": "Web-App → Übersicht nach Organigramm",
+        "menuepfad_offen": true,
+        "zweck": "Die Jahresübersicht zeigt die Konten des Haushalts gegliedert nach dem Organigramm, mit Einnahmen und Ausgaben als zwei Seiten und Veranstaltungen mit Ergebnis.",
+        "aktionen": [
+          {
+            "element": "knoten-aufklappen",
+            "ausloeser": "Klick auf eine Knotenzeile oder ihren Pfeil",
+            "wirkung": "Unter der Zeile erscheinen die eigenen Konten des Knotens auf zwei Seiten und seine Veranstaltungen; ein zweiter Klick klappt zu. Unterknoten stehen darunter, wenn der Knoten aufgeklappt ist."
+          },
+          {
+            "element": "alle-aufklappen",
+            "ausloeser": "Klick auf „Alle aufklappen“ im Kopf der Karte",
+            "wirkung": "Alle Knoten des Baums klappen auf."
+          },
+          {
+            "element": "alle-zuklappen",
+            "ausloeser": "Klick auf „Zuklappen“ im Kopf der Karte",
+            "wirkung": "Alle Knoten klappen zu; die Knoten der obersten Ebene bleiben als Zeilen sichtbar."
+          },
+          {
+            "element": "konten-ansicht-wechseln",
+            "ausloeser": "Umschalter „Plan / Ist | Nur Ist“ im Kopf der Karte",
+            "wirkung": "Nur Ist blendet die Planzahlen und Abweichungen aus: in Knotenzeilen „von <Plan>“, auf den Seiten die Spalte Plan."
+          },
+          {
+            "element": "knoten-position-anlegen",
+            "ausloeser": "Klick auf „Position für <Knoten>“ im Leersatz eines aufgeklappten Knotens",
+            "wirkung": "Der bestehende Dialog „Position“ öffnet sich mit der Abteilung des Knotens vorgewählt; bei einer Mannschaft mit ihrer Abteilung (der Dialog kennt keine Mannschaften), beim Verein „vereinsweit“."
+          },
+          {
+            "element": "baum-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Karte",
+            "wirkung": "Baum und Positionen werden erneut abgerufen."
+          },
+          {
+            "element": "sicht-wechseln",
+            "ausloeser": "Umschalter „Nach Rubrik | Nach Seite“ im Kopf der Karte",
+            "wirkung": "Die Karte zeigt die gewählte Sicht; die Wahl wird je Verein im Browser gemerkt."
+          },
+          {
+            "element": "buchungen-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ in der Störung der Buchungen eines Kontos",
+            "wirkung": "Die Buchungen dieses Kontos werden erneut abgerufen."
+          },
+          {
+            "element": "weitere-buchungen",
+            "ausloeser": "Klick auf „Weitere <n> Buchungen“ unter den ersten 20",
+            "wirkung": "Alle Buchungen des Kontos stehen in der Liste."
+          },
+          {
+            "element": "veranstaltung-zurueck",
+            "ausloeser": "Klick auf „Konten nach Organigramm“ oder den Knotennamen in der Krume",
+            "wirkung": "Der Baum erscheint wieder mit demselben Klappzustand.",
+            "fuehrt_zu": "zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/finanzen/belegerfassung",
+        "titel": "Belegerfassung im Finance-Hub",
+        "menuepfad": "Web-App → Belegerfassung im Finance-Hub",
+        "menuepfad_offen": true,
+        "zweck": "Der Arbeitsplatz des Kassiers für alles, was als Beleg hereinkommt: zuordnen, buchen, Auslagen anerkennen und ausgleichen.",
+        "aktionen": [
+          {
+            "element": "zur-buchhaltung",
+            "ausloeser": "Klick auf „Zur Buchhaltung“",
+            "wirkung": "Wechsel in den Bereich Buchhaltung des Finance-Hubs.",
+            "fuehrt_zu": "Finance-Hub, Bereich Buchhaltung"
+          },
+          {
+            "element": "ohne-beleg-ansehen",
+            "ausloeser": "Klick auf „<N> Buchungen ohne Beleg ansehen“",
+            "wirkung": "Wechsel in die Buchhaltung, Offene Punkte gefiltert auf fehlende Belege.",
+            "fuehrt_zu": "Finance-Hub, Buchhaltung › Offene Punkte (fehlende Belege)"
+          },
+          {
+            "element": "meine-auslagen-oeffnen",
+            "ausloeser": "Klick auf „Meine Auslagen“",
+            "wirkung": "Wechsel in „Mein Bereich“ › Meine Auslagen des Vereins.",
+            "fuehrt_zu": "„Meine Auslagen (Web)“"
+          },
+          {
+            "element": "belege-hochladen",
+            "ausloeser": "Klick auf „Belege hochladen“ oder mobil der Kamera-Knopf der Hub-Hülle",
+            "wirkung": "Jede Datei wird in den Beleg-Eingang geladen und als Eingangsbeleg RECEIPT angelegt; die Analyse startet im Hintergrund."
+          },
+          {
+            "element": "eingang-neu-laden",
+            "ausloeser": "Klick auf „Erneut laden“ im Störungskasten",
+            "wirkung": "Liste und Kennzahlen werden neu abgerufen."
+          },
+          {
+            "element": "hier-anhaengen",
+            "ausloeser": "Klick auf „Hier anhängen“ an einem Kandidaten",
+            "wirkung": "Die Datei wird in den Plan der Buchung umgehängt und dort als Beleg angehängt; der Eingangsbeleg ist erledigt."
+          },
+          {
+            "element": "doch-neu-buchen",
+            "ausloeser": "Klick auf „Doch neu buchen“",
+            "wirkung": "Das Detail zeigt statt der Kandidaten den Entwurf (K2)."
+          },
+          {
+            "element": "buchung-anlegen",
+            "ausloeser": "Klick auf „Buchung anlegen“ im Entwurf",
+            "wirkung": "Eine manuelle Buchung mit dem Beleg entsteht; sie wartet auf die Freigabe einer zweiten Person."
+          },
+          {
+            "element": "auslage-anerkennen",
+            "ausloeser": "Klick auf „Anerkennen“",
+            "wirkung": "Der Anspruch ist anerkannt und steht in „Offene Erstattungen“; gebucht wird noch nichts."
+          },
+          {
+            "element": "beleg-ablehnen",
+            "ausloeser": "Klick auf „Ablehnen …“",
+            "wirkung": "Der Eingangsbeleg ist abgelehnt; die Datei bleibt als Nachweis im Eingang, das Mitglied kann nicht mehr zurückziehen."
+          },
+          {
+            "element": "event-aendern",
+            "ausloeser": "Klick auf die Event-Marke oder „Event angeben“ im Detail",
+            "wirkung": "Das Event des Belegs wird gesetzt, geändert oder entfernt; Kandidaten und Postenwahl richten sich neu danach."
+          },
+          {
+            "element": "noch-einmal-lesen",
+            "ausloeser": "Klick auf „Noch einmal lesen“",
+            "wirkung": "Der Beleg geht zurück in „Wird gelesen …“; das Ergebnis ersetzt das vorige."
+          },
+          {
+            "element": "ausgleich-oeffnen",
+            "ausloeser": "Klick auf „Ausgleichen“ in einer Zeile der offenen Erstattungen",
+            "wirkung": "Der Ausgleichsdialog öffnet sich, vorbelegt nach Wunschweg."
+          },
+          {
+            "element": "iban-kopieren",
+            "ausloeser": "Klick auf „Kopieren“ neben der Bankverbindung",
+            "wirkung": "Die IBAN liegt in der Zwischenablage für das Banking des Kassiers."
+          },
+          {
+            "element": "ausgleich-buchen",
+            "ausloeser": "Klick auf „Ausgleich buchen“",
+            "wirkung": "Die Quittung wird in den Plan des Tages umgehängt und eine Ausgabe mit ihr gebucht; der Anspruch ist ausgeglichen, das Mitglied wird benachrichtigt."
+          }
+        ]
+      }
+    ],
+    "event": [
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-anmeldung",
+        "titel": "Abschnitt „Dabei sein\"",
+        "menuepfad": "Web-App → Abschnitt „Dabei sein\"",
+        "menuepfad_offen": true,
+        "zweck": "Sich anmelden — offen für alle oder nur mit Einladung.",
+        "aktionen": [
+          {
+            "element": "begleitpersonen",
+            "ausloeser": "Ändern der Zahl der Begleitpersonen",
+            "wirkung": "setzt, wie viele mitkommen"
+          },
+          {
+            "element": "anmelden",
+            "ausloeser": "Klick auf die Anmeldung",
+            "wirkung": "meldet an — mit Begleitpersonen und, falls vorhanden, dem Einladungsmerkmal"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-bereiche",
+        "titel": "Abschnitt „Auf dem Fest\"",
+        "menuepfad": "Web-App → Abschnitt „Auf dem Fest\"",
+        "menuepfad_offen": true,
+        "zweck": "Was gibt es auf dem Gelände — Bühnen, Stände, Treffpunkte?",
+        "aktionen": [
+          {
+            "element": "zum-bereich",
+            "ausloeser": "Klick auf eine Bereichskarte",
+            "wirkung": "öffnet die Bereichsseite",
+            "fuehrt_zu": "„Bereich (öffentlich)“"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-gaestefeed",
+        "titel": "Abschnitt „Momente\"",
+        "menuepfad": "Web-App → Abschnitt „Momente\"",
+        "menuepfad_offen": true,
+        "zweck": "Was Gäste vom Fest zeigen und erzählen.",
+        "aktionen": [
+          {
+            "element": "beitragen-oeffnen",
+            "ausloeser": "Klick auf den Beitragsknopf",
+            "wirkung": "öffnet die Eingabe für einen Gästebeitrag"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-galerie",
+        "titel": "Abschnitt „Galerie\"",
+        "menuepfad": "Web-App → Abschnitt „Galerie\"",
+        "menuepfad_offen": true,
+        "zweck": "Die Bilder vom Fest.",
+        "aktionen": [
+          {
+            "element": "bild-oeffnen",
+            "ausloeser": "Klick auf ein Bild",
+            "wirkung": "öffnet die Grossansicht"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-gelaendeplan",
+        "titel": "Abschnitt „Geländeplan\"",
+        "menuepfad": "Web-App → Abschnitt „Geländeplan\"",
+        "menuepfad_offen": true,
+        "zweck": "Wo ist was — und wo sitze ich?",
+        "aktionen": [
+          {
+            "element": "plan-waehlen",
+            "ausloeser": "Wahl eines Plans",
+            "wirkung": "zeigt diesen Plan"
+          },
+          {
+            "element": "zone-oeffnen",
+            "ausloeser": "Klick auf eine Zone mit eigenem Detailplan",
+            "wirkung": "zeigt den Detailplan dieser Zone"
+          },
+          {
+            "element": "gastsuche",
+            "ausloeser": "Wahl eines Gastes in der Suche",
+            "wirkung": "hebt dessen Zone hervor und markiert die zugehörigen Tische"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-news",
+        "titel": "Abschnitt „Aktuelles\"",
+        "menuepfad": "Web-App → Abschnitt „Aktuelles\"",
+        "menuepfad_offen": true,
+        "zweck": "Was gibt es Neues zur Veranstaltung?",
+        "aktionen": [
+          {
+            "element": "beitrag-aufklappen",
+            "ausloeser": "Klick auf eine Beitragskarte",
+            "wirkung": "klappt den vollen Text auf"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-programm",
+        "titel": "Abschnitt „Programm\"",
+        "menuepfad": "Web-App → Abschnitt „Programm\"",
+        "menuepfad_offen": true,
+        "zweck": "Was findet wann statt?",
+        "aktionen": [
+          {
+            "element": "punkt-oeffnen",
+            "ausloeser": "Klick auf einen Programmpunkt",
+            "wirkung": "öffnet die Einzelheiten — Beschreibung und Partner"
+          },
+          {
+            "element": "punktverweis",
+            "ausloeser": "Klick auf den Verweis eines Programmpunkts",
+            "wirkung": "führt zum hinterlegten Ziel",
+            "fuehrt_zu": "wechselnd"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/abschnitt-uebersicht",
+        "titel": "Abschnitt „Entdecken\"",
+        "menuepfad": "Web-App → Abschnitt „Entdecken\"",
+        "menuepfad_offen": true,
+        "zweck": "Der Einstieg: Was läuft gerade, was kommt gleich, und — bei einem Fest — welche Tage gibt es?",
+        "aktionen": [
+          {
+            "element": "tag-waehlen",
+            "ausloeser": "Klick auf einen Festtag",
+            "wirkung": "öffnet die öffentliche Seite dieses Tages",
+            "fuehrt_zu": "„Öffentlicher Event-Hub“"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/bereich-arbeitsplatz",
+        "titel": "Planer — Arbeitsplatz eines Bereichs",
+        "menuepfad": "Web-App → Planer — Arbeitsplatz eines Bereichs",
+        "menuepfad_offen": true,
+        "zweck": "Kein eigener Abschnitt der Schiene, sondern eine Ebene tiefer: Wer in „Bereiche\" einen Arbeitsort öffnet, landet hier. Einbettung an genau einer Stelle — PlannerBereichePage.tsx:423.",
+        "aktionen": [
+          {
+            "element": "zurueck-zur-liste",
+            "ausloeser": "der Knopf „Zurück zu Bereiche-Liste\"",
+            "wirkung": "schliesst den Arbeitsplatz und zeigt wieder die Bereichsliste"
+          },
+          {
+            "element": "abschnitt-waehlen",
+            "ausloeser": "ein Eintrag der Schiene",
+            "wirkung": "wechselt den Inhalt rechts; die Wahl liegt beim Aufrufer"
+          },
+          {
+            "element": "einstellungen-speichern",
+            "ausloeser": "„Speichern\"",
+            "wirkung": "schreibt den Bereich; Zeiten nur, wenn er öffentlich ist, sonst werden beide auf leer gesetzt"
+          },
+          {
+            "element": "bereich-loeschen",
+            "ausloeser": "„Lösch-Job starten\" im rot umrandeten Block",
+            "wirkung": "reicht den Bereich an den Aufrufer weiter, der den Auftrag stellt"
+          },
+          {
+            "element": "verantwortliche-hinzufuegen",
+            "ausloeser": "„Hinzufügen\" nach Wahl eines Mitglieds",
+            "wirkung": "legt die Leitung an; die erste wird automatisch hauptverantwortlich"
+          },
+          {
+            "element": "hauptverantwortlich-setzen",
+            "ausloeser": "„Als Haupt setzen\" an einer Zeile",
+            "wirkung": "macht diese Leitung zur hauptverantwortlichen"
+          },
+          {
+            "element": "verantwortliche-entfernen",
+            "ausloeser": "das Papierkorb-Zeichen",
+            "wirkung": "entfernt die Leitung ohne Rückfrage"
+          },
+          {
+            "element": "team-zuweisen",
+            "ausloeser": "„Zuweisen\"",
+            "wirkung": "weist das gewählte Mitglied dem Bereich zu"
+          },
+          {
+            "element": "team-entfernen",
+            "ausloeser": "das Papierkorb-Zeichen",
+            "wirkung": "hebt die Zuweisung auf, ohne Rückfrage"
+          },
+          {
+            "element": "person-anlegen",
+            "ausloeser": "„Neue Person\" — oder der Eintrag im leeren Suchergebnis („Keine passende Person — lege unten eine neue an.\")",
+            "wirkung": "öffnet einen Dialog „Neue Person anlegen\"; nach dem Anlegen wird die Person sofort diesem Bereich zugewiesen"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/bereich-feed",
+        "titel": "Planer — Bereich: Live-Feed",
+        "menuepfad": "Web-App → Planer — Bereich: Live-Feed",
+        "menuepfad_offen": true,
+        "zweck": "Kurze Meldungen während des Fests, die zu diesem einen Arbeitsort gehören — „Bier alle\", „Auftritt verschiebt sich um zwanzig Minuten\". Es ist kein Beitragswesen, sondern ein Funkkanal.",
+        "aktionen": [
+          {
+            "element": "kategorie-waehlen",
+            "ausloeser": "eines der Merkzeichen über dem Feld",
+            "wirkung": "ordnet die Meldung einer Art zu (Voreinstellung „info\")"
+          },
+          {
+            "element": "anpinnen-vorwaehlen",
+            "ausloeser": "der Schalter neben den Kategorien",
+            "wirkung": "die Meldung wird beim Absenden gleich angepinnt"
+          },
+          {
+            "element": "absenden",
+            "ausloeser": "„Senden\"",
+            "wirkung": "schreibt die Meldung in den Kanal und leert das Feld"
+          },
+          {
+            "element": "beitrag-anpinnen",
+            "ausloeser": "das Pin-Zeichen an einer Meldung",
+            "wirkung": "pinnt sie an oder löst den Pin"
+          },
+          {
+            "element": "beitrag-loeschen",
+            "ausloeser": "das Papierkorb-Zeichen",
+            "wirkung": "entfernt die Meldung ohne Rückfrage"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/bereich-galerie",
+        "titel": "Planer — Bereich: Titelbild, Flyer und Galerie",
+        "menuepfad": "Web-App → Planer — Bereich: Titelbild, Flyer und Galerie",
+        "menuepfad_offen": true,
+        "zweck": "Alles Bildmaterial, das nur zu diesem Arbeitsort gehört: ein Titelbild, beliebig viele Flyer (auch PDF) und die Galerie. Je Datei wird hier entschieden, ob sie im öffentlichen Hub erscheint.",
+        "aktionen": [
+          {
+            "element": "alle-teilen",
+            "ausloeser": "„Alle teilen\"",
+            "wirkung": "öffnet die Bereichsauswahl für Titelbild und alle Flyer zusammen"
+          },
+          {
+            "element": "titelbild-hochladen",
+            "ausloeser": "der Knopf am Titelbild, oder eine Datei darauf ziehen",
+            "wirkung": "ersetzt das bisherige Titelbild"
+          },
+          {
+            "element": "titelbild-teilen",
+            "ausloeser": "der Teilen-Knopf am Titelbild",
+            "wirkung": "öffnet die Bereichsauswahl für dieses eine Bild"
+          },
+          {
+            "element": "titelbild-sichtbarkeit",
+            "ausloeser": "das Augen-Symbol",
+            "wirkung": "schaltet zwischen öffentlich und privat"
+          },
+          {
+            "element": "titelbild-loeschen",
+            "ausloeser": "das Papierkorb-Symbol",
+            "wirkung": "fragt nach und entfernt das Bild dann unwiderruflich"
+          },
+          {
+            "element": "titelbild-loesen",
+            "ausloeser": "„Von diesem Bereich lösen\"",
+            "wirkung": "nimmt dieses Bild aus diesem Bereich heraus, ohne es zu löschen"
+          },
+          {
+            "element": "flyer-hochladen",
+            "ausloeser": "der Knopf oder Ziehen auf die Ablage",
+            "wirkung": "lädt eine oder mehrere Dateien; die Bereichsfrage kommt auch hier vorher"
+          },
+          {
+            "element": "alle-flyer-teilen",
+            "ausloeser": "„Alle teilen\" im Kopf der Flyer-Ablage",
+            "wirkung": "wendet sämtliche Flyer auf die gewählten Bereiche an"
+          },
+          {
+            "element": "datei-sichtbarkeit",
+            "ausloeser": "das Augen-Symbol an einer Kachel",
+            "wirkung": "schaltet diese Datei öffentlich oder privat"
+          },
+          {
+            "element": "datei-loeschen",
+            "ausloeser": "das Papierkorb-Symbol",
+            "wirkung": "fragt nach („*Dateiname* wird unwiderruflich entfernt.\") und löscht dann"
+          },
+          {
+            "element": "vorschau",
+            "ausloeser": "ein Klick auf ein Bild",
+            "wirkung": "zeigt es gross, mit einem Schliessen-Zeichen"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/bereich-oeffentlich",
+        "titel": "Bereich (öffentlich)",
+        "menuepfad": "Web-App → Bereich (öffentlich)",
+        "menuepfad_offen": true,
+        "zweck": "Was gibt es an dieser Bühne, an diesem Stand, in diesem Zelt?",
+        "aktionen": [
+          {
+            "element": "bild-oeffnen",
+            "ausloeser": "Klick auf ein Bild oder einen Flyer",
+            "wirkung": "öffnet die Grossansicht"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/dj-gaesteseite",
+        "titel": "Musikwünsche (Gästeseite)",
+        "menuepfad": "Web-App → Musikwünsche (Gästeseite)",
+        "menuepfad_offen": true,
+        "zweck": "Einen Titel wünschen — oder dem Wunsch eines anderen zustimmen.",
+        "aktionen": [
+          {
+            "element": "suchen",
+            "ausloeser": "Tippen im Suchfeld",
+            "wirkung": "sucht im Titelkatalog"
+          },
+          {
+            "element": "hoerprobe",
+            "ausloeser": "Klick auf das Abspielzeichen eines Treffers",
+            "wirkung": "spielt die Hörprobe"
+          },
+          {
+            "element": "wunsch-anlegen",
+            "ausloeser": "Klick auf einen Katalogtreffer",
+            "wirkung": "legt den Wunsch an"
+          },
+          {
+            "element": "zustimmen",
+            "ausloeser": "Klick auf das Herz bei einem Wunsch",
+            "wirkung": "gibt eine Stimme oder nimmt sie zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/dj-verwaltung",
+        "titel": "DJ-Verwaltung",
+        "menuepfad": "Web-App → DJ-Verwaltung",
+        "menuepfad_offen": true,
+        "zweck": "Was die Gäste sich wünschen — und was davon gespielt wird.",
+        "aktionen": [
+          {
+            "element": "schalter-umlegen",
+            "ausloeser": "Umlegen eines der vier Schalter",
+            "wirkung": "speichert die Einstellung sofort"
+          },
+          {
+            "element": "als-gespielt-markieren",
+            "ausloeser": "Klick auf die Zusage bei einem Wunsch",
+            "wirkung": "markiert den Titel als gespielt"
+          },
+          {
+            "element": "wunsch-ablehnen",
+            "ausloeser": "Klick auf die Absage bei einem Wunsch",
+            "wirkung": "lehnt den Wunsch ab"
+          },
+          {
+            "element": "alles-zuruecksetzen",
+            "ausloeser": "Klick auf das Zurücksetzen",
+            "wirkung": "leert die Wunschliste des Festtags"
+          },
+          {
+            "element": "gaeste-code",
+            "ausloeser": "Klick auf den Code-Knopf",
+            "wirkung": "zeigt den Code, über den Gäste zur Wunschseite kommen"
+          },
+          {
+            "element": "zur-gaesteseite",
+            "ausloeser": "Klick auf „Gästeseite öffnen\"",
+            "wirkung": "zeigt, was die Gäste sehen",
+            "fuehrt_zu": "„Musikwünsche (Gästeseite)“"
+          },
+          {
+            "element": "zum-wiedergabemonitor",
+            "ausloeser": "Klick auf den Monitor-Weg",
+            "wirkung": "öffnet die Anzeige für den Bildschirm neben der DJ-Kabine",
+            "fuehrt_zu": "„Live-Monitor“"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/einstieg",
+        "titel": "Event-Einstieg",
+        "menuepfad": "Web-App → Event-Einstieg",
+        "menuepfad_offen": true,
+        "zweck": "Entscheiden, welche der fünf Event-Oberflächen jemand zu sehen bekommt.",
+        "aktionen": [
+          {
+            "element": "zum-oeffentlichen-hub",
+            "ausloeser": "Betreten des öffentlichen Eingangs bei zusammengesetzter Veranstaltung, ohne Anmeldung, oder über einen der vier Sonderwege",
+            "wirkung": "zeigt den immersiven öffentlichen Hub",
+            "fuehrt_zu": "„Öffentlicher Event-Hub“"
+          },
+          {
+            "element": "zur-schlanken-ansicht",
+            "ausloeser": "Betreten des öffentlichen Eingangs bei einer einfachen Veranstaltung, angemeldet",
+            "wirkung": "zeigt die schlanke Detailansicht im Vereinsgewand",
+            "fuehrt_zu": "„Termin — die Ansicht im Vereinsgewand“"
+          },
+          {
+            "element": "zum-planer",
+            "ausloeser": "Betreten des Verwaltungseingangs mit Berechtigung, bei zusammengesetzter Veranstaltung",
+            "wirkung": "zeigt den Event-Planer",
+            "fuehrt_zu": "„Event-Planer“"
+          },
+          {
+            "element": "zur-schlanken-verwaltung",
+            "ausloeser": "Betreten des Verwaltungseingangs mit Berechtigung, bei einfacher Veranstaltung",
+            "wirkung": "zeigt die schlanke Verwaltungsansicht",
+            "fuehrt_zu": "„Termin verwalten“"
+          },
+          {
+            "element": "umleitung-zum-elternteil",
+            "ausloeser": "Betreten des Verwaltungseingangs einer Kind-Veranstaltung",
+            "wirkung": "leitet zur Verwaltung des Elternteils um",
+            "fuehrt_zu": "„Event-Einstieg“"
+          },
+          {
+            "element": "umleitung-zum-helfer",
+            "ausloeser": "Betreten des Verwaltungseingangs ohne Verwaltungsrecht, aber mit Helfer-Zugang",
+            "wirkung": "leitet zum Helfer-Hub um",
+            "fuehrt_zu": "„Helfer-Hub“"
+          },
+          {
+            "element": "umleitung-zur-oeffentlichkeit",
+            "ausloeser": "Betreten eines geschützten Eingangs ohne Anmeldung, oder ohne Verwaltungsrecht und ohne Helfer-Zugang",
+            "wirkung": "leitet auf die öffentliche Seite um",
+            "fuehrt_zu": "„Öffentlicher Event-Hub“"
+          },
+          {
+            "element": "zum-helfer-hub",
+            "ausloeser": "Betreten des Helfer-Eingangs",
+            "wirkung": "zeigt den Helfer-Hub",
+            "fuehrt_zu": "„Helfer-Hub“"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/helfer-hub",
+        "titel": "Helfer-Hub",
+        "menuepfad": "Web-App → Helfer-Hub",
+        "menuepfad_offen": true,
+        "zweck": "Was habe ich zu tun, wann, und wo?",
+        "aktionen": [
+          {
+            "element": "abschnittswahl",
+            "ausloeser": "Klick auf einen der drei Abschnitte",
+            "wirkung": "zeigt dessen Inhalt"
+          },
+          {
+            "element": "veranstaltungsfilter",
+            "ausloeser": "Wahl einer Veranstaltung oder „alle\"",
+            "wirkung": "schränkt Schichten und Aufgaben auf einen Festtag ein"
+          },
+          {
+            "element": "phasenfilter",
+            "ausloeser": "Wahl einer Phase im Aufgabenabschnitt",
+            "wirkung": "zeigt nur Aufgaben dieser Phase"
+          },
+          {
+            "element": "zur-oeffentlichen-seite",
+            "ausloeser": "Klick auf den Weg zur öffentlichen Seite",
+            "wirkung": "verlässt den Helfer-Hub",
+            "fuehrt_zu": "„Öffentlicher Event-Hub“"
+          },
+          {
+            "element": "zum-planer",
+            "ausloeser": "Klick auf den Weg zur Planung",
+            "wirkung": "öffnet die Verwaltung der Veranstaltung",
+            "fuehrt_zu": "„Event-Einstieg“"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/live-monitor",
+        "titel": "Live-Monitor",
+        "menuepfad": "Web-App → Live-Monitor",
+        "menuepfad_offen": true,
+        "zweck": "Eine Fläche, die niemand bedient: Sie läuft auf einem Beamer oder Fernseher und zeigt, was gerade passiert — Gästebeiträge, Live-Ticker und die Musikwarteschlange. Dunkler Grund, grosse Schrift, automatischer Wechsel.",
+        "aktionen": [
+          {
+            "element": "darstellung-waehlen",
+            "ausloeser": "die Umschalter „Rotation\" und „Grid\"",
+            "wirkung": "wechselt zwischen einem grossen Beitrag und bis zu drei nebeneinander"
+          },
+          {
+            "element": "anzahl-waehlen",
+            "ausloeser": "die Marken 1, 2, 3, 5, 10 hinter der Aufschrift „Letzte\"",
+            "wirkung": "begrenzt, wie viele der neuesten Beiträge gezeigt werden"
+          },
+          {
+            "element": "vollbild-umschalten",
+            "ausloeser": "das Vollbildsymbol rechts",
+            "wirkung": "schaltet den Browser in den Vollbildmodus und zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/momente-seite",
+        "titel": "Momente-Seite",
+        "menuepfad": "Web-App → Momente-Seite",
+        "menuepfad_offen": true,
+        "zweck": "Ein Gast scannt einen Code am Tisch und will einen Moment teilen.",
+        "aktionen": [
+          {
+            "element": "beitragen",
+            "ausloeser": "Klick auf den Beitragsknopf — oben rechts oder schwebend",
+            "wirkung": "öffnet die Eingabe"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/oeffentlicher-hub",
+        "titel": "Öffentlicher Event-Hub",
+        "menuepfad": "Web-App → Öffentlicher Event-Hub",
+        "menuepfad_offen": true,
+        "zweck": "Die Veranstaltung so zeigen, wie Gäste sie sehen sollen — im Gewand der Veranstaltung, nicht der Plattform.",
+        "aktionen": [
+          {
+            "element": "zum-abschnitt",
+            "ausloeser": "Klick auf einen Eintrag der Schiene",
+            "wirkung": "rollt zum Abschnitt"
+          },
+          {
+            "element": "schiene-ausklappen",
+            "ausloeser": "Klick auf das Menüzeichen",
+            "wirkung": "öffnet die vollständige Abschnittsliste"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/offene-schichten",
+        "titel": "Offene Schichten",
+        "menuepfad": "Web-App → Offene Schichten",
+        "menuepfad_offen": true,
+        "zweck": "Wo werden noch Leute gebraucht — und wie trage ich mich ein?",
+        "aktionen": [
+          {
+            "element": "eintragen",
+            "ausloeser": "Klick auf den Eintragen-Knopf einer Zeile",
+            "wirkung": "trägt die eigene Person für die Schicht ein"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer",
+        "titel": "Event-Planer",
+        "menuepfad": "Web-App → Event-Planer",
+        "menuepfad_offen": true,
+        "zweck": "Der Arbeitsplatz für ein Fest. Er legt sich als eigene Ebene über die Anwendung (position: fixed, ganzer Bildschirm) und hält drei Dinge zusammen: die Kopfleiste mit Zustand und Aussenwegen, die Hierarchiekarte für den Festtag, und darunter Schiene plus den gewählten Abschnitt.",
+        "aktionen": [
+          {
+            "element": "nicht-gefunden-zurueck",
+            "ausloeser": "Knopf „Zurück zum Verein\"",
+            "wirkung": "verlässt den Planer und kehrt in den Vereinsbereich zurück"
+          },
+          {
+            "element": "zum-helfer-hub",
+            "ausloeser": "Knopf „Worker Hub\"",
+            "wirkung": "verlässt den Planer und zeigt die Helferoberfläche",
+            "fuehrt_zu": "„Helfer-Hub“"
+          },
+          {
+            "element": "public-vorschau",
+            "ausloeser": "Knopf „Public-Vorschau\"",
+            "wirkung": "öffnet die öffentliche Seite in einem neuen Fenster",
+            "fuehrt_zu": "„Öffentlicher Event-Hub“"
+          },
+          {
+            "element": "veroeffentlichen",
+            "ausloeser": "Knopf „Veröffentlichen\"",
+            "wirkung": "setzt die Veranstaltung auf bestätigt — und bei einem mehrtägigen Elternteil zusätzlich alle Festtage, die noch Entwurf sind"
+          },
+          {
+            "element": "festtage-nachziehen",
+            "ausloeser": "Knopf „Mit veröffentlichen\"",
+            "wirkung": "setzt alle Entwurfs-Festtage auf bestätigt"
+          },
+          {
+            "element": "suche",
+            "ausloeser": "Lupensymbol rechts in der Kopfleiste",
+            "wirkung": "keine — der Knopf trägt keine Rückmeldung und tut nichts"
+          },
+          {
+            "element": "benachrichtigungen",
+            "ausloeser": "Glockensymbol rechts in der Kopfleiste",
+            "wirkung": "keine — wie die Lupe ohne Rückmeldung und ohne Beschriftung"
+          },
+          {
+            "element": "gesamtes-fest-waehlen",
+            "ausloeser": "Kachel „Gesamtes Fest\" in der Hierarchiekarte",
+            "wirkung": "hebt die Wahl des Festtags auf; die Abschnitte arbeiten danach auf dem Elternteil"
+          },
+          {
+            "element": "festtag-waehlen",
+            "ausloeser": "eine der Tageskacheln",
+            "wirkung": "setzt den Festtag; die Abschnitte arbeiten danach auf diesem Kind"
+          },
+          {
+            "element": "bereiche-oeffnen",
+            "ausloeser": "Knopf „Bereiche\" über dem Inhalt",
+            "wirkung": "öffnet die Schiene als Schublade",
+            "fuehrt_zu": "„Planer-Schiene“"
+          },
+          {
+            "element": "zurueck-im-planer",
+            "ausloeser": "Knopf „Zurück zu {Bereich}\"",
+            "wirkung": "stellt Abschnitt, Festtag, Bereich und Unterbereich des vorigen Eintrags wieder her"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-anmeldungen",
+        "titel": "Planer — Teilnahme & Einladungen",
+        "menuepfad": "Web-App → Planer — Teilnahme & Einladungen",
+        "menuepfad_offen": true,
+        "zweck": "Wer sich angemeldet hat, wer eingeladen ist, wer noch antworten muss. Anmeldungen entstehen woanders (öffentlicher Auftritt); hier werden sie gesichtet, ihr Zustand geändert, ausgegeben — und Einladungen an Mitglieder verschickt.",
+        "aktionen": [
+          {
+            "element": "tag-filter",
+            "ausloeser": "eine der vier Marken „Alle Tage\", „Tag 1\", „Tag 2\", „Tag 3\"",
+            "wirkung": "keine. Der gewählte Wert wird ausschliesslich zur Einfärbung gelesen; die Anmeldungsliste kennt ihn nicht"
+          },
+          {
+            "element": "zustand-waehlen",
+            "ausloeser": "Auswahlfeld mit vier Werten — Alle, Bestätigt, Abgesagt, Nur Einladungen",
+            "wirkung": "filtert die Tabelle"
+          },
+          {
+            "element": "liste-ausgeben",
+            "ausloeser": "Knopf „CSV-Export\"",
+            "wirkung": "erzeugt eine Datei mit sechs Spalten aus der gefilterten Ansicht und lädt sie herunter"
+          },
+          {
+            "element": "mitglieder-einladen",
+            "ausloeser": "Knopf „Mitglieder einladen\"",
+            "wirkung": "öffnet den Dialog"
+          },
+          {
+            "element": "einladungen-senden",
+            "ausloeser": "Knopf im Dialog",
+            "wirkung": "legt je Mitglied eine Einladung an, dazu je Abteilung, Gruppe und Organ einen Sammelauftrag; leert danach die Auswahl und schliesst den Dialog"
+          },
+          {
+            "element": "zustand-aendern",
+            "ausloeser": "Aktionsschaltfläche an einer Anmeldezeile, dann Bestätigen oder Absagen",
+            "wirkung": "setzt den Zustand der Anmeldung"
+          },
+          {
+            "element": "externe-einladen",
+            "ausloeser": "Knopf „Externe einladen\" / „Einladen - mehrere Tage\"",
+            "wirkung": "keine. Der Knopf ist gesperrt"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-aufgaben",
+        "titel": "Planer — Aufgaben",
+        "menuepfad": "Web-App → Planer — Aufgaben",
+        "menuepfad_offen": true,
+        "zweck": "Aufgaben eines Festes planen und ihren Stand steuern — in drei Ansichten (Tafel, Zeitstrahl, Kalender), gefiltert nach Festphase, zugeordnet zu Arbeitsorten und Menschen.",
+        "aktionen": [
+          {
+            "element": "aufgabe-anlegen",
+            "ausloeser": "Knopf „Aufgabe hinzufügen\"",
+            "wirkung": "öffnet den Dialog, mit der gewählten Phase vorbelegt (in „Alle\" und „Ohne Phase\" bleibt sie leer)"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Leiste unter dem Kopf",
+            "wirkung": "schaltet den sichtbaren Datenbereich um; auch den Ladeweg — mit Auswahl drei Abrufe (Aufgaben, Zuweisungen, Kontext), ohne Auswahl zwei je Arbeitsort plus den Kontext"
+          },
+          {
+            "element": "phasenreiter",
+            "ausloeser": "fünf Reiter — Alle, Vorbereitung, Live, Nachbereitung, Ohne Phase",
+            "wirkung": "filtert Tafel, Zeitstrahl, Kalender und drei der vier Kacheln"
+          },
+          {
+            "element": "ansicht-umschalten",
+            "ausloeser": "drei Knöpfe — Board, Zeithorizont, Kalender",
+            "wirkung": "wechselt zwischen tafel, zeitleiste und kalender"
+          },
+          {
+            "element": "aufgabe-oeffnen",
+            "ausloeser": "Titel oder Knopf „Details\" an einer Karte, ein Eintrag auf dem Zeitstrahl, in einer Tagesgruppe oder im Kalender",
+            "wirkung": "ersetzt die ganze Fläche durch die Detailansicht („Aufgabe — Detailansicht“, eigene Spezifikation)"
+          },
+          {
+            "element": "aufgabe-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Karte",
+            "wirkung": "öffnet den Dialog mit den Werten dieser Aufgabe"
+          },
+          {
+            "element": "aufgabe-loeschen",
+            "ausloeser": "Papierkorb an einer Karte",
+            "wirkung": "löscht die Aufgabe sofort"
+          },
+          {
+            "element": "aufgabe-verschieben",
+            "ausloeser": "einer der zwei Statusknöpfe an einer Karte",
+            "wirkung": "setzt den Status"
+          },
+          {
+            "element": "aufgabe-speichern",
+            "ausloeser": "„Erstellen\" beziehungsweise „Speichern\"",
+            "wirkung": "legt die Aufgabe an oder aktualisiert sie"
+          },
+          {
+            "element": "mitglied-zuweisen",
+            "ausloeser": "zwei Wege — einen Menschen aus der Schiene auf eine Karte ziehen und ablegen, oder den Knopf „Zuweisen\" an der Karte",
+            "wirkung": "weist zu — und fügt den Menschen zugleich dem Arbeitsort hinzu, wenn er noch nicht dort war"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-bereiche",
+        "titel": "Planer — Bereiche",
+        "menuepfad": "Web-App → Planer — Bereiche",
+        "menuepfad_offen": true,
+        "zweck": "Arbeitsorte und Gewerke eines Fests anlegen — und als Rahmen für die Arbeit an einem einzelnen Ort dienen.",
+        "aktionen": [
+          {
+            "element": "arbeitsort-hinzufuegen",
+            "ausloeser": "Knopf im Kopf",
+            "wirkung": "öffnet den Anlege-Dialog"
+          },
+          {
+            "element": "naechster-schritt-oeffnen",
+            "ausloeser": "der Knopf im Schrittvorschlag",
+            "wirkung": "öffnet den Arbeitsplatz dieses Bereichs"
+          },
+          {
+            "element": "mitglied-zuweisen",
+            "ausloeser": "ein Auswahlfeld an der Karte; ein Klick auf ein Namenskürzel entfernt die Zuweisung wieder",
+            "wirkung": "weist einen Menschen diesem Arbeitsort zu beziehungsweise nimmt ihn heraus"
+          },
+          {
+            "element": "bereich-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Karte",
+            "wirkung": "öffnet den Dialog mit den Werten dieses Bereichs"
+          },
+          {
+            "element": "bereich-speichern",
+            "ausloeser": "der Bestätigungsknopf im Dialog",
+            "wirkung": "legt den Bereich an oder aktualisiert ihn"
+          },
+          {
+            "element": "kopieren-ausfuehren",
+            "ausloeser": "der Bestätigungsknopf im Kopier-Dialog",
+            "wirkung": "legt den Bereich in allen gewählten Festtagen an und überträgt, was angehakt ist; ein gleichnamiger Bereich wird wiederverwendet statt doppelt angelegt"
+          },
+          {
+            "element": "loeschen-ausfuehren",
+            "ausloeser": "Bestätigen im Löschdialog",
+            "wirkung": "stösst einen Auftrag an, der den Bereich samt verknüpfter Daten im Hintergrund entfernt; war er gerade geöffnet, kehrt die Fläche zur Übersicht zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-dashboard",
+        "titel": "Planer — Dashboard",
+        "menuepfad": "Web-App → Planer — Dashboard",
+        "menuepfad_offen": true,
+        "zweck": "Der Einstieg: Was steht an, wie weit ist das Fest, und wo geht es weiter.",
+        "aktionen": [
+          {
+            "element": "fokus-weitere",
+            "ausloeser": "ein Knopf an einer Empfehlung",
+            "wirkung": "springt in den genannten Abschnitt"
+          },
+          {
+            "element": "leitstand-blocker-aktion",
+            "ausloeser": "ein Knopf im Leitstand",
+            "wirkung": "springt in den betroffenen Abschnitt"
+          },
+          {
+            "element": "festtage-anlegen",
+            "ausloeser": "Knopf im leeren „Festtage im Blick\"",
+            "wirkung": "springt in den Abschnitt Festtage"
+          },
+          {
+            "element": "tageskarte-oeffnen",
+            "ausloeser": "eine Festtagszeile",
+            "wirkung": "wechselt auf diesen Festtag"
+          },
+          {
+            "element": "ansprechpartner-pflegen",
+            "ausloeser": "Knopf an der Kontakttafel",
+            "wirkung": "springt in den Abschnitt Kontakte"
+          },
+          {
+            "element": "direkt-arbeiten",
+            "ausloeser": "ein Eintrag der Werkzeugliste",
+            "wirkung": "springt in den Abschnitt"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-design-studio",
+        "titel": "Planer — Design-Studio",
+        "menuepfad": "Web-App → Planer — Design-Studio",
+        "menuepfad_offen": true,
+        "zweck": "Der Auftritt eines Festes: Farben, Schriften, Abstände, Titelbild, Flyer, die Reihenfolge der Blöcke im öffentlichen Hub und seine Texte. Alles wirkt auf denselben öffentlichen Auftritt.",
+        "aktionen": [
+          {
+            "element": "auftritt-speichern",
+            "ausloeser": "Knopf „Auftritt speichern\" im Kopf",
+            "wirkung": "legt den Auftritt an oder aktualisiert ihn"
+          },
+          {
+            "element": "public-preview-oeffnen",
+            "ausloeser": "Knopf „Public Preview\" im Kopf",
+            "wirkung": "öffnet den öffentlichen Auftritt in einem neuen Tab"
+          },
+          {
+            "element": "reiter-waehlen",
+            "ausloeser": "einer der sechs Reiter",
+            "wirkung": "tauscht den Inhaltsbereich aus"
+          },
+          {
+            "element": "stichworte",
+            "ausloeser": "Feld „Stichwort\" plus Knopf zum Hinzufügen",
+            "wirkung": "hängt ein Stichwort an; jedes erscheint als Marke mit Löschkreuz"
+          },
+          {
+            "element": "stil-berater",
+            "ausloeser": "Knopf im Reiter „Auftritt\"",
+            "wirkung": "schlägt aus Stimmung und Stichworten einen Satz Farben und Formwerte vor"
+          },
+          {
+            "element": "auftritt-entfernen",
+            "ausloeser": "Knopf im Reiter „Auftritt\", danach der Löschdialog",
+            "wirkung": "entfernt den Auftritt"
+          },
+          {
+            "element": "bildstil",
+            "ausloeser": "eine der Stilvorgaben",
+            "wirkung": "bestimmt die Anmutung der erzeugten Bilder"
+          },
+          {
+            "element": "anlage-hochladen",
+            "ausloeser": "Knopf „Hochladen\" an einer der beiden Karten",
+            "wirkung": "ersetzt das Bild durch eine eigene Datei"
+          },
+          {
+            "element": "anlage-erzeugen",
+            "ausloeser": "Knopf an einer der beiden Karten",
+            "wirkung": "erzeugt das Bild aus Stimmung, Stichworten, Stilvorgabe und Zusatzwunsch"
+          },
+          {
+            "element": "anlage-entfernen",
+            "ausloeser": "Papierkorb an einer der beiden Karten",
+            "wirkung": "löscht das Bild"
+          },
+          {
+            "element": "seitenaufbau-phase",
+            "ausloeser": "eine der Phasen (vor dem Fest, live, danach)",
+            "wirkung": "zeigt die Reihenfolge für genau diese Phase"
+          },
+          {
+            "element": "seitenaufbau-ordnen",
+            "ausloeser": "einen Block an seinem Griff ziehen",
+            "wirkung": "ändert die Reihenfolge im öffentlichen Hub"
+          },
+          {
+            "element": "seitenaufbau-ausblenden",
+            "ausloeser": "Schalter an einem Block",
+            "wirkung": "blendet ihn im öffentlichen Hub aus; sein Name erscheint durchgestrichen"
+          },
+          {
+            "element": "seitenaufbau-zuruecksetzen",
+            "ausloeser": "Knopf",
+            "wirkung": "stellt die Voreinstellung dieser Phase wieder her"
+          },
+          {
+            "element": "text-abschnitt",
+            "ausloeser": "einer der Abschnittsreiter",
+            "wirkung": "wählt den Hub-Abschnitt, dessen Texte bearbeitet werden"
+          },
+          {
+            "element": "text-phase",
+            "ausloeser": "eine der vier Phasen — vor dem Fest, live, danach, immer",
+            "wirkung": "wählt, für welche Phase der Text gilt"
+          },
+          {
+            "element": "text-zuruecksetzen",
+            "ausloeser": "Knopf im Reiter „Public-Texte\"",
+            "wirkung": "verwirft den eigenen Text für dieses Feld"
+          },
+          {
+            "element": "vorschau-groesse",
+            "ausloeser": "Umschalter Desktop / Mobil",
+            "wirkung": "ändert die Breite der Live-Vorschau"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-festtage",
+        "titel": "Planer — Festtage",
+        "menuepfad": "Web-App → Planer — Festtage",
+        "menuepfad_offen": true,
+        "zweck": "Die einzelnen Tage eines mehrtägigen Fests anlegen, ihre Bereitschaft ablesen und von dort in die Arbeit springen.",
+        "aktionen": [
+          {
+            "element": "anmeldelogik",
+            "ausloeser": "zwei Schaltflächen — „Einmal fürs Fest\" und „Pro Festtag\"",
+            "wirkung": "schreibt sofort am Gesamtfest, ohne Rückfrage"
+          },
+          {
+            "element": "tag-oeffnen",
+            "ausloeser": "vier Knöpfe je Karte — der vorgeschlagene nächste Schritt und die drei festen „Bereiche\", „Ablauf\", „Aufgaben\"",
+            "wirkung": "wechselt auf diesen Festtag und öffnet dort den genannten Abschnitt"
+          },
+          {
+            "element": "festtag-anlegen",
+            "ausloeser": "Knopf im Kopf oder im Leerzustand",
+            "wirkung": "öffnet den Dialog mit vorgeschlagenen Zeiten — eine Stunde nach dem Ende des letzten Tages, dann acht Stunden lang; ohne vorherigen Tag ab dem Beginn des Fests"
+          },
+          {
+            "element": "festtag-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Karte",
+            "wirkung": "öffnet denselben Dialog mit den Werten dieses Tages"
+          },
+          {
+            "element": "festtag-speichern",
+            "ausloeser": "„Hinzufügen\" beziehungsweise „Speichern\"",
+            "wirkung": "legt den Tag an oder aktualisiert ihn"
+          },
+          {
+            "element": "festtag-loeschen",
+            "ausloeser": "Papierkorb an einer Karte",
+            "wirkung": "löscht den Tag samt seiner Planung"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-gaeste-beitraege",
+        "titel": "Planer — Gäste-Beiträge",
+        "menuepfad": "Web-App → Planer — Gäste-Beiträge",
+        "menuepfad_offen": true,
+        "zweck": "Beiträge, die Gäste am Fest einstellen, prüfen: freigeben oder ausblenden.",
+        "aktionen": [
+          {
+            "element": "filter",
+            "ausloeser": "vier anklickbare Marken — Alle, Zur Prüfung, Veröffentlicht, Ausgeblendet",
+            "wirkung": "schränkt die Liste ein; die Voreinstellung ist „Alle\""
+          },
+          {
+            "element": "beitrag-freigeben",
+            "ausloeser": "Knopf „Freigeben\"",
+            "wirkung": "gibt den Beitrag frei und holt die Familie nach"
+          },
+          {
+            "element": "beitrag-ausblenden",
+            "ausloeser": "Knopf „Ausblenden\" an einem veröffentlichten Beitrag, „Ablehnen\" an einem noch nicht veröffentlichten",
+            "wirkung": "dieselbe Aktion in beiden Fällen — nur die Beschriftung wechselt"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-galerie",
+        "titel": "Planer — Galerie",
+        "menuepfad": "Web-App → Planer — Galerie",
+        "menuepfad_offen": true,
+        "zweck": "Bilder des Fests sammeln und je Bild entscheiden, ob es öffentlich erscheint.",
+        "aktionen": [
+          {
+            "element": "bilder-hochladen",
+            "ausloeser": "drei Wege — Knopf im Kopf, Knopf im Schrittvorschlag, Knopf im Leerzustand; dazu Ziehen und Ablegen auf das Raster",
+            "wirkung": "lädt die Dateien nacheinander hoch — die neuen Bilder sind zunächst privat"
+          },
+          {
+            "element": "sichtbarkeit-umschalten",
+            "ausloeser": "Augensymbol an einer Kachel",
+            "wirkung": "schaltet dieses eine Bild um"
+          },
+          {
+            "element": "bild-loeschen",
+            "ausloeser": "Papierkorb an einer Kachel",
+            "wirkung": "entfernt das Bild unwiderruflich"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-konfiguration",
+        "titel": "Planer — Konfiguration",
+        "menuepfad": "Web-App → Planer — Konfiguration",
+        "menuepfad_offen": true,
+        "zweck": "Modus, Sichtbarkeit, Anmeldung und aktive Werkzeuge des Fests — jede Sektion mit eigenem Speichern-Knopf.",
+        "aktionen": [
+          {
+            "element": "stammdaten-speichern",
+            "ausloeser": "der Speichern-Knopf dieser Karte",
+            "wirkung": "schreibt Titel, Zeitraum, Ort und Beschreibung"
+          },
+          {
+            "element": "sichtbarkeit-speichern",
+            "ausloeser": "der Speichern-Knopf dieser Karte",
+            "wirkung": "schreibt die Sichtbarkeit — unter Umgehung der Typprüfung"
+          },
+          {
+            "element": "anmeldung-speichern",
+            "ausloeser": "der Speichern-Knopf dieser Karte",
+            "wirkung": "sendet Frist, Höchstzahl und die Begleitpersonen-Regel — die der Dienst verwirft. Die Meldung sagt trotzdem „gespeichert\""
+          },
+          {
+            "element": "werkzeuge-speichern",
+            "ausloeser": "der Speichern-Knopf dieser Karte",
+            "wirkung": "schreibt das Merkmalsprofil"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-kontakte",
+        "titel": "Planer — Ansprechpartner",
+        "menuepfad": "Web-App → Planer — Ansprechpartner",
+        "menuepfad_offen": true,
+        "zweck": "Wer beim Fest ansprechbar ist — mit Rolle, Telefon, E-Mail, Zuordnung zu einem Arbeitsort, einer Dringlichkeitsstufe, Sichtbarkeit und freien Notizen. Ein Kontakt kann an ein Vereinsmitglied gebunden sein; dann kommen Name und Erreichbarkeit von dort.",
+        "aktionen": [
+          {
+            "element": "kontakt-anlegen",
+            "ausloeser": "Knopf „Ansprechpartner hinzufügen\" im Kopfbereich",
+            "wirkung": "öffnet den Dialog ohne Vorbelegung"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Leiste unter dem Kopf",
+            "wirkung": "schaltet den sichtbaren Datenbereich um — Kennzahlen, Block und Kartenraster folgen der Wahl"
+          },
+          {
+            "element": "kontakt-uebernehmen",
+            "ausloeser": "Knopf an einer Gesamtfest-Karte",
+            "wirkung": "legt eine eigene Kopie dieses Kontakts für den Festtag an — mit Name, Rolle, Erreichbarkeit, Arbeitsort, Dringlichkeitsstufe und Sichtbarkeit"
+          },
+          {
+            "element": "kontakt-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Kontaktkarte",
+            "wirkung": "öffnet den Dialog mit den Werten dieses Kontakts"
+          },
+          {
+            "element": "kontakt-loeschen",
+            "ausloeser": "Papierkorb an einer Kontaktkarte",
+            "wirkung": "löscht den Kontakt"
+          },
+          {
+            "element": "rolle-waehlen",
+            "ausloeser": "jeder Anschlag im Feld „Rolle / Funktion\" — ein Auswahlfeld mit zwanzig Vorschlägen und freier Eingabe",
+            "wirkung": "setzt die Dringlichkeitsstufe neu — Notfall bei Ersthelfer, Sanitäter, Sicherheitsdienst, Feuerwehr oder Polizei; Wichtig bei Festleitung, Verantwortlichen, Bereichs- leitung, Festbüro, Ordner, Hausmeister, Technik, Schicht-, Einlass-, Catering- oder Barleitung"
+          },
+          {
+            "element": "kontakt-speichern",
+            "ausloeser": "Bestätigen im Dialog",
+            "wirkung": "legt den Kontakt an oder aktualisiert ihn, samt Notizen"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-liveticker",
+        "titel": "Planer — Live-Regie",
+        "menuepfad": "Web-App → Planer — Live-Regie",
+        "menuepfad_offen": true,
+        "zweck": "Kurze Hinweise an Gäste senden, wichtige davon oben halten und den Verlauf der Durchführung sichern. Die Fläche heisst in der Oberfläche „Live-Regie\", nicht „Live-Ticker\" — der Abschnittsname in der Schiene lautet „Live-Ticker\".",
+        "aktionen": [
+          {
+            "element": "moments-qr",
+            "ausloeser": "Knopf „Moments-QR\"",
+            "wirkung": "öffnet den Dialog „Moment teilen — QR-Code & Link\" mit dem QR-Code, über den Gäste eigene Momente beitragen"
+          },
+          {
+            "element": "live-monitor-oeffnen",
+            "ausloeser": "Knopf „Live-Monitor\"",
+            "wirkung": "öffnet /club/<verein>/event/<fest>/monitor in einem neuen Tab"
+          },
+          {
+            "element": "splitscreen-oeffnen",
+            "ausloeser": "Knopf „Splitscreen (TV)\"",
+            "wirkung": "öffnet denselben Monitor mit ?layout=split in einem neuen Tab — Momente links, Musikwünsche rechts"
+          },
+          {
+            "element": "kanal-erneut-versuchen",
+            "ausloeser": "Knopf „Erneut versuchen\" im Kanalzustand",
+            "wirkung": "setzt den Merker zurück; der Anlegeversuch läuft erneut"
+          },
+          {
+            "element": "bild-anhaengen",
+            "ausloeser": "Knopf „Bild\"",
+            "wirkung": "keine. Der Knopf ist dauerhaft gesperrt und ohne Klickverhalten — eine angekündigte, nicht gebaute Funktion. Er sieht aus wie die anderen Bedienelemente daneben"
+          },
+          {
+            "element": "pin-vormerken",
+            "ausloeser": "Knopf „Pinnen\" / „Wird gepinnt\"",
+            "wirkung": "merkt vor, dass die nächste Meldung angepinnt wird"
+          },
+          {
+            "element": "kennzeichnung-waehlen",
+            "ausloeser": "eine der Kennzeichnungs-Marken",
+            "wirkung": "setzt die Art der Meldung; die gewählte wird farbig gefüllt"
+          },
+          {
+            "element": "meldung-senden",
+            "ausloeser": "Knopf „Senden\"",
+            "wirkung": "legt die Nachricht mit Kennzeichnung, Art „manual\" und der Kennung des Kontexts an; war der Pin vorgemerkt, wird sie danach angepinnt"
+          },
+          {
+            "element": "pin-umschalten",
+            "ausloeser": "Pin-Knopf an einer Meldung",
+            "wirkung": "pinnt an oder löst den Pin"
+          },
+          {
+            "element": "meldung-loeschen",
+            "ausloeser": "Papierkorb an einer Meldung",
+            "wirkung": "löscht die Meldung — ohne Rückfrage"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-musikwuensche",
+        "titel": "Planer — Musikwünsche",
+        "menuepfad": "Web-App → Planer — Musikwünsche",
+        "menuepfad_offen": true,
+        "zweck": "Gäste wünschen sich Titel und stimmen darüber ab; hier wird die Warteschlange abgearbeitet und die Regeln dafür gesetzt.",
+        "aktionen": [
+          {
+            "element": "zur-verwaltungsseite",
+            "ausloeser": "Knopf „DJ-Panel öffnen\"",
+            "wirkung": "verlässt die Anwendung und öffnet die öffentliche Verwaltungsseite in einem neuen Fenster"
+          },
+          {
+            "element": "gaeste-code",
+            "ausloeser": "Knopf „QR-Code & Link\"",
+            "wirkung": "öffnet einen Dialog mit QR-Code und Adresse für die Gäste"
+          },
+          {
+            "element": "zum-wiedergabemonitor",
+            "ausloeser": "Knopf „Playlist-Monitor\"",
+            "wirkung": "verlässt die Anwendung und öffnet die Warteschlangen-Anzeige für einen eigenen Bildschirm"
+          },
+          {
+            "element": "funktion-schalten",
+            "ausloeser": "Schalter „Musikwünsche aktivieren\"",
+            "wirkung": "schaltet das Merkmal des Fests — und beim Einschalten zugleich die Funktion selbst, falls die noch aus war"
+          },
+          {
+            "element": "seite-schalten",
+            "ausloeser": "Schalter „Public-Seite anzeigen\"",
+            "wirkung": "blendet die Seite ein oder aus, ohne das Merkmal zu ändern"
+          },
+          {
+            "element": "wuensche-schalten",
+            "ausloeser": "Schalter „Wünsche offen\"",
+            "wirkung": "Ist er zu, können Gäste nichts Neues einreihen"
+          },
+          {
+            "element": "abstimmung-schalten",
+            "ausloeser": "Schalter „Voting offen\"",
+            "wirkung": "Ist er zu, bleibt die Reihenfolge sichtbar, aber Stimmen ändern sich nicht mehr"
+          },
+          {
+            "element": "anstoessiges-erlauben",
+            "ausloeser": "Schalter „Explicit erlauben\"",
+            "wirkung": "erlaubt als anstössig gekennzeichnete Titel beim Vorschlagen"
+          },
+          {
+            "element": "wuensche-je-gast",
+            "ausloeser": "Plus und Minus an „Wünsche pro Gast\"",
+            "wirkung": "begrenzt, wie viele offene Wünsche ein Gast gleichzeitig haben darf"
+          },
+          {
+            "element": "wartezeit",
+            "ausloeser": "Plus und Minus an „Cooldown (Minuten)\"",
+            "wirkung": "legt fest, wie lange ein gespielter Titel gesperrt bleibt (0 schaltet die Sperre ab)"
+          },
+          {
+            "element": "als-gespielt",
+            "ausloeser": "Knopf „Gespielt\" an einer Zeile",
+            "wirkung": "nimmt den Titel aus der Warteschlange und trägt ihn unter „Bereits gespielt\" ein — damit beginnt seine Wartezeit"
+          },
+          {
+            "element": "ablehnen",
+            "ausloeser": "Knopf „Ablehnen\" an einer Zeile",
+            "wirkung": "nimmt den Wunsch aus der Warteschlange"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-news",
+        "titel": "Planer — News",
+        "menuepfad": "Web-App → Planer — News",
+        "menuepfad_offen": true,
+        "zweck": "Mitteilungen an die Teilnehmer schreiben, anpinnen und im Verlauf behalten.",
+        "aktionen": [
+          {
+            "element": "anpinnen",
+            "ausloeser": "Nadelsymbol an einer Karte",
+            "wirkung": "hebt die Mitteilung nach oben und markiert sie"
+          },
+          {
+            "element": "beitrag-veroeffentlichen",
+            "ausloeser": "das Sendesymbol an der Karte, links neben der Nadel",
+            "wirkung": "macht den Entwurf zur veröffentlichten Mitteilung und setzt, falls noch keiner da ist, den Zeitpunkt auf jetzt"
+          },
+          {
+            "element": "beitrag-loeschen",
+            "ausloeser": "Papierkorb an einer Karte",
+            "wirkung": "löscht die Mitteilung"
+          },
+          {
+            "element": "beitrag-schreiben",
+            "ausloeser": "Knopf im Kopf, im Schrittvorschlag oder im Leerzustand",
+            "wirkung": "öffnet den Verfassen-Dialog — immer leer"
+          },
+          {
+            "element": "assistent-oeffnen",
+            "ausloeser": "Knopf „KI-Assistent\" (leerer Entwurf) oder „KI optimieren\" (vorhandenen Text überarbeiten)",
+            "wirkung": "öffnet den Schreibassistenten; sein Ergebnis fliesst in Titel, Inhalt und gegebenenfalls ein Titelbild zurück"
+          },
+          {
+            "element": "beitrag-speichern",
+            "ausloeser": "der Bestätigungsknopf im Dialog",
+            "wirkung": "legt die Mitteilung an — als Entwurf oder veröffentlicht, je nach Schalter"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-programm",
+        "titel": "Planer — Programm",
+        "menuepfad": "Web-App → Planer — Programm",
+        "menuepfad_offen": true,
+        "zweck": "Was wann und wo passiert — Programmpunkte je Arbeitsort, mit Zeiten, Bildern, Turnierbezug und Sponsoren.",
+        "aktionen": [
+          {
+            "element": "festtag-oeffnen",
+            "ausloeser": "„Im Festtag bearbeiten\" an einer Karte oder „Festtag Öffnen\" im Ablaufblock",
+            "wirkung": "wechselt auf diesen Festtag und bleibt im Abschnitt Programm"
+          },
+          {
+            "element": "programmpunkt-hinzufuegen",
+            "ausloeser": "Knopf „Programmpunkt\" im Kopf, oder „Ersten Programmpunkt anlegen\" im Leerzustand",
+            "wirkung": "öffnet den Dialog ohne Vorbelegung"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Leiste unter dem Kopf",
+            "wirkung": "schränkt Kacheln, Konflikterkennung und Ablauf auf einen Ort ein"
+          },
+          {
+            "element": "ansicht-umschalten",
+            "ausloeser": "zwei Knöpfe — „Line-up\" und „Liste\"",
+            "wirkung": "wechselt zwischen zeitleiste und liste"
+          },
+          {
+            "element": "medien-hochladen",
+            "ausloeser": "„Bild hochladen\" für das Header-Visual, ebenso für den Flyer",
+            "wirkung": "legt die Datei ab und merkt sich ihre Kennung am Programmpunkt"
+          },
+          {
+            "element": "turnier-verknuepfen",
+            "ausloeser": "das Feld „Turnier referenzieren\"",
+            "wirkung": "bindet den Programmpunkt an ein Turnier — und schreibt beim Speichern dessen Zuordnung zum Fest, Beginn und Ende dorthin zurück"
+          },
+          {
+            "element": "sponsoren-zuordnen",
+            "ausloeser": "das Mehrfachfeld „Sponsoren\"",
+            "wirkung": "verknüpft; legt dabei bei Bedarf eine Bereichs-Zuordnung an"
+          },
+          {
+            "element": "programmpunkt-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Karte",
+            "wirkung": "öffnet den Dialog mit den Werten dieses Punkts"
+          },
+          {
+            "element": "programmpunkt-speichern",
+            "ausloeser": "„Erstellen\" beziehungsweise „Speichern\"",
+            "wirkung": "legt an oder aktualisiert — und bis zu zwei weitere Schreibvorgänge: die Sponsoren-Zuordnung, danach das Turnier"
+          },
+          {
+            "element": "programmpunkt-loeschen",
+            "ausloeser": "Papierkorb an einer Karte",
+            "wirkung": "löscht den Punkt sofort"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-ressourcen",
+        "titel": "Planer — Ressourcen",
+        "menuepfad": "Web-App → Planer — Ressourcen",
+        "menuepfad_offen": true,
+        "zweck": "Räume und Gebäude aus dem Vereinsbestand für das Fest reservieren und Arbeitsorten zuordnen.",
+        "aktionen": [
+          {
+            "element": "ressource-verknuepfen",
+            "ausloeser": "Knopf „Ressource verknüpfen\" im Kopf",
+            "wirkung": "öffnet den Dialog, mit dem gewählten Arbeitsort vorbelegt"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Leiste unter dem Kopf",
+            "wirkung": "schränkt Kacheln, Schrittvorschlag und Liste auf einen Ort ein"
+          },
+          {
+            "element": "verknuepfung-speichern",
+            "ausloeser": "Knopf „Verknüpfen\"",
+            "wirkung": "legt die Verknüpfung an — ohne den gewählten Bereich"
+          },
+          {
+            "element": "verknuepfung-entfernen",
+            "ausloeser": "Papierkorb an einer Zeile",
+            "wirkung": "entfernt die Verknüpfung sofort"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-schichtplan",
+        "titel": "Planer — Einsatzplanung",
+        "menuepfad": "Web-App → Planer — Einsatzplanung",
+        "menuepfad_offen": true,
+        "zweck": "Einsatzfenster je Arbeitsort planen und Menschen darauf verteilen. Die Fläche heisst in der Oberfläche „Wer arbeitet wann wo?\"; der Abschnittsname in der Schiene lautet „Schichtplan\".",
+        "aktionen": [
+          {
+            "element": "plan-ausgeben",
+            "ausloeser": "Knopf „Als PDF teilen\", danach eine von zwei Formen — „Als Tabelle\" oder „Als Zeitstrahl\"",
+            "wirkung": "erzeugt das Dokument in der gewählten Form"
+          },
+          {
+            "element": "schicht-anlegen",
+            "ausloeser": "Knopf „Schicht hinzufügen\"",
+            "wirkung": "öffnet den Dialog ohne Vorbelegung"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Arbeitsort-Leiste unter dem Kopf",
+            "wirkung": "schränkt die Anzeige auf einen Arbeitsort ein"
+          },
+          {
+            "element": "schicht-anlegen-hier",
+            "ausloeser": "Knopf in der Kopfzeile eines Arbeitsorts",
+            "wirkung": "öffnet den Dialog mit diesem Arbeitsort vorbelegt"
+          },
+          {
+            "element": "mitglied-zuweisen",
+            "ausloeser": "zwei Wege — einen Menschen aus der Liste auf die Schicht ziehen und ablegen, oder ihn im Auswahlfeld der Schichtzeile wählen",
+            "wirkung": "weist ihn dieser Schicht zu"
+          },
+          {
+            "element": "zuweisung-entfernen",
+            "ausloeser": "Löschkreuz an der Marke eines zugewiesenen Menschen",
+            "wirkung": "nimmt die Zuweisung zurück"
+          },
+          {
+            "element": "schicht-speichern",
+            "ausloeser": "Bestätigen im Dialog",
+            "wirkung": "legt die Schicht an oder aktualisiert sie"
+          },
+          {
+            "element": "schicht-bearbeiten",
+            "ausloeser": "Stiftsymbol an einer Schichtzeile",
+            "wirkung": "öffnet den Dialog mit den Werten dieser Schicht"
+          },
+          {
+            "element": "schicht-loeschen",
+            "ausloeser": "Papierkorb an einer Schichtzeile",
+            "wirkung": "löscht die Schicht"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-schiene",
+        "titel": "Planer-Schiene",
+        "menuepfad": "Web-App → Planer-Schiene",
+        "menuepfad_offen": true,
+        "zweck": "Die linke Leiste des Planers. Sie zeigt, wo man ist, in welcher Phase das Fest steckt, und führt zu den 21 Abschnitten.",
+        "aktionen": [
+          {
+            "element": "abschnitt-waehlen",
+            "ausloeser": "ein Eintrag der Liste",
+            "wirkung": "öffnet diesen Abschnitt; die Schiene bleibt stehen"
+          },
+          {
+            "element": "schiene-einklappen",
+            "ausloeser": "Symbolknopf oben in der Schiene",
+            "wirkung": "wechselt zwischen 280 und 64 Pixel Breite"
+          },
+          {
+            "element": "zurueck-zum-verein",
+            "ausloeser": "Fusszeile „Zurück zum Verein\" (aufgeklappt) beziehungsweise ein Pfeilsymbol unten (eingeklappt)",
+            "wirkung": "verlässt den Planer und kehrt in den Vereinsbereich zurück"
+          },
+          {
+            "element": "hilfe-oeffnen",
+            "ausloeser": "Fusszeile „Hilfe & Tipps\"",
+            "wirkung": "öffnet die Hilfe"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-speisekarte",
+        "titel": "Planer — Speisekarte",
+        "menuepfad": "Web-App → Planer — Speisekarte",
+        "menuepfad_offen": true,
+        "zweck": "Speisekarten des Vereins einem Fest zuordnen — und auf Arbeitsort-Ebene ihre Gerichte bearbeiten.",
+        "aktionen": [
+          {
+            "element": "speisekarten-pflegen",
+            "ausloeser": "der anklickbare Hinweisstreifen „Speisekarten pflegen\"",
+            "wirkung": "verlässt die Anwendung und öffnet den Versorgungsbereich des Vereins in einem neuen Fenster"
+          },
+          {
+            "element": "karte-zuweisen",
+            "ausloeser": "Knopf „Speisekarte hinzufügen\" im Kopf oder im Leerzustand",
+            "wirkung": "öffnet den Dialog"
+          },
+          {
+            "element": "zuweisung-speichern",
+            "ausloeser": "der Bestätigungsknopf im Dialog",
+            "wirkung": "weist die gewählte Karte zu — oder legt eine neue an und weist sie zu"
+          },
+          {
+            "element": "karte-vorschau",
+            "ausloeser": "Knopf „Vollständige Karte ansehen\" über jeder Karte",
+            "wirkung": "öffnet die öffentliche Ansicht der Karte — mit Vereinslogo, ihrer Gestaltung und dem QR-Code"
+          },
+          {
+            "element": "zuweisung-entfernen",
+            "ausloeser": "Papierkorb an einer Karte",
+            "wirkung": "nimmt die Zuweisung zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-sponsoren",
+        "titel": "Planer — Sponsoren",
+        "menuepfad": "Web-App → Planer — Sponsoren",
+        "menuepfad_offen": true,
+        "zweck": "Sponsoren aus dem Vereinsbestand dem Fest zuordnen, ihnen eine Stufe geben — und aus den Sponsoring-Angeboten des Vereins sammelweise übernehmen.",
+        "aktionen": [
+          {
+            "element": "partner-zuordnen",
+            "ausloeser": "Knopf „Sponsor hinzufügen\" im Kopf oder im Schrittvorschlag",
+            "wirkung": "öffnet den Dialog mit der Stufe „Partner\" vorbelegt"
+          },
+          {
+            "element": "arbeitsort-waehlen",
+            "ausloeser": "die Leiste unter dem Kopf",
+            "wirkung": "schränkt Kacheln, Schrittvorschlag und Liste auf einen Ort ein"
+          },
+          {
+            "element": "abgleich-ausfuehren",
+            "ausloeser": "Knopf „Übernehmen\" im Panel",
+            "wirkung": "legt für jeden Sponsor mit aktivem Angebot eine Verknüpfung an, mit der Stufe des Angebots; vorhandene bleiben"
+          },
+          {
+            "element": "zuordnung-speichern",
+            "ausloeser": "der Bestätigungsknopf im Dialog",
+            "wirkung": "legt die Verknüpfung an"
+          },
+          {
+            "element": "zuordnung-entfernen",
+            "ausloeser": "Löschsymbol an einer Sponsorenkarte",
+            "wirkung": "nimmt die Zuordnung zurück"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-stammdaten",
+        "titel": "Planer — Stammdaten",
+        "menuepfad": "Web-App → Planer — Stammdaten",
+        "menuepfad_offen": true,
+        "zweck": "Titel, Zeitraum, Ort, Beschreibung, Status und Sichtbarkeit — und, ganz unten, das Löschen der Veranstaltung.",
+        "aktionen": [
+          {
+            "element": "feld-tippen",
+            "ausloeser": "jede Eingabe in einem Textfeld",
+            "wirkung": "merkt die Änderung vor, ohne zu speichern"
+          },
+          {
+            "element": "feld-abgeben",
+            "ausloeser": "das Verlassen eines Textfelds",
+            "wirkung": "schreibt die vorgemerkten Änderungen"
+          },
+          {
+            "element": "status-waehlen",
+            "ausloeser": "das Feld „Status\"",
+            "wirkung": "schreibt sofort, nicht erst beim Verlassen"
+          },
+          {
+            "element": "sichtbarkeit-waehlen",
+            "ausloeser": "das Feld „Sichtbarkeit\"",
+            "wirkung": "schreibt sofort"
+          },
+          {
+            "element": "loeschen",
+            "ausloeser": "Knopf „Veranstaltung löschen\" beziehungsweise „Tag löschen\"",
+            "wirkung": "stösst einen Auftrag an; das Löschen selbst passiert danach im Hintergrund"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/planer-turniere",
+        "titel": "Planer — Turniere",
+        "menuepfad": "Web-App → Planer — Turniere",
+        "menuepfad_offen": true,
+        "zweck": "Turnierserien und ihre Ausführungen mit einem Fest verknüpfen — und von dort aus in den Turnier-Hub wechseln, wo sie tatsächlich verwaltet werden.",
+        "aktionen": [
+          {
+            "element": "tournament-hub-oeffnen",
+            "ausloeser": "Knopf „Tournament Hub\" im Kopf",
+            "wirkung": "verlässt den Planer und öffnet den Turnierbereich des Vereins"
+          },
+          {
+            "element": "serie-erstellen",
+            "ausloeser": "Knopf „Serie erstellen\" im Kopf",
+            "wirkung": "verlässt den Planer und öffnet das Anlegen einer Serie, mit diesem Fest vorbelegt"
+          },
+          {
+            "element": "serie-verknuepfen",
+            "ausloeser": "Knopf „Aufnehmen\"",
+            "wirkung": "verknüpft die Serie mit dem Fest — und alle ihre noch unverknüpften Ausführungen gleich mit — und schaltet den Turnier-Abschnitt des Fests ein"
+          },
+          {
+            "element": "festtag-oeffnen",
+            "ausloeser": "Knopf „Festtag öffnen\"",
+            "wirkung": "wechselt auf diesen Festtag, bleibt im Planer"
+          },
+          {
+            "element": "turnier-in-festtag-erstellen",
+            "ausloeser": "Knopf „Turnier in Festtag erstellen\"",
+            "wirkung": "verlässt den Planer und öffnet das Anlegen einer Serie, mit dem gewählten Festtag vorbelegt"
+          },
+          {
+            "element": "programmpunkt-erzeugen",
+            "ausloeser": "Knopf „Programmpunkt\" an einer Ausführung",
+            "wirkung": "legt einen Programmpunkt an — im Standard-Arbeitsort, und wenn es keinen gibt, im ersten beliebigen — und schreibt Zuordnung, Beginn und Ende ins Turnier zurück"
+          },
+          {
+            "element": "verknuepfung-loesen",
+            "ausloeser": "Knopf „Kopplung entfernen\"",
+            "wirkung": "löst die Ausführung vom Fest"
+          },
+          {
+            "element": "serie-planer-oeffnen",
+            "ausloeser": "Knopf „Planner\" an einer Serienzeile",
+            "wirkung": "verlässt den Planer und öffnet die Serienplanung"
+          },
+          {
+            "element": "turnier-oeffentlich-oeffnen",
+            "ausloeser": "Knopf „Public\" an einer Ausführung",
+            "wirkung": "verlässt den Planer und öffnet die öffentliche Ansicht dieser Ausführung"
+          },
+          {
+            "element": "turnier-verwalten",
+            "ausloeser": "Knopf „Verwalten\" an einer Ausführung",
+            "wirkung": "verlässt den Planer und öffnet die Turnierverwaltung"
+          }
+        ]
+      },
+      {
+        "ui_spec_id": "comvenio/event/schichtplan-helfer",
+        "titel": "Schichtplan (Helferansicht)",
+        "menuepfad": "Web-App → Schichtplan (Helferansicht)",
+        "menuepfad_offen": true,
+        "zweck": "Wer arbeitet wann und wo — und wo ist noch Platz für mich?",
+        "aktionen": [
+          {
+            "element": "suchen",
+            "ausloeser": "Tippen im Suchfeld",
+            "wirkung": "zeigt nur passende Schichten"
+          },
+          {
+            "element": "nur-meine",
+            "ausloeser": "Umlegen des Schalters „nur meine\"",
+            "wirkung": "zeigt nur die eigenen Schichten"
+          },
+          {
+            "element": "eintragen",
+            "ausloeser": "Klick auf den Eintragen-Knopf einer Schicht",
+            "wirkung": "trägt die eigene Person ein"
+          },
+          {
+            "element": "austragen",
+            "ausloeser": "Klick auf den Austragen-Knopf einer eigenen Schicht",
+            "wirkung": "nimmt die eigene Zuweisung zurück"
+          },
+          {
+            "element": "ausgeben",
+            "ausloeser": "Wahl einer Ausgabeform — Tabelle oder Zeitschiene",
+            "wirkung": "erzeugt ein Dokument des Plans"
+          }
+        ]
+      }
+    ],
+    "tournament": [],
+    "meeting": []
+  },
+  "hinweise": [
+    "club/homepage-generator/designer#reihe-gleich-verteilen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "club/homepage-generator/designer#reihe-trennlinie: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "club/homepage-generator/designer#spalten-wahl: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/abschnitt-turniere: kein Anker im Code",
+    "comvenio/event/abschnitt-wetter: kein Anker im Code",
+    "comvenio/event/bereich-galerie#flyer-teilen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/gelaendeplan-export: kein Anker im Code",
+    "comvenio/event/helfer-zugang: kein Anker im Code",
+    "comvenio/event/planer-bereiche#bereich-kopieren: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-bereiche#bereich-loeschen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-design-studio#farben: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-design-studio#formwerte: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-design-studio#referenz-importieren: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-galerie#bild-gross-ansehen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-galerie#bild-info: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-speisekarte#gericht-bearbeiten: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-turniere#festtag-waehlen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/event/planer-turniere#serie-waehlen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/analyse: kein Anker im Code",
+    "comvenio/finance/bereich-als-sicht#fehlenden-haushalt-anlegen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchhaltung-event-verknuepfung#dialog-eventliste-erneut-laden: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchhaltung-event-verknuepfung#hauptposition-erneut-laden: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchhaltung-event-verknuepfung#plan-zuordnung-erneut-laden: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchhaltung-event-verknuepfung#verknuepfen-erneut-versuchen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchhaltung-event-verknuepfung#ziel-art-auswahl: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/buchungsdetail#beleg-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/budget-organigramm#aufteilen-speichern: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/budget-organigramm#stand-ablegen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/budget-organigramm#stand-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/budget-saison#folgehaushalt-anlegen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/pruefung#haushaltsjahr-kennzeichnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/uebersicht-nach-organigramm#buchung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/uebersicht-nach-organigramm#konto-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/finance/uebersicht-nach-organigramm#veranstaltung-oeffnen: Auslöser oder Wirkung fehlt oder nennt Internes",
+    "comvenio/web/gruendung-erscheinungsbild: kein Anker im Code",
+    "frontend/ui/melden-blockieren.md: Frontmatter nicht lesbar"
+  ]
+}
