@@ -181,6 +181,28 @@ function numberRecord(value: unknown): Record<string, JsonValue> | undefined {
   return result;
 }
 
+/**
+ * Roles with source verein whose font_id is not in the register: web and app
+ * show the fallback font there (homepage-generator 18 DC-8).
+ */
+function missingClubFonts(design: Record<string, JsonValue>): JsonValue[] {
+  const tokens = design.tokens;
+  const type = tokens && typeof tokens === "object" && !Array.isArray(tokens) ? (tokens as Record<string, JsonValue>).type : undefined;
+  if (!type || typeof type !== "object" || Array.isArray(type)) return [];
+  const registered = new Set(Array.isArray(design.fonts)
+    ? design.fonts.flatMap((font) => (font && typeof font === "object" && !Array.isArray(font) && typeof font.id === "string" ? [font.id] : []))
+    : []);
+  const hints: JsonValue[] = [];
+  for (const role of ["heading", "body"] as const) {
+    const entry = (type as Record<string, JsonValue>)[role];
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    if (entry.source === "verein" && typeof entry.font_id === "string" && !registered.has(entry.font_id)) {
+      hints.push({ rolle: role, font_id: entry.font_id, hinweis: "Schrift nicht im Register: Web und App zeigen die Rückfallschrift." });
+    }
+  }
+  return hints;
+}
+
 /** tokens.type: only the heading/body roles with their four known fields. */
 function fontRoles(value: unknown): Record<string, JsonValue> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -188,7 +210,10 @@ function fontRoles(value: unknown): Record<string, JsonValue> | undefined {
   for (const role of ["heading", "body"] as const) {
     const entry = (value as Record<string, unknown>)[role];
     if (entry && typeof entry === "object" && !Array.isArray(entry)) {
-      result[role] = pick(entry as Record<string, unknown>, ["family", "source", "font_id", "weight"]);
+      const picked = pick(entry as Record<string, unknown>, ["family", "source", "font_id", "weight"]);
+      // The club-service allows weight null; on a read it means "not set".
+      if (picked.weight === null) delete picked.weight;
+      result[role] = picked;
     }
   }
   return result;
@@ -268,6 +293,8 @@ export function redactClubSettings(value: unknown): JsonValue {
         .slice(0, 2)
         .map((entry) => pick(entry, ["id", "family", "format", "lizenz"]));
     }
+    const hinweise = missingClubFonts(safeDesign);
+    if (hinweise.length > 0) safeDesign.font_hinweise = hinweise;
     result.design_settings = safeDesign;
   }
   return result;

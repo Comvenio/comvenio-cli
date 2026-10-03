@@ -166,7 +166,9 @@ const designSettings = z.object({
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),
   tokens: designTokens.nullable().optional(),
-  fonts: z.array(clubFont).max(2).optional(),
+  fonts: z.array(clubFont).max(2)
+    .refine((fonts) => new Set(fonts.map((font) => font.id)).size === fonts.length, "fonts: jede id nur einmal")
+    .optional(),
 }).strict();
 
 const features = z.object({
@@ -249,6 +251,12 @@ const settingsPayload = z.object({
 // (sidebar_color_mode "light"/"dark" once failed the whole read).
 const freeName = z.string().trim().max(80);
 const designSettingsRead = designSettings.extend({
+  // Roles whose club font is missing from the register (homepage-generator 18 DC-8).
+  font_hinweise: z.array(z.object({
+    rolle: z.enum(["heading", "body"]),
+    font_id: uuid,
+    hinweis: z.string().max(200),
+  }).strict()).max(2).optional(),
   homepage_theme: freeName.optional(),
   homepage_template: freeName.nullable().optional(),
   sidebar_style: freeName.optional(),

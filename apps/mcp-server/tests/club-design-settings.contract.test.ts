@@ -113,6 +113,29 @@ describe("club design settings contract", () => {
       expect(write({ fonts: [{ ...font, id: "../../etc" }] }).success).toBe(false);
     });
 
+    test("review R1: a stored weight null reads as not set; duplicate register ids are refused", () => {
+      const redacted = redactClubSettings({
+        design_settings: { tokens: { type: { body: { family: "Lato", source: "plattform", weight: null } } } },
+      }) as Record<string, any>;
+      const parsed = K7_ACTION_SCHEMAS["cai.club.03.settings"].output.parse(redacted) as Record<string, any>;
+      expect(parsed.design_settings.tokens.type.body).toEqual({ family: "Lato", source: "plattform" });
+      const font = { id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" };
+      expect(write({ fonts: [font, { ...font, family: "Jaga Sans" }] }).success).toBe(false);
+    });
+
+    test("DC-8: a role whose club font is not registered is named in font_hinweise", () => {
+      const redacted = redactClubSettings({
+        design_settings: {
+          tokens: { type: { heading: { family: "Jaga Serif", source: "verein", font_id: fontId } } },
+          fonts: [],
+        },
+      }) as Record<string, any>;
+      const parsed = K7_ACTION_SCHEMAS["cai.club.03.settings"].output.parse(redacted) as Record<string, any>;
+      expect(parsed.design_settings.font_hinweise).toEqual([
+        { rolle: "heading", font_id: fontId, hinweis: "Schrift nicht im Register: Web und App zeigen die Rückfallschrift." },
+      ]);
+    });
+
     test("a read returns the font roles and the register, nothing else", () => {
       const redacted = redactClubSettings({
         design_settings: {
@@ -130,6 +153,7 @@ describe("club design settings contract", () => {
         heading: { family: "Jaga Serif", source: "verein", font_id: fontId, weight: 700 },
       });
       expect(parsed.design_settings.fonts).toEqual([{ id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" }]);
+      expect(parsed.design_settings.font_hinweise).toBeUndefined();
     });
   });
 });

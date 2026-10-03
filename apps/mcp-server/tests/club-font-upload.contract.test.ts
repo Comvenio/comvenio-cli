@@ -18,7 +18,16 @@ const newFontId = "44444444-4444-4444-8444-444444444444";
 const oldFontId = "55555555-5555-4555-8555-555555555555";
 const otherFontId = "66666666-6666-4666-8666-666666666666";
 const thirdFontId = "77777777-7777-4777-8777-777777777777";
-const ttf = new Uint8Array([0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x10, 0, 0, 0, 0, 1, 2, 3, 4]);
+// Smallest consistent sfnt: version 0x00010000, one table "head" at offset 28 with length 4.
+const ttf = new Uint8Array([
+  0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00,
+  0x68, 0x65, 0x61, 0x64, 0, 0, 0, 0, 0, 0, 0, 28, 0, 0, 0, 4,
+  1, 2, 3, 4,
+]);
+const readerOf = (bytes: Uint8Array) => ({
+  size: bytes.byteLength,
+  async read(start: number, end: number) { return bytes.slice(start, Math.min(end, bytes.byteLength)); },
+});
 const ttfSha = createHash("sha256").update(ttf).digest("hex");
 
 const input = (overrides: Record<string, unknown> = {}) => ({
@@ -32,10 +41,21 @@ const input = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-function harness(options: { settings?: JsonValue; jobClub?: string; mime?: string } = {}) {
+function mergeDesign(current: Record<string, any>, patch: Record<string, any>): Record<string, any> {
+  const result = { ...current };
+  for (const [key, value] of Object.entries(patch)) {
+    result[key] = value && typeof value === "object" && !Array.isArray(value) && result[key] && typeof result[key] === "object" && !Array.isArray(result[key])
+      ? mergeDesign(result[key], value)
+      : value;
+  }
+  return result;
+}
+
+function harness(options: { settings?: JsonValue; jobClub?: string; mime?: string; revokeAtActor?: number; dropAfterPut?: boolean } = {}) {
   const calls: Array<ComvenioApiRequest & { fields?: Record<string, string> }> = [];
   let consumed = 0;
-  const settings = options.settings ?? { design_settings: {} };
+  let actors = 0;
+  let settings = structuredClone(options.settings ?? { design_settings: {} }) as Record<string, any>;
   const client: ComvenioApiClient = {
     timeout_ms: 15000,
     async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> {
@@ -47,14 +67,23 @@ function harness(options: { settings?: JsonValue; jobClub?: string; mime?: strin
       if (request.method === "POST" && request.path === `/fonts/club/${clubId}/upload`) {
         return { font_id: newFontId, family: "Jaga Serif", format: "ttf", size_bytes: ttf.byteLength } as unknown as T;
       }
-      if (request.method === "PUT" && request.path === `/clubs/${clubId}/settings`) return {} as T;
+      if (request.method === "PUT" && request.path === `/clubs/${clubId}/settings`) {
+        // Deep merge like the club-service; lists are replaced. dropAfterPut plays a concurrent writer.
+        const patched = mergeDesign(settings, request.body as Record<string, any>);
+        settings = options.dropAfterPut ? structuredClone(options.settings ?? { design_settings: {} }) as Record<string, any> : patched;
+        return {} as T;
+      }
       throw new Error(`unexpected ${request.method} ${request.path}`);
     },
   };
   const job = {
     record: { handle: { club_id: options.jobClub ?? clubId } },
     envelope: { input: input(), context: { request_id: "req-1", club_id: clubId } },
-    async freshActor() { return client; },
+    async freshActor() {
+      actors += 1;
+      if (options.revokeAtActor !== undefined && actors >= options.revokeAtActor) throw new Error("revoked");
+      return client;
+    },
     files: {
       async consumeCleanUpload() {
         consumed += 1;
@@ -70,7 +99,7 @@ function harness(options: { settings?: JsonValue; jobClub?: string; mime?: strin
     fetch: async () => new Response(ttf, { status: 200 }),
     async reportProgress() {},
   } as unknown as JobExecutionContext;
-  return { job, calls, consumed: () => consumed };
+  return { job, calls, consumed: () => consumed, actors: () => actors };
 }
 
 describe("cai.club.15.font_upload contract", () => {
@@ -104,9 +133,27 @@ describe("cai.club.15.font_upload contract", () => {
     expect(extensionMatches("Jaga.ttf", "font/ttf")).toBe(true);
     expect(extensionMatches("Jaga.woff2", "font/woff2")).toBe(true);
     expect(extensionMatches("Jaga.ttf", "font/woff2")).toBe(false);
-    const reader = { size: 0, async read() { return new Uint8Array(); } };
-    expect((await detectBinarySignature(ttf, reader as never))?.mimes).toEqual(["font/ttf"]);
-    expect((await detectBinarySignature(new TextEncoder().encode("wOF2xxxx"), reader as never))?.mimes).toEqual(["font/woff2"]);
+    expect((await detectBinarySignature(ttf, readerOf(ttf)))?.mimes).toEqual(["font/ttf"]);
+    const woff2 = new Uint8Array(48);
+    woff2.set(new TextEncoder().encode("wOF2"), 0);
+    new DataView(woff2.buffer).setUint32(8, 48, false);
+    new DataView(woff2.buffer).setUint16(12, 1, false);
+    expect((await detectBinarySignature(woff2, readerOf(woff2)))?.mimes).toEqual(["font/woff2"]);
+  });
+
+  test("review R1: magic bytes alone are no font; JSON, text and ISO media keep their reading", async () => {
+    const cut = ttf.slice(0, 20);
+    expect(await detectBinarySignature(cut, readerOf(cut))).toBeNull();
+    const bare = new Uint8Array([0x00, 0x01, 0x00, 0x00]);
+    expect(await detectBinarySignature(bare, readerOf(bare))).toBeNull();
+    const fakeWoff = new TextEncoder().encode("wOF2xxxx");
+    expect(await detectBinarySignature(fakeWoff, readerOf(fakeWoff))).toBeNull();
+    for (const text of ["true", "true story"]) {
+      const bytes = new TextEncoder().encode(text);
+      expect(await detectBinarySignature(bytes, readerOf(bytes))).toBeNull();
+    }
+    const iso = new Uint8Array([0x00, 0x01, 0x00, 0x00, ...new TextEncoder().encode("ftypisom"), 0, 0, 0, 0]);
+    expect((await detectBinarySignature(iso, readerOf(iso)))?.mimes).toContain("video/mp4");
   });
 });
 
@@ -154,9 +201,21 @@ describe("cai.club.15.font_upload executor", () => {
           { id: otherFontId, family: "Jaga Sans", format: "ttf", lizenz: "OFL 1.1" },
           { id: newFontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" },
         ],
-        tokens: { type: { heading: { font_id: newFontId } } },
+        tokens: { type: { heading: { family: "Jaga Serif", source: "verein", font_id: newFontId } } },
       },
     });
+  });
+
+  test("review R1: a revoked actor right before the register write stops the PUT", async () => {
+    // Actors: 1 capacity GET, 2 consumption, 3 font POST, 4 register GET, 5 PUT.
+    const { job, calls } = harness({ revokeAtActor: 5 });
+    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toThrow("revoked");
+    expect(calls.some((call) => call.method === "PUT")).toBe(false);
+  });
+
+  test("review R1: an entry dropped by a concurrent write is reported, not claimed as success", async () => {
+    const { job } = harness({ dropAfterPut: true });
+    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   test("a third family is refused before the file is consumed or uploaded", async () => {

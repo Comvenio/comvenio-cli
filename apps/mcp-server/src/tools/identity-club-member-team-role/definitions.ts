@@ -6,6 +6,7 @@ import type {
   PermissionPolicy,
 } from "@comvenio/tool-catalog";
 
+import { k12FilePermissionPolicy } from "../content-homepage-news-data/definitions.ts";
 import {
   K7_ACTION_IDS,
   type K7ActionDefinition,
@@ -164,7 +165,11 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
   "cai.club.15.font_upload": definition({
     action_id: "cai.club.15.font_upload", domain: "club", source_action: "font-upload",
     scopes: [...CLUB_READ, ...ADMIN_WRITE, "files.import", "files.write"],
-    permission: policy(["manage_club_settings"]), risk: "reversible_write", gate: "job",
+    // The upload, its completion and the consumption are authorized with the
+    // file_write profile of the data actions; the action shows only to members
+    // who have it besides manage_club_settings (review K18 R1).
+    permission: { ...policy(["manage_club_settings"]), any_of: [...k12FilePermissionPolicy("file_write").any_of] },
+    risk: "reversible_write", gate: "job",
     routes: [
       route("route.023", "GET", "club", "/clubs/{club_id}/settings"),
       route(null, "POST", "content", "/fonts/club/{club_id}/upload"),

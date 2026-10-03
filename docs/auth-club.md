@@ -267,7 +267,8 @@ comvenio action call cai.club.05.design \
 Antwort nennt die `font_id`; sie gehört danach in `tokens.type` mit
 `source: verein`. Eine Schrift derselben Familie wird ersetzt, Rollen, die
 sie nutzten, zeigen danach auf die neue Datei; mehr als zwei Familien nimmt der
-Verein nicht auf. Die App lädt nur TTF.
+Verein nicht auf. Die App lädt nur TTF. `cai.club.03.settings` nennt in
+`design_settings.font_hinweise` Rollen, deren Schrift nicht im Register steht.
 
 ```bash
 comvenio action call cai.club.15.font_upload \

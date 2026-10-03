@@ -290,6 +290,10 @@ export function createComvenioApiClient(
       const context = normalizeRequestContext(input.context);
       const request = { ...input, context };
       validateRequestTarget(request);
+      if (request.form !== undefined || request.body !== undefined) {
+        // This path sends no body; refusing beats silently dropping a form or JSON body.
+        throw configError(context.request_id, "Ein Datei-Download sendet keinen Request-Body.");
+      }
       const base = normalizeGatewayBaseUrl(config.gatewayBaseUrl, context.request_id);
       const url = buildUrl(base, request);
       const token = await resolveAccessToken(config.accessToken, context);

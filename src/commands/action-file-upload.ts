@@ -298,9 +298,12 @@ function uploadIncomplete(detail: string): PublicCliError {
   return new PublicCliError("UPLOAD_TIMEOUT", detail, { detail: `${detail} ${EXPIRY_HINT}` });
 }
 
-function jobUnfinished(jobId: string, state: string): PublicCliError {
-  const detail = `Der Hintergrundauftrag ${jobId} war zuletzt im Zustand ${state}. `
-    + "Die Datei ist bereits übergeben: mit cai.data.01.list prüfen, ob sie angekommen ist, statt neu hochzuladen.";
+function jobUnfinished(
+  jobId: string,
+  state: string,
+  check = "Mit cai.data.01.list prüfen, ob die Datei angekommen ist, statt neu hochzuladen.",
+): PublicCliError {
+  const detail = `Der Hintergrundauftrag ${jobId} war zuletzt im Zustand ${state}. Die Datei ist bereits übergeben: ${check}`;
   return new PublicCliError("OUTCOME_UNKNOWN", detail, { detail });
 }
 
@@ -425,7 +428,7 @@ export async function runFileUpload(
 
   const aborted = (phase: FileUploadPhase, jobId?: string, state?: string): PublicCliError =>
     phase === "job" && jobId
-      ? jobUnfinished(jobId, state ?? "unbekannt")
+      ? jobUnfinished(jobId, state ?? "unbekannt", target.check)
       : uploadIncomplete("Der Upload wurde abgebrochen.");
   const wait = async (ms: number, phase: FileUploadPhase, jobId?: string, state?: string) => {
     try {
@@ -554,7 +557,7 @@ export async function runFileUpload(
       });
     }
     const pause = pollDelayMs(attempt, random);
-    if (now() + pause >= jobDeadline) throw jobUnfinished(jobId, state);
+    if (now() + pause >= jobDeadline) throw jobUnfinished(jobId, state, target.check);
     await wait(pause, "job", jobId, state);
     try {
       job = await deps.client.callTool(JOB_STATUS_TOOL, { job_id: jobId });

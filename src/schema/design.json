@@ -94,7 +94,7 @@
       "type": "ClubFont[]",
       "max": 2,
       "entry": { "id": "UUID aus POST /fonts/club/{club_id}/upload", "family": "1–64 Zeichen", "format": "woff2|ttf", "lizenz": "1–200 Zeichen" },
-      "note": "Register der Vereinsschriften (Lastenheft homepage-generator 18 §11). Eine noch in tokens.type verwendete Schrift lässt sich nicht allein entfernen (422). Die App lädt nur TTF; WOFF2 zeigt sie in Inter. Öffentliche Einstellungen liefern fonts ohne lizenz."
+      "note": "Register der Vereinsschriften (Lastenheft homepage-generator 18 §11). Hochladen und Eintragen: cai.club.15.font_upload; Rollen ohne Registereintrag meldet cai.club.03.settings in design_settings.font_hinweise. Eine noch in tokens.type verwendete Schrift lässt sich nicht allein entfernen (422). Die App lädt nur TTF; WOFF2 zeigt sie in Inter. Öffentliche Einstellungen liefern fonts ohne lizenz."
     },
     "custom_css": {
       "scope": ".pub-site-root",

@@ -78,6 +78,7 @@ describe("ComvenioApiClient", () => {
     const form = new FormData();
     await expect(client.request({ method: "PUT", service: "content", path: "/x", form, context: cliContext })).rejects.toBeDefined();
     await expect(client.request({ method: "POST", service: "content", path: "/x", form, body: {}, context: cliContext })).rejects.toBeDefined();
+    await expect(client.requestBytes!({ method: "POST", service: "content", path: "/x", form, context: cliContext })).rejects.toBeDefined();
     expect(fetchCalls).toBe(0);
   });
 

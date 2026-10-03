@@ -261,6 +261,8 @@ comvenio action call cai.club.05.design \
 answer names the `font_id`; use it in `tokens.type` with `source: verein`. A
 font of the same family is replaced, and roles that used it point to the new
 file; a club keeps at most two families. The app loads TTF only.
+`cai.club.03.settings` lists roles whose font is missing from the register in
+`design_settings.font_hinweise`.
 
 ```bash
 comvenio action call cai.club.15.font_upload \
