@@ -247,6 +247,19 @@ comvenio action call cai.club.05.design \
   --json
 ```
 
+Schriften für Web und App legen die Schriftrollen in `tokens.type` fest:
+`source: plattform` für die Familien der Schriftpaare (Merriweather, Lato,
+Oswald, Open Sans, Nunito, Montserrat, Source Sans 3), `source: system` für
+`serif`, `sans-serif` oder `system-ui`, `source: verein` für eine hochgeladene
+Vereinsschrift mit `font_id` aus `design_settings.fonts`. Die App lädt
+Vereinsschriften nur als TTF.
+
+```bash
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"tokens":{"type":{"heading":{"family":"Merriweather","source":"plattform","weight":700},"body":{"family":"Lato","source":"plattform"}}}}}' \
+  --json
+```
+
 Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
 verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
 zur Vereins-Homepage.

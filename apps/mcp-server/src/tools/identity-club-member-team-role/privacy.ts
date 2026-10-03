@@ -181,6 +181,19 @@ function numberRecord(value: unknown): Record<string, JsonValue> | undefined {
   return result;
 }
 
+/** tokens.type: only the heading/body roles with their four known fields. */
+function fontRoles(value: unknown): Record<string, JsonValue> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const result: Record<string, JsonValue> = {};
+  for (const role of ["heading", "body"] as const) {
+    const entry = (value as Record<string, unknown>)[role];
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      result[role] = pick(entry as Record<string, unknown>, ["family", "source", "font_id", "weight"]);
+    }
+  }
+  return result;
+}
+
 export function redactClubSettings(value: unknown): JsonValue {
   const settings = object(value);
   const result: Record<string, JsonValue> = {};
@@ -243,7 +256,17 @@ export function redactClubSettings(value: unknown): JsonValue {
       if (palette !== undefined) safeTokens.palette = palette;
       const radius = numberRecord(tokenRecord.radius);
       if (radius !== undefined) safeTokens.radius = radius;
+      const type = fontRoles(tokenRecord.type);
+      if (type !== undefined) safeTokens.type = type;
       safeDesign.tokens = safeTokens;
+    }
+    // Club font register (homepage-generator 18): ids, families, formats and
+    // licence notes are the club's own design data, no member data.
+    if (Array.isArray(designRecord.fonts)) {
+      safeDesign.fonts = designRecord.fonts
+        .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
+        .slice(0, 2)
+        .map((entry) => pick(entry, ["id", "family", "format", "lizenz"]));
     }
     result.design_settings = safeDesign;
   }

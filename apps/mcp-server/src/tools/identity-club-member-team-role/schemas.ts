@@ -83,14 +83,52 @@ const publicHeader = z.object({
   density: z.enum(["compact", "comfortable"]).optional(),
   sticky: z.boolean().optional(),
 }).strict();
+// Font roles of the design contract (homepage-generator 18): generic families
+// for source "system", the families of the five font pairs for "plattform",
+// anything else is a club font file referenced by font_id ("verein").
+export const SYSTEM_FONT_FAMILIES = ["serif", "sans-serif", "system-ui"] as const;
+export const PLATFORM_FONT_FAMILIES = [
+  "Merriweather", "Lato", "Oswald", "Open Sans", "Nunito", "Montserrat", "Source Sans 3",
+] as const;
+const fontRole = z.object({
+  family: z.string().trim().min(1).max(64),
+  source: z.enum(["system", "plattform", "verein"]),
+  font_id: uuid.optional(),
+  weight: z.number().int().min(100).max(900).multipleOf(100).optional(),
+}).strict().superRefine((role, ctx) => {
+  if (role.source === "system" && !(SYSTEM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+    ctx.addIssue({ code: "custom", path: ["family"], message: `source system erlaubt nur ${SYSTEM_FONT_FAMILIES.join(", ")}` });
+  }
+  if (role.source === "plattform" && !(PLATFORM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+    ctx.addIssue({ code: "custom", path: ["family"], message: `source plattform erlaubt nur ${PLATFORM_FONT_FAMILIES.join(", ")}` });
+  }
+  if (role.source === "verein") {
+    if (!role.font_id) ctx.addIssue({ code: "custom", path: ["font_id"], message: "source verein braucht font_id aus dem Upload" });
+    if ((PLATFORM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+      ctx.addIssue({ code: "custom", path: ["source"], message: `${role.family} ist eine Plattform-Schrift — source plattform verwenden` });
+    }
+  } else if (role.font_id) {
+    ctx.addIssue({ code: "custom", path: ["font_id"], message: "font_id nur bei source verein" });
+  }
+});
+// The club font register (design_settings.fonts); the club-service checks
+// every tokens.type font_id against it on write.
+const clubFont = z.object({
+  id: uuid,
+  family: z.string().trim().min(1).max(64),
+  format: z.enum(["woff2", "ttf"]),
+  lizenz: z.string().trim().min(1).max(200),
+}).strict();
 // Mirrors club-service validate_tokens: palette is role -> hex with free role
-// names (surface, ink, accent, nav, on_nav, ...), radius is key -> px.
+// names (surface, ink, accent, nav, on_nav, header, card, button, ...),
+// radius is key -> px, type holds the heading/body font roles.
 const designTokens = z.object({
   palette: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,39}$/u), color).optional(),
   radius: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,15}$/u), z.number().min(0).max(48)).optional(),
   spacing_scale: z.number().min(0.5).max(2).optional(),
   type_scale: z.number().min(0.8).max(1.4).optional(),
   shadow_level: z.number().int().min(0).max(3).optional(),
+  type: z.object({ heading: fontRole.optional(), body: fontRole.optional() }).strict().optional(),
 }).strict();
 const designSettings = z.object({
   homepage_theme: z.enum([
@@ -127,6 +165,7 @@ const designSettings = z.object({
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),
   tokens: designTokens.nullable().optional(),
+  fonts: z.array(clubFont).max(2).optional(),
 }).strict();
 
 const features = z.object({

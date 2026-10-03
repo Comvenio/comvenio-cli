@@ -241,6 +241,19 @@ comvenio action call cai.club.05.design \
   --json
 ```
 
+Fonts for web and app are set by the font roles in `tokens.type`:
+`source: plattform` for the families of the font pairs (Merriweather, Lato,
+Oswald, Open Sans, Nunito, Montserrat, Source Sans 3), `source: system` for
+`serif`, `sans-serif` or `system-ui`, `source: verein` for an uploaded club
+font with a `font_id` from `design_settings.fonts`. The app loads club fonts
+as TTF only.
+
+```bash
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"tokens":{"type":{"heading":{"family":"Merriweather","source":"plattform","weight":700},"body":{"family":"Lato","source":"plattform"}}}}}' \
+  --json
+```
+
 Before every design change, use the homepage preview and check afterward.
 The complete workflow for the public page is in the club homepage article.
 
