@@ -1,3 +1,4 @@
+import { ASYNC_JOB_HANDLE_SCHEMA } from "@comvenio/connector-contracts";
 import { z } from "zod";
 
 import type { K7ActionId, K7ActionSchemaContract } from "./types.ts";
@@ -723,6 +724,22 @@ const positionRoleOutput = z.object({
 
 const contract = (input: z.ZodType, output: z.ZodType): K7ActionSchemaContract => ({ input, output });
 
+// Club font upload (homepage-generator 18): the CLI fills the file fields from
+// --file; family and licence note come from --input. At most 2 MB, TTF or WOFF2.
+export const CLUB_FONT_MAX_BYTES = 2_097_152;
+const fontUploadInput = z.object({
+  club_id: uuid,
+  source_file_id: uuid,
+  filename: z.string().trim().min(1).max(255),
+  content_type: z.enum(["font/ttf", "font/woff2"]),
+  expected_size: z.number().int().min(1).max(CLUB_FONT_MAX_BYTES),
+  family: z.string().trim().min(1).max(64).refine(
+    (family) => !(PLATFORM_FONT_FAMILIES as readonly string[]).includes(family),
+    "Familie der Schriftpaare: source plattform statt Upload verwenden",
+  ),
+  lizenz: z.string().trim().min(1).max(200),
+}).strict();
+
 // Weekly preview (ai-service): a run starts a draft; the share token of a snapshot stays out.
 const weeklyPreviewRunOutput = z.object({
   run_id: uuid,
@@ -795,6 +812,7 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
     z.array(forumThreadOutput),
   ),
 
+  "cai.club.15.font_upload": contract(fontUploadInput, ASYNC_JOB_HANDLE_SCHEMA),
   "cai.member.01.list": contract(z.object({ club_id: uuid, limit: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).default(0) }).strict(), z.object({ items: z.array(memberListItem), limit: z.number().int(), offset: z.number().int(), total: z.number().int().nullable() }).strict()),
   "cai.member.02.show": contract(entityContext("member_id"), memberDetail),
   "cai.member.03.add": contract(z.object({ club_id: uuid, member: memberCreate }).strict(), memberListItem),

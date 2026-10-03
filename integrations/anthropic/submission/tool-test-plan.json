@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "8de692827b36d4a94863b2b4f8e920be7973062052d56a542c138d432ba6a667",
+  "tool_sync_version": "13dfbb1443432966749c0cd17edbe47be7e859df14ccba84b7c6f854c4291c03",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -412,6 +412,21 @@
       "tool_name": "cv_club_14_forum_thread_list",
       "happy_path_prompt": "Führe „Comvenio: Verein – forum thread list“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: Verein – forum thread list“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_club_15_font_upload",
+      "happy_path_prompt": "Führe „Comvenio: Verein – font upload“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: Verein – font upload“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

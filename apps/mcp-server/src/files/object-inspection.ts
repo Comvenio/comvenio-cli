@@ -59,6 +59,8 @@ export const UPLOAD_EXTENSIONS: Readonly<Record<ConnectorUploadMime, readonly st
   "audio/wav": ["wav"],
   "audio/webm": ["webm", "weba"],
   "audio/aac": ["aac"],
+  "font/ttf": ["ttf"],
+  "font/woff2": ["woff2"],
 };
 
 export interface InspectableObject extends RandomAccessObject {
@@ -228,6 +230,9 @@ export async function detectBinarySignature(head: Uint8Array, reader: RandomAcce
   const gif = ascii(head, 0, 6);
   if (gif === "GIF87a" || gif === "GIF89a") return only("image/gif");
   if (ascii(head, 0, 5) === "%PDF-") return only("application/pdf");
+  // Fonts: TrueType (0x00010000 or "true") and WOFF2 ("wOF2").
+  if (matches(head, [0x00, 0x01, 0x00, 0x00]) || ascii(head, 0, 4) === "true") return only("font/ttf");
+  if (ascii(head, 0, 4) === "wOF2") return only("font/woff2");
   if (ascii(head, 0, 4) === "RIFF") {
     const form = ascii(head, 8, 12);
     if (form === "WEBP") return only("image/webp");

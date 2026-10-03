@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "8de692827b36d4a94863b2b4f8e920be7973062052d56a542c138d432ba6a667",
+  "catalog_source_hash_sha256": "13dfbb1443432966749c0cd17edbe47be7e859df14ccba84b7c6f854c4291c03",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -411,6 +411,21 @@
     {
       "tool_name": "cv_club_14_forum_thread_list",
       "prompt": "Prüfe „Comvenio: Verein – forum thread list“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_club_15_font_upload",
+      "prompt": "Prüfe „Comvenio: Verein – font upload“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

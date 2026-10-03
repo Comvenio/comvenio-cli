@@ -53,6 +53,34 @@ describe("ComvenioApiClient", () => {
     await expect(client.request({ method: "POST", service: "ai", path: "/chat/", body: {}, context: cliContext, timeout_ms: 10 })).rejects.toBeDefined();
   });
 
+  test("a form body is sent as multipart without a JSON content type (club font upload)", async () => {
+    let seen: RequestInit | null = null;
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async (_url, init) => {
+        seen = init as RequestInit;
+        return new Response(JSON.stringify({ font_id: "x" }), { headers: { "Content-Type": "application/json" } });
+      } },
+    );
+    const form = new FormData();
+    form.append("family", "Jaga Serif");
+    expect(await client.request({ method: "POST", service: "content", path: "/fonts/club/c/upload", form, context: cliContext })).toEqual({ font_id: "x" });
+    expect(seen!.body).toBe(form);
+    expect((seen!.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+  });
+
+  test("a form body is refused with a JSON body or on another method, before network access", async () => {
+    let fetchCalls = 0;
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async () => { fetchCalls++; return new Response("{}"); } },
+    );
+    const form = new FormData();
+    await expect(client.request({ method: "PUT", service: "content", path: "/x", form, context: cliContext })).rejects.toBeDefined();
+    await expect(client.request({ method: "POST", service: "content", path: "/x", form, body: {}, context: cliContext })).rejects.toBeDefined();
+    expect(fetchCalls).toBe(0);
+  });
+
   test("rejects invalid configuration before network access", async () => {
     let fetchCalls = 0;
     const client = createComvenioApiClient(

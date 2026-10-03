@@ -260,6 +260,22 @@ comvenio action call cai.club.05.design \
   --json
 ```
 
+### Vereinsschrift hochladen
+
+`cai.club.15.font_upload` lädt eine eigene Schrift (TTF oder WOFF2, höchstens
+2 MB, mit Lizenzangabe) hoch und trägt sie in `design_settings.fonts` ein. Die
+Antwort nennt die `font_id`; sie gehört danach in `tokens.type` mit
+`source: verein`. Eine Schrift derselben Familie wird ersetzt, Rollen, die
+sie nutzten, zeigen danach auf die neue Datei; mehr als zwei Familien nimmt der
+Verein nicht auf. Die App lädt nur TTF.
+
+```bash
+comvenio action call cai.club.15.font_upload \
+  --file ./JagaSerif.ttf \
+  --input '{"club_id":"<club-id>","family":"Jaga Serif","lizenz":"SIL OFL 1.1"}' \
+  --json
+```
+
 Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
 verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
 zur Vereins-Homepage.
@@ -330,6 +346,7 @@ comvenio action call cai.club.08.department_add \
 - `cai.club.10.department_delete` — department-delete (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.club.13.forum_board_list` — forum-board-list (lesen) · Scopes: `club.read`
 - `cai.club.14.forum_thread_list` — forum-thread-list (lesen) · Scopes: `club.read`
+- `cai.club.15.font_upload` — font-upload (ändern) · Scopes: `club.read`, `admin.write`, `files.import`, `files.write`
 <!-- /gen:docs -->
 
 ## Fehler

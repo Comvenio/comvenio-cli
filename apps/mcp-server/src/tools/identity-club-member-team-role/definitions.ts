@@ -159,6 +159,18 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     routes: [route(null, "GET", "message", "/forum/threads")],
   }),
 
+  // Club font for the design contract (homepage-generator 18): a clean
+  // connector upload goes to the content-service and into design_settings.fonts.
+  "cai.club.15.font_upload": definition({
+    action_id: "cai.club.15.font_upload", domain: "club", source_action: "font-upload",
+    scopes: [...CLUB_READ, ...ADMIN_WRITE, "files.import", "files.write"],
+    permission: policy(["manage_club_settings"]), risk: "reversible_write", gate: "job",
+    routes: [
+      route("route.023", "GET", "club", "/clubs/{club_id}/settings"),
+      route(null, "POST", "content", "/fonts/club/{club_id}/upload"),
+      route("route.030", "PUT", "club", "/clubs/{club_id}/settings"),
+    ],
+  }),
   "cai.member.01.list": definition({
     action_id: "cai.member.01.list", domain: "member", source_action: "list", scopes: MEMBER_BASIC,
     permission: policy(["view_members"]), routes: [route("route.285", "GET", "member", "/members/by_club/{club_id}")],
