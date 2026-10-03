@@ -173,7 +173,7 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     routes: [
       route("route.023", "GET", "club", "/clubs/{club_id}/settings"),
       route(null, "POST", "content", "/fonts/club/{club_id}/upload"),
-      route("route.030", "PUT", "club", "/clubs/{club_id}/settings"),
+      route(null, "POST", "club", "/clubs/{club_id}/settings/fonts"),
     ],
   }),
   "cai.member.01.list": definition({

@@ -281,7 +281,8 @@ export async function detectBinarySignature(head: Uint8Array, reader: RandomAcce
 }
 
 /**
- * A TrueType file (sfnt 0x00010000): 1..64 tables, each directory entry with
+ * A TrueType file (sfnt 0x00010000): at least one table, a directory that
+ * fits the object (no fixed upper bound — OpenType allows vendor tables), each entry with
  * a four-character printable tag and a table that lies inside the object.
  * Rejects truncated files and other content that merely starts with the
  * version bytes (homepage-generator 18, club fonts).
@@ -290,7 +291,7 @@ async function isSfntFont(reader: RandomAccessObject): Promise<boolean> {
   if (reader.size < 12) return false;
   const header = await reader.read(0, 12);
   const tables = dataView(header).getUint16(4, false);
-  if (tables < 1 || tables > 64 || reader.size < 12 + tables * 16) return false;
+  if (tables < 1 || reader.size < 12 + tables * 16) return false;
   const directory = await reader.read(12, 12 + tables * 16);
   if (directory.byteLength !== tables * 16) return false;
   const view = dataView(directory);

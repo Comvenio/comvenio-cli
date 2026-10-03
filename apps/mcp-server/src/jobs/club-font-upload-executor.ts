@@ -29,6 +29,12 @@ const registerEntrySchema = z.object({
   lizenz: z.string(),
 }).passthrough();
 
+const registerResultSchema = z.object({
+  fonts: z.array(z.object({ id: z.string().uuid() }).passthrough()),
+  replaced_font_ids: z.array(z.string()),
+  moved_roles: z.array(z.string()),
+}).passthrough();
+
 const fontResultSchema = z.object({
   font_id: z.string().uuid(),
   club_id: z.string().uuid(),
@@ -70,38 +76,27 @@ function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-/** The stored register and the heading/body roles of the club's design. */
-function currentDesign(settings: JsonValue): { fonts: RegisterEntry[]; roles: Record<string, Record<string, unknown>> } {
+/** The stored register of the club's design. */
+function currentFonts(settings: JsonValue): RegisterEntry[] {
   const design = record(record(settings)?.design_settings);
-  const fonts = Array.isArray(design?.fonts)
+  return Array.isArray(design?.fonts)
     ? design.fonts.flatMap((entry) => {
       const parsed = registerEntrySchema.safeParse(entry);
       return parsed.success ? [{ id: parsed.data.id, family: parsed.data.family, format: parsed.data.format, lizenz: parsed.data.lizenz }] : [];
     })
     : [];
-  const type = record(record(design?.tokens)?.type);
-  const roles: Record<string, Record<string, unknown>> = {};
-  for (const role of ["heading", "body"]) {
-    const entry = record(type?.[role]);
-    if (entry) roles[role] = entry;
-  }
-  return { fonts, roles };
 }
 
 /**
  * cai.club.15.font_upload: moves exactly one clean connector upload (TTF or
- * WOFF2, at most 2 MB) to the content-service font route and registers it in
- * design_settings.fonts (homepage-generator 18 §11). An existing font of the
- * same family is replaced, and roles in tokens.type that pointed at it move to
- * the new font in the same write; a third family is refused before anything
- * is uploaded. The connector file is consumed once; a failure after that
- * point ends the job without a retry. Each side effect starts with a fresh
- * job actor, so a revoked grant stops the job before the next effect.
- *
- * Known limit: the register is a list the club-service replaces on write, so
- * two uploads at the same moment can drop one entry. The job re-reads after
- * its write and fails with CONFLICT instead of reporting success; an atomic
- * registration in the club-service is the structural fix (review K18 R1).
+ * WOFF2, at most 2 MB) to the content-service font route and registers it with
+ * POST /clubs/{club_id}/settings/fonts — one locked write in the club-service
+ * that replaces the same family, moves the tokens.type roles that used it and
+ * refuses a third family (homepage-generator 18 §11, review K18 R3-2). A third
+ * family is also refused before anything is consumed. The connector file is
+ * consumed once; a failure after that point ends the job without a retry.
+ * Each side effect starts with a fresh job actor, so a revoked grant stops the
+ * job before the next effect.
  */
 export const CLUB_FONT_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
   action_id: "cai.club.15.font_upload",
@@ -118,10 +113,10 @@ export const CLUB_FONT_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     const settingsPath = `/clubs/${encodeURIComponent(input.club_id)}/settings`;
 
     // Capacity first: a third family is refused before the file is consumed or uploaded.
-    const before = currentDesign(await (await job.freshActor()).request<JsonValue>({
+    const before = currentFonts(await (await job.freshActor()).request<JsonValue>({
       method: "GET", service: "club", path: settingsPath, context,
     }));
-    if (!before.fonts.some((font) => font.family === input.family) && before.fonts.length >= MAX_CLUB_FONTS) {
+    if (!before.some((font) => font.family === input.family) && before.length >= MAX_CLUB_FONTS) {
       throw failure(context, "CONFLICT", `Der Verein hat schon ${MAX_CLUB_FONTS} Schriften; zuerst eine entfernen oder dieselbe Familie ersetzen.`);
     }
 
@@ -180,52 +175,17 @@ export const CLUB_FONT_UPLOAD_EXECUTOR: JobExecutor = Object.freeze({
     }
     await job.reportProgress(70);
 
-    // Register against the state right before the write: replace the same family, keep the other.
-    const now = currentDesign(await (await job.freshActor()).request<JsonValue>({
-      method: "GET", service: "club", path: settingsPath, context,
-    }));
-    const replaced = now.fonts.filter((font) => font.family === input.family).map((font) => font.id);
-    const fonts: RegisterEntry[] = [
-      ...now.fonts.filter((font) => font.family !== input.family),
-      { id: uploaded.data.font_id, family: input.family, format: uploaded.data.format, lizenz: input.lizenz },
-    ];
-    if (fonts.length > MAX_CLUB_FONTS) {
-      throw failure(context, "CONFLICT", `Schrift ${uploaded.data.font_id} ist hochgeladen, aber nicht eingetragen: der Verein hat inzwischen ${MAX_CLUB_FONTS} andere Schriften.`);
-    }
-    // Roles that pointed at a replaced font move to the new one in the same write
-    // (the club-service refuses removing a font that tokens.type still uses). The
-    // whole role is sent: validate_tokens checks the patch before it is merged.
-    const type: Record<string, JsonValue> = {};
-    for (const [role, entry] of Object.entries(now.roles)) {
-      if (typeof entry.font_id === "string" && replaced.includes(entry.font_id)) {
-        type[role] = {
-          family: typeof entry.family === "string" ? entry.family : input.family,
-          source: "verein",
-          font_id: uploaded.data.font_id,
-          ...(typeof entry.weight === "number" ? { weight: entry.weight } : {}),
-        };
-      }
-    }
-    // The PUT is its own side effect: a fresh actor right before it.
-    await (await job.freshActor()).request<JsonValue>({
-      method: "PUT",
+    // Register in one locked write in the club-service: same family replaces,
+    // roles that used it move along, a third family is refused (review K18 R3-2).
+    const registered = registerResultSchema.safeParse(await (await job.freshActor()).request<JsonValue>({
+      method: "POST",
       service: "club",
-      path: settingsPath,
+      path: `${settingsPath}/fonts`,
       context,
-      body: {
-        design_settings: {
-          fonts,
-          ...(Object.keys(type).length > 0 ? { tokens: { type } } : {}),
-        },
-      },
-    });
-    // The register is a list that a write replaces; a concurrent upload can drop
-    // this entry again. Say so instead of reporting success (review K18 R1).
-    const after = currentDesign(await (await job.freshActor()).request<JsonValue>({
-      method: "GET", service: "club", path: settingsPath, context,
+      body: { id: uploaded.data.font_id, family: input.family, format: uploaded.data.format, lizenz: input.lizenz },
     }));
-    if (!after.fonts.some((font) => font.id === uploaded.data.font_id)) {
-      throw failure(context, "CONFLICT", `Schrift ${uploaded.data.font_id} ist hochgeladen, aber eine gleichzeitige Änderung hat den Eintrag ersetzt; die Action erneut ausführen.`);
+    if (!registered.success || !registered.data.fonts.some((font) => font.id === uploaded.data.font_id)) {
+      throw failure(context, "UPSTREAM_UNAVAILABLE", `Schrift ${uploaded.data.font_id} ist hochgeladen, aber der Verein hat die Eintragung nicht bestätigt.`);
     }
     await job.reportProgress(100);
     return fontResultSchema.parse({

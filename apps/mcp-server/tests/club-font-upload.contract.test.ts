@@ -51,7 +51,7 @@ function mergeDesign(current: Record<string, any>, patch: Record<string, any>): 
   return result;
 }
 
-function harness(options: { settings?: JsonValue; jobClub?: string; mime?: string; revokeAtActor?: number; dropAfterPut?: boolean } = {}) {
+function harness(options: { settings?: JsonValue; jobClub?: string; mime?: string; revokeAtActor?: number; unconfirmed?: boolean } = {}) {
   const calls: Array<ComvenioApiRequest & { fields?: Record<string, string> }> = [];
   let consumed = 0;
   let actors = 0;
@@ -67,11 +67,13 @@ function harness(options: { settings?: JsonValue; jobClub?: string; mime?: strin
       if (request.method === "POST" && request.path === `/fonts/club/${clubId}/upload`) {
         return { font_id: newFontId, family: "Jaga Serif", format: "ttf", size_bytes: ttf.byteLength } as unknown as T;
       }
-      if (request.method === "PUT" && request.path === `/clubs/${clubId}/settings`) {
-        // Deep merge like the club-service; lists are replaced. dropAfterPut plays a concurrent writer.
-        const patched = mergeDesign(settings, request.body as Record<string, any>);
-        settings = options.dropAfterPut ? structuredClone(options.settings ?? { design_settings: {} }) as Record<string, any> : patched;
-        return {} as T;
+      if (request.method === "POST" && request.path === `/clubs/${clubId}/settings/fonts`) {
+        // Plays the club-service route: one write, same family replaces; unconfirmed drops the entry.
+        const entry = request.body as Record<string, any>;
+        const fonts = ((settings.design_settings?.fonts ?? []) as Array<Record<string, any>>).filter((font) => font.family !== entry.family);
+        settings = mergeDesign(settings, { design_settings: { fonts: [...fonts, entry] } });
+        const reported = options.unconfirmed ? fonts : [...fonts, entry];
+        return { fonts: reported, replaced_font_ids: [], moved_roles: [] } as unknown as T;
       }
       throw new Error(`unexpected ${request.method} ${request.path}`);
     },
@@ -114,6 +116,9 @@ describe("cai.club.15.font_upload contract", () => {
     expect(definition.backend_routes.map((route) => `${route.method} ${route.service} ${route.normalized_path_template}`)).toContain(
       "POST content /fonts/club/{club_id}/upload",
     );
+    expect(definition.backend_routes.map((route) => `${route.method} ${route.service} ${route.normalized_path_template}`)).toContain(
+      "POST club /clubs/{club_id}/settings/fonts",
+    );
     expect([...CLUB_FONT_UPLOAD_EXECUTOR.required_scopes].sort()).toEqual([...definition.required_scopes].sort());
   });
 
@@ -141,6 +146,22 @@ describe("cai.club.15.font_upload contract", () => {
     expect((await detectBinarySignature(woff2, readerOf(woff2)))?.mimes).toEqual(["font/woff2"]);
   });
 
+  test("review R2: more than 64 tables are a valid font when the directory fits", async () => {
+    const tables = 65;
+    const dir = 12 + tables * 16;
+    const bytes = new Uint8Array(dir + tables * 4);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(0, 0x00010000, false);
+    view.setUint16(4, tables, false);
+    for (let index = 0; index < tables; index += 1) {
+      const entry = 12 + index * 16;
+      bytes.set(new TextEncoder().encode(`t${String(index).padStart(3, "0")}`), entry);
+      view.setUint32(entry + 8, dir + index * 4, false);
+      view.setUint32(entry + 12, 4, false);
+    }
+    expect((await detectBinarySignature(bytes, readerOf(bytes)))?.mimes).toEqual(["font/ttf"]);
+  });
+
   test("review R1: magic bytes alone are no font; JSON, text and ISO media keep their reading", async () => {
     const cut = ttf.slice(0, 20);
     expect(await detectBinarySignature(cut, readerOf(cut))).toBeNull();
@@ -166,56 +187,35 @@ describe("cai.club.15.font_upload executor", () => {
     expect(upload.service).toBe("content");
     expect(upload.body).toBeUndefined();
     expect(upload.fields).toEqual({ file: "file:font/ttf", family: "Jaga Serif", lizenz: "OFL 1.1" });
-    const write = calls.find((call) => call.method === "PUT")!;
-    expect(write.body).toEqual({
-      design_settings: { fonts: [{ id: newFontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" }] },
-    });
+    const register = calls.find((call) => call.path === `/clubs/${clubId}/settings/fonts`)!;
+    expect(register.method).toBe("POST");
+    expect(register.body).toEqual({ id: newFontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" });
+    expect(calls.some((call) => call.method === "PUT")).toBe(false);
     const result = CLUB_FONT_UPLOAD_EXECUTOR.projectResult!(output);
     expect(ASYNC_JOB_RESULT_SCHEMA.parse(result)).toEqual({
       kind: "club_font", font_id: newFontId, family: "Jaga Serif", format: "ttf", size_bytes: ttf.byteLength,
     });
   });
 
-  test("replaces the same family and moves the roles that used it in the same write", async () => {
+  test("registration is one call to the club-service route; replacing and moving roles happen there", async () => {
     const { job, calls } = harness({
-      settings: {
-        design_settings: {
-          fonts: [
-            { id: oldFontId, family: "Jaga Serif", format: "woff2", lizenz: "OFL 1.1" },
-            { id: otherFontId, family: "Jaga Sans", format: "ttf", lizenz: "OFL 1.1" },
-          ],
-          tokens: {
-            type: {
-              heading: { family: "Jaga Serif", source: "verein", font_id: oldFontId },
-              body: { family: "Jaga Sans", source: "verein", font_id: otherFontId },
-            },
-          },
-        },
-      },
+      settings: { design_settings: { fonts: [{ id: oldFontId, family: "Jaga Serif", format: "woff2", lizenz: "OFL 1.1" }] } },
     });
     await CLUB_FONT_UPLOAD_EXECUTOR.execute(job);
-    const write = calls.find((call) => call.method === "PUT")!;
-    expect(write.body).toEqual({
-      design_settings: {
-        fonts: [
-          { id: otherFontId, family: "Jaga Sans", format: "ttf", lizenz: "OFL 1.1" },
-          { id: newFontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" },
-        ],
-        tokens: { type: { heading: { family: "Jaga Serif", source: "verein", font_id: newFontId } } },
-      },
-    });
-  });
-
-  test("review R1: a revoked actor right before the register write stops the PUT", async () => {
-    // Actors: 1 capacity GET, 2 consumption, 3 font POST, 4 register GET, 5 PUT.
-    const { job, calls } = harness({ revokeAtActor: 5 });
-    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toThrow("revoked");
+    expect(calls.filter((call) => call.path === `/clubs/${clubId}/settings/fonts`)).toHaveLength(1);
     expect(calls.some((call) => call.method === "PUT")).toBe(false);
   });
 
-  test("review R1: an entry dropped by a concurrent write is reported, not claimed as success", async () => {
-    const { job } = harness({ dropAfterPut: true });
-    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toMatchObject({ code: "CONFLICT" });
+  test("review R1: a revoked actor right before the registration stops it", async () => {
+    // Actors: 1 capacity GET, 2 consumption, 3 font POST, 4 registration.
+    const { job, calls } = harness({ revokeAtActor: 4 });
+    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toThrow("revoked");
+    expect(calls.some((call) => call.path === `/clubs/${clubId}/settings/fonts`)).toBe(false);
+  });
+
+  test("a registration the club-service does not confirm is no success", async () => {
+    const { job } = harness({ unconfirmed: true });
+    await expect(CLUB_FONT_UPLOAD_EXECUTOR.execute(job)).rejects.toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
   });
 
   test("a third family is refused before the file is consumed or uploaded", async () => {
