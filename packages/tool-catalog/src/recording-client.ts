@@ -106,6 +106,9 @@ export class FailClosedRecordingComvenioClient implements ComvenioApiClient {
         `${this.fixture.operation_id}: Öffentliche Fixture darf keinen OAuth-Grant senden.`,
         "ROUTE_TRACE_MISMATCH");
     }
+    // Recorded fixtures cover JSON bodies only; a multipart form is never matched silently.
+    assertCatalog(request.form === undefined,
+      `${this.fixture.operation_id}: Formular-Bodies werden nicht aufgezeichnet.`, "ROUTE_TRACE_MISMATCH");
     const actualContentType = request.body === undefined ? null : "application/json";
     assertCatalog(actualContentType === step.request_matcher.content_type,
       `${this.fixture.operation_id}: Content-Type weicht ab.`, "ROUTE_TRACE_MISMATCH");

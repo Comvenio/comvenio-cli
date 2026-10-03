@@ -9,6 +9,7 @@ import type { MalwareScannerPort, QuarantineObjectPort } from "./files/types.ts"
 import { HttpCapabilityContextResolver } from "./http/upstreams.ts";
 import type { ReadinessDependency } from "./http/types.ts";
 import { BullMqJobQueue } from "./jobs/bullmq.ts";
+import { CLUB_FONT_UPLOAD_EXECUTOR } from "./jobs/club-font-upload-executor.ts";
 import { DATA_UPLOAD_EXECUTOR } from "./jobs/data-upload-executor.ts";
 import { JobExecutorRegistry } from "./jobs/executors.ts";
 import { FairUseService, bundledRateLimitConfig, fairUseConfigReadiness } from "./jobs/fair-use.ts";
@@ -75,7 +76,7 @@ export async function startJobFilePlatform(input: {
     const fileMetadata = new RedisFileMetadataStore(connections.producer);
     const objects = adapters.quarantine(input.config.quarantine);
     const scanner = adapters.scanner(input.config.clamd, objects);
-    const registry = new JobExecutorRegistry([DATA_UPLOAD_EXECUTOR]);
+    const registry = new JobExecutorRegistry([DATA_UPLOAD_EXECUTOR, CLUB_FONT_UPLOAD_EXECUTOR]);
     const capabilities = new HttpCapabilityContextResolver({ api_base_url: input.api_base_url });
     const processor = new DomainJobProcessor({
       inputs,

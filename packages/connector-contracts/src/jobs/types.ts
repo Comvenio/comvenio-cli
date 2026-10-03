@@ -17,7 +17,16 @@ export interface DataShareFileJobResult {
   size_bytes: number;
 }
 
-export type AsyncJobResult = DataShareFileJobResult;
+/** Club font the job uploaded and registered in design_settings.fonts (homepage-generator 18). */
+export interface ClubFontJobResult {
+  kind: "club_font";
+  font_id: UUID;
+  family: string;
+  format: "woff2" | "ttf";
+  size_bytes: number;
+}
+
+export type AsyncJobResult = DataShareFileJobResult | ClubFontJobResult;
 
 export interface AsyncJobHandle {
   job_id: UUID;

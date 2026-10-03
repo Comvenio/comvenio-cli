@@ -247,6 +247,36 @@ comvenio action call cai.club.05.design \
   --json
 ```
 
+Schriften für Web und App legen die Schriftrollen in `tokens.type` fest:
+`source: plattform` für die Familien der Schriftpaare (Merriweather, Lato,
+Oswald, Open Sans, Nunito, Montserrat, Source Sans 3), `source: system` für
+`serif`, `sans-serif` oder `system-ui`, `source: verein` für eine hochgeladene
+Vereinsschrift mit `font_id` aus `design_settings.fonts`. Die App lädt
+Vereinsschriften nur als TTF.
+
+```bash
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"tokens":{"type":{"heading":{"family":"Merriweather","source":"plattform","weight":700},"body":{"family":"Lato","source":"plattform"}}}}}' \
+  --json
+```
+
+### Vereinsschrift hochladen
+
+`cai.club.15.font_upload` lädt eine eigene Schrift (TTF oder WOFF2, höchstens
+2 MB, mit Lizenzangabe) hoch und trägt sie in `design_settings.fonts` ein. Die
+Antwort nennt die `font_id`; sie gehört danach in `tokens.type` mit
+`source: verein`. Eine Schrift derselben Familie wird ersetzt, Rollen, die
+sie nutzten, zeigen danach auf die neue Datei; mehr als zwei Familien nimmt der
+Verein nicht auf. Die App lädt nur TTF. `cai.club.03.settings` nennt in
+`design_settings.font_hinweise` Rollen, deren Schrift nicht im Register steht.
+
+```bash
+comvenio action call cai.club.15.font_upload \
+  --file ./JagaSerif.ttf \
+  --input '{"club_id":"<club-id>","family":"Jaga Serif","lizenz":"SIL OFL 1.1"}' \
+  --json
+```
+
 Vor jeder Design-Änderung anschließend die Homepage-Vorschau und -Prüfung
 verwenden. Der vollständige Ablauf für die öffentliche Seite steht im Artikel
 zur Vereins-Homepage.
@@ -317,6 +347,7 @@ comvenio action call cai.club.08.department_add \
 - `cai.club.10.department_delete` — department-delete (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.club.13.forum_board_list` — forum-board-list (lesen) · Scopes: `club.read`
 - `cai.club.14.forum_thread_list` — forum-thread-list (lesen) · Scopes: `club.read`
+- `cai.club.15.font_upload` — font-upload (ändern) · Scopes: `club.read`, `admin.write`, `files.import`, `files.write`
 <!-- /gen:docs -->
 
 ## Fehler

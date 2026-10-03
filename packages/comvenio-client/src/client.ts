@@ -18,6 +18,12 @@ export interface ComvenioApiRequest {
   context: RequestContext;
   query?: Record<string, string | string[]>;
   body?: JsonValue;
+  /**
+   * Multipart body for a file route (the club font upload of
+   * homepage-generator 18). POST only and never together with `body`; fetch
+   * sets the boundary header itself.
+   */
+  form?: FormData;
   /** Longer budget for synchronous LLM turns; capped at MAX_REQUEST_TIMEOUT_MS. */
   timeout_ms?: number;
 }
@@ -124,6 +130,10 @@ function validateRequestTarget(request: ComvenioApiRequest): void {
   }
   if (request.body !== undefined && !isJsonValue(request.body)) {
     throw configError(request.context.request_id, "Der Request-Body ist ungültig.");
+  }
+  if (request.form !== undefined && (request.body !== undefined || request.method !== "POST"
+    || !(request.form instanceof FormData))) {
+    throw configError(request.context.request_id, "Ein Formular-Body ist nur allein und nur bei POST zulässig.");
   }
 }
 
@@ -280,6 +290,10 @@ export function createComvenioApiClient(
       const context = normalizeRequestContext(input.context);
       const request = { ...input, context };
       validateRequestTarget(request);
+      if (request.form !== undefined || request.body !== undefined) {
+        // This path sends no body; refusing beats silently dropping a form or JSON body.
+        throw configError(context.request_id, "Ein Datei-Download sendet keinen Request-Body.");
+      }
       const base = normalizeGatewayBaseUrl(config.gatewayBaseUrl, context.request_id);
       const url = buildUrl(base, request);
       const token = await resolveAccessToken(config.accessToken, context);
@@ -333,6 +347,7 @@ export function createComvenioApiClient(
       };
       if (token) headers.Authorization = `Bearer ${token}`;
       if (request.body !== undefined) headers["Content-Type"] = "application/json";
+      const payload = request.form ?? (request.body === undefined ? undefined : JSON.stringify(request.body));
 
       const canRetry = request.method === "GET";
       let attempt = 0;
@@ -347,7 +362,7 @@ export function createComvenioApiClient(
           const response = await fetchImpl(url, {
             method: request.method,
             headers,
-            body: request.body === undefined ? undefined : JSON.stringify(request.body),
+            body: payload,
             signal: controller.signal,
           });
 

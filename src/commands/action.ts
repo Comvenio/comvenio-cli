@@ -11,9 +11,10 @@ import {
   connectorToolActionId,
 } from "../mcp/client.ts";
 import {
-  FILE_UPLOAD_ACTION_ID,
+  FILE_UPLOAD_ACTIONS,
   assertNoFileDerivedFields,
   formatFileUploadResult,
+  isFileUploadAction,
   runFileUpload,
 } from "./action-file-upload.ts";
 
@@ -79,7 +80,7 @@ export async function connector(subject = "Actions brauchen"): Promise<CliConnec
   });
 }
 
-async function uploadFile(options: Options): Promise<void> {
+async function uploadFile(actionId: string, options: Options): Promise<void> {
   if (typeof options.file !== "string" || options.file.length === 0) {
     throw new Error("--file benötigt einen Dateipfad.");
   }
@@ -96,6 +97,7 @@ async function uploadFile(options: Options): Promise<void> {
     const result = await runFileUpload({
       path: options.file,
       input,
+      action_id: actionId,
       ...(options.idempotencyKey ? { idempotency_key: options.idempotencyKey } : {}),
     }, {
       client,
@@ -117,7 +119,7 @@ export function registerActionCommands(cli: CAC): void {
       "action <verb> [actionId]",
       "Kanonische Comvenio-Capabilities sicher über den CLI-MCP-Kanal ausführen",
     )
-    .option("--file <path>", `Lokale Datei hochladen (nur für ${FILE_UPLOAD_ACTION_ID})`)
+    .option("--file <path>", `Lokale Datei hochladen (nur für ${Object.keys(FILE_UPLOAD_ACTIONS).join(", ")})`)
     .option("--input <json>", "Strikt typisierte Action-Eingabe als JSON-Objekt")
     .option("--idempotency-key <uuid>", "Stabiler Schlüssel für Schreibaktionen")
     .option("--preview-id <uuid>", "Vorschau-ID für action confirm")
@@ -128,15 +130,15 @@ export function registerActionCommands(cli: CAC): void {
       actionId: string | undefined,
       options: Options,
     ) => {
-      // --file is the upload source of cai.data.06.upload, nothing else.
-      if (options.file !== undefined && (verb !== "call" || actionId !== FILE_UPLOAD_ACTION_ID)) {
+      // --file is the upload source of the file actions (DataShare upload, club font), nothing else.
+      if (options.file !== undefined && (verb !== "call" || !isFileUploadAction(actionId))) {
         throw new Error(
-          `--file ist nur für "action call ${FILE_UPLOAD_ACTION_ID}" vorgesehen; `
+          `--file ist nur für "action call ${Object.keys(FILE_UPLOAD_ACTIONS).join("\" bzw. \"action call ")}" vorgesehen; `
           + "die Action-Eingabe gehört in --input.",
         );
       }
-      if (verb === "call" && actionId === FILE_UPLOAD_ACTION_ID && options.file !== undefined) {
-        await uploadFile(options);
+      if (verb === "call" && actionId !== undefined && isFileUploadAction(actionId) && options.file !== undefined) {
+        await uploadFile(actionId, options);
         return;
       }
       const client = await connector();

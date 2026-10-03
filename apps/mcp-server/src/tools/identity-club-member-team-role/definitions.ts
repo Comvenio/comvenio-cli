@@ -6,6 +6,7 @@ import type {
   PermissionPolicy,
 } from "@comvenio/tool-catalog";
 
+import { k12FilePermissionPolicy } from "../content-homepage-news-data/definitions.ts";
 import {
   K7_ACTION_IDS,
   type K7ActionDefinition,
@@ -159,6 +160,22 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     routes: [route(null, "GET", "message", "/forum/threads")],
   }),
 
+  // Club font for the design contract (homepage-generator 18): a clean
+  // connector upload goes to the content-service and into design_settings.fonts.
+  "cai.club.15.font_upload": definition({
+    action_id: "cai.club.15.font_upload", domain: "club", source_action: "font-upload",
+    scopes: [...CLUB_READ, ...ADMIN_WRITE, "files.import", "files.write"],
+    // The upload, its completion and the consumption are authorized with the
+    // file_write profile of the data actions; the action shows only to members
+    // who have it besides manage_club_settings (review K18 R1).
+    permission: { ...policy(["manage_club_settings"]), any_of: [...k12FilePermissionPolicy("file_write").any_of] },
+    risk: "reversible_write", gate: "job",
+    routes: [
+      route("route.023", "GET", "club", "/clubs/{club_id}/settings"),
+      route(null, "POST", "content", "/fonts/club/{club_id}/upload"),
+      route(null, "POST", "club", "/clubs/{club_id}/settings/fonts"),
+    ],
+  }),
   "cai.member.01.list": definition({
     action_id: "cai.member.01.list", domain: "member", source_action: "list", scopes: MEMBER_BASIC,
     permission: policy(["view_members"]), routes: [route("route.285", "GET", "member", "/members/by_club/{club_id}")],
