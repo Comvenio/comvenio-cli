@@ -68,4 +68,92 @@ describe("club design settings contract", () => {
     expect(() => schema.parse({ club_id: clubId, design_settings: { tokens: { palette: { nav: "blue" } } } })).toThrow();
     expect(() => schema.parse({ club_id: clubId, design_settings: { tokens: { shadow_level: 7 } } })).toThrow();
   });
+
+  describe("font roles and the club font register (homepage-generator 18)", () => {
+    const fontId = "3f2b6c1e-8a4d-4f7b-9c2e-1d5a6b7c8d9e";
+    const schema = K7_ACTION_SCHEMAS["cai.club.05.design"].input;
+    const write = (designSettings: Record<string, unknown>) =>
+      schema.safeParse({ club_id: clubId, design_settings: designSettings });
+
+    test("TC-01: a platform heading font and a system body font are accepted", () => {
+      const result = write({
+        tokens: {
+          type: {
+            heading: { family: "Merriweather", source: "plattform", weight: 700 },
+            body: { family: "sans-serif", source: "system" },
+          },
+        },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    test("TC-08: a club font needs a font_id, a platform family must not be source verein", () => {
+      expect(write({ tokens: { type: { heading: { family: "Jaga Serif", source: "verein" } } } }).success).toBe(false);
+      expect(write({ tokens: { type: { heading: { family: "Lato", source: "verein", font_id: fontId } } } }).success).toBe(false);
+      expect(write({
+        fonts: [{ id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" }],
+        tokens: { type: { heading: { family: "Jaga Serif", source: "verein", font_id: fontId } } },
+      }).success).toBe(true);
+    });
+
+    test("families, sources, weights and roles outside the contract are refused", () => {
+      expect(write({ tokens: { type: { heading: { family: "Georgia", source: "system" } } } }).success).toBe(false);
+      expect(write({ tokens: { type: { heading: { family: "Comic Sans", source: "plattform" } } } }).success).toBe(false);
+      expect(write({ tokens: { type: { heading: { family: "Lato", source: "plattform", weight: 450 } } } }).success).toBe(false);
+      expect(write({ tokens: { type: { heading: { family: "Lato", source: "plattform", font_id: fontId } } } }).success).toBe(false);
+      expect(write({ tokens: { type: { title: { family: "Lato", source: "plattform" } } } }).success).toBe(false);
+    });
+
+    test("the register holds at most two fonts with id, family, format and licence", () => {
+      const font = { id: fontId, family: "Jaga Serif", format: "woff2", lizenz: "OFL 1.1" };
+      expect(write({ fonts: [font] }).success).toBe(true);
+      expect(write({ fonts: [font, { ...font, id: "4f2b6c1e-8a4d-4f7b-9c2e-1d5a6b7c8d9e" }, { ...font, id: "5f2b6c1e-8a4d-4f7b-9c2e-1d5a6b7c8d9e" }] }).success).toBe(false);
+      expect(write({ fonts: [{ ...font, format: "otf" }] }).success).toBe(false);
+      expect(write({ fonts: [{ ...font, lizenz: "" }] }).success).toBe(false);
+      expect(write({ fonts: [{ ...font, id: "../../etc" }] }).success).toBe(false);
+    });
+
+    test("review R1: a stored weight null reads as not set; duplicate register ids are refused", () => {
+      const redacted = redactClubSettings({
+        design_settings: { tokens: { type: { body: { family: "Lato", source: "plattform", weight: null } } } },
+      }) as Record<string, any>;
+      const parsed = K7_ACTION_SCHEMAS["cai.club.03.settings"].output.parse(redacted) as Record<string, any>;
+      expect(parsed.design_settings.tokens.type.body).toEqual({ family: "Lato", source: "plattform" });
+      const font = { id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" };
+      expect(write({ fonts: [font, { ...font, family: "Jaga Sans" }] }).success).toBe(false);
+    });
+
+    test("DC-8: a role whose club font is not registered is named in font_hinweise", () => {
+      const redacted = redactClubSettings({
+        design_settings: {
+          tokens: { type: { heading: { family: "Jaga Serif", source: "verein", font_id: fontId } } },
+          fonts: [],
+        },
+      }) as Record<string, any>;
+      const parsed = K7_ACTION_SCHEMAS["cai.club.03.settings"].output.parse(redacted) as Record<string, any>;
+      expect(parsed.design_settings.font_hinweise).toEqual([
+        { rolle: "heading", font_id: fontId, hinweis: "Schrift nicht im Register: Web und App zeigen die Rückfallschrift." },
+      ]);
+    });
+
+    test("a read returns the font roles and the register, nothing else", () => {
+      const redacted = redactClubSettings({
+        design_settings: {
+          tokens: {
+            type: {
+              heading: { family: "Jaga Serif", source: "verein", font_id: fontId, weight: 700, css: "x" },
+              caption: { family: "Lato", source: "plattform" },
+            },
+          },
+          fonts: [{ id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1", storage_key: "s3://x" }],
+        },
+      }) as Record<string, any>;
+      const parsed = K7_ACTION_SCHEMAS["cai.club.03.settings"].output.parse(redacted) as Record<string, any>;
+      expect(parsed.design_settings.tokens.type).toEqual({
+        heading: { family: "Jaga Serif", source: "verein", font_id: fontId, weight: 700 },
+      });
+      expect(parsed.design_settings.fonts).toEqual([{ id: fontId, family: "Jaga Serif", format: "ttf", lizenz: "OFL 1.1" }]);
+      expect(parsed.design_settings.font_hinweise).toBeUndefined();
+    });
+  });
 });

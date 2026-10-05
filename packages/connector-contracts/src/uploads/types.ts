@@ -33,6 +33,9 @@ export const CONNECTOR_UPLOAD_MIME_VALUES = [
   "audio/wav",
   "audio/webm",
   "audio/aac",
+  // Club fonts of the design contract (homepage-generator 18), max 2 MB per action.
+  "font/ttf",
+  "font/woff2",
 ] as const;
 
 export type ConnectorUploadMime = (typeof CONNECTOR_UPLOAD_MIME_VALUES)[number];

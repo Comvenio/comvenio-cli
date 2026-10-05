@@ -1,3 +1,4 @@
+import { ASYNC_JOB_HANDLE_SCHEMA } from "@comvenio/connector-contracts";
 import { z } from "zod";
 
 import type { K7ActionId, K7ActionSchemaContract } from "./types.ts";
@@ -83,14 +84,52 @@ const publicHeader = z.object({
   density: z.enum(["compact", "comfortable"]).optional(),
   sticky: z.boolean().optional(),
 }).strict();
+// Font roles of the design contract (homepage-generator 18): generic families
+// for source "system", the families of the five font pairs for "plattform",
+// anything else is a club font file referenced by font_id ("verein").
+export const SYSTEM_FONT_FAMILIES = ["serif", "sans-serif", "system-ui"] as const;
+export const PLATFORM_FONT_FAMILIES = [
+  "Merriweather", "Lato", "Oswald", "Open Sans", "Nunito", "Montserrat", "Source Sans 3",
+] as const;
+const fontRole = z.object({
+  family: z.string().trim().min(1).max(64),
+  source: z.enum(["system", "plattform", "verein"]),
+  font_id: uuid.optional(),
+  weight: z.number().int().min(100).max(900).multipleOf(100).optional(),
+}).strict().superRefine((role, ctx) => {
+  if (role.source === "system" && !(SYSTEM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+    ctx.addIssue({ code: "custom", path: ["family"], message: `source system erlaubt nur ${SYSTEM_FONT_FAMILIES.join(", ")}` });
+  }
+  if (role.source === "plattform" && !(PLATFORM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+    ctx.addIssue({ code: "custom", path: ["family"], message: `source plattform erlaubt nur ${PLATFORM_FONT_FAMILIES.join(", ")}` });
+  }
+  if (role.source === "verein") {
+    if (!role.font_id) ctx.addIssue({ code: "custom", path: ["font_id"], message: "source verein braucht font_id aus dem Upload" });
+    if ((PLATFORM_FONT_FAMILIES as readonly string[]).includes(role.family)) {
+      ctx.addIssue({ code: "custom", path: ["source"], message: `${role.family} ist eine Plattform-Schrift — source plattform verwenden` });
+    }
+  } else if (role.font_id) {
+    ctx.addIssue({ code: "custom", path: ["font_id"], message: "font_id nur bei source verein" });
+  }
+});
+// The club font register (design_settings.fonts); the club-service checks
+// every tokens.type font_id against it on write.
+const clubFont = z.object({
+  id: uuid,
+  family: z.string().trim().min(1).max(64),
+  format: z.enum(["woff2", "ttf"]),
+  lizenz: z.string().trim().min(1).max(200),
+}).strict();
 // Mirrors club-service validate_tokens: palette is role -> hex with free role
-// names (surface, ink, accent, nav, on_nav, ...), radius is key -> px.
+// names (surface, ink, accent, nav, on_nav, header, card, button, ...),
+// radius is key -> px, type holds the heading/body font roles.
 const designTokens = z.object({
   palette: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,39}$/u), color).optional(),
   radius: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,15}$/u), z.number().min(0).max(48)).optional(),
   spacing_scale: z.number().min(0.5).max(2).optional(),
   type_scale: z.number().min(0.8).max(1.4).optional(),
   shadow_level: z.number().int().min(0).max(3).optional(),
+  type: z.object({ heading: fontRole.optional(), body: fontRole.optional() }).strict().optional(),
 }).strict();
 const designSettings = z.object({
   homepage_theme: z.enum([
@@ -127,6 +166,9 @@ const designSettings = z.object({
     public_header: publicHeader.nullable().optional(),
   }).strict().nullable().optional(),
   tokens: designTokens.nullable().optional(),
+  fonts: z.array(clubFont).max(2)
+    .refine((fonts) => new Set(fonts.map((font) => font.id)).size === fonts.length, "fonts: jede id nur einmal")
+    .optional(),
 }).strict();
 
 const features = z.object({
@@ -209,6 +251,12 @@ const settingsPayload = z.object({
 // (sidebar_color_mode "light"/"dark" once failed the whole read).
 const freeName = z.string().trim().max(80);
 const designSettingsRead = designSettings.extend({
+  // Roles whose club font is missing from the register (homepage-generator 18 DC-8).
+  font_hinweise: z.array(z.object({
+    rolle: z.enum(["heading", "body"]),
+    font_id: uuid,
+    hinweis: z.string().max(200),
+  }).strict()).max(2).optional(),
   homepage_theme: freeName.optional(),
   homepage_template: freeName.nullable().optional(),
   sidebar_style: freeName.optional(),
@@ -684,6 +732,22 @@ const positionRoleOutput = z.object({
 
 const contract = (input: z.ZodType, output: z.ZodType): K7ActionSchemaContract => ({ input, output });
 
+// Club font upload (homepage-generator 18): the CLI fills the file fields from
+// --file; family and licence note come from --input. At most 2 MB, TTF or WOFF2.
+export const CLUB_FONT_MAX_BYTES = 2_097_152;
+const fontUploadInput = z.object({
+  club_id: uuid,
+  source_file_id: uuid,
+  filename: z.string().trim().min(1).max(255),
+  content_type: z.enum(["font/ttf", "font/woff2"]),
+  expected_size: z.number().int().min(1).max(CLUB_FONT_MAX_BYTES),
+  family: z.string().trim().min(1).max(64).refine(
+    (family) => !(PLATFORM_FONT_FAMILIES as readonly string[]).includes(family),
+    "Familie der Schriftpaare: source plattform statt Upload verwenden",
+  ),
+  lizenz: z.string().trim().min(1).max(200),
+}).strict();
+
 // Weekly preview (ai-service): a run starts a draft; the share token of a snapshot stays out.
 const weeklyPreviewRunOutput = z.object({
   run_id: uuid,
@@ -756,6 +820,7 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
     z.array(forumThreadOutput),
   ),
 
+  "cai.club.15.font_upload": contract(fontUploadInput, ASYNC_JOB_HANDLE_SCHEMA),
   "cai.member.01.list": contract(z.object({ club_id: uuid, limit: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).default(0) }).strict(), z.object({ items: z.array(memberListItem), limit: z.number().int(), offset: z.number().int(), total: z.number().int().nullable() }).strict()),
   "cai.member.02.show": contract(entityContext("member_id"), memberDetail),
   "cai.member.03.add": contract(z.object({ club_id: uuid, member: memberCreate }).strict(), memberListItem),

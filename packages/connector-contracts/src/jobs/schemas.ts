@@ -43,8 +43,18 @@ export const DATASHARE_FILE_JOB_RESULT_SCHEMA = z.object({
   size_bytes: z.number().int().positive(),
 }).strict();
 
+/** Club font uploaded and registered for the design contract (homepage-generator 18). */
+export const CLUB_FONT_JOB_RESULT_SCHEMA = z.object({
+  kind: z.literal("club_font"),
+  font_id: uuid,
+  family: z.string().trim().min(1).max(64),
+  format: z.enum(["woff2", "ttf"]),
+  size_bytes: z.number().int().positive().max(2_097_152),
+}).strict();
+
 export const ASYNC_JOB_RESULT_SCHEMA = z.discriminatedUnion("kind", [
   DATASHARE_FILE_JOB_RESULT_SCHEMA,
+  CLUB_FONT_JOB_RESULT_SCHEMA,
 ]);
 
 export const ASYNC_JOB_HANDLE_SCHEMA = z.object({

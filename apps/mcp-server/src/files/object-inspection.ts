@@ -59,6 +59,8 @@ export const UPLOAD_EXTENSIONS: Readonly<Record<ConnectorUploadMime, readonly st
   "audio/wav": ["wav"],
   "audio/webm": ["webm", "weba"],
   "audio/aac": ["aac"],
+  "font/ttf": ["ttf"],
+  "font/woff2": ["woff2"],
 };
 
 export interface InspectableObject extends RandomAccessObject {
@@ -228,6 +230,7 @@ export async function detectBinarySignature(head: Uint8Array, reader: RandomAcce
   const gif = ascii(head, 0, 6);
   if (gif === "GIF87a" || gif === "GIF89a") return only("image/gif");
   if (ascii(head, 0, 5) === "%PDF-") return only("application/pdf");
+
   if (ascii(head, 0, 4) === "RIFF") {
     const form = ascii(head, 8, 12);
     if (form === "WEBP") return only("image/webp");
@@ -270,7 +273,46 @@ export async function detectBinarySignature(head: Uint8Array, reader: RandomAcce
     return { mimes: container.mimes, zip_directory: container.directory };
   }
   if (matches(head, CFB_SIGNATURE)) return only(...await classifyCompoundFile(reader));
+  // Fonts last, after every media check, and only with a consistent structure:
+  // four magic bytes alone also start JSON, text or an ISO box.
+  if (matches(head, [0x00, 0x01, 0x00, 0x00]) && await isSfntFont(reader)) return only("font/ttf");
+  if (ascii(head, 0, 4) === "wOF2" && isWoff2Header(head, reader.size)) return only("font/woff2");
   return null;
+}
+
+/**
+ * A TrueType file (sfnt 0x00010000): at least one table, a directory that
+ * fits the object (no fixed upper bound — OpenType allows vendor tables), each entry with
+ * a four-character printable tag and a table that lies inside the object.
+ * Rejects truncated files and other content that merely starts with the
+ * version bytes (homepage-generator 18, club fonts).
+ */
+async function isSfntFont(reader: RandomAccessObject): Promise<boolean> {
+  if (reader.size < 12) return false;
+  const header = await reader.read(0, 12);
+  const tables = dataView(header).getUint16(4, false);
+  if (tables < 1 || reader.size < 12 + tables * 16) return false;
+  const directory = await reader.read(12, 12 + tables * 16);
+  if (directory.byteLength !== tables * 16) return false;
+  const view = dataView(directory);
+  for (let index = 0; index < tables; index += 1) {
+    const entry = index * 16;
+    for (let offset = 0; offset < 4; offset += 1) {
+      const char = directory[entry + offset] ?? 0;
+      if (char < 0x20 || char > 0x7e) return false;
+    }
+    const tableOffset = view.getUint32(entry + 8, false);
+    const tableLength = view.getUint32(entry + 12, false);
+    if (tableOffset < 12 + tables * 16 || tableOffset + tableLength > reader.size) return false;
+  }
+  return true;
+}
+
+/** A WOFF2 header whose declared length is the object size and that names at least one table. */
+function isWoff2Header(head: Uint8Array, size: number): boolean {
+  if (head.byteLength < 48) return false;
+  const view = dataView(head);
+  return view.getUint32(8, false) === size && view.getUint16(12, false) > 0;
 }
 
 function skipXmlPreamble(text: string): string {

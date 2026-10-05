@@ -241,6 +241,36 @@ comvenio action call cai.club.05.design \
   --json
 ```
 
+Fonts for web and app are set by the font roles in `tokens.type`:
+`source: plattform` for the families of the font pairs (Merriweather, Lato,
+Oswald, Open Sans, Nunito, Montserrat, Source Sans 3), `source: system` for
+`serif`, `sans-serif` or `system-ui`, `source: verein` for an uploaded club
+font with a `font_id` from `design_settings.fonts`. The app loads club fonts
+as TTF only.
+
+```bash
+comvenio action call cai.club.05.design \
+  --input '{"design_settings":{"tokens":{"type":{"heading":{"family":"Merriweather","source":"plattform","weight":700},"body":{"family":"Lato","source":"plattform"}}}}}' \
+  --json
+```
+
+### Uploading a club font
+
+`cai.club.15.font_upload` uploads a font of your own (TTF or WOFF2, at most
+2 MB, with a licence note) and registers it in `design_settings.fonts`. The
+answer names the `font_id`; use it in `tokens.type` with `source: verein`. A
+font of the same family is replaced, and roles that used it point to the new
+file; a club keeps at most two families. The app loads TTF only.
+`cai.club.03.settings` lists roles whose font is missing from the register in
+`design_settings.font_hinweise`.
+
+```bash
+comvenio action call cai.club.15.font_upload \
+  --file ./JagaSerif.ttf \
+  --input '{"club_id":"<club-id>","family":"Jaga Serif","lizenz":"SIL OFL 1.1"}' \
+  --json
+```
+
 Before every design change, use the homepage preview and check afterward.
 The complete workflow for the public page is in the club homepage article.
 
@@ -310,6 +340,7 @@ comvenio action call cai.club.08.department_add \
 - `cai.club.10.department_delete` — department-delete (change with confirmation) · Scopes: `admin.write`
 - `cai.club.13.forum_board_list` — forum-board-list (read) · Scopes: `club.read`
 - `cai.club.14.forum_thread_list` — forum-thread-list (read) · Scopes: `club.read`
+- `cai.club.15.font_upload` — font-upload (change) · Scopes: `club.read`, `admin.write`, `files.import`, `files.write`
 <!-- /gen:docs -->
 
 ## Errors

@@ -30,6 +30,38 @@ export const FILE_DERIVED_INPUT_FIELDS = ["source_file_id", "filename", "content
 /** Both scopes are needed: files.write for the upload, files.import for the job that consumes it. */
 export const FILE_UPLOAD_SCOPES = ["files.import", "files.write"] as const;
 
+/** Club font upload of the design contract (homepage-generator 18). */
+export const FONT_UPLOAD_ACTION_ID = "cai.club.15.font_upload";
+const CLUB_FONT_MAX_BYTES = 2_097_152;
+
+/**
+ * Actions that take a local file via --file. Each names the scopes its job
+ * needs, the step shown while it runs and where to look when the outcome is
+ * unknown; the upload itself is the same for all.
+ */
+export const FILE_UPLOAD_ACTIONS: Readonly<Record<string, {
+  scopes: readonly string[];
+  step: string;
+  check: string;
+  max_bytes?: number;
+}>> = {
+  [FILE_UPLOAD_ACTION_ID]: {
+    scopes: FILE_UPLOAD_SCOPES,
+    step: "Lege die Datei in der Vereinsablage ab …",
+    check: "Mit cai.data.01.list prüfen, ob die Datei angekommen ist, statt neu hochzuladen.",
+  },
+  [FONT_UPLOAD_ACTION_ID]: {
+    scopes: ["club.read", "admin.write", ...FILE_UPLOAD_SCOPES],
+    step: "Lade die Vereinsschrift hoch und trage sie ein …",
+    check: "Mit cai.club.03.settings prüfen, ob die Schrift in design_settings.fonts steht, statt neu hochzuladen.",
+    max_bytes: CLUB_FONT_MAX_BYTES,
+  },
+};
+
+export function isFileUploadAction(actionId: string | undefined): boolean {
+  return actionId !== undefined && Object.hasOwn(FILE_UPLOAD_ACTIONS, actionId);
+}
+
 const START_TOOL = "cv_file_upload_start_write";
 const COMPLETE_TOOL = "cv_file_upload_complete_write";
 const JOB_STATUS_TOOL = "cv_job_status_read";
@@ -75,6 +107,8 @@ export const UPLOAD_EXTENSIONS: Readonly<Record<ConnectorUploadMime, readonly st
   "audio/wav": ["wav"],
   "audio/webm": ["webm", "weba"],
   "audio/aac": ["aac"],
+  "font/ttf": ["ttf"],
+  "font/woff2": ["woff2"],
 };
 
 /** Extension (lower case, without dot) -> MIME type; the first table entry wins. */
@@ -264,9 +298,12 @@ function uploadIncomplete(detail: string): PublicCliError {
   return new PublicCliError("UPLOAD_TIMEOUT", detail, { detail: `${detail} ${EXPIRY_HINT}` });
 }
 
-function jobUnfinished(jobId: string, state: string): PublicCliError {
-  const detail = `Der Hintergrundauftrag ${jobId} war zuletzt im Zustand ${state}. `
-    + "Die Datei ist bereits übergeben: mit cai.data.01.list prüfen, ob sie angekommen ist, statt neu hochzuladen.";
+function jobUnfinished(
+  jobId: string,
+  state: string,
+  check = "Mit cai.data.01.list prüfen, ob die Datei angekommen ist, statt neu hochzuladen.",
+): PublicCliError {
+  const detail = `Der Hintergrundauftrag ${jobId} war zuletzt im Zustand ${state}. Die Datei ist bereits übergeben: ${check}`;
   return new PublicCliError("OUTCOME_UNKNOWN", detail, { detail });
 }
 
@@ -300,11 +337,37 @@ export function dataShareFileResult(job: Record<string, unknown>): DataShareFile
   };
 }
 
+/** The club font a finished cai.club.15.font_upload job reports, or null. */
+export function clubFontResult(job: Record<string, unknown>): Record<string, unknown> | null {
+  const result = object(job.result);
+  if (
+    result?.kind !== "club_font"
+    || typeof result.font_id !== "string"
+    || typeof result.family !== "string"
+    || (result.format !== "ttf" && result.format !== "woff2")
+    || typeof result.size_bytes !== "number"
+  ) {
+    return null;
+  }
+  return { kind: "club_font", font_id: result.font_id, family: result.family, format: result.format, size_bytes: result.size_bytes };
+}
+
 /** Human-readable summary of a finished upload (the non-JSON output). */
 export function formatFileUploadResult(result: Record<string, unknown>): string {
   const file = object(result.file) ?? {};
   const job = object(result.job) ?? {};
   const stored = object(result.result);
+  if (result.action_id === FONT_UPLOAD_ACTION_ID) {
+    return [
+      `Hochgeladen: ${String(file.filename)} (${String(file.content_type)}, ${String(file.size_bytes)} Bytes)`,
+      `Hintergrundauftrag: ${String(job.job_id)} — ${String(job.state)}`,
+      stored
+        ? `Vereinsschrift: font_id ${String(stored.font_id)} — ${String(stored.family)} (${String(stored.format)}); `
+          + "in tokens.type mit source verein verwenden (cai.club.05.design)"
+        : "Vereinsschrift: Der Server hat keine font_id gemeldet; mit cai.club.03.settings nachsehen.",
+      `Idempotenzschlüssel: ${String(result.idempotency_key)}`,
+    ].join("\n");
+  }
   return [
     `Hochgeladen: ${String(file.filename)} (${String(file.content_type)}, ${String(file.size_bytes)} Bytes)`,
     `Hintergrundauftrag: ${String(job.job_id)} — ${String(job.state)}`,
@@ -325,9 +388,14 @@ export async function runFileUpload(
     path: string;
     input: Record<string, unknown>;
     idempotency_key?: string;
+    /** One of FILE_UPLOAD_ACTIONS; cai.data.06.upload when left out. */
+    action_id?: string;
   },
   deps: FileUploadDependencies,
 ): Promise<Record<string, unknown>> {
+  const actionId = request.action_id ?? FILE_UPLOAD_ACTION_ID;
+  const target = FILE_UPLOAD_ACTIONS[actionId];
+  if (!target) throw new Error(`--file ist für ${actionId} nicht vorgesehen.`);
   const fetchImpl = deps.fetch ?? globalThis.fetch.bind(globalThis);
   const sleep = deps.sleep ?? defaultSleep;
   const now = deps.now ?? Date.now;
@@ -338,7 +406,12 @@ export async function runFileUpload(
   // Local checks first: nothing leaves the machine for a request that cannot succeed.
   assertNoFileDerivedFields(request.input);
   const file = readUploadFile(request.path);
-  const missingScopes = FILE_UPLOAD_SCOPES.filter((scope) => !deps.granted_scopes.includes(scope));
+  if (target.max_bytes !== undefined && file.size_bytes > target.max_bytes) {
+    throw new PublicCliError("VALIDATION_FAILED", `Die Datei ist zu groß: höchstens ${target.max_bytes / (1024 * 1024)} MB.`, {
+      detail: `${actionId} nimmt höchstens ${target.max_bytes} Bytes an.`,
+    });
+  }
+  const missingScopes = target.scopes.filter((scope) => !deps.granted_scopes.includes(scope));
   if (missingScopes.length > 0) {
     throw new PublicCliError("SCOPE_REQUIRED", "Für Datei-Uploads fehlen Scopes.", {
       required_scopes: missingScopes,
@@ -355,7 +428,7 @@ export async function runFileUpload(
 
   const aborted = (phase: FileUploadPhase, jobId?: string, state?: string): PublicCliError =>
     phase === "job" && jobId
-      ? jobUnfinished(jobId, state ?? "unbekannt")
+      ? jobUnfinished(jobId, state ?? "unbekannt", target.check)
       : uploadIncomplete("Der Upload wurde abgebrochen.");
   const wait = async (ms: number, phase: FileUploadPhase, jobId?: string, state?: string) => {
     try {
@@ -452,9 +525,9 @@ export async function runFileUpload(
 
   // 4. Hand the clean file to the action; its answer is a job handle.
   const idempotencyKey = request.idempotency_key ?? randomUUID();
-  progress("job", "Lege die Datei in der Vereinsablage ab …");
+  progress("job", target.step);
   const call = await deps.client.callAction({
-    action_id: FILE_UPLOAD_ACTION_ID,
+    action_id: actionId,
     input: {
       ...request.input,
       source_file_id: fileId,
@@ -467,8 +540,7 @@ export async function runFileUpload(
   let job = object(call.result) ?? call;
   const jobId = typeof job.job_id === "string" ? job.job_id : null;
   if (!jobId) {
-    const detail = "Die Antwort enthält keinen Hintergrundauftrag. "
-      + "Mit cai.data.01.list prüfen, ob die Datei angekommen ist, statt neu hochzuladen.";
+    const detail = `Die Antwort enthält keinen Hintergrundauftrag. ${target.check}`;
     throw new PublicCliError("OUTCOME_UNKNOWN", detail, { detail });
   }
 
@@ -485,7 +557,7 @@ export async function runFileUpload(
       });
     }
     const pause = pollDelayMs(attempt, random);
-    if (now() + pause >= jobDeadline) throw jobUnfinished(jobId, state);
+    if (now() + pause >= jobDeadline) throw jobUnfinished(jobId, state, target.check);
     await wait(pause, "job", jobId, state);
     try {
       job = await deps.client.callTool(JOB_STATUS_TOOL, { job_id: jobId });
@@ -495,11 +567,11 @@ export async function runFileUpload(
   }
 
   return {
-    action_id: FILE_UPLOAD_ACTION_ID,
+    action_id: actionId,
     status: "succeeded",
     job,
-    // The file in the club's DataShare; null when the server does not report it.
-    result: dataShareFileResult(job),
+    // The stored file (DataShare file or club font); null when the server does not report it.
+    result: actionId === FONT_UPLOAD_ACTION_ID ? clubFontResult(job) : dataShareFileResult(job),
     file: {
       source_file_id: fileId,
       filename: file.filename,
