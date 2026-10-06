@@ -197,6 +197,10 @@ die Seite als Baum von Überschrift, Text, Bild und Knopf komponieren.
   Slot-Namen bestehen aus Kleinbuchstaben, Ziffern und Bindestrich, beginnen
   mit Buchstabe oder Ziffer, sind höchstens 63 Zeichen lang und je Reiter
   eindeutig.
+- Ein `link`-Slot sitzt immer auf einem `<a>`-Element
+  (`<a data-slot="mehr"></a>`); auf einem anderen Element lehnt die Prüfung das
+  Gerüst ab (Regel R3, `link_slot_not_anchor`). Auch eine Knopfbeschriftung ist
+  Inhalt des Slots, nie fester Text im Gerüst.
 - Ein Bild-Slot direkt auf einem Bildelement füllt nur Adresse und
   Alternativtext; Klasse, Größe und Ladeverhalten bleiben im Gerüst. Ein
   Bild-Slot auf einem umschließenden Element ist dagegen das vollständige

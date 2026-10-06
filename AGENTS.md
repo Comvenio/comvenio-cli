@@ -105,9 +105,18 @@ Die kundenorientierte Langfassung steht in `README.md` unter **„Eigene Domain 
 comvenio login                                            # Browser, OAuth — Standard: alle Scopes
 comvenio login --scopes club.read,role.read.self          # bewusst nur lesen
 comvenio action list                                      # was diese Verbindung darf
+comvenio action show <cai.…-id>                           # Eingabefelder je Teilaktion
 comvenio action call <cai.…-id> --input '{…}' --json      # lesen oder Vorschau erzeugen
 comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …
 ```
+
+- **`confirm` mit demselben Schlüssel wie `call`.** Ohne `--idempotency-key` erzeugt `call` einen;
+  die Textausgabe druckt den fertigen `confirm`-Befehl, `--json` das Feld `confirmation`.
+- **Screenshots** (`cai.homepage.04.screenshot`, `cai.community.04.screenshot`) kommen als Bilder
+  in der Antwort; mit `--screenshots <ordner>` speichert das CLI sie je Aufruf in einem eigenen
+  Unterordner (`<preview_id>-<zeit>/`, nie überschrieben). Jeder Eintrag in `result.screenshots`
+  nennt dann seine Datei im Feld `file`, `screenshot_files` listet alle. Ohne die Option wird
+  nichts geschrieben; `screenshots_not_saved` sagt das.
 
 - **Nur noch OAuth.** Klassische Befehle (`comvenio teams …`, `comvenio club info` …) brauchen
   einen Geräte-Token und laufen unter OAuth nicht. Fehlt eine Funktion als Action, wird sie im
