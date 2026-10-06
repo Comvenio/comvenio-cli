@@ -25,6 +25,7 @@ type Options = {
   idempotencyKey?: string;
   previewId?: string;
   confirmationToken?: string;
+  screenshots?: string;
   json?: boolean;
 };
 
@@ -126,6 +127,7 @@ export function registerActionCommands(cli: CAC): void {
     .option("--idempotency-key <uuid>", "Stabiler Schlüssel für Schreibaktionen")
     .option("--preview-id <uuid>", "Vorschau-ID für action confirm")
     .option("--confirmation-token <token>", "Einmaliges Bestätigungstoken")
+    .option("--screenshots <ordner>", "Bilder der Antwort (Screenshot-Actions) als Dateien in diesen Ordner speichern")
     .option("--json", "JSON-Ausgabe (maschinenlesbar)")
     .action(async (
       verb: string,
@@ -190,7 +192,10 @@ export function registerActionCommands(cli: CAC): void {
           input,
           ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
         });
-        const result = saveScreenshots(answer.result, answer.images, { cwd: process.cwd() });
+        const result = saveScreenshots(answer.result, answer.images, {
+          cwd: process.cwd(),
+          ...(options.screenshots ? { dir: options.screenshots } : {}),
+        });
         output(
           idempotencyKey ? { ...result, idempotency_key: idempotencyKey } : result,
           options.json,

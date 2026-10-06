@@ -112,9 +112,11 @@ comvenio action confirm --preview-id … --confirmation-token … --idempotency-
 
 - **`confirm` mit demselben Schlüssel wie `call`.** Ohne `--idempotency-key` erzeugt `call` einen;
   die Textausgabe druckt den fertigen `confirm`-Befehl, `--json` das Feld `confirmation`.
-- **Screenshots** (`cai.homepage.04.screenshot`, `cai.community.04.screenshot`) landen als
-  Dateien unter `.comvenio-screenshots/<preview_id>/`; jeder Eintrag in `result.screenshots`
-  nennt seine Datei im Feld `file`, `screenshot_files` listet alle.
+- **Screenshots** (`cai.homepage.04.screenshot`, `cai.community.04.screenshot`) kommen als Bilder
+  in der Antwort; mit `--screenshots <ordner>` speichert das CLI sie je Aufruf in einem eigenen
+  Unterordner (`<preview_id>-<zeit>/`, nie überschrieben). Jeder Eintrag in `result.screenshots`
+  nennt dann seine Datei im Feld `file`, `screenshot_files` listet alle. Ohne die Option wird
+  nichts geschrieben; `screenshots_not_saved` sagt das.
 
 - **Nur noch OAuth.** Klassische Befehle (`comvenio teams …`, `comvenio club info` …) brauchen
   einen Geräte-Token und laufen unter OAuth nicht. Fehlt eine Funktion als Action, wird sie im

@@ -2,7 +2,7 @@
 // fields of an action, the confirm command with the same idempotency key and
 // screenshots saved as files instead of being dropped.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 import type { ConnectorImage, ConnectorTool } from "../mcp/client.ts";
 
@@ -118,41 +118,50 @@ function fileStem(value: unknown): string | null {
 }
 
 /**
- * Saves the image blocks of an answer under `.comvenio-screenshots/<preview>/`
- * and names each file in its screenshot entry (`file`), in the order the
- * connector marked them `data_in_content`. Without images the answer stays.
+ * Screenshots of an answer (MCP image content, K16). Without `dir` nothing is
+ * written — a read stays a read — and the answer names the option. With `dir`
+ * every call gets its own folder `<dir>/<preview>-<time>/`; files are created
+ * exclusively (never overwritten, never through an existing link). Entries
+ * marked `data_in_content` name their `file` only if the number of images
+ * matches; otherwise the files are listed with a warning.
  */
 export function saveScreenshots(
   result: Json,
   images: readonly ConnectorImage[],
-  options: { cwd: string; now?: Date },
+  options: { cwd: string; dir?: string; now?: Date },
 ): Json {
   if (images.length === 0) return result;
+  if (!options.dir) {
+    return {
+      ...result,
+      screenshots_not_saved: `${images.length} Bild(er) in der Antwort; mit --screenshots <ordner> als Dateien speichern.`,
+    };
+  }
   const inner = object(result.result) ?? {};
   const entries = Array.isArray(inner.screenshots) ? inner.screenshots : [];
-  const folder = fileStem(inner.preview_id) ?? (options.now ?? new Date()).toISOString().replace(/[:.]/gu, "-");
-  const dir = join(options.cwd, ".comvenio-screenshots", folder);
-  mkdirSync(dir, { recursive: true });
+  const marked = entries.filter((value) => object(value)?.data_in_content === true).length;
+  const time = (options.now ?? new Date()).toISOString().replace(/[:.]/gu, "-");
+  const folder = join(resolve(options.cwd, options.dir), `${fileStem(inner.preview_id) ?? "screenshots"}-${time}`);
+  mkdirSync(folder, { recursive: true });
 
+  const files = images.map((image, index) => {
+    const path = join(folder, `${index + 1}.${EXTENSIONS[image.mime_type] ?? "bin"}`);
+    writeFileSync(path, Buffer.from(image.data, "base64"), { flag: "wx" });
+    return relative(options.cwd, path);
+  });
+  if (marked !== images.length) {
+    return {
+      ...result,
+      screenshot_files: files,
+      screenshot_warning: `${images.length} Bild(er), aber ${marked} markierte Einträge — Zuordnung nicht eindeutig, Dateien in Reihenfolge der Antwort.`,
+    };
+  }
   let next = 0;
-  const files: string[] = [];
-  const write = (entry: Json | null): string => {
-    const image = images[next]!;
-    const stem = fileStem(entry?.viewport) ?? fileStem(entry?.name) ?? String(next + 1);
-    const path = join(dir, `${next + 1}-${stem}.${EXTENSIONS[image.mime_type] ?? "bin"}`);
-    writeFileSync(path, Buffer.from(image.data, "base64"));
-    next += 1;
-    const shown = relative(options.cwd, path);
-    files.push(shown);
-    return shown;
-  };
   const screenshots = entries.map((value) => {
     const entry = object(value);
-    if (!entry || entry.data_in_content !== true || next >= images.length) return value;
+    if (!entry || entry.data_in_content !== true) return value;
     const { data_in_content: _shown, ...rest } = entry;
-    return { ...rest, file: write(entry) };
+    return { ...rest, file: files[next++] };
   });
-  // Images the connector did not tie to an entry still land on disk.
-  while (next < images.length) write(null);
   return { ...result, result: { ...inner, screenshots }, screenshot_files: files };
 }

@@ -22,6 +22,38 @@ export type ConnectorTool = {
   _meta?: Record<string, unknown>;
 };
 
+/** Prefix of the tool error the MCP SDK sends when the input fails the tool schema (McpError InvalidParams). */
+const SDK_INPUT_VALIDATION = "MCP error -32602: Input validation error";
+
+/**
+ * Names the rejected fields of that error, e.g. "input.operation: Invalid
+ * discriminator value …". The SDK appends the zod issues as JSON; if they
+ * cannot be read, the sentence after the prefix stays.
+ */
+export function inputValidationDetail(text: string): string {
+  const start = text.indexOf("[", SDK_INPUT_VALIDATION.length);
+  if (start >= 0) {
+    try {
+      const issues = JSON.parse(text.slice(start)) as unknown;
+      if (Array.isArray(issues)) {
+        const lines = issues
+          .map(object)
+          .filter((issue): issue is JsonObject => issue !== null)
+          .map((issue) => {
+            const path = Array.isArray(issue.path) ? issue.path.join(".") : "";
+            const message = typeof issue.message === "string" ? issue.message : "ungültig";
+            return path ? `${path}: ${message}` : message;
+          });
+        if (lines.length > 0) return lines.join("\n");
+      }
+    } catch {
+      // Fall through to the plain sentence.
+    }
+  }
+  return text.slice(SDK_INPUT_VALIDATION.length).replace(/^[:\s]+/u, "").split("\n")[0]!.trim()
+    || "Die Eingabe passt nicht zum Schema der Action.";
+}
+
 /** An image block of a tool answer (base64, as the MCP content carries it). */
 export type ConnectorImage = { data: string; mime_type: string };
 
@@ -225,6 +257,16 @@ export class CliConnectorClient {
       const firstText = content
         .map(object)
         .find((entry) => entry?.type === "text" && typeof entry.text === "string");
+      if (!structured && typeof firstText?.text === "string" && firstText.text.startsWith(SDK_INPUT_VALIDATION)) {
+        // The SDK rejected the input before any handler ran; it answers with text
+        // only, which the CLI showed as UNKNOWN_ERROR without the field (K16).
+        throw new ConnectorClientError(firstText.text, {
+          error: "validation_failed",
+          code: "VALIDATION_FAILED",
+          retryable: false,
+          detail: inputValidationDetail(firstText.text),
+        });
+      }
       throw new ConnectorClientError(
         typeof firstText?.text === "string"
           ? firstText.text

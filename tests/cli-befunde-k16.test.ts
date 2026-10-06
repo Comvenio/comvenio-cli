@@ -2,15 +2,15 @@
 // community actions — input errors as VALIDATION_FAILED with the field, the
 // confirm command with the same key, input fields per action, screenshots on disk.
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { z } from "zod";
 
 import { formatActionDescription, formatCallText, inputVariants, saveScreenshots } from "../src/commands/action-output.ts";
-import { formatCliError, inputValidationDetail, toPublicError } from "../src/errors.ts";
-import { CliConnectorClient, ConnectorClientError } from "../src/mcp/client.ts";
+import { formatCliError, toPublicError } from "../src/errors.ts";
+import { CliConnectorClient, ConnectorClientError, inputValidationDetail } from "../src/mcp/client.ts";
 
 // The text the MCP SDK sends back when the tool input fails its schema
 // (McpError InvalidParams around the zod message), built from a real zod error.
@@ -26,22 +26,42 @@ function sdkValidationText(): string {
   return `MCP error -32602: Input validation error: Invalid arguments for tool cai_community_01_show: ${parsed.error.message}`;
 }
 
+function connectorAnswering(answer: (body: { id: string }) => unknown) {
+  return new CliConnectorClient({
+    endpoint: "https://mcp.comvenio.app/cli",
+    access_token: "token",
+    fetch: (async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { id: string };
+      return Response.json({ jsonrpc: "2.0", id: body.id, ...(answer(body) as object) });
+    }) as typeof fetch,
+  });
+}
+
 describe("(a) missing required field", () => {
-  test("is VALIDATION_FAILED naming input.operation, not UNKNOWN_ERROR", () => {
-    const rendered = toPublicError(new ConnectorClientError(sdkValidationText()), { lang: "de" });
+  test("the SDK input check of a tool answer is VALIDATION_FAILED naming input.operation", async () => {
+    const client = connectorAnswering(() => ({
+      result: { isError: true, content: [{ type: "text", text: sdkValidationText() }] },
+    }));
+    const error = await client.callAction({ action_id: "cai.community.01.show", input: {} }).catch((e: unknown) => e);
+    const rendered = toPublicError(error, { lang: "de" });
     expect(rendered.code).toBe("VALIDATION_FAILED");
     expect(rendered.detail).toStartWith("input.operation: ");
     expect(rendered.next_command).toBe("comvenio action list --json");
     expect(formatCliError(rendered).split("\n")[0]).toStartWith("Fehler VALIDATION_FAILED: ");
   });
 
-  test("unreadable issue list keeps the sentence after the marker", () => {
-    expect(inputValidationDetail("MCP error -32602: Input validation error: kaputt")).toBe("kaputt");
+  test("a JSON-RPC error with the same words keeps its own way (no guess from text)", async () => {
+    const client = connectorAnswering(() => ({ error: { code: -32000, message: sdkValidationText(), data: "x" } }));
+    const error = await client.callAction({ action_id: "cai.community.01.show", input: {} }).catch((e: unknown) => e);
+    expect(toPublicError(error, { lang: "de" }).code).not.toBe("VALIDATION_FAILED");
   });
 
-  test("a structured connector answer keeps its own code", () => {
-    const error = new ConnectorClientError("Input validation error", { error: "conflict", code: "CONFLICT" });
-    expect(toPublicError(error, { lang: "de" }).code).toBe("CONFLICT");
+  test("a plain ConnectorClientError with the words is not reclassified", () => {
+    expect(toPublicError(new ConnectorClientError(sdkValidationText()), { lang: "de" }).code).toBe("UNKNOWN_ERROR");
+  });
+
+  test("unreadable issue list keeps the sentence after the prefix", () => {
+    expect(inputValidationDetail("MCP error -32602: Input validation error: kaputt")).toBe("kaputt");
   });
 });
 
@@ -120,25 +140,51 @@ describe("(d) screenshots", () => {
     expect(answer.images).toEqual([{ data: "aGFsbG8=", mime_type: "image/png" }]);
   });
 
-  test("images land on disk and each entry names its file", () => {
+  const twoShots = () => ({ result: { preview_id: "p-1", screenshots: [{ viewport: "desktop", width: 1440, data_in_content: true }, { viewport: "mobile", data_in_content: true }] } });
+  const twoImages = [{ data: Buffer.from("eins").toString("base64"), mime_type: "image/png" }, { data: Buffer.from("zwei").toString("base64"), mime_type: "image/jpeg" }];
+
+  test("without --screenshots nothing is written and the answer names the option", () => {
     dir = mkdtempSync(join(tmpdir(), "k16-"));
-    const result = saveScreenshots(
-      { result: { preview_id: "p-1", screenshots: [{ viewport: "desktop", width: 1440, data_in_content: true }, { viewport: "mobile", data_in_content: true }] } },
-      [{ data: Buffer.from("eins").toString("base64"), mime_type: "image/png" }, { data: Buffer.from("zwei").toString("base64"), mime_type: "image/jpeg" }],
-      { cwd: dir },
-    );
+    const result = saveScreenshots(twoShots(), twoImages, { cwd: dir });
+    expect(result.screenshots_not_saved).toContain("--screenshots");
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  test("with --screenshots images land in their own folder and each entry names its file", () => {
+    dir = mkdtempSync(join(tmpdir(), "k16-"));
+    const now = new Date("2026-10-06T20:00:00Z");
+    const result = saveScreenshots(twoShots(), twoImages, { cwd: dir, dir: "bilder", now });
     const shots = (result.result as { screenshots: Record<string, unknown>[] }).screenshots;
-    expect(shots[0]).toEqual({ viewport: "desktop", width: 1440, file: join(".comvenio-screenshots", "p-1", "1-desktop.png") });
-    expect(shots[1]!.file).toBe(join(".comvenio-screenshots", "p-1", "2-mobile.jpg"));
+    const folder = join("bilder", "p-1-2026-10-06T20-00-00-000Z");
+    expect(shots[0]).toEqual({ viewport: "desktop", width: 1440, file: join(folder, "1.png") });
+    expect(shots[1]!.file).toBe(join(folder, "2.jpg"));
     expect(readFileSync(join(dir, shots[0]!.file as string), "utf8")).toBe("eins");
     expect(result.screenshot_files).toEqual([shots[0]!.file, shots[1]!.file]);
   });
 
-  test("without images nothing is written", () => {
+  test("a second call never overwrites the first", () => {
+    dir = mkdtempSync(join(tmpdir(), "k16-"));
+    const now = new Date("2026-10-06T20:00:00Z");
+    saveScreenshots(twoShots(), twoImages, { cwd: dir, dir: "bilder", now });
+    expect(() => saveScreenshots(twoShots(), twoImages, { cwd: dir, dir: "bilder", now })).toThrow();
+    const later = saveScreenshots(twoShots(), twoImages, { cwd: dir, dir: "bilder", now: new Date("2026-10-06T20:00:01Z") });
+    expect((later.screenshot_files as string[])[0]).toContain("20-00-01");
+    expect(readFileSync(join(dir, "bilder", "p-1-2026-10-06T20-00-00-000Z", "1.png"), "utf8")).toBe("eins");
+  });
+
+  test("a different number of images and entries names no file in the entries and warns", () => {
+    dir = mkdtempSync(join(tmpdir(), "k16-"));
+    const result = saveScreenshots(twoShots(), [twoImages[0]!], { cwd: dir, dir: "bilder" });
+    expect(result.screenshot_warning).toContain("nicht eindeutig");
+    expect((result.result as { screenshots: Record<string, unknown>[] }).screenshots[0]!.file).toBeUndefined();
+    expect(result.screenshot_files).toHaveLength(1);
+  });
+
+  test("without images nothing happens", () => {
     dir = mkdtempSync(join(tmpdir(), "k16-"));
     const answer = { result: { screenshots: [] } };
-    expect(saveScreenshots(answer, [], { cwd: dir })).toBe(answer);
-    expect(existsSync(join(dir, ".comvenio-screenshots"))).toBe(false);
+    expect(saveScreenshots(answer, [], { cwd: dir, dir: "bilder" })).toBe(answer);
+    expect(existsSync(join(dir, "bilder"))).toBe(false);
   });
 
   test("an unsafe preview id never becomes a path", () => {
@@ -146,9 +192,9 @@ describe("(d) screenshots", () => {
     const result = saveScreenshots(
       { result: { preview_id: "../../etc", screenshots: [{ viewport: "../x", data_in_content: true }] } },
       [{ data: "eA==", mime_type: "image/png" }],
-      { cwd: dir, now: new Date("2026-10-06T20:00:00Z") },
+      { cwd: dir, dir: "bilder", now: new Date("2026-10-06T20:00:00Z") },
     );
     const file = (result.result as { screenshots: Record<string, unknown>[] }).screenshots[0]!.file as string;
-    expect(file).toBe(join(".comvenio-screenshots", "2026-10-06T20-00-00-000Z", "1-1.png"));
+    expect(file).toBe(join("bilder", "screenshots-2026-10-06T20-00-00-000Z", "1.png"));
   });
 });
