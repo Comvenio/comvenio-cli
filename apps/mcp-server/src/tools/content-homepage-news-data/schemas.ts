@@ -114,6 +114,14 @@ const homepageTab = z.object({
   label: z.string().trim().min(1).max(100), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u).max(100), icon: z.string().max(100).nullable().optional(), navigation_group: z.string().trim().max(100).nullable().optional(), position: z.number().int().min(0).max(10_000).default(0), visibility_scope: z.enum(["public", "member", "department"]).default("public"), department_id: uuid.nullable().optional(), sections: z.array(homepageSection).max(50).default([]),
 }).strict().refine((tab) => tab.visibility_scope === "department" ? Boolean(tab.department_id) : tab.department_id === undefined || tab.department_id === null, "Abteilungs-ID und Sichtbarkeit müssen zusammenpassen.");
 const homepage = { tabs: z.array(homepageTab).min(1).max(30), clear_existing: z.boolean().default(false) } as const;
+// A community page has no departments (community-hub 01 D-43); the service rejects them too.
+const communityTab = homepageTab.refine((tab) => tab.visibility_scope !== "department", "Eine Community-Seite kennt keine Abteilungs-Sichtbarkeit.");
+const community = { community_id: uuid } as const;
+const communityPage = { ...community, tabs: z.array(communityTab).min(1).max(30), clear_existing: z.boolean().default(false) } as const;
+// Version of every general tab the preview planned with (12 §4.3); apply sends exactly these.
+const expectedVersions = z.record(uuid, z.number().int().min(1)).refine((value) => Object.keys(value).length <= 100, "Höchstens 100 Tab-Versionen.");
+const designSettings = z.record(z.string().max(100), z.json()).refine((value) => JSON.stringify(value).length <= 200_000, "design_settings ist zu groß.");
+const screenshot = { preview_id: uuid, viewports: z.array(z.enum(["desktop", "mobile"])).min(1).max(2).default(["desktop", "mobile"]), tab_slug: z.string().trim().max(100).nullable().optional(), settle_ms: z.number().int().min(0).max(10_000).default(1_500) } as const;
 
 const verifyOptions = { viewports: z.array(z.enum(["desktop", "mobile"])).min(1).max(2).default(["desktop", "mobile"]), audit: z.boolean().default(true), wait_ms: z.number().int().min(0).max(10_000).default(1_500) } as const;
 const fileReference = { source_file_id: uuid, filename: safeString.max(255), content_type: z.string().regex(/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/iu), expected_size: z.number().int().min(1).max(209_715_200) } as const;
@@ -150,6 +158,13 @@ export const K12_ACTION_SCHEMAS: Readonly<Record<K12ActionId, K12ActionSchemaCon
   // immer die aktuelle Live-Struktur, eine Datei- oder tabs-Eingabe gibt es
   // nicht — sonst gäbe es zwei Wege, dieselbe Struktur zu übergeben.
   "cai.homepage.05.convert": contract(single({})),
+  "cai.community.01.show": contract(union([grouped("private", { ...community }), grouped("public", { ...community })])),
+  "cai.community.02.preview": contract(single({ ...communityPage, design_settings: designSettings.optional(), ttl_hours: z.number().int().min(1).max(24).optional() })),
+  // Ohne expected_versions haengt der Bulk an; Ersetzen verlangt die Versionen
+  // aus der Antwort von cai.community.02.preview (14 DC-5, DC-8).
+  "cai.community.03.apply": contract(single({ ...communityPage, expected_versions: expectedVersions.default({}) })),
+  "cai.community.04.screenshot": contract(single({ ...community, ...screenshot })),
+  "cai.community.05.design": contract(union([grouped("show", { ...community }), grouped("update", { ...community, design_settings: designSettings, expected_design_version: z.number().int().min(1) })])),
   "cai.schema.01.list_domains": contract(single({})),
   "cai.schema.02.show_domain_schema": contract(single({ domain: z.enum(K12_SCHEMA_DOMAINS) })),
   "cai.verify.01.url": contract(single({ target_url: externalHttpsUrl, ...verifyOptions })),

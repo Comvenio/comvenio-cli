@@ -95,6 +95,18 @@
     "next_command": "comvenio action list",
     "help": "fehler/tenant-mismatch"
   },
+  "COMMUNITY_NOT_IN_CLUB": {
+    "de": {
+      "message": "Der verbundene Verein gehört nicht zu dieser Community.",
+      "cause": "Seiten einer Community lassen sich nur über einen ihrer Mitgliedsvereine bearbeiten, und der verbundene Verein ist keiner davon."
+    },
+    "en": {
+      "message": "The connected club does not belong to this community.",
+      "cause": "A community's pages can only be edited through one of its member clubs, and the connected club is not one of them."
+    },
+    "next_command": "comvenio login",
+    "help": "fehler/community-not-in-club"
+  },
   "VALIDATION_FAILED": {
     "de": {
       "message": "Die Eingabe passt nicht zur Action.",

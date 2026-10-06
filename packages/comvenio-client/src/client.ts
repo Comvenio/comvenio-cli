@@ -194,6 +194,17 @@ async function upstreamBody(response: Response): Promise<UpstreamBody> {
       const first = detail[0] as { msg?: unknown; loc?: unknown };
       const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
       line = typeof first.msg === "string" ? (where ? `${where}: ${first.msg}` : first.msg) : null;
+    } else if (detail !== null && typeof detail === "object") {
+      // {"code": "TAB_VERSION_CONFLICT", "message": "…", "tabs": [{"tab_id": …}]}
+      // (club-service community page): the code names the way forward, the
+      // tabs say which pages changed (community-hub 14 DC-3, TC-05).
+      const entry = detail as { code?: unknown; message?: unknown; tabs?: unknown };
+      const text = typeof entry.message === "string" ? entry.message : typeof entry.code === "string" ? entry.code : null;
+      const code = typeof entry.code === "string" && text && !text.includes(entry.code) ? `${entry.code}: ` : "";
+      const tabs = Array.isArray(entry.tabs)
+        ? entry.tabs.flatMap((tab) => tab !== null && typeof tab === "object" && typeof (tab as { tab_id?: unknown }).tab_id === "string" ? [(tab as { tab_id: string }).tab_id] : [])
+        : [];
+      line = text ? `${code}${text}${tabs.length ? ` (Tabs: ${tabs.join(", ")})` : ""}` : null;
     }
     if (!line) return { detail: null, required_scope: requiredScope };
     const clean = line.replace(/\s+/gu, " ").trim();
