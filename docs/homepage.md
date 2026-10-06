@@ -1,7 +1,7 @@
 ---
 id: homepage
 kategorie: thema
-domaenen: [homepage]
+domaenen: [homepage, community]
 stichwoerter: [homepage, website, vereinsseite, widgets, design]
 ---
 
@@ -330,6 +330,95 @@ Navigation, Hero, Mobilansicht). Wer die Seite vorher schon offen hatte, sieht
 nach einer Veröffentlichung unter Umständen zunächst noch einen alten Stand —
 ein vollständiges Neuladen der Seite behebt das.
 
+### Community-Seite gestalten
+
+Die Seite einer Community — etwa einer Vereinsmeisterschaft mehrerer Vereine —
+entsteht genauso wie die Vereins-Homepage: Gerüst, Slots, Vorschau, Freigabe.
+Die Actions `cai.community.*` gehen über den Verein der Anmeldung; er muss
+**Mitgliedsverein** der Community sein. Jede Action liest dafür zuerst die
+Community und ihre Mitgliedsvereine; ist der Verein keiner davon, endet sie mit
+`COMMUNITY_NOT_IN_CLUB`, bevor irgendetwas anderes gelesen oder geschrieben
+wird. Ob die Seite geändert werden darf, entscheidet Comvenio selbst — nur
+Verantwortliche der Community dürfen schreiben (sonst `PERMISSION_DENIED`).
+
+Werkzeugkette: ansehen → Design ansehen → Vorschau → Bild → Freigabe → Design
+setzen → Seite anwenden.
+
+```bash
+comvenio action call cai.community.01.show \
+  --input '{"operation":"private","community_id":"<community-id>"}' --json > sicherung-community.json
+comvenio action call cai.community.05.design \
+  --input '{"operation":"show","community_id":"<community-id>"}' --json
+# Antwort enthält design_settings und design_version
+
+comvenio action call cai.community.02.preview --input "$(cat community-seite.json)" --json
+# Antwort enthält preview_id, preview_url (/community-preview/…) und expected_versions
+comvenio action call cai.community.04.screenshot \
+  --input '{"community_id":"<community-id>","preview_id":"<preview-id>","viewports":["mobile","desktop"]}' --json
+```
+
+`community-seite.json` trägt die Community und die `tabs` — hier ein Gerüst
+mit einem Terminslot, der die öffentlichen Termine aller Mitgliedsvereine
+zeigt:
+
+```json
+{
+  "community_id": "<community-id>",
+  "clear_existing": true,
+  "design_settings": { "custom_css": ".vm-hero { padding: 3rem 1rem; }" },
+  "tabs": [{
+    "label": "Start", "slug": "start", "position": 0, "visibility_scope": "public",
+    "sections": [{ "layout": "full", "widgets": [{
+      "kind": "custom_html",
+      "config": {
+        "html": "<section class=\"vm-hero\" aria-label=\"Start\"><h1 data-slot=\"titel\"></h1><div data-slot=\"termine\"></div></section>",
+        "slots": {
+          "titel": { "kind": "heading", "config": { "text": "Vereinsmeisterschaft" } },
+          "termine": { "kind": "community_calendar", "config": { "community_id": "<community-id>", "view": "list", "range_days": 60 } }
+        }
+      }
+    }]}]
+  }]
+}
+```
+
+Die Community-Widgets `community_calendar`, `community_news` und
+`club_directory` brauchen immer die `community_id`; Felder und Werte nennt
+`cai.schema.02.show_domain_schema` mit `{"domain":"homepage"}`. Eine
+Community-Seite kennt keine Abteilungs-Sichtbarkeit (`visibility_scope`
+`department` wird abgelehnt). `design_settings` in der Vorschau zeigen ein
+geplantes Design, ohne es zu speichern.
+
+Nach der Freigabe von Bildern und Vorschau, in dieser Reihenfolge:
+
+```bash
+comvenio action call cai.community.05.design \
+  --input '{"operation":"update","community_id":"<community-id>","design_settings":{…},"expected_design_version":<design_version aus design show>}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+
+comvenio action call cai.community.03.apply --input "$(cat community-seite-apply.json)" --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+```
+
+`community-seite-apply.json` enthält dieselben `community_id`, `tabs` und
+`clear_existing` wie die freigegebene Vorschau (ohne `design_settings`) und
+**genau die `expected_versions` aus deren Antwort** — nie frisch gelesene
+Versionen. Ist eine der darin genannten Seiten inzwischen geändert oder
+entfernt, antwortet Comvenio mit `TAB_VERSION_CONFLICT` und nennt die Tabs:
+dann neu vorschauen, neu freigeben und mit den Versionen dieser neuen
+Vorschau anwenden. Ohne `clear_existing` hängt `cai.community.03.apply` die
+Tabs an, wie die Vorschau zeigte. Lehnt Comvenio die Seite nach dem Design
+ab (etwa `TAB_VERSION_CONFLICT`), sagt die Meldung ausdrücklich, dass von der
+Seite nichts geschrieben wurde und das neue Design schon live ist. Nach einer
+Zeitüberschreitung oder einem Serverfehler ist offen, ob die Seite
+geschrieben wurde: dann erst mit `cai.community.01.show` prüfen, nicht
+einfach wiederholen.
+
+`cai.community.05.design update` führt wie `cai.club.05.design` mit dem
+gespeicherten Design zusammen. Hat jemand das Design inzwischen geändert,
+endet die Bestätigung mit `DESIGN_VERSION_CONFLICT`: Design neu lesen und
+mit der neuen `design_version` erneut setzen.
+
 ### Mobilgeräte
 
 Jede Section bricht auf kleineren Bildschirmen um: Raster werden einspaltig,
@@ -544,6 +633,14 @@ Zweck: Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich seh
 - `cai.homepage.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
 - `cai.homepage.05.convert` — convert (lesen) · Scopes: `club.write`
 - Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
+
+**community**
+
+- `cai.community.01.show` — private, public (lesen) · Scopes: `club.read`, `public.read`
+- `cai.community.02.preview` — preview (lesen) · Scopes: `club.write`
+- `cai.community.03.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.community.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
+- `cai.community.05.design` — show, update (lesen, ändern mit Bestätigung) · Scopes: `club.read`, `club.write`
 <!-- /gen:docs -->
 
 ## Widgets
@@ -575,6 +672,7 @@ dokumentiert, keine erfundene Aussage.
 - `news` — Liste der neuesten Vereinsnachrichten. Datenquelle: Comvenio-News-Daten des Vereins (öffentlich freigegebene Beiträge), optional gefiltert nach Abteilung. Macht öffentlich: Titel, Anrisstext/Bild und, wenn aktiviert, Autor der veröffentlichten News-Beiträge — nur was die Redaktion bereits als News veröffentlicht hat. Passt zu: Startseite, Newsseite
 - `news_highlight` — Ein einzelner hervorgehobener News-Beitrag in großer Darstellung. Datenquelle: Comvenio-News-Daten (der im Formular gewählte News-Beitrag, optional gefiltert nach Abteilung). Macht öffentlich: Titel, Text/Bild und Autor des gewählten News-Beitrags — wie beim Widget news. Passt zu: Startseite, Newsseite
 - `ticker` — Laufband mit wechselnden Kurzmeldungen aus Events, News und Geburtstagen. Datenquelle: Öffentliche Comvenio-Daten: kommende Events, News und Geburtstage — jede Quelle einzeln zuschaltbar. Macht öffentlich: Wie bei den Einzel-Widgets: Events und News wie dort; Geburtstage nur für Mitglieder mit erteilter Freigabe, dann nur Vorname und Tag/Monat ohne Geburtsjahr. Passt zu: Startseite, beliebige Seite
+- `community_news` — Veröffentlichte öffentliche Nachrichten aller Vereine einer Community als Karten mit Titelbild, Teaser und Herkunft. Datenquelle: Comvenio-Content-Daten über die öffentliche Sammelroute der Community. Macht öffentlich: Titel, Teaser, Titelbild, Datum und Verein öffentlicher Nachrichten. Passt zu: Gemeinde-Startseite, Ortsseite, Vereinsseite in einer Community
 
 **veranstaltungen**
 
@@ -588,6 +686,7 @@ dokumentiert, keine erfundene Aussage.
 - `special_event_promo` — Bettet die vollständige öffentliche Event-Detailseite (Event-Hub) eines Termins ein — Programm, Bilder, News und Anmeldung. Datenquelle: Comvenio-Event-Daten über den öffentlichen Event-Hub zum im Formular gewählten Event; der Hub holt seine Daten selbst über die öffentlichen Comvenio-Endpunkte. Macht öffentlich: Alles, was der Event-Hub öffentlich zeigt: Titel, Zeitraum, Ort, Programm, öffentliche Bilder und der Anmeldestatus der eingeloggten Person — keine Daten anderer Teilnehmender. Passt zu: Veranstaltungsseite
 - `feature_grid` — Kachelraster mit Symbol, Beschriftung und Erläuterung je Kachel (z. B. Programmpunkte oder Leistungsmerkmale). Datenquelle: feste Eingabe im Formular; ohne eigene Einträge zeigt das Widget eine feste Demo-Belegung. Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, Veranstaltungsseite
 - `department_calendar` — Kalender einer Abteilung mit Terminen, Training, Buchungen und Sitzungen. Datenquelle: feste Eingabe im Formular (Termine je Eintrag mit Titel, Datum, Art); ein Feld zum Filtern nach Abteilung ist im Formular vorhanden, wird vom Widget aber derzeit nicht ausgewertet. Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Abteilungsseite
+- `community_calendar` — Kommende öffentliche Termine aller Vereine einer Community, je mit dem Verein, der einlädt — als Liste oder Monatsansicht. Datenquelle: Comvenio-Event-Daten über die öffentliche Sammelroute der Community (öffentliche Termine aller Mitgliedsvereine). Macht öffentlich: Titel, Datum, Ort und einladender Verein der öffentlichen Termine — keine Teilnehmerlisten. Passt zu: Gemeinde-Startseite, Ortsseite, Vereinsseite in einer Community
 
 **mitglieder**
 
@@ -638,6 +737,7 @@ dokumentiert, keine erfundene Aussage.
 - `image_text_split` — Bild neben Text mit Überschrift und optionalem Button. Datenquelle: feste Eingabe im Formular Macht öffentlich: nichts über die Eingabe hinaus Passt zu: Startseite, beliebige Seite
 - `forum_highlight` — Vorschau der neuesten öffentlichen Forenbeiträge. Datenquelle: Comvenio-Forendaten: öffentliche Themen und Themenbereiche des Vereinsforums — ein bewusst öffentlich zugänglicher Bereich. Macht öffentlich: Titel, Textanriss und Statistik (Antworten, Aufrufe) der öffentlichen Beiträge; als Autorenangabe zeigt das Widget nur die ersten acht Zeichen der internen Nutzer-Kennung, keinen Klarnamen. Passt zu: Startseite, Vereinsseite
 - `chat_preview` — Vorschau einiger Chat-/Forennachrichten mit Link zum vollständigen Chat. Datenquelle: feste Eingabe im Formular (Nachrichten je Eintrag: Text, Absender, Zeit); ein im Formular gewählter Themenbereich steuert nur, wohin der Link "Zum Chat" für eingeloggte Mitglieder führt, liefert aber selbst keine Live-Nachrichten. Macht öffentlich: Nur was die Vereinsadministration hier manuell einträgt — keine echten, aktuellen Chatnachrichten. Passt zu: Startseite, Vereinsseite
+- `club_directory` — Verzeichnis aller Mitgliedsvereine einer Community mit Logo und Sparten, mit Absprung auf die eigene öffentliche Seite des Vereins. Datenquelle: Öffentliche Vereinsliste der Community (Name, Logo, Sparten, öffentliche Adresse). Macht öffentlich: Name, Logo, Sparten und öffentliche Adresse der Mitgliedsvereine — keine Mitglieder, keine Kontakte. Passt zu: Gemeinde-Startseite, Ortsseite, Vereinsseite in einer Community
 
 **sport**
 
@@ -703,5 +803,8 @@ Kurzbeschreibung.
 - `CONFLICT` — die Seite wurde zwischen Lesen und Schreiben bereits
   geändert; aktuellen Stand erneut lesen und neu entscheiden.
   `comvenio help fehler CONFLICT`.
+- `COMMUNITY_NOT_IN_CLUB` — der Verein der Anmeldung ist kein Mitgliedsverein
+  der Community; nichts weiter wurde gelesen.
+  `comvenio help fehler COMMUNITY_NOT_IN_CLUB`.
 - `USAGE_ERROR` — ein alter Befehl (etwa `homepage slot`, `homepage tree`)
   gibt es im CLI nicht mehr. `comvenio help fehler USAGE_ERROR`.

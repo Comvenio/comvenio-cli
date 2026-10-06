@@ -1,5 +1,5 @@
 import type { ComvenioApiClient, ComvenioHttpMethod } from "@comvenio/comvenio-client";
-import { createConnectorError, type JsonValue, type RequestContext } from "@comvenio/connector-contracts";
+import { createConnectorError, isConnectorError, type JsonValue, type RequestContext } from "@comvenio/connector-contracts";
 
 import { PublicResponseRedactor } from "../../public/redaction.ts";
 import { convertLiveTabs, stilKatalog } from "./convert.ts";
@@ -55,6 +55,55 @@ add("cai.homepage.05.convert", "convert", async (input, context, client) => {
   if (katalogHinweis) hinweise.unshift(katalogHinweis);
   return JSON.parse(JSON.stringify({ tabs, bericht, hinweise })) as JsonValue;
 });
+
+// community-hub 14 §4.1: the club of the sign-in must be a member club of the
+// community — read before anything else is sent. An unknown community is the
+// service's 404; nothing else of the community is read or written.
+export async function assertCommunityInClub(client: ComvenioApiClient, inputValue: JsonValue, context: RequestContext): Promise<void> {
+  const communityId = string(record(inputValue), "community_id");
+  await request(client, context, "GET", "club", `/communities/${communityId}`);
+  const members = await request(client, context, "GET", "club", `/communities/${communityId}/clubs`);
+  const clubs = Array.isArray(members) ? members.flatMap((entry) => entry !== null && typeof entry === "object" && !Array.isArray(entry) && typeof entry.club_id === "string" ? [entry.club_id] : []) : [];
+  if (!context.club_id || !clubs.includes(context.club_id)) {
+    throw createConnectorError({ code: "COMMUNITY_NOT_IN_CLUB", message: "Der verbundene Verein ist kein Mitgliedsverein dieser Community.", request_id: context.request_id, retryable: false });
+  }
+}
+// Refusals the service answers before it writes anything (4xx of the bulk route).
+const APPLY_REFUSED: ReadonlySet<string> = new Set(["AUTH_REQUIRED", "PERMISSION_DENIED", "SCOPE_REQUIRED", "NOT_FOUND", "CONFLICT", "VALIDATION_FAILED", "RATE_LIMITED"]);
+const communityPath = (input: JsonObject, rest = "") => `/home-config/communities/${string(input, "community_id")}${rest}`;
+// Community trees carry the member clubs' own ids (club tabs), so no club
+// assertion here; the binding above already tied the community to the club.
+add("cai.community.01.show", "private", async (input, context, client) => redactContentValue(await request(client, context, "GET", "club", communityPath(input, "/tabs"))));
+add("cai.community.01.show", "public", async (input, context, client) => redactContentValue(await request(client, context, "GET", "club", `/public/communities/${string(input, "community_id")}/home`)));
+add("cai.community.02.preview", "preview", async (input, context, client) => redactContentValue(await request(client, context, "POST", "club", communityPath(input, "/preview"), {
+  body: { tabs: input.tabs!, clear_existing: input.clear_existing!, ...(input.design_settings !== undefined ? { design_settings: input.design_settings } : {}), ...(input.ttl_hours !== undefined ? { ttl_hours: input.ttl_hours } : {}) },
+})));
+add("cai.community.03.apply", "apply", async (input, context, client) => {
+  let result: JsonObject;
+  try {
+    result = record(await request(client, context, "POST", "club", communityPath(input, "/bulk"), { body: { tabs: input.tabs!, clear_existing: input.clear_existing!, expected_versions: input.expected_versions ?? {} } }));
+  } catch (error) {
+    // 14 DC-8: the design is written first; if the page then fails, say that the new design is already live.
+    // "Nothing written" holds only for a refusal of the service; after a timeout or a server error the outcome is open.
+    if (isConnectorError(error)) {
+      const page = APPLY_REFUSED.has(error.code)
+        ? "Von der Seite wurde nichts geschrieben."
+        : "Ob die Seite geschrieben wurde, ist offen — erst mit cai.community.01.show prüfen, nicht einfach wiederholen.";
+      throw createConnectorError({
+        code: error.code,
+        message: `${error.message} ${page} Ein zuvor mit cai.community.05.design update gesetztes Design bleibt live.`,
+        request_id: error.request_id,
+        retryable: error.retryable,
+        ...(error.retry_after_seconds === undefined ? {} : { retry_after_seconds: error.retry_after_seconds }),
+      });
+    }
+    throw error;
+  }
+  return { applied: true, cleared: input.clear_existing === true, tabs: Array.isArray(result.tabs) ? result.tabs.length : 0, sections: typeof result.sections_created === "number" ? result.sections_created : 0, widgets: typeof result.widgets_created === "number" ? result.widgets_created : 0 };
+});
+add("cai.community.04.screenshot", "screenshot", async (input, context, client) => request(client, context, "POST", "club", communityPath(input, `/preview/${string(input, "preview_id")}/screenshot`), { body: { viewports: input.viewports!, tab_slug: input.tab_slug ?? null, settle_ms: input.settle_ms! } }));
+add("cai.community.05.design", "show", async (input, context, client) => redactContentValue(await request(client, context, "GET", "club", `/communities/${string(input, "community_id")}/design`)));
+add("cai.community.05.design", "update", async (input, context, client) => redactContentValue(await request(client, context, "PUT", "club", `/communities/${string(input, "community_id")}/design`, { body: { design_settings: input.design_settings!, expected_design_version: input.expected_design_version! } })));
 
 add("cai.schema.01.list_domains", "list", async () => listK12Schemas());
 add("cai.schema.02.show_domain_schema", "show", async (input) => showK12Schema(string(input, "domain") as K12SchemaDomain));

@@ -36,9 +36,9 @@ bun run gen:connector-release      # Release-Artefakte (eval, quality, gate repo
 ## 4. Alle CI-Schritte lokal (die GitHub-CI kann am Budget scheitern)
 
 ```bash
-for s in typecheck test:cli test:mcp test:contracts gen:coverage:check check:docs \
+for s in typecheck test:cli test:mcp test:contracts check:docs \
   gen:openai-submission:check gen:anthropic-submission:draft:check \
-  gen:connector-release:check gen:provider-submissions:check build:mcp; do
+  gen:connector-release:check gen:provider-submissions:check build build:mcp; do
   bun run $s >/tmp/ci-$s.log 2>&1; echo "$s exit $?"; done
 ```
 
@@ -55,4 +55,3 @@ noch als „nicht freigegeben“ erscheinen.
 | `Statisches OpenAI-Profil weicht vom generierten Profil ab` | Schritt 3 vergessen |
 | `covers all 303 legacy actions …` | neue ID nicht in `additiveActionIds` oder Zählung nicht erhöht |
 | `Property 'routes' does not exist on type 'K7ActionDefinition'` im eigenen Test | Felder heißen `backend_routes`, `risk_class`, `confirmation` |
-| `Coverage-Registry muss N Top-Level-Commands enthalten` | neuer Top-Level-Command: Zahl in `scripts/gen-coverage.ts` und `src/coverage/domains.json` nachziehen, `bun run gen:coverage` |

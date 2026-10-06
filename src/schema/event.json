@@ -19,7 +19,8 @@
       "excursion",
       "training",
       "competition",
-      "other"
+      "other",
+      "bye"
     ],
     "visibility_scope": [
       "public",

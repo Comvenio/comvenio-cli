@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "13dfbb1443432966749c0cd17edbe47be7e859df14ccba84b7c6f854c4291c03",
+  "catalog_source_hash_sha256": "14e151f44b68c5ded2e3f83afeeb1baa337258dfc2e859d4a1fbcdd72b8f7caa",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -441,6 +441,81 @@
     {
       "tool_name": "cv_club_agent_converse",
       "prompt": "Prüfe „Comvenio: Mit dem Club-Agenten sprechen“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_01_show",
+      "prompt": "Prüfe „Comvenio: community – show“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_02_preview",
+      "prompt": "Prüfe „Comvenio: community – preview“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_03_apply",
+      "prompt": "Prüfe „Comvenio: community – apply“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_04_screenshot",
+      "prompt": "Prüfe „Comvenio: community – screenshot“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_05_design",
+      "prompt": "Prüfe „Comvenio: community – design“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

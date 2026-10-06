@@ -25,7 +25,8 @@ describe("homepage schema", () => {
   });
 
   test("mirrors all homepage vocabularies", () => {
-    expect(homepage.widget_count).toBe(75);
+    // 78 since community-hub 14: community_calendar, community_news, club_directory.
+    expect(homepage.widget_count).toBe(78);
     expect(homepage.widget_kinds).toEqual(expect.arrayContaining(["heading", "text", "link"]));
     expect(homepage.slots_contract.slot_name.pattern).toBe("^[a-z0-9][a-z0-9-]{0,62}$");
     expect(homepage.widget_kinds).toContain("event_hub_embed");
@@ -53,7 +54,9 @@ describe("homepage schema", () => {
     expect(homepage.interaction_contract.public_detail_routes.event).toContain("/event/");
     expect(homepage.templates).toContain("flex");
     expect(homepage.vocabulary_sync.missing_in_backend).toEqual([]);
-    expect(homepage.vocabulary_sync.missing_in_prompt).toEqual([]);
+    // The ai-service prompt does not know the community widgets yet (community-hub 14
+    // §4.7, DC-7: out of scope) — named here so that the gap stays visible.
+    expect(homepage.vocabulary_sync.missing_in_prompt).toEqual(["community_calendar", "community_news", "club_directory"]);
     expect(homepage.preview_contract.no_live_write).toBe(true);
     expect(homepage.preview_contract.design_snapshot_version).toBe(1);
     expect(homepage.preview_contract.optional_top_level_fields).toContain("ttl_hours");
@@ -329,11 +332,13 @@ describe("Herkunft der Config-Felder", () => {
       .reduce((n, w) => n + (w.config?.length ?? 0), 0);
     // 540 since comvenio-cli-doku 06 (2026-09-29): 21 fields no widget reads were removed
     // (config_not_read_by_widget), one of them with a value set; 541 with custom_html/slots,
-    // the named slots the gateway must be able to write.
-    expect(felder).toBe(541);
+    // the named slots the gateway must be able to write; 554 with the three community
+    // widgets (community-hub 14: 5 + 4 + 4 fields, each with community_id).
+    expect(felder).toBe(554);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;
-    expect(mitWerten).toBe(138);
+    // 142 with view/range_days (community_calendar) and layout/sort (club_directory).
+    expect(mitWerten).toBe(142);
   });
 });

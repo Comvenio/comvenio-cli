@@ -5,6 +5,9 @@ import type { ActionRisk, PermissionPolicy } from "@comvenio/tool-catalog";
 import type { z } from "zod";
 
 export const K12_HOMEPAGE_ACTION_IDS = ["cai.homepage.01.preview", "cai.homepage.02.apply", "cai.homepage.03.show", "cai.homepage.04.screenshot", "cai.homepage.05.convert"] as const;
+// Page of a community (community-hub 14), bound to the club of the sign-in:
+// every action first checks that this club is a member club of the community.
+export const K12_COMMUNITY_ACTION_IDS = ["cai.community.01.show", "cai.community.02.preview", "cai.community.03.apply", "cai.community.04.screenshot", "cai.community.05.design"] as const;
 export const K12_SCHEMA_ACTION_IDS = ["cai.schema.01.list_domains", "cai.schema.02.show_domain_schema"] as const;
 export const K12_VERIFY_ACTION_IDS = ["cai.verify.01.url", "cai.verify.02.event", "cai.verify.03.menu", "cai.verify.04.homepage", "cai.verify.05.news", "cai.verify.06.certificate"] as const;
 export const K12_DATA_ACTION_IDS = [
@@ -20,10 +23,10 @@ export const K12_NEWS_ACTION_IDS = [
   "cai.news.01.list", "cai.news.02.show", "cai.news.03.create", "cai.news.04.update", "cai.news.05.delete", "cai.news.06.apply",
   "cai.news.07.preview", "cai.news.08.publish", "cai.news.09.video_slideshow_result_teaser",
 ] as const;
-export const K12_ACTION_IDS = [...K12_HOMEPAGE_ACTION_IDS, ...K12_SCHEMA_ACTION_IDS, ...K12_VERIFY_ACTION_IDS, ...K12_DATA_ACTION_IDS, ...K12_NEWS_ACTION_IDS] as const;
+export const K12_ACTION_IDS = [...K12_HOMEPAGE_ACTION_IDS, ...K12_COMMUNITY_ACTION_IDS, ...K12_SCHEMA_ACTION_IDS, ...K12_VERIFY_ACTION_IDS, ...K12_DATA_ACTION_IDS, ...K12_NEWS_ACTION_IDS] as const;
 
 export type K12ActionId = (typeof K12_ACTION_IDS)[number];
-export type K12Domain = "homepage" | "schema" | "verify" | "data" | "news";
+export type K12Domain = "homepage" | "community" | "schema" | "verify" | "data" | "news";
 export type K12ExecutionGate = "inline" | "write_safety" | "confirmation" | "job" | "confirmed_job";
 export interface K12BackendRoute {
   method: ComvenioHttpMethod;

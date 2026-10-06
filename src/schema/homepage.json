@@ -7,14 +7,18 @@
     "Backend/Microservice-Backend/club-service/app/schemas/club_home_section.py",
     "Backend/Microservice-Backend/club-service/app/constants/widget_kinds.py"
   ],
-  "widget_count": 75,
-  "widget_config_documented": 75,
+  "widget_count": 78,
+  "widget_config_documented": 78,
   "vocabulary_sync": {
-    "registry_count": 75,
-    "backend_count": 75,
+    "registry_count": 78,
+    "backend_count": 78,
     "prompt_count": 75,
     "missing_in_backend": [],
-    "missing_in_prompt": [],
+    "missing_in_prompt": [
+      "community_calendar",
+      "community_news",
+      "club_directory"
+    ],
     "extra_in_backend": [],
     "extra_in_prompt": []
   },
@@ -207,7 +211,10 @@
     "department_calendar",
     "chat_preview",
     "honor_wall",
-    "ad_banner"
+    "ad_banner",
+    "community_calendar",
+    "community_news",
+    "club_directory"
   ],
   "widgets": {
     "hero": {
@@ -4916,6 +4923,156 @@
           ]
         }
       }
+    },
+    "community_calendar": {
+      "config": [
+        {
+          "name": "view",
+          "values": [
+            "list",
+            "month"
+          ]
+        },
+        {
+          "name": "count"
+        },
+        {
+          "name": "range_days",
+          "values": [
+            14,
+            30,
+            60,
+            90
+          ]
+        },
+        {
+          "name": "community_id"
+        },
+        {
+          "name": "show_title"
+        }
+      ],
+      "beschreibung": {
+        "kategorie": "veranstaltungen",
+        "zweck": {
+          "de": "Kommende öffentliche Termine aller Vereine einer Community, je mit dem Verein, der einlädt — als Liste oder Monatsansicht.",
+          "en": "Upcoming public events of all clubs of a community, each with the inviting club — as a list or month view."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Event-Daten über die öffentliche Sammelroute der Community (öffentliche Termine aller Mitgliedsvereine).",
+          "en": "Comvenio event data via the community's public aggregate route (public events of all member clubs)."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Datum, Ort und einladender Verein der öffentlichen Termine — keine Teilnehmerlisten.",
+          "en": "Title, date, location and inviting club of public events — no attendee lists."
+        },
+        "passt_zu": {
+          "de": [
+            "Gemeinde-Startseite",
+            "Ortsseite",
+            "Vereinsseite in einer Community"
+          ],
+          "en": [
+            "Community homepage",
+            "Local page",
+            "Club page within a community"
+          ]
+        }
+      }
+    },
+    "community_news": {
+      "config": [
+        {
+          "name": "count"
+        },
+        {
+          "name": "show_images"
+        },
+        {
+          "name": "community_id"
+        },
+        {
+          "name": "show_title"
+        }
+      ],
+      "beschreibung": {
+        "kategorie": "news",
+        "zweck": {
+          "de": "Veröffentlichte öffentliche Nachrichten aller Vereine einer Community als Karten mit Titelbild, Teaser und Herkunft.",
+          "en": "Published public news of all clubs of a community as cards with cover image, teaser and origin."
+        },
+        "datenquelle": {
+          "de": "Comvenio-Content-Daten über die öffentliche Sammelroute der Community.",
+          "en": "Comvenio content data via the community's public aggregate route."
+        },
+        "macht_oeffentlich": {
+          "de": "Titel, Teaser, Titelbild, Datum und Verein öffentlicher Nachrichten.",
+          "en": "Title, teaser, cover image, date and club of public news."
+        },
+        "passt_zu": {
+          "de": [
+            "Gemeinde-Startseite",
+            "Ortsseite",
+            "Vereinsseite in einer Community"
+          ],
+          "en": [
+            "Community homepage",
+            "Local page",
+            "Club page within a community"
+          ]
+        }
+      }
+    },
+    "club_directory": {
+      "config": [
+        {
+          "name": "layout",
+          "values": [
+            "grid",
+            "list"
+          ]
+        },
+        {
+          "name": "sort",
+          "values": [
+            "name",
+            "with_page_first"
+          ]
+        },
+        {
+          "name": "community_id"
+        },
+        {
+          "name": "show_title"
+        }
+      ],
+      "beschreibung": {
+        "kategorie": "community",
+        "zweck": {
+          "de": "Verzeichnis aller Mitgliedsvereine einer Community mit Logo und Sparten, mit Absprung auf die eigene öffentliche Seite des Vereins.",
+          "en": "Directory of all member clubs of a community with logo and sports, linking to each club's own public page."
+        },
+        "datenquelle": {
+          "de": "Öffentliche Vereinsliste der Community (Name, Logo, Sparten, öffentliche Adresse).",
+          "en": "Public club list of the community (name, logo, sports, public address)."
+        },
+        "macht_oeffentlich": {
+          "de": "Name, Logo, Sparten und öffentliche Adresse der Mitgliedsvereine — keine Mitglieder, keine Kontakte.",
+          "en": "Name, logo, sports and public address of the member clubs — no members, no contacts."
+        },
+        "passt_zu": {
+          "de": [
+            "Gemeinde-Startseite",
+            "Ortsseite",
+            "Vereinsseite in einer Community"
+          ],
+          "en": [
+            "Community homepage",
+            "Local page",
+            "Club page within a community"
+          ]
+        }
+      }
     }
   },
   "interaction_contract": {
@@ -4982,14 +5139,14 @@
     ]
   },
   "config_sync": {
-    "widgets_checked": 75,
-    "fields_checked": 541,
+    "widgets_checked": 78,
+    "fields_checked": 554,
     "widgets_with_unread_fields": 1,
     "unread_fields": 1,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 33,
-    "value_sets_unreadable": 105,
+    "value_sets_unreadable": 109,
     "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,

@@ -43,6 +43,10 @@ function action(id: K12ActionId, domain: K12Domain, source: string, operations: 
   return { action_id: id, domain, source_action: source, source_path: `src/commands/${domain}.ts`, operations: Object.freeze(Object.fromEntries(operations.map((entry) => [entry.operation, entry]))), publication_state: "implemented", blocker: null, coverage_status: coverage };
 }
 
+// The two reads of the club binding stand in front of every community route.
+const communityPreflight = [route("GET", "club", "/communities/{community_id}", "preflight"), route("GET", "club", "/communities/{community_id}/clubs", "preflight")];
+const communityOperation = (input: { name: string; scopes: OAuthScope[]; risk: ActionRisk; routes: K12BackendRoute[]; external?: K12OperationDefinition["external_effect"] }) =>
+  operation({ ...input, profile: "authenticated", routes: [...communityPreflight, ...input.routes] });
 const fileRead = (name: string, path: string) => read(name, "file_read", ["files.read"], "content", path);
 const fileWrite = (name: string, method: ComvenioHttpMethod, path: string, critical = false) => write(name, "file_write", ["files.write"], method, "content", path, critical);
 const rightWrite = (name: string, method: ComvenioHttpMethod, path: string, critical = false) => write(name, "file_rights", ["files.write"], method, "content", path, critical);
@@ -62,6 +66,22 @@ export const K12_ACTION_DEFINITIONS: Readonly<Record<K12ActionId, K12ActionDefin
   // wandelt lokal um — kein Schreiben, deshalb risk: "read". Scope und Profil
   // wie cai.homepage.01.preview (DC-4): Teil desselben Design-Workflows.
   "cai.homepage.05.convert": action("cai.homepage.05.convert", "homepage", "convert", [operation({ name: "convert", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("GET", "club", "/home-config/{club_id}/tabs", "read")] })]),
+
+  // community-hub 14 §11: the page of a community through the club of the
+  // sign-in. Every operation first reads the community and its member clubs
+  // (preflight); the club must be one of them (COMMUNITY_NOT_IN_CLUB). The
+  // write right itself is checked by the service (responsible person).
+  "cai.community.01.show": action("cai.community.01.show", "community", "show", [
+    communityOperation({ name: "private", scopes: ["club.read"], risk: "read", routes: [route("GET", "club", "/home-config/communities/{community_id}/tabs")] }),
+    communityOperation({ name: "public", scopes: ["public.read"], risk: "read", routes: [route("GET", "club", "/public/communities/{community_id}/home")] }),
+  ]),
+  "cai.community.02.preview": action("cai.community.02.preview", "community", "preview", [communityOperation({ name: "preview", scopes: ["club.write"], risk: "read", routes: [route("POST", "club", "/home-config/communities/{community_id}/preview", "read")] })]),
+  "cai.community.03.apply": action("cai.community.03.apply", "community", "apply", [communityOperation({ name: "apply", scopes: ["club.write"], risk: "critical_write", routes: [route("POST", "club", "/home-config/communities/{community_id}/bulk")], external: "comvenio_public" })]),
+  "cai.community.04.screenshot": action("cai.community.04.screenshot", "community", "screenshot", [communityOperation({ name: "screenshot", scopes: ["club.write"], risk: "read", routes: [route("POST", "club", "/home-config/communities/{community_id}/preview/{preview_id}/screenshot", "read")] })]),
+  "cai.community.05.design": action("cai.community.05.design", "community", "design", [
+    communityOperation({ name: "show", scopes: ["club.read"], risk: "read", routes: [route("GET", "club", "/communities/{community_id}/design")] }),
+    communityOperation({ name: "update", scopes: ["club.write"], risk: "critical_write", routes: [route("PUT", "club", "/communities/{community_id}/design")], external: "comvenio_public" }),
+  ]),
 
   "cai.schema.01.list_domains": action("cai.schema.01.list_domains", "schema", "list domains", [read("list", "authenticated", ["club.read"], "connector", "/schema")], "core-partial"),
   "cai.schema.02.show_domain_schema": action("cai.schema.02.show_domain_schema", "schema", "show domain schema", [read("show", "authenticated", ["club.read"], "connector", "/schema/{domain}")], "core-partial"),

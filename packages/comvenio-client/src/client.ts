@@ -176,6 +176,9 @@ interface UpstreamBody {
   required_scope: OAuthScope | null;
 }
 
+const SERVICE_ERROR_CODE = /^[A-Z][A-Z0-9_]{2,63}$/u;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
 async function upstreamBody(response: Response): Promise<UpstreamBody> {
   try {
     const text = (await response.text()).slice(0, 4000);
@@ -194,6 +197,24 @@ async function upstreamBody(response: Response): Promise<UpstreamBody> {
       const first = detail[0] as { msg?: unknown; loc?: unknown };
       const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
       line = typeof first.msg === "string" ? (where ? `${where}: ${first.msg}` : first.msg) : null;
+    } else if (detail !== null && typeof detail === "object") {
+      // {"code": "TAB_VERSION_CONFLICT", "message": "…", "tabs": [{"tab_id": …}]}
+      // (club-service community page): the code names the way forward, the
+      // tabs say which pages changed (community-hub 14 DC-3, TC-05). Only a
+      // coded error is shown, and only tab ids that are ids; any other object
+      // keeps the generic message as before.
+      const entry = detail as { code?: unknown; message?: unknown; tabs?: unknown };
+      if (typeof entry.code === "string" && SERVICE_ERROR_CODE.test(entry.code)) {
+        const text = typeof entry.message === "string" ? entry.message : entry.code;
+        const code = text.includes(entry.code) ? "" : `${entry.code}: `;
+        const tabs = Array.isArray(entry.tabs)
+          ? entry.tabs.flatMap((tab) => {
+            const id = tab !== null && typeof tab === "object" ? (tab as { tab_id?: unknown }).tab_id : null;
+            return typeof id === "string" && UUID_PATTERN.test(id) ? [id] : [];
+          }).slice(0, 10)
+          : [];
+        line = `${code}${text}${tabs.length ? ` (Tabs: ${tabs.join(", ")})` : ""}`;
+      }
     }
     if (!line) return { detail: null, required_scope: requiredScope };
     const clean = line.replace(/\s+/gu, " ").trim();

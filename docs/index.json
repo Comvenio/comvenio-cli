@@ -342,6 +342,33 @@
       }
     },
     {
+      "id": "fehler/community-not-in-club",
+      "kategorie": "fehler",
+      "title": {
+        "de": "COMMUNITY_NOT_IN_CLUB — Der verbundene Verein gehört nicht zu dieser Community.",
+        "en": "COMMUNITY_NOT_IN_CLUB — The connected club does not belong to this community."
+      },
+      "stichwoerter": {
+        "de": [
+          "community",
+          "verein",
+          "mitgliedsverein",
+          "gemeinde"
+        ],
+        "en": [
+          "community",
+          "club",
+          "member club",
+          "municipality"
+        ]
+      },
+      "domaenen": [],
+      "pfad": {
+        "de": "docs/fehler/community-not-in-club.md",
+        "en": "docs/en/fehler/community-not-in-club.md"
+      }
+    },
+    {
       "id": "fehler/config-invalid",
       "kategorie": "fehler",
       "title": {
@@ -914,7 +941,8 @@
         ]
       },
       "domaenen": [
-        "homepage"
+        "homepage",
+        "community"
       ],
       "pfad": {
         "de": "docs/homepage.md",

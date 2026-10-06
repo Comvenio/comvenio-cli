@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { PUBLIC_READ_CONTRACTS } from "../../public/contracts.ts";
 import { K12_ACTION_DEFINITIONS, validateK12Definitions } from "./definitions.ts";
-import { executeK12Operation, hasK12OperationHandler } from "./handlers.ts";
+import { assertCommunityInClub, executeK12Operation, hasK12OperationHandler } from "./handlers.ts";
 import { ContentChangeConfirmationPolicy, ContentJobPolicy } from "./policies.ts";
 import { buildK12Preview } from "./preview.ts";
 import { K12_ACTION_SCHEMAS } from "./schemas.ts";
@@ -79,6 +79,8 @@ export abstract class K12ToolSet {
     const mutationRequest = { definition, operation, input, context, capability_snapshot: snapshot }; const mutation = () => executeK12Operation(definition.action_id, operation.operation, input, context, this.#dependencies.client);
     const jobMutationRequest = { ...mutationRequest, input: withoutConfirmation(input) };
     try {
+      // community-hub 14 §4.1: before every gate — also before a confirmation preview.
+      if (definition.domain === "community") await assertCommunityInClub(this.#dependencies.client, input, context);
       let result: JsonValue; let status: K12ActionResult["status"] = "completed";
       if (operation.execution_gate === "inline") result = await mutation();
       else if (operation.execution_gate === "job") {
@@ -105,8 +107,9 @@ export abstract class K12ToolSet {
 }
 
 export class HomepageToolSet extends K12ToolSet { constructor(dependencies: K12ExecutionDependencies) { super("homepage", dependencies); } publicReadContracts() { return [structuredClone(PUBLIC_READ_CONTRACTS.public_club_home)]; } }
+export class CommunityToolSet extends K12ToolSet { constructor(dependencies: K12ExecutionDependencies) { super("community", dependencies); } }
 export class SchemaToolSet extends K12ToolSet { readonly coverage_status = "core-partial" as const; constructor(dependencies: K12ExecutionDependencies) { super("schema", dependencies); } }
 export class VerifyToolSet extends K12ToolSet { constructor(dependencies: K12ExecutionDependencies) { super("verify", dependencies); } }
 export class DataToolSet extends K12ToolSet { constructor(dependencies: K12ExecutionDependencies) { super("data", dependencies); } }
 export class NewsToolSet extends K12ToolSet { constructor(dependencies: K12ExecutionDependencies) { super("news", dependencies); } publicReadContracts() { return [structuredClone(PUBLIC_READ_CONTRACTS.public_news), structuredClone(PUBLIC_READ_CONTRACTS.public_news_detail), structuredClone(PUBLIC_READ_CONTRACTS.public_department_news)]; } }
-export function createK12ToolSets(dependencies: K12ExecutionDependencies) { return { homepage: new HomepageToolSet(dependencies), schema: new SchemaToolSet(dependencies), verify: new VerifyToolSet(dependencies), data: new DataToolSet(dependencies), news: new NewsToolSet(dependencies) }; }
+export function createK12ToolSets(dependencies: K12ExecutionDependencies) { return { homepage: new HomepageToolSet(dependencies), community: new CommunityToolSet(dependencies), schema: new SchemaToolSet(dependencies), verify: new VerifyToolSet(dependencies), data: new DataToolSet(dependencies), news: new NewsToolSet(dependencies) }; }
