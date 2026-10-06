@@ -10,6 +10,22 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { insufficientScopeToolResult } from "./oauth-tool-challenge.ts";
 
 /**
+ * Service codes whose reason may reach the customer, each reviewed for what it
+ * reveals. The automations of the ai-service (automatisierungen-07 DC-3); a new
+ * code joins only after the same review.
+ */
+const PUBLIC_DETAIL_CODES: ReadonlySet<string> = new Set([
+  "automation_changed",
+  "automation_paused",
+  "automation_limit_reached",
+  "function_not_automatable",
+  "standing_not_allowed",
+  "invalid_args",
+  "invalid_schedule",
+  "invalid_trigger",
+]);
+
+/**
  * The customer-facing tool error: public code, cause and next command from
  * docs/fehler/katalog.json. A missing scope keeps the OAuth step-up challenge
  * so providers can re-authorize; `error` keeps the internal code for existing
@@ -41,10 +57,13 @@ export function publicToolError(
     request_id: context.request_id,
   };
   // The service's reason names the way forward for a conflict or a refused input
-  // (automation_changed with live_version, automatisierungen-07 DC-3). Refusals and
-  // unknown objects keep the catalog sentence only: a 404 says nothing about existence.
+  // (automation_changed with live_version, automatisierungen-07 DC-3) — but only for
+  // reviewed codes: a free service text can tell a foreign club's file from a missing
+  // one (finance receipts, review R3). Refusals and unknown objects keep the catalog
+  // sentence: a 404 says nothing about existence.
   const detail = connectorError?.detail
     && (connectorError.code === "CONFLICT" || connectorError.code === "VALIDATION_FAILED")
+    && PUBLIC_DETAIL_CODES.has(connectorError.detail.split(/[\s(]/u)[0] ?? "")
     ? connectorError.detail
     : null;
   // Assistants read the article through the public help tool (05-ki-zugang).

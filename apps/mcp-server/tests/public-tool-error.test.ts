@@ -79,6 +79,18 @@ describe("connector customer errors (01-fehlermodell)", () => {
     expect((missing.content[0] as { text: string }).text).not.toContain("automation_not_found");
   });
 
+  test("an unreviewed service reason stays out, even on a refused input (review R3, finance receipts)", () => {
+    const foreign = publicToolError(context, origin, createConnectorError({
+      code: "VALIDATION_FAILED",
+      message: "intern",
+      request_id: context.request_id,
+      retryable: false,
+      detail: "receipt_invalid: file belongs to another club",
+    }), "write");
+    expect(foreign.structuredContent).not.toHaveProperty("detail");
+    expect((foreign.content[0] as { text: string }).text).not.toContain("another club");
+  });
+
   test("TC-03: a foreign error becomes UNKNOWN_ERROR with the request ID", () => {
     const result = publicToolError(context, origin, new TypeError("boom"), "read");
     expect(result.structuredContent).toMatchObject({
