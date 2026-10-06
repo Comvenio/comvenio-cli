@@ -8,7 +8,7 @@ const automationId = "33333333-3333-4333-8333-333333333333";
 const runId = "44444444-4444-4444-8444-444444444444";
 const userId = "55555555-5555-4555-8555-555555555555";
 
-const routes: Array<[string, string, string, string]> = [
+const routes = [
   ["cai.club.16.automation_list", "GET", "/automations/{club_id}", "read"],
   ["cai.club.17.automation_options", "GET", "/automations/{club_id}/options", "read"],
   ["cai.club.18.automation_show", "GET", "/automations/{club_id}/{automation_id}", "read"],
@@ -19,7 +19,7 @@ const routes: Array<[string, string, string, string]> = [
   ["cai.club.23.automation_resume", "POST", "/automations/{club_id}/{automation_id}/resume", "reversible_write"],
   ["cai.club.24.automation_run", "POST", "/automations/{club_id}/{automation_id}/run", "critical_write"],
   ["cai.club.25.automation_delete", "DELETE", "/automations/{club_id}/{automation_id}", "critical_write"],
-];
+] as const;
 
 const automation = {
   id: automationId, club_id: clubId, kind: "club", department_id: null, owner_user_id: null,
