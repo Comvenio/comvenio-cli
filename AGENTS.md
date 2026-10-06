@@ -315,8 +315,8 @@ comvenio agent chat "<rückfrage>" --session <session-id> --json   # dieselbe Un
 ```
 
 `comvenio function`, `comvenio automation` und `comvenio agent approval` gibt es im CLI nicht
-mehr: Funktionen stehen in der Web-App im Admin-Reiter „Fähigkeiten & Routinen“, Automationen
-unter „Automatisierungen“, Freigaben unter „Mein Agent“, Spur „Braucht dich“. Ein Aufruf endet
+mehr: Funktionen stehen in der Web-App im Admin-Reiter „Fähigkeiten & Routinen“, Automatisierungen
+laufen über die Actions `cai.club.16`–`cai.club.25` (automatisierungen-07) oder unter „Automatisierungen“, Freigaben unter „Mein Agent“, Spur „Braucht dich“. Ein Aufruf endet
 mit `USAGE_ERROR` und nennt diesen Ort.
 
 Vollständiger Ablauf (Zustände, was du meldest, Grenzen): Skill `club-agent-lokal` in

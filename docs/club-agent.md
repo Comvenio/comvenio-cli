@@ -51,13 +51,21 @@ frei, weder im Assistenten-Chat noch im Terminal noch im Web-Chat.
 
 ### Freigaben und Verwaltung
 
-Offene und entschiedene Freigaben, Dauerfreigaben, Funktionen, Automationen, Konfiguration,
-Skill-Pakete, Routinen, Watch-Rules, Journal und Memory werden ausschließlich in Web oder App
-bedient — Freigaben über den im Dialog genannten Direktlink oder unter „Mein Agent“, Spur „Braucht
-dich“; Funktionen und Dauerfreigaben im Admin-Reiter „Fähigkeiten & Routinen“; Automationen unter
-„Automatisierungen“. Die früheren Befehle `comvenio agent approval`, `comvenio function` und
-`comvenio automation` gibt es im CLI nicht mehr; ein Aufruf endet mit `USAGE_ERROR` und nennt den
-Ort in der Web-App.
+Offene und entschiedene Freigaben, Dauerfreigaben, Funktionen, Konfiguration, Skill-Pakete,
+Routinen, Watch-Rules, Journal und Memory werden ausschließlich in Web oder App bedient —
+Freigaben über den im Dialog genannten Direktlink oder unter „Mein Agent“, Spur „Braucht dich“;
+Funktionen und Dauerfreigaben im Admin-Reiter „Fähigkeiten & Routinen“. Die früheren Befehle
+`comvenio agent approval`, `comvenio function` und `comvenio automation` gibt es im CLI nicht
+mehr; ein Aufruf endet mit `USAGE_ERROR` und nennt den Ort.
+
+Automatisierungen steuerst du über die Actions `cai.club.16.automation_list` bis
+`cai.club.25.automation_delete` (Liste, Optionen, Anzeige, Verlauf, Anlegen, Ändern, Pausieren,
+Fortsetzen, Jetzt ausführen, Löschen) mit `comvenio action call`, oder in der Web-App unter
+„Automatisierungen“. Lesen braucht `club.read`, Schreiben `club.write`; Anlegen, Ändern, Jetzt
+ausführen und Löschen zeigen erst eine Vorschau und laufen nach `comvenio action confirm`. Die
+Rechte prüft der Dienst wie in der Web-App: vereinsweite Automatisierungen nur mit dem
+Verwaltungsrecht im Bereich, persönliche nur die eigenen. Freigaben eines Laufs entscheidest du
+weiter in Web oder App.
 
 ### Verfügbarkeit
 

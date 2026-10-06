@@ -15,9 +15,11 @@ export const REMOVED_COMMANDS = {
   function:
     "Funktionen des Club-Agenten findest du in der Web-App im Admin-Reiter „Fähigkeiten & Routinen“. "
     + "Aus dem Terminal sprichst du mit dem Club-Agenten über „comvenio agent chat“.",
+  // automatisierungen-07 (D16): automations run over the connector actions cai.club.16–25.
   automation:
-    "Automationen verwaltest du in der Web-App unter „Automatisierungen“: "
-    + "„Meine Automatisierungen“ für deine eigenen, „Admin-Automatisierungen“ für die des Vereins.",
+    "Automatisierungen steuerst du über die Actions „cai.club.16.automation_list“ bis "
+    + "„cai.club.25.automation_delete“ („comvenio action list“, ausgeführt mit „comvenio action call“) "
+    + "oder in der Web-App unter „Meine Automatisierungen“ und „Admin-Automatisierungen“.",
 } as const;
 
 export type RemovedCommand = keyof typeof REMOVED_COMMANDS;

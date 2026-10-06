@@ -176,6 +176,61 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
       route(null, "POST", "club", "/clubs/{club_id}/settings/fonts"),
     ],
   }),
+  // Automatisierungen (automatisierungen-07, D16): the classic `automation` command left with the device
+  // token (D-GTA-03); these run the routes of 01. The ai-service checks the rights per call (D6:
+  // manage_club_settings in the area for club-wide ones, the owner for personal ones, 404 otherwise),
+  // and never decides an approval (D-AF-16).
+  "cai.club.16.automation_list": definition({
+    action_id: "cai.club.16.automation_list", domain: "club", source_action: "automation-list", scopes: CLUB_READ,
+    permission: policy([], "optional", true),
+    routes: [route(null, "GET", "ai", "/automations/{club_id}")],
+  }),
+  "cai.club.17.automation_options": definition({
+    action_id: "cai.club.17.automation_options", domain: "club", source_action: "automation-options", scopes: CLUB_READ,
+    permission: policy([], "optional", true),
+    routes: [route(null, "GET", "ai", "/automations/{club_id}/options")],
+  }),
+  "cai.club.18.automation_show": definition({
+    action_id: "cai.club.18.automation_show", domain: "club", source_action: "automation-show", scopes: CLUB_READ,
+    permission: policy([], "optional", true),
+    routes: [route(null, "GET", "ai", "/automations/{club_id}/{automation_id}")],
+  }),
+  "cai.club.19.automation_runs": definition({
+    action_id: "cai.club.19.automation_runs", domain: "club", source_action: "automation-runs", scopes: CLUB_READ,
+    permission: policy([], "optional", true),
+    routes: [route(null, "GET", "ai", "/automations/{club_id}/{automation_id}/runs")],
+  }),
+  "cai.club.20.automation_create": definition({
+    action_id: "cai.club.20.automation_create", domain: "club", source_action: "automation-create", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "ai", "/automations/{club_id}")],
+  }),
+  "cai.club.21.automation_update": definition({
+    action_id: "cai.club.21.automation_update", domain: "club", source_action: "automation-update", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "PATCH", "ai", "/automations/{club_id}/{automation_id}")],
+  }),
+  "cai.club.22.automation_pause": definition({
+    action_id: "cai.club.22.automation_pause", domain: "club", source_action: "automation-pause", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "reversible_write",
+    routes: [route(null, "POST", "ai", "/automations/{club_id}/{automation_id}/pause")],
+  }),
+  "cai.club.23.automation_resume": definition({
+    action_id: "cai.club.23.automation_resume", domain: "club", source_action: "automation-resume", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "reversible_write",
+    routes: [route(null, "POST", "ai", "/automations/{club_id}/{automation_id}/resume")],
+  }),
+  "cai.club.24.automation_run": definition({
+    action_id: "cai.club.24.automation_run", domain: "club", source_action: "automation-run", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "POST", "ai", "/automations/{club_id}/{automation_id}/run")],
+  }),
+  "cai.club.25.automation_delete": definition({
+    action_id: "cai.club.25.automation_delete", domain: "club", source_action: "automation-delete", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "DELETE", "ai", "/automations/{club_id}/{automation_id}")],
+  }),
+
   "cai.member.01.list": definition({
     action_id: "cai.member.01.list", domain: "member", source_action: "list", scopes: MEMBER_BASIC,
     permission: policy(["view_members"]), routes: [route("route.285", "GET", "member", "/members/by_club/{club_id}")],
