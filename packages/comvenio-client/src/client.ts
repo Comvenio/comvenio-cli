@@ -177,7 +177,27 @@ interface UpstreamBody {
 }
 
 const SERVICE_ERROR_CODE = /^[A-Z][A-Z0-9_]{2,63}$/u;
+const SNAKE_ERROR_CODE = /^[a-z][a-z0-9_]{2,63}$/u;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+/**
+ * Named fields beside a coded `detail` — {"detail": "automation_changed",
+ * "live_version": 4} (ai-service, automatisierungen-07 DC-3): the code alone
+ * does not say which version is current. Only these fields, only integers or
+ * code-like words; anything else stays out of the customer's line.
+ */
+const DETAIL_EXTRA_FIELDS = ["live_version", "limit", "paused_reason", "field"] as const;
+const DETAIL_EXTRA_WORD = /^[A-Za-z0-9_.:-]{1,80}$/u;
+
+function detailExtras(body: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const key of DETAIL_EXTRA_FIELDS) {
+    const value = body[key];
+    if (typeof value === "number" && Number.isSafeInteger(value)) parts.push(`${key}: ${value}`);
+    else if (typeof value === "string" && DETAIL_EXTRA_WORD.test(value)) parts.push(`${key}: ${value}`);
+  }
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
 
 async function upstreamBody(response: Response): Promise<UpstreamBody> {
   try {
@@ -192,7 +212,9 @@ async function upstreamBody(response: Response): Promise<UpstreamBody> {
       ? body.required_scope as OAuthScope
       : null;
     let line: string | null = null;
-    if (typeof detail === "string") line = detail;
+    if (typeof detail === "string") {
+      line = SNAKE_ERROR_CODE.test(detail) ? `${detail}${detailExtras(body as Record<string, unknown>)}` : detail;
+    }
     else if (Array.isArray(detail) && detail.length > 0) {
       const first = detail[0] as { msg?: unknown; loc?: unknown };
       const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
@@ -217,7 +239,8 @@ async function upstreamBody(response: Response): Promise<UpstreamBody> {
       }
     }
     if (!line) return { detail: null, required_scope: requiredScope };
-    const clean = line.replace(/\s+/gu, " ").trim();
+    // Control characters (terminal escapes) never reach a terminal or an assistant.
+    const clean = line.replace(/[\u0000-\u001f\u007f-\u009f]/gu, " ").replace(/\s+/gu, " ").trim();
     return { detail: clean.length > 300 ? `${clean.slice(0, 297)}...` : clean, required_scope: requiredScope };
   } catch {
     return { detail: null, required_scope: null };
@@ -431,6 +454,7 @@ export function createComvenioApiClient(
               retryable: mapped.retryable,
               ...(retryAfter === undefined ? {} : { retry_after_seconds: retryAfter }),
               ...(mapped.required_scope ? { required_scope: mapped.required_scope } : {}),
+              ...(detail ? { detail } : {}),
             });
           }
 

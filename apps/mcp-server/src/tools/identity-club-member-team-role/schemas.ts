@@ -778,6 +778,85 @@ const weeklyPreviewSnapshotOutput = z.object({
   created_at: z.string().max(40).nullable(),
 }).strip();
 
+// Automatisierungen (ai-service, automatisierungen-07): the routes of 01. `args` follow the intent
+// schema of the chosen function, which the service checks; the trigger has a fixed shape.
+const automationKind = z.enum(["club", "personal"]);
+const approvalMode = z.enum(["click", "objection_window", "standing"]);
+const capabilityId = z.string().trim().min(1).max(120);
+const jsonObject = z.record(z.string().max(200), z.json());
+const timestamp = z.string().max(40);
+const automationTrigger = z.object({
+  type: z.enum(["schedule", "manual", "event"]),
+  rrule: z.string().trim().min(1).max(500).optional(),
+  timezone: z.string().trim().min(1).max(64).optional(),
+  event_type: z.string().trim().min(1).max(80).optional(),
+  department_id: uuid.optional(),
+  subject_id: uuid.optional(),
+}).strict();
+const automationRunOutput = z.object({
+  id: uuid,
+  automation_id: uuid,
+  trigger_type: z.string().max(40),
+  scheduled_for: timestamp.nullable().optional(),
+  state: z.string().max(40),
+  reason: z.string().max(2_000).nullable().optional(),
+  function_run_id: uuid.nullable().optional(),
+  result_text: z.string().max(20_000).nullable().optional(),
+  approval_request_id: uuid.nullable().optional(),
+  delivery_state: z.string().max(40).nullable().optional(),
+  delivered_message_id: z.string().max(80).nullable().optional(),
+  trigger_event: jsonObject.nullable().optional(),
+  started_at: timestamp.nullable().optional(),
+  finished_at: timestamp.nullable().optional(),
+  created_at: timestamp,
+}).strip();
+const automationOutput = z.object({
+  id: uuid,
+  club_id: uuid,
+  kind: z.string().max(20),
+  department_id: uuid.nullable().optional(),
+  owner_user_id: uuid.nullable().optional(),
+  name: z.string().max(200),
+  capability_id: z.string().max(120),
+  args: jsonObject,
+  trigger: jsonObject,
+  output: jsonObject,
+  approval_mode: z.string().max(40),
+  objection_hours: z.number().int().nullable().optional(),
+  enabled: z.boolean(),
+  paused_reason: z.string().max(80).nullable().optional(),
+  failure_streak: z.number().int(),
+  next_run_at: timestamp.nullable().optional(),
+  last_run_at: timestamp.nullable().optional(),
+  runs_today: z.number().int().optional(),
+  last_run: automationRunOutput.nullable().optional(),
+  version: z.number().int(),
+  created_at: timestamp,
+  updated_at: timestamp,
+}).strip();
+const automationOptionsOutput = z.object({
+  kind: z.string().max(20),
+  areas: z.array(z.object({
+    department_id: uuid.nullable(),
+    anchor_department_id: uuid,
+    name: z.string().max(200),
+    output: z.object({ type: z.string().max(40), label: z.string().max(200) }).strip(),
+  }).strip()),
+  functions: z.array(jsonObject),
+  approval_modes: z.array(z.string().max(40)),
+  event_types: z.array(z.object({ key: z.string().max(80), label: z.string().max(200) }).strip()),
+}).strip();
+const automationContext = entityContext("automation_id");
+const automationVersion = z.number().int().min(1);
+const automationChanges = {
+  name: z.string().trim().min(1).max(200),
+  args: jsonObject,
+  department_id: uuid.nullable(),
+  approval_mode: approvalMode,
+  objection_hours: z.number().int().min(1).max(48).nullable(),
+  enabled: z.boolean(),
+};
+
 export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContract>> = Object.freeze({
   "cai.whoami.01.whoami": contract(clubContext, z.object({ subject_id: uuid, club_id: uuid, display_name: z.string().nullable(), email: z.string().email().nullable() }).strict()),
   "cai.club.01.info": contract(clubContext, clubOutput),
@@ -821,6 +900,66 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   ),
 
   "cai.club.15.font_upload": contract(fontUploadInput, ASYNC_JOB_HANDLE_SCHEMA),
+  "cai.club.16.automation_list": contract(
+    z.object({ club_id: uuid, kind: automationKind.optional(), department_id: uuid.optional(), capability_id: capabilityId.optional() }).strict(),
+    z.object({ items: z.array(automationOutput) }).strip(),
+  ),
+  "cai.club.17.automation_options": contract(
+    z.object({ club_id: uuid, kind: automationKind, capability_id: capabilityId.optional() }).strict(),
+    automationOptionsOutput,
+  ),
+  "cai.club.18.automation_show": contract(automationContext, automationOutput),
+  "cai.club.19.automation_runs": contract(automationContext, z.object({ items: z.array(automationRunOutput) }).strip()),
+  "cai.club.20.automation_create": contract(
+    z.object({
+      club_id: uuid,
+      automation: z.object({
+        kind: automationKind,
+        capability_id: capabilityId,
+        trigger: automationTrigger,
+        name: automationChanges.name,
+        args: automationChanges.args.optional(),
+        department_id: automationChanges.department_id.optional(),
+        approval_mode: automationChanges.approval_mode.optional(),
+        objection_hours: automationChanges.objection_hours.optional(),
+        enabled: automationChanges.enabled.optional(),
+      }).strict(),
+    }).strict(),
+    automationOutput,
+  ),
+  "cai.club.21.automation_update": contract(
+    z.object({
+      club_id: uuid,
+      automation_id: uuid,
+      changes: z.object({
+        expected_version: automationVersion,
+        trigger: automationTrigger.optional(),
+        name: automationChanges.name.optional(),
+        args: automationChanges.args.optional(),
+        department_id: automationChanges.department_id.optional(),
+        approval_mode: automationChanges.approval_mode.optional(),
+        objection_hours: automationChanges.objection_hours.optional(),
+        enabled: automationChanges.enabled.optional(),
+      }).strict().refine((value) => Object.keys(value).length > 1, "mindestens eine Änderung neben expected_version"),
+    }).strict(),
+    automationOutput,
+  ),
+  "cai.club.22.automation_pause": contract(
+    z.object({ club_id: uuid, automation_id: uuid, expected_version: automationVersion.optional() }).strict(),
+    automationOutput,
+  ),
+  "cai.club.23.automation_resume": contract(
+    z.object({ club_id: uuid, automation_id: uuid, expected_version: automationVersion.optional() }).strict(),
+    automationOutput,
+  ),
+  "cai.club.24.automation_run": contract(
+    z.object({ club_id: uuid, automation_id: uuid, idempotency_key: z.string().trim().min(1).max(120).optional() }).strict(),
+    automationRunOutput,
+  ),
+  "cai.club.25.automation_delete": contract(
+    z.object({ club_id: uuid, automation_id: uuid, expected_version: automationVersion }).strict(),
+    deleted,
+  ),
   "cai.member.01.list": contract(z.object({ club_id: uuid, limit: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).default(0) }).strict(), z.object({ items: z.array(memberListItem), limit: z.number().int(), offset: z.number().int(), total: z.number().int().nullable() }).strict()),
   "cai.member.02.show": contract(entityContext("member_id"), memberDetail),
   "cai.member.03.add": contract(z.object({ club_id: uuid, member: memberCreate }).strict(), memberListItem),

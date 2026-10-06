@@ -25,6 +25,14 @@ Die Einträge folgen
 
 ### Added
 
+- Zehn Actions für Automatisierungen `cai.club.16.automation_list` bis
+  `cai.club.25.automation_delete` über die Routen des ai-service (automatisierungen-07, D16):
+  Liste, Optionen, Anzeige, Verlauf mit `club.read`; Anlegen, Ändern, Jetzt ausführen, Löschen
+  mit Vorschau und Bestätigung, Pausieren und Fortsetzen mit `club.write`. `comvenio automation`
+  bleibt entfallen und nennt jetzt diese Actions.
+- Bei `CONFLICT` und `VALIDATION_FAILED` trägt die Fehlerantwort jeder Action den Grund des
+  Dienstes (`detail`, Zeile „Grund:“), etwa `automation_changed (live_version: 4)`. Bei
+  fehlenden Rechten und unbekannten Objekten bleibt es beim Katalogsatz.
 - Neue Action `cai.homepage.05.convert` (Scope `club.write`, lesend): wandelt
   die Homepage-Gerüste des angemeldeten Vereins vom alten Format
   (`data-widget-slot`) in benannte Slots um — der Algorithmus des

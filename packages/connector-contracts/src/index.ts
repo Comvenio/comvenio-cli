@@ -168,6 +168,11 @@ export interface ConnectorError {
   required_scope?: OAuthScope;
   /** All missing scopes when more than one is needed; wins over required_scope. */
   required_scopes?: OAuthScope[];
+  /**
+   * The service's own reason, one cleaned line (`automation_changed (live_version: 4)`).
+   * Shown to the customer only for CONFLICT and VALIDATION_FAILED (automatisierungen-07 DC-3).
+   */
+  detail?: string;
 }
 
 const INVALID_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
@@ -221,6 +226,9 @@ export function createConnectorError(input: ConnectorError): Error & ConnectorEr
   }
   if (input.required_scopes !== undefined) {
     error.required_scopes = [...input.required_scopes];
+  }
+  if (input.detail !== undefined) {
+    error.detail = input.detail;
   }
   CONNECTOR_ERRORS.add(error);
   return error;

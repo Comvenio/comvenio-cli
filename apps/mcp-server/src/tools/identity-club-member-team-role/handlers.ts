@@ -46,6 +46,15 @@ function without(source: JsonObject, keys: readonly string[]): JsonObject {
   return Object.fromEntries(Object.entries(source).filter(([key]) => !keys.includes(key)));
 }
 
+function automationPath(input: JsonValue): string {
+  return `/automations/${string(input, "club_id")}/${string(input, "automation_id")}`;
+}
+
+function versionQuery(input: JsonValue): Record<string, string> {
+  const version = record(input).expected_version;
+  return typeof version === "number" ? { expected_version: String(version) } : {};
+}
+
 async function request(
   client: ComvenioApiClient,
   context: RequestContext,
@@ -186,6 +195,53 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
     if (typeof values.offset === "number") query.offset = String(values.offset);
     if (typeof values.status === "string") query.status = values.status;
     return request(client, context, "GET", "message", "/forum/threads", { query });
+  },
+
+  // Automatisierungen (automatisierungen-07): plain pass-through to the routes of 01; the
+  // service decides visibility and rights.
+  async "cai.club.16.automation_list"(input, context, client) {
+    const values = record(input);
+    const query: Record<string, string> = {};
+    for (const key of ["kind", "department_id", "capability_id"]) {
+      if (typeof values[key] === "string") query[key] = values[key];
+    }
+    return request(client, context, "GET", "ai", `/automations/${string(input, "club_id")}`, { query });
+  },
+  async "cai.club.17.automation_options"(input, context, client) {
+    const values = record(input);
+    const query: Record<string, string> = { kind: string(input, "kind") };
+    if (typeof values.capability_id === "string") query.capability_id = values.capability_id;
+    return request(client, context, "GET", "ai", `/automations/${string(input, "club_id")}/options`, { query });
+  },
+  async "cai.club.18.automation_show"(input, context, client) {
+    return request(client, context, "GET", "ai", automationPath(input));
+  },
+  async "cai.club.19.automation_runs"(input, context, client) {
+    return request(client, context, "GET", "ai", `${automationPath(input)}/runs`);
+  },
+  async "cai.club.20.automation_create"(input, context, client) {
+    return request(client, context, "POST", "ai", `/automations/${string(input, "club_id")}`, {
+      body: nested(input, "automation"),
+    });
+  },
+  async "cai.club.21.automation_update"(input, context, client) {
+    return request(client, context, "PATCH", "ai", automationPath(input), { body: nested(input, "changes") });
+  },
+  async "cai.club.22.automation_pause"(input, context, client) {
+    return request(client, context, "POST", "ai", `${automationPath(input)}/pause`, { query: versionQuery(input) });
+  },
+  async "cai.club.23.automation_resume"(input, context, client) {
+    return request(client, context, "POST", "ai", `${automationPath(input)}/resume`, { query: versionQuery(input) });
+  },
+  async "cai.club.24.automation_run"(input, context, client) {
+    return request(client, context, "POST", "ai", `${automationPath(input)}/run`, {
+      body: without(record(input), ["club_id", "automation_id"]),
+    });
+  },
+  async "cai.club.25.automation_delete"(input, context, client) {
+    const id = string(input, "automation_id");
+    await request(client, context, "DELETE", "ai", automationPath(input), { query: versionQuery(input) });
+    return { deleted: true, id };
   },
 
   async "cai.member.01.list"(input, context, client) {

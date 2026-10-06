@@ -200,9 +200,10 @@ describe("Comvenio connector inventory contract", () => {
     // +2 forum read access (cai.club.13.forum_board_list, cai.club.14.forum_thread_list),
     // +1 homepage conversion (cai.homepage.05.convert),
     // +1 club font upload of the design contract (cai.club.15.font_upload),
-    // +5 community page through the club of the sign-in (community-hub 14, cai.community.01..05).
-    expect(directActionIds).toHaveLength(389);
-    expect(new Set(directActionIds).size).toBe(389);
+    // +5 community page through the club of the sign-in (community-hub 14, cai.community.01..05),
+    // +10 automations over OAuth (automatisierungen-07, cai.club.16..25).
+    expect(directActionIds).toHaveLength(399);
+    expect(new Set(directActionIds).size).toBe(399);
     expect(additiveActionIds).toEqual([
       // Wochenvorschau (ai-service): the classic command ran on the device token only.
       "cai.club.11.weekly_preview_create",
@@ -212,6 +213,18 @@ describe("Comvenio connector inventory contract", () => {
       "cai.club.14.forum_thread_list",
       // Vereinsschrift (homepage-generator 18): the classic `club font-upload` never reached main (K4).
       "cai.club.15.font_upload",
+      // Automatisierungen (ai-service, automatisierungen-07): the classic `automation` command
+      // left with the device token (D-GTA-03); D16 brings them back as actions.
+      "cai.club.16.automation_list",
+      "cai.club.17.automation_options",
+      "cai.club.18.automation_show",
+      "cai.club.19.automation_runs",
+      "cai.club.20.automation_create",
+      "cai.club.21.automation_update",
+      "cai.club.22.automation_pause",
+      "cai.club.23.automation_resume",
+      "cai.club.24.automation_run",
+      "cai.club.25.automation_delete",
       // Kein Legacy-Gegenstueck: Die Seite einer Community (community-hub 14)
       // entstand nach dem Legacy-Inventar; der Verein der Anmeldung muss
       // Mitgliedsverein der Community sein.
@@ -330,8 +343,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 389,
-      published_domain_actions: 387,
+      discovered_actions: 399,
+      published_domain_actions: 397,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -502,10 +515,10 @@ function k7Dependencies(client: ComvenioApiClient): K7ExecutionDependencies {
 }
 
 describe("K7 identity, club, member, team and role contract", () => {
-  test("TC-01/TC-02: maps all six domains and exactly 90 inventoried actions", () => {
-    expect(K7_ACTION_IDS).toHaveLength(90);
-    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(90);
-    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(90);
+  test("TC-01/TC-02: maps all six domains and exactly 100 inventoried actions", () => {
+    expect(K7_ACTION_IDS).toHaveLength(100);
+    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(100);
+    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(100);
 
     const sets = createK7ToolSets(k7Dependencies(k7Client(async () => null)));
     expect({
@@ -515,7 +528,7 @@ describe("K7 identity, club, member, team and role contract", () => {
       team: sets.team.listDefinitions().length,
       teams: sets.teams.listDefinitions().length,
       role: sets.role.listDefinitions().length,
-    }).toEqual({ identity: 1, club: 15, member: 21, team: 7, teams: 31, role: 15 });
+    }).toEqual({ identity: 1, club: 25, member: 21, team: 7, teams: 31, role: 15 });
     expect(K7_ACTION_IDS.some((id) => /login|logout|log_service|master.?admin/iu.test(id))).toBe(false);
   });
 

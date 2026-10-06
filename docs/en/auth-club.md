@@ -341,6 +341,16 @@ comvenio action call cai.club.08.department_add \
 - `cai.club.13.forum_board_list` — forum-board-list (read) · Scopes: `club.read`
 - `cai.club.14.forum_thread_list` — forum-thread-list (read) · Scopes: `club.read`
 - `cai.club.15.font_upload` — font-upload (change) · Scopes: `club.read`, `admin.write`, `files.import`, `files.write`
+- `cai.club.16.automation_list` — automation-list (read) · Scopes: `club.read`
+- `cai.club.17.automation_options` — automation-options (read) · Scopes: `club.read`
+- `cai.club.18.automation_show` — automation-show (read) · Scopes: `club.read`
+- `cai.club.19.automation_runs` — automation-runs (read) · Scopes: `club.read`
+- `cai.club.20.automation_create` — automation-create (change with confirmation) · Scopes: `club.write`
+- `cai.club.21.automation_update` — automation-update (change with confirmation) · Scopes: `club.write`
+- `cai.club.22.automation_pause` — automation-pause (change) · Scopes: `club.write`
+- `cai.club.23.automation_resume` — automation-resume (change) · Scopes: `club.write`
+- `cai.club.24.automation_run` — automation-run (change with confirmation) · Scopes: `club.write`
+- `cai.club.25.automation_delete` — automation-delete (change with confirmation) · Scopes: `club.write`
 <!-- /gen:docs -->
 
 ## Errors

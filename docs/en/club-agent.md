@@ -50,13 +50,20 @@ the agent writes something during the dialog, it automatically opens an approval
 
 ### Approvals and administration
 
-Open and decided approvals, standing approvals, functions, automations, configuration, skill
-packages, routines, watch rules, journal and memory are handled only in the web app or the mobile
-app — approvals through the direct link named in the dialog or under "My agent", lane "Needs
-you"; functions and standing approvals in the admin tab "Capabilities & Routines"; automations
-under "Automations". The former commands `comvenio agent approval`, `comvenio function` and
-`comvenio automation` no longer exist in the CLI; a call ends with `USAGE_ERROR` and names the
-place in the web app.
+Open and decided approvals, standing approvals, functions, configuration, skill packages,
+routines, watch rules, journal and memory are handled only in the web app or the mobile app —
+approvals through the direct link named in the dialog or under "My agent", lane "Needs you";
+functions and standing approvals in the admin tab "Capabilities & Routines". The former commands
+`comvenio agent approval`, `comvenio function` and `comvenio automation` no longer exist in the
+CLI; a call ends with `USAGE_ERROR` and names the place.
+
+Automations run through the actions `cai.club.16.automation_list` to
+`cai.club.25.automation_delete` (list, options, show, runs, create, update, pause, resume, run now,
+delete) with `comvenio action call`, or in the web app under "Automations". Reading needs
+`club.read`, writing `club.write`; create, update, run now and delete show a preview first and run
+after `comvenio action confirm`. The service checks the rights as in the web app: club-wide
+automations only with the management right in the area, personal ones only your own. Approvals of
+a run stay in the web or mobile app.
 
 ### Availability
 
