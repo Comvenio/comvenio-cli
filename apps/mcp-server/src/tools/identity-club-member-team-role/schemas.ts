@@ -783,7 +783,7 @@ const weeklyPreviewSnapshotOutput = z.object({
 const automationKind = z.enum(["club", "personal"]);
 const approvalMode = z.enum(["click", "objection_window", "standing"]);
 const capabilityId = z.string().trim().min(1).max(120);
-const jsonObject = z.record(z.string().max(80), z.json());
+const jsonObject = z.record(z.string().max(200), z.json());
 const timestamp = z.string().max(40);
 const automationTrigger = z.object({
   type: z.enum(["schedule", "manual", "event"]),

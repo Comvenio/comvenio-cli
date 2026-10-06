@@ -85,6 +85,44 @@ describe("Automatisierungen over OAuth (automatisierungen-07, cai.club.16–25)"
     expect(list.items).toEqual([]);
   });
 
+  test("each handler calls its route of 01 with query and body where the service reads them", async () => {
+    const { K7_ACTION_HANDLERS } = await import("../src/tools/identity-club-member-team-role/handlers.ts");
+    const base = `/automations/${clubId}`;
+    const one = `${base}/${automationId}`;
+    const cases: Array<[keyof typeof K7_ACTION_SCHEMAS, Record<string, unknown>, Record<string, unknown>]> = [
+      ["cai.club.16.automation_list", { club_id: clubId, kind: "club", department_id: departmentId },
+        { method: "GET", path: base, query: { kind: "club", department_id: departmentId } }],
+      ["cai.club.17.automation_options", { club_id: clubId, kind: "personal" },
+        { method: "GET", path: `${base}/options`, query: { kind: "personal" } }],
+      ["cai.club.18.automation_show", { club_id: clubId, automation_id: automationId }, { method: "GET", path: one }],
+      ["cai.club.19.automation_runs", { club_id: clubId, automation_id: automationId }, { method: "GET", path: `${one}/runs` }],
+      ["cai.club.20.automation_create", { club_id: clubId, automation: { kind: "personal", name: "N", capability_id: "c", trigger: { type: "manual" } } },
+        { method: "POST", path: base, body: { kind: "personal", name: "N", capability_id: "c", trigger: { type: "manual" } } }],
+      ["cai.club.21.automation_update", { club_id: clubId, automation_id: automationId, changes: { expected_version: 3, enabled: false } },
+        { method: "PATCH", path: one, body: { expected_version: 3, enabled: false } }],
+      ["cai.club.22.automation_pause", { club_id: clubId, automation_id: automationId, expected_version: 3 },
+        { method: "POST", path: `${one}/pause`, query: { expected_version: "3" } }],
+      ["cai.club.23.automation_resume", { club_id: clubId, automation_id: automationId },
+        { method: "POST", path: `${one}/resume`, query: {} }],
+      ["cai.club.24.automation_run", { club_id: clubId, automation_id: automationId, idempotency_key: "k-1" },
+        { method: "POST", path: `${one}/run`, body: { idempotency_key: "k-1" } }],
+      ["cai.club.25.automation_delete", { club_id: clubId, automation_id: automationId, expected_version: 3 },
+        { method: "DELETE", path: one, query: { expected_version: "3" } }],
+    ];
+    for (const [id, raw, expected] of cases) {
+      const handler = K7_ACTION_HANDLERS[id];
+      if (!handler) throw new Error(`Missing handler ${id}`);
+      type Args = Parameters<typeof handler>;
+      const context = { club_id: clubId } as unknown as Args[1];
+      const calls: Array<Record<string, unknown>> = [];
+      // DELETE answers 204 without a body; the client returns null then.
+      const client = { request: async (request: Record<string, unknown>) => { calls.push(request); return null; } } as unknown as Args[2];
+      const result = await handler(K7_ACTION_SCHEMAS[id].input.parse(raw) as Args[0], context, client);
+      expect(calls).toEqual([{ service: "ai", context, ...expected }]);
+      if (id === "cai.club.25.automation_delete") expect(result).toEqual({ deleted: true, id: automationId });
+    }
+  });
+
   test("options require the kind", () => {
     const schema = K7_ACTION_SCHEMAS["cai.club.17.automation_options"].input;
     expect(() => schema.parse({ club_id: clubId })).toThrow();

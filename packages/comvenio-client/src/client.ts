@@ -177,7 +177,29 @@ interface UpstreamBody {
 }
 
 const SERVICE_ERROR_CODE = /^[A-Z][A-Z0-9_]{2,63}$/u;
+const SNAKE_ERROR_CODE = /^[a-z][a-z0-9_]{2,63}$/u;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+/**
+ * Plain fields beside a coded `detail` — {"detail": "automation_changed",
+ * "live_version": 4} (ai-service, automatisierungen-07 DC-3): the code alone
+ * does not say which version is current. Only scalars, at most five, strings
+ * cut to 120 characters; nested values stay out.
+ */
+function detailExtras(body: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(body)) {
+    if (key === "detail" || key === "required_scope" || !SNAKE_ERROR_CODE.test(key)) continue;
+    if (typeof value === "number" && Number.isFinite(value)) parts.push(`${key}: ${value}`);
+    else if (typeof value === "boolean") parts.push(`${key}: ${value}`);
+    else if (typeof value === "string" && value.trim()) {
+      const clean = value.replace(/\s+/gu, " ").trim();
+      parts.push(`${key}: ${clean.length > 120 ? `${clean.slice(0, 117)}...` : clean}`);
+    }
+    if (parts.length === 5) break;
+  }
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
 
 async function upstreamBody(response: Response): Promise<UpstreamBody> {
   try {
@@ -192,7 +214,9 @@ async function upstreamBody(response: Response): Promise<UpstreamBody> {
       ? body.required_scope as OAuthScope
       : null;
     let line: string | null = null;
-    if (typeof detail === "string") line = detail;
+    if (typeof detail === "string") {
+      line = SNAKE_ERROR_CODE.test(detail) ? `${detail}${detailExtras(body as Record<string, unknown>)}` : detail;
+    }
     else if (Array.isArray(detail) && detail.length > 0) {
       const first = detail[0] as { msg?: unknown; loc?: unknown };
       const where = Array.isArray(first.loc) ? first.loc.filter((part) => part !== "body").join(".") : "";
