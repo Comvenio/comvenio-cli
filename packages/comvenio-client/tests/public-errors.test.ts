@@ -76,11 +76,21 @@ describe("ComvenioApiClient public error mapping", () => {
   test("a coded string detail keeps its plain extras, nothing nested (automatisierungen-07 TC-07)", async () => {
     const client = createComvenioApiClient(
       { gatewayBaseUrl: "https://api.comvenio.app" },
-      { fetch: async () => new Response(JSON.stringify({ detail: "automation_changed", live_version: 4, rows: [{ id: 1 }], "<x>": "y" }), { status: 409 }) },
+      { fetch: async () => new Response(JSON.stringify({ detail: "automation_changed", live_version: 4, secret: "s3cr3t", rows: [{ id: 1 }], field: "a b [x](http://e)" }), { status: 409 }) },
     );
     const error = await failure(client.request({ method: "PATCH", service: "ai", path: "/automations/x/y", context }));
     expect(error.code).toBe("CONFLICT");
     expect(error.message).toBe("Der Comvenio-Dienst hat die Anfrage abgelehnt: automation_changed (live_version: 4)");
+    expect(error.detail).toBe("automation_changed (live_version: 4)");
+  });
+
+  test("control characters of a detail never reach the terminal", async () => {
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async () => new Response(JSON.stringify({ detail: "Kasse\u001b[31m rot\u0007" }), { status: 422 }) },
+    );
+    const error = await failure(client.request({ method: "POST", service: "finance", path: "/x", context }));
+    expect(error.detail).toBe("Kasse [31m rot");
   });
 
   test("a sentence as detail stays as it is, without extras", async () => {

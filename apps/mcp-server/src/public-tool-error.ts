@@ -40,9 +40,17 @@ export function publicToolError(
     help: rendered.help,
     request_id: context.request_id,
   };
+  // The service's reason names the way forward for a conflict or a refused input
+  // (automation_changed with live_version, automatisierungen-07 DC-3). Refusals and
+  // unknown objects keep the catalog sentence only: a 404 says nothing about existence.
+  const detail = connectorError?.detail
+    && (connectorError.code === "CONFLICT" || connectorError.code === "VALIDATION_FAILED")
+    ? connectorError.detail
+    : null;
   // Assistants read the article through the public help tool (05-ki-zugang).
   const assistantHint = `Hilfe: comvenio_hilfe mit operation "fehler" und code "${rendered.code}".`;
-  const content = [{ type: "text" as const, text: `${formatPublicError(rendered)}\n${assistantHint}` }];
+  const reason = detail ? `\nGrund: ${detail}` : "";
+  const content = [{ type: "text" as const, text: `${formatPublicError(rendered)}${reason}\n${assistantHint}` }];
   if (connectorError?.code === "SCOPE_REQUIRED" && requiredScopes.length > 0) {
     return insufficientScopeToolResult({
       public_origin: publicOrigin,
@@ -56,6 +64,7 @@ export function publicToolError(
       error: connectorError?.code.toLowerCase() ?? "upstream_unavailable",
       ...(connectorError?.required_scope ? { required_scope: connectorError.required_scope } : {}),
       ...publicFields,
+      ...(detail ? { detail } : {}),
     },
     _meta: { request_id: context.request_id },
     isError: true,

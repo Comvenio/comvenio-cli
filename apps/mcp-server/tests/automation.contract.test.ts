@@ -90,20 +90,20 @@ describe("Automatisierungen over OAuth (automatisierungen-07, cai.club.16–25)"
     const base = `/automations/${clubId}`;
     const one = `${base}/${automationId}`;
     const cases: Array<[keyof typeof K7_ACTION_SCHEMAS, Record<string, unknown>, Record<string, unknown>]> = [
-      ["cai.club.16.automation_list", { club_id: clubId, kind: "club", department_id: departmentId },
-        { method: "GET", path: base, query: { kind: "club", department_id: departmentId } }],
-      ["cai.club.17.automation_options", { club_id: clubId, kind: "personal" },
-        { method: "GET", path: `${base}/options`, query: { kind: "personal" } }],
+      ["cai.club.16.automation_list", { club_id: clubId, kind: "club", department_id: departmentId, capability_id: "weekly_preview.create" },
+        { method: "GET", path: base, query: { kind: "club", department_id: departmentId, capability_id: "weekly_preview.create" } }],
+      ["cai.club.17.automation_options", { club_id: clubId, kind: "personal", capability_id: "weekly_preview.create" },
+        { method: "GET", path: `${base}/options`, query: { kind: "personal", capability_id: "weekly_preview.create" } }],
       ["cai.club.18.automation_show", { club_id: clubId, automation_id: automationId }, { method: "GET", path: one }],
       ["cai.club.19.automation_runs", { club_id: clubId, automation_id: automationId }, { method: "GET", path: `${one}/runs` }],
       ["cai.club.20.automation_create", { club_id: clubId, automation: { kind: "personal", name: "N", capability_id: "c", trigger: { type: "manual" } } },
         { method: "POST", path: base, body: { kind: "personal", name: "N", capability_id: "c", trigger: { type: "manual" } } }],
       ["cai.club.21.automation_update", { club_id: clubId, automation_id: automationId, changes: { expected_version: 3, enabled: false } },
         { method: "PATCH", path: one, body: { expected_version: 3, enabled: false } }],
-      ["cai.club.22.automation_pause", { club_id: clubId, automation_id: automationId, expected_version: 3 },
-        { method: "POST", path: `${one}/pause`, query: { expected_version: "3" } }],
-      ["cai.club.23.automation_resume", { club_id: clubId, automation_id: automationId },
-        { method: "POST", path: `${one}/resume`, query: {} }],
+      ["cai.club.22.automation_pause", { club_id: clubId, automation_id: automationId },
+        { method: "POST", path: `${one}/pause`, query: {} }],
+      ["cai.club.23.automation_resume", { club_id: clubId, automation_id: automationId, expected_version: 5 },
+        { method: "POST", path: `${one}/resume`, query: { expected_version: "5" } }],
       ["cai.club.24.automation_run", { club_id: clubId, automation_id: automationId, idempotency_key: "k-1" },
         { method: "POST", path: `${one}/run`, body: { idempotency_key: "k-1" } }],
       ["cai.club.25.automation_delete", { club_id: clubId, automation_id: automationId, expected_version: 3 },
@@ -121,6 +121,45 @@ describe("Automatisierungen over OAuth (automatisierungen-07, cai.club.16–25)"
       expect(calls).toEqual([{ service: "ai", context, ...expected }]);
       if (id === "cai.club.25.automation_delete") expect(result).toEqual({ deleted: true, id: automationId });
     }
+  });
+
+  test("TC-07: a stale version reaches the action answer as CONFLICT with live_version", async () => {
+    const { createComvenioApiClient } = await import("@comvenio/comvenio-client");
+    const { createK7ToolSets } = await import("../src/tools/identity-club-member-team-role/tool-sets.ts");
+    const { publicToolError } = await import("../src/public-tool-error.ts");
+    const context = {
+      request_id: "66666666-6666-4666-8666-666666666666", surface: "cli", provider: null, subject_id: userId,
+      oauth_grant_id: "77777777-7777-4777-8777-777777777777", club_id: clubId, department_id: null,
+      scopes: ["club.read", "club.write"], capability_version: "A".repeat(43), locale: "de-DE", timezone: "Europe/Berlin",
+    } as const;
+    const snapshot = {
+      subject_id: userId, member_id: runId, club_id: clubId, department_ids: [], permissions: {}, sources: [],
+      capability_version: context.capability_version, generated_at: new Date().toISOString(),
+      observed_at: new Date().toISOString(), expires_at: new Date(Date.now() + 60_000).toISOString(),
+    };
+    const sent: Array<{ method: string; path: string; body: unknown }> = [];
+    const client = createComvenioApiClient({ gatewayBaseUrl: "https://apidev.comvenio.app" }, {
+      fetch: async (url, init) => {
+        sent.push({ method: String(init?.method), path: new URL(String(url)).pathname, body: init?.body ? JSON.parse(String(init.body)) : null });
+        return Response.json({ detail: "automation_changed", live_version: 4 }, { status: 409 });
+      },
+    });
+    const club = createK7ToolSets({ client, write_safety: { async execute(_request, mutation) { return mutation(); } } }).club;
+    let caught: unknown = null;
+    try {
+      await club.execute({
+        action_id: "cai.club.21.automation_update",
+        input: { club_id: clubId, automation_id: automationId, changes: { expected_version: 3, enabled: false } },
+        context: context as never,
+        capability_snapshot: snapshot as never,
+      });
+    } catch (error) { caught = error; }
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ method: "PATCH", body: { expected_version: 3, enabled: false } });
+    expect(sent[0]!.path).toEndWith(`/automations/${clubId}/${automationId}`);
+    const answer = publicToolError(context as never, "https://mcp.comvenio.app", caught, "write");
+    expect(answer.structuredContent).toMatchObject({ code: "CONFLICT", detail: "automation_changed (live_version: 4)" });
+    expect((answer.content[0] as { text: string }).text).toContain("Grund: automation_changed (live_version: 4)");
   });
 
   test("options require the kind", () => {
