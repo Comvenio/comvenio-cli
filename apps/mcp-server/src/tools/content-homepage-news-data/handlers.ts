@@ -68,6 +68,8 @@ export async function assertCommunityInClub(client: ComvenioApiClient, inputValu
     throw createConnectorError({ code: "COMMUNITY_NOT_IN_CLUB", message: "Der verbundene Verein ist kein Mitgliedsverein dieser Community.", request_id: context.request_id, retryable: false });
   }
 }
+// Refusals the service answers before it writes anything (4xx of the bulk route).
+const APPLY_REFUSED: ReadonlySet<string> = new Set(["AUTH_REQUIRED", "PERMISSION_DENIED", "SCOPE_REQUIRED", "NOT_FOUND", "CONFLICT", "VALIDATION_FAILED", "RATE_LIMITED"]);
 const communityPath = (input: JsonObject, rest = "") => `/home-config/communities/${string(input, "community_id")}${rest}`;
 // Community trees carry the member clubs' own ids (club tabs), so no club
 // assertion here; the binding above already tied the community to the club.
@@ -82,10 +84,14 @@ add("cai.community.03.apply", "apply", async (input, context, client) => {
     result = record(await request(client, context, "POST", "club", communityPath(input, "/bulk"), { body: { tabs: input.tabs!, clear_existing: input.clear_existing!, expected_versions: input.expected_versions ?? {} } }));
   } catch (error) {
     // 14 DC-8: the design is written first; if the page then fails, say that the new design is already live.
+    // "Nothing written" holds only for a refusal of the service; after a timeout or a server error the outcome is open.
     if (isConnectorError(error)) {
+      const page = APPLY_REFUSED.has(error.code)
+        ? "Von der Seite wurde nichts geschrieben."
+        : "Ob die Seite geschrieben wurde, ist offen — erst mit cai.community.01.show prüfen, nicht einfach wiederholen.";
       throw createConnectorError({
         code: error.code,
-        message: `${error.message} Von der Seite wurde nichts geschrieben. Ein zuvor mit cai.community.05.design update gesetztes Design bleibt live.`,
+        message: `${error.message} ${page} Ein zuvor mit cai.community.05.design update gesetztes Design bleibt live.`,
         request_id: error.request_id,
         retryable: error.retryable,
         ...(error.retry_after_seconds === undefined ? {} : { retry_after_seconds: error.retry_after_seconds }),

@@ -407,9 +407,12 @@ Versionen. Ist eine der darin genannten Seiten inzwischen geändert oder
 entfernt, antwortet Comvenio mit `TAB_VERSION_CONFLICT` und nennt die Tabs:
 dann neu vorschauen, neu freigeben und mit den Versionen dieser neuen
 Vorschau anwenden. Ohne `clear_existing` hängt `cai.community.03.apply` die
-Tabs an, wie die Vorschau zeigte. Scheitert die Seite nach dem Design, sagt
-die Meldung ausdrücklich, dass von der Seite nichts geschrieben wurde und
-das neue Design schon live ist.
+Tabs an, wie die Vorschau zeigte. Lehnt Comvenio die Seite nach dem Design
+ab (etwa `TAB_VERSION_CONFLICT`), sagt die Meldung ausdrücklich, dass von der
+Seite nichts geschrieben wurde und das neue Design schon live ist. Nach einer
+Zeitüberschreitung oder einem Serverfehler ist offen, ob die Seite
+geschrieben wurde: dann erst mit `cai.community.01.show` prüfen, nicht
+einfach wiederholen.
 
 `cai.community.05.design update` führt wie `cai.club.05.design` mit dem
 gespeicherten Design zusammen. Hat jemand das Design inzwischen geändert,

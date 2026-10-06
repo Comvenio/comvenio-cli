@@ -61,6 +61,27 @@ describe("ComvenioApiClient public error mapping", () => {
     expect(error.required_scope).toBeUndefined();
   });
 
+  test("a coded object detail shows code, message and the tab ids that are ids (community-hub 14 TC-05)", async () => {
+    const tabId = "88888888-8888-4888-8888-888888888888";
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async () => new Response(JSON.stringify({ detail: { code: "TAB_VERSION_CONFLICT", message: "TAB_VERSION_CONFLICT: geändert", tabs: [{ tab_id: tabId }, { tab_id: "<script>" }] } }), { status: 409 }) },
+    );
+    const error = await failure(client.request({ method: "GET", service: "club", path: "/clubs/current", context }));
+    expect(error.code).toBe("CONFLICT");
+    expect(error.message).toContain(`TAB_VERSION_CONFLICT: geändert (Tabs: ${tabId})`);
+    expect(error.message).not.toContain("<script>");
+  });
+
+  test("an object detail without an error code keeps the generic message", async () => {
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://api.comvenio.app" },
+      { fetch: async () => new Response(JSON.stringify({ detail: { message: "internal row 42 of tenant x" } }), { status: 409 }) },
+    );
+    const error = await failure(client.request({ method: "GET", service: "club", path: "/clubs/current", context }));
+    expect(error.message).toBe("Der Comvenio-Dienst hat die Anfrage abgelehnt.");
+  });
+
   test("an unknown scope name in the 403 body is not trusted", async () => {
     const client = createComvenioApiClient(
       { gatewayBaseUrl: "https://api.comvenio.app" },

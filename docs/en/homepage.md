@@ -389,9 +389,11 @@ versions. If one of the pages named there has changed or been removed in the
 meantime, Comvenio answers with `TAB_VERSION_CONFLICT` and names the tabs:
 preview again, approve again and apply with the versions of that new preview.
 Without `clear_existing`, `cai.community.03.apply` appends the tabs as the
-preview showed. If the page fails after the design, the message states
-explicitly that nothing of the page was written and that the new design is
-already live.
+preview showed. If Comvenio refuses the page after the design (for example
+`TAB_VERSION_CONFLICT`), the message states explicitly that nothing of the
+page was written and that the new design is already live. After a timeout or
+a server error it is open whether the page was written: check with
+`cai.community.01.show` first, do not simply repeat.
 
 `cai.community.05.design update` merges into the stored design like
 `cai.club.05.design`. If someone changed the design in the meantime, the

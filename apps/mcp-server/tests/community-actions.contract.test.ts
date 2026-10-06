@@ -237,6 +237,7 @@ describe("cai.community.* — Abläufe (TC-02..TC-05, TC-07)", () => {
           if (path.endsWith(`/communities/${communityId}`)) return Response.json({ id: communityId });
           if (path.endsWith(`/communities/${communityId}/clubs`)) return Response.json([{ community_id: communityId, club_id: clubId }]);
           expect(init?.method).toBe("PUT");
+          expect(JSON.parse(String(init?.body))).toEqual({ design_settings: { tokens: { primary: "#1b5e20" } }, expected_design_version: 1 });
           return Response.json({ detail: { code: "DESIGN_VERSION_CONFLICT", message: "DESIGN_VERSION_CONFLICT: das Design wurde inzwischen geändert, bitte neu laden", expected_version: 1, live_version: 2 } }, { status: 409 });
         },
       },
@@ -249,6 +250,38 @@ describe("cai.community.* — Abläufe (TC-02..TC-05, TC-07)", () => {
     const error = await failure(community.execute({ action_id: "cai.community.05.design", input: { ...input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } }, context, capability_snapshot: capabilitySnapshot }));
     expect(error.code).toBe("CONFLICT");
     expect(error.message).toContain("DESIGN_VERSION_CONFLICT");
+  });
+});
+
+describe("cai.community.03.apply — Ausgang nach einem Fehler (R3)", () => {
+  async function applyFailing(status: number) {
+    const client = createComvenioApiClient(
+      { gatewayBaseUrl: "https://apidev.comvenio.app" },
+      {
+        fetch: async (url) => {
+          const path = new URL(String(url)).pathname;
+          if (path.endsWith(`/communities/${communityId}`)) return Response.json({ id: communityId });
+          if (path.endsWith(`/communities/${communityId}/clubs`)) return Response.json([{ community_id: communityId, club_id: clubId }]);
+          return Response.json({ detail: "boom" }, { status });
+        },
+      },
+    );
+    const community = createK12ToolSets({ client, write_safety: { execute: async (_request, mutation) => mutation() } }).community;
+    const run = (input: Record<string, JsonValue>) => community.execute({ action_id: "cai.community.03.apply", input: { club_id: clubId, ...input }, context, capability_snapshot: capabilitySnapshot });
+    const preview = ((await run(page)).result as { preview: { preview_id: string; confirmation_token: string } }).preview;
+    return failure(run({ ...page, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } }));
+  }
+
+  test("ein Serverfehler beim Bulk behauptet nicht, es sei nichts geschrieben", async () => {
+    const error = await applyFailing(502);
+    expect(error.message).not.toContain("nichts geschrieben");
+    expect(error.message).toContain("cai.community.01.show prüfen");
+  });
+
+  test("eine Ablehnung (422) sagt, dass von der Seite nichts geschrieben wurde", async () => {
+    const error = await applyFailing(422);
+    expect(error.code).toBe("VALIDATION_FAILED");
+    expect(error.message).toContain("Von der Seite wurde nichts geschrieben.");
   });
 });
 
