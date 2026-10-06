@@ -18,75 +18,77 @@ import a13 from "../../../docs/en/fehler/auth-required.md" with { type: "text" }
 import a14 from "../../../docs/en/fehler/auth-temporarily-unavailable.md" with { type: "text" };
 import a15 from "../../../docs/en/fehler/club-agent-not-ready.md" with { type: "text" };
 import a16 from "../../../docs/en/fehler/club-selection-required.md" with { type: "text" };
-import a17 from "../../../docs/en/fehler/config-invalid.md" with { type: "text" };
-import a18 from "../../../docs/en/fehler/confirmation-expired.md" with { type: "text" };
-import a19 from "../../../docs/en/fehler/confirmation-mismatch.md" with { type: "text" };
-import a20 from "../../../docs/en/fehler/confirmation-required.md" with { type: "text" };
-import a21 from "../../../docs/en/fehler/conflict.md" with { type: "text" };
-import a22 from "../../../docs/en/fehler/not-found.md" with { type: "text" };
-import a23 from "../../../docs/en/fehler/outcome-unknown.md" with { type: "text" };
-import a24 from "../../../docs/en/fehler/permission-denied.md" with { type: "text" };
-import a25 from "../../../docs/en/fehler/rate-limited.md" with { type: "text" };
-import a26 from "../../../docs/en/fehler/scope-required.md" with { type: "text" };
-import a27 from "../../../docs/en/fehler/tenant-mismatch.md" with { type: "text" };
-import a28 from "../../../docs/en/fehler/unknown-error.md" with { type: "text" };
-import a29 from "../../../docs/en/fehler/upload-not-enabled.md" with { type: "text" };
-import a30 from "../../../docs/en/fehler/upload-rejected.md" with { type: "text" };
-import a31 from "../../../docs/en/fehler/upload-timeout.md" with { type: "text" };
-import a32 from "../../../docs/en/fehler/upstream-timeout.md" with { type: "text" };
-import a33 from "../../../docs/en/fehler/upstream-unavailable.md" with { type: "text" };
-import a34 from "../../../docs/en/fehler/usage-error.md" with { type: "text" };
-import a35 from "../../../docs/en/fehler/validation-failed.md" with { type: "text" };
-import a36 from "../../../docs/en/fehlerbilder.md" with { type: "text" };
-import a37 from "../../../docs/en/finanzen.md" with { type: "text" };
-import a38 from "../../../docs/en/homepage.md" with { type: "text" };
-import a39 from "../../../docs/en/meetings.md" with { type: "text" };
-import a40 from "../../../docs/en/mitglieder-teams.md" with { type: "text" };
-import a41 from "../../../docs/en/rollen-rechte.md" with { type: "text" };
-import a42 from "../../../docs/en/speisekarten.md" with { type: "text" };
-import a43 from "../../../docs/en/sponsoring.md" with { type: "text" };
-import a44 from "../../../docs/en/turniere.md" with { type: "text" };
-import a45 from "../../../docs/en/veranstaltungen.md" with { type: "text" };
-import a46 from "../../../docs/en/vereinsnews.md" with { type: "text" };
-import a47 from "../../../docs/en/wochenvorschau.md" with { type: "text" };
-import a48 from "../../../docs/en/zonen.md" with { type: "text" };
-import a49 from "../../../docs/fehler/action-not-listed.md" with { type: "text" };
-import a50 from "../../../docs/fehler/auth-required.md" with { type: "text" };
-import a51 from "../../../docs/fehler/auth-temporarily-unavailable.md" with { type: "text" };
-import a52 from "../../../docs/fehler/club-agent-not-ready.md" with { type: "text" };
-import a53 from "../../../docs/fehler/club-selection-required.md" with { type: "text" };
-import a54 from "../../../docs/fehler/config-invalid.md" with { type: "text" };
-import a55 from "../../../docs/fehler/confirmation-expired.md" with { type: "text" };
-import a56 from "../../../docs/fehler/confirmation-mismatch.md" with { type: "text" };
-import a57 from "../../../docs/fehler/confirmation-required.md" with { type: "text" };
-import a58 from "../../../docs/fehler/conflict.md" with { type: "text" };
-import a59 from "../../../docs/fehler/not-found.md" with { type: "text" };
-import a60 from "../../../docs/fehler/outcome-unknown.md" with { type: "text" };
-import a61 from "../../../docs/fehler/permission-denied.md" with { type: "text" };
-import a62 from "../../../docs/fehler/rate-limited.md" with { type: "text" };
-import a63 from "../../../docs/fehler/scope-required.md" with { type: "text" };
-import a64 from "../../../docs/fehler/tenant-mismatch.md" with { type: "text" };
-import a65 from "../../../docs/fehler/unknown-error.md" with { type: "text" };
-import a66 from "../../../docs/fehler/upload-not-enabled.md" with { type: "text" };
-import a67 from "../../../docs/fehler/upload-rejected.md" with { type: "text" };
-import a68 from "../../../docs/fehler/upload-timeout.md" with { type: "text" };
-import a69 from "../../../docs/fehler/upstream-timeout.md" with { type: "text" };
-import a70 from "../../../docs/fehler/upstream-unavailable.md" with { type: "text" };
-import a71 from "../../../docs/fehler/usage-error.md" with { type: "text" };
-import a72 from "../../../docs/fehler/validation-failed.md" with { type: "text" };
-import a73 from "../../../docs/fehlerbilder.md" with { type: "text" };
-import a74 from "../../../docs/finanzen.md" with { type: "text" };
-import a75 from "../../../docs/homepage.md" with { type: "text" };
-import a76 from "../../../docs/meetings.md" with { type: "text" };
-import a77 from "../../../docs/mitglieder-teams.md" with { type: "text" };
-import a78 from "../../../docs/rollen-rechte.md" with { type: "text" };
-import a79 from "../../../docs/speisekarten.md" with { type: "text" };
-import a80 from "../../../docs/sponsoring.md" with { type: "text" };
-import a81 from "../../../docs/turniere.md" with { type: "text" };
-import a82 from "../../../docs/veranstaltungen.md" with { type: "text" };
-import a83 from "../../../docs/vereinsnews.md" with { type: "text" };
-import a84 from "../../../docs/wochenvorschau.md" with { type: "text" };
-import a85 from "../../../docs/zonen.md" with { type: "text" };
+import a17 from "../../../docs/en/fehler/community-not-in-club.md" with { type: "text" };
+import a18 from "../../../docs/en/fehler/config-invalid.md" with { type: "text" };
+import a19 from "../../../docs/en/fehler/confirmation-expired.md" with { type: "text" };
+import a20 from "../../../docs/en/fehler/confirmation-mismatch.md" with { type: "text" };
+import a21 from "../../../docs/en/fehler/confirmation-required.md" with { type: "text" };
+import a22 from "../../../docs/en/fehler/conflict.md" with { type: "text" };
+import a23 from "../../../docs/en/fehler/not-found.md" with { type: "text" };
+import a24 from "../../../docs/en/fehler/outcome-unknown.md" with { type: "text" };
+import a25 from "../../../docs/en/fehler/permission-denied.md" with { type: "text" };
+import a26 from "../../../docs/en/fehler/rate-limited.md" with { type: "text" };
+import a27 from "../../../docs/en/fehler/scope-required.md" with { type: "text" };
+import a28 from "../../../docs/en/fehler/tenant-mismatch.md" with { type: "text" };
+import a29 from "../../../docs/en/fehler/unknown-error.md" with { type: "text" };
+import a30 from "../../../docs/en/fehler/upload-not-enabled.md" with { type: "text" };
+import a31 from "../../../docs/en/fehler/upload-rejected.md" with { type: "text" };
+import a32 from "../../../docs/en/fehler/upload-timeout.md" with { type: "text" };
+import a33 from "../../../docs/en/fehler/upstream-timeout.md" with { type: "text" };
+import a34 from "../../../docs/en/fehler/upstream-unavailable.md" with { type: "text" };
+import a35 from "../../../docs/en/fehler/usage-error.md" with { type: "text" };
+import a36 from "../../../docs/en/fehler/validation-failed.md" with { type: "text" };
+import a37 from "../../../docs/en/fehlerbilder.md" with { type: "text" };
+import a38 from "../../../docs/en/finanzen.md" with { type: "text" };
+import a39 from "../../../docs/en/homepage.md" with { type: "text" };
+import a40 from "../../../docs/en/meetings.md" with { type: "text" };
+import a41 from "../../../docs/en/mitglieder-teams.md" with { type: "text" };
+import a42 from "../../../docs/en/rollen-rechte.md" with { type: "text" };
+import a43 from "../../../docs/en/speisekarten.md" with { type: "text" };
+import a44 from "../../../docs/en/sponsoring.md" with { type: "text" };
+import a45 from "../../../docs/en/turniere.md" with { type: "text" };
+import a46 from "../../../docs/en/veranstaltungen.md" with { type: "text" };
+import a47 from "../../../docs/en/vereinsnews.md" with { type: "text" };
+import a48 from "../../../docs/en/wochenvorschau.md" with { type: "text" };
+import a49 from "../../../docs/en/zonen.md" with { type: "text" };
+import a50 from "../../../docs/fehler/action-not-listed.md" with { type: "text" };
+import a51 from "../../../docs/fehler/auth-required.md" with { type: "text" };
+import a52 from "../../../docs/fehler/auth-temporarily-unavailable.md" with { type: "text" };
+import a53 from "../../../docs/fehler/club-agent-not-ready.md" with { type: "text" };
+import a54 from "../../../docs/fehler/club-selection-required.md" with { type: "text" };
+import a55 from "../../../docs/fehler/community-not-in-club.md" with { type: "text" };
+import a56 from "../../../docs/fehler/config-invalid.md" with { type: "text" };
+import a57 from "../../../docs/fehler/confirmation-expired.md" with { type: "text" };
+import a58 from "../../../docs/fehler/confirmation-mismatch.md" with { type: "text" };
+import a59 from "../../../docs/fehler/confirmation-required.md" with { type: "text" };
+import a60 from "../../../docs/fehler/conflict.md" with { type: "text" };
+import a61 from "../../../docs/fehler/not-found.md" with { type: "text" };
+import a62 from "../../../docs/fehler/outcome-unknown.md" with { type: "text" };
+import a63 from "../../../docs/fehler/permission-denied.md" with { type: "text" };
+import a64 from "../../../docs/fehler/rate-limited.md" with { type: "text" };
+import a65 from "../../../docs/fehler/scope-required.md" with { type: "text" };
+import a66 from "../../../docs/fehler/tenant-mismatch.md" with { type: "text" };
+import a67 from "../../../docs/fehler/unknown-error.md" with { type: "text" };
+import a68 from "../../../docs/fehler/upload-not-enabled.md" with { type: "text" };
+import a69 from "../../../docs/fehler/upload-rejected.md" with { type: "text" };
+import a70 from "../../../docs/fehler/upload-timeout.md" with { type: "text" };
+import a71 from "../../../docs/fehler/upstream-timeout.md" with { type: "text" };
+import a72 from "../../../docs/fehler/upstream-unavailable.md" with { type: "text" };
+import a73 from "../../../docs/fehler/usage-error.md" with { type: "text" };
+import a74 from "../../../docs/fehler/validation-failed.md" with { type: "text" };
+import a75 from "../../../docs/fehlerbilder.md" with { type: "text" };
+import a76 from "../../../docs/finanzen.md" with { type: "text" };
+import a77 from "../../../docs/homepage.md" with { type: "text" };
+import a78 from "../../../docs/meetings.md" with { type: "text" };
+import a79 from "../../../docs/mitglieder-teams.md" with { type: "text" };
+import a80 from "../../../docs/rollen-rechte.md" with { type: "text" };
+import a81 from "../../../docs/speisekarten.md" with { type: "text" };
+import a82 from "../../../docs/sponsoring.md" with { type: "text" };
+import a83 from "../../../docs/turniere.md" with { type: "text" };
+import a84 from "../../../docs/veranstaltungen.md" with { type: "text" };
+import a85 from "../../../docs/vereinsnews.md" with { type: "text" };
+import a86 from "../../../docs/wochenvorschau.md" with { type: "text" };
+import a87 from "../../../docs/zonen.md" with { type: "text" };
 
 export const ARTIKEL: Readonly<Record<string, string>> = {
   "docs/aufgaben.md": a0,
@@ -106,73 +108,75 @@ export const ARTIKEL: Readonly<Record<string, string>> = {
   "docs/en/fehler/auth-temporarily-unavailable.md": a14,
   "docs/en/fehler/club-agent-not-ready.md": a15,
   "docs/en/fehler/club-selection-required.md": a16,
-  "docs/en/fehler/config-invalid.md": a17,
-  "docs/en/fehler/confirmation-expired.md": a18,
-  "docs/en/fehler/confirmation-mismatch.md": a19,
-  "docs/en/fehler/confirmation-required.md": a20,
-  "docs/en/fehler/conflict.md": a21,
-  "docs/en/fehler/not-found.md": a22,
-  "docs/en/fehler/outcome-unknown.md": a23,
-  "docs/en/fehler/permission-denied.md": a24,
-  "docs/en/fehler/rate-limited.md": a25,
-  "docs/en/fehler/scope-required.md": a26,
-  "docs/en/fehler/tenant-mismatch.md": a27,
-  "docs/en/fehler/unknown-error.md": a28,
-  "docs/en/fehler/upload-not-enabled.md": a29,
-  "docs/en/fehler/upload-rejected.md": a30,
-  "docs/en/fehler/upload-timeout.md": a31,
-  "docs/en/fehler/upstream-timeout.md": a32,
-  "docs/en/fehler/upstream-unavailable.md": a33,
-  "docs/en/fehler/usage-error.md": a34,
-  "docs/en/fehler/validation-failed.md": a35,
-  "docs/en/fehlerbilder.md": a36,
-  "docs/en/finanzen.md": a37,
-  "docs/en/homepage.md": a38,
-  "docs/en/meetings.md": a39,
-  "docs/en/mitglieder-teams.md": a40,
-  "docs/en/rollen-rechte.md": a41,
-  "docs/en/speisekarten.md": a42,
-  "docs/en/sponsoring.md": a43,
-  "docs/en/turniere.md": a44,
-  "docs/en/veranstaltungen.md": a45,
-  "docs/en/vereinsnews.md": a46,
-  "docs/en/wochenvorschau.md": a47,
-  "docs/en/zonen.md": a48,
-  "docs/fehler/action-not-listed.md": a49,
-  "docs/fehler/auth-required.md": a50,
-  "docs/fehler/auth-temporarily-unavailable.md": a51,
-  "docs/fehler/club-agent-not-ready.md": a52,
-  "docs/fehler/club-selection-required.md": a53,
-  "docs/fehler/config-invalid.md": a54,
-  "docs/fehler/confirmation-expired.md": a55,
-  "docs/fehler/confirmation-mismatch.md": a56,
-  "docs/fehler/confirmation-required.md": a57,
-  "docs/fehler/conflict.md": a58,
-  "docs/fehler/not-found.md": a59,
-  "docs/fehler/outcome-unknown.md": a60,
-  "docs/fehler/permission-denied.md": a61,
-  "docs/fehler/rate-limited.md": a62,
-  "docs/fehler/scope-required.md": a63,
-  "docs/fehler/tenant-mismatch.md": a64,
-  "docs/fehler/unknown-error.md": a65,
-  "docs/fehler/upload-not-enabled.md": a66,
-  "docs/fehler/upload-rejected.md": a67,
-  "docs/fehler/upload-timeout.md": a68,
-  "docs/fehler/upstream-timeout.md": a69,
-  "docs/fehler/upstream-unavailable.md": a70,
-  "docs/fehler/usage-error.md": a71,
-  "docs/fehler/validation-failed.md": a72,
-  "docs/fehlerbilder.md": a73,
-  "docs/finanzen.md": a74,
-  "docs/homepage.md": a75,
-  "docs/meetings.md": a76,
-  "docs/mitglieder-teams.md": a77,
-  "docs/rollen-rechte.md": a78,
-  "docs/speisekarten.md": a79,
-  "docs/sponsoring.md": a80,
-  "docs/turniere.md": a81,
-  "docs/veranstaltungen.md": a82,
-  "docs/vereinsnews.md": a83,
-  "docs/wochenvorschau.md": a84,
-  "docs/zonen.md": a85,
+  "docs/en/fehler/community-not-in-club.md": a17,
+  "docs/en/fehler/config-invalid.md": a18,
+  "docs/en/fehler/confirmation-expired.md": a19,
+  "docs/en/fehler/confirmation-mismatch.md": a20,
+  "docs/en/fehler/confirmation-required.md": a21,
+  "docs/en/fehler/conflict.md": a22,
+  "docs/en/fehler/not-found.md": a23,
+  "docs/en/fehler/outcome-unknown.md": a24,
+  "docs/en/fehler/permission-denied.md": a25,
+  "docs/en/fehler/rate-limited.md": a26,
+  "docs/en/fehler/scope-required.md": a27,
+  "docs/en/fehler/tenant-mismatch.md": a28,
+  "docs/en/fehler/unknown-error.md": a29,
+  "docs/en/fehler/upload-not-enabled.md": a30,
+  "docs/en/fehler/upload-rejected.md": a31,
+  "docs/en/fehler/upload-timeout.md": a32,
+  "docs/en/fehler/upstream-timeout.md": a33,
+  "docs/en/fehler/upstream-unavailable.md": a34,
+  "docs/en/fehler/usage-error.md": a35,
+  "docs/en/fehler/validation-failed.md": a36,
+  "docs/en/fehlerbilder.md": a37,
+  "docs/en/finanzen.md": a38,
+  "docs/en/homepage.md": a39,
+  "docs/en/meetings.md": a40,
+  "docs/en/mitglieder-teams.md": a41,
+  "docs/en/rollen-rechte.md": a42,
+  "docs/en/speisekarten.md": a43,
+  "docs/en/sponsoring.md": a44,
+  "docs/en/turniere.md": a45,
+  "docs/en/veranstaltungen.md": a46,
+  "docs/en/vereinsnews.md": a47,
+  "docs/en/wochenvorschau.md": a48,
+  "docs/en/zonen.md": a49,
+  "docs/fehler/action-not-listed.md": a50,
+  "docs/fehler/auth-required.md": a51,
+  "docs/fehler/auth-temporarily-unavailable.md": a52,
+  "docs/fehler/club-agent-not-ready.md": a53,
+  "docs/fehler/club-selection-required.md": a54,
+  "docs/fehler/community-not-in-club.md": a55,
+  "docs/fehler/config-invalid.md": a56,
+  "docs/fehler/confirmation-expired.md": a57,
+  "docs/fehler/confirmation-mismatch.md": a58,
+  "docs/fehler/confirmation-required.md": a59,
+  "docs/fehler/conflict.md": a60,
+  "docs/fehler/not-found.md": a61,
+  "docs/fehler/outcome-unknown.md": a62,
+  "docs/fehler/permission-denied.md": a63,
+  "docs/fehler/rate-limited.md": a64,
+  "docs/fehler/scope-required.md": a65,
+  "docs/fehler/tenant-mismatch.md": a66,
+  "docs/fehler/unknown-error.md": a67,
+  "docs/fehler/upload-not-enabled.md": a68,
+  "docs/fehler/upload-rejected.md": a69,
+  "docs/fehler/upload-timeout.md": a70,
+  "docs/fehler/upstream-timeout.md": a71,
+  "docs/fehler/upstream-unavailable.md": a72,
+  "docs/fehler/usage-error.md": a73,
+  "docs/fehler/validation-failed.md": a74,
+  "docs/fehlerbilder.md": a75,
+  "docs/finanzen.md": a76,
+  "docs/homepage.md": a77,
+  "docs/meetings.md": a78,
+  "docs/mitglieder-teams.md": a79,
+  "docs/rollen-rechte.md": a80,
+  "docs/speisekarten.md": a81,
+  "docs/sponsoring.md": a82,
+  "docs/turniere.md": a83,
+  "docs/veranstaltungen.md": a84,
+  "docs/vereinsnews.md": a85,
+  "docs/wochenvorschau.md": a86,
+  "docs/zonen.md": a87,
 };

@@ -1,7 +1,7 @@
 ---
 id: homepage
 kategorie: thema
-domaenen: [homepage]
+domaenen: [homepage, community]
 stichwoerter: [homepage, website, club-site, widgets, design]
 ---
 
@@ -313,6 +313,91 @@ hero, mobile view). Anyone who already had the page open beforehand may
 briefly see an older state after publishing — a full reload of the page
 fixes that.
 
+### Designing a community page
+
+The page of a community — for example a championship run by several clubs —
+is built like the club homepage: skeleton, slots, preview, approval. The
+`cai.community.*` actions go through the club of the sign-in; that club must be
+a **member club** of the community. Every action first reads the community and
+its member clubs; if the club is not one of them, it ends with
+`COMMUNITY_NOT_IN_CLUB` before anything else is read or written. Whether the
+page may be changed is decided by Comvenio itself — only the people
+responsible for the community may write (otherwise `PERMISSION_DENIED`).
+
+Tool chain: show → show design → preview → screenshot → approval → set design
+→ apply the page.
+
+```bash
+comvenio action call cai.community.01.show \
+  --input '{"operation":"private","community_id":"<community-id>"}' --json > sicherung-community.json
+comvenio action call cai.community.05.design \
+  --input '{"operation":"show","community_id":"<community-id>"}' --json
+# response contains design_settings and design_version
+
+comvenio action call cai.community.02.preview --input "$(cat community-seite.json)" --json
+# response contains preview_id, preview_url (/community-preview/…) and expected_versions
+comvenio action call cai.community.04.screenshot \
+  --input '{"community_id":"<community-id>","preview_id":"<preview-id>","viewports":["mobile","desktop"]}' --json
+```
+
+`community-seite.json` carries the community and the `tabs` — here a skeleton
+with an events slot that shows the public events of all member clubs:
+
+```json
+{
+  "community_id": "<community-id>",
+  "clear_existing": true,
+  "design_settings": { "custom_css": ".vm-hero { padding: 3rem 1rem; }" },
+  "tabs": [{
+    "label": "Start", "slug": "start", "position": 0, "visibility_scope": "public",
+    "sections": [{ "layout": "full", "widgets": [{
+      "kind": "custom_html",
+      "config": {
+        "html": "<section class=\"vm-hero\" aria-label=\"Start\"><h1 data-slot=\"titel\"></h1><div data-slot=\"termine\"></div></section>",
+        "slots": {
+          "titel": { "kind": "heading", "config": { "text": "Vereinsmeisterschaft" } },
+          "termine": { "kind": "community_calendar", "config": { "community_id": "<community-id>", "view": "list", "range_days": 60 } }
+        }
+      }
+    }]}]
+  }]
+}
+```
+
+The community widgets `community_calendar`, `community_news` and
+`club_directory` always need the `community_id`; fields and values are listed
+by `cai.schema.02.show_domain_schema` with `{"domain":"homepage"}`. A
+community page has no department visibility (`visibility_scope` `department`
+is rejected). `design_settings` in the preview show a planned design without
+saving it.
+
+After images and preview have been approved, in this order:
+
+```bash
+comvenio action call cai.community.05.design \
+  --input '{"operation":"update","community_id":"<community-id>","design_settings":{…},"expected_design_version":<design_version from design show>}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+
+comvenio action call cai.community.03.apply --input "$(cat community-seite-apply.json)" --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+```
+
+`community-seite-apply.json` holds the same `community_id`, `tabs` and
+`clear_existing` as the approved preview (without `design_settings`) and
+**exactly the `expected_versions` from its response** — never freshly read
+versions. If one of the pages named there has changed or been removed in the
+meantime, Comvenio answers with `TAB_VERSION_CONFLICT` and names the tabs:
+preview again, approve again and apply with the versions of that new preview.
+Without `clear_existing`, `cai.community.03.apply` appends the tabs as the
+preview showed. If the page fails after the design, the message states
+explicitly that nothing of the page was written and that the new design is
+already live.
+
+`cai.community.05.design update` merges into the stored design like
+`cai.club.05.design`. If someone changed the design in the meantime, the
+confirmation ends with `DESIGN_VERSION_CONFLICT`: read the design again and
+set it with the new `design_version`.
+
 ### Mobile devices
 
 Every section wraps on smaller screens: grids become single-column, buttons
@@ -528,6 +613,14 @@ Purpose: Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich s
 - `cai.homepage.04.screenshot` — screenshot (read) · Scopes: `club.write`
 - `cai.homepage.05.convert` — convert (read) · Scopes: `club.write`
 - Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"homepage"}'` (the sign-in sets `club_id` — never in `--input`)
+
+**community**
+
+- `cai.community.01.show` — private, public (read) · Scopes: `club.read`, `public.read`
+- `cai.community.02.preview` — preview (read) · Scopes: `club.write`
+- `cai.community.03.apply` — apply (change with confirmation) · Scopes: `club.write`
+- `cai.community.04.screenshot` — screenshot (read) · Scopes: `club.write`
+- `cai.community.05.design` — show, update (read, change with confirmation) · Scopes: `club.read`, `club.write`
 <!-- /gen:docs -->
 
 ## Widgets
@@ -559,6 +652,7 @@ invented claim.
 - `news` — List of the club's latest news articles. Data source: The club's Comvenio news data (publicly released articles), optionally filtered by department. Makes public: Title, teaser text/image and, if enabled, the author of published news articles — only what the editors have already published as news. Fits: Homepage, News page
 - `news_highlight` — A single highlighted news article in a large presentation. Data source: Comvenio news data (the news article chosen in the form, optionally filtered by department). Makes public: Title, text/image and author of the chosen news article — same as the news widget. Fits: Homepage, News page
 - `ticker` — Marquee ticker cycling through short items from events, news and birthdays. Data source: Public Comvenio data: upcoming events, news and birthdays — each source can be switched on separately. Makes public: Same as the individual widgets: events and news as there; birthdays only for members who opted in, showing only first name and day/month without the birth year. Fits: Homepage, any page
+- `community_news` — Published public news of all clubs of a community as cards with cover image, teaser and origin. Data source: Comvenio content data via the community's public aggregate route. Makes public: Title, teaser, cover image, date and club of public news. Fits: Community homepage, Local page, Club page within a community
 
 **veranstaltungen**
 
@@ -572,6 +666,7 @@ invented claim.
 - `special_event_promo` — Embeds the full public event detail page (event hub) of one event — programme, images, news and RSVP. Data source: Comvenio event data via the public event hub for the event chosen in the form; the hub fetches its own data via Comvenio's public endpoints. Makes public: Everything the event hub shows publicly: title, time span, location, programme, public images and the logged-in visitor's own RSVP status — no data about other attendees. Fits: Event page
 - `feature_grid` — Tile grid with an icon, label and detail text per tile (e.g. programme highlights or features). Data source: fixed form input; without any entries the widget shows a fixed set of demo tiles. Makes public: nothing beyond what was entered Fits: Homepage, Event page
 - `department_calendar` — A department's calendar of events, training, bookings and meetings. Data source: fixed form input (events per entry with title, date, type); a field for filtering by department exists in the form but is currently not evaluated by the widget. Makes public: nothing beyond what was entered Fits: Department page
+- `community_calendar` — Upcoming public events of all clubs of a community, each with the inviting club — as a list or month view. Data source: Comvenio event data via the community's public aggregate route (public events of all member clubs). Makes public: Title, date, location and inviting club of public events — no attendee lists. Fits: Community homepage, Local page, Club page within a community
 
 **mitglieder**
 
@@ -622,6 +717,7 @@ invented claim.
 - `image_text_split` — Image beside text with a heading and an optional button. Data source: fixed input in the widget form Makes public: nothing beyond what was entered Fits: Homepage, any page
 - `forum_highlight` — Preview of the latest public forum posts. Data source: Comvenio forum data: public threads and boards of the club forum — a deliberately publicly accessible area. Makes public: Title, text preview and stats (replies, views) of the public posts; as the author it shows only the first eight characters of the internal user id, never a real name. Fits: Homepage, Club page
 - `chat_preview` — Preview of a few chat/forum messages with a link to the full chat. Data source: fixed form input (messages per entry: text, sender, time); a board chosen in the form only controls where the "Go to chat" link leads for logged-in members, but does not itself supply any live messages. Makes public: Only what the club administration enters here manually — no real, live chat messages. Fits: Homepage, Club page
+- `club_directory` — Directory of all member clubs of a community with logo and sports, linking to each club's own public page. Data source: Public club list of the community (name, logo, sports, public address). Makes public: Name, logo, sports and public address of the member clubs — no members, no contacts. Fits: Community homepage, Local page, Club page within a community
 
 **sport**
 
@@ -686,6 +782,9 @@ with a short description.
 - `CONFLICT` — the page was already changed between reading and writing;
   read the current state again and decide anew.
   `comvenio help fehler CONFLICT`.
+- `COMMUNITY_NOT_IN_CLUB` — the club of the sign-in is not a member club of
+  the community; nothing else was read.
+  `comvenio help fehler COMMUNITY_NOT_IN_CLUB`.
 - `USAGE_ERROR` — an old command (for example `homepage slot`,
   `homepage tree`) no longer exists in the CLI.
   `comvenio help fehler USAGE_ERROR`.
