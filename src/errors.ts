@@ -63,6 +63,41 @@ function object(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+const INPUT_VALIDATION_MARKER = "Input validation error";
+
+export function isInputValidationText(text: string): boolean {
+  return text.includes(INPUT_VALIDATION_MARKER);
+}
+
+/**
+ * Names the rejected fields of an MCP input validation error, e.g.
+ * "input.operation: Invalid input". The SDK appends the zod issues as JSON;
+ * if they cannot be read, the sentence after the marker stays.
+ */
+export function inputValidationDetail(text: string): string {
+  const start = text.indexOf("[", text.indexOf(INPUT_VALIDATION_MARKER));
+  if (start >= 0) {
+    try {
+      const issues = JSON.parse(text.slice(start)) as unknown;
+      if (Array.isArray(issues)) {
+        const lines = issues
+          .map(object)
+          .filter((issue): issue is Record<string, unknown> => issue !== null)
+          .map((issue) => {
+            const path = Array.isArray(issue.path) ? issue.path.join(".") : "";
+            const message = typeof issue.message === "string" ? issue.message : "ungültig";
+            return path ? `${path}: ${message}` : message;
+          });
+        if (lines.length > 0) return lines.join("\n");
+      }
+    } catch {
+      // Fall through to the plain sentence.
+    }
+  }
+  const sentence = text.slice(text.indexOf(INPUT_VALIDATION_MARKER) + INPUT_VALIDATION_MARKER.length);
+  return sentence.replace(/^[:\s]+/u, "").split("\n")[0]!.trim() || INPUT_VALIDATION_MARKER;
+}
+
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string") : [];
 }
@@ -90,6 +125,11 @@ export function toPublicError(
     code = error.code;
     requiredScopes = [...error.required_scopes];
     detail = error.detail;
+  } else if (error instanceof ConnectorClientError && !object(error.details) && isInputValidationText(error.message)) {
+    // The MCP SDK checks the tool input before any handler runs and answers with
+    // text only; without this the customer saw UNKNOWN_ERROR and not the field (K16).
+    code = "VALIDATION_FAILED";
+    detail = inputValidationDetail(error.message);
   } else if (error instanceof ConnectorClientError) {
     const data = object(error.details);
     requestId = typeof data?.request_id === "string" ? data.request_id : null;

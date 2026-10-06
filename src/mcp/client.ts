@@ -22,6 +22,16 @@ export type ConnectorTool = {
   _meta?: Record<string, unknown>;
 };
 
+/** An image block of a tool answer (base64, as the MCP content carries it). */
+export type ConnectorImage = { data: string; mime_type: string };
+
+function actionArguments(input: { input: JsonObject; idempotency_key?: string }): JsonObject {
+  return {
+    input: input.input,
+    ...(input.idempotency_key ? { idempotency_key: input.idempotency_key } : {}),
+  };
+}
+
 export function connectorToolActionId(tool: ConnectorTool): string | null {
   const actionId = tool._meta?.["comvenio/actionId"];
   return typeof actionId === "string"
@@ -191,6 +201,17 @@ export class CliConnectorClient {
   }
 
   async callTool(name: string, arguments_: JsonObject): Promise<JsonObject> {
+    return (await this.callToolWithImages(name, arguments_)).result;
+  }
+
+  /**
+   * Like callTool, plus the image blocks of the answer: screenshots travel as
+   * MCP image content, not in structuredContent (data_in_content, K16).
+   */
+  async callToolWithImages(
+    name: string,
+    arguments_: JsonObject,
+  ): Promise<{ result: JsonObject; images: ConnectorImage[] }> {
     if (!/^[a-z][a-z0-9_]{2,63}$/u.test(name)) {
       throw new ConnectorClientError("Der Connector-Toolname ist ungültig.");
     }
@@ -218,7 +239,15 @@ export class CliConnectorClient {
     // A critical write answers with a confirmation widget; the credential for
     // action_confirm travels in _meta (widget-only), not in structuredContent.
     const credential = object(object(result._meta)?.["comvenio/confirmation"]);
-    return credential ? { ...structured, confirmation: credential } : structured;
+    const images = (Array.isArray(result.content) ? result.content : [])
+      .map(object)
+      .filter((entry): entry is JsonObject =>
+        entry?.type === "image" && typeof entry.data === "string" && typeof entry.mimeType === "string")
+      .map((entry) => ({ data: entry.data as string, mime_type: entry.mimeType as string }));
+    return {
+      result: credential ? { ...structured, confirmation: credential } : structured,
+      images,
+    };
   }
 
   callAction(input: {
@@ -226,12 +255,15 @@ export class CliConnectorClient {
     input: JsonObject;
     idempotency_key?: string;
   }): Promise<JsonObject> {
-    return this.callTool(connectorActionToolName(input.action_id), {
-      input: input.input,
-      ...(input.idempotency_key
-        ? { idempotency_key: input.idempotency_key }
-        : {}),
-    });
+    return this.callTool(connectorActionToolName(input.action_id), actionArguments(input));
+  }
+
+  callActionWithImages(input: {
+    action_id: string;
+    input: JsonObject;
+    idempotency_key?: string;
+  }): Promise<{ result: JsonObject; images: ConnectorImage[] }> {
+    return this.callToolWithImages(connectorActionToolName(input.action_id), actionArguments(input));
   }
 
   async whoami(): Promise<JsonObject> {

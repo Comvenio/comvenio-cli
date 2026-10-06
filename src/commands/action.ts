@@ -17,6 +17,7 @@ import {
   isFileUploadAction,
   runFileUpload,
 } from "./action-file-upload.ts";
+import { formatActionDescription, formatCallText, inputVariants, saveScreenshots } from "./action-output.ts";
 
 type Options = {
   file?: string;
@@ -117,7 +118,8 @@ export function registerActionCommands(cli: CAC): void {
   cli
     .command(
       "action <verb> [actionId]",
-      "Kanonische Comvenio-Capabilities sicher über den CLI-MCP-Kanal ausführen",
+      "Kanonische Comvenio-Capabilities sicher über den CLI-MCP-Kanal ausführen "
+        + "(list | show <id>: Eingabefelder | call <id> | confirm)",
     )
     .option("--file <path>", `Lokale Datei hochladen (nur für ${Object.keys(FILE_UPLOAD_ACTIONS).join(", ")})`)
     .option("--input <json>", "Strikt typisierte Action-Eingabe als JSON-Objekt")
@@ -183,15 +185,41 @@ export function registerActionCommands(cli: CAC): void {
         const idempotencyKey = readOnly
           ? undefined
           : options.idempotencyKey ?? randomUUID();
-        const result = await client.callAction({
+        const answer = await client.callActionWithImages({
           action_id: actionId,
           input,
           ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
         });
+        const result = saveScreenshots(answer.result, answer.images, { cwd: process.cwd() });
         output(
           idempotencyKey ? { ...result, idempotency_key: idempotencyKey } : result,
           options.json,
-          () => JSON.stringify(result, null, 2),
+          () => formatCallText(result, idempotencyKey),
+        );
+        return;
+      }
+      if (verb === "show") {
+        if (!actionId) {
+          throw new Error("action show benötigt eine kanonische Action-ID.");
+        }
+        const tool = (await client.listTools())
+          .find((entry) => entry.name === connectorActionToolName(actionId));
+        if (!tool) {
+          throw new PublicCliError(
+            "ACTION_NOT_LISTED",
+            "Diese Action ist im aktuellen OAuth-, Vereins- und Rechtekontext nicht freigegeben.",
+          );
+        }
+        output(
+          {
+            action_id: actionId,
+            title: tool.title ?? null,
+            description: tool.description ?? null,
+            input: inputVariants(tool.inputSchema),
+            input_schema: tool.inputSchema ?? null,
+          },
+          options.json,
+          () => formatActionDescription(actionId, tool),
         );
         return;
       }
@@ -213,6 +241,6 @@ export function registerActionCommands(cli: CAC): void {
         output(result, options.json, () => JSON.stringify(result, null, 2));
         return;
       }
-      throw new Error('action unterstützt "list", "call" und "confirm".');
+      throw new Error('action unterstützt "list", "show", "call" und "confirm".');
     });
 }
