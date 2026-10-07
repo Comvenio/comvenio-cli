@@ -624,8 +624,12 @@ const activationPreviewOutput = z.object({
 const terminKind = z.enum(["MATCH", "TRAINING", "EXCURSION", "OTHER"]);
 // VisibilityScope of the event-service (app/models/event.py).
 const terminVisibility = z.enum(["public", "member", "department", "private", "invite_only"]);
-// The service parses a datetime; a free word must not reach it.
-const terminTime = isoDateTime.refine((value) => !Number.isNaN(Date.parse(value)), { message: "Kein gültiger ISO-Zeitpunkt." });
+// The service parses an ISO datetime (Pydantic): date and time, optional seconds with a "." or ","
+// fraction, optional zone. Free words, plain dates and impossible fields must not reach it.
+const terminTime = isoDateTime.regex(
+  /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])[T ](?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:[.,]\d{1,9})?)?(?:Z|[+-](?:[01]\d|2[0-3]):?[0-5]\d)?$/u,
+  { message: "Kein gültiger ISO-Zeitpunkt." },
+);
 const seasonEventOutput = z.object({
   event_id: uuid,
   title: z.string(),

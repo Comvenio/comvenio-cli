@@ -62,24 +62,26 @@ describe("Mannschaftstermine over OAuth (cai.teams.30/31/32)", () => {
       .toEqual({ opponent: null, home_state: null, competition_id: null, location: null, note: null, title: null });
     expect(parse({ title: "" })).toEqual({ title: "" });
     expect(parse({ visibility: "invite_only" })).toEqual({ visibility: "invite_only" });
-    expect(parse({ start_time: "2026-10-10T10:00:00+02:00" })).toEqual({ start_time: "2026-10-10T10:00:00+02:00" });
-    expect(() => parse({ start_time: "morgen" })).toThrow();
-    expect(() => parse({ end_time: "2026-13-45T99:00" })).toThrow();
+    for (const time of ["2026-10-10T10:00:00+02:00", "2026-10-10T08:00:00Z", "2026-10-10T10:00:00,123Z",
+      "2026-10-10T10:00:00.123456+0200", "2026-10-10T10:00", "2026-10-10 10:00:00"]) {
+      expect(parse({ start_time: time })).toEqual({ start_time: time });
+    }
+    for (const time of ["morgen", "October 10, 2026", "2026-10-10", "2026-13-45T99:00", "2026-10-10T24:00:00Z"]) {
+      expect(() => parse({ end_time: time })).toThrow();
+    }
     expect(() => parse({ opponent: "  " })).toThrow();
   });
 
-  test("create and update answer with the full TerminRead of the service", () => {
+  test("create and update keep every field of the service's TerminRead", () => {
+    const competitionId = "44444444-4444-4444-8444-444444444444";
     const answer = {
-      event_id: eventId, series_id: null, kind: "TRAINING", source: "MANUAL", title: "F-Jugend: Training",
-      start_time: "2026-10-06T16:00:00Z", end_time: "2026-10-06T17:30:00Z", location: null, note: null,
-      status: "confirmed", home_state: null, competition_id: null, opponent: null, visibility: "invite_only",
-      announce_general: false, repeat: { weekdays: ["TU"], until: null }, can_edit: true, booking_status: null,
+      event_id: eventId, series_id: seasonId, kind: "MATCH", source: "MANUAL", title: "F-Jugend: SV Motzing - SC Rain",
+      start_time: "2026-10-06T16:00:00Z", end_time: "2026-10-06T17:30:00Z", location: "Sportplatz", note: "Hinweis",
+      status: "confirmed", home_state: "HOME", competition_id: competitionId, opponent: "SC Rain", visibility: "invite_only",
+      announce_general: false, repeat: { weekdays: ["TU"], until: "2026-12-15" }, can_edit: true, booking_status: "BOOKED",
     };
     for (const action of ["cai.teams.31.termin_create", "cai.teams.32.termin_update"] as const) {
-      const row = K7_ACTION_SCHEMAS[action].output.parse(answer) as Record<string, any>;
-      expect(row.repeat).toEqual({ weekdays: ["TU"], until: null });
-      expect(row.can_edit).toBe(true);
-      expect(row.source).toBe("MANUAL");
+      expect(K7_ACTION_SCHEMAS[action].output.parse(answer)).toEqual(answer);
     }
   });
 });
