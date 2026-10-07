@@ -97,7 +97,8 @@ describe("cai.community.* — Vertrag (14 §4)", () => {
     };
     const seen: string[] = [];
     for (const [id, definition] of Object.entries(K12_ACTION_DEFINITIONS)) {
-      if (definition.domain !== "community") continue;
+      // 06.club_page reads more than one route; its own test below.
+      if (definition.domain !== "community" || id === "cai.community.06.club_page") continue;
       for (const operation of Object.values(definition.operations)) {
         const key = `${id}/${operation.operation}`; seen.push(key);
         const [method, path, scopes, risk] = expected[key]!;
@@ -128,6 +129,9 @@ describe("cai.community.* — Vereinsbindung (TC-01)", () => {
       ["cai.community.03.apply", page],
       ["cai.community.04.screenshot", { community_id: communityId, preview_id: previewId }],
       ["cai.community.05.design", { operation: "show", community_id: communityId }],
+      ["cai.community.06.club_page", { operation: "show", community_id: communityId }],
+      ["cai.community.06.club_page", { operation: "create", community_id: communityId, label: "SV Motzing" }],
+      ["cai.community.06.club_page", { operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections: [] }],
     ] as const) {
       const fake = service([otherClubId]);
       const error = await failure(fake.run(action, input as Record<string, JsonValue>));
@@ -292,5 +296,120 @@ describe("Homepage-Schema (TC-08)", () => {
       expect(widgets[kind]?.config.map((field) => field.name)).toContain("community_id");
       expect(homepageSchema.widget_kinds).toContain(kind);
     }
+  });
+});
+
+// cai.community.06.club_page (community-hub 15, TC-02..TC-06): the own pages of
+// the club of the sign-in in the community; routes as in club-service
+// community_pages.py:355/383 and club_home_publish.py:144.
+describe("cai.community.06.club_page — Vereinsseiten (15)", () => {
+  const sectionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const widgetId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const generalTabId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const ownPages = [
+    { community_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", community_name: "Andere", tabs: [{ id: generalTabId, label: "Fremd", version: 1 }] },
+    { community_id: communityId, community_name: "Dorfvereine", tabs: [{ id: tabId, label: "SV Motzing", slug: "sv-motzing-start", visibility_scope: "public", navigation_group: "SV Motzing", version: 2, hidden_by_community_at: null, hidden_reason: null }] },
+  ];
+  const tree = {
+    community_id: communityId,
+    membership: "member",
+    tabs: [
+      { id: generalTabId, managed_by_club_id: null, version: 4, sections: [] },
+      { id: tabId, managed_by_club_id: clubId, version: 2, sections: [{ id: sectionId, version: 3, layout: "full", widgets: [{ id: widgetId, version: 5, kind: "text", config: {} }] }] },
+    ],
+  };
+  const answers: Responder = (request) => {
+    if (request.path === `/clubs/${clubId}/community-pages`) return ownPages as unknown as JsonValue;
+    if (request.path === `/home-config/communities/${communityId}/tabs`) return tree as unknown as JsonValue;
+    if (request.path === `/communities/${communityId}/club-pages`) return { id: tabId, label: "SV Motzing", version: 1 };
+    return { sections: [{ id: sectionId }], widgets: [{ id: widgetId }, { id: widgetId }], warnungen: [] };
+  };
+  const draft = [{ id: sectionId, layout: "full", widgets: [{ id: widgetId, kind: "text", config: { content: "<p>Willkommen</p>" } }] }];
+
+  test("Routen, Risiko und Scopes: Bindung vor jeder Route, show und publish lesen die Seiten des Vereins", () => {
+    const operations = K12_ACTION_DEFINITIONS["cai.community.06.club_page"].operations;
+    const routes = (name: string) => operations[name]!.backend_routes.map((entry) => `${entry.method} ${entry.normalized_path_template}`);
+    const binding = BINDING.map((entry) => entry.replace(communityId, "{community_id}"));
+    expect(routes("show")).toEqual([...binding, "GET /clubs/{club_id}/community-pages", "GET /home-config/communities/{community_id}/tabs"]);
+    expect(routes("create")).toEqual([...binding, "POST /communities/{community_id}/club-pages"]);
+    expect(routes("publish")).toEqual([...binding, "GET /clubs/{club_id}/community-pages", "POST /home-config/{community_id}/tabs/{tab_id}/publish"]);
+    expect(operations.show!.risk_class).toBe("read");
+    expect(operations.show!.required_scopes).toEqual(["club.read"] as never);
+    for (const name of ["create", "publish"]) {
+      expect(operations[name]!.risk_class).toBe("critical_write");
+      expect(operations[name]!.execution_gate).toBe("confirmation");
+      expect(operations[name]!.required_scopes).toEqual(["club.write"] as never);
+    }
+  });
+
+  test("TC-02: show liefert nur Seiten des Vereins in dieser Community, mit version und fertiger base", async () => {
+    const fake = service([clubId], answers);
+    const result = (await fake.run("cai.community.06.club_page", { operation: "show", community_id: communityId })).result as { club_id: string; pages: Array<{ tab_id: string; version: number; base: { sections: Record<string, number>; widgets: Record<string, number> } }> };
+    expect(result.club_id).toBe(clubId);
+    expect(result.pages.map((entry) => entry.tab_id)).toEqual([tabId]);
+    expect(result.pages[0]!.version).toBe(2);
+    expect(result.pages[0]!.base).toEqual({ sections: { [sectionId]: 3 }, widgets: { [widgetId]: 5 } });
+    expect(fake.calls.map(route)).toEqual([...BINDING, `GET /clubs/${clubId}/community-pages`, `GET /home-config/communities/${communityId}/tabs`]);
+  });
+
+  test("TC-03: create ohne Bestätigung schreibt nichts; mit Bestätigung für den Verein der Anmeldung mit Vorlage", async () => {
+    const fake = service([clubId], answers);
+    const input = { operation: "create", community_id: communityId, label: "SV Motzing" };
+    const vorschau = await fake.run("cai.community.06.club_page", input);
+    expect(vorschau.status).toBe("confirmation_required");
+    expect(fake.writes()).toHaveLength(0);
+    const preview = (vorschau.result as { preview: { preview_id: string; confirmation_token: string; effects: Array<{ type: string }> } }).preview;
+    expect(preview.effects.map((effect) => effect.type)).toContain("community_club_page_publication");
+    await fake.run("cai.community.06.club_page", { ...input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } });
+    expect(fake.writes().map(route)).toEqual([`POST /communities/${communityId}/club-pages`]);
+    expect(fake.writes()[0]!.body).toEqual({ club_id: clubId, label: "SV Motzing", visibility_scope: "public", template: "vereinsseite" });
+  });
+
+  test("TC-03: ein anderer Verein in der Eingabe → TENANT_MISMATCH, nichts gesendet", async () => {
+    const fake = service([clubId], answers);
+    const error = await failure(fake.run("cai.community.06.club_page", { operation: "create", community_id: communityId, label: "Fremd", club_id: otherClubId }));
+    expect(error.code).toBe("TENANT_MISMATCH");
+    expect(fake.calls).toHaveLength(0);
+  });
+
+  test("TC-03: template none legt eine leere Seite an", async () => {
+    const fake = service([clubId], answers);
+    const input = { operation: "create", community_id: communityId, label: "Leer", visibility_scope: "member", template: "none" };
+    const preview = ((await fake.run("cai.community.06.club_page", input)).result as { preview: { preview_id: string; confirmation_token: string } }).preview;
+    await fake.run("cai.community.06.club_page", { ...input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } });
+    expect(fake.writes()[0]!.body).toEqual({ club_id: clubId, label: "Leer", visibility_scope: "member", template: null });
+  });
+
+  test("TC-04: publish auf einen allgemeinen Reiter oder fremde Seite → TENANT_MISMATCH, kein POST", async () => {
+    for (const target of [generalTabId, "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"]) {
+      const fake = service([clubId], answers);
+      const error = await failure(fake.run("cai.community.06.club_page", { operation: "publish", community_id: communityId, tab_id: target, expected_tab_version: 1, base: {}, sections: [] }));
+      expect(error.code).toBe("TENANT_MISMATCH");
+      expect(fake.writes()).toHaveLength(0);
+    }
+  });
+
+  test("TC-05: publish ohne Bestätigung schreibt nichts; mit Bestätigung Version als Query, base und sections im Rumpf", async () => {
+    const fake = service([clubId], answers);
+    const input = { operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 2, base: { sections: { [sectionId]: 3 }, widgets: { [widgetId]: 5 } }, sections: draft };
+    const vorschau = await fake.run("cai.community.06.club_page", input as unknown as Record<string, JsonValue>);
+    expect(vorschau.status).toBe("confirmation_required");
+    expect(fake.writes()).toHaveLength(0);
+    const preview = (vorschau.result as { preview: { preview_id: string; confirmation_token: string } }).preview;
+    const bestaetigt = await fake.run("cai.community.06.club_page", { ...input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } as unknown as Record<string, JsonValue>);
+    expect(bestaetigt.result).toEqual({ published: true, tab_id: tabId, sections: 1, widgets: 2, warnungen: [] });
+    const call = fake.writes()[0]!;
+    expect(route(call)).toBe(`POST /home-config/${communityId}/tabs/${tabId}/publish`);
+    expect(call.query).toEqual({ expected_tab_version: "2" });
+    expect((call.body as { base: JsonValue }).base).toEqual({ sections: { [sectionId]: 3 }, widgets: { [widgetId]: 5 } });
+    expect(((call.body as { sections: Array<{ id: string }> }).sections)[0]!.id).toBe(sectionId);
+  });
+
+  test("Eingabe streng: Label über 60 Zeichen, Abteilungs-Sichtbarkeit und fremde Felder werden abgelehnt", () => {
+    const schema = K12_ACTION_SCHEMAS["cai.community.06.club_page"].input;
+    expect(schema.safeParse({ club_id: clubId, operation: "create", community_id: communityId, label: "x".repeat(61) }).success).toBe(false);
+    expect(schema.safeParse({ club_id: clubId, operation: "create", community_id: communityId, label: "A", visibility_scope: "department" }).success).toBe(false);
+    expect(schema.safeParse({ club_id: clubId, operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections: [], fremd: 1 }).success).toBe(false);
+    expect(schema.safeParse({ club_id: clubId, operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections: [{ widgets: [{ kind: "text", config: { content: "<script>x</script>" } }] }] }).success).toBe(false);
   });
 });

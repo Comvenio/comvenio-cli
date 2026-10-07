@@ -400,6 +400,42 @@ a server error it is open whether the page was written: check with
 confirmation ends with `DESIGN_VERSION_CONFLICT`: read the design again and
 set it with the new `design_version`.
 
+### Designing a club page in a community
+
+Every member club keeps its own pages in the community; the menu lists them
+under its name. `cai.community.06.club_page` always works with the club of
+the sign-in — whoever is responsible for several clubs signs in once per club
+(`comvenio login`, choose the club in the consent). Creating and publishing
+require the right to manage the club settings.
+
+```bash
+# The club's own pages in the community, with version and base per page
+comvenio action call cai.community.06.club_page \
+  --input '{"operation":"show","community_id":"<community-id>"}' --json
+
+# Create a page — from the template (profile, dates, news of the club) or empty ("template":"none")
+comvenio action call cai.community.06.club_page \
+  --input '{"operation":"create","community_id":"<community-id>","label":"SV Motzing","visibility_scope":"public"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+
+# Publish the page as a whole: version and base from show, sections as in the homepage schema
+comvenio action call cai.community.06.club_page --input "$(cat club-page.json)" --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+```
+
+`club-page.json` holds `"operation":"publish"`, `community_id`, `tab_id`,
+`expected_tab_version` (= `version` from `show`), `base` (unchanged from
+`show`) and `sections`. Sections and widgets that stay carry their `id`;
+anything missing is deleted; new ones come without `id`. The page is replaced
+in one step. If someone changed it meanwhile, the confirmation ends with
+`CONFLICT` (`tab_changed` or `TAB_VERSION_CONFLICT`): run `show` again and
+base the draft on the new `base`. A tab that is not a page of the signed-in
+club in this community ends with `TENANT_MISMATCH` before the confirmation.
+Club pages have no preview: create them with `"visibility_scope":"member"`
+first, design, look at them in the hub, then make them public in the web app.
+For clubs without a public club page (inactive) the template blocks dates and
+news stay empty — the content then belongs in the skeleton.
+
 ### Mobile devices
 
 Every section wraps on smaller screens: grids become single-column, buttons
@@ -623,6 +659,7 @@ Purpose: Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich s
 - `cai.community.03.apply` — apply (change with confirmation) · Scopes: `club.write`
 - `cai.community.04.screenshot` — screenshot (read) · Scopes: `club.write`
 - `cai.community.05.design` — show, update (read, change with confirmation) · Scopes: `club.read`, `club.write`
+- `cai.community.06.club_page` — show, create, publish (read, change with confirmation) · Scopes: `club.read`, `club.write`
 <!-- /gen:docs -->
 
 ## Widgets

@@ -423,6 +423,43 @@ gespeicherten Design zusammen. Hat jemand das Design inzwischen geändert,
 endet die Bestätigung mit `DESIGN_VERSION_CONFLICT`: Design neu lesen und
 mit der neuen `design_version` erneut setzen.
 
+### Vereinsseite in einer Community gestalten
+
+Jeder Mitgliedsverein pflegt in der Community eigene Seiten; sie stehen im
+Menü unter seinem Namen. `cai.community.06.club_page` arbeitet immer mit dem
+Verein der Anmeldung — wer für mehrere Vereine zuständig ist, meldet sich je
+Verein an (`comvenio login`, Verein im Consent wählen). Anlegen und
+Veröffentlichen verlangen das Recht, die Vereinseinstellungen zu verwalten.
+
+```bash
+# Eigene Seiten des Vereins in der Community, mit version und base je Seite
+comvenio action call cai.community.06.club_page \
+  --input '{"operation":"show","community_id":"<community-id>"}' --json
+
+# Seite anlegen — mit Vorlage (Kurzprofil, Termine, News des Vereins) oder leer ("template":"none")
+comvenio action call cai.community.06.club_page \
+  --input '{"operation":"create","community_id":"<community-id>","label":"SV Motzing","visibility_scope":"public"}' --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+
+# Seite als Ganzes veröffentlichen: version und base aus show, sections wie im Homepage-Schema
+comvenio action call cai.community.06.club_page --input "$(cat vereinsseite.json)" --json
+comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+```
+
+`vereinsseite.json` enthält `"operation":"publish"`, `community_id`, `tab_id`,
+`expected_tab_version` (= `version` aus `show`), `base` (unverändert aus
+`show`) und `sections`. Abschnitte und Widgets, die bleiben sollen, tragen
+ihre `id`; was fehlt, wird gelöscht; neue kommen ohne `id`. Die Seite wird in
+einem Schritt ersetzt. Hat jemand sie inzwischen geändert, endet die
+Bestätigung mit `CONFLICT` (`tab_changed` oder `TAB_VERSION_CONFLICT`): neu
+`show`, Entwurf auf die neue `base` setzen. Ein Reiter, der keine Seite des
+angemeldeten Vereins in dieser Community ist, endet vor der Bestätigung mit
+`TENANT_MISMATCH`. Eine Vorschau gibt es für Vereinsseiten nicht: erst mit
+`"visibility_scope":"member"` anlegen, gestalten, im Hub ansehen und dann in
+der Web-App öffentlich stellen. Bei Vereinen ohne öffentliche Vereinsseite
+(inaktiv) bleiben die Vorlagen-Bausteine Termine und News leer — der Inhalt
+gehört dann ins Gerüst.
+
 ### Mobilgeräte
 
 Jede Section bricht auf kleineren Bildschirmen um: Raster werden einspaltig,
@@ -645,6 +682,7 @@ Zweck: Wie sieht mein Entwurf in voller Größe aus — und ist das, was ich seh
 - `cai.community.03.apply` — apply (ändern mit Bestätigung) · Scopes: `club.write`
 - `cai.community.04.screenshot` — screenshot (lesen) · Scopes: `club.write`
 - `cai.community.05.design` — show, update (lesen, ändern mit Bestätigung) · Scopes: `club.read`, `club.write`
+- `cai.community.06.club_page` — show, create, publish (lesen, ändern mit Bestätigung) · Scopes: `club.read`, `club.write`
 <!-- /gen:docs -->
 
 ## Widgets

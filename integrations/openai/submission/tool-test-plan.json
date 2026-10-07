@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "catalog_source_hash_sha256": "83f5b3e56085ed02a8b4f3292e5a3be6df32df8aae5ef9d456ddd70c9c4330f1",
+  "catalog_source_hash_sha256": "b0abd96906f6ebd86a4c9ad721e9be1eaaf87e7af5204dff637f1774ae75f417",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -666,6 +666,21 @@
     {
       "tool_name": "cv_community_05_design",
       "prompt": "Prüfe „Comvenio: community – design“ mit synthetischen Daten im ausgewählten Testverein.",
+      "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
+      "required_surfaces": [
+        "web",
+        "mobile"
+      ],
+      "verifies": [
+        "schema",
+        "security_schemes",
+        "annotations",
+        "rbac_recheck"
+      ]
+    },
+    {
+      "tool_name": "cv_community_06_club_page",
+      "prompt": "Prüfe „Comvenio: community – club page“ mit synthetischen Daten im ausgewählten Testverein.",
       "expected_response_fixture": "fixtures/provider/openai/full-connector-v1.response.json",
       "required_surfaces": [
         "web",

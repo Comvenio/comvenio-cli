@@ -99,17 +99,20 @@ function checkSlots(slots: unknown, ctx: z.RefinementCtx): void {
     checkFields(kind, config as Record<string, unknown>, ctx, [...at, "config"]);
   }
 }
-const homepageWidget = z.object({ kind: z.enum(widgetKinds), title: z.string().max(200).nullable().optional(), config: widgetConfig.default({}), slot_index: z.number().int().min(0).max(100).default(0) }).strict().superRefine((value, ctx) => {
+const homepageWidgetShape = z.object({ kind: z.enum(widgetKinds), title: z.string().max(200).nullable().optional(), config: widgetConfig.default({}), slot_index: z.number().int().min(0).max(100).default(0) }).strict();
+function checkWidget(value: z.infer<typeof homepageWidgetShape>, ctx: z.RefinementCtx): void {
   checkFields(value.kind, value.config, ctx, ["config"]);
   if (value.kind === "custom_html" && value.config.slots !== undefined) checkSlots(value.config.slots, ctx);
   const serialized = JSON.stringify(value.config);
   if (/(?:[A-Za-z]:\\|file:\/\/|javascript\s*:|<\s*script|\son[a-z]+\s*=)/iu.test(serialized)) ctx.addIssue({ code: "custom", path: ["config"], message: "Lokale Pfade oder aktive Inhalte sind nicht erlaubt." });
-});
-const homepageSection = z.object({
+}
+const homepageWidget = homepageWidgetShape.superRefine(checkWidget);
+const homepageSectionShape = z.object({
   layout: z.enum(["full", "two-col", "three-col", "four-col", "sidebar-left", "sidebar-right", "asymmetric-left", "asymmetric-right"]).default("full"),
   style_variant: z.enum(["default", "primary", "dark", "subtle", "gradient", "glass", "image"]).default("default"),
-  sort_order: z.number().int().min(0).max(10_000).default(0), title: z.string().max(200).nullable().optional(), is_visible: z.boolean().default(true), bg_image_url: httpsUrl.nullable().optional(), widgets: z.array(homepageWidget).max(100).default([]),
-}).strict();
+  sort_order: z.number().int().min(0).max(10_000).default(0), title: z.string().max(200).nullable().optional(), is_visible: z.boolean().default(true), bg_image_url: httpsUrl.nullable().optional(),
+});
+const homepageSection = homepageSectionShape.extend({ widgets: z.array(homepageWidget).max(100).default([]) }).strict();
 const homepageTab = z.object({
   label: z.string().trim().min(1).max(100), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u).max(100), icon: z.string().max(100).nullable().optional(), navigation_group: z.string().trim().max(100).nullable().optional(), position: z.number().int().min(0).max(10_000).default(0), visibility_scope: z.enum(["public", "member", "department"]).default("public"), department_id: uuid.nullable().optional(), sections: z.array(homepageSection).max(50).default([]),
 }).strict().refine((tab) => tab.visibility_scope === "department" ? Boolean(tab.department_id) : tab.department_id === undefined || tab.department_id === null, "Abteilungs-ID und Sichtbarkeit müssen zusammenpassen.");
@@ -121,6 +124,13 @@ const communityPage = { ...community, tabs: z.array(communityTab).min(1).max(30)
 // Version of every general tab the preview planned with (12 §4.3); apply sends exactly these.
 const expectedVersions = z.record(uuid, z.number().int().min(1)).refine((value) => Object.keys(value).length <= 100, "Höchstens 100 Tab-Versionen.");
 const designSettings = z.record(z.string().max(100), z.json()).refine((value) => JSON.stringify(value).length <= 200_000, "design_settings ist zu groß.");
+// A club page as the service's per-tab publish takes it (community-hub 15 §4.4,
+// club_home_publish.py PublishSection): kept sections and widgets carry their id.
+const clubPageWidget = homepageWidgetShape.extend({ id: uuid.optional() }).strict().superRefine(checkWidget);
+const clubPageSection = homepageSectionShape.extend({ id: uuid.optional(), spalten_breiten: z.array(z.number().int().min(20).max(100)).min(2).max(4).optional(), widgets: z.array(clubPageWidget).max(100).default([]) }).strict();
+// The versions of every live section and widget of the tab, as cai.community.06.club_page show returns them.
+const publishBase = z.object({ sections: z.record(uuid, z.number().int().min(1)).default({}), widgets: z.record(uuid, z.number().int().min(1)).default({}) }).strict()
+  .refine((value) => Object.keys(value.sections).length + Object.keys(value.widgets).length <= 500, "Höchstens 500 Versionen in base.");
 const screenshot = { preview_id: uuid, viewports: z.array(z.enum(["desktop", "mobile"])).min(1).max(2).default(["desktop", "mobile"]), tab_slug: z.string().trim().max(100).nullable().optional(), settle_ms: z.number().int().min(0).max(10_000).default(1_500) } as const;
 
 const verifyOptions = { viewports: z.array(z.enum(["desktop", "mobile"])).min(1).max(2).default(["desktop", "mobile"]), audit: z.boolean().default(true), wait_ms: z.number().int().min(0).max(10_000).default(1_500) } as const;
@@ -165,6 +175,13 @@ export const K12_ACTION_SCHEMAS: Readonly<Record<K12ActionId, K12ActionSchemaCon
   "cai.community.03.apply": contract(single({ ...communityPage, expected_versions: expectedVersions.default({}) })),
   "cai.community.04.screenshot": contract(single({ ...community, ...screenshot })),
   "cai.community.05.design": contract(union([grouped("show", { ...community }), grouped("update", { ...community, design_settings: designSettings, expected_design_version: z.number().int().min(1) })])),
+  // The club is always the one of the sign-in (club_id from the runtime); the
+  // versions for publish come from show and are never read again silently (15 DC-5).
+  "cai.community.06.club_page": contract(union([
+    grouped("show", { ...community }),
+    grouped("create", { ...community, label: z.string().trim().min(1).max(60), visibility_scope: z.enum(["public", "member"]).default("public"), template: z.enum(["vereinsseite", "none"]).default("vereinsseite") }),
+    grouped("publish", { ...community, tab_id: uuid, expected_tab_version: z.number().int().min(1), base: publishBase, sections: z.array(clubPageSection).max(50) }),
+  ])),
   "cai.schema.01.list_domains": contract(single({})),
   "cai.schema.02.show_domain_schema": contract(single({ domain: z.enum(K12_SCHEMA_DOMAINS) })),
   "cai.verify.01.url": contract(single({ target_url: externalHttpsUrl, ...verifyOptions })),

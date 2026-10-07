@@ -7,7 +7,8 @@ import type { z } from "zod";
 export const K12_HOMEPAGE_ACTION_IDS = ["cai.homepage.01.preview", "cai.homepage.02.apply", "cai.homepage.03.show", "cai.homepage.04.screenshot", "cai.homepage.05.convert"] as const;
 // Page of a community (community-hub 14), bound to the club of the sign-in:
 // every action first checks that this club is a member club of the community.
-export const K12_COMMUNITY_ACTION_IDS = ["cai.community.01.show", "cai.community.02.preview", "cai.community.03.apply", "cai.community.04.screenshot", "cai.community.05.design"] as const;
+// 06.club_page: the club's own pages in the community (community-hub 15).
+export const K12_COMMUNITY_ACTION_IDS = ["cai.community.01.show", "cai.community.02.preview", "cai.community.03.apply", "cai.community.04.screenshot", "cai.community.05.design", "cai.community.06.club_page"] as const;
 export const K12_SCHEMA_ACTION_IDS = ["cai.schema.01.list_domains", "cai.schema.02.show_domain_schema"] as const;
 export const K12_VERIFY_ACTION_IDS = ["cai.verify.01.url", "cai.verify.02.event", "cai.verify.03.menu", "cai.verify.04.homepage", "cai.verify.05.news", "cai.verify.06.certificate"] as const;
 export const K12_DATA_ACTION_IDS = [
