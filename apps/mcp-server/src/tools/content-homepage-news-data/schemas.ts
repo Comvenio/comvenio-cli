@@ -76,11 +76,22 @@ const widgetConfig = z.object(widgetFields).strict();
 const SLOT_NAME = /^[a-z0-9][a-z0-9-]{0,62}$/u;
 const SLOT_ENTRY_KEYS = new Set(["kind", "config", "style"]);
 const MAX_SLOTS = 200;
-function checkFields(kind: string, config: Record<string, unknown>, ctx: z.RefinementCtx, path: (string | number)[]): void {
+// community-hub 15: the building blocks of the template "vereinsseite" are bound to their club
+// through config.club_id (club-service community_page.py _template_sections, 10 §18). Only a
+// club page may carry it, and only the club of the sign-in (handlers.ts assertOwnClubPage).
+const CLUB_BOUND_KINDS = new Set(["description", "events_list", "news"]);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+function checkFields(kind: string, config: Record<string, unknown>, ctx: z.RefinementCtx, path: (string | number)[], clubBound = false): void {
   const allowed = widgetFieldsByKind.get(kind) ?? new Set<string>();
-  for (const key of Object.keys(config)) if (!allowed.has(key)) ctx.addIssue({ code: "custom", path: [...path, key], message: `Das Feld ist für ${kind} nicht freigegeben.` });
+  for (const key of Object.keys(config)) {
+    if (clubBound && key === "club_id" && CLUB_BOUND_KINDS.has(kind)) {
+      if (typeof config[key] !== "string" || !UUID_PATTERN.test(config[key] as string)) ctx.addIssue({ code: "custom", path: [...path, key], message: "club_id muss eine Vereins-ID sein." });
+      continue;
+    }
+    if (!allowed.has(key)) ctx.addIssue({ code: "custom", path: [...path, key], message: `Das Feld ist für ${kind} nicht freigegeben.` });
+  }
 }
-function checkSlots(slots: unknown, ctx: z.RefinementCtx): void {
+function checkSlots(slots: unknown, ctx: z.RefinementCtx, clubBound = false): void {
   const path = ["config", "slots"];
   if (slots === null || typeof slots !== "object" || Array.isArray(slots)) { ctx.addIssue({ code: "custom", path, message: "config.slots muss ein Objekt sein." }); return; }
   const entries = Object.entries(slots as Record<string, unknown>);
@@ -96,16 +107,17 @@ function checkSlots(slots: unknown, ctx: z.RefinementCtx): void {
     if (e.style !== undefined && e.style !== null && (typeof e.style !== "string" || !SLOT_NAME.test(e.style))) ctx.addIssue({ code: "custom", path: [...at, "style"], message: "style ist keine gültige Stil-Kennung." });
     const config = e.config ?? {};
     if (config === null || typeof config !== "object" || Array.isArray(config)) { ctx.addIssue({ code: "custom", path: [...at, "config"], message: "config muss ein Objekt sein." }); continue; }
-    checkFields(kind, config as Record<string, unknown>, ctx, [...at, "config"]);
+    checkFields(kind, config as Record<string, unknown>, ctx, [...at, "config"], clubBound);
   }
 }
 const homepageWidgetShape = z.object({ kind: z.enum(widgetKinds), title: z.string().max(200).nullable().optional(), config: widgetConfig.default({}), slot_index: z.number().int().min(0).max(100).default(0) }).strict();
-function checkWidget(value: z.infer<typeof homepageWidgetShape>, ctx: z.RefinementCtx): void {
-  checkFields(value.kind, value.config, ctx, ["config"]);
-  if (value.kind === "custom_html" && value.config.slots !== undefined) checkSlots(value.config.slots, ctx);
+const checkWidgetWith = (clubBound: boolean) => (value: { kind: string; config: Record<string, unknown> }, ctx: z.RefinementCtx): void => {
+  checkFields(value.kind, value.config, ctx, ["config"], clubBound);
+  if (value.kind === "custom_html" && value.config.slots !== undefined) checkSlots(value.config.slots, ctx, clubBound);
   const serialized = JSON.stringify(value.config);
   if (/(?:[A-Za-z]:\\|file:\/\/|javascript\s*:|<\s*script|\son[a-z]+\s*=)/iu.test(serialized)) ctx.addIssue({ code: "custom", path: ["config"], message: "Lokale Pfade oder aktive Inhalte sind nicht erlaubt." });
-}
+};
+const checkWidget = checkWidgetWith(false);
 const homepageWidget = homepageWidgetShape.superRefine(checkWidget);
 const homepageSectionShape = z.object({
   layout: z.enum(["full", "two-col", "three-col", "four-col", "sidebar-left", "sidebar-right", "asymmetric-left", "asymmetric-right"]).default("full"),
@@ -126,7 +138,7 @@ const expectedVersions = z.record(uuid, z.number().int().min(1)).refine((value) 
 const designSettings = z.record(z.string().max(100), z.json()).refine((value) => JSON.stringify(value).length <= 200_000, "design_settings ist zu groß.");
 // A club page as the service's per-tab publish takes it (community-hub 15 §4.4,
 // club_home_publish.py PublishSection): kept sections and widgets carry their id.
-const clubPageWidget = homepageWidgetShape.extend({ id: uuid.optional() }).strict().superRefine(checkWidget);
+const clubPageWidget = homepageWidgetShape.extend({ id: uuid.optional(), config: z.object({ ...widgetFields, club_id: z.json().optional() }).strict().default({}) }).strict().superRefine(checkWidgetWith(true));
 const clubPageSection = homepageSectionShape.extend({ id: uuid.optional(), spalten_breiten: z.array(z.number().int().min(20).max(100)).min(2).max(4).optional(), widgets: z.array(clubPageWidget).max(100).default([]) }).strict();
 // The versions of every live section and widget of the tab, as cai.community.06.club_page show returns them.
 const publishBase = z.object({ sections: z.record(uuid, z.number().int().min(1)).default({}), widgets: z.record(uuid, z.number().int().min(1)).default({}) }).strict()
