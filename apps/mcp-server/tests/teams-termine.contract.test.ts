@@ -49,5 +49,13 @@ test("termin list uses the same explicit 500-row window as the agent", async () 
   const client = { request: async (request: unknown) => { calls.push(request); return []; } } as unknown as Args[2];
   const input = K7_ACTION_SCHEMAS["cai.teams.30.termin_list"].input.parse({ club_id: clubId, team_season_id: seasonId });
   await handler(input as Args[0], context, client);
-  expect(calls).toEqual([{ method: "GET", service: "event", path: `/team-seasons/${seasonId}/events?limit=500`, context }]);
+  // The API client rejects any "?" in the path (CONFIG_INVALID); the window travels as query.
+  expect(calls).toEqual([{ method: "GET", service: "event", path: `/team-seasons/${seasonId}/events`, query: { limit: "500" }, context }]);
+});
+
+test("no K7 handler embeds a query string in its request path", async () => {
+  const { K7_ACTION_HANDLERS } = await import("../src/tools/identity-club-member-team-role/handlers.ts");
+  const source = await Bun.file(new URL("../src/tools/identity-club-member-team-role/handlers.ts", import.meta.url)).text();
+  expect(Object.keys(K7_ACTION_HANDLERS).length).toBeGreaterThan(0);
+  expect(source.match(/`\/[^`]*\?[^`]*`/g) ?? []).toEqual([]);
 });
