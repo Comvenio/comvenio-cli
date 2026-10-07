@@ -105,6 +105,61 @@ add("cai.community.04.screenshot", "screenshot", async (input, context, client) 
 add("cai.community.05.design", "show", async (input, context, client) => redactContentValue(await request(client, context, "GET", "club", `/communities/${string(input, "community_id")}/design`)));
 add("cai.community.05.design", "update", async (input, context, client) => redactContentValue(await request(client, context, "PUT", "club", `/communities/${string(input, "community_id")}/design`, { body: { design_settings: input.design_settings!, expected_design_version: input.expected_design_version! } })));
 
+// community-hub 15: the pages of the club of the sign-in in this community.
+// club_id is the runtime's (the club of the sign-in), never an input of its own.
+function objects(value: JsonValue | undefined): JsonObject[] {
+  return Array.isArray(value) ? value.filter((entry): entry is JsonObject => entry !== null && typeof entry === "object" && !Array.isArray(entry)) : [];
+}
+async function ownClubPages(client: ComvenioApiClient, context: RequestContext, input: JsonObject): Promise<JsonObject[]> {
+  const communities = objects(await request(client, context, "GET", "club", `/clubs/${string(input, "club_id")}/community-pages`));
+  return objects(communities.find((entry) => entry.community_id === string(input, "community_id"))?.tabs);
+}
+function clubPage(page: JsonObject, tree: JsonObject | undefined): JsonObject {
+  const head = {
+    tab_id: page.id ?? null, label: page.label ?? null, slug: page.slug ?? null, visibility_scope: page.visibility_scope ?? null, navigation_group: page.navigation_group ?? null,
+    hidden_by_community_at: page.hidden_by_community_at ?? null, hidden_reason: page.hidden_reason ?? null,
+  };
+  // Missing from the tree (e.g. member page while the membership is unknown):
+  // no base rather than an empty one, which publish would treat as "delete all".
+  if (!tree) return { ...head, version: page.version ?? null, sections: null, base: null, hinweis: "Seiteninhalt gerade nicht lesbar — später erneut show, vorher kein publish." };
+  const sections = objects(tree.sections);
+  // The versions of every live section and widget: publish sends them as base (15 §4.4).
+  const base = {
+    sections: Object.fromEntries(sections.map((section) => [String(section.id), Number(section.version ?? 1)])),
+    widgets: Object.fromEntries(sections.flatMap((section) => objects(section.widgets).map((widget) => [String(widget.id), Number(widget.version ?? 1)]))),
+  };
+  return { ...head, version: tree.version ?? page.version ?? null, sections, base };
+}
+add("cai.community.06.club_page", "show", async (input, context, client) => {
+  const pages = await ownClubPages(client, context, input);
+  // The tree route answers with { community_id, membership, tabs } (01.show private).
+  const live = await request(client, context, "GET", "club", communityPath(input, "/tabs"));
+  const trees = new Map(objects(Array.isArray(live) ? live : record(live).tabs).map((tab) => [tab.id, tab]));
+  return redactContentValue({ community_id: string(input, "community_id"), club_id: string(input, "club_id"), pages: pages.map((page) => clubPage(page, trees.get(page.id ?? null))) });
+});
+add("cai.community.06.club_page", "create", async (input, context, client) => redactContentValue(await request(client, context, "POST", "club", `/communities/${string(input, "community_id")}/club-pages`, {
+  body: { club_id: string(input, "club_id"), label: string(input, "label"), visibility_scope: input.visibility_scope!, template: input.template === "none" ? null : input.template! },
+})));
+// Only a page of the club of the sign-in in this community — never a general
+// tab and never another club's page; nothing is sent otherwise (15 §4.4).
+// Runs before the confirmation (tool-sets.ts) and again right before the write.
+export async function assertOwnClubPage(client: ComvenioApiClient, inputValue: JsonValue, context: RequestContext): Promise<void> {
+  const input = record(inputValue);
+  const tabId = string(input, "tab_id");
+  if (!(await ownClubPages(client, context, input)).some((page) => page.id === tabId)) {
+    throw createConnectorError({ code: "TENANT_MISMATCH", message: "Dieser Reiter ist keine Seite des verbundenen Vereins in dieser Community.", request_id: context.request_id, retryable: false });
+  }
+}
+add("cai.community.06.club_page", "publish", async (input, context, client) => {
+  const tabId = string(input, "tab_id");
+  await assertOwnClubPage(client, input, context);
+  const result = record(await request(client, context, "POST", "club", `/home-config/${string(input, "community_id")}/tabs/${tabId}/publish`, {
+    query: { expected_tab_version: String(input.expected_tab_version) },
+    body: { base: input.base!, sections: input.sections! },
+  }));
+  return redactContentValue({ published: true, tab_id: tabId, sections: objects(result.sections).length, widgets: objects(result.widgets).length, warnungen: result.warnungen ?? [] });
+});
+
 add("cai.schema.01.list_domains", "list", async () => listK12Schemas());
 add("cai.schema.02.show_domain_schema", "show", async (input) => showK12Schema(string(input, "domain") as K12SchemaDomain));
 

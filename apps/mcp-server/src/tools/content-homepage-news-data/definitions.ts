@@ -82,6 +82,15 @@ export const K12_ACTION_DEFINITIONS: Readonly<Record<K12ActionId, K12ActionDefin
     communityOperation({ name: "show", scopes: ["club.read"], risk: "read", routes: [route("GET", "club", "/communities/{community_id}/design")] }),
     communityOperation({ name: "update", scopes: ["club.write"], risk: "critical_write", routes: [route("PUT", "club", "/communities/{community_id}/design")], external: "comvenio_public" }),
   ]),
+  // community-hub 15 §11: the own pages of the club of the sign-in in the
+  // community. {club_id} is always that club; the service checks
+  // manage_club_settings in it. publish first reads the club's pages and stops
+  // with CLUB_PAGE_NOT_OWN for any other tab.
+  "cai.community.06.club_page": action("cai.community.06.club_page", "community", "club page", [
+    communityOperation({ name: "show", scopes: ["club.read"], risk: "read", routes: [route("GET", "club", "/clubs/{club_id}/community-pages"), route("GET", "club", "/home-config/communities/{community_id}/tabs")] }),
+    communityOperation({ name: "create", scopes: ["club.write"], risk: "critical_write", routes: [route("POST", "club", "/communities/{community_id}/club-pages")], external: "comvenio_public" }),
+    communityOperation({ name: "publish", scopes: ["club.write"], risk: "critical_write", routes: [route("GET", "club", "/clubs/{club_id}/community-pages", "preflight"), route("POST", "club", "/home-config/{community_id}/tabs/{tab_id}/publish")], external: "comvenio_public" }),
+  ]),
 
   "cai.schema.01.list_domains": action("cai.schema.01.list_domains", "schema", "list domains", [read("list", "authenticated", ["club.read"], "connector", "/schema")], "core-partial"),
   "cai.schema.02.show_domain_schema": action("cai.schema.02.show_domain_schema", "schema", "show domain schema", [read("show", "authenticated", ["club.read"], "connector", "/schema/{domain}")], "core-partial"),

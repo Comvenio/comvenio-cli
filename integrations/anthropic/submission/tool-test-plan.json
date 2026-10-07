@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "tool_sync_version": "83f5b3e56085ed02a8b4f3292e5a3be6df32df8aae5ef9d456ddd70c9c4330f1",
+  "tool_sync_version": "b0abd96906f6ebd86a4c9ad721e9be1eaaf87e7af5204dff637f1774ae75f417",
   "coverage": "every_published_tool",
   "cases": [
     {
@@ -667,6 +667,21 @@
       "tool_name": "cv_community_05_design",
       "happy_path_prompt": "Führe „Comvenio: community – design“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
       "permission_denied_prompt": "Prüfe „Comvenio: community – design“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
+      "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
+      "required_clients": [
+        "mcp_inspector",
+        "claude_custom_connector"
+      ],
+      "required_surfaces": [
+        "web",
+        "desktop",
+        "mobile"
+      ]
+    },
+    {
+      "tool_name": "cv_community_06_club_page",
+      "happy_path_prompt": "Führe „Comvenio: community – club page“ mit gültigen synthetischen Daten im ausgewählten Testverein aus.",
+      "permission_denied_prompt": "Prüfe „Comvenio: community – club page“ mit einem synthetischen Konto ohne die erforderliche Berechtigung.",
       "expected_response_fixture": "fixtures/provider/anthropic/full-connector-v1.response.json",
       "required_clients": [
         "mcp_inspector",

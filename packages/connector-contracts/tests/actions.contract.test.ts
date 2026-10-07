@@ -201,9 +201,10 @@ describe("Comvenio connector inventory contract", () => {
     // +1 homepage conversion (cai.homepage.05.convert),
     // +1 club font upload of the design contract (cai.club.15.font_upload),
     // +5 community page through the club of the sign-in (community-hub 14, cai.community.01..05),
-    // +10 automations over OAuth (automatisierungen-07, cai.club.16..25).
-    expect(directActionIds).toHaveLength(399);
-    expect(new Set(directActionIds).size).toBe(399);
+    // +10 automations over OAuth (automatisierungen-07, cai.club.16..25),
+    // +1 own club pages in a community (community-hub 15, cai.community.06.club_page).
+    expect(directActionIds).toHaveLength(400);
+    expect(new Set(directActionIds).size).toBe(400);
     expect(additiveActionIds).toEqual([
       // Wochenvorschau (ai-service): the classic command ran on the device token only.
       "cai.club.11.weekly_preview_create",
@@ -233,6 +234,7 @@ describe("Comvenio connector inventory contract", () => {
       "cai.community.03.apply",
       "cai.community.04.screenshot",
       "cai.community.05.design",
+      "cai.community.06.club_page",
       // Kein Legacy-Gegenstueck: Das Legacy-Inventar vom 2026-07-14 kannte die
       // Vereinsbuchhaltung nicht. Die 19 Aktionen decken Jahresplan, Posten und
       // Buchungen des finance-service ab; Rechnungen, Beitraege, Spenden und
@@ -343,8 +345,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 399,
-      published_domain_actions: 397,
+      discovered_actions: 400,
+      published_domain_actions: 398,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -1408,23 +1410,23 @@ function k12Dependencies(client: ComvenioApiClient): K12ExecutionDependencies {
 }
 
 describe("K12 homepage, community, schema, verify, data and news adapter contract", () => {
-  test("TC-01/TC-02: exposes six toolsets and exactly 5/5/2/6/35/9 actions", () => {
+  test("TC-01/TC-02: exposes six toolsets and exactly 5/6/2/6/35/9 actions", () => {
     // homepage: preview, apply, show, screenshot (2026-08-29) — plus convert
     // (comvenio-cli-doku 06 §4.3, 2026-09-29). Die Zahl ist ein Riegel gegen
     // unbemerkte Aktionen, kein Deckel: Wer eine hinzufuegt, zieht sie hier
     // bewusst mit. community: show, preview, apply, screenshot, design
-    // (community-hub 14, 2026-10-06).
+    // (community-hub 14, 2026-10-06), club_page (community-hub 15, 2026-10-07).
     expect(K12_HOMEPAGE_ACTION_IDS).toHaveLength(5);
-    expect(K12_COMMUNITY_ACTION_IDS).toHaveLength(5);
+    expect(K12_COMMUNITY_ACTION_IDS).toHaveLength(6);
     expect(K12_SCHEMA_ACTION_IDS).toHaveLength(2);
     expect(K12_VERIFY_ACTION_IDS).toHaveLength(6);
     expect(K12_DATA_ACTION_IDS).toHaveLength(35);
     expect(K12_NEWS_ACTION_IDS).toHaveLength(9);
-    expect(K12_ACTION_IDS).toHaveLength(62);
-    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(62);
-    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(62);
+    expect(K12_ACTION_IDS).toHaveLength(63);
+    expect(Object.keys(K12_ACTION_DEFINITIONS)).toHaveLength(63);
+    expect(Object.keys(K12_ACTION_SCHEMAS)).toHaveLength(63);
     const sets = createK12ToolSets(k12Dependencies(k7Client(async () => [])));
-    expect({ homepage: sets.homepage.listDefinitions().length, community: sets.community.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 5, community: 5, schema: 2, verify: 6, data: 35, news: 9 });
+    expect({ homepage: sets.homepage.listDefinitions().length, community: sets.community.listDefinitions().length, schema: sets.schema.listDefinitions().length, verify: sets.verify.listDefinitions().length, data: sets.data.listDefinitions().length, news: sets.news.listDefinitions().length }).toEqual({ homepage: 5, community: 6, schema: 2, verify: 6, data: 35, news: 9 });
     expect(sets.schema.coverage_status).toBe("core-partial");
     expect(sets.schema.listDefinitions().every((definition) => definition.coverage_status === "core-partial")).toBe(true);
   });

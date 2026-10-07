@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { PUBLIC_READ_CONTRACTS } from "../../public/contracts.ts";
 import { K12_ACTION_DEFINITIONS, validateK12Definitions } from "./definitions.ts";
-import { assertCommunityInClub, executeK12Operation, hasK12OperationHandler } from "./handlers.ts";
+import { assertCommunityInClub, assertOwnClubPage, executeK12Operation, hasK12OperationHandler } from "./handlers.ts";
 import { ContentChangeConfirmationPolicy, ContentJobPolicy } from "./policies.ts";
 import { buildK12Preview } from "./preview.ts";
 import { K12_ACTION_SCHEMAS } from "./schemas.ts";
@@ -81,6 +81,8 @@ export abstract class K12ToolSet {
     try {
       // community-hub 14 §4.1: before every gate — also before a confirmation preview.
       if (definition.domain === "community") await assertCommunityInClub(this.#dependencies.client, input, context);
+      // community-hub 15 §4.4: publish only onto a page of the club of the sign-in — checked before the confirmation too.
+      if (definition.action_id === "cai.community.06.club_page" && operation.operation === "publish") await assertOwnClubPage(this.#dependencies.client, input, context);
       let result: JsonValue; let status: K12ActionResult["status"] = "completed";
       if (operation.execution_gate === "inline") result = await mutation();
       else if (operation.execution_gate === "job") {
