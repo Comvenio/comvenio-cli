@@ -115,17 +115,20 @@ async function ownClubPages(client: ComvenioApiClient, context: RequestContext, 
   return objects(communities.find((entry) => entry.community_id === string(input, "community_id"))?.tabs);
 }
 function clubPage(page: JsonObject, tree: JsonObject | undefined): JsonObject {
-  const sections = objects(tree?.sections);
+  const head = {
+    tab_id: page.id ?? null, label: page.label ?? null, slug: page.slug ?? null, visibility_scope: page.visibility_scope ?? null, navigation_group: page.navigation_group ?? null,
+    hidden_by_community_at: page.hidden_by_community_at ?? null, hidden_reason: page.hidden_reason ?? null,
+  };
+  // Missing from the tree (e.g. member page while the membership is unknown):
+  // no base rather than an empty one, which publish would treat as "delete all".
+  if (!tree) return { ...head, version: page.version ?? null, sections: null, base: null, hinweis: "Seiteninhalt gerade nicht lesbar — später erneut show, vorher kein publish." };
+  const sections = objects(tree.sections);
   // The versions of every live section and widget: publish sends them as base (15 §4.4).
   const base = {
     sections: Object.fromEntries(sections.map((section) => [String(section.id), Number(section.version ?? 1)])),
     widgets: Object.fromEntries(sections.flatMap((section) => objects(section.widgets).map((widget) => [String(widget.id), Number(widget.version ?? 1)]))),
   };
-  return {
-    tab_id: page.id ?? null, label: page.label ?? null, slug: page.slug ?? null, visibility_scope: page.visibility_scope ?? null, navigation_group: page.navigation_group ?? null,
-    version: tree?.version ?? page.version ?? null, hidden_by_community_at: page.hidden_by_community_at ?? null, hidden_reason: page.hidden_reason ?? null,
-    sections, base,
-  };
+  return { ...head, version: tree.version ?? page.version ?? null, sections, base };
 }
 add("cai.community.06.club_page", "show", async (input, context, client) => {
   const pages = await ownClubPages(client, context, input);

@@ -449,10 +449,10 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> -
 `vereinsseite.json` enthält `"operation":"publish"`, `community_id`, `tab_id`,
 `expected_tab_version` (= `version` aus `show`), `base` (unverändert aus
 `show`) und `sections`. Abschnitte und Widgets, die bleiben sollen, tragen
-ihre `id`; was fehlt, wird gelöscht; neue kommen ohne `id`. Die Seite wird in
+ihre `id`; was fehlt, wird gelöscht (Widgets ohne Abschnitt bleiben stehen); neue kommen ohne `id`. Die Seite wird in
 einem Schritt ersetzt. Hat jemand sie inzwischen geändert, endet die
 Bestätigung mit `CONFLICT` (`tab_changed` oder `TAB_VERSION_CONFLICT`): neu
-`show`, Entwurf auf die neue `base` setzen. Ein Reiter, der keine Seite des
+`show`, Entwurf auf die neue `base` setzen. Liefert `show` für eine Seite `base: null`, war ihr Inhalt gerade nicht lesbar — später erneut lesen. Bleibt der Konflikt bei unveränderter Seite, trägt der Reiter ein Widget ohne Abschnitt, das `show` nicht sieht: dann in der Web-App bearbeiten. Nach dem Veröffentlichen die neue `version` wieder mit `show` lesen. Ein Reiter, der keine Seite des
 angemeldeten Vereins in dieser Community ist, endet vor der Bestätigung mit
 `TENANT_MISMATCH`. Eine Vorschau gibt es für Vereinsseiten nicht: erst mit
 `"visibility_scope":"member"` anlegen, gestalten, im Hub ansehen und dann in

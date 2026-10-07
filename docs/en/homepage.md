@@ -426,10 +426,10 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> -
 `club-page.json` holds `"operation":"publish"`, `community_id`, `tab_id`,
 `expected_tab_version` (= `version` from `show`), `base` (unchanged from
 `show`) and `sections`. Sections and widgets that stay carry their `id`;
-anything missing is deleted; new ones come without `id`. The page is replaced
+anything missing is deleted (widgets without a section stay); new ones come without `id`. The page is replaced
 in one step. If someone changed it meanwhile, the confirmation ends with
 `CONFLICT` (`tab_changed` or `TAB_VERSION_CONFLICT`): run `show` again and
-base the draft on the new `base`. A tab that is not a page of the signed-in
+base the draft on the new `base`. If `show` returns `base: null` for a page, its content could not be read just now — read again later. If the conflict persists on an unchanged page, the tab holds a widget without a section that `show` cannot see: edit it in the web app. After publishing, read the new `version` with `show` again. A tab that is not a page of the signed-in
 club in this community ends with `TENANT_MISMATCH` before the confirmation.
 Club pages have no preview: create them with `"visibility_scope":"member"`
 first, design, look at them in the hub, then make them public in the web app.

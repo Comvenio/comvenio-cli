@@ -352,6 +352,14 @@ describe("cai.community.06.club_page — Vereinsseiten (15)", () => {
     expect(fake.calls.map(route)).toEqual([...BINDING, `GET /clubs/${clubId}/community-pages`, `GET /home-config/communities/${communityId}/tabs`]);
   });
 
+  test("TC-02: fehlt die eigene Seite im Seitenbaum (Mitgliedschaft unbekannt), liefert show base null statt einer leeren Basis", async () => {
+    const fake = service([clubId], (request) => request.path === `/home-config/communities/${communityId}/tabs` ? { community_id: communityId, membership: "unknown", tabs: [] } : answers(request));
+    const result = (await fake.run("cai.community.06.club_page", { operation: "show", community_id: communityId })).result as { pages: Array<{ base: JsonValue; sections: JsonValue; version: number }> };
+    expect(result.pages[0]!.base).toBeNull();
+    expect(result.pages[0]!.sections).toBeNull();
+    expect(result.pages[0]!.version).toBe(2);
+  });
+
   test("TC-03: create ohne Bestätigung schreibt nichts; mit Bestätigung für den Verein der Anmeldung mit Vorlage", async () => {
     const fake = service([clubId], answers);
     const input = { operation: "create", community_id: communityId, label: "SV Motzing" };
