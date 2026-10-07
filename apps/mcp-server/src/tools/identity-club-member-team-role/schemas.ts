@@ -622,6 +622,10 @@ const activationPreviewOutput = z.object({
 }).strip();
 // Mannschaftstermine: GET /team-seasons/{id}/events and POST …/termine (event-service).
 const terminKind = z.enum(["MATCH", "TRAINING", "EXCURSION", "OTHER"]);
+// VisibilityScope of the event-service (app/models/event.py).
+const terminVisibility = z.enum(["public", "member", "department", "private", "invite_only"]);
+// The service parses a datetime; a free word must not reach it.
+const terminTime = isoDateTime.refine((value) => !Number.isNaN(Date.parse(value)), { message: "Kein gültiger ISO-Zeitpunkt." });
 const seasonEventOutput = z.object({
   event_id: uuid,
   title: z.string(),
@@ -648,25 +652,27 @@ const terminInput = z.object({
   end_time: isoDateTime.optional(),
   location: z.string().trim().max(500).optional(),
   note: z.string().trim().max(2_000).optional(),
-  visibility: z.enum(["public", "member", "department", "private"]).optional(),
+  visibility: terminVisibility.optional(),
   announce_general: z.boolean().optional(),
   repeat: z.object({
     weekdays: z.array(z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"])).min(1).max(7),
     until: date.optional(),
   }).strict().optional(),
 }).strict().refine((t) => t.kind !== "MATCH" || Boolean(t.opponent), { message: "Ein Spiel braucht einen Gegner." });
-// PATCH …/termine/{event_id}: only the fields sent change. A match title is always rebuilt
-// from opponent and home state; other kinds rebuild it when `title` is sent.
+// PATCH …/termine/{event_id} (TerminUpdate): only the fields sent change; a new start without an
+// end keeps the duration. A match title is always rebuilt from opponent and home state; other
+// kinds rebuild it when `title` is sent (null or empty: the default title). null clears
+// opponent, home state and competition — a match refuses that (TERMIN_MATCH_NEEDS_OPPONENT).
 const terminUpdateInput = z.object({
   title: z.string().trim().max(200).nullable().optional(),
-  opponent: z.string().trim().min(1).max(200).optional(),
-  home_state: z.enum(["HOME", "AWAY"]).optional(),
+  opponent: z.string().trim().min(1).max(200).nullable().optional(),
+  home_state: z.enum(["HOME", "AWAY"]).nullable().optional(),
   competition_id: uuid.nullable().optional(),
-  start_time: isoDateTime.optional(),
-  end_time: isoDateTime.optional(),
+  start_time: terminTime.optional(),
+  end_time: terminTime.optional(),
   location: z.string().trim().max(500).nullable().optional(),
   note: z.string().trim().max(2_000).nullable().optional(),
-  visibility: z.enum(["public", "member", "department", "private"]).optional(),
+  visibility: terminVisibility.optional(),
   announce_general: z.boolean().optional(),
   scope: z.enum(["THIS", "FOLLOWING"]).optional(),
 }).strict();
@@ -682,8 +688,15 @@ const terminOutput = z.object({
   status: z.string(),
   home_state: z.string().nullable().optional(),
   opponent: z.string().nullable().optional(),
+  competition_id: uuid.nullable().optional(),
+  source: z.string().optional(),
   visibility: z.string(),
   announce_general: z.boolean(),
+  repeat: z.object({
+    weekdays: z.array(z.string()),
+    until: date.nullable().optional(),
+  }).strip().nullable().optional(),
+  can_edit: z.boolean().optional(),
   booking_status: z.string().nullable().optional(),
 }).strip();
 

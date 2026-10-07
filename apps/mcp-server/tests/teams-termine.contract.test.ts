@@ -52,6 +52,36 @@ describe("Mannschaftstermine over OAuth (cai.teams.30/31/32)", () => {
     expect(() => schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { kind: "MATCH" } })).toThrow();
     expect(() => schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { scope: "ALL" } })).toThrow();
   });
+
+  test("update follows the service contract TerminUpdate", () => {
+    const schema = K7_ACTION_SCHEMAS["cai.teams.32.termin_update"].input;
+    const parse = (termin: Record<string, unknown>) =>
+      (schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin }) as Record<string, any>).termin;
+    // null clears a field the service can clear; an empty title gives the default title.
+    expect(parse({ opponent: null, home_state: null, competition_id: null, location: null, note: null, title: null }))
+      .toEqual({ opponent: null, home_state: null, competition_id: null, location: null, note: null, title: null });
+    expect(parse({ title: "" })).toEqual({ title: "" });
+    expect(parse({ visibility: "invite_only" })).toEqual({ visibility: "invite_only" });
+    expect(parse({ start_time: "2026-10-10T10:00:00+02:00" })).toEqual({ start_time: "2026-10-10T10:00:00+02:00" });
+    expect(() => parse({ start_time: "morgen" })).toThrow();
+    expect(() => parse({ end_time: "2026-13-45T99:00" })).toThrow();
+    expect(() => parse({ opponent: "  " })).toThrow();
+  });
+
+  test("create and update answer with the full TerminRead of the service", () => {
+    const answer = {
+      event_id: eventId, series_id: null, kind: "TRAINING", source: "MANUAL", title: "F-Jugend: Training",
+      start_time: "2026-10-06T16:00:00Z", end_time: "2026-10-06T17:30:00Z", location: null, note: null,
+      status: "confirmed", home_state: null, competition_id: null, opponent: null, visibility: "invite_only",
+      announce_general: false, repeat: { weekdays: ["TU"], until: null }, can_edit: true, booking_status: null,
+    };
+    for (const action of ["cai.teams.31.termin_create", "cai.teams.32.termin_update"] as const) {
+      const row = K7_ACTION_SCHEMAS[action].output.parse(answer) as Record<string, any>;
+      expect(row.repeat).toEqual({ weekdays: ["TU"], until: null });
+      expect(row.can_edit).toBe(true);
+      expect(row.source).toBe("MANUAL");
+    }
+  });
 });
 
 test("termin update sends the change to the termin's own path", async () => {

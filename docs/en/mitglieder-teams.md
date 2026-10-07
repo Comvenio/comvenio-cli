@@ -217,9 +217,14 @@ changes data is critical and goes through a preview and `comvenio action confirm
 7. List team appointments (`cai.teams.30.termin_list`) and create one (`cai.teams.31.termin_create`,
    `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, plus `start_time`; a match needs `opponent`;
    repeat with weekdays via `repeat`). Change a hand-made appointment (`cai.teams.32.termin_update` with
-   `event_id`; only the fields sent change, for a series appointment `scope` is `THIS` or `FOLLOWING`).
-   The service always puts the team name in front of the title ("F-Jugend: …"); for a match it rebuilds
-   the title from opponent and home/away, even when `termin` is empty. Times are ISO timestamps with a time zone, for example
+   `event_id`). The fields sent change; a new start without an end moves the end along and keeps the
+   duration. `null` clears opponent, home/away, competition, location and note (a match needs opponent
+   and home/away). For a match the service always rebuilds the title from opponent and home/away, even
+   when `termin` is empty; for the other kinds only when `title` is sent. The team name then stands in
+   front ("F-Jugend: …"). For a series appointment `scope` applies: `THIS` changes this occurrence —
+   opponent, home/away, competition and announcement belong to the whole series, though, and change
+   there too; `FOLLOWING` ends the series before this occurrence and starts a new one from here, the
+   following appointments get new ids. Times are ISO timestamps with a time zone, for example
    `2026-09-12T15:00:00+02:00` for 3 pm Central European Summer Time. The running season is shown by
    `cai.teams.06.season_list` (status `AKTIV`); its `id` is the `team_season_id`.
 
