@@ -220,10 +220,15 @@ Bestätigung möglich; alles, was ändert, ist kritisch und läuft über Vorscha
 7. Mannschaftstermine auflisten (`cai.teams.30.termin_list`) und anlegen (`cai.teams.31.termin_create`,
    `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, dazu `start_time`; ein Spiel braucht `opponent`;
    Wiederholung über `repeat` mit Wochentagen). Einen von Hand angelegten Termin ändern
-   (`cai.teams.32.termin_update` mit `event_id`; nur die gesendeten Felder ändern sich, bei einem
-   Serientermin gilt `scope` `THIS` oder `FOLLOWING`). Den Titel setzt der Dienst immer mit dem
-   Mannschaftsnamen davor („F-Jugend: …“); bei einem Spiel baut er ihn aus Gegner und Heim- oder Auswärtsspiel
-   neu, auch wenn `termin` leer ist. Zeitpunkte als ISO-Zeitpunkt mit Zeitzone, etwa
+   (`cai.teams.32.termin_update` mit `event_id`). Es ändern sich die gesendeten Felder; ein neuer
+   Beginn ohne Ende verschiebt das Ende mit, die Dauer bleibt. `null` leert Gegner, Heimrecht,
+   Wettbewerb, Ort und Notiz (ein Spiel braucht Gegner und Heimrecht). Den Titel baut der Dienst
+   bei einem Spiel immer aus Gegner und Heimrecht neu, auch wenn `termin` leer ist;
+   bei den anderen Arten nur, wenn `title` mitkommt. Er steht dann mit dem Mannschaftsnamen davor
+   („F-Jugend: …“). Bei einem Serientermin gilt `scope`: `THIS` ändert dieses Vorkommen — Gegner,
+   Heimrecht, Wettbewerb und Ankündigung gehören aber zur ganzen Serie und ändern sich dort mit;
+   `FOLLOWING` beendet die Serie vor diesem Vorkommen und legt ab hier eine neue an, die Folgetermine
+   bekommen dabei neue Kennungen. Zeitpunkte als ISO-Zeitpunkt mit Zeitzone, etwa
    `2026-09-12T15:00:00+02:00` für 15 Uhr deutscher Sommerzeit. Welche Saison gerade läuft, zeigt
    `cai.teams.06.season_list` (Status `AKTIV`); deren `id` ist die `team_season_id`.
 
