@@ -216,7 +216,10 @@ changes data is critical and goes through a preview and `comvenio action confirm
    `{"type":"POSSIBLE_DUPLICATE","action":"KEEP_EXISTING"}`).
 7. List team appointments (`cai.teams.30.termin_list`) and create one (`cai.teams.31.termin_create`,
    `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, plus `start_time`; a match needs `opponent`;
-   repeat with weekdays via `repeat`). Times are ISO timestamps with a time zone, for example
+   repeat with weekdays via `repeat`). Change a hand-made appointment (`cai.teams.32.termin_update` with
+   `event_id`; only the fields sent change, for a series appointment `scope` is `THIS` or `FOLLOWING`).
+   The service always puts the team name in front of the title ("F-Jugend: …"); for a match it rebuilds
+   the title from opponent and home/away, even when `termin` is empty. Times are ISO timestamps with a time zone, for example
    `2026-09-12T15:00:00+02:00` for 3 pm Central European Summer Time. The running season is shown by
    `cai.teams.06.season_list` (status `AKTIV`); its `id` is the `team_season_id`.
 
@@ -235,6 +238,9 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 comvenio action call cai.teams.31.termin_create \
   --input '{"team_season_id":"<season-id>","termin":{"kind":"MATCH","opponent":"SV Example","home_state":"HOME","start_time":"2026-09-12T15:00:00+02:00"}}' --json
+
+comvenio action call cai.teams.32.termin_update \
+  --input '{"team_season_id":"<season-id>","event_id":"<termin-id>","termin":{"location":"Sportplatz Motzing"}}' --json
 ```
 
 ## Examples
@@ -356,6 +362,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.teams.29.clarification_resolve` — sync resolve (change with confirmation) · Scopes: `admin.write`
 - `cai.teams.30.termin_list` — termin list (read) · Scopes: `club.read`
 - `cai.teams.31.termin_create` — termin create (change with confirmation) · Scopes: `club.write`
+- `cai.teams.32.termin_update` — termin update (change with confirmation) · Scopes: `club.write`
 - Fields and values: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"team"}'` (the sign-in sets `club_id` — never in `--input`)
 <!-- /gen:docs -->
 

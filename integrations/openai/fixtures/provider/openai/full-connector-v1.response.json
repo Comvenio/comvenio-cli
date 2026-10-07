@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "entity": "ProviderResponseContractMatrix",
   "release_scope": "full_connector_v1",
-  "runtime_tool_catalog_sha256": "b0abd96906f6ebd86a4c9ad721e9be1eaaf87e7af5204dff637f1774ae75f417",
+  "runtime_tool_catalog_sha256": "324496f651e64b07929059f7262843f9e49690f7a5435a9696d6288b4fc26284",
   "synthetic_data_only": true,
   "cases": [
     {
@@ -7075,6 +7075,25 @@
     },
     {
       "tool_name": "cv_teams_31_termin_create",
+      "risk_class": "critical_write",
+      "required_scopes": [
+        "club.write"
+      ],
+      "expected_outcome": "confirmation_required_or_actionable_denial",
+      "oauth_bound_club_context": true,
+      "backend_rbac_recheck_required": true,
+      "confirmation_contract": true,
+      "response_contract": {
+        "structured_content_required": true,
+        "safe_text_summary_required": true,
+        "provider_specific_payload_forbidden": true,
+        "secret_or_token_echo_forbidden": true,
+        "delegated_capability_confirmation": false,
+        "provider_retry_contract": "idempotent_by_key"
+      }
+    },
+    {
+      "tool_name": "cv_teams_32_termin_update",
       "risk_class": "critical_write",
       "required_scopes": [
         "club.write"

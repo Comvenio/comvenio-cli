@@ -219,7 +219,11 @@ Bestätigung möglich; alles, was ändert, ist kritisch und läuft über Vorscha
    `{"type":"POSSIBLE_DUPLICATE","action":"KEEP_EXISTING"}`).
 7. Mannschaftstermine auflisten (`cai.teams.30.termin_list`) und anlegen (`cai.teams.31.termin_create`,
    `kind` `MATCH`, `TRAINING`, `EXCURSION`, `OTHER`, dazu `start_time`; ein Spiel braucht `opponent`;
-   Wiederholung über `repeat` mit Wochentagen). Zeitpunkte als ISO-Zeitpunkt mit Zeitzone, etwa
+   Wiederholung über `repeat` mit Wochentagen). Einen von Hand angelegten Termin ändern
+   (`cai.teams.32.termin_update` mit `event_id`; nur die gesendeten Felder ändern sich, bei einem
+   Serientermin gilt `scope` `THIS` oder `FOLLOWING`). Den Titel setzt der Dienst immer mit dem
+   Mannschaftsnamen davor („F-Jugend: …“); bei einem Spiel baut er ihn aus Gegner und Heim- oder Auswärtsspiel
+   neu, auch wenn `termin` leer ist. Zeitpunkte als ISO-Zeitpunkt mit Zeitzone, etwa
    `2026-09-12T15:00:00+02:00` für 15 Uhr deutscher Sommerzeit. Welche Saison gerade läuft, zeigt
    `cai.teams.06.season_list` (Status `AKTIV`); deren `id` ist die `team_season_id`.
 
@@ -238,6 +242,9 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 
 comvenio action call cai.teams.31.termin_create \
   --input '{"team_season_id":"<saison-id>","termin":{"kind":"MATCH","opponent":"SV Beispiel","home_state":"HOME","start_time":"2026-09-12T15:00:00+02:00"}}' --json
+
+comvenio action call cai.teams.32.termin_update \
+  --input '{"team_season_id":"<saison-id>","event_id":"<termin-id>","termin":{"location":"Sportplatz Motzing"}}' --json
 ```
 
 ## Beispiele
@@ -359,6 +366,7 @@ comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
 - `cai.teams.29.clarification_resolve` — sync resolve (ändern mit Bestätigung) · Scopes: `admin.write`
 - `cai.teams.30.termin_list` — termin list (lesen) · Scopes: `club.read`
 - `cai.teams.31.termin_create` — termin create (ändern mit Bestätigung) · Scopes: `club.write`
+- `cai.teams.32.termin_update` — termin update (ändern mit Bestätigung) · Scopes: `club.write`
 - Felder und Werte: `comvenio action call cai.schema.02.show_domain_schema --input '{"domain":"team"}'` (`club_id` setzt die Anmeldung — nie in `--input`)
 <!-- /gen:docs -->
 

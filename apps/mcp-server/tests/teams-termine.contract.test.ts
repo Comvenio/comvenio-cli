@@ -6,7 +6,7 @@ const clubId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
 const eventId = "33333333-3333-4333-8333-333333333333";
 
-describe("Mannschaftstermine over OAuth (cai.teams.30/31)", () => {
+describe("Mannschaftstermine over OAuth (cai.teams.30/31/32)", () => {
   test("create posts a hand-made termin to the season and is a confirmed write", () => {
     const definition = K7_ACTION_DEFINITIONS["cai.teams.31.termin_create"];
     expect(definition.backend_routes[0]).toMatchObject({ method: "POST", service: "event", normalized_path_template: "/team-seasons/{team_season_id}/termine" });
@@ -36,6 +36,35 @@ describe("Mannschaftstermine over OAuth (cai.teams.30/31)", () => {
     ]) as Array<Record<string, unknown>>;
     expect(rows.map((r) => r.kind)).toEqual(["BYE", "MATCH"]);
   });
+
+  test("update patches one termin of the season and is a confirmed write", () => {
+    const definition = K7_ACTION_DEFINITIONS["cai.teams.32.termin_update"];
+    expect(definition.backend_routes[0]).toMatchObject({ method: "PATCH", service: "event", normalized_path_template: "/team-seasons/{team_season_id}/termine/{event_id}" });
+    expect(definition.risk_class).toBe("critical_write");
+    expect(definition.confirmation).toBe("required");
+    const schema = K7_ACTION_SCHEMAS["cai.teams.32.termin_update"].input;
+    // An empty change is allowed: the service rebuilds a match title with the team prefix.
+    const empty = schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: {} }) as Record<string, any>;
+    expect(empty.termin).toEqual({});
+    const titled = schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { title: "Training", scope: "THIS" } }) as Record<string, any>;
+    expect(titled.termin).toEqual({ title: "Training", scope: "THIS" });
+    expect(() => schema.parse({ club_id: clubId, team_season_id: seasonId, termin: {} })).toThrow();
+    expect(() => schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { kind: "MATCH" } })).toThrow();
+    expect(() => schema.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { scope: "ALL" } })).toThrow();
+  });
+});
+
+test("termin update sends the change to the termin's own path", async () => {
+  const { K7_ACTION_HANDLERS } = await import("../src/tools/identity-club-member-team-role/handlers.ts");
+  const handler = K7_ACTION_HANDLERS["cai.teams.32.termin_update"];
+  if (!handler) throw new Error("Missing termin update handler");
+  type Args = Parameters<typeof handler>;
+  const context = { club_id: clubId } as unknown as Args[1];
+  const calls: unknown[] = [];
+  const client = { request: async (request: unknown) => { calls.push(request); return {}; } } as unknown as Args[2];
+  const input = K7_ACTION_SCHEMAS["cai.teams.32.termin_update"].input.parse({ club_id: clubId, team_season_id: seasonId, event_id: eventId, termin: { title: "Training" } });
+  await handler(input as Args[0], context, client);
+  expect(calls).toEqual([{ method: "PATCH", service: "event", path: `/team-seasons/${seasonId}/termine/${eventId}`, body: { title: "Training" }, context }]);
 });
 
 
