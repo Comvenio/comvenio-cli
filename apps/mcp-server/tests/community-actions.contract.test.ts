@@ -10,6 +10,7 @@ import { describe, expect, test } from "bun:test";
 
 import homepageSchema from "../../../src/schema/homepage.json";
 import { K12_ACTION_DEFINITIONS } from "../src/tools/content-homepage-news-data/definitions.ts";
+import { assertOwnClubPage } from "../src/tools/content-homepage-news-data/handlers.ts";
 import { K12_ACTION_SCHEMAS } from "../src/tools/content-homepage-news-data/schemas.ts";
 import { createK12ToolSets } from "../src/tools/content-homepage-news-data/tool-sets.ts";
 import type { K12ActionId } from "../src/tools/content-homepage-news-data/types.ts";
@@ -452,5 +453,28 @@ describe("cai.community.06.club_page — Vereinsseiten (15)", () => {
     const error = await failure(foreign.run("cai.community.06.club_page", { ...input, sections: skeleton(otherClubId) } as unknown as Record<string, JsonValue>));
     expect(error.code).toBe("TENANT_MISMATCH");
     expect(foreign.writes()).toHaveLength(0);
+  });
+
+  // The runtime check (tool-sets.ts) already rejects a foreign club_id; this covers the
+  // second guard in assertOwnClubPage on its own, which also runs right before the POST.
+  test("Vereinsbindung: assertOwnClubPage allein lehnt einen einzigen fremden Baustein ab, direkt oder als Slot, ohne Anfrage", async () => {
+    const CLUB_BOUND = ["description", "events_list", "news"];
+    const own = (kind: string) => ({ kind, config: { club_id: clubId } });
+    const cases: Array<[string, JsonValue]> = [];
+    for (const kind of CLUB_BOUND) {
+      cases.push([`${kind} direkt`, [{ widgets: [...CLUB_BOUND.map(own), bound(kind, otherClubId)] }] as unknown as JsonValue]);
+      cases.push([`${kind} als Slot`, [{ widgets: [...CLUB_BOUND.map(own), { kind: "custom_html", config: { html: "<div data-slot=\"x\"></div>", slots: { x: bound(kind, otherClubId) } } }] }] as unknown as JsonValue]);
+    }
+    for (const [name, sections] of cases) {
+      const calls: ComvenioApiRequest[] = [];
+      const client = { timeout_ms: 15_000, async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> { calls.push(request); return answers(request) as T; } } as ComvenioApiClient;
+      const error = await failure(assertOwnClubPage(client, { club_id: clubId, community_id: communityId, tab_id: tabId, sections }, context));
+      expect([name, error.code]).toEqual([name, "TENANT_MISMATCH"]);
+      expect([name, calls.length]).toEqual([name, 0]);
+    }
+    const calls: ComvenioApiRequest[] = [];
+    const client = { timeout_ms: 15_000, async request<T extends JsonValue>(request: ComvenioApiRequest): Promise<T> { calls.push(request); return answers(request) as T; } } as ComvenioApiClient;
+    await assertOwnClubPage(client, { club_id: clubId, community_id: communityId, tab_id: tabId, sections: skeleton(clubId) as unknown as JsonValue }, context);
+    expect(calls.map(route)).toEqual([`GET /clubs/${clubId}/community-pages`]);
   });
 });
