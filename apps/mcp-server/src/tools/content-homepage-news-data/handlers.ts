@@ -146,6 +146,10 @@ add("cai.community.06.club_page", "create", async (input, context, client) => re
 export async function assertOwnClubPage(client: ComvenioApiClient, inputValue: JsonValue, context: RequestContext): Promise<void> {
   const input = record(inputValue);
   const tabId = string(input, "tab_id");
+  // Building blocks bound to a club (schemas.ts CLUB_BOUND_KINDS) only to the club of the sign-in.
+  if (clubIds(input.sections ?? []).some((id) => id !== string(input, "club_id"))) {
+    throw createConnectorError({ code: "TENANT_MISMATCH", message: "Ein Baustein ist an einen anderen Verein gebunden.", request_id: context.request_id, retryable: false });
+  }
   if (!(await ownClubPages(client, context, input)).some((page) => page.id === tabId)) {
     throw createConnectorError({ code: "TENANT_MISMATCH", message: "Dieser Reiter ist keine Seite des verbundenen Vereins in dieser Community.", request_id: context.request_id, retryable: false });
   }

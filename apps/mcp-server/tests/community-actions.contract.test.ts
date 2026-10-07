@@ -420,4 +420,37 @@ describe("cai.community.06.club_page — Vereinsseiten (15)", () => {
     expect(schema.safeParse({ club_id: clubId, operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections: [], fremd: 1 }).success).toBe(false);
     expect(schema.safeParse({ club_id: clubId, operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections: [{ widgets: [{ kind: "text", config: { content: "<script>x</script>" } }] }] }).success).toBe(false);
   });
+
+  // The template "vereinsseite" binds description, events_list and news to the club
+  // (club-service community_page.py _template_sections); publish must carry that binding.
+  const bound = (kind: string, club: string) => ({ kind, config: { club_id: club } });
+  const skeleton = (club: string) => [{ widgets: [
+    bound("events_list", club),
+    { kind: "custom_html", config: { html: "<div data-slot=\"profil\"></div><div data-slot=\"news\"></div>", slots: { profil: { kind: "description", config: { club_id: club, content: "<p>Verein</p>" } }, news: { kind: "news", config: { club_id: club, limit: 3 } } } } },
+  ] }];
+
+  test("Vereinsbindung: club_id der Vorlagenbausteine nur in club_page publish, nicht bei anderen Arten oder allgemeinen Seiten", () => {
+    const publish = (sections: JsonValue) => K12_ACTION_SCHEMAS["cai.community.06.club_page"].input.safeParse({ club_id: clubId, operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 1, base: {}, sections });
+    expect(publish(skeleton(clubId) as unknown as JsonValue).success).toBe(true);
+    expect(publish([{ widgets: [bound("text", clubId)] }] as unknown as JsonValue).success).toBe(false);
+    expect(publish([{ widgets: [bound("news", "kein-verein")] }] as unknown as JsonValue).success).toBe(false);
+    const preview = (config: JsonValue) => K12_ACTION_SCHEMAS["cai.community.02.preview"].input.safeParse({ club_id: clubId, community_id: communityId, tabs: [{ label: "Start", slug: "start", sections: [{ widgets: [{ kind: "news", config }] }] }] });
+    expect(preview({ limit: 3 }).success).toBe(true);
+    expect(preview({ limit: 3, club_id: clubId }).success).toBe(false);
+  });
+
+  test("Vereinsbindung: Bausteine des eigenen Vereins werden veröffentlicht, ein fremder Verein → TENANT_MISMATCH, nichts gesendet", async () => {
+    const own = service([clubId], answers);
+    const input = { operation: "publish", community_id: communityId, tab_id: tabId, expected_tab_version: 2, base: { sections: { [sectionId]: 3 }, widgets: { [widgetId]: 5 } }, sections: skeleton(clubId) };
+    const preview = ((await own.run("cai.community.06.club_page", input as unknown as Record<string, JsonValue>)).result as { preview: { preview_id: string; confirmation_token: string } }).preview;
+    await own.run("cai.community.06.club_page", { ...input, confirmation: { preview_id: preview.preview_id, confirmation_token: preview.confirmation_token } } as unknown as Record<string, JsonValue>);
+    expect(own.writes().map(route)).toEqual([`POST /home-config/${communityId}/tabs/${tabId}/publish`]);
+    const sent = JSON.stringify(own.writes()[0]!.body);
+    expect(sent).toContain(`"club_id":"${clubId}"`);
+
+    const foreign = service([clubId], answers);
+    const error = await failure(foreign.run("cai.community.06.club_page", { ...input, sections: skeleton(otherClubId) } as unknown as Record<string, JsonValue>));
+    expect(error.code).toBe("TENANT_MISMATCH");
+    expect(foreign.writes()).toHaveLength(0);
+  });
 });
