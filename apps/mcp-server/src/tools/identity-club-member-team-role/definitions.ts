@@ -516,6 +516,12 @@ export const K7_ACTION_DEFINITIONS: Readonly<Record<K7ActionId, K7ActionDefiniti
     permission: policy([], "optional", true), risk: "critical_write",
     routes: [route(null, "POST", "event", "/team-seasons/{team_season_id}/termine")],
   }),
+  // Change one hand-made termin; the service rebuilds the title with the team prefix.
+  "cai.teams.32.termin_update": definition({
+    action_id: "cai.teams.32.termin_update", domain: "teams", source_action: "termin update", scopes: CLUB_WRITE,
+    permission: policy([], "optional", true), risk: "critical_write",
+    routes: [route(null, "PATCH", "event", "/team-seasons/{team_season_id}/termine/{event_id}")],
+  }),
 
   "cai.role.01.list": definition({
     action_id: "cai.role.01.list", domain: "role", source_action: "list", scopes: CLUB_READ,

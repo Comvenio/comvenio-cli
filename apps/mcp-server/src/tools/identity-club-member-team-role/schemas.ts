@@ -655,6 +655,21 @@ const terminInput = z.object({
     until: date.optional(),
   }).strict().optional(),
 }).strict().refine((t) => t.kind !== "MATCH" || Boolean(t.opponent), { message: "Ein Spiel braucht einen Gegner." });
+// PATCH …/termine/{event_id}: only the fields sent change. A match title is always rebuilt
+// from opponent and home state; other kinds rebuild it when `title` is sent.
+const terminUpdateInput = z.object({
+  title: z.string().trim().max(200).nullable().optional(),
+  opponent: z.string().trim().min(1).max(200).optional(),
+  home_state: z.enum(["HOME", "AWAY"]).optional(),
+  competition_id: uuid.nullable().optional(),
+  start_time: isoDateTime.optional(),
+  end_time: isoDateTime.optional(),
+  location: z.string().trim().max(500).nullable().optional(),
+  note: z.string().trim().max(2_000).nullable().optional(),
+  visibility: z.enum(["public", "member", "department", "private"]).optional(),
+  announce_general: z.boolean().optional(),
+  scope: z.enum(["THIS", "FOLLOWING"]).optional(),
+}).strict();
 const terminOutput = z.object({
   event_id: uuid,
   series_id: uuid.nullable().optional(),
@@ -1077,6 +1092,10 @@ export const K7_ACTION_SCHEMAS: Readonly<Record<K7ActionId, K7ActionSchemaContra
   "cai.teams.30.termin_list": contract(entityContext("team_season_id"), z.array(seasonEventOutput)),
   "cai.teams.31.termin_create": contract(
     z.object({ club_id: uuid, team_season_id: uuid, termin: terminInput }).strict(),
+    terminOutput,
+  ),
+  "cai.teams.32.termin_update": contract(
+    z.object({ club_id: uuid, team_season_id: uuid, event_id: uuid, termin: terminUpdateInput }).strict(),
     terminOutput,
   ),
 

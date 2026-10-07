@@ -202,9 +202,10 @@ describe("Comvenio connector inventory contract", () => {
     // +1 club font upload of the design contract (cai.club.15.font_upload),
     // +5 community page through the club of the sign-in (community-hub 14, cai.community.01..05),
     // +10 automations over OAuth (automatisierungen-07, cai.club.16..25),
-    // +1 own club pages in a community (community-hub 15, cai.community.06.club_page).
-    expect(directActionIds).toHaveLength(400);
-    expect(new Set(directActionIds).size).toBe(400);
+    // +1 own club pages in a community (community-hub 15, cai.community.06.club_page),
+    // +1 change a team termin over OAuth (cai.teams.32.termin_update, team prefix in old titles).
+    expect(directActionIds).toHaveLength(401);
+    expect(new Set(directActionIds).size).toBe(401);
     expect(additiveActionIds).toEqual([
       // Wochenvorschau (ai-service): the classic command ran on the device token only.
       "cai.club.11.weekly_preview_create",
@@ -334,6 +335,7 @@ describe("Comvenio connector inventory contract", () => {
       // Mannschaftstermine 05: the season's termine over the OAuth grant.
       "cai.teams.30.termin_list",
       "cai.teams.31.termin_create",
+      "cai.teams.32.termin_update",
     ]);
     expect(candidateActionIds
       .filter((actionId) => !RETIRED_LEGACY_ACTION_IDS.has(actionId))
@@ -345,8 +347,8 @@ describe("Comvenio connector inventory contract", () => {
     expect(Object.keys(definitions).sort()).toEqual([...directActionIds].sort());
     expect(Object.keys(schemas).sort()).toEqual([...directActionIds].sort());
     expect(summary).toMatchObject({
-      discovered_actions: 400,
-      published_domain_actions: 398,
+      discovered_actions: 401,
+      published_domain_actions: 399,
       blocked_action_ids: [
         "cai.club.01.info",
         "cai.role.15.effective",
@@ -517,10 +519,10 @@ function k7Dependencies(client: ComvenioApiClient): K7ExecutionDependencies {
 }
 
 describe("K7 identity, club, member, team and role contract", () => {
-  test("TC-01/TC-02: maps all six domains and exactly 100 inventoried actions", () => {
-    expect(K7_ACTION_IDS).toHaveLength(100);
-    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(100);
-    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(100);
+  test("TC-01/TC-02: maps all six domains and exactly 101 inventoried actions", () => {
+    expect(K7_ACTION_IDS).toHaveLength(101);
+    expect(Object.keys(K7_ACTION_DEFINITIONS)).toHaveLength(101);
+    expect(Object.keys(K7_ACTION_SCHEMAS)).toHaveLength(101);
 
     const sets = createK7ToolSets(k7Dependencies(k7Client(async () => null)));
     expect({
@@ -530,7 +532,7 @@ describe("K7 identity, club, member, team and role contract", () => {
       team: sets.team.listDefinitions().length,
       teams: sets.teams.listDefinitions().length,
       role: sets.role.listDefinitions().length,
-    }).toEqual({ identity: 1, club: 25, member: 21, team: 7, teams: 31, role: 15 });
+    }).toEqual({ identity: 1, club: 25, member: 21, team: 7, teams: 32, role: 15 });
     expect(K7_ACTION_IDS.some((id) => /login|logout|log_service|master.?admin/iu.test(id))).toBe(false);
   });
 

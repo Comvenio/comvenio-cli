@@ -568,6 +568,12 @@ const handlers: Partial<Record<K7ActionId, K7ActionHandler>> = {
         body: nested(input, "termin"),
       });
   },
+  async "cai.teams.32.termin_update"(input, context, client) {
+    return request(client, context, "PATCH", "event",
+      `/team-seasons/${string(input, "team_season_id")}/termine/${string(input, "event_id")}`, {
+        body: nested(input, "termin"),
+      });
+  },
 
   async "cai.role.01.list"(input, context, client) {
     return request(client, context, "GET", "role", `/roles/by-club/${string(input, "club_id")}`);
