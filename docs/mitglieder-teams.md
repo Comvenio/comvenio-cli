@@ -226,7 +226,8 @@ Bestätigung möglich; alles, was ändert, ist kritisch und läuft über Vorscha
    bei einem Spiel immer aus Gegner und Heimrecht neu, auch wenn `termin` leer ist;
    bei den anderen Arten nur, wenn `title` mitkommt. Er steht dann mit dem Mannschaftsnamen davor
    („F-Jugend: …“). Bei einem Serientermin gilt `scope`: `THIS` ändert dieses Vorkommen — Gegner,
-   Heimrecht, Wettbewerb und Ankündigung gehören aber zur ganzen Serie und ändern sich dort mit;
+   Heimrecht, Wettbewerb und Ankündigung gehören aber zur ganzen Serie: Ein geänderter Wert wird mit
+   `THIS` abgelehnt (422 `TERMIN_SERIES_FIELD_NEEDS_FOLLOWING`), derselbe Wert geht durch;
    `FOLLOWING` beendet die Serie vor diesem Vorkommen und legt ab hier eine neue an, die Folgetermine
    bekommen dabei neue Kennungen. Zeitpunkte als ISO-Zeitpunkt mit Zeitzone, etwa
    `2026-09-12T15:00:00+02:00` für 15 Uhr deutscher Sommerzeit. Welche Saison gerade läuft, zeigt

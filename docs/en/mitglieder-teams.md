@@ -222,8 +222,8 @@ changes data is critical and goes through a preview and `comvenio action confirm
    and home/away). For a match the service always rebuilds the title from opponent and home/away, even
    when `termin` is empty; for the other kinds only when `title` is sent. The team name then stands in
    front ("F-Jugend: …"). For a series appointment `scope` applies: `THIS` changes this occurrence —
-   opponent, home/away, competition and announcement belong to the whole series, though, and change
-   there too; `FOLLOWING` ends the series before this occurrence and starts a new one from here, the
+   opponent, home/away, competition and announcement belong to the whole series, though: a changed
+   value is rejected with `THIS` (422 `TERMIN_SERIES_FIELD_NEEDS_FOLLOWING`), the same value passes; `FOLLOWING` ends the series before this occurrence and starts a new one from here, the
    following appointments get new ids. Times are ISO timestamps with a time zone, for example
    `2026-09-12T15:00:00+02:00` for 3 pm Central European Summer Time. The running season is shown by
    `cai.teams.06.season_list` (status `AKTIV`); its `id` is the `team_season_id`.
