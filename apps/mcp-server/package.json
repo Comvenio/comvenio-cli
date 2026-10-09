@@ -18,7 +18,7 @@
     "@comvenio/kundendoku": "workspace:*",
     "@comvenio/tool-catalog": "workspace:*",
     "@modelcontextprotocol/ext-apps": "1.7.4",
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
     "bullmq": "5.80.9",
     "express": "^5.2.1",
     "ioredis": "5.11.1",
