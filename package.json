@@ -29,6 +29,7 @@
     "gen:web-app-fuehrung": "bun run scripts/gen-web-app-fuehrung.ts",
     "gen:web-app-fuehrung:check": "bun run scripts/gen-web-app-fuehrung.ts --check",
     "check:docs": "bun run scripts/check-docs.ts",
+    "check:submissions": "bun run gen:openai-submission:check && bun run gen:anthropic-submission:draft:check && bun run gen:connector-release:check",
     "probelauf": "bun run scripts/probelauf-lauf.ts",
     "gen:connector-inventory": "bun run scripts/import-connector-inventory.ts",
     "gen:connector-inventory:check": "bun run scripts/import-connector-inventory.ts --check",
