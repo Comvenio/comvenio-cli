@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "commands": [
+    { "id": "typecheck", "kind": "build", "program": "npm.cmd", "args": ["run", "typecheck"], "required": true, "timeoutSeconds": 300, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "test-cli", "kind": "test", "program": "npm.cmd", "args": ["run", "test:cli"], "required": true, "timeoutSeconds": 600, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "test-mcp", "kind": "test", "program": "npm.cmd", "args": ["run", "test:mcp"], "required": true, "timeoutSeconds": 600, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "test-contracts", "kind": "test", "program": "npm.cmd", "args": ["run", "test:contracts"], "required": true, "timeoutSeconds": 600, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "check-docs", "kind": "custom", "program": "npm.cmd", "args": ["run", "check:docs"], "required": true, "timeoutSeconds": 300, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "check-submissions", "kind": "custom", "program": "npm.cmd", "args": ["run", "check:submissions"], "required": true, "timeoutSeconds": 300, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "build-cli", "kind": "build", "program": "npm.cmd", "args": ["run", "build"], "required": true, "timeoutSeconds": 600, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] },
+    { "id": "build-mcp", "kind": "build", "program": "npm.cmd", "args": ["run", "build:mcp"], "required": true, "timeoutSeconds": 600, "changedFileExtensions": ["ts", "tsx", "js", "jsx"] }
+  ]
+}
