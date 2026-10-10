@@ -230,7 +230,7 @@ comvenio action call cai.club.10.department_delete \
 # Antwort enthält preview_id und confirmation_token
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <token> \
+  --confirmation-token=<token> \
   --idempotency-key <key>
 ```
 

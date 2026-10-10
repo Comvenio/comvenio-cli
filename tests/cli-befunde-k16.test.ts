@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { z } from "zod";
+import { cac } from "cac";
+import { registerActionCommands } from "../src/commands/action.ts";
 
 import { formatActionDescription, formatCallText, inputVariants, saveScreenshots } from "../src/commands/action-output.ts";
 import { formatCliError, toPublicError } from "../src/errors.ts";
@@ -71,7 +73,23 @@ describe("(b) confirm with the same idempotency key", () => {
       status: "confirmation_required",
       confirmation: { preview_id: "p-1", confirmation_token: "tok", idempotency_key: "k-1" },
     }, "k-1");
-    expect(text).toContain("comvenio action confirm --preview-id p-1 --confirmation-token tok --idempotency-key k-1");
+    expect(text).toContain("comvenio action confirm --preview-id p-1 --confirmation-token=tok --idempotency-key k-1");
+  });
+
+  test.each(["-token_123", "--token_123", "token_123"])("printed command preserves token %s in the real parser", (token) => {
+    const text = formatCallText({
+      status: "confirmation_required",
+      confirmation: { preview_id: "p-1", confirmation_token: token, idempotency_key: "k-1" },
+    }, "k-1");
+    const command = text.split("\n").find((line) => line.trimStart().startsWith("comvenio action confirm"));
+    expect(command).toBeDefined();
+    const cli = cac("comvenio");
+    registerActionCommands(cli);
+    const parsed = cli.parse(["bun", ...command!.trim().split(/\s+/u)], { run: false });
+    expect(parsed.options.confirmationToken).toBe(token);
+    expect(parsed.options.idempotencyKey).toBe("k-1");
+    expect(cli.matchedCommand?.name).toBe("action");
+    expect(parsed.args).toEqual(["confirm"]);
   });
 
   test("a write without confirmation still names its key", () => {

@@ -128,7 +128,7 @@
       "message": "This action must be confirmed first.",
       "cause": "Critical actions only run after a preview and your explicit confirmation."
     },
-    "next_command": "comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>",
+    "next_command": "comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>",
     "help": "fehler/confirmation-required"
   },
   "CONFIRMATION_EXPIRED": {

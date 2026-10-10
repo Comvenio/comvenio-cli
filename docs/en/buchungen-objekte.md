@@ -34,7 +34,7 @@ Sign in with `comvenio login`; which actions your club enables and which scopes 
 
 Every sub-action of a multi-part action is selected with `"operation": "<name>"` in `--input`. A
 critical (`critical_write`) sub-action first returns a preview with a `preview_id` and
-`confirmation_token`; only `comvenio action confirm --preview-id … --confirmation-token …
+`confirmation_token`; only `comvenio action confirm --preview-id … --confirmation-token=…
 --idempotency-key …` executes it.
 
 ## Workflows
@@ -60,7 +60,7 @@ comvenio action call cai.object.06.building_list_show_create_update_delete \
 
 comvenio action call cai.object.06.building_list_show_create_update_delete \
   --input '{"operation":"delete","building_id":"<building-id>","force":true}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -76,7 +76,7 @@ comvenio action call cai.object.07.room_list_show_create_update_delete \
 
 comvenio action call cai.object.07.room_list_show_create_update_delete \
   --input '{"operation":"delete","room_id":"<room-id>","force":true}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -97,7 +97,7 @@ comvenio action call cai.object.03.create \
   --input '{"department_id":"<department-id>","room_id":"<room-id>","is_default":false,"object":{"name":"Dartboard 1","description":"Board at lane 1","type":"static","booking_granularity":"30min","min_duration_minutes":30,"max_duration_minutes":180,"approval_required":false,"max_participants":8}}' --json
 
 comvenio action call cai.object.05.delete --input '{"object_id":"<object-id>","force":true}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -117,7 +117,7 @@ comvenio action call cai.object.08.booking_rule_list_show_create_bulk_update_del
 
 comvenio action call cai.object.08.booking_rule_list_show_create_bulk_update_delete \
   --input '{"operation":"delete","rule_id":"<rule-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.object.09.task_rule_list_show_create_update_delete \
@@ -143,16 +143,16 @@ comvenio action call cai.booking.02.show --input '{"reservation_id":"<reservatio
 
 comvenio action call cai.booking.03.create \
   --input '{"object_id":"<object-id>","title":"Darts training","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","comment":"League preparation"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.booking.05.approve --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.booking.07.cancel \
   --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>","reason":"Court closed"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -167,7 +167,7 @@ in a single bulk run — critical.
 ```bash
 comvenio action call cai.booking.09.bulk \
   --input '{"object_id":"<main-object-id>","title":"Darts training","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","group_ids":["<group-id>"],"portable_reservations":[{"object_id":"<portable-object-id>","start_time":"2026-07-21T17:45:00+02:00","end_time":"2026-07-21T20:15:00+02:00","title":"Mobile board"}]}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -242,7 +242,7 @@ Create an object and delete it with a forced cascade:
 comvenio action call cai.object.03.create \
   --input '{"department_id":"<department-id>","room_id":"<room-id>","is_default":false,"object":{"name":"Dartboard 1","description":"Board at lane 1","type":"static","booking_granularity":"30min","min_duration_minutes":30,"max_duration_minutes":180,"approval_required":false,"max_participants":8}}' --json
 comvenio action call cai.object.05.delete --input '{"object_id":"<object-id>","force":true}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -258,11 +258,11 @@ Create, approve and cancel a booking:
 ```bash
 comvenio action call cai.booking.03.create \
   --input '{"object_id":"<object-id>","title":"Darts training","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","comment":"League preparation"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.booking.05.approve --input '{"reservation_id":"<reservation-id>","object_id":"<object-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -271,7 +271,7 @@ Bulk booking with a portable object:
 ```bash
 comvenio action call cai.booking.09.bulk \
   --input '{"object_id":"<main-object-id>","title":"Darts training","start_time":"2026-07-21T18:00:00+02:00","end_time":"2026-07-21T20:00:00+02:00","timezone":"Europe/Berlin","status":"requested","group_ids":["<group-id>"],"portable_reservations":[{"object_id":"<portable-object-id>","start_time":"2026-07-21T17:45:00+02:00","end_time":"2026-07-21T20:15:00+02:00","title":"Mobile board"}]}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 

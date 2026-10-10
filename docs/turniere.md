@@ -27,7 +27,7 @@ zeigt `comvenio action list --json`.
   sich statt `--input '<json>'` auch mit `--file <pfad>` übergeben.
 
 Eine kritische (`critical_write`) Action liefert zuerst eine Vorschau mit `preview_id` und
-`confirmation_token`; erst `comvenio action confirm --preview-id … --confirmation-token …
+`confirmation_token`; erst `comvenio action confirm --preview-id … --confirmation-token=…
 --idempotency-key …` führt sie aus.
 
 ## Abläufe
@@ -48,7 +48,7 @@ comvenio action call cai.tournament.04.series_update \
   --input '{"series_id":"<series-id>","changes":{"is_public":false}}' --json
 
 comvenio action call cai.tournament.05.series_delete --input '{"series_id":"<series-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -87,11 +87,11 @@ comvenio action call cai.tournament.10.update \
 
 comvenio action call cai.tournament.12.status \
   --input '{"tournament_id":"<tournament-id>","status":"registration"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.tournament.19.start --input '{"tournament_id":"<tournament-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -116,14 +116,14 @@ comvenio action call cai.tournament.15.participant \
 
 comvenio action call cai.tournament.16.participant_withdraw \
   --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>","mode":"walkover"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.tournament.17.participant_reinstate \
   --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>"}' --json
 comvenio action call cai.tournament.18.participant_remove \
   --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -142,12 +142,12 @@ comvenio action call cai.tournament.26.draw \
   --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual","fixed_assignments":[{"participant_id":"<id-1>","group_key":"A"},{"participant_id":"<id-2>","group_key":"B"}],"knockout_config":{"qualified_per_group":2,"third_place_match":true,"play_all_placements":false,"placement_mode":"direct"}}}' --json
 
 comvenio action call cai.tournament.27.draw_confirm --input '{"tournament_id":"<tournament-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.tournament.23.redraw \
   --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual"}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -173,18 +173,18 @@ comvenio action call cai.tournament.28.schedule_generate \
 
 comvenio action call cai.tournament.28.schedule_generate \
   --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":false}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.tournament.29.match_schedule \
   --input '{"match_id":"<match-id>","starts_at":"2026-09-05T10:00:00+02:00","ends_at":"2026-09-05T10:15:00+02:00","location":"Board 1","match_number":1,"schedule_status":"proposed"}' --json
 
 comvenio action call cai.tournament.30.match_delete --input '{"match_id":"<match-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 comvenio action call cai.tournament.21.matches_clear \
   --input '{"tournament_id":"<tournament-id>","phase":"group"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -237,7 +237,7 @@ comvenio action call cai.tournament.24.standings --input '{"tournament_id":"<tou
 
 comvenio action call cai.tournament.25.preview \
   --input '{"tournament_id":"<tournament-id>","output_format":"html"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -266,7 +266,7 @@ comvenio action call cai.tournament.14.mannschaft \
 
 comvenio action call cai.tournament.16.participant_withdraw \
   --input '{"tournament_id":"<tournament-id>","participant_id":"<participant-id>","mode":"walkover"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -276,7 +276,7 @@ Auslosen und bestätigen:
 comvenio action call cai.tournament.26.draw \
   --input '{"tournament_id":"<tournament-id>","draw_plan":{"strategy":"manual","fixed_assignments":[{"participant_id":"<id-1>","group_key":"A"},{"participant_id":"<id-2>","group_key":"B"}],"knockout_config":{"qualified_per_group":2,"third_place_match":true,"play_all_placements":false,"placement_mode":"direct"}}}' --json
 comvenio action call cai.tournament.27.draw_confirm --input '{"tournament_id":"<tournament-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -287,7 +287,7 @@ comvenio action call cai.tournament.28.schedule_generate \
   --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":true}' --json
 comvenio action call cai.tournament.28.schedule_generate \
   --input '{"tournament_id":"<tournament-id>","match_minutes":15,"break_minutes":3,"field_count":2,"first_kickoff":"2026-09-05T10:00:00+02:00","dry_run":false}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 

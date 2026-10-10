@@ -25,7 +25,7 @@ Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche S
 
 1. `cai.role.06.permission_defs` liefert die verfügbaren Berechtigungs-Schlüssel; `cai.role.08.permissions_show_apply` mit `operation: show` die aktuelle Matrix einer Rolle.
 2. `cai.role.07.permission_set` ändert genau einen Wert gezielt (`permission_key`, `allowed`) — `reversible_write`.
-3. `cai.role.08.permissions_show_apply` mit `operation: apply` wendet eine ganze Matrix (`values`) an; ohne `replace` ist das additiv, nur gelieferte Schlüssel werden geändert, mit `replace: true` setzt es alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt". Beide Ausprägungen dieser Action sind laut Freigabeliste `critical_write`: Der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Änderung aus und sichert sie gegen zwischenzeitliche parallele Änderungen ab.
+3. `cai.role.08.permissions_show_apply` mit `operation: apply` wendet eine ganze Matrix (`values`) an; ohne `replace` ist das additiv, nur gelieferte Schlüssel werden geändert, mit `replace: true` setzt es alle nicht gelieferten Schlüssel ausdrücklich auf „nicht erlaubt". Beide Ausprägungen dieser Action sind laut Freigabeliste `critical_write`: Der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` mit diesen Werten führt die Änderung aus und sichert sie gegen zwischenzeitliche parallele Änderungen ab.
 
 ### Rolle direkt zuweisen (`cai.role.09.assign`)
 
@@ -58,7 +58,7 @@ comvenio action call cai.role.05.delete --input '{"role_id":"<role-id>"}'
 # Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 
@@ -84,7 +84,7 @@ comvenio action call cai.role.08.permissions_show_apply --input '{
 # Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 

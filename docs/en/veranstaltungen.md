@@ -42,14 +42,14 @@ A `403` means the permission is missing. A `404` can intentionally appear instea
 
 1. Create a template: `comvenio action call cai.event.07.template_list_create_clone_instantiate --input '{"operation":"create","template":{"department_id":"<department-id>","title":"Darttraining","event_type":"training","visibility_scope":"member","organizer_type":"member","description":"Wöchentliches Training"}}'`.
 2. Define a series from the template: `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"create","series":{"name":"Darttraining Mittwoch","department_id":"<department-id>","event_type":"training","visibility_scope":"member","timezone":"Europe/Berlin","rrule":"FREQ=WEEKLY;BYDAY=WE","dtstart":"2026-01-07T19:00:00+01:00","duration_minutes":120}}'`. The recurrence is an RRULE in `rrule` (e.g. `FREQ=WEEKLY;BYDAY=WE`), no longer separate frequency/weekday flags.
-3. Materialize a concrete time range: a call without confirmation returns a preview — `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"materialize","series_id":"<series-id>","range":{"from":"2026-01-01","to":"2026-03-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}'`. Check the preview, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `materialize` is idempotent and skips existing dates.
+3. Materialize a concrete time range: a call without confirmation returns a preview — `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"materialize","series_id":"<series-id>","range":{"from":"2026-01-01","to":"2026-03-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}'`. Check the preview, then `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `materialize` is idempotent and skips existing dates.
 
 ### Create and publish a single event
 
 1. Create an event: `comvenio action call cai.event.03.create --input '{"event":{"department_id":"<department-id>","title":"Sommerfest","event_type":"party","visibility_scope":"public","organizer_type":"member","start_time":"2026-08-15T16:00:00+02:00","end_time":"2026-08-16T01:00:00+02:00","description":"Sommerfest am Vereinsheim","location":"Vereinsheim","event_complexity":"simple"}}'`.
 2. Read an event: `comvenio action call cai.event.02.show --input '{"event_id":"<event-id>"}'`. List events (the time range is required): `comvenio action call cai.event.01.list --input '{"range":{"from":"2026-08-01","to":"2026-09-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true},"limit":50}'`.
 3. Update an event: `comvenio action call cai.event.04.update --input '{"event_id":"<event-id>","changes":{"description":"Neuer Text"}}'`.
-4. Publish an event (critical — preview first, then confirmation): `comvenio action call cai.event.05.publish --input '{"event_id":"<event-id>","make_public":true}'`, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `publish` sets `status=confirmed`; `make_public=true` also sets `visibility_scope=public`.
+4. Publish an event (critical — preview first, then confirmation): `comvenio action call cai.event.05.publish --input '{"event_id":"<event-id>","make_public":true}'`, then `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `publish` sets `status=confirmed`; `make_public=true` also sets `visibility_scope=public`.
 5. Delete an event (critical): `comvenio action call cai.event.06.delete --input '{"event_id":"<event-id>"}'`, then `comvenio action confirm …`.
 
 ### Multi-day festivals with festival days
@@ -97,7 +97,7 @@ A `403` means the permission is missing. A `404` can intentionally appear instea
 
 ### Site plan
 
-Site plans are event functionality, but their own action domain because of their scope. Read and simple write operations (`list`, `show`, `create`, `update`, `link`, `duplicate`) run directly; critical operations (`delete`, `unlink`, `export`, `illustrate`, `compose`) return a preview first, then `comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …`.
+Site plans are event functionality, but their own action domain because of their scope. Read and simple write operations (`list`, `show`, `create`, `update`, `link`, `duplicate`) run directly; critical operations (`delete`, `unlink`, `export`, `illustrate`, `compose`) return a preview first, then `comvenio action confirm --preview-id … --confirmation-token=… --idempotency-key …`.
 
 ```bash
 comvenio action call cai.plan.01.list --input '{"event_id":"<event-id>"}'
