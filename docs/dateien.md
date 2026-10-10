@@ -72,7 +72,7 @@ Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 - `cai.data.09.move` verschiebt eine Datei in einen anderen Ordner; `target_folder_id: null` verschiebt sie auf die oberste Ebene.
 - `cai.data.10.visibility` setzt die Sichtbarkeit über `operation`: `private` ist ein normaler Schreibzugriff, `public` gilt als `critical_write`.
-- `cai.data.07.delete` verschiebt eine Datei standardmäßig in den Papierkorb (`operation: soft_delete`); endgültiges Löschen (`operation: hard_delete`) ist `critical_write` und nicht rückgängig zu machen — der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Löschung aus.
+- `cai.data.07.delete` verschiebt eine Datei standardmäßig in den Papierkorb (`operation: soft_delete`); endgültiges Löschen (`operation: hard_delete`) ist `critical_write` und nicht rückgängig zu machen — der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` mit diesen Werten führt die Löschung aus.
 - `cai.data.08.restore` holt eine weich gelöschte Datei zurück.
 - `cai.data.11.stats` liefert Speicherverbrauch je Verein oder je Abteilung.
 - `cai.data.12.empty_trash` (`critical_write`) leert den Papierkorb einer Abteilung gezielt und läuft über dieselbe Vorschau-/Bestätigungsfolge.
@@ -151,7 +151,7 @@ comvenio action call cai.data.07.delete --input '{"operation":"hard_delete","fil
 # Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 
 comvenio action call cai.data.11.stats --input '{}'

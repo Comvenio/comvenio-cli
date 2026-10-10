@@ -43,7 +43,7 @@ comvenio action call cai.member.03.add \
 comvenio action call cai.member.04.update \
   --input '{"member_id":"<member-id>","changes":{"phone_number":"+49 123 456789"}}' --json
 comvenio action call cai.member.05.remove --input '{"member_id":"<member-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -59,7 +59,7 @@ Zeitraum-Abläufe unten.
 
 ```bash
 comvenio action call cai.member.06.import --input '{"file_id":"<file-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -77,7 +77,7 @@ comvenio action call cai.member.09.family_add \
 comvenio action call cai.member.10.family_update \
   --input '{"family_id":"<family-id>","changes":{"notes":"Neue Notiz"}}' --json
 comvenio action call cai.member.11.family_delete --input '{"family_id":"<family-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -96,7 +96,7 @@ comvenio action call cai.member.14.status_add \
 comvenio action call cai.member.15.status_update \
   --input '{"status_id":"<status-id>","changes":{"priority":80}}' --json
 comvenio action call cai.member.16.status_delete --input '{"status_id":"<status-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -117,7 +117,7 @@ comvenio action call cai.member.19.period_add \
 comvenio action call cai.member.20.period_update \
   --input '{"period_id":"<period-id>","changes":{"left_at":"2026-06-30","reason":"Kündigung"}}' --json
 comvenio action call cai.member.21.period_delete --input '{"period_id":"<period-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -135,7 +135,7 @@ comvenio action call cai.team.03.create \
 comvenio action call cai.team.04.update \
   --input '{"team_id":"<team-id>","changes":{"name":"Dart Erste","home_location":"Vereinsheim","required_resource_count":3}}' --json
 comvenio action call cai.team.05.delete --input '{"team_id":"<team-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -150,12 +150,12 @@ verlangt eine Bestätigung.
 ```bash
 comvenio action call cai.team.06.member_list_add_update_remove \
   --input '{"operation":"list","team_id":"<team-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.team.06.member_list_add_update_remove \
   --input '{"operation":"add","team_id":"<team-id>","member_id":"<member-id>","role":"PLAYER"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.team.06.member_list_add_update_remove \
@@ -176,12 +176,12 @@ diese Action ist als Ganzes kritisch — jede Teilaktion verlangt Vorschau und B
 ```bash
 comvenio action call cai.team.07.resource_list_add_update_remove \
   --input '{"operation":"list","team_id":"<team-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.team.07.resource_list_add_update_remove \
   --input '{"operation":"add","team_id":"<team-id>","object_id":"<object-id>","priority":1,"booking_duration_minutes":120,"notes":"Dienstagstraining"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 
@@ -238,12 +238,12 @@ comvenio action call cai.teams.06.season_list --input '{"team_id":"<team-id>"}' 
 
 comvenio action call cai.teams.12.roster_add \
   --input '{"team_season_id":"<saison-id>","member_id":"<member-id>","role":"CAPTAIN","jersey_number":7}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.teams.07.season_create \
   --input '{"team_id":"<team-id>","season":{"name":"Saison 2026/27","starts_on":"2026-08-01","ends_on":"2027-06-30"}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.teams.31.termin_create \
@@ -294,12 +294,12 @@ comvenio action call cai.team.03.create \
 
 comvenio action call cai.team.06.member_list_add_update_remove \
   --input '{"operation":"add","team_id":"<team-id>","member_id":"<member-id>","role":"PLAYER"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 
 comvenio action call cai.team.07.resource_list_add_update_remove \
   --input '{"operation":"add","team_id":"<team-id>","object_id":"<object-id>","priority":1,"booking_duration_minutes":120,"notes":"Dienstagstraining"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <schlüssel> --json
 ```
 

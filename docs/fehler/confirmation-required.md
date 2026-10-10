@@ -16,4 +16,6 @@ Diese Aktion muss zuerst bestätigt werden.
 
 ## Lösung
 
-1. Mit den Werten aus der Vorschau bestätigen: `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`
+1. Mit den Werten aus der Vorschau bestätigen: `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`
+
+Das Token direkt mit `--confirmation-token=<token>` übergeben. Das Gleichheitszeichen erhält auch Tokens, die mit einem Bindestrich beginnen.

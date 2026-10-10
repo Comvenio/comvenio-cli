@@ -103,7 +103,7 @@ export function formatCallText(result: Json, idempotencyKey: string | undefined)
       "",
       "Bestätigen (derselbe Idempotenzschlüssel wie beim Aufruf):",
       `  comvenio action confirm --preview-id ${confirmation.preview_id} `
-        + `--confirmation-token ${confirmation.confirmation_token} --idempotency-key ${key}`,
+        + `--confirmation-token=${confirmation.confirmation_token} --idempotency-key ${key}`,
     );
   } else if (key) {
     lines.push("", `Idempotenzschlüssel: ${key} (bei einer Wiederholung unverändert mit --idempotency-key angeben)`);

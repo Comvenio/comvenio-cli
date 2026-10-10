@@ -35,7 +35,7 @@ der jeweiligen Abteilung zu verwalten.
    `confirmation_token`, dazu Lauf- und Plan-ID; der Entwurf selbst entsteht erst mit der
    Bestätigung und liegt danach im Agent-Messenger zur Freigabe.
 5. Vorschau prüfen, dann bestätigen:
-   `comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <schlüssel>`.
+   `comvenio action confirm --preview-id <preview-id> --confirmation-token=<confirmation-token> --idempotency-key <schlüssel>`.
    Der Idempotenzschlüssel macht eine Wiederholung sicher: Bricht die Bestätigung durch
    Zeitüberschreitung ab, hat der Dienst eventuell trotzdem weitergearbeitet — derselbe Schlüssel
    liefert dann denselben Lauf statt einen zweiten.
@@ -55,7 +55,7 @@ Noch nicht als Action verfügbar — in der Web-App erledigen.
 
 ```bash
 comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","range":"next_week","telegram":false}'
-comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <schlüssel>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<confirmation-token> --idempotency-key <schlüssel>
 comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","team_ids":["<team-id-a>","<team-id-b>"],"range":"next_7_days","telegram":true}'
 comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-id>","limit":20}'
 ```

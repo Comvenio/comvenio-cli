@@ -32,7 +32,7 @@ Sign in with `comvenio login`; which actions your club enables and which scopes 
 1. Find images in DataShare, or upload them there first (see [dateien.md](dateien.md)); their file IDs (`cover_image_file_id`, images in the HTML) come from this step.
 2. Compose the news post as an object (`cai.news.03.create` or `cai.news.06.apply`): title, content, teaser, visibility, cover image.
 3. Check the layout preview before anything is saved — `cai.news.07.preview` renders in the real layout and writes nothing.
-4. Create it with `operation: draft` or publish it directly with `operation: publish`. `publish` is `critical_write`: the call first returns only a confirmation preview with `preview_id` and `confirmation_token`; only `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` with these values carries out the publication.
+4. Create it with `operation: draft` or publish it directly with `operation: publish`. `publish` is `critical_write`: the call first returns only a confirmation preview with `preview_id` and `confirmation_token`; only `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` with these values carries out the publication.
 
 Pure preview fields such as a short-lived image address, club name and author name are part of the input to `cai.news.07.preview`, not of the permanent news post itself. Images in the HTML need a stable file identifier in addition to the address, so the application can re-sign an expired address automatically.
 
@@ -100,7 +100,7 @@ comvenio action call cai.news.06.apply --input '{"operation":"publish","news":{"
 # response returns preview_id, confirmation_token, target, current state, diff and risk
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 

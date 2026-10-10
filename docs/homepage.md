@@ -312,7 +312,7 @@ comvenio action call cai.homepage.02.apply \
 # Antwort enthält preview_id und confirmation_token
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <token> \
+  --confirmation-token=<token> \
   --idempotency-key <key>
 
 comvenio action call cai.homepage.03.show --input '{"operation":"public"}' --json
@@ -398,10 +398,10 @@ Nach der Freigabe von Bildern und Vorschau, in dieser Reihenfolge:
 ```bash
 comvenio action call cai.community.05.design \
   --input '{"operation":"update","community_id":"<community-id>","design_settings":{…},"expected_design_version":<design_version aus design show>}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> --idempotency-key <key>
 
 comvenio action call cai.community.03.apply --input "$(cat community-seite-apply.json)" --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> --idempotency-key <key>
 ```
 
 `community-seite-apply.json` enthält dieselben `community_id`, `tabs` und
@@ -439,11 +439,11 @@ comvenio action call cai.community.06.club_page \
 # Seite anlegen — mit Vorlage (Kurzprofil, Termine, News des Vereins) oder leer ("template":"none")
 comvenio action call cai.community.06.club_page \
   --input '{"operation":"create","community_id":"<community-id>","label":"SV Motzing","visibility_scope":"public"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> --idempotency-key <key>
 
 # Seite als Ganzes veröffentlichen: version und base aus show, sections wie im Homepage-Schema
 comvenio action call cai.community.06.club_page --input "$(cat vereinsseite.json)" --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> --idempotency-key <key>
 ```
 
 `vereinsseite.json` enthält `"operation":"publish"`, `community_id`, `tab_id`,

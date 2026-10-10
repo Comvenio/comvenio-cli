@@ -103,7 +103,7 @@ comvenio action call cai.task.06.bulk --input '{
 # response returns preview_id, confirmation_token, target, current state, diff and risk
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 
@@ -117,7 +117,7 @@ comvenio action call cai.task.10.delete --input '{"task_id":"<task-id>"}'
 # response returns preview_id, confirmation_token, target, current state, diff and risk
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 

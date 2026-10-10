@@ -16,4 +16,6 @@ This action must be confirmed first.
 
 ## Solution
 
-1. Confirm with the values from the preview: `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`
+1. Confirm with the values from the preview: `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`
+
+Pass the token directly as `--confirmation-token=<token>`. The equals sign preserves tokens that start with a hyphen.
