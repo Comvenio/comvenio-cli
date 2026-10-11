@@ -2218,6 +2218,25 @@
           "name": "limit"
         },
         {
+          "name": "event_count"
+        },
+        {
+          "name": "per_event"
+        },
+        {
+          "name": "include_feed"
+        },
+        {
+          "name": "shuffle"
+        },
+        {
+          "name": "effect",
+          "values": [
+            "crossfade",
+            "kenburns"
+          ]
+        },
+        {
           "name": "urls"
         },
         {
@@ -2232,7 +2251,8 @@
             "grid",
             "masonry",
             "carousel",
-            "filmstrip"
+            "filmstrip",
+            "slideshow"
           ]
         }
       ],
@@ -5140,13 +5160,13 @@
   },
   "config_sync": {
     "widgets_checked": 78,
-    "fields_checked": 554,
+    "fields_checked": 559,
     "widgets_with_unread_fields": 1,
     "unread_fields": 1,
     "widgets_with_wrong_values": 0,
     "wrong_values": 0,
     "value_sets_checked": 33,
-    "value_sets_unreadable": 109,
+    "value_sets_unreadable": 110,
     "field_source": "widget-felder.json",
     "widgets_with_undocumented_fields": 0,
     "undocumented_fields": 0,
