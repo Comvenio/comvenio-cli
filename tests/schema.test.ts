@@ -333,12 +333,15 @@ describe("Herkunft der Config-Felder", () => {
     // 540 since comvenio-cli-doku 06 (2026-09-29): 21 fields no widget reads were removed
     // (config_not_read_by_widget), one of them with a value set; 541 with custom_html/slots,
     // the named slots the gateway must be able to write; 554 with the three community
-    // widgets (community-hub 14: 5 + 4 + 4 fields, each with community_id).
-    expect(felder).toBe(554);
+    // widgets (community-hub 14: 5 + 4 + 4 fields, each with community_id); 559 with the
+    // gallery of recent events (homepage-generator 20/01: image_gallery event_count,
+    // per_event, include_feed, shuffle, effect).
+    expect(felder).toBe(559);
     const mitWerten = Object.values(homepage.widgets as Record<string, { config?: Array<{ values?: unknown }> }>)
       .flatMap((w) => w.config ?? [])
       .filter((f) => Array.isArray(f.values)).length;
-    // 142 with view/range_days (community_calendar) and layout/sort (club_directory).
-    expect(mitWerten).toBe(142);
+    // 142 with view/range_days (community_calendar) and layout/sort (club_directory);
+    // 143 with image_gallery/effect (homepage-generator 20/01).
+    expect(mitWerten).toBe(143);
   });
 });
