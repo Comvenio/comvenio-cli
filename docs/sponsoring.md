@@ -35,7 +35,7 @@ Eine neue Vertragsversion (`cai.sponsor.12.contract_add`) bildet geänderte Kond
 
 ### Sponsor einem Produkt zuordnen (`cai.sponsor.16.assign`)
 
-Eine Zuordnung verbindet einen Sponsor mit einem Produkt für einen Zeitraum und optional eine Menge; Preis oder Gesamtpreis können dabei die Produktvorgabe überschreiben. Das Anlegen ist `critical_write`: der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` führt die Zuordnung aus. Eine Zuordnung lässt sich später über `cai.sponsor.17.assignment_update` anpassen oder mit `cai.sponsor.18.cancel` mit einer Notiz und einem Enddatum beenden — beides ebenfalls `critical_write`. `cai.sponsor.15.assignment_list` zeigt gelöschte Zuordnungen auf Wunsch mit an.
+Eine Zuordnung verbindet einen Sponsor mit einem Produkt für einen Zeitraum und optional eine Menge; Preis oder Gesamtpreis können dabei die Produktvorgabe überschreiben. Das Anlegen ist `critical_write`: der Aufruf liefert zunächst nur eine Vorschau mit `preview_id` und `confirmation_token`, erst `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` führt die Zuordnung aus. Eine Zuordnung lässt sich später über `cai.sponsor.17.assignment_update` anpassen oder mit `cai.sponsor.18.cancel` mit einer Notiz und einem Enddatum beenden — beides ebenfalls `critical_write`. `cai.sponsor.15.assignment_list` zeigt gelöschte Zuordnungen auf Wunsch mit an.
 
 ### Vertragsdokument einer Zuordnung hochladen (`cai.sponsor.20.doc_upload`)
 
@@ -130,7 +130,7 @@ comvenio action call cai.sponsor.16.assign --input '{
 # Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 
 comvenio action call cai.sponsor.15.assignment_list --input '{"sponsor_id":"<sponsor-id>","status":"active","include_deleted":false,"limit":50}'

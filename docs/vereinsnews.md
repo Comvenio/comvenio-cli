@@ -32,7 +32,7 @@ Anmeldung mit `comvenio login`; welche Actions dein Verein freigibt und welche S
 1. Bilder in DataShare finden oder zuerst dorthin hochladen (siehe [dateien.md](dateien.md)); ihre Datei-IDs (`cover_image_file_id`, Bilder im HTML) stammen aus diesem Schritt.
 2. Die News als Objekt komponieren (`cai.news.03.create` oder `cai.news.06.apply`): Titel, Inhalt, Teaser, Sichtbarkeit, Titelbild.
 3. Die Layout-Vorschau prüfen, bevor irgendetwas gespeichert wird — `cai.news.07.preview` rendert im echten Layout und schreibt nichts.
-4. Mit `operation: draft` anlegen oder mit `operation: publish` direkt veröffentlichen. `publish` ist `critical_write`: Der Aufruf liefert zunächst nur eine Bestätigungs-Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` mit diesen Werten führt die Veröffentlichung aus.
+4. Mit `operation: draft` anlegen oder mit `operation: publish` direkt veröffentlichen. `publish` ist `critical_write`: Der Aufruf liefert zunächst nur eine Bestätigungs-Vorschau mit `preview_id` und `confirmation_token`; erst `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` mit diesen Werten führt die Veröffentlichung aus.
 
 Reine Vorschau-Felder wie eine kurzlebige Bild-Adresse, Vereinsname und Autorenname sind Teil der Eingabe von `cai.news.07.preview`, nicht der dauerhaften News selbst. Bilder im HTML brauchen zusätzlich zur Adresse eine stabile Datei-Kennung, damit die Anwendung eine abgelaufene Adresse automatisch neu signieren kann.
 
@@ -100,7 +100,7 @@ comvenio action call cai.news.06.apply --input '{"operation":"publish","news":{"
 # Antwort liefert preview_id, confirmation_token, Ziel, Ist-Stand, Unterschied und Risiko
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 ```
 

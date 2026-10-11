@@ -35,7 +35,7 @@ A new contract version (`cai.sponsor.12.contract_add`) reflects changed terms wi
 
 ### Assigning a sponsor to a product (`cai.sponsor.16.assign`)
 
-An assignment connects a sponsor to a product for a period and optionally a quantity; a price or total price can override the product's default. Creating it is `critical_write`: the call first returns only a preview with `preview_id` and `confirmation_token`, and only `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` carries out the assignment. An assignment can be adjusted later through `cai.sponsor.17.assignment_update`, or ended with a note and an end date through `cai.sponsor.18.cancel` — both also `critical_write`. `cai.sponsor.15.assignment_list` can optionally include deleted assignments.
+An assignment connects a sponsor to a product for a period and optionally a quantity; a price or total price can override the product's default. Creating it is `critical_write`: the call first returns only a preview with `preview_id` and `confirmation_token`, and only `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` carries out the assignment. An assignment can be adjusted later through `cai.sponsor.17.assignment_update`, or ended with a note and an end date through `cai.sponsor.18.cancel` — both also `critical_write`. `cai.sponsor.15.assignment_list` can optionally include deleted assignments.
 
 ### Uploading an assignment's contract document (`cai.sponsor.20.doc_upload`)
 
@@ -130,7 +130,7 @@ comvenio action call cai.sponsor.16.assign --input '{
 # response returns preview_id, confirmation_token, target, current state, diff and risk
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 
 comvenio action call cai.sponsor.15.assignment_list --input '{"sponsor_id":"<sponsor-id>","status":"active","include_deleted":false,"limit":50}'

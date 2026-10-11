@@ -72,7 +72,7 @@ Not yet available as an action — do this in the web app.
 
 - `cai.data.09.move` moves a file into another folder; `target_folder_id: null` moves it to the top level.
 - `cai.data.10.visibility` sets visibility via `operation`: `private` is a normal write, `public` is `critical_write`.
-- `cai.data.07.delete` moves a file to the trash by default (`operation: soft_delete`); a hard delete (`operation: hard_delete`) is `critical_write` and cannot be undone — the call first returns only a preview with `preview_id` and `confirmation_token`, and only `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` with these values carries out the deletion.
+- `cai.data.07.delete` moves a file to the trash by default (`operation: soft_delete`); a hard delete (`operation: hard_delete`) is `critical_write` and cannot be undone — the call first returns only a preview with `preview_id` and `confirmation_token`, and only `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` with these values carries out the deletion.
 - `cai.data.08.restore` brings back a soft-deleted file.
 - `cai.data.11.stats` returns storage usage per club or per department.
 - `cai.data.12.empty_trash` (`critical_write`) empties a department's trash specifically and runs through the same preview/confirm sequence.
@@ -150,7 +150,7 @@ comvenio action call cai.data.07.delete --input '{"operation":"hard_delete","fil
 # response returns preview_id, confirmation_token, target, current state, diff and risk
 comvenio action confirm \
   --preview-id <preview-id> \
-  --confirmation-token <confirmation-token> \
+  --confirmation-token=<confirmation-token> \
   --idempotency-key <idempotency-key>
 
 comvenio action call cai.data.11.stats --input '{}'

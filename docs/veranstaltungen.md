@@ -42,14 +42,14 @@ Ein `403` bedeutet fehlendes Recht. Ein `404` kann bei nicht sichtbaren Daten ab
 
 1. Vorlage anlegen: `comvenio action call cai.event.07.template_list_create_clone_instantiate --input '{"operation":"create","template":{"department_id":"<department-id>","title":"Darttraining","event_type":"training","visibility_scope":"member","organizer_type":"member","description":"Wöchentliches Training"}}'`.
 2. Serie aus der Vorlage definieren: `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"create","series":{"name":"Darttraining Mittwoch","department_id":"<department-id>","event_type":"training","visibility_scope":"member","timezone":"Europe/Berlin","rrule":"FREQ=WEEKLY;BYDAY=WE","dtstart":"2026-01-07T19:00:00+01:00","duration_minutes":120}}'`. Die Wiederholung steht als RRULE in `rrule` (z. B. `FREQ=WEEKLY;BYDAY=WE`), nicht mehr als einzelne Frequenz-/Wochentag-Flags.
-3. Konkreten Zeitraum materialisieren: Aufruf ohne Bestätigung liefert eine Vorschau — `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"materialize","series_id":"<series-id>","range":{"from":"2026-01-01","to":"2026-03-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}'`. Preview prüfen, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `materialize` ist idempotent und überspringt vorhandene Termine.
+3. Konkreten Zeitraum materialisieren: Aufruf ohne Bestätigung liefert eine Vorschau — `comvenio action call cai.event.08.series_list_show_create_materialize_promote_recurring_promote_yearly_n --input '{"operation":"materialize","series_id":"<series-id>","range":{"from":"2026-01-01","to":"2026-03-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true}}'`. Preview prüfen, danach `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `materialize` ist idempotent und überspringt vorhandene Termine.
 
 ### Einzelnes Event anlegen und veröffentlichen
 
 1. Event anlegen: `comvenio action call cai.event.03.create --input '{"event":{"department_id":"<department-id>","title":"Sommerfest","event_type":"party","visibility_scope":"public","organizer_type":"member","start_time":"2026-08-15T16:00:00+02:00","end_time":"2026-08-16T01:00:00+02:00","description":"Sommerfest am Vereinsheim","location":"Vereinsheim","event_complexity":"simple"}}'`.
 2. Event lesen: `comvenio action call cai.event.02.show --input '{"event_id":"<event-id>"}'`. Events auflisten (Zeitraum ist Pflicht): `comvenio action call cai.event.01.list --input '{"range":{"from":"2026-08-01","to":"2026-09-01","timezone":"Europe/Berlin","from_inclusive":true,"to_exclusive":true},"limit":50}'`.
 3. Event aktualisieren: `comvenio action call cai.event.04.update --input '{"event_id":"<event-id>","changes":{"description":"Neuer Text"}}'`.
-4. Event veröffentlichen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.event.05.publish --input '{"event_id":"<event-id>","make_public":true}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `publish` setzt `status=confirmed`; `make_public=true` setzt zusätzlich `visibility_scope=public`.
+4. Event veröffentlichen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.event.05.publish --input '{"event_id":"<event-id>","make_public":true}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `publish` setzt `status=confirmed`; `make_public=true` setzt zusätzlich `visibility_scope=public`.
 5. Event löschen (kritisch): `comvenio action call cai.event.06.delete --input '{"event_id":"<event-id>"}'`, danach `comvenio action confirm …`.
 
 ### Mehrtägige Feste mit Festtagen
@@ -97,7 +97,7 @@ Ein `403` bedeutet fehlendes Recht. Ein `404` kann bei nicht sichtbaren Daten ab
 
 ### Geländeplan
 
-Geländepläne sind Event-Funktionalität, aber wegen ihres Umfangs eine eigene Action-Domäne. Lesende und einfach schreibende Vorgänge (`list`, `show`, `create`, `update`, `link`, `duplicate`) laufen direkt; kritische Vorgänge (`delete`, `unlink`, `export`, `illustrate`, `compose`) liefern erst eine Vorschau, dann `comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …`.
+Geländepläne sind Event-Funktionalität, aber wegen ihres Umfangs eine eigene Action-Domäne. Lesende und einfach schreibende Vorgänge (`list`, `show`, `create`, `update`, `link`, `duplicate`) laufen direkt; kritische Vorgänge (`delete`, `unlink`, `export`, `illustrate`, `compose`) liefern erst eine Vorschau, dann `comvenio action confirm --preview-id … --confirmation-token=… --idempotency-key …`.
 
 ```bash
 comvenio action call cai.plan.01.list --input '{"event_id":"<event-id>"}'

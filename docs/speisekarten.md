@@ -39,13 +39,13 @@ Ein fehlendes Recht meldet `403`.
 ### Vorlagen zuerst nutzen
 
 1. Passende Gericht-Vorlage suchen: `comvenio action call cai.template.01.dish --input '{"operation":"list","search":"Schnitzel","limit":20}'`.
-2. Rezept daraus instanziieren (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. Die Antwort enthält `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus.
+2. Rezept daraus instanziieren (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. Die Antwort enthält `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` und den Erfolgsstatus.
 3. `from-template` matcht serverseitig auf Verein und Rezeptname — ein zweiter Aufruf mit demselben Namen liefert die bestehende `recipe_id` statt eines Duplikats.
 4. Steht eine Zutat in `missing_ingredients`, hatte sie keinen Vorlagen-Match und wurde ohne Allergen angelegt. Bei wichtigen Allergenträgern (Mehl, Bier, Käse, Fisch, …) mit `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` die exakte Vorlagen-Schreibweise prüfen — der Match ist case-insensitiv, aber nicht fuzzy.
 
 ### Ad-hoc-Rezept anlegen (wenn keine Vorlage passt)
 
-1. Rezept mit Zutaten anlegen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `ingredients` ist ein Array aus `{"name","quantity","unit"}`, kein Textformat mehr.
+1. Rezept mit Zutaten anlegen (kritisch — erst Vorschau, dann Bestätigung): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, danach `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `ingredients` ist ein Array aus `{"name","quantity","unit"}`, kein Textformat mehr.
 2. Zutaten-Vorlagen-Namen exakt treffen, damit die Allergene mit erben — vorher mit `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` die Schreibweise prüfen.
 3. Fehlende Zutaten werden beim Anlegen automatisch erzeugt (`auto_create_missing_ingredients`, Voreinstellung an).
 
@@ -53,7 +53,7 @@ Ein fehlendes Recht meldet `403`.
 
 1. Karte und Einträge als ein Objekt komponieren (siehe Beispiele).
 2. `apply` ist kritisch: Der erste Aufruf ohne Bestätigung ist bereits die Prüfung — `comvenio action call cai.menu.09.apply --input '{"menu": {…}}'` prüft Pflichtfelder, Preise, `display_order` und alle Rezept-Verknüpfungen serverseitig, ohne etwas zu schreiben, und liefert eine Vorschau mit `preview_id` und `confirmation_token`.
-3. Vorschau prüfen; erst danach legt `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` Karte und Einträge im Bulk an.
+3. Vorschau prüfen; erst danach legt `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` Karte und Einträge im Bulk an.
 
 ### Karte direkt zusammenstellen und Rezepte wiederverwenden
 
@@ -163,11 +163,11 @@ Vollständiges Beispiel — eine Grillbuden-Karte von den Rezepten bis zur ferti
 ```bash
 # Rezepte einmalig anlegen (mit Allergenen) — recipe.from-template und recipe.create sind kritisch
 comvenio action call cai.recipe.02.from_template --input '{"template_id":"<steaksemmel-template-id>","custom_name":"Steaksemmel","custom_price":4.50}'
-comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>
 STEAK=<recipe_id aus der Antwort>
 
 comvenio action call cai.recipe.01.create --input '{"name":"Käse","type_of_recipe":"food","selling_price":3.40,"ingredients":[{"name":"Gouda Käse","quantity":0.1,"unit":"kg"}]}'
-comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>
 KAAS=<recipe_id aus der Antwort>
 
 # Karte anlegen

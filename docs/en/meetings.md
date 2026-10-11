@@ -28,7 +28,7 @@ Sign in with `comvenio login`; which actions your club enables and which scopes 
 
 Every sub-action of a multi-part action is selected with `"operation": "<name>"` in `--input`. A
 critical (`critical_write`) sub-action first returns a preview with a `preview_id` and
-`confirmation_token`; only `comvenio action confirm --preview-id … --confirmation-token …
+`confirmation_token`; only `comvenio action confirm --preview-id … --confirmation-token=…
 --idempotency-key …` executes it.
 
 ## Workflows
@@ -75,14 +75,14 @@ time when moving to "in progress" and the end time when moving to "finalized".
 ```bash
 comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
   --input '{"operation":"advance","protocol_id":"<protocol-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
   --input '{"operation":"validation","protocol_id":"<protocol-id>"}' --json
 comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
   --input '{"operation":"publish","protocol_id":"<protocol-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -104,17 +104,17 @@ require confirmation.
 ```bash
 comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
   --input '{"operation":"create","protocol_id":"<protocol-id>","agenda_item":{"title":"Treasury report","description":"Second-quarter review","estimated_duration_minutes":20,"is_hidden":false}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
   --input '{"operation":"reorder","protocol_id":"<protocol-id>","agenda_item_ids":["<top-id-1>","<top-id-2>"]}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.03.agenda_list_show_create_update_delete_reorder_start_complete_skip_appr \
   --input '{"operation":"start","protocol_id":"<protocol-id>","agenda_item_id":"<top-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -166,22 +166,22 @@ critical.
 ```bash
 comvenio action call cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote \
   --input '{"operation":"create","agenda_item_id":"<top-id>","decision":{"title":"Approve 2027 budget","decision_type":"voting","voting_visibility":"public","valid_from":"2026-07-13T19:30:00+02:00","voting_eligibility":"all_participants","allow_proxy_voting":true,"is_offline_voting":false,"allow_multiple_choice":false}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
   --input '{"operation":"open","decision_id":"<decision-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract \
   --input '{"operation":"cast","decision_id":"<decision-id>","vote":{"option_id":"<option-id>"}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
   --input '{"operation":"close","decision_id":"<decision-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
   --input '{"operation":"results","decision_id":"<decision-id>"}' --json
@@ -205,12 +205,12 @@ comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_c
 
 comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
   --input '{"operation":"approve","resolution_id":"<resolution-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
   --input '{"operation":"decline","resolution_id":"<resolution-id>","reason":"Procedural defect in the draft resolution"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -234,7 +234,7 @@ comvenio action call cai.meeting.10.entry_list_show_show_agenda_create_update_de
 
 comvenio action call cai.meeting.11.attachment_list_add_remove \
   --input '{"operation":"add","entry_id":"<entry-id>","file_id":"<file-id>","title":"Treasury report Q2"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -265,7 +265,7 @@ comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_adva
 
 comvenio action call cai.meeting.02.protocol_list_show_create_update_delete_advance_revert_updates_validat \
   --input '{"operation":"publish","protocol_id":"<protocol-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -274,17 +274,17 @@ Create a decision and run a vote:
 ```bash
 comvenio action call cai.meeting.06.decision_create_agenda_update_cancel_option_add_options_add_promote \
   --input '{"operation":"create","agenda_item_id":"<top-id>","decision":{"title":"Approve 2027 budget","decision_type":"voting","voting_visibility":"public","valid_from":"2026-07-13T19:30:00+02:00","voting_eligibility":"all_participants","allow_proxy_voting":true,"is_offline_voting":false,"allow_multiple_choice":false}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.07.voting_open_close_results_eligible_tally \
   --input '{"operation":"open","decision_id":"<decision-id>"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 
 comvenio action call cai.meeting.08.vote_cast_cast_bulk_proxy_proxy_bulk_option_retract_retract \
   --input '{"operation":"cast","decision_id":"<decision-id>","vote":{"option_id":"<option-id>"}}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 
@@ -293,7 +293,7 @@ Decline a resolution:
 ```bash
 comvenio action call cai.meeting.09.resolution_list_list_protocol_show_history_create_update_approve_decli \
   --input '{"operation":"decline","resolution_id":"<resolution-id>","reason":"Procedural defect in the draft resolution"}' --json
-comvenio action confirm --preview-id <preview-id> --confirmation-token <token> \
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<token> \
   --idempotency-key <key> --json
 ```
 

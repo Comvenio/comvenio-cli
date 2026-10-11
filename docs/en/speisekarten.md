@@ -39,13 +39,13 @@ A missing permission is reported as `403`.
 ### Use templates first
 
 1. Search for a matching dish template: `comvenio action call cai.template.01.dish --input '{"operation":"list","search":"Schnitzel","limit":20}'`.
-2. Instantiate a recipe from it (critical — preview first, then confirmation): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. The response contains `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` and the success status.
+2. Instantiate a recipe from it (critical — preview first, then confirmation): `comvenio action call cai.recipe.02.from_template --input '{"template_id":"<template-id>","custom_price":12}'`, then `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. The response contains `recipe_id`, `recipe_name`, `created_ingredients`, `missing_ingredients` and the success status.
 3. `from-template` matches server-side on club and recipe name — a second call with the same name returns the existing `recipe_id` instead of creating a duplicate.
 4. If an ingredient appears in `missing_ingredients`, it had no template match and was created without an allergen. For important allergen carriers (flour, beer, cheese, fish, …) check the exact template spelling with `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'` — the match is case-insensitive but not fuzzy.
 
 ### Create an ad-hoc recipe (when no template fits)
 
-1. Create a recipe with ingredients (critical — preview first, then confirmation): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, then `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>`. `ingredients` is an array of `{"name","quantity","unit"}`, no longer a text format.
+1. Create a recipe with ingredients (critical — preview first, then confirmation): `comvenio action call cai.recipe.01.create --input '{"name":"Brezn","type_of_recipe":"food","category":"Snacks","selling_price":3.00,"ingredients":[{"name":"Laugenbreze","quantity":1,"unit":"pc"}]}'`, then `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>`. `ingredients` is an array of `{"name","quantity","unit"}`, no longer a text format.
 2. Match ingredient template names exactly so the allergens are inherited too — check the spelling first with `comvenio action call cai.template.02.ingredient --input '{"operation":"list","search":"<name>"}'`.
 3. Missing ingredients are created automatically when the recipe is created (`auto_create_missing_ingredients`, on by default).
 
@@ -53,7 +53,7 @@ A missing permission is reported as `403`.
 
 1. Compose the menu and its items as one object (see Examples).
 2. `apply` is critical: the first call without confirmation already is the check — `comvenio action call cai.menu.09.apply --input '{"menu": {…}}'` checks required fields, prices, `display_order` and every recipe link server-side, without writing anything, and returns a preview with `preview_id` and `confirmation_token`.
-3. Review the preview; only then does `comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>` create the menu and its items in bulk.
+3. Review the preview; only then does `comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>` create the menu and its items in bulk.
 
 ### Assembling a menu directly and reusing recipes
 
@@ -163,11 +163,11 @@ Complete example — a barbecue-stand menu from the recipes to the finished menu
 ```bash
 # Create recipes once (with allergens) — recipe.from-template and recipe.create are critical
 comvenio action call cai.recipe.02.from_template --input '{"template_id":"<steaksemmel-template-id>","custom_name":"Steaksemmel","custom_price":4.50}'
-comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>
 STEAK=<recipe_id from the response>
 
 comvenio action call cai.recipe.01.create --input '{"name":"Käse","type_of_recipe":"food","selling_price":3.40,"ingredients":[{"name":"Gouda Käse","quantity":0.1,"unit":"kg"}]}'
-comvenio action confirm --preview-id <id> --confirmation-token <token> --idempotency-key <key>
+comvenio action confirm --preview-id <id> --confirmation-token=<token> --idempotency-key <key>
 KAAS=<recipe_id from the response>
 
 # Create the menu

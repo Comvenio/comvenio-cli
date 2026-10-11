@@ -33,7 +33,7 @@ needs the right to manage club settings, or the right to manage events of the re
    `confirmation_token`, plus the run and plan ID; the draft itself is only created on confirmation
    and then sits in the agent messenger for approval.
 5. Check the preview, then confirm:
-   `comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <key>`.
+   `comvenio action confirm --preview-id <preview-id> --confirmation-token=<confirmation-token> --idempotency-key <key>`.
    The idempotency key makes a repeat safe: if the confirmation aborts on a timeout, the service may
    still have kept working — the same key then returns the same run instead of a second one.
 
@@ -53,7 +53,7 @@ Not yet available as an action — do this in the web app.
 
 ```bash
 comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","range":"next_week","telegram":false}'
-comvenio action confirm --preview-id <preview-id> --confirmation-token <confirmation-token> --idempotency-key <key>
+comvenio action confirm --preview-id <preview-id> --confirmation-token=<confirmation-token> --idempotency-key <key>
 comvenio action call cai.club.11.weekly_preview_create --input '{"department_id":"<department-id>","team_ids":["<team-id-a>","<team-id-b>"],"range":"next_7_days","telegram":true}'
 comvenio action call cai.club.12.weekly_preview_list --input '{"plan_id":"<plan-id>","limit":20}'
 ```

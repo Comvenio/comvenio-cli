@@ -107,7 +107,7 @@ comvenio login --scopes club.read,role.read.self          # bewusst nur lesen
 comvenio action list                                      # was diese Verbindung darf
 comvenio action show <cai.…-id>                           # Eingabefelder je Teilaktion
 comvenio action call <cai.…-id> --input '{…}' --json      # lesen oder Vorschau erzeugen
-comvenio action confirm --preview-id … --confirmation-token … --idempotency-key …
+comvenio action confirm --preview-id … --confirmation-token=… --idempotency-key …
 ```
 
 - **`confirm` mit demselben Schlüssel wie `call`.** Ohne `--idempotency-key` erzeugt `call` einen;
