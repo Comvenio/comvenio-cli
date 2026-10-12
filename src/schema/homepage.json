@@ -2259,12 +2259,12 @@
       "beschreibung": {
         "kategorie": "medien",
         "zweck": {
-          "de": "Bildergalerie als Raster, Mauerwerk, Karussell oder Filmstreifen.",
-          "en": "Image gallery as a grid, masonry layout, carousel or filmstrip."
+          "de": "Bildergalerie als Raster, Mauerwerk, Karussell, Filmstreifen oder Diashow.",
+          "en": "Image gallery as a grid, masonry layout, carousel, filmstrip or slideshow."
         },
         "datenquelle": {
-          "de": "Je nach im Formular gewählter Quelle: ausgewählte Dateien aus dem Dateibereich, Bilder eines gewählten Events, Bilder der letzten drei öffentlichen Events, ein Ordner aus dem Dateibereich, externe Bild-URLs oder öffentliche Vereinsbilder.",
-          "en": "Depending on the source chosen in the form: selected files from the file area, images of a chosen event, images from the last three public events, a folder from the file area, external image URLs, or public club images."
+          "de": "Je nach im Formular gewählter Quelle: ausgewählte Dateien aus dem Dateibereich, Bilder eines gewählten Events, Bilder der letzten begonnenen öffentlichen Events aus Event-Galerie und freigegebenen Beiträgen des Event-Feeds (bis zu 50, je Event begrenzt), ein Ordner aus dem Dateibereich, externe Bild-URLs oder öffentliche Vereinsbilder.",
+          "en": "Depending on the source chosen in the form: selected files from the file area, images of a chosen event, images from the most recent started public events from the event gallery and approved event-feed posts (up to 50, limited per event), a folder from the file area, external image URLs, or public club images."
         },
         "macht_oeffentlich": {
           "de": "Nur bereits als öffentlich markierte Bilder der gewählten Quelle.",
