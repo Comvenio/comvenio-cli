@@ -107,9 +107,18 @@ veröffentlichen.
 ### Inhalte gestalten
 
 - **Bildergalerie** (`image_gallery`): Quelle wahlweise ausgewählte Dateien,
-  öffentliche Vereinsbilder, die Bilder einer Veranstaltung, die letzten drei
-  abgeschlossenen öffentlichen Veranstaltungen, ein Ordner oder externe
-  Adressen; `limit` 1–50, Standard 24. Es erscheinen nur öffentliche, fertige,
+  öffentliche Vereinsbilder, die Bilder einer Veranstaltung, die letzten Events
+  mit Bildern (`recent_events`), ein Ordner oder externe Adressen; `limit`
+  1–50, Standard 24. Die Quelle `recent_events` nimmt begonnene — auch gerade
+  laufende — öffentliche, bestätigte Veranstaltungen, jüngste zuerst, und
+  überspringt solche ohne öffentliches Bild; Bilder kommen aus der Event-Galerie
+  und, mit `include_feed` (Standard an), aus freigegebenen öffentlichen
+  Beiträgen des Event-Feeds. Für sie gelten `event_count` (1–10, Standard 5),
+  `per_event` (1–20, Standard 10) und `shuffle` (Standard an, sonst die
+  neuesten); höchstens `event_count` × `per_event`, nie mehr als 50 Bilder —
+  `limit` wird für diese Quelle nicht gelesen. Layout `slideshow` (Diashow)
+  wechselt alle `interval` Sekunden mit `effect` `crossfade` oder `kenburns`
+  und öffnet per Klick das Event. Es erscheinen nur öffentliche, fertige,
   aktive Bilder desselben Vereins; Titelbilder, Flyer und Logos einer
   Veranstaltung werden dabei ausgelassen. Die Ordnerquelle zeigt ausschließlich
   die öffentlich freigegebene Ansicht eines Ordners, nie einen privaten
