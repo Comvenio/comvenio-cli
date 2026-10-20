@@ -2,7 +2,7 @@ import type { ComvenioApiClient, ComvenioHttpMethod } from "@comvenio/comvenio-c
 import { createConnectorError, isConnectorError, type JsonValue, type RequestContext } from "@comvenio/connector-contracts";
 
 import { PublicResponseRedactor } from "../../public/redaction.ts";
-import { convertLiveTabs, stilKatalog } from "./convert.ts";
+import { convertLiveTabs, stilKatalog, verschachtelteLiveTabs, type LiveInhalt } from "./convert.ts";
 import { boundedContentList, minimizeFile, minimizeNews, minimizePaper, redactContentValue } from "./privacy.ts";
 import { listK12Schemas, showK12Schema, type K12SchemaDomain } from "./schema-registry.ts";
 import type { K12ActionId } from "./types.ts";
@@ -42,7 +42,20 @@ add("cai.homepage.04.screenshot", "screenshot", async (input, context, client) =
 simple("cai.homepage.03.show", "private", "GET", "club", (input) => `/home-config/${string(input, "club_id")}/tabs`);
 add("cai.homepage.03.show", "public", async (input, context, client) => new PublicResponseRedactor().redact({ alias: "public_club_home", response: await request(client, context, "GET", "club", `/public/clubs/${string(input, "club_id")}/home`), request_id: context.request_id, expected_club_id: string(input, "club_id") }));
 add("cai.homepage.05.convert", "convert", async (input, context, client) => {
-  const live = assertClub(await request(client, context, "GET", "club", `/home-config/${string(input, "club_id")}/tabs`), input, context);
+  const clubId = string(input, "club_id");
+  const flach = assertClub(await request(client, context, "GET", "club", `/home-config/${clubId}/tabs`), input, context);
+  // The tabs route is flat: sections and widgets are read per tab (bug ddc0a35a).
+  const inhalt = new Map<string, LiveInhalt>();
+  for (const tab of Array.isArray(flach) ? flach : []) {
+    const tabId = tab !== null && typeof tab === "object" && !Array.isArray(tab) && typeof tab.id === "string" ? tab.id : null;
+    if (!tabId) continue;
+    const [sections, widgets] = await Promise.all([
+      request(client, context, "GET", "club", `/home-config/${clubId}/tabs/${tabId}/sections`),
+      request(client, context, "GET", "club", `/home-config/${clubId}/tabs/${tabId}/widgets`),
+    ]);
+    inhalt.set(tabId, { sections: assertClub(sections, input, context), widgets: assertClub(widgets, input, context) });
+  }
+  const { tabs: live, hinweise: lesehinweise } = verschachtelteLiveTabs(flach, inhalt);
   // The style catalog moves matching classes into slot styles (comvenio-cli-doku 06 §4.3); without it the conversion still works.
   let styles: ReturnType<typeof stilKatalog> = [];
   let katalogHinweis: string | null = null;
@@ -52,6 +65,7 @@ add("cai.homepage.05.convert", "convert", async (input, context, client) => {
   // A tenant mismatch aborts like on the live structure — never style ids of another club.
   if (settings !== null) styles = stilKatalog(assertClub(settings, input, context));
   const { tabs, bericht, hinweise } = convertLiveTabs(live, { styles });
+  hinweise.unshift(...lesehinweise);
   if (katalogHinweis) hinweise.unshift(katalogHinweis);
   return JSON.parse(JSON.stringify({ tabs, bericht, hinweise })) as JsonValue;
 });

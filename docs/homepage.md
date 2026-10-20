@@ -99,10 +99,12 @@ von `cai.homepage.01.preview` beziehungsweise `cai.homepage.02.apply`
 was mit dem Bestand geschieht: `false` legt die übergebenen Tabs nur
 **zusätzlich** an (ein schon vorhandener Slug bekommt `-2`), bestehende Tabs,
 Sections und Widgets bleiben unverändert. Einen vorhandenen Text ändern —
-etwa den Begrüßungstext der Startseite — heißt deshalb: Bestand mit
-`cai.homepage.03.show` lesen, die Stelle in der vollständigen Struktur ändern
-und alles mit `clear_existing: true` über Vorschau und Bestätigung
-veröffentlichen.
+etwa den Begrüßungstext der Startseite — heißt deshalb: die vollständige
+Struktur mit `cai.homepage.05.convert` lesen (sie liefert `tabs` samt
+Sections und Widgets), die Stelle darin ändern und alles mit
+`clear_existing: true` über Vorschau und Bestätigung veröffentlichen.
+`cai.homepage.03.show` mit `private` listet nur die Reiter ohne Inhalt —
+diese Liste mit `clear_existing: true` anzuwenden, leert die Seite.
 
 ### Inhalte gestalten
 
@@ -307,8 +309,9 @@ Der Aufruf liefert zunächst eine Vorschau mit `preview_id` und
 wirklich.
 
 ```bash
-comvenio action call cai.homepage.03.show \
-  --input '{"operation":"public"}' \
+# Sicherung: vollständige Struktur (tabs samt Sections und Widgets; im neuen Format unverändert)
+comvenio action call cai.homepage.05.convert \
+  --input '{}' \
   --json > sicherung-home.json
 
 comvenio action call cai.club.05.design \

@@ -200,6 +200,69 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
     expect(Array.isArray(value.hinweise)).toBe(true);
   });
 
+  test("Bug ddc0a35a: die Reiter-Route ist flach — Sektionen und Widgets werden je Reiter gelesen, nichts geht verloren", async () => {
+    // Shapes as club-service returns them: List[ClubHomeTabRead] without
+    // sections, then List[ClubHomeSectionRead] and List[ClubHomeWidgetRead] per tab.
+    const tabId = "77777777-7777-4777-8777-777777777777";
+    const sectionA = "88888888-8888-4888-8888-888888888881";
+    const sectionB = "88888888-8888-4888-8888-888888888882";
+    const html = '<section aria-label="Start"><div data-widget-slot="news" data-widget-config=\'{"limit":3}\'></div></section>';
+    const calls: string[] = [];
+    const homepage = createK12ToolSets({
+      client: adapterClient(async (request) => {
+        calls.push(`${request.method} ${request.path}`);
+        if (request.path.endsWith("/settings")) return { club_id: clubId, design_settings: {} };
+        if (request.path.endsWith(`/tabs/${tabId}/sections`)) {
+          return [
+            { id: sectionB, club_id: clubId, tab_id: tabId, sort_order: 5, layout: "two-col", style_variant: "default", title: "Zweite", is_visible: true, bg_image_url: null, spalten_breiten: [40, 60] },
+            { id: sectionA, club_id: clubId, tab_id: tabId, sort_order: 1, layout: "full", style_variant: "default", title: null, is_visible: true, bg_image_url: null, spalten_breiten: null },
+          ];
+        }
+        if (request.path.endsWith(`/tabs/${tabId}/widgets`)) {
+          return [
+            { id: "w-2", club_id: clubId, tab_id: tabId, section_id: sectionB, kind: "image", title: null, config: { url: "https://example.org/b.jpg" }, slot_index: 1, position: 0, is_active: true },
+            { id: "w-1", club_id: clubId, tab_id: tabId, section_id: sectionA, kind: "custom_html", title: null, config: { html, slots: {} }, slot_index: 0, position: 0, is_active: true },
+            { id: "w-3", club_id: clubId, tab_id: tabId, section_id: sectionB, kind: "news", title: null, config: {}, slot_index: 0, position: 0, is_active: true },
+            { id: "w-4", club_id: clubId, tab_id: tabId, section_id: null, kind: "text", title: null, config: {}, slot_index: 0, position: 0, is_active: true },
+          ];
+        }
+        return [{ id: tabId, club_id: clubId, label: "Start", slug: "start", position: 0, visibility_scope: "public", is_active: true }];
+      }),
+    }).homepage;
+
+    const result = await homepage.execute({ action_id: "cai.homepage.05.convert", input: { club_id: clubId }, context, capability_snapshot: capabilitySnapshot });
+
+    expect(calls).toEqual([
+      `GET /home-config/${clubId}/tabs`,
+      `GET /home-config/${clubId}/tabs/${tabId}/sections`,
+      `GET /home-config/${clubId}/tabs/${tabId}/widgets`,
+      `GET /clubs/${clubId}/settings`,
+    ]);
+    const value = result.result as { tabs: BulkTab[]; bericht: { umgewandelt: number }; hinweise: string[] };
+    const sections = value.tabs[0]!.sections;
+    expect(sections.map((s) => s.title)).toEqual([null, "Zweite"]);
+    expect(sections[0]!.widgets.map((w) => w.kind)).toEqual(["custom_html"]);
+    expect(sections[1]!.widgets.map((w) => w.kind)).toEqual(["news", "image"]);
+    expect(value.bericht.umgewandelt).toBeGreaterThan(0);
+    expect(value.hinweise.some((h) => h.includes("kein Gerüst"))).toBe(false);
+    expect(value.hinweise.some((h) => h.includes("1 Widget(s) ohne Sektion"))).toBe(true);
+    expect(value.hinweise.some((h) => h.includes("Spaltenbreiten"))).toBe(true);
+    const parsed = K12_ACTION_SCHEMAS["cai.homepage.02.apply"].input.safeParse({ club_id: clubId, tabs: JSON.parse(JSON.stringify(value.tabs)), clear_existing: true });
+    expect(parsed.success).toBe(true);
+  });
+
+  test("Bug ddc0a35a: Sektionen eines anderen Vereins brechen ab", async () => {
+    const tabId = "77777777-7777-4777-8777-777777777777";
+    const homepage = createK12ToolSets({
+      client: adapterClient(async (request) => {
+        if (request.path.endsWith("/sections")) return [{ id: "s", club_id: "44444444-4444-4444-8444-444444444444", tab_id: tabId, sort_order: 0 }];
+        if (request.path.endsWith("/widgets")) return [];
+        return [{ id: tabId, club_id: clubId, label: "Start", slug: "start", position: 0 }];
+      }),
+    }).homepage;
+    await expect(homepage.execute({ action_id: "cai.homepage.05.convert", input: { club_id: clubId }, context, capability_snapshot: capabilitySnapshot })).rejects.toMatchObject({ code: "TENANT_MISMATCH" });
+  });
+
   test("Befund R2-2: Settings eines anderen Vereins brechen ab statt fremde Stil-Kennungen zu übernehmen", async () => {
     const homepage = createK12ToolSets({
       client: adapterClient(async (request) => request.path.endsWith("/settings")
