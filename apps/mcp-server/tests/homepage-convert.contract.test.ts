@@ -209,7 +209,7 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
     const html = '<section aria-label="Start"><div data-widget-slot="news" data-widget-config=\'{"limit":3}\'></div></section>';
     const calls: string[] = [];
     const homepage = createK12ToolSets({
-      client: adapterClient(async (request) => {
+      client: adapterClient(async (request): Promise<JsonValue> => {
         calls.push(`${request.method} ${request.path}`);
         if (request.path.endsWith("/settings")) return { club_id: clubId, design_settings: {} };
         if (request.path.endsWith(`/tabs/${tabId}/sections`)) {
@@ -238,7 +238,7 @@ describe("cai.homepage.05.convert — Vertrag und Verdrahtung", () => {
       `GET /home-config/${clubId}/tabs/${tabId}/widgets`,
       `GET /clubs/${clubId}/settings`,
     ]);
-    const value = result.result as { tabs: BulkTab[]; bericht: { umgewandelt: number }; hinweise: string[] };
+    const value = result.result as unknown as { tabs: BulkTab[]; bericht: { umgewandelt: number }; hinweise: string[] };
     const sections = value.tabs[0]!.sections;
     expect(sections.map((s) => s.title)).toEqual([null, "Zweite"]);
     expect(sections[0]!.widgets.map((w) => w.kind)).toEqual(["custom_html"]);
