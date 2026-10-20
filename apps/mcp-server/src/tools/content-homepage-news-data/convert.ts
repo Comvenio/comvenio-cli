@@ -11,11 +11,10 @@
 // Ported unchanged from the CLI's own `src/homepage/umwandeln.ts` (last
 // readable at commit 8988b21, before K4 removed `src/homepage/`) — only the
 // entry point changed: the old `homepage convert` command read `--from`/live
-// through `src/homepage/befehle.ts`'s `liveAlsBulk`; here `readLiveTabs`
-// below plays that role against the same `GET …/home-config/{club_id}/tabs`
-// route cai.homepage.03.show already uses (the endpoint returns tabs with
-// sections and widgets nested, the same shape cai.homepage.01/02 accept as
-// input — see src/schema/homepage.json `structure`).
+// through `src/homepage/befehle.ts`'s `liveAlsBulk`; here the handler reads
+// the flat `GET …/home-config/{club_id}/tabs` plus sections and widgets per
+// tab, and `verschachtelteLiveTabs` below nests them into the shape
+// cai.homepage.01/02 accept as input (src/schema/homepage.json `structure`).
 import type { JsonValue } from "@comvenio/connector-contracts";
 
 import {
@@ -339,14 +338,61 @@ function jsonString(value: JsonValue | undefined): string | null {
   return typeof value === "string" ? value : null;
 }
 
+export interface LiveInhalt {
+  sections: JsonValue;
+  widgets: JsonValue;
+}
+
+function zahl(value: JsonValue | undefined): number {
+  return typeof value === "number" ? value : 0;
+}
+
 /**
- * `GET …/home-config/{club_id}/tabs` (the same route cai.homepage.03.show
- * private uses) already returns tabs nested with their sections and widgets —
- * the identical shape cai.homepage.01.preview/02.apply accept as `tabs` input
- * (src/schema/homepage.json `structure`). Reading it into `BulkTab[]` is
- * therefore a defensive field pick, not a second HTTP round-trip per tab like
- * the pre-K4 CLI's `ladeReiter`/`ladeInhalt` needed against the older,
- * un-nested endpoints.
+ * `GET …/home-config/{club_id}/tabs` returns the tabs FLAT (club-service
+ * `List[ClubHomeTabRead]`, no sections, no widgets). Sections and widgets come
+ * per tab from `…/tabs/{tab_id}/sections` and `…/tabs/{tab_id}/widgets`; this
+ * nests them like the pre-K4 CLI's `liveAlsBulk` (commit 8988b21). Without it
+ * every tab reads as empty, and applying the result with `clear_existing: true`
+ * would wipe the whole homepage (bug ddc0a35a, Jagabluat 2026-10-20).
+ * A tab without fetched content keeps the sections it already carries.
+ */
+export function verschachtelteLiveTabs(value: JsonValue, inhalt: Map<string, LiveInhalt>): { tabs: JsonValue; hinweise: string[] } {
+  const hinweise: string[] = [];
+  const tabs = [...jsonArray(value)]
+    .map(jsonObject)
+    .sort((a, b) => zahl(a.position) - zahl(b.position))
+    .map((t) => {
+      const id = jsonString(t.id);
+      const geladen = id ? inhalt.get(id) : undefined;
+      if (!geladen) return t;
+      const slug = jsonString(t.slug) ?? "";
+      const widgets = jsonArray(geladen.widgets).map(jsonObject);
+      const ohneSektion = widgets.filter((w) => !jsonString(w.section_id));
+      if (ohneSektion.length) {
+        hinweise.push(`Reiter "${slug}": ${ohneSektion.length} Widget(s) ohne Sektion stehen nicht in tabs — clear_existing: true würde sie entfernen.`);
+      }
+      const sections = jsonArray(geladen.sections)
+        .map(jsonObject)
+        .sort((a, b) => zahl(a.sort_order) - zahl(b.sort_order))
+        .map((s, i) => {
+          if (Array.isArray(s.spalten_breiten) && s.spalten_breiten.length) {
+            hinweise.push(`Reiter "${slug}": Sektion ${i + 1} hat gespeicherte Spaltenbreiten — cai.homepage.02.apply überträgt sie nicht, nach dem Anwenden sind die Spalten gleich breit.`);
+          }
+          const eigene = widgets
+            .filter((w) => jsonString(w.section_id) === jsonString(s.id))
+            .sort((a, b) => zahl(a.slot_index) - zahl(b.slot_index) || zahl(a.position) - zahl(b.position))
+            .map((w, j) => ({ ...w, slot_index: j }));
+          return { ...s, sort_order: i, widgets: eigene };
+        });
+      return { ...t, sections };
+    });
+  return { tabs: tabs as JsonValue, hinweise };
+}
+
+/**
+ * Picks the fields cai.homepage.01.preview/02.apply accept as `tabs` input
+ * (src/schema/homepage.json `structure`) from tabs that carry their sections
+ * and widgets nested — see verschachtelteLiveTabs for the live route.
  */
 export function liveTabsAlsBulk(value: JsonValue): { tabs: BulkTab[]; hinweise: string[] } {
   const hinweise: string[] = [];

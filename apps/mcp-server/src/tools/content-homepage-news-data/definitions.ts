@@ -65,7 +65,7 @@ export const K12_ACTION_DEFINITIONS: Readonly<Record<K12ActionId, K12ActionDefin
   // 06 §4.3): liest dieselbe Route wie cai.homepage.03.show private und
   // wandelt lokal um — kein Schreiben, deshalb risk: "read". Scope und Profil
   // wie cai.homepage.01.preview (DC-4): Teil desselben Design-Workflows.
-  "cai.homepage.05.convert": action("cai.homepage.05.convert", "homepage", "convert", [operation({ name: "convert", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("GET", "club", "/home-config/{club_id}/tabs", "read")] })]),
+  "cai.homepage.05.convert": action("cai.homepage.05.convert", "homepage", "convert", [operation({ name: "convert", profile: "homepage_manage", scopes: ["club.write"], risk: "read", routes: [route("GET", "club", "/home-config/{club_id}/tabs", "read"), route("GET", "club", "/home-config/{club_id}/tabs/{tab_id}/sections", "read"), route("GET", "club", "/home-config/{club_id}/tabs/{tab_id}/widgets", "read")] })]),
 
   // community-hub 14 §11: the page of a community through the club of the
   // sign-in. Every operation first reads the community and its member clubs
