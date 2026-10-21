@@ -118,6 +118,35 @@ describe("cai.homepage.05.convert — Algorithmus (comvenio-cli-doku 06 §4.3)",
     expect(mit([] as JsonValue)).toBe(false);
   });
 
+  test("BUG b72433d8: Altfelder, die die Vorschau ablehnt, werden entfernt und genannt — das Ergebnis besteht cai.homepage.01.preview", () => {
+    // The live form of Jagabluat (2026-10-20): show_title on a ticker slot, an
+    // image_gallery slot and an event_hub_embed widget, none of them read by a renderer.
+    const html = '<section aria-label="Start"><div data-slot="seite-ticker"></div><div data-slot="section-image-gallery"></div></section>';
+    const slots: Record<string, JsonValue> = {
+      "seite-ticker": { kind: "ticker", config: { show_title: false, show_news: true } },
+      "section-image-gallery": { kind: "image_gallery", config: { show_title: false, layout: "grid" } },
+    };
+    const start = tab("start", html, slots) as Record<string, JsonValue>;
+    const fest = { label: "Fest", slug: "fest", position: 1, visibility_scope: "public", sections: [{ layout: "full", style_variant: "default", sort_order: 0, is_visible: true, widgets: [{ kind: "event_hub_embed", title: null, config: { show_title: false, height: 800 }, slot_index: 0 }] }] };
+    const preview = K12_ACTION_SCHEMAS["cai.homepage.01.preview"].input;
+    const eingabe = (tabs: JsonValue) => ({ club_id: "33333333-3333-4333-8333-333333333333", tabs: JSON.parse(JSON.stringify(tabs)), clear_existing: true });
+    // Without the normalization the live form itself fails the preview.
+    expect(preview.safeParse(eingabe([start, fest])).success).toBe(false);
+
+    const { tabs, hinweise } = convertLiveTabs([start, fest]);
+    expect(preview.safeParse(eingabe(tabs as unknown as JsonValue)).success).toBe(true);
+    const festWidget = (tabs[1] as BulkTab).sections[0]!.widgets[0]!;
+    expect(festWidget.config).toEqual({ height: 800 });
+    expect(hinweise.some((h) => h.includes('Reiter "fest"') && h.includes("show_title an event_hub_embed"))).toBe(true);
+    const startHinweis = hinweise.find((h) => h.startsWith('Reiter "start": Felder entfernt'));
+    expect(startHinweis).toContain("show_title an ticker (Slot seite-ticker)");
+    expect(startHinweis).toContain("show_title an image_gallery (Slot section-image-gallery)");
+    // Only the rejected keys go; the declared fields of the slots stay.
+    const geruest = (tabs[0] as BulkTab).sections[0]!.widgets[0]!.config;
+    expect(JSON.stringify(geruest)).toContain('"show_news":true');
+    expect(JSON.stringify(geruest)).toContain('"layout":"grid"');
+  });
+
   test("Befund R1-7: eine leere Live-Seite liefert einen Hinweis statt eines stummen leeren Ergebnisses", () => {
     const { tabs, hinweise } = convertLiveTabs([]);
     expect(tabs).toEqual([]);

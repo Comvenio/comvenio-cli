@@ -57,6 +57,18 @@ describe("CLI customer errors (01-fehlermodell)", () => {
     expect(rendered.code).toBe("OUTCOME_UNKNOWN");
   });
 
+  test("BUG b72433d8: a JSON-RPC VALIDATION_FAILED shows the transport's detail (request too large)", () => {
+    const rendered = toPublicError(new ConnectorClientError("Die Anfrage ist zu groß.", {
+      code: "VALIDATION_FAILED",
+      request_id: requestId,
+      retryable: false,
+      detail: "Die Anfrage ist 147 KB groß, angenommen werden höchstens 100 KB.",
+    }), { lang: "de" });
+    expect(rendered.code).toBe("VALIDATION_FAILED");
+    expect(rendered.request_id).toBe(requestId);
+    expect(rendered.detail).toBe("Die Anfrage ist 147 KB groß, angenommen werden höchstens 100 KB.");
+  });
+
   test("JSON shape matches the contract", () => {
     const rendered = toPublicError(new PublicCliError("ACTION_NOT_LISTED", "nicht freigegeben"), { lang: "de" });
     expect(Object.keys(rendered).sort()).toEqual(

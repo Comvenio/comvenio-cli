@@ -29,6 +29,7 @@ import {
   type SlotEntry,
   type WidgetRead,
 } from "./convert-geruest.ts";
+import { homepageConfigFields } from "./schemas.ts";
 
 export interface StyleEntry {
   id: string;
@@ -338,6 +339,34 @@ function jsonString(value: JsonValue | undefined): string | null {
   return typeof value === "string" ? value : null;
 }
 
+/**
+ * Live configs can carry keys the preview rejects for their kind — `show_title`
+ * on ticker, image_gallery and event_hub_embed, which no renderer reads
+ * (bug b72433d8, Jagabluat 2026-10-20). They are dropped and named in
+ * `entfernt`, so the result passes cai.homepage.01.preview unchanged; the
+ * closed field set itself stays (schemas.ts, Tom 2026-08-29). Unknown kinds are
+ * left alone: the preview rejects them with their own message.
+ */
+function zulaessigeConfig(kind: string, config: Record<string, JsonValue>, ort: string, entfernt: string[]): Record<string, JsonValue> {
+  const felder = homepageConfigFields(kind);
+  if (!felder) return config;
+  const behalten: Record<string, JsonValue> = {};
+  for (const [key, value] of Object.entries(config)) {
+    if (felder.has(key)) behalten[key] = value;
+    else entfernt.push(`${key} an ${kind}${ort}`);
+  }
+  if (kind === "custom_html" && behalten.slots !== undefined) {
+    const slots = jsonObject(behalten.slots);
+    behalten.slots = Object.fromEntries(Object.entries(slots).map(([name, raw]) => {
+      const eintrag = jsonObject(raw);
+      const slotArt = jsonString(eintrag.kind);
+      if (!slotArt || slotArt === "custom_html" || eintrag.config === undefined) return [name, raw];
+      return [name, { ...eintrag, config: zulaessigeConfig(slotArt, jsonObject(eintrag.config), ` (Slot ${name})`, entfernt) }];
+    }));
+  }
+  return behalten;
+}
+
 export interface LiveInhalt {
   sections: JsonValue;
   widgets: JsonValue;
@@ -398,11 +427,13 @@ export function liveTabsAlsBulk(value: JsonValue): { tabs: BulkTab[]; hinweise: 
   const hinweise: string[] = [];
   const tabs = jsonArray(value).map((rawTab) => {
     const t = jsonObject(rawTab);
+    const entfernt: string[] = [];
     const sections = jsonArray(t.sections).map((rawSection) => {
       const s = jsonObject(rawSection);
       const widgets = jsonArray(s.widgets).map((rawWidget) => {
         const w = jsonObject(rawWidget);
-        const widget: BulkWidget = { kind: jsonString(w.kind) ?? "", title: jsonString(w.title), config: jsonObject(w.config) as Record<string, unknown> };
+        const kind = jsonString(w.kind) ?? "";
+        const widget: BulkWidget = { kind, title: jsonString(w.title), config: zulaessigeConfig(kind, jsonObject(w.config), "", entfernt) };
         if (typeof w.slot_index === "number") widget.slot_index = w.slot_index;
         return widget;
       });
@@ -421,6 +452,7 @@ export function liveTabsAlsBulk(value: JsonValue): { tabs: BulkTab[]; hinweise: 
     const slug = jsonString(t.slug) ?? "";
     const hatGeruest = sections.some((s) => s.widgets.some((w) => w.kind === "custom_html"));
     if (!hatGeruest) hinweise.push(`Reiter "${slug}": kein Gerüst (custom_html) — nichts umzustellen.`);
+    if (entfernt.length) hinweise.push(`Reiter "${slug}": Felder entfernt, die cai.homepage.01.preview für die Art nicht annimmt — ${entfernt.join(", ")}.`);
     return { label, slug, icon: jsonString(t.icon), navigation_group: jsonString(t.navigation_group), position: typeof t.position === "number" ? t.position : 0, visibility_scope: jsonString(t.visibility_scope) ?? "public", department_id: jsonString(t.department_id), sections } satisfies BulkTab;
   });
   return { tabs, hinweise };
