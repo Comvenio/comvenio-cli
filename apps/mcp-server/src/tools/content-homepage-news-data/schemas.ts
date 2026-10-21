@@ -70,6 +70,10 @@ const widgetFields = Object.fromEntries(Object.values(K12_HOMEPAGE_REGISTRY.widg
  * — dann ist diese Sperre neu abzuwaegen. Bis dahin ist sie der einzige Boden.
  */
 const widgetFieldsByKind = new Map(Object.entries(K12_HOMEPAGE_REGISTRY.widgets).map(([kind, entry]) => [kind, new Set(entry.config.map((field) => field.name))]));
+/** The config keys cai.homepage.01/02 accept for the kind on a club page, undefined for an unknown kind; convert normalizes live data to them (bug b72433d8). */
+export function homepageConfigFields(kind: string): ReadonlySet<string> | undefined {
+  return widgetFieldsByKind.get(kind);
+}
 const widgetConfig = z.object(widgetFields).strict();
 // Named slots of a custom_html skeleton (17-designer-struktur 02 §4.3) get the same closed field set per kind as a
 // standalone widget; mirrors sanitize_slot_entry in club-service (name pattern, entry keys, no nested custom_html).

@@ -114,6 +114,16 @@ function normalizeOptionalToolArguments(body: unknown): unknown {
   };
 }
 
+/** body-parser's `entity.too.large` as one customer line with limit and size, else null. */
+export function bodyTooLarge(error: unknown): string | null {
+  if (error === null || typeof error !== "object") return null;
+  const { type, limit, length } = error as { type?: unknown; limit?: unknown; length?: unknown };
+  if (type !== "entity.too.large") return null;
+  const kb = (bytes: unknown) => typeof bytes === "number" && Number.isFinite(bytes) ? `${Math.ceil(bytes / 1024)} KB` : null;
+  const grenze = kb(limit), groesse = kb(length);
+  return `Die Anfrage ist${groesse ? ` ${groesse}` : ""} groß, angenommen werden höchstens ${grenze ?? "100 KB"}. Bilder als URL übergeben statt eingebettet (data:).`;
+}
+
 export class McpHttpServer {
   readonly app: Express;
   readonly #options: McpRuntimeOptions;
@@ -360,13 +370,19 @@ export class McpHttpServer {
       if (response.headersSent) return;
       const requestId = this.#newRequestId();
       response.setHeader("x-request-id", requestId);
-      response.status(400).json(jsonRpcErrorBody({
+      // express.json() of the SDK app stops at its default limit (100 KB). Without
+      // the reason a large preview input read as an unexplained VALIDATION_FAILED (bug b72433d8).
+      const zuGross = bodyTooLarge(error);
+      response.status(zuGross ? 413 : 400).json(jsonRpcErrorBody({
         code: "VALIDATION_FAILED",
-        message: error instanceof SyntaxError
-          ? "Der JSON-Request ist ungültig."
-          : "Die Anfrage ist ungültig.",
+        message: zuGross
+          ? "Die Anfrage ist zu groß."
+          : error instanceof SyntaxError
+            ? "Der JSON-Request ist ungültig."
+            : "Die Anfrage ist ungültig.",
         request_id: requestId,
         retryable: false,
+        ...(zuGross ? { detail: zuGross } : {}),
       }));
     });
   }

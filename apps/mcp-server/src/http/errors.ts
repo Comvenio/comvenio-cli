@@ -53,6 +53,7 @@ export function jsonRpcErrorBody(error: ConnectorError): Record<string, unknown>
         code: error.code,
         request_id: error.request_id,
         retryable: error.retryable,
+        ...(error.detail === undefined ? {} : { detail: error.detail }),
       },
     },
     id: null,

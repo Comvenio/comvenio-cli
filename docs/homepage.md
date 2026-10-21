@@ -245,7 +245,13 @@ die Seite als Baum von Überschrift, Text, Bild und Knopf komponieren.
   Nichts wird angewendet — die `tabs` gehen unverändert an
   `cai.homepage.01.preview` und danach an `cai.homepage.02.apply` mit
   `clear_existing: true` (sonst entstehen die Reiter doppelt), nach
-  ausdrücklicher Freigabe.
+  ausdrücklicher Freigabe. Felder, die die Vorschau für eine Art nicht
+  annimmt (etwa ein altes `show_title` an `ticker`, `image_gallery` oder
+  `event_hub_embed`, das keine Darstellung liest), lässt `convert` weg und
+  nennt jedes in `hinweise` mit Reiter, Art und Slot.
+- Eine Anfrage darf höchstens 100 KB groß sein; darüber antwortet jede Action
+  mit `VALIDATION_FAILED` und nennt Grenze und Größe. Bilder deshalb als URL
+  übergeben, nicht als eingebettete `data:`-Adresse.
 - Ein Gerüst mit festem Text oder Bild außerhalb eines Slots, ohne
   eindeutigen Slot-Namen, ohne Bereichsbeschriftung, mit unbekanntem Stil oder
   mit mehr als einer Hauptüberschrift wird beim Schreiben abgelehnt.

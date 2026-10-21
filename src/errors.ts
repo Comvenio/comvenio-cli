@@ -112,6 +112,8 @@ export function toPublicError(
           code: internal,
           ...(typeof data?.retryable === "boolean" ? { retryable: data.retryable } : {}),
         });
+      // The transport's own rejection (request too large) carries its reason here (bug b72433d8).
+      if ((code === "VALIDATION_FAILED" || code === "CONFLICT") && typeof data?.detail === "string") detail = data.detail;
     }
   } else if (error instanceof LoginOptionError) {
     code = "USAGE_ERROR";

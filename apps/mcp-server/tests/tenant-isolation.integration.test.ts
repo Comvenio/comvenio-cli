@@ -496,6 +496,27 @@ async function postCli(baseUrl: string, body: unknown, token?: string): Promise<
   });
 }
 
+test("BUG b72433d8: a request over the JSON limit names limit and size instead of a bare VALIDATION_FAILED", async () => {
+  const server = new McpHttpServer(runtimeOptions());
+  const address = await server.listen(0, "127.0.0.1");
+  try {
+    const response = await postCli(`http://127.0.0.1:${address.port}`, {
+      jsonrpc: "2.0",
+      id: "zu-gross",
+      method: "tools/call",
+      params: { name: "cv_runtime_context_read", arguments: { club_id: clubId, ballast: "x".repeat(150_000) } },
+    }, "openai-token");
+    expect(response.status).toBe(413);
+    const payload = (await response.json()) as { error: { message: string; data: { code: string; detail?: string } } };
+    expect(payload.error.message).toBe("Die Anfrage ist zu groß.");
+    expect(payload.error.data.code).toBe("VALIDATION_FAILED");
+    expect(payload.error.data.detail).toContain("höchstens 100 KB");
+    expect(payload.error.data.detail).toContain("147 KB");
+  } finally {
+    await server.drain(2_000);
+  }
+});
+
 test("isolates the native CLI MCP route from provider identity", async () => {
   const server = new McpHttpServer(runtimeOptions());
   const address = await server.listen(0, "127.0.0.1");
